@@ -21,6 +21,10 @@ var ErrPeerDisagreement = errors.New("peers disagree (suspected isolation, fork,
 // of peers returned a usable answer.
 var ErrNotEnoughPeers = errors.New("not enough peers reached quorum")
 
+// ErrInvalidPeerConfiguration reports a local configuration error, before any
+// RPC requests are started. It is distinct from an unavailable peer quorum.
+var ErrInvalidPeerConfiguration = errors.New("invalid multi-peer configuration")
+
 // MultiClient fans queries out to N peers, recomputes each peer's
 // claim locally, and returns the answer only if at least K of the
 // peers agree byte-for-byte on the recomputed result. Disagreement
@@ -34,7 +38,7 @@ var ErrNotEnoughPeers = errors.New("not enough peers reached quorum")
 // peer's response is enough to decide an early failure.
 type MultiClient struct {
 	Peers  []*Client
-	Quorum int // K; must be 1..len(Peers). Default len(Peers).
+	Quorum int // K; 0 means unanimous, otherwise must be 1..len(Peers).
 }
 
 // NewMultiClient builds a MultiClient with the given URLs. The default
@@ -46,6 +50,33 @@ func NewMultiClient(urls []string) *MultiClient {
 		peers[i] = NewClient(u)
 	}
 	return &MultiClient{Peers: peers, Quorum: len(urls)}
+}
+
+// Validate checks the local peer configuration without making requests or
+// changing the caller's quorum. Distinct endpoints or independent operators
+// are not established by this check.
+func (m *MultiClient) Validate() error {
+	_, err := m.requiredQuorum()
+	return err
+}
+
+func (m *MultiClient) requiredQuorum() (int, error) {
+	if m == nil || len(m.Peers) == 0 {
+		return 0, fmt.Errorf("%w: no peers configured", ErrInvalidPeerConfiguration)
+	}
+	q := m.Quorum
+	if q == 0 {
+		q = len(m.Peers)
+	}
+	if q < 1 || q > len(m.Peers) {
+		return 0, fmt.Errorf("%w: quorum must be zero (unanimous) or within the peer count", ErrInvalidPeerConfiguration)
+	}
+	for i, p := range m.Peers {
+		if p == nil || p.HTTP == nil || strings.TrimSpace(p.URL) == "" {
+			return 0, fmt.Errorf("%w: peer %d requires a client, HTTP client, and nonempty URL", ErrInvalidPeerConfiguration, i)
+		}
+	}
+	return q, nil
 }
 
 // peerResult captures one peer's response to a fan-out query.
@@ -68,15 +99,9 @@ type peerDetailedResult struct {
 // momentum hash transitively implies agreement on the parsed
 // content, since the content hash is bound into the signed envelope.
 func (m *MultiClient) FetchByHeightDetailed(ctx context.Context, start, count uint64) ([]DetailedHeader, error) {
-	if len(m.Peers) == 0 {
-		return nil, errors.New("multi: no peers configured")
-	}
-	q := m.Quorum
-	if q < 1 {
-		q = len(m.Peers)
-	}
-	if q > len(m.Peers) {
-		return nil, fmt.Errorf("multi: quorum %d > peers %d", q, len(m.Peers))
+	q, err := m.requiredQuorum()
+	if err != nil {
+		return nil, err
 	}
 
 	results := make([]peerDetailedResult, len(m.Peers))
@@ -99,15 +124,9 @@ func (m *MultiClient) FetchByHeightDetailed(ctx context.Context, start, count ui
 // header hashes for every height. If peers disagree, returns
 // ErrPeerDisagreement with a per-peer summary embedded in the error.
 func (m *MultiClient) FetchByHeight(ctx context.Context, start, count uint64) ([]chain.Header, error) {
-	if len(m.Peers) == 0 {
-		return nil, errors.New("multi: no peers configured")
-	}
-	q := m.Quorum
-	if q < 1 {
-		q = len(m.Peers)
-	}
-	if q > len(m.Peers) {
-		return nil, fmt.Errorf("multi: quorum %d > peers %d", q, len(m.Peers))
+	q, err := m.requiredQuorum()
+	if err != nil {
+		return nil, err
 	}
 
 	results := make([]peerResult, len(m.Peers))
@@ -136,8 +155,9 @@ func (m *MultiClient) FetchByHeight(ctx context.Context, start, count uint64) ([
 // requires Quorum peers to agree on the (height, hash) at that height.
 // Disagreement → ErrPeerDisagreement.
 func (m *MultiClient) FetchFrontierAtAgreedHeight(ctx context.Context, safetyMargin uint64) (chain.Header, error) {
-	if len(m.Peers) == 0 {
-		return chain.Header{}, errors.New("multi: no peers configured")
+	q, err := m.requiredQuorum()
+	if err != nil {
+		return chain.Header{}, err
 	}
 	heights := make([]uint64, len(m.Peers))
 	errs := make([]error, len(m.Peers))
@@ -163,7 +183,7 @@ func (m *MultiClient) FetchFrontierAtAgreedHeight(ctx context.Context, safetyMar
 		}
 		usable = append(usable, h)
 	}
-	if len(usable) < m.Quorum {
+	if len(usable) < q {
 		return chain.Header{}, fmt.Errorf("%w: %d/%d peers reached on frontier", ErrNotEnoughPeers, len(usable), len(m.Peers))
 	}
 	// Median tolerates up to floor((n-1)/2) Byzantine peers without
@@ -249,15 +269,9 @@ func reconcileDetailed(results []peerDetailedResult, q int) ([]DetailedHeader, e
 // returns the slice only if at least Quorum peers agree on every
 // block hash. Disagreement → ErrPeerDisagreement.
 func (m *MultiClient) FetchAccountBlocksByHeight(ctx context.Context, addressBech32 string, start, count uint64) ([]chain.AccountBlock, error) {
-	if len(m.Peers) == 0 {
-		return nil, errors.New("multi: no peers configured")
-	}
-	q := m.Quorum
-	if q < 1 {
-		q = len(m.Peers)
-	}
-	if q > len(m.Peers) {
-		return nil, fmt.Errorf("multi: quorum %d > peers %d", q, len(m.Peers))
+	q, err := m.requiredQuorum()
+	if err != nil {
+		return nil, err
 	}
 
 	type peerBlocksResult struct {
