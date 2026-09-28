@@ -22,6 +22,8 @@ Plus:
 
 This is **not a full Zenon light client.** See [`docs/trust-model.md`](docs/trust-model.md) for what each ACCEPT actually proves and [`docs/conformance.md`](docs/conformance.md) for the implementation matrix against the spec.
 
+**Momentum format support is limited to version 1.** Other versions are refused before hashing or using retained headers. This does not establish which version a network requires at a given height. See [`docs/header-versions.md`](docs/header-versions.md) for the source basis, refusal behavior, and requirements for Dynamic Plasma support.
+
 ## What it does NOT do
 
 | Capability | Status |

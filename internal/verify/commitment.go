@@ -41,6 +41,9 @@ import (
 // (NG1) or that this is the only block at that (address, height) on
 // the canonical chain (NG6). Effect-equivalence only.
 func VerifyCommitment(state HeaderState, evidence proof.CommitmentEvidence, policy Policy) Result {
+	if err := state.ValidateHeaderVersions(); err != nil {
+		return refuse(ReasonUnsupportedHeaderVersion, err.Error())
+	}
 	header, ok := state.HeaderAtHeight(evidence.Height)
 	if !ok {
 		return Result{

@@ -364,7 +364,7 @@ func (a *ScheduleAuthorizer) Source() ProducerSource { return ProducerSourceOper
 // never ran through producer auth, but the CLI would print the
 // tier-2 caveat as if they had.
 //
-// Returns ACCEPT when:
+// Returns ACCEPT when all retained momentum versions are supported and:
 //   - producer auth is Disabled, or
 //   - every retained header authorizes cleanly under the configured
 //     schedule.
@@ -373,12 +373,16 @@ func (a *ScheduleAuthorizer) Source() ProducerSource { return ProducerSourceOper
 // header fails authorization (FailedAt = window index), REFUSED/
 // ReasonProducerSetUnknown when any retained header is outside the
 // schedule's coverage or no authorizer is configured under Required
-// mode.
+// mode. An unsupported retained momentum version returns REFUSED /
+// ReasonUnsupportedHeaderVersion even when producer auth is Disabled.
 //
 // Cost: O(len(RetainedWindow)) authorizer calls. The retained
 // window is capped at policy.W+1 (≤ a few hundred entries even at
 // the highest tier), so this is negligible compared to fetch/verify.
 func AuthorizeRetainedWindow(state HeaderState, opts VerifyOptions) Result {
+	if err := state.ValidateHeaderVersions(); err != nil {
+		return refuse(ReasonUnsupportedHeaderVersion, err.Error())
+	}
 	if opts.ProducerAuth.Mode != ProducerAuthRequired {
 		return accept().WithNotProven(GuaranteeProducerAuthorization)
 	}
