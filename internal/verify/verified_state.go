@@ -217,6 +217,9 @@ func freezeStateOptions(anchor GenesisTrustRoot, opts VerifyOptions) (VerifyOpti
 			if a == nil || a.Schedule == nil {
 				return VerifyOptions{}, errors.New("producer schedule is nil")
 			}
+			if err := validateScheduleSize(a.Schedule.Coverage, a.Schedule.Entries); err != nil {
+				return VerifyOptions{}, err
+			}
 			// Only substantive schedule fields are used for authorization.
 			// Rebuild the index after copying; never retain caller-owned maps.
 			schedule := &ProducerSchedule{ChainID: a.Schedule.ChainID, ScheduleHash: a.Schedule.ScheduleHash,
