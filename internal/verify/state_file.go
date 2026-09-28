@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
 )
@@ -28,23 +29,29 @@ type persistedState struct {
 	Capacity int              `json:"capacity"`
 }
 
-// SaveHeaderState atomically writes state to path as JSON. The
-// sequence is: write to <path>.tmp, fsync(tmp), close, rename, then
-// fsync the parent directory.
+// SaveHeaderState writes state to path as JSON. The sequence is:
+// write to a temporary file in the same directory, fsync(tmp),
+// close, rename, then fsync the parent directory on non-Windows
+// platforms. The caller must ensure exclusive ownership of path.
 //
-// All three syncs matter for crash safety on Linux ext4 with default
-// data=ordered: fsync(tmp) makes the file's contents durable; the
-// rename is atomic so a torn file is impossible; and fsync(parent)
-// (C1) makes the directory entry pointing to the new inode durable —
-// without it, a power loss between rename and the next journal commit
-// can revert the directory entry and the state file appears to roll
-// back to its previous content. The dir-sync is best-effort on
-// Windows (returns ENOTSUP); the rename itself is durable on NTFS so
-// we tolerate the open error.
+// On filesystems supporting atomic rename and directory sync, both
+// syncs matter: fsync(tmp) flushes the contents, while fsync(parent)
+// flushes the replacement directory entry. Neither error is ignored.
+// Windows retains the existing best-effort replacement behavior;
+// parent-directory sync is skipped and the same crash-durability
+// guarantee is not claimed there.
+//
+// An error after rename does not undo the replacement: the new state
+// may already be visible, but its crash durability is unconfirmed.
 //
 // Only call after a successful VerifyHeaders ACCEPT — persisting a
 // state that wasn't proven would silently lower the SPV's trust.
 func SaveHeaderState(path string, state HeaderState) error {
+	return saveHeaderState(path, state, os.Open)
+}
+
+// openDir is injected to exercise failures after the atomic rename.
+func saveHeaderState(path string, state HeaderState, openDir func(string) (*os.File, error)) error {
 	if path == "" {
 		return errors.New("verify: SaveHeaderState: empty path")
 	}
@@ -85,13 +92,19 @@ func SaveHeaderState(path string, state HeaderState) error {
 		cleanup()
 		return fmt.Errorf("rename: %w", err)
 	}
-	// C1: fsync the parent directory so the renamed entry is durable
-	// across power loss. Silent on Windows (open will fail with
-	// ENOTSUP / EACCES); ignore the open error there since NTFS
-	// renames are durable without it.
-	if d, err := os.Open(dir); err == nil {
-		_ = d.Sync()
+	if runtime.GOOS == "windows" {
+		return nil
+	}
+	d, err := openDir(dir)
+	if err != nil {
+		return fmt.Errorf("open parent directory: %w", err)
+	}
+	if err := d.Sync(); err != nil {
 		_ = d.Close()
+		return fmt.Errorf("sync parent directory: %w", err)
+	}
+	if err := d.Close(); err != nil {
+		return fmt.Errorf("close parent directory: %w", err)
 	}
 	return nil
 }

@@ -4,8 +4,9 @@
 // frontier, computes a conservative target height (min(frontiers) -
 // safety_margin), fetches the next batch of momentums extending the
 // persisted retained-window tip, and runs VerifyHeaders. On ACCEPT
-// the updated state is atomically persisted via SaveHeaderState; on
-// REJECT or REFUSED the state file is unchanged (Phase 4 invariant).
+// the updated state is persisted via SaveHeaderState before advancing
+// in memory or logging ACCEPT. Repeated save failures stop the loop;
+// REJECT or REFUSED leave the state file unchanged (Phase 4 invariant).
 //
 // The transport is the existing internal/fetch.MultiClient (HTTPS
 // JSON-RPC with k-of-n agreement). A future libp2p/WebRTC backend
@@ -73,13 +74,23 @@ type Loop struct {
 
 	// Out is where per-tick logs go. nil discards.
 	Out io.Writer
+
+	// MaxStateSaveFailures bounds consecutive failed save attempts.
+	// Zero selects the default of three; negative values are invalid.
+	MaxStateSaveFailures int
+
+	// SaveState overrides persistence for embedding and fault injection.
+	// nil uses verify.SaveHeaderState. An override must return success
+	// only after completing its persistence contract.
+	SaveState func(string, verify.HeaderState) error
 }
 
 // Defaults
 const (
-	DefaultInterval     = 10 * time.Second
-	DefaultSafetyMargin = uint64(6)
-	DefaultBatchSize    = uint64(60)
+	DefaultInterval             = 10 * time.Second
+	DefaultSafetyMargin         = uint64(6)
+	DefaultBatchSize            = uint64(60)
+	DefaultMaxStateSaveFailures = 3
 )
 
 // TickResult describes the outcome of a single iteration.
@@ -94,17 +105,29 @@ type TickResult struct {
 }
 
 // Run executes the loop until ctx is cancelled. Returns nil on
-// graceful shutdown (ctx.Done) and a non-nil error only on
-// unrecoverable setup failure (e.g., state file load failure on
-// startup). Per-tick verification failures (REJECT/REFUSED) are
+// graceful shutdown (ctx.Done) and a non-nil error on unrecoverable
+// setup failure or MaxStateSaveFailures consecutive failed save
+// attempts. A successful save resets the counter. Verification
+// failures (REJECT/REFUSED) are
 // logged but do not terminate the loop — a transient peer issue
 // shouldn't take down a long-running service.
 func (l *Loop) Run(ctx context.Context) error {
+	saveState := l.SaveState
+	if saveState == nil {
+		saveState = verify.SaveHeaderState
+	}
 	if l.Multi == nil {
 		return errors.New("syncer: Multi client required")
 	}
 	if l.StatePath == "" {
 		return errors.New("syncer: StatePath required (use verify-headers for ephemeral runs)")
+	}
+	if l.MaxStateSaveFailures < 0 {
+		return errors.New("syncer: MaxStateSaveFailures must not be negative")
+	}
+	maxSaveFailures := l.MaxStateSaveFailures
+	if maxSaveFailures == 0 {
+		maxSaveFailures = DefaultMaxStateSaveFailures
 	}
 	if l.Interval == 0 {
 		l.Interval = DefaultInterval
@@ -147,22 +170,36 @@ func (l *Loop) Run(ctx context.Context) error {
 
 	timer := time.NewTimer(0) // fire immediately on first iteration
 	defer timer.Stop()
+	saveFailures := 0
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		case <-timer.C:
 			res, newState := l.tick(ctx, state)
-			l.logTick(res)
+			persistedProgress := false
 			if res.Outcome == verify.OutcomeAccept {
-				state = newState
-				if err := verify.SaveHeaderState(l.StatePath, state); err != nil {
-					l.logf("state: save failed: %v\n", err)
+				if err := saveState(l.StatePath, newState); err != nil {
+					saveFailures++
+					l.logf("state: save failed (%d/%d), retaining tip=%d: %v\n",
+						saveFailures, maxSaveFailures, res.Tip, err)
+					if saveFailures >= maxSaveFailures {
+						return fmt.Errorf("syncer: state save failed after %d consecutive attempts: %w", saveFailures, err)
+					}
+				} else {
+					state = newState
+					saveFailures = 0
+					persistedProgress = len(res.FetchedHeights) > 0
+					l.logTick(res)
 				}
+			} else {
+				l.logTick(res)
 			}
-			// If we made progress and there's still ground to cover,
-			// fire again immediately rather than waiting Interval.
-			if res.Outcome == verify.OutcomeAccept && res.Target > res.Tip+l.BatchSize {
+			// Only a successfully persisted advance can trigger immediate
+			// catch-up. Failed saves retry from the retained state after
+			// Interval, including when more headers are available.
+			tip, _ := state.Tip()
+			if persistedProgress && res.Target > tip.Height {
 				timer.Reset(0)
 			} else {
 				timer.Reset(l.Interval)
