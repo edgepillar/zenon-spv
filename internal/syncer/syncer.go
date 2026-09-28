@@ -35,6 +35,10 @@ import (
 
 // Loop is the configuration for a watch-mode run.
 type Loop struct {
+	// ShowContext logs captured verification settings once at startup. The
+	// diagnostic excludes peer URLs, file paths, and free-form profile Source.
+	ShowContext bool
+
 	// Multi is the multi-peer client. May be a MultiClient with a
 	// single peer (degenerate but valid) or many peers with a quorum.
 	Multi *fetch.MultiClient
@@ -160,6 +164,13 @@ func (l *Loop) Run(ctx context.Context) error {
 		tip.Height,
 		len(l.Multi.Peers), l.Multi.Quorum, l.Interval)
 	l.logf("state: trust_assumptions=%v\n", state.TrustAssumptions())
+	if l.ShowContext {
+		raw, err := state.VerificationContextJSON()
+		if err != nil {
+			return fmt.Errorf("verification context: %w", err)
+		}
+		l.logf("verification_context: %s\n", raw)
+	}
 
 	timer := time.NewTimer(0) // fire immediately on first iteration
 	defer timer.Stop()

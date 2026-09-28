@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "fingerprint": "7951c89b57addd9905a3decf2240dbfca8a0429ad3264d0023149ebab25d8037",
+  "fingerprint_status": "available",
+  "anchor": {
+    "chain_id": 1,
+    "height": 100,
+    "header_hash": "0100000000000000000000000000000000000000000000000000000000000000"
+  },
+  "policy": {
+    "w": 6,
+    "max_bundle_bytes": 67108864,
+    "max_headers": 100000,
+    "max_commitments": 10000,
+    "max_flat_evidence_members": 100000,
+    "max_total_flat_evidence_members": 1000000,
+    "max_segments": 1000,
+    "max_segment_blocks": 10000,
+    "max_total_segment_blocks": 100000,
+    "max_state_value_proofs": 1000,
+    "max_state_proof_nodes": 1024,
+    "max_state_proof_bytes": 4194304
+  },
+  "protocol_profile": null,
+  "producer": {
+    "mode": "Required",
+    "source": "OperatorAttested",
+    "kind": "schedule",
+    "schedule_hash": "29a13d55b7d4865f4bb7c00e0141c90a02b64e2f63c705e9fb2ee12ec20281d8"
+  },
+  "checkpoints": [
+    {
+      "height": 1000000,
+      "header_hash": "9ac060c14855568922a877853ee347fcd68f42d354545919869d742d9f79b7f7"
+    },
+    {
+      "height": 5000000,
+      "header_hash": "1b151e6a51fd26f5db9fb4c4dff0777d069029d28ea3634aec3b61ff3ff8375d"
+    },
+    {
+      "height": 10000000,
+      "header_hash": "4d3ce735eb6316de2222c5b747b84b5c5109bcaf01dde04b7143daae6d8a452c"
+    },
+    {
+      "height": 13000000,
+      "header_hash": "00d55c7d5a49ea85fb8d0949f064b909a806afbefbb5fd93811815afa34fa528"
+    }
+  ]
+}

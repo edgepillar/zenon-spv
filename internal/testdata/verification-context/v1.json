@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "fingerprint": "3f474880411601e44f9978c0b7e1bc1fe78817f421a2b2a50b4b524edaef12f4",
+  "fingerprint_status": "available",
+  "anchor": {
+    "chain_id": 3,
+    "height": 100,
+    "header_hash": "0100000000000000000000000000000000000000000000000000000000000000"
+  },
+  "policy": {
+    "w": 2,
+    "max_bundle_bytes": 67108864,
+    "max_headers": 100000,
+    "max_commitments": 10000,
+    "max_flat_evidence_members": 100000,
+    "max_total_flat_evidence_members": 1000000,
+    "max_segments": 1000,
+    "max_segment_blocks": 10000,
+    "max_total_segment_blocks": 100000,
+    "max_state_value_proofs": 1000,
+    "max_state_proof_nodes": 1024,
+    "max_state_proof_bytes": 4194304
+  },
+  "protocol_profile": {
+    "version": 1,
+    "valid_through": 110,
+    "v2_from_height": 0
+  },
+  "producer": {
+    "mode": "Disabled",
+    "source": "None",
+    "kind": "disabled",
+    "schedule_hash": null
+  },
+  "checkpoints": []
+}

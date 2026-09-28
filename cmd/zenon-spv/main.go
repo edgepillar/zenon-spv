@@ -127,6 +127,10 @@ activation profile for verify-* and watch. V2 requires this flag. Profiles
 expire at their configured height and must match persisted state exactly.
 They do not independently prove activation. See docs/header-versions.md.
 
+--show-context prints a diagnostic JSON object with captured verifier settings
+and a configuration fingerprint. Available on verify-* and watch; excludes
+private audit metadata and does not imply verification success.
+
 --schedule <path> loads an operator-attested per-momentum producer
 schedule (Branch 5b). When set, the verifier requires each header's
 producer to match the schedule's expected (height, timestamp,
@@ -339,6 +343,7 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 	tier := fs.String("window", "low", "policy window tier: low | medium | high")
 	genesisConfig := fs.String("genesis-config", "", "path to genesis trust root JSON file (overrides env)")
 	profilePath := fs.String("protocol-profile", "", "path to an operator-attested momentum activation profile")
+	showContext := fs.Bool("show-context", false, "print captured verification settings without private provenance metadata")
 	statePath := fs.String("state", "", "path to persisted HeaderState; load if present, save after ACCEPT")
 	schedulePath := fs.String("schedule", "", "path to producer schedule JSON; when set, header producer authorization is required (tier-2 caveat)")
 	if err := fs.Parse(args); err != nil {
@@ -430,6 +435,14 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 		return verifierContext{}, outcomeExitCode(r.Outcome)
 	}
 
+	if *showContext {
+		raw, err := state.VerificationContextJSON()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "verification context: %v\n", err)
+			return verifierContext{}, 70
+		}
+		fmt.Printf("verification_context: %s\n", raw)
+	}
 	return verifierContext{
 		bundle:    bundle,
 		state:     state,
@@ -545,6 +558,7 @@ func runWatch(args []string) int {
 	tier := fs.String("window", "low", "policy window tier: low | medium | high")
 	genesisConfig := fs.String("genesis-config", "", "path to genesis trust root JSON file (overrides env)")
 	profilePath := fs.String("protocol-profile", "", "path to an operator-attested momentum activation profile")
+	showContext := fs.Bool("show-context", false, "log captured verification settings without private provenance metadata")
 	statePath := fs.String("state", "", "path to persisted HeaderState (required)")
 	schedulePath := fs.String("schedule", "", "path to producer schedule JSON; when set, header producer authorization is required (tier-2 caveat)")
 	interval := fs.Duration("interval", syncer.DefaultInterval, "tick interval between iterations")
@@ -607,6 +621,7 @@ func runWatch(args []string) int {
 		SafetyMargin: *safetyMargin,
 		BatchSize:    *batchSize,
 		Out:          os.Stderr,
+		ShowContext:  *showContext,
 	}
 
 	// Surface the ACCEPT caveat once at startup. Per-tick ACCEPT logs

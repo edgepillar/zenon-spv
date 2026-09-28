@@ -3,6 +3,7 @@ package conformance_test
 import (
 	"errors"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"testing"
 
@@ -33,6 +34,16 @@ func TestNodeTransitionThroughVerifiedStateAPI(t *testing.T) {
 	r, after := resumed.Extend(headers[2:])
 	if r.Outcome != verify.OutcomeAccept {
 		t.Fatal(r)
+	}
+	wantContext, err := state.VerificationContext()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, handle := range []verify.VerifiedState{before, resumed, after} {
+		got, err := handle.VerificationContext()
+		if err != nil || !reflect.DeepEqual(got, wantContext) {
+			t.Fatalf("node-derived transition changed the captured settings: %v", err)
+		}
 	}
 	v := c.Transition.Vectors[3]
 	r = after.VerifyCommitment(proof.CommitmentEvidence{Height: v.Header.Height, Target: v.Content[0],

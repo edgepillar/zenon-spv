@@ -251,6 +251,13 @@ func TestVerifiedState_ConcurrentReadersOwnTheirSnapshots(t *testing.T) {
 				view := state.Snapshot()
 				view.RetainedWindow[0].PublicKey[0] ^= 1
 				view.ProtocolProfile.ValidThrough = 0
+				settings, err := state.VerificationContext()
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				settings.ProtocolProfile.ValidThrough = 0
+				*settings.Fingerprint = chain.Hash{}
 				if r := state.VerifyCommitment(evidence); r.Outcome != OutcomeAccept {
 					t.Errorf("snapshot mutation affected a concurrent reader: %s", r)
 				}

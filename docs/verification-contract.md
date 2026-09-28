@@ -34,6 +34,11 @@ record of every integration input. The verified state API reports configured
 anchor and persisted-state trust explicitly; legacy free functions retain
 their earlier assumption reporting.
 
+Use the optional [verification context](verification-context.md) diagnostic
+to record captured settings and compare their fingerprints. It intentionally
+omits private audit metadata and is not a complete provenance record, a proof
+receipt, or a substitute for the result's guarantees and trust assumptions.
+
 | Path | Bounded meaning of ACCEPT |
 | --- | --- |
 | Header verification | Implemented layout hashes, signatures, chain identity, links, height progression, configured checkpoint matches, and the retained-window requirement pass relative to the supplied state. |

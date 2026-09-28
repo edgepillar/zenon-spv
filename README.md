@@ -140,6 +140,9 @@ Optional flags shared across all verify-* subcommands:
 - `--genesis-config <path>` — override the embedded mainnet anchor. Required for testnet/devnet bundles.
 - `--state <path>` — persist `HeaderState` across runs.
 - `--schedule <path>` — load an operator-attested per-momentum producer schedule (tier-2 caveat).
+- `--show-context` — print captured verification settings with a reproducible
+  fingerprint, excluding private audit metadata. Also available on `watch`;
+  see [`verification context`](docs/verification-context.md).
 
 ## What ACCEPT actually proves
 

@@ -84,6 +84,13 @@ and operator-schedule assumptions remain explicit. `TrustAssumptions()` returns
 these captured inputs without claiming that a proof has succeeded; watch
 prints them at startup.
 
+`VerificationContext()` and `VerificationContextJSON()` expose detached,
+privacy-filtered settings for diagnostics. They identify built-in schedules
+and explicit activation rules without copying their audit labels or peer
+metadata. Custom authorizers have no fingerprint. The optional CLI/watch
+`--show-context` flag prints this object; see
+[verification context](verification-context.md) for its encoding and limits.
+
 The handle protects in-process ownership and verification provenance. It does
 not authenticate the origin of a local file, reconstruct evicted history,
 establish an independently elected producer set, select a canonical fork, or
