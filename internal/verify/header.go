@@ -74,12 +74,10 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 		return protocolFailure(err), state
 	}
 
-	// Required mode with no authorizer is REFUSED — Codex review v1
-	// P2 lock-in. Surface this once at the input boundary rather than
-	// per-header so the diagnostic is actionable.
-	if opts.ProducerAuth.Mode == ProducerAuthRequired && opts.ProducerAuth.Authorizer == nil {
-		return refuse(ReasonProducerSetUnknown,
-			"producer authorization required but no authorizer configured"), state
+	// Unsupported modes and Required mode without an authorizer must
+	// refuse before any header can advance the state.
+	if err := opts.ProducerAuth.validate(); err != nil {
+		return refuse(ReasonProducerSetUnknown, err.Error()), state
 	}
 
 	// Work on a copy so a REJECT mid-loop leaves caller's state
@@ -169,7 +167,7 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 		// above) skip this block. Decision semantics live in
 		// docs/producer-set-verification.md §4.
 		if opts.ProducerAuth.Mode == ProducerAuthRequired {
-			switch opts.ProducerAuth.Authorizer.Authorize(h.Height, h.TimestampUnix, h.PublicKey) {
+			switch decision := opts.ProducerAuth.Authorizer.Authorize(h.Height, h.TimestampUnix, h.PublicKey); decision {
 			case ProducerAuthorized:
 				// fall through to Append
 			case ProducerUnauthorized:
@@ -179,6 +177,9 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 			case ProducerSetUnknown:
 				return refuse(ReasonProducerSetUnknown,
 					fmt.Sprintf("no producer schedule coverage for height=%d", h.Height)), state
+			default:
+				return refuse(ReasonProducerSetUnknown,
+					fmt.Sprintf("unsupported producer authorization decision %d at height=%d", decision, h.Height)), state
 			}
 		}
 

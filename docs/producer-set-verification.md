@@ -325,6 +325,11 @@ Required-mode semantics:
   verifier must not silently downgrade.
 - `Mode == ProducerAuthDisabled` → producer check skipped; the
   CLI continues to print Branch-4 tier-1 caveat.
+- Any unsupported mode or authorizer decision returns
+  `REFUSED / ReasonProducerSetUnknown` without proven guarantees.
+  Both incoming-header and retained-window authorization apply this rule.
+  Header verification preserves the original state on refusal, including
+  when an invalid decision arrives after earlier headers were authorized.
 
 The existing `VerifyHeaders(headers, state, policy)` remains a
 thin wrapper that calls

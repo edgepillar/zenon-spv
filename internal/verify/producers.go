@@ -120,6 +120,20 @@ type ProducerAuthOptions struct {
 	Authorizer ProducerAuthorizer
 }
 
+func (o ProducerAuthOptions) validate() error {
+	switch o.Mode {
+	case ProducerAuthDisabled:
+		return nil
+	case ProducerAuthRequired:
+		if o.Authorizer == nil {
+			return errors.New("producer authorization required but no authorizer configured")
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported producer authorization mode %d", o.Mode)
+	}
+}
+
 // VerifyOptions bundles per-call verifier knobs. Policy stays for
 // resource and finality settings; producer-auth lives here so it can
 // evolve independently without churning Policy callers.
@@ -383,15 +397,14 @@ func AuthorizeRetainedWindow(state HeaderState, opts VerifyOptions) Result {
 	if err := state.validateProtocolPolicy(opts.Policy); err != nil {
 		return protocolFailure(err)
 	}
-	if opts.ProducerAuth.Mode != ProducerAuthRequired {
+	if err := opts.ProducerAuth.validate(); err != nil {
+		return refuse(ReasonProducerSetUnknown, err.Error())
+	}
+	if opts.ProducerAuth.Mode == ProducerAuthDisabled {
 		return withProtocolTrust(accept().WithNotProven(GuaranteeProducerAuthorization), state.ProtocolProfile)
 	}
-	if opts.ProducerAuth.Authorizer == nil {
-		return refuse(ReasonProducerSetUnknown,
-			"producer authorization required but no authorizer configured")
-	}
 	for i, h := range state.RetainedWindow {
-		switch opts.ProducerAuth.Authorizer.Authorize(h.Height, h.TimestampUnix, h.PublicKey) {
+		switch decision := opts.ProducerAuth.Authorizer.Authorize(h.Height, h.TimestampUnix, h.PublicKey); decision {
 		case ProducerAuthorized:
 			// fall through
 		case ProducerUnauthorized:
@@ -400,6 +413,9 @@ func AuthorizeRetainedWindow(state HeaderState, opts VerifyOptions) Result {
 		case ProducerSetUnknown:
 			return refuse(ReasonProducerSetUnknown,
 				fmt.Sprintf("retained-window header at height=%d not covered by configured schedule", h.Height))
+		default:
+			return refuse(ReasonProducerSetUnknown,
+				fmt.Sprintf("unsupported producer authorization decision %d at retained height=%d", decision, h.Height))
 		}
 	}
 
