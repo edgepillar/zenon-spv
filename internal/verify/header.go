@@ -128,9 +128,9 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 				fmt.Sprintf("previous_hash=%x does not link to anchor=%x", h.PreviousHash, prevHash)), state
 		}
 
-		if h.Height != prevHeight+1 {
+		if h.Height <= prevHeight || h.Height-prevHeight != 1 {
 			return reject(ReasonHeightNonMonotonic, i,
-				fmt.Sprintf("height=%d not equal to previous+1=%d", h.Height, prevHeight+1)), state
+				fmt.Sprintf("height=%d is not the immediate successor of previous=%d", h.Height, prevHeight)), state
 		}
 
 		recomputed := h.ComputeHash()

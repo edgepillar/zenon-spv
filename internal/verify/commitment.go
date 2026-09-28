@@ -59,11 +59,11 @@ func VerifyCommitment(state HeaderState, evidence proof.CommitmentEvidence, poli
 	// commitment is at the oldest retained slot; this check makes
 	// the property load-bearing instead of incidentally true.
 	if tip, hasTip := state.Tip(); hasTip {
-		if tip.Height < evidence.Height+policy.W {
+		if tip.Height < evidence.Height || tip.Height-evidence.Height < policy.W {
 			return Result{
 				Outcome:  OutcomeRefused,
 				Reason:   ReasonInsufficientFinality,
-				Message:  fmt.Sprintf("tip=%d < evidence.height=%d + W=%d (need %d headers past target)", tip.Height, evidence.Height, policy.W, policy.W),
+				Message:  fmt.Sprintf("tip=%d does not have W=%d headers past target=%d", tip.Height, policy.W, evidence.Height),
 				FailedAt: -1,
 			}
 		}
