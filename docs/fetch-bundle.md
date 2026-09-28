@@ -40,12 +40,28 @@ default verifier limits. Inclusive ranges ending at `uint64` maximum remain
 valid when they meet those limits. Zero starts are rejected before range
 arithmetic, including a zero-to-maximum range that would otherwise wrap.
 
-These are input and query limits. Nodes may impose smaller limits; response
-byte caps also apply. The assembled evidence can still exceed other verifier
-bounds or fail its signature, linkage, commitment, or policy checks. Output
-files are not an atomic pair: successful input validation does not make a later
-filesystem failure transactional. Authenticate checkpoint provenance and run
-the verifier before using the evidence.
+Nodes may impose smaller limits; response byte caps also apply.
+
+## Evidence and output bounds
+
+Assembly permits at most 10000 commitments, 100000 content members per flat
+evidence item, and 1000000 flat members in total. The aggregate counts every
+serialized repetition: sharing a content slice in memory does not reduce its
+wire or verifier cost. The command checks these limits before copying content
+or fetching account segments and returns no partial evidence on refusal.
+
+The emitted bundle uses compact JSON with a final newline, capped at 64 MiB
+including that newline. Encoding proceeds by individual headers, commitments,
+and account blocks so repeated flat evidence cannot create an unbounded
+whole-bundle JSON scratch buffer. No bundle bytes are written to files or stdout
+until this bounded encoding succeeds. This bounds accumulated encoded output,
+not process memory: RPC responses, decoded objects, buffer capacity, and
+per-item encoder scratch space require additional memory.
+
+The candidate can still fail signature, linkage, commitment, or policy checks.
+Output files are not an atomic pair: successful input and size validation does
+not make a later filesystem failure transactional. Authenticate checkpoint
+provenance and run the verifier before using the evidence.
 
 ## Regression evidence
 
@@ -54,3 +70,9 @@ assert the selected endpoints, load emitted files, and verify their headers
 under the synthetic experiment's depth policy. Invalid-input tests assert zero
 RPC requests and unchanged existing files or absent new files. No public node
 is contacted, and the fetched checkpoint remains an explicit trust assumption.
+
+Synthetic hash-consistent RPC responses exercise repeated-evidence and byte
+refusals, asserting unchanged or absent output files. These assembly tests do
+not claim valid signatures. Serializer tests compare compact output with the
+standard wire encoding, including nil versus empty arrays, optional fields,
+exact byte limits, and early termination when the cap is exceeded.
