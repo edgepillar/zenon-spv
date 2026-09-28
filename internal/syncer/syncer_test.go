@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -133,8 +134,9 @@ func tmpStateFile(t *testing.T) string {
 
 // startServer wires up an RPC handler that serves headers from
 // `all`, with frontierIdx adjustable via the returned advance fn.
+// At any extraResponseAt height, it returns one more header than requested.
 // Returns: server URL, advance(idx) fn, close fn.
-func startServer(t *testing.T, all []chain.Header, preimages [][]byte) (string, func(int), func()) {
+func startServer(t *testing.T, all []chain.Header, preimages [][]byte, extraResponseAt ...uint64) (string, func(int), func()) {
 	t.Helper()
 	frontierIdx := len(all) - 1
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -157,6 +159,9 @@ func startServer(t *testing.T, all []chain.Header, preimages [][]byte) (string, 
 			var start, count uint64
 			_ = json.Unmarshal(p[0], &start)
 			_ = json.Unmarshal(p[1], &count)
+			if slices.Contains(extraResponseAt, start) {
+				count++
+			}
 			list := make([]any, 0, count)
 			for i := range count {
 				idx := indexOfHeight(all, start+i)

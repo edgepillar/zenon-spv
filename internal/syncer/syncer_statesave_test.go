@@ -239,7 +239,12 @@ func TestRun_NegativeSaveFailureLimitIsRejected(t *testing.T) {
 
 func TestRun_RefusedTickDoesNotSave(t *testing.T) {
 	loop, out, _ := persistenceLoop(t)
-	loop.Policy.MaxHeaders = 1 // The three-header batch exceeds policy.
+	loop.Policy.MaxHeaders = 1
+	_, headers, preimages := chainFixtureRPC(t, 40)
+	// The peer ignores the one-header request and sends an extra header.
+	url, _, closeServer := startServer(t, headers, preimages, 1007)
+	defer closeServer()
+	loop.Multi = fetch.NewMultiClient([]string{url})
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	loop.SaveState = func(string, verify.HeaderState) error {
@@ -256,7 +261,8 @@ func TestRun_RefusedTickDoesNotSave(t *testing.T) {
 	if err := loop.Run(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(out.String(), "tick: REFUSED") {
-		t.Fatal("expected a refused tick")
+	if !strings.Contains(out.String(), "tick: REFUSED ReasonMissingEvidence") ||
+		!strings.Contains(out.String(), "rpc returned 2 momentums, expected 1") {
+		t.Fatalf("expected refusal of the oversized RPC response: %s", out.String())
 	}
 }

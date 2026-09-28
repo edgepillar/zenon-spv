@@ -63,17 +63,18 @@ type Loop struct {
 	Authorizer verify.ProducerAuthorizer
 
 	// Interval is the time between ticks. 10s is the natural cadence
-	// (one momentum). Setting to 0 falls back to the default.
+	// (one momentum). Zero selects the default; negative values are invalid.
 	Interval time.Duration
 
 	// SafetyMargin is the number of momentums below median(frontiers)
-	// the loop refuses to fetch — keeps us behind the bleeding edge
-	// so all peers definitely have the data.
+	// the loop refuses to fetch, allowing peers time to catch up without
+	// guaranteeing availability. Zero selects the default of six.
 	SafetyMargin uint64
 
 	// BatchSize caps how many headers are fetched per tick. At quiet
 	// times the loop fetches just the new tip+1..target; at catch-up
-	// time it can be limited to keep memory bounded. 0 means no cap.
+	// time it can be limited to keep memory bounded. Zero selects 60 in Run.
+	// A positive Policy.MaxHeaders additionally caps each incoming batch.
 	BatchSize uint64
 
 	// Out is where per-tick logs go. nil discards.
@@ -132,6 +133,9 @@ func (l *Loop) Run(ctx context.Context) error {
 	}
 	if l.MaxStateSaveFailures < 0 {
 		return errors.New("syncer: MaxStateSaveFailures must not be negative")
+	}
+	if l.Interval < 0 {
+		return errors.New("syncer: Interval must not be negative")
 	}
 	maxSaveFailures := l.MaxStateSaveFailures
 	if maxSaveFailures == 0 {
@@ -236,6 +240,9 @@ func (l *Loop) tick(ctx context.Context, state verify.VerifiedState) (TickResult
 	count := target - tip
 	if l.BatchSize > 0 && count > l.BatchSize {
 		count = l.BatchSize
+	}
+	if l.Policy.MaxHeaders > 0 && count > uint64(l.Policy.MaxHeaders) {
+		count = uint64(l.Policy.MaxHeaders)
 	}
 	start := tip + 1
 	headers, err := l.Multi.FetchByHeight(ctx, start, count)

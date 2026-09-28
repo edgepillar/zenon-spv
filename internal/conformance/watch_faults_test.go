@@ -45,7 +45,8 @@ func TestOfflineWatchPeerFaults(t *testing.T) {
 		{name: "unauthorized-producer", peers: [3]string{"producer", "producer", "producer"}, want: "REJECT ReasonUnauthorizedProducer"},
 		{name: "missing-v2-price", peers: [3]string{"price", "price", "price"}, want: "REFUSED ReasonMissingEvidence"},
 		{name: "expired-profile", expire: true, want: "REFUSED ReasonProtocolProfileCoverage"},
-		{name: "oversized-header-batch", maxHeaders: 2, want: "REFUSED ReasonOversizedHeaders"},
+		{name: "oversized-header-batch", peers: [3]string{"oversized", "oversized", "oversized"},
+			maxHeaders: 2, want: "REFUSED ReasonMissingEvidence", detail: "rpc returned 3 momentums, expected 2"},
 		{name: "all-stale", peers: [3]string{"stale", "stale", "stale"}, caughtUp: true, want: "ACCEPT (caught up"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -197,7 +198,11 @@ func startFaultPeer(t *testing.T, vectors []momentumVector, mode string, peer in
 				return
 			}
 			start := req.Params[0] - 2001
-			response = map[string]any{"list": wire[start : start+req.Params[1]]}
+			end := start + req.Params[1]
+			if mode == "oversized" && req.Params[0] == 2003 && end < uint64(len(wire)) {
+				end++ // Ignore the requested count only for the incoming batch.
+			}
+			response = map[string]any{"list": wire[start:end]}
 		default:
 			t.Errorf("unexpected method: %s", req.Method)
 			http.Error(w, "unsupported method", http.StatusBadRequest)

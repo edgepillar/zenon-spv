@@ -30,6 +30,27 @@ or operators are independent, authenticate the network, or prove consensus
 finality. Keep transport configuration stable while queries or watch are
 running; concurrent mutation of the public client fields is unsupported.
 
+## Polling and request bounds
+
+Negative polling intervals are rejected before state loading or RPC requests.
+The CLI returns exit 64; embedders receive a setup error from `Loop.Run`.
+Zero keeps the existing default of 10 seconds. Successful persisted catch-up
+batches may still run immediately; an idle, refused, rejected, or failed-save
+tick waits for the configured interval.
+
+Each header-range request is bounded by the remaining distance to the target,
+the configured batch size, and a positive `Policy.MaxHeaders`. This lets
+embedders use a verification limit smaller than the requested batch size
+without repeatedly fetching a batch that the verifier would refuse.
+`Policy.MaxHeaders = 0` keeps its existing meaning of disabling that policy
+bound. The verifier still independently checks the returned evidence.
+
+In both `Loop.Run` and the CLI, a zero batch size selects 60 headers and a
+zero safety margin selects six heights below the agreed median frontier.
+These defaults are unchanged; zero does not disable either option. The
+safety margin allows peers time to catch up but does not prove availability
+or finality.
+
 ## Failure and recovery
 
 - A failed save leaves the in-memory state at the last successful save.
@@ -112,6 +133,12 @@ save preservation, truncated valid windows, byte limits, and capacity bounds.
 outages, disagreement, and rejecting invalid clients before request fan-out.
 `internal/syncer/peer_config_test.go` covers startup validation and an RPC
 outage with an explicit zero quorum without persistence or accepted progress.
+`internal/syncer/request_bounds_test.go` checks actual RPC range counts,
+policy-sized persisted progress, default options, and negative-interval
+rejection before state loading. `cmd/zenon-spv/watch_interval_test.go` covers
+CLI interval validation before configuration loading.
+The save-ordering and offline peer-fault tests inject responses with more
+headers than requested and check refusal without persisting progress.
 
 The tests use synthetic signed headers, local HTTP fixtures, temporary
 files, and injected failures. They do not simulate a power cut, prove
