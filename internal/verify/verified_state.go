@@ -230,7 +230,11 @@ func freezeStateOptions(anchor GenesisTrustRoot, opts VerifyOptions) (VerifyOpti
 			}
 			auth = NewScheduleAuthorizer(schedule)
 		}
-		opts.ProducerAuth.Authorizer = isolatedStateAuthorizer{delegate: auth, source: auth.Source()}
+		source := auth.Source()
+		if source != ProducerSourceOperatorAttested && source != ProducerSourceLocallyDerivedFromChain {
+			return VerifyOptions{}, fmt.Errorf("unsupported source %d for required producer authorization", source)
+		}
+		opts.ProducerAuth.Authorizer = isolatedStateAuthorizer{delegate: auth, source: source}
 	}
 	return opts, nil
 }

@@ -56,7 +56,8 @@ constructor that turns an arbitrary `HeaderState` into a verified handle.
   structure, hash, and chain ID are checked, and its lookup index is rebuilt.
 - Custom producer authorizers remain trusted caller-supplied behavior. They
   must remain stable and be safe for concurrent use when shared. Their source
-  classification is captured, and callbacks receive disposable public-key
+  classification is captured; required authorization refuses missing or
+  unsupported source classifications. Callbacks receive disposable public-key
   copies rather than access to state memory.
 - Immutable handles support concurrent reads. This does not authorize
   concurrent writers to a state file; the existing exclusive-writer

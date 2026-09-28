@@ -129,6 +129,9 @@ func TestVerifiedState_ConstructorRejectsInvalidInputs(t *testing.T) {
 		{ProducerAuth: ProducerAuthOptions{Mode: ProducerAuthRequired}},
 		{ProducerAuth: ProducerAuthOptions{Mode: ProducerAuthMode(7)}},
 		{ProducerAuth: ProducerAuthOptions{Mode: ProducerAuthRequired, Authorizer: (*ScheduleAuthorizer)(nil)}},
+		{ProducerAuth: ProducerAuthOptions{Mode: ProducerAuthRequired, Authorizer: staticProducerAuthorizer{source: ProducerSourceNone}}},
+		{ProducerAuth: ProducerAuthOptions{Mode: ProducerAuthRequired, Authorizer: staticProducerAuthorizer{source: ProducerSource(-1)}}},
+		{ProducerAuth: ProducerAuthOptions{Mode: ProducerAuthRequired, Authorizer: staticProducerAuthorizer{source: ProducerSource(255)}}},
 	} {
 		if state, err := NewVerifiedState(anchor, opts); err == nil || state.data != nil {
 			t.Fatal("invalid configuration created a handle")
