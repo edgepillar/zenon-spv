@@ -224,9 +224,9 @@ func VerifySegment(state HeaderState, segment proof.AccountSegment, commitments 
 				previousOutcome = OutcomeReject
 				continue
 			}
-			if b.Height != parentHeight+1 {
+			if b.Height <= parentHeight || b.Height-parentHeight != 1 {
 				out.Blocks[i] = Result{Outcome: OutcomeReject, Reason: ReasonHeightNonMonotonic, FailedAt: i,
-					Message: fmt.Sprintf("height=%d != verified parent height+1=%d", b.Height, parentHeight+1)}
+					Message: fmt.Sprintf("height=%d is not the immediate successor of verified parent=%d", b.Height, parentHeight)}
 				previousOutcome = OutcomeReject
 				continue
 			}
