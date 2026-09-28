@@ -77,6 +77,8 @@ func momentumJSON(h chain.Header, dataPreimage []byte) map[string]any {
 		"changesHash":     hx(h.ChangesHash[:]),
 		"publicKey":       b64(h.PublicKey),
 		"signature":       b64(h.Signature),
+		"nextFusionPrice": h.NextFusionPrice,
+		"nextWorkPrice":   h.NextWorkPrice,
 	}
 }
 
@@ -95,6 +97,11 @@ func indexOf(headers []chain.Header, h uint64) int {
 // specific height's response for disagreement scenarios.
 func startPeer(t *testing.T, headers []chain.Header, preimages [][]byte, override map[uint64]map[string]any) *httptest.Server {
 	t.Helper()
+	return startPeerWithFrontier(t, headers, preimages, override, nil)
+}
+
+func startPeerWithFrontier(t *testing.T, headers []chain.Header, preimages [][]byte, override map[uint64]map[string]any, frontierOverride map[string]any) *httptest.Server {
+	t.Helper()
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			Method string          `json:"method"`
@@ -110,9 +117,13 @@ func startPeer(t *testing.T, headers []chain.Header, preimages [][]byte, overrid
 			// at startup as provenance metadata.
 			frontier := headers[len(headers)-1]
 			frontierPreimage := preimages[len(preimages)-1]
+			result := frontierOverride
+			if result == nil {
+				result = momentumJSON(frontier, frontierPreimage)
+			}
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"jsonrpc": "2.0", "id": 1,
-				"result": momentumJSON(frontier, frontierPreimage),
+				"result": result,
 			})
 			return
 		case "ledger.getMomentumsByHeight":
@@ -171,7 +182,7 @@ func TestDeriveSchedule_HappyPath_ThreePeersAgree(t *testing.T) {
 
 	from := headers[0].Height
 	through := headers[len(headers)-1].Height
-	schedule, err := deriveSchedule(ctx, multi, urls, 99, from, through, 4, io.Discard)
+	schedule, err := deriveSchedule(ctx, multi, 99, from, through, 4, io.Discard)
 	if err != nil {
 		t.Fatalf("deriveSchedule: %v", err)
 	}
@@ -227,7 +238,7 @@ func TestDeriveSchedule_PeerDisagreementAborts(t *testing.T) {
 
 	from := headers[0].Height
 	through := headers[len(headers)-1].Height
-	_, err := deriveSchedule(ctx, multi, urls, 99, from, through, 4, io.Discard)
+	_, err := deriveSchedule(ctx, multi, 99, from, through, 4, io.Discard)
 	if err == nil {
 		t.Fatal("expected error on peer disagreement, got nil")
 	}
@@ -258,7 +269,7 @@ func TestDeriveSchedule_FrontierBelowThroughAborts(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, err := deriveSchedule(ctx, multi, urls, 99, 1001, 1006, 4, io.Discard)
+	_, err := deriveSchedule(ctx, multi, 99, 1001, 1006, 4, io.Discard)
 	if err == nil {
 		t.Fatal("expected error when peer frontier is below --through, got nil")
 	}
@@ -266,9 +277,8 @@ func TestDeriveSchedule_FrontierBelowThroughAborts(t *testing.T) {
 
 // TestDeriveSchedule_HashMismatchAborts covers the syntactically-
 // agreeing-but-corrupt response case: all peers serve the same
-// header but its claimed HeaderHash does NOT recompute. MultiClient
-// won't catch this (it agrees byte-for-byte) — deriveSchedule's
-// local hash recompute does.
+// header but its claimed HeaderHash does NOT recompute. The RPC parser
+// refuses each response, so agreement on corrupt bytes cannot emit a schedule.
 func TestDeriveSchedule_HashMismatchAborts(t *testing.T) {
 	headers, preimages := makeChain(t, 6)
 	corrupt := headers[2]
@@ -295,9 +305,8 @@ func TestDeriveSchedule_HashMismatchAborts(t *testing.T) {
 
 	from := headers[0].Height
 	through := headers[len(headers)-1].Height
-	_, err := deriveSchedule(ctx, multi, urls, 99, from, through, 4, io.Discard)
+	_, err := deriveSchedule(ctx, multi, 99, from, through, 4, io.Discard)
 	if err == nil {
 		t.Fatal("expected error on header hash mismatch, got nil")
 	}
 }
-
