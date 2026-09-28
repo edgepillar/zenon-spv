@@ -5,6 +5,31 @@ It then advances the in-memory retained window. This is an operational
 ordering guarantee; it does not add consensus, producer authorization,
 canonicality, or finality guarantees to the verifier.
 
+## Peer configuration
+
+The CLI accepts `--quorum 0` for unanimous agreement, or a value from one
+through the configured peer count. Negative or excessive values fail with
+exit 64 before loading configuration or starting RPC requests.
+
+For embedders, `MultiClient.Quorum = 0` has the same unanimous meaning in
+all four fetch methods, including frontier selection. If too few frontiers
+are usable, the request returns `ErrNotEnoughPeers` before selecting a target;
+an outage does not produce a frontier or advance retained state. Any
+disagreement among usable target responses still fails, even when the
+configured quorum is smaller than the peer count.
+
+`MultiClient.Validate` and every fetch method reject an empty peer set,
+negative or excessive quorum, nil peer, missing HTTP client, or empty URL
+with `ErrInvalidPeerConfiguration`. Validation makes no RPC requests and
+does not rewrite the caller's quorum. Watch also checks this configuration
+before loading retained state or reporting startup context. Negative quorum
+values that previously selected a fallback in some paths are now invalid.
+
+This checks local configuration only. It does not establish that endpoints
+or operators are independent, authenticate the network, or prove consensus
+finality. Keep transport configuration stable while queries or watch are
+running; concurrent mutation of the public client fields is unsupported.
+
 ## Failure and recovery
 
 - A failed save leaves the in-memory state at the last successful save.
@@ -83,6 +108,10 @@ caught-up failures, refusal behavior, and pacing after a failed save.
 syncing the parent directory, including the post-replacement boundary.
 `internal/verify/state_validation_test.go` covers corrupt retained prefixes,
 save preservation, truncated valid windows, byte limits, and capacity bounds.
+`internal/fetch/multi_config_test.go` covers consistent quorum handling,
+outages, disagreement, and rejecting invalid clients before request fan-out.
+`internal/syncer/peer_config_test.go` covers startup validation and an RPC
+outage with an explicit zero quorum without persistence or accepted progress.
 
 The tests use synthetic signed headers, local HTTP fixtures, temporary
 files, and injected failures. They do not simulate a power cut, prove

@@ -600,6 +600,10 @@ func runWatch(args []string) int {
 		fmt.Fprintln(os.Stderr, "watch: --peers or --rpc required (or set ZENON_SPV_PEERS / ZENON_SPV_RPC)")
 		return 64
 	}
+	if *quorum < 0 || *quorum > len(urls) {
+		fmt.Fprintln(os.Stderr, "watch: --quorum must be 0 (unanimous) or between 1 and the number of peers")
+		return 64
+	}
 	multi := fetch.NewMultiClient(urls)
 	if *quorum > 0 {
 		multi.Quorum = *quorum

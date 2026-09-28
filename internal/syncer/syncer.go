@@ -124,6 +124,9 @@ func (l *Loop) Run(ctx context.Context) error {
 	if l.Multi == nil {
 		return errors.New("syncer: Multi client required")
 	}
+	if err := l.Multi.Validate(); err != nil {
+		return fmt.Errorf("syncer: %w", err)
+	}
 	if l.StatePath == "" {
 		return errors.New("syncer: StatePath required (use verify-headers for ephemeral runs)")
 	}
