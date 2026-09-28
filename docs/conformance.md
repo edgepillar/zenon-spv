@@ -66,11 +66,14 @@ State-value layer:
 - [x] Tri-state outcome with structured `ReasonCode` — implemented.
 - [x] Multi-peer header fetching — implemented (HTTPS JSON-RPC,
       k-of-n agreement; see `internal/fetch/multi.go`).
-- [x] Persisted `HeaderState` with atomic, dir-sync'd writes —
-      implemented (`internal/verify/state_file.go`).
-- [x] Watch loop with persist-before-advance and fatal-after-N
-      save-failure — implemented (`internal/syncer/syncer.go`,
-      Branch 3 fix).
+- [x] Persisted `HeaderState` with same-directory replacement and
+      checked parent-directory sync on non-Windows platforms
+      (`internal/verify/state_file.go`). Windows directory durability
+      remains best-effort; see [`watch-persistence.md`](watch-persistence.md).
+- [x] Watch loop saves before advancing in memory or logging ACCEPT,
+      retries at the normal interval, and stops after three consecutive
+      failed save attempts by default. A successful save resets the
+      counter (`internal/syncer/syncer.go`).
 - [~] Measure σ_B, σ_π, σ_H from real samples — Branch 2a shipped a
       pragmatic header-size sample
       (`docs/resource-bound-measurements.md`); the full spec §10

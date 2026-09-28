@@ -12,7 +12,7 @@ The verifier currently ships, in five surfaces:
 - **`verify-commitment`** — account-header inclusion under `MomentumContent.Hash` via flat sorted-content evidence (O(m) bandwidth, the only shape current go-zenon authenticates).
 - **`verify-segment`** — per-block hash recompute, Ed25519 signature, account-chain linkage, F1 `PubKeyToAddress` binding, commitment lookup.
 - **`verify-state-value`** — wire envelope + verifier skeleton for state-value proofs. **Refused by design** for every `StateCommitmentKind` today because current-protocol go-zenon has no consensus-bound authenticated state root. See [`docs/state-commitment-audit.md`](docs/state-commitment-audit.md).
-- **`watch`** — stateful service that ticks against live peers at the chain's natural cadence; persists `HeaderState` after each ACCEPT.
+- **`watch`** — stateful service that ticks against live peers at the chain's natural cadence; saves `HeaderState` before reporting ACCEPT and stops after repeated save failures.
 
 Plus:
 
@@ -129,7 +129,7 @@ Each subcommand reads a HeaderBundle JSON and runs progressively more checks. Hi
 | `verify-commitment` | Above + each `CommitmentEvidence` against a verified momentum's `ContentHash` | An account-block triple `(Address, Height, BlockHash)` was committed by Zenon consensus at the named momentum. |
 | `verify-segment` | Above + per-block hash/signature/linkage/commitment-lookup for every block in every segment | The account-block contents (amount, token, to_address, from_block_hash) are bit-identical to what the network signed. |
 | `verify-state-value` | Above + structural checks on each `StateValueProof` | **Never** today. Refuses on `ReasonUnsupportedStateCommitment` for every kind. Forward-compatible for a future protocol-level state root. |
-| `watch` | Streams new momentums from peers and verifies them at the chain's natural cadence | Per-tick ACCEPT advances the persisted `HeaderState`. SIGINT/SIGTERM exits cleanly. |
+| `watch` | Streams new momentums from peers and verifies them at the chain's natural cadence | ACCEPT is logged only after a successful state save. Three consecutive save failures stop the service. SIGINT/SIGTERM exits cleanly. |
 
 Optional flags shared across all verify-* subcommands:
 
