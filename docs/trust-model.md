@@ -78,8 +78,8 @@ rationale.)_
 
 3. **Finality.** ACCEPT inside the retained window does not imply
    the chain will never reorganize past the verified anchor.
-   `Policy.W` controls how deep the verifier waits before treating
-   a commitment as final.
+   `Policy.W` controls the required strict-past header depth for a
+   commitment. Meeting that threshold is not a consensus finality proof.
 
 4. **Canonical chain determination (NG6).** This verifier sees one
    chain. It cannot tell whether that chain is the network's

@@ -157,7 +157,7 @@ trust_assumptions:         ← external dependencies of this verdict
   - TRUST_RETAINED_WINDOW_DEPTH
 ```
 
-Integrators can gate downstream actions on the `proven:` list rather than just the ACCEPT verdict — e.g., a bridge that demands `PRODUCER_AUTHORIZATION` before releasing wrapped assets. See [`docs/trust-model.md`](docs/trust-model.md) §"What ACCEPT does NOT prove" for the full taxonomy.
+Integrators must check the guarantees they require in `proven:` and the external trust assumptions they accept. An ACCEPT verdict or an operator-attested producer schedule alone does not establish canonicality or finality for irreversible settlement. See the [`verification contract`](docs/verification-contract.md) for the current integration boundary and [`trust model`](docs/trust-model.md) for the full taxonomy.
 
 ## Layout
 
@@ -189,6 +189,7 @@ See [`docs/README.md`](docs/README.md) for the full index. Start here:
 
 - [`docs/architecture.md`](docs/architecture.md) — shipped components and roadmap.
 - [`docs/trust-model.md`](docs/trust-model.md) — what each ACCEPT does and does not prove.
+- [`docs/verification-contract.md`](docs/verification-contract.md) — native-client trust inputs, result interpretation, and next acceptance gates.
 - [`docs/conformance.md`](docs/conformance.md) — spec conformance + known gaps.
 - [`docs/state-commitment-audit.md`](docs/state-commitment-audit.md) — source-cited audit of what go-zenon authenticates (and the external dependencies that would unblock balance proofs).
 - [`docs/sentry-sentinel-role.md`](docs/sentry-sentinel-role.md) — proof-availability vs. proof-authority boundary.

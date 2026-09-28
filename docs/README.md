@@ -10,6 +10,8 @@ audit history.
   current guarantees, and forward roadmap.
 - [`trust-model.md`](trust-model.md) — what each `ACCEPT` does and does
   not prove.
+- [`verification-contract.md`](verification-contract.md) — native-client
+  trust inputs, bounded results, and acceptance gates for further work.
 - [`conformance.md`](conformance.md) — implemented conformance cases,
   known gaps, and production follow-ups.
 - [`producer-set-verification.md`](producer-set-verification.md) —
