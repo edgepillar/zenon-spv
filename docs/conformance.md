@@ -75,6 +75,10 @@ Producer-authorization layer (opt-in):
       unknown/trailing JSON, and checks dense coverage in linear time,
       including ranges ending at `MaxUint64`. Failed revalidation clears
       the previous lookup index.
+- [x] Schedule derivation checks observed chain IDs, signatures, contiguous
+      links across batches, and overlapping frontier observations. Invalid
+      ranges, duplicate endpoints, and insufficient quorum settings fail
+      before RPC; agreed invalid observations do not produce an output file.
 
 State-value layer:
 

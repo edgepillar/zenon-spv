@@ -142,14 +142,27 @@ shipped.
 ### How the table is derived
 
 `tools/derive-producer-schedule` iterates a declared height range
-against N independent peers via the existing JSON-RPC. For each height H
-in the range:
+against operator-selected peers via JSON-RPC. It requires at least two
+distinct endpoint strings, and a quorum between two and the peer count.
+By default every configured peer must agree; three or more independently
+operated peers are recommended. Repeated endpoint strings are refused,
+but different URLs can still resolve to the same node or operator.
+
+The requested range must start at height 2 or later and contain at most
+1,000,000 entries. Genesis has no elected signer. Range and quorum checks
+run before network access or entry allocation. Batching handles a terminal
+`uint64` height without wrapping; the batch size is clipped to the remaining
+range. For each height H:
 
 1. Fetch the momentum at H from every peer (already supported via
    `internal/fetch.MultiClient`).
-2. Record `(H → (momentum.TimestampUnix, chain.PubKeyToAddress(momentum.PublicKey)))`.
-3. The N peer responses must agree on BOTH the timestamp and the
-   producer address, byte for byte. Any disagreement aborts
+2. Require the expected height and configured chain ID, a supported layout,
+   a matching recomputed hash, and a valid Ed25519 signature. Require links
+   between successive observed headers, including across batch boundaries.
+3. Record `(H → (momentum.TimestampUnix, chain.PubKeyToAddress(momentum.PublicKey)))`.
+4. At least the configured quorum must return usable responses, and all
+   usable responses must agree on the hash, public key, and signature.
+   Any disagreement aborts
    derivation — the tool refuses to emit a schedule, the operator
    must investigate, and no caveat downgrade follows. Recording the
    timestamp is load-bearing: go-zenon's
@@ -157,15 +170,29 @@ in the range:
    via the timestamp, not the height, so the SPV must verify both
    to avoid admitting a timestamp-mutation attack.
 
-The tool produces a JSON file containing the per-height table plus
-metadata (§3). Each schedule explicitly declares which height range
+Each peer's startup frontier must be at or above the requested range,
+belong to the configured chain, and pass hash/signature checks. If it is
+exactly at the last requested height, it must match the later range read,
+including its signer and signature. Higher frontier observations are not
+linked back to the range because the intervening headers are not fetched.
+
+The tool produces a JSON file only after all observations pass, so a
+derivation failure preserves any existing output. The file contains the
+per-height table plus metadata (§3). Metadata records the actual configured
+endpoints and their observed frontier heights, not per-header endorsements.
+Each schedule explicitly declares which height range
 its derivation covered; there is **no** automatic extrapolation
 before the first observed height or after the last. Coverage of
 non-contiguous ranges is supported (two separate `ProducerCoverage`
 entries) but each range must independently come from observations.
 
-Attestation threshold defaults to **N = 3** distinct operator peers,
-configurable via the tool's `--peers` flag.
+These checks establish internal consistency of observations under the chosen
+peer assumptions. The tool does not authenticate the first previous hash,
+remote identity, activation rules, elected producers, or canonical history.
+It can record signed v1/v2 observations without an activation profile;
+the verifier separately requires a profile when consuming v2 headers.
+A fully consistent fabricated chain can still produce a schedule. Protect
+and independently justify the schedule before using it as a trust input.
 
 ### Size and shipping
 
