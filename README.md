@@ -137,7 +137,9 @@ Each subcommand reads a HeaderBundle JSON and runs progressively more checks. Hi
 Optional flags shared across all verify-* subcommands:
 
 - `--window {low|medium|high}` — finality depth `W`. low=6, medium=60, high=360. Default `low`.
-- `--genesis-config <path>` — override the embedded mainnet anchor. Required for testnet/devnet bundles.
+- `--genesis-config <path>` — override the embedded mainnet anchor with a strict,
+  bounded JSON file. Custom networks require this file or a complete anchor
+  environment override; see [anchor configuration](docs/anchor-configuration.md).
 - `--state <path>` — persist `HeaderState` across runs.
 - `--schedule <path>` — load an operator-attested per-momentum producer schedule (tier-2 caveat).
 - `--show-context` — print captured verification settings with a reproducible

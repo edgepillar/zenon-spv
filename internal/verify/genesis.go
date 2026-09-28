@@ -1,9 +1,12 @@
 package verify
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
@@ -56,8 +59,26 @@ type GenesisTrustRoot struct {
 	HeaderHash chain.Hash `json:"header_hash"`
 }
 
-// LoadGenesisFromConfig reads a genesis trust root from a JSON file
-// matching GenesisTrustRoot's schema:
+// MaxGenesisConfigBytes bounds the entire anchor file, including whitespace.
+const MaxGenesisConfigBytes = 16 * 1024
+
+var (
+	ErrInvalidGenesis        = errors.New("invalid genesis trust root")
+	ErrGenesisConfigTooLarge = errors.New("genesis config exceeds 16 KiB")
+)
+
+// Validate checks structural anchor requirements, not provenance or finality.
+// Chain ID zero remains available for explicitly configured custom networks.
+func (g GenesisTrustRoot) Validate() error {
+	if g.Height == 0 || g.HeaderHash.IsZero() {
+		return fmt.Errorf("%w: nonzero anchor hash and height required", ErrInvalidGenesis)
+	}
+	return nil
+}
+
+// LoadGenesisFromConfig accepts one bounded JSON object with all three fields
+// explicitly present and non-null. Unknown, duplicate, or differently cased
+// field names are rejected. Loading an anchor does not authenticate its source.
 //
 //	{
 //	  "chain_id":    1,
@@ -65,13 +86,67 @@ type GenesisTrustRoot struct {
 //	  "header_hash": "<64-hex-chars>"
 //	}
 func LoadGenesisFromConfig(path string) (GenesisTrustRoot, error) {
-	b, err := os.ReadFile(path)
+	f, err := os.Open(path)
 	if err != nil {
 		return GenesisTrustRoot{}, fmt.Errorf("read genesis config: %w", err)
 	}
-	var g GenesisTrustRoot
-	if err := json.Unmarshal(b, &g); err != nil {
-		return GenesisTrustRoot{}, fmt.Errorf("parse genesis config: %w", err)
+	defer func() { _ = f.Close() }()
+	info, err := f.Stat()
+	if err != nil {
+		return GenesisTrustRoot{}, fmt.Errorf("stat genesis config: %w", err)
+	}
+	if info.Size() > MaxGenesisConfigBytes {
+		return GenesisTrustRoot{}, ErrGenesisConfigTooLarge
+	}
+	return readGenesisConfig(f)
+}
+
+func readGenesisConfig(r io.Reader) (GenesisTrustRoot, error) {
+	// The read bound also covers streams and files that grow after Stat.
+	raw, err := io.ReadAll(io.LimitReader(r, MaxGenesisConfigBytes+1))
+	if err != nil {
+		return GenesisTrustRoot{}, fmt.Errorf("read genesis config: %w", err)
+	}
+	if len(raw) > MaxGenesisConfigBytes {
+		return GenesisTrustRoot{}, ErrGenesisConfigTooLarge
+	}
+	d := json.NewDecoder(bytes.NewReader(raw))
+	start, err := d.Token()
+	if err != nil || start != json.Delim('{') {
+		return GenesisTrustRoot{}, fmt.Errorf("%w: expected one JSON object", ErrInvalidGenesis)
+	}
+	var chainID, height *uint64
+	var hash *chain.Hash
+	fields := map[string]any{"chain_id": &chainID, "height": &height, "header_hash": &hash}
+	seen := make(map[string]bool, len(fields))
+	for d.More() {
+		token, err := d.Token()
+		if err != nil {
+			return GenesisTrustRoot{}, fmt.Errorf("%w: malformed JSON object", ErrInvalidGenesis)
+		}
+		key, ok := token.(string)
+		target, known := fields[key]
+		if !ok || !known || seen[key] {
+			return GenesisTrustRoot{}, fmt.Errorf("%w: unknown or duplicate field", ErrInvalidGenesis)
+		}
+		seen[key] = true
+		if err := d.Decode(target); err != nil {
+			// Report the known schema field, never the untrusted value.
+			return GenesisTrustRoot{}, fmt.Errorf("%w: invalid %s", ErrInvalidGenesis, key)
+		}
+	}
+	if end, err := d.Token(); err != nil || end != json.Delim('}') {
+		return GenesisTrustRoot{}, fmt.Errorf("%w: malformed JSON object", ErrInvalidGenesis)
+	}
+	if err := d.Decode(new(json.RawMessage)); err != io.EOF {
+		return GenesisTrustRoot{}, fmt.Errorf("%w: trailing JSON", ErrInvalidGenesis)
+	}
+	if chainID == nil || height == nil || hash == nil {
+		return GenesisTrustRoot{}, fmt.Errorf("%w: chain_id, height, and header_hash must be explicit and non-null", ErrInvalidGenesis)
+	}
+	g := GenesisTrustRoot{ChainID: *chainID, Height: *height, HeaderHash: *hash}
+	if err := g.Validate(); err != nil {
+		return GenesisTrustRoot{}, err
 	}
 	return g, nil
 }
