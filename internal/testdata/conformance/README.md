@@ -1,4 +1,4 @@
-# Node-derived momentum corpus
+# Node-derived conformance corpora
 
 `momentum-v1-v2.json` is corpus format 1. It contains nine standalone
 serialization cases, a six-header synthetic version-1 chain, and a six-header
@@ -36,7 +36,7 @@ frontiers, nonzero v1 price fields, and the synthetic anchor deliberately
 exercise byte-level behavior without claiming consensus validity. The corpus
 does not establish network activation, elected producers, canonicality,
 state-transition correctness, finality, or state-value proofs. It does not
-yet cover account-block serialization or proposed v3 state-root layouts.
+yet cover complete account-block semantics or proposed v3 state-root layouts.
 
 The node sorts content when constructing it; `MomentumContent.Hash` itself
 hashes the supplied sequence. These fixtures use canonically ordered content.
@@ -63,3 +63,25 @@ no local paths, timestamps, or machine metadata.
 The source commit is a provenance record, not a deployment claim. Updating
 it requires reviewing the node layout and all changed vectors together;
 do not regenerate expected values from the implementation under test.
+
+## Account amount corpus
+
+`account-amounts.json` uses the same source pin and generator module, with seven
+account-block vectors covering scalar boundaries and raw magnitude encoding.
+It includes binary data, a synthetic descendant hash, wide scalar fields, and
+synthetic Ed25519 signatures. Invalid amounts are intentionally serialized and
+signed to distinguish low-level hash parity from acceptable proof inputs.
+See [account amount validation](../../../docs/account-amount-validation.md)
+for the exact scope and the pre-fix offline alias reproductions.
+
+```sh
+(cd tools/gen-node-momentum-vectors && go run -mod=readonly . --account-amounts) > /tmp/account-amounts.json
+cmp internal/testdata/conformance/account-amounts.json /tmp/account-amounts.json
+python3 tools/gen-node-momentum-vectors/check-account-amounts.py /tmp/account-amounts.json
+go test ./internal/conformance ./internal/verify ./internal/fetch
+```
+
+The Python checker independently verifies magnitude bytes, data and descendant
+digests, scalar classification, and full hash preimages. Signature checks remain
+in Go. The corpus contains no wallet or live-network observations and does not
+assert full-node validity, authenticated state transitions, or finality.

@@ -105,8 +105,8 @@ func TestConvertAndVerifyAccountBlock_TamperedDataPreimageRejects(t *testing.T) 
 // TestAttack_NegativeAmountRejected demonstrates DOC1: the JSON-RPC
 // wire admits decimal-string Amounts that go-zenon's protobuf wire
 // (BigIntToBytes) cannot represent. Without rejection, a malicious
-// peer could push a negative Amount whose hash diverges from a
-// go-zenon recompute (A1/F7). parseDecimalBigInt now rejects.
+// peer could push a negative Amount that aliases its positive magnitude
+// in the signed envelope. parseDecimalBigInt rejects it.
 func TestAttack_NegativeAmountRejected(t *testing.T) {
 	if _, err := parseDecimalBigInt("-5"); err == nil {
 		t.Fatalf("DOC1: parseDecimalBigInt accepted negative amount; want error")

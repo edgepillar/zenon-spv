@@ -14,6 +14,10 @@ import (
 // account. Returns the state, the segment, and the matching
 // commitments slice.
 func segmentFixture(t *testing.T) (HeaderState, proof.AccountSegment, []proof.CommitmentEvidence, ed25519.PrivateKey) {
+	return segmentFixtureWithAmount(t, big.NewInt(1000))
+}
+
+func segmentFixtureWithAmount(t *testing.T, amount *big.Int) (HeaderState, proof.AccountSegment, []proof.CommitmentEvidence, ed25519.PrivateKey) {
 	t.Helper()
 	priv := ed25519.NewKeyFromSeed(make([]byte, ed25519.SeedSize))
 	pub := priv.Public().(ed25519.PublicKey)
@@ -39,7 +43,7 @@ func segmentFixture(t *testing.T) (HeaderState, proof.AccountSegment, []proof.Co
 		MomentumAcknowledged: momentumAck,
 		Address:              addr,
 		ToAddress:            chain.Address{0x99},
-		Amount:               big.NewInt(1000),
+		Amount:               amount,
 		TokenStandard:        chain.TokenStandard{0x01, 0x02, 0x03},
 		Nonce:                chain.Nonce{0xa1, 0xa2},
 		PublicKey:            append([]byte{}, pub...),
