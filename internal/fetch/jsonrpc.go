@@ -74,9 +74,12 @@ type rpcResponse struct {
 	Error  *rpcError       `json:"error"`
 }
 
-// Call performs a JSON-RPC POST and unmarshals result into out.
+// Call performs a JSON-RPC POST, validates its response envelope, and unmarshals
+// result into out. Envelope failures leave out untouched. Validation also applies
+// when out is nil.
 func (c *Client) Call(ctx context.Context, method string, params any, out any) error {
-	body, err := json.Marshal(rpcRequest{JSONRPC: "2.0", ID: 1, Method: method, Params: params})
+	request := rpcRequest{JSONRPC: "2.0", ID: 1, Method: method, Params: params}
+	body, err := json.Marshal(request)
 	if err != nil {
 		return fmt.Errorf("marshal request: %w", err)
 	}
@@ -104,9 +107,9 @@ func (c *Client) Call(ctx context.Context, method string, params any, out any) e
 	if int64(len(raw)) > MaxResponseBytes {
 		return fmt.Errorf("%w: read %d bytes, max %d", ErrResponseTooLarge, len(raw), MaxResponseBytes)
 	}
-	var r rpcResponse
-	if err := json.Unmarshal(raw, &r); err != nil {
-		return fmt.Errorf("unmarshal envelope: %w", err)
+	r, err := decodeRPCResponse(raw, request.ID)
+	if err != nil {
+		return err
 	}
 	if r.Error != nil {
 		return r.Error
