@@ -2,10 +2,10 @@
 //
 // Subcommands:
 //
-//	zenon-spv verify-headers     <bundle.json> [--window {low|medium|high}] [--genesis-config <path>] [--state <path>]
-//	zenon-spv verify-commitment  <bundle.json> [--window ...] [--genesis-config ...] [--state <path>]
-//	zenon-spv verify-segment     <bundle.json> [--window ...] [--genesis-config ...] [--state <path>]
-//	zenon-spv verify-state-value <bundle.json> [--window ...] [--genesis-config ...] [--state <path>]
+//	zenon-spv verify-headers     [--window {low|medium|high}] [--genesis-config <path>] [--state <path>] <bundle.json>
+//	zenon-spv verify-commitment  [--window ...] [--genesis-config ...] [--state <path>] <bundle.json>
+//	zenon-spv verify-segment     [--window ...] [--genesis-config ...] [--state <path>] <bundle.json>
+//	zenon-spv verify-state-value [--window ...] [--genesis-config ...] [--state <path>] <bundle.json>
 //	zenon-spv watch              [--peers <urls>|--rpc <url>] --state <path> [--genesis-config ...] [--window ...] [--interval <dur>] [--safety-margin <n>] [--batch-size <n>] [--quorum <k>]
 //
 // watch turns the verifier into a stateful service: load (or
@@ -83,10 +83,10 @@ import (
 const usage = `zenon-spv — resource-bounded Zenon SPV verifier
 
 Usage:
-  zenon-spv verify-headers     <bundle.json> [--window {low|medium|high}] [--genesis-config <path>] [--state <path>] [--schedule <path>]
-  zenon-spv verify-commitment  <bundle.json> [--window ...] [--genesis-config ...] [--state <path>] [--schedule <path>]
-  zenon-spv verify-segment     <bundle.json> [--window ...] [--genesis-config ...] [--state <path>] [--schedule <path>]
-  zenon-spv verify-state-value <bundle.json> [--window ...] [--genesis-config ...] [--state <path>] [--schedule <path>]
+  zenon-spv verify-headers     [--window {low|medium|high}] [--genesis-config <path>] [--state <path>] [--schedule <path>] <bundle.json>
+  zenon-spv verify-commitment  [--window ...] [--genesis-config ...] [--state <path>] [--schedule <path>] <bundle.json>
+  zenon-spv verify-segment     [--window ...] [--genesis-config ...] [--state <path>] [--schedule <path>] <bundle.json>
+  zenon-spv verify-state-value [--window ...] [--genesis-config ...] [--state <path>] [--schedule <path>] <bundle.json>
   zenon-spv watch              [--peers <urls>|--rpc <url>] --state <path> [--schedule <path>] [--genesis-config ...]
                                [--window ...] [--interval <dur>] [--safety-margin <n>] [--batch-size <n>] [--quorum <k>]
 
@@ -124,6 +124,10 @@ override is configured. Override via --genesis-config (strict JSON, max 16 KiB)
 or all three environment variables: ZENON_SPV_GENESIS_HASH, ZENON_SPV_CHAIN_ID,
 and ZENON_SPV_GENESIS_HEIGHT. Partial or empty environment overrides fail.
 Height must be positive and the hash nonzero. A config file overrides env.
+
+--window accepts exactly low, medium, or high (default low). Invalid or empty
+values fail with exit 64 before configuration or evidence is loaded. Put all
+verify-* flags before the bundle path; watch accepts flags only.
 
 --protocol-profile <path> loads an anchor-bound, operator-attested momentum
 activation profile for verify-* and watch. V2 requires this flag. Profiles
@@ -358,13 +362,17 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 		return verifierContext{}, 64
 	}
 	bundlePath := fs.Arg(0)
+	policy, err := parseWindowPolicy(*tier)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s: %v\n", name, err)
+		return verifierContext{}, 64
+	}
 
 	genesis, err := loadGenesis(*genesisConfig)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "genesis: %v\n", err)
 		return verifierContext{}, 70
 	}
-	policy := verify.PolicyForTier(*tier)
 	if err := configureProtocolProfile(&policy, *profilePath, genesis); err != nil {
 		fmt.Fprintf(os.Stderr, "protocol profile: %v\n", err)
 		return verifierContext{}, 70
@@ -570,6 +578,15 @@ func runWatch(args []string) int {
 	if err := fs.Parse(args); err != nil {
 		return 64
 	}
+	if fs.NArg() != 0 {
+		fmt.Fprintln(os.Stderr, "watch does not accept positional arguments")
+		return 64
+	}
+	policy, err := parseWindowPolicy(*tier)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "watch: %v\n", err)
+		return 64
+	}
 	if *statePath == "" {
 		fmt.Fprintln(os.Stderr, "watch: --state <path> is required (the loop must persist on every ACCEPT)")
 		return 64
@@ -593,7 +610,6 @@ func runWatch(args []string) int {
 		fmt.Fprintf(os.Stderr, "genesis: %v\n", err)
 		return 70
 	}
-	policy := verify.PolicyForTier(*tier)
 	if err := configureProtocolProfile(&policy, *profilePath, genesis); err != nil {
 		fmt.Fprintf(os.Stderr, "protocol profile: %v\n", err)
 		return 70
@@ -648,6 +664,17 @@ func runWatch(args []string) int {
 		return 70
 	}
 	return 0
+}
+
+// The library's PolicyForTier preserves its legacy fallback for callers that
+// rely on it. A misspelled explicit CLI choice must not lower the requested W.
+func parseWindowPolicy(tier string) (verify.Policy, error) {
+	switch tier {
+	case "low", "medium", "high":
+		return verify.PolicyForTier(tier), nil
+	default:
+		return verify.Policy{}, errors.New("--window must be low, medium, or high")
+	}
 }
 
 func splitWatchPeers(s string) []string {
