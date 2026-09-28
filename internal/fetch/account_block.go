@@ -17,25 +17,25 @@ import (
 // Field names match go-zenon's JSON tags
 // (reference/go-zenon/chain/nom/account_block.go:83-119).
 type rpcAccountBlock struct {
-	Version              uint64           `json:"version"`
-	ChainIdentifier      uint64           `json:"chainIdentifier"`
-	BlockType            uint64           `json:"blockType"`
-	Hash                 string           `json:"hash"`
-	PreviousHash         string           `json:"previousHash"`
-	Height               uint64           `json:"height"`
-	MomentumAcknowledged rpcHashHeight    `json:"momentumAcknowledged"`
-	Address              string           `json:"address"`
-	ToAddress            string           `json:"toAddress"`
-	Amount               string           `json:"amount"` // decimal string
-	TokenStandard        string           `json:"tokenStandard"`
-	FromBlockHash        string           `json:"fromBlockHash"`
-	DescendantBlocks     []rpcDescendant  `json:"descendantBlocks"`
-	Data                 string           `json:"data"` // base64
-	FusedPlasma          uint64           `json:"fusedPlasma"`
-	Difficulty           uint64           `json:"difficulty"`
-	Nonce                string           `json:"nonce"` // hex
-	PublicKey            string           `json:"publicKey"`
-	Signature            string           `json:"signature"`
+	Version              uint64          `json:"version"`
+	ChainIdentifier      uint64          `json:"chainIdentifier"`
+	BlockType            uint64          `json:"blockType"`
+	Hash                 string          `json:"hash"`
+	PreviousHash         string          `json:"previousHash"`
+	Height               uint64          `json:"height"`
+	MomentumAcknowledged rpcHashHeight   `json:"momentumAcknowledged"`
+	Address              string          `json:"address"`
+	ToAddress            string          `json:"toAddress"`
+	Amount               string          `json:"amount"` // decimal string
+	TokenStandard        string          `json:"tokenStandard"`
+	FromBlockHash        string          `json:"fromBlockHash"`
+	DescendantBlocks     []rpcDescendant `json:"descendantBlocks"`
+	Data                 string          `json:"data"` // base64
+	FusedPlasma          uint64          `json:"fusedPlasma"`
+	Difficulty           uint64          `json:"difficulty"`
+	Nonce                string          `json:"nonce"` // hex
+	PublicKey            string          `json:"publicKey"`
+	Signature            string          `json:"signature"`
 }
 
 type rpcHashHeight struct {
@@ -60,20 +60,32 @@ type rpcAccountBlockList struct {
 // surfaces as ErrHashMismatch.
 //
 // The address is encoded as a "z1..." string when sent to the RPC.
+// Start and count must be positive, and the range must not overflow. Each
+// returned block must belong to the requested account and height position.
 func (c *Client) FetchAccountBlocksByHeight(ctx context.Context, addressBech32 string, start, count uint64) ([]chain.AccountBlock, error) {
+	address, err := validateAccountQuery(addressBech32, start, count)
+	if err != nil {
+		return nil, err
+	}
 	var list rpcAccountBlockList
 	if err := c.Call(ctx, "ledger.getAccountBlocksByHeight",
 		[]any{addressBech32, start, count}, &list); err != nil {
 		return nil, fmt.Errorf("getAccountBlocksByHeight: %w", err)
 	}
 	if uint64(len(list.List)) != count {
-		return nil, fmt.Errorf("rpc returned %d blocks, expected %d", len(list.List), count)
+		return nil, fmt.Errorf("%w: rpc returned %d blocks, expected %d", ErrQueryMismatch, len(list.List), count)
 	}
 	out := make([]chain.AccountBlock, count)
 	for i, b := range list.List {
+		if b.Height != start+uint64(i) {
+			return nil, fmt.Errorf("%w: account block index %d has height %d, expected height %d", ErrQueryMismatch, i, b.Height, start+uint64(i))
+		}
 		bl, err := convertAndVerifyAccountBlock(b)
 		if err != nil {
 			return nil, fmt.Errorf("block height=%d: %w", b.Height, err)
+		}
+		if bl.Address != address {
+			return nil, fmt.Errorf("%w: account block index %d belongs to another address", ErrQueryMismatch, i)
 		}
 		out[i] = bl
 	}

@@ -103,6 +103,9 @@ func (m *MultiClient) FetchByHeightDetailed(ctx context.Context, start, count ui
 	if err != nil {
 		return nil, err
 	}
+	if err := validateHeightRange(start, count); err != nil {
+		return nil, err
+	}
 
 	results := make([]peerDetailedResult, len(m.Peers))
 	var wg sync.WaitGroup
@@ -126,6 +129,9 @@ func (m *MultiClient) FetchByHeightDetailed(ctx context.Context, start, count ui
 func (m *MultiClient) FetchByHeight(ctx context.Context, start, count uint64) ([]chain.Header, error) {
 	q, err := m.requiredQuorum()
 	if err != nil {
+		return nil, err
+	}
+	if err := validateHeightRange(start, count); err != nil {
 		return nil, err
 	}
 
@@ -271,6 +277,9 @@ func reconcileDetailed(results []peerDetailedResult, q int) ([]DetailedHeader, e
 func (m *MultiClient) FetchAccountBlocksByHeight(ctx context.Context, addressBech32 string, start, count uint64) ([]chain.AccountBlock, error) {
 	q, err := m.requiredQuorum()
 	if err != nil {
+		return nil, err
+	}
+	if _, err := validateAccountQuery(addressBech32, start, count); err != nil {
 		return nil, err
 	}
 

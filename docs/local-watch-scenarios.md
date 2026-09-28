@@ -37,6 +37,9 @@ canonicality. Failed evidence must neither save nor log an ACCEPT tick.
 | Three healthy peers | ACCEPT | Advance from 2002 to 2005 |
 | One unavailable peer, two healthy | ACCEPT | Advance to 2005 |
 | One stale peer, two healthy | ACCEPT | Advance to 2005 |
+| One peer replays an older target header, two healthy | ACCEPT | Advance to 2005 using the two matching responses |
+| All peers replay an older header for the agreed target height | REFUSED | No caught-up ACCEPT; no save |
+| All peers return an older batch for the incoming range | REFUSED | No save; original bytes retained |
 | Two unavailable peers | REFUSED | No save; original bytes retained |
 | Two agreeing peers and one consistent conflicting fork | REFUSED | No save; original bytes retained |
 | All peers agree on a bad signature at 2003 | REJECT | No save; original bytes retained |
@@ -44,7 +47,7 @@ canonicality. Failed evidence must neither save nor log an ACCEPT tick.
 | All peers agree on a valid signature from a producer absent from the configured slot | REJECT | No save; original bytes retained |
 | All peers omit a required v2 price | REFUSED | No save; original bytes retained |
 | Activation profile expires at 2004 | REFUSED | No partial advance; original bytes retained |
-| Three fetched headers exceed the configured two-header limit | REFUSED | No save; original bytes retained |
+| Peers return three headers for a policy-capped two-header request | REFUSED | No save; original bytes retained |
 | All peers remain at 2002 | Caught-up ACCEPT | Existing window saved with identical bytes; no advance |
 
 The conflicting-fork case records the current strict disagreement policy:

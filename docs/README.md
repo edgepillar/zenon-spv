@@ -20,6 +20,8 @@ audit history.
   known gaps, and production follow-ups.
 - [`local-watch-scenarios.md`](local-watch-scenarios.md) — reproducible
   multi-peer RPC faults, verification outcomes, and persistence checks.
+- [`rpc-query-binding.md`](rpc-query-binding.md) — local query validation,
+  response height/account binding, and quorum treatment of mismatched replies.
 - [`producer-set-verification.md`](producer-set-verification.md) —
   opt-in producer authorization via operator-attested per-momentum
   schedules.

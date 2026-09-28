@@ -38,6 +38,11 @@ func TestOfflineWatchPeerFaults(t *testing.T) {
 		{name: "healthy", advance: true, want: "ACCEPT"},
 		{name: "one-unavailable", peers: [3]string{"", "", "unavailable"}, advance: true, want: "ACCEPT"},
 		{name: "one-stale", peers: [3]string{"", "", "stale"}, advance: true, want: "ACCEPT"},
+		{name: "one-replayed-target", peers: [3]string{"replayed-target", "", ""}, advance: true, want: "ACCEPT"},
+		{name: "all-replayed-targets", peers: [3]string{"replayed-target", "replayed-target", "replayed-target"},
+			want: "REFUSED ReasonMissingEvidence", detail: "expected height 2005"},
+		{name: "all-replayed-batches", peers: [3]string{"replayed-batch", "replayed-batch", "replayed-batch"},
+			want: "REFUSED ReasonMissingEvidence", detail: "expected height 2003"},
 		{name: "quorum-loss", peers: [3]string{"", "unavailable", "unavailable"}, want: "REFUSED ReasonMissingEvidence", detail: "not enough peers"},
 		{name: "valid-peer-fork", peers: [3]string{"", "", "fork"}, want: "REFUSED ReasonMissingEvidence", detail: "peers disagree"},
 		{name: "invalid-signature", peers: [3]string{"signature", "signature", "signature"}, want: "REJECT ReasonInvalidSignature"},
@@ -198,6 +203,10 @@ func startFaultPeer(t *testing.T, vectors []momentumVector, mode string, peer in
 				return
 			}
 			start := req.Params[0] - 2001
+			if (mode == "replayed-target" && req.Params[0] == 2005) ||
+				(mode == "replayed-batch" && req.Params[0] == 2003) {
+				start = 0 // Valid fixture headers that do not answer this query.
+			}
 			end := start + req.Params[1]
 			if mode == "oversized" && req.Params[0] == 2003 && end < uint64(len(wire)) {
 				end++ // Ignore the requested count only for the incoming batch.
