@@ -16,6 +16,8 @@ audit history.
   state, captured policy, and trusted local resume.
 - [`conformance.md`](conformance.md) — implemented conformance cases,
   known gaps, and production follow-ups.
+- [`local-watch-scenarios.md`](local-watch-scenarios.md) — reproducible
+  multi-peer RPC faults, verification outcomes, and persistence checks.
 - [`producer-set-verification.md`](producer-set-verification.md) —
   opt-in producer authorization via operator-attested per-momentum
   schedules.

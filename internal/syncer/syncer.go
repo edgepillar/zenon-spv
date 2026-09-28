@@ -1,7 +1,7 @@
 // Package syncer turns the SPV verifier into a long-running service.
 //
 // A Loop ticks at the configured interval, multi-peer-fetches the
-// frontier, computes a conservative target height (min(frontiers) -
+// frontier, computes a conservative target height (median(frontiers) -
 // safety_margin), fetches the next batch of momentums extending the
 // persisted retained-window tip, and runs VerifyHeaders. On ACCEPT
 // the updated state is persisted via SaveHeaderState before advancing
@@ -62,7 +62,7 @@ type Loop struct {
 	// (one momentum). Setting to 0 falls back to the default.
 	Interval time.Duration
 
-	// SafetyMargin is the number of momentums below min(frontiers)
+	// SafetyMargin is the number of momentums below median(frontiers)
 	// the loop refuses to fetch — keeps us behind the bleeding edge
 	// so all peers definitely have the data.
 	SafetyMargin uint64
