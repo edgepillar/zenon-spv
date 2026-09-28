@@ -136,7 +136,7 @@ func TestLoadGenesisConfigTakesPrecedence(t *testing.T) {
 	}
 }
 
-func captureAnchorRun(t *testing.T, run func() int) (int, string, string) {
+func captureSetupRun(t *testing.T, run func() int) (int, string, string) {
 	t.Helper()
 	f, err := os.CreateTemp(t.TempDir(), "stderr")
 	if err != nil {
@@ -199,7 +199,7 @@ func TestInvalidAnchorStopsAllCommandsBeforeEvidenceOrState(t *testing.T) {
 					} else {
 						args = append(args, filepath.Join(dir, "absent-bundle.json"))
 					}
-					code, out, diagnostics := captureAnchorRun(t, func() int { return run(args) })
+					code, out, diagnostics := captureSetupRun(t, func() int { return run(args) })
 					if code != 70 || out != "" || !strings.HasPrefix(diagnostics, "genesis: ") || strings.Contains(diagnostics, "verification_context:") {
 						t.Fatalf("invalid anchor reached verification: code=%d out=%s diagnostics=%s", code, out, diagnostics)
 					}

@@ -1,9 +1,7 @@
 package verify
 
 import (
-	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -110,41 +108,17 @@ func readGenesisConfig(r io.Reader) (GenesisTrustRoot, error) {
 	if len(raw) > MaxGenesisConfigBytes {
 		return GenesisTrustRoot{}, ErrGenesisConfigTooLarge
 	}
-	d := json.NewDecoder(bytes.NewReader(raw))
-	start, err := d.Token()
-	if err != nil || start != json.Delim('{') {
-		return GenesisTrustRoot{}, fmt.Errorf("%w: expected one JSON object", ErrInvalidGenesis)
+	return decodeGenesisConfig(raw)
+}
+
+// decodeGenesisConfig is also used for the anchor inside a bounded profile.
+func decodeGenesisConfig(raw []byte) (GenesisTrustRoot, error) {
+	var g GenesisTrustRoot
+	if err := decodeRequiredObject(raw, map[string]any{
+		"chain_id": &g.ChainID, "height": &g.Height, "header_hash": &g.HeaderHash,
+	}); err != nil {
+		return GenesisTrustRoot{}, fmt.Errorf("%w: %v", ErrInvalidGenesis, err)
 	}
-	var chainID, height *uint64
-	var hash *chain.Hash
-	fields := map[string]any{"chain_id": &chainID, "height": &height, "header_hash": &hash}
-	seen := make(map[string]bool, len(fields))
-	for d.More() {
-		token, err := d.Token()
-		if err != nil {
-			return GenesisTrustRoot{}, fmt.Errorf("%w: malformed JSON object", ErrInvalidGenesis)
-		}
-		key, ok := token.(string)
-		target, known := fields[key]
-		if !ok || !known || seen[key] {
-			return GenesisTrustRoot{}, fmt.Errorf("%w: unknown or duplicate field", ErrInvalidGenesis)
-		}
-		seen[key] = true
-		if err := d.Decode(target); err != nil {
-			// Report the known schema field, never the untrusted value.
-			return GenesisTrustRoot{}, fmt.Errorf("%w: invalid %s", ErrInvalidGenesis, key)
-		}
-	}
-	if end, err := d.Token(); err != nil || end != json.Delim('}') {
-		return GenesisTrustRoot{}, fmt.Errorf("%w: malformed JSON object", ErrInvalidGenesis)
-	}
-	if err := d.Decode(new(json.RawMessage)); err != io.EOF {
-		return GenesisTrustRoot{}, fmt.Errorf("%w: trailing JSON", ErrInvalidGenesis)
-	}
-	if chainID == nil || height == nil || hash == nil {
-		return GenesisTrustRoot{}, fmt.Errorf("%w: chain_id, height, and header_hash must be explicit and non-null", ErrInvalidGenesis)
-	}
-	g := GenesisTrustRoot{ChainID: *chainID, Height: *height, HeaderHash: *hash}
 	if err := g.Validate(); err != nil {
 		return GenesisTrustRoot{}, err
 	}
