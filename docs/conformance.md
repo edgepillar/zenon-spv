@@ -102,7 +102,10 @@ State-value layer:
       (`docs/resource-bound-measurements.md`); the full spec §10
       σ characterization is still deferred.
 - [ ] Benchmark `C_verify` on target platforms — deferred.
-- [ ] Simulated network partition test — deferred.
+- [~] Local multi-peer failures, disagreement, stale frontiers, invalid
+      evidence, and bounded restart checks are covered by
+      [`local-watch-scenarios.md`](local-watch-scenarios.md).
+      A real-node partition test remains deferred.
 - [ ] Policy-window validation against observed reorg data — deferred.
 - [ ] Refusal-rate histogram aggregation — deferred (structured
       `ReasonCode` is in place; the histogram is later).
