@@ -71,6 +71,10 @@ Producer-authorization layer (opt-in):
       `(height, timestamp, producer address)` to match.
 - [x] Schedule mismatch → REJECT/`ReasonUnauthorizedProducer`.
 - [x] Missing schedule coverage → REFUSED/`ReasonProducerSetUnknown`.
+- [x] Schedule loading bounds file bytes and decoded row counts, refuses
+      unknown/trailing JSON, and checks dense coverage in linear time,
+      including ranges ending at `MaxUint64`. Failed revalidation clears
+      the previous lookup index.
 
 State-value layer:
 

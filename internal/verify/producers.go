@@ -1,10 +1,12 @@
 package verify
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -184,6 +186,22 @@ type ProducerSchedule struct {
 	idx map[uint64]int `json:"-"`
 }
 
+// These limits accommodate the existing million-momentum sidecar design.
+// They bound operator-supplied data, not the amount of authenticated history.
+const (
+	MaxProducerScheduleEntries   = 1_000_000
+	MaxProducerScheduleFileBytes = 256 * 1024 * 1024
+)
+
+var ErrProducerScheduleTooLarge = errors.New("producer schedule exceeds resource limit")
+
+func validateScheduleSize(coverage []ProducerCoverage, entries []ProducerEntry) error {
+	if len(entries) > MaxProducerScheduleEntries || len(coverage) > MaxProducerScheduleEntries {
+		return fmt.Errorf("%w: at most %d entries and coverage ranges", ErrProducerScheduleTooLarge, MaxProducerScheduleEntries)
+	}
+	return nil
+}
+
 // computeScheduleHash returns the SHA3-256 over the canonical
 // big-endian encoding of substantive schedule content. Metadata
 // (GeneratedAt, SourcePeers, SourceHeights) is intentionally
@@ -231,6 +249,11 @@ func computeScheduleHash(chainID uint64, coverage []ProducerCoverage, entries []
 //     (dense, no gaps, no duplicates).
 //   - Recomputed ScheduleHash matches the stored value.
 func (s *ProducerSchedule) Validate() error {
+	// A failed revalidation must not leave a usable index from an earlier call.
+	s.idx = nil
+	if err := validateScheduleSize(s.Coverage, s.Entries); err != nil {
+		return err
+	}
 	if len(s.Coverage) == 0 {
 		return errors.New("producer schedule: empty coverage")
 	}
@@ -250,41 +273,36 @@ func (s *ProducerSchedule) Validate() error {
 		}
 	}
 
-	idx := make(map[uint64]int, len(s.Entries))
-	for i, e := range s.Entries {
-		idx[e.Height] = i
-	}
+	// Walk both sorted lists together. Work is bounded by the number of
+	// entries, even when an interval claims the entire uint64 height space.
+	ei := 0
 	for ci, c := range s.Coverage {
-		for h := c.FromHeight; h <= c.ThroughHeight; h++ {
-			if _, ok := idx[h]; !ok {
+		for h := c.FromHeight; ; h++ {
+			if ei < len(s.Entries) && s.Entries[ei].Height < h {
+				return fmt.Errorf("producer schedule: entry[%d] height %d falls outside declared coverage", ei, s.Entries[ei].Height)
+			}
+			if ei == len(s.Entries) || s.Entries[ei].Height != h {
 				return fmt.Errorf("producer schedule: coverage[%d] height %d has no entry (dense-coverage requirement)", ci, h)
+			}
+			ei++
+			if h == c.ThroughHeight {
+				break // Never increment a terminal MaxUint64 height.
 			}
 		}
 	}
-	// Every entry must be inside some coverage range; orphan entries
-	// would let a tampered schedule sneak attestations into uncovered
-	// territory.
-	for ei, e := range s.Entries {
-		if !s.heightInCoverage(e.Height) {
-			return fmt.Errorf("producer schedule: entry[%d] height %d falls outside declared coverage", ei, e.Height)
-		}
+	if ei != len(s.Entries) {
+		return fmt.Errorf("producer schedule: entry[%d] height %d falls outside declared coverage", ei, s.Entries[ei].Height)
 	}
 
 	recomputed := computeScheduleHash(s.ChainID, s.Coverage, s.Entries)
 	if recomputed != s.ScheduleHash {
 		return fmt.Errorf("producer schedule: ScheduleHash mismatch (recomputed=%x stored=%x)", recomputed, s.ScheduleHash)
 	}
-	s.idx = idx
-	return nil
-}
-
-func (s *ProducerSchedule) heightInCoverage(h uint64) bool {
-	for _, c := range s.Coverage {
-		if h >= c.FromHeight && h <= c.ThroughHeight {
-			return true
-		}
+	s.idx = make(map[uint64]int, len(s.Entries))
+	for i, e := range s.Entries {
+		s.idx[e.Height] = i
 	}
-	return false
+	return nil
 }
 
 // LookupEntry returns the entry at the given height and whether the
@@ -301,16 +319,49 @@ func (s *ProducerSchedule) LookupEntry(height uint64) (ProducerEntry, bool) {
 }
 
 // LoadProducerSchedule reads, parses, and validates a schedule from
-// a JSON file. On success the returned schedule has its lookup index
-// populated and is ready to back a ScheduleAuthorizer.
+// one bounded JSON object with known fields only. On success the returned
+// schedule has its lookup index populated and is ready for authorization.
 func LoadProducerSchedule(path string) (*ProducerSchedule, error) {
-	b, err := os.ReadFile(path)
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("read schedule: %w", err)
 	}
+	defer func() { _ = f.Close() }()
+	info, err := f.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("stat schedule: %w", err)
+	}
+	if info.Size() > MaxProducerScheduleFileBytes {
+		return nil, fmt.Errorf("%w: file exceeds %d bytes", ErrProducerScheduleTooLarge, MaxProducerScheduleFileBytes)
+	}
+	// The bounded read also handles files growing after Stat and streams
+	// whose reported size does not reflect how many bytes they can yield.
+	return decodeProducerSchedule(f, MaxProducerScheduleFileBytes)
+}
+
+func decodeProducerSchedule(r io.Reader, maxBytes int64) (*ProducerSchedule, error) {
+	b, err := io.ReadAll(io.LimitReader(r, maxBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("read schedule: %w", err)
+	}
+	if int64(len(b)) > maxBytes {
+		return nil, fmt.Errorf("%w: file exceeds %d bytes", ErrProducerScheduleTooLarge, maxBytes)
+	}
+	d := json.NewDecoder(bytes.NewReader(b))
+	d.DisallowUnknownFields()
 	var s ProducerSchedule
-	if err := json.Unmarshal(b, &s); err != nil {
+	type plain ProducerSchedule
+	wire := struct {
+		*plain
+		Coverage boundedScheduleRows[ProducerCoverage] `json:"coverage"`
+		Entries  boundedScheduleRows[ProducerEntry]    `json:"entries"`
+	}{plain: (*plain)(&s)}
+	if err := d.Decode(&wire); err != nil {
 		return nil, fmt.Errorf("decode schedule: %w", err)
+	}
+	s.Coverage, s.Entries = wire.Coverage, wire.Entries
+	if err := d.Decode(new(any)); err != io.EOF {
+		return nil, errors.New("decode schedule: trailing JSON")
 	}
 	if err := s.Validate(); err != nil {
 		return nil, fmt.Errorf("validate schedule: %w", err)
@@ -318,10 +369,49 @@ func LoadProducerSchedule(path string) (*ProducerSchedule, error) {
 	return &s, nil
 }
 
+// Tiny JSON objects can expand into much larger structs. Stop array decoding
+// at the count cap rather than allocating every row before Validate runs.
+type boundedScheduleRows[T any] []T
+
+func (rows *boundedScheduleRows[T]) UnmarshalJSON(raw []byte) error {
+	d := json.NewDecoder(bytes.NewReader(raw))
+	d.DisallowUnknownFields()
+	first, err := d.Token()
+	if err != nil {
+		return err
+	}
+	if first == nil {
+		*rows = nil
+		return nil
+	}
+	if first != json.Delim('[') {
+		return errors.New("producer schedule: expected an array")
+	}
+	var decoded []T
+	for d.More() {
+		if len(decoded) == MaxProducerScheduleEntries {
+			return ErrProducerScheduleTooLarge
+		}
+		var row T
+		if err := d.Decode(&row); err != nil {
+			return err
+		}
+		decoded = append(decoded, row)
+	}
+	if _, err := d.Token(); err != nil {
+		return err
+	}
+	*rows = decoded
+	return nil
+}
+
 // NewProducerSchedule builds a schedule from raw components, computes
 // the ScheduleHash, and validates the result. Intended for the
 // derivation tool; production callers use LoadProducerSchedule.
 func NewProducerSchedule(chainID uint64, coverage []ProducerCoverage, entries []ProducerEntry, peers []string, peerHeights map[string]uint64) (*ProducerSchedule, error) {
+	if err := validateScheduleSize(coverage, entries); err != nil {
+		return nil, err
+	}
 	s := &ProducerSchedule{
 		ChainID:       chainID,
 		Coverage:      append([]ProducerCoverage(nil), coverage...),

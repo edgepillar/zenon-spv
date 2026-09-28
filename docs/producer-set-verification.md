@@ -169,9 +169,9 @@ configurable via the tool's `--peers` flag.
 
 ### Size and shipping
 
-A checkpoint-interval range (~1M momentums) produces ~32MB of
-table data (1M × 32 bytes for `(uint64 Height, uint64 TimestampUnix,
-20-byte Address)` packed). Too large to embed in the binary. The
+A checkpoint-interval range (~1M momentums) produces ~36MB of
+table data (1M × 36 bytes for `(uint64 Height, uint64 TimestampUnix,
+20-byte Address)` packed), before JSON expansion and metadata. The
 current implementation ships the schedule as a JSON sidecar loaded via
 `--schedule <path>` at the CLI. The embedded-default route remains available
 for short ranges if a future use case warrants it; the default
@@ -181,6 +181,18 @@ A compact wire form (packed binary, possibly delta-encoded over
 the address byte stream) is a Branch 5b implementation choice; the
 table contents are the load-bearing decision and JSON is the
 reference shape.
+
+The loader caps a sidecar at 256 MiB, with at most 1,000,000 entries
+and 1,000,000 coverage ranges. These hard limits retain room for the
+million-momentum design; they are not typical memory-use estimates.
+Split longer observations into separate, explicitly selected schedules.
+The file-size check and bounded read precede JSON decoding. Array decoding
+stops at the count limit, before a compact list of empty objects can expand
+into arbitrarily many structs. Count checks also precede index allocation
+and owned-state schedule copies. Validation walks
+sorted coverage and entries together in linear time, including terminal
+`uint64` heights; it does not iterate over a large claimed gap or rescan
+all coverage ranges for each entry.
 
 ---
 
@@ -235,10 +247,14 @@ Notes:
   the hash because two operators deriving the same range from
   the same peers would otherwise produce different hashes.
 
-The JSON form mirrors the Go struct; load-time validation rejects
-any schedule where (a) entries are not sorted, (b) entries do not
-densely cover every height in their declared coverage range, or
-(c) the recomputed `ScheduleHash` does not match the stored value.
+The JSON form mirrors the Go struct. The loader accepts exactly one object
+with known fields only; unknown fields and trailing data are errors.
+Validation rejects unsorted entries, gaps, entries outside coverage,
+overlapping ranges, and a recomputed `ScheduleHash` mismatch. Failed
+revalidation clears any previous lookup index. As before, callers must keep
+a successfully validated schedule read-only; the owned state API captures
+its own copy. These integrity checks do not authenticate the operator or
+the metadata, and a content hash is not an attestation signature.
 
 ---
 
