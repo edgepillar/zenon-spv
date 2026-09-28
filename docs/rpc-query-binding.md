@@ -1,5 +1,31 @@
 # RPC query binding
 
+## Response envelope
+
+`Client.Call` validates the JSON-RPC envelope before decoding a result into
+caller output, including when that output is nil. Following the
+[JSON-RPC 2.0 response rules](https://www.jsonrpc.org/specification#response_object),
+the response must declare version `2.0`, identify the request, and supply one
+outcome. This client sends integer IDs and requires the same integer encoding;
+string, null, decimal, and exponent-form IDs are not supported.
+
+Missing fields, duplicate control fields, case aliases, trailing data, and
+simultaneous `result` and `error` fields return `ErrInvalidRPCResponse`.
+An error must contain an integer code and string message. Unrelated extension
+members are ignored; a legitimate `result: null` remains valid at the envelope
+layer, and a well-formed remote error is returned to the caller. Method-specific
+evidence validation remains separate, so null does not supply header evidence.
+
+Envelope failures leave caller output untouched and malformed peer fields or
+values are not echoed in parser diagnostics. This does not change diagnostic
+handling for valid remote errors, HTTP failures, or method-result decoding.
+The existing response byte cap and HTTP timeout remain in force. Control-field
+checks apply to the envelope and error object, not recursively to method data.
+The ID check correlates the response format; it does not establish freshness
+or prevent a peer from replaying an otherwise matching response.
+
+## Heights and accounts
+
 The fetch layer checks that a response answers the requested query before
 it can count toward peer quorum. A self-consistent hash does not make a block
 from a different height or account an answer to the original request.

@@ -36,6 +36,9 @@ canonicality. Failed evidence must neither save nor log an ACCEPT tick.
 | --- | --- | --- |
 | Three healthy peers | ACCEPT | Advance from 2002 to 2005 |
 | One unavailable peer, two healthy | ACCEPT | Advance to 2005 |
+| One peer uses the wrong JSON-RPC ID, two healthy | ACCEPT | Advance to 2005 using the two matching responses |
+| All peers use the wrong JSON-RPC ID | REFUSED | No save; original bytes retained |
+| All peers overwrite an RPC error with a duplicate null field beside a result | REFUSED | No save; original bytes retained |
 | One stale peer, two healthy | ACCEPT | Advance to 2005 |
 | One peer replays an older target header, two healthy | ACCEPT | Advance to 2005 using the two matching responses |
 | All peers replay an older header for the agreed target height | REFUSED | No caught-up ACCEPT; no save |

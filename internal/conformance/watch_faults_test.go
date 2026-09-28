@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -37,6 +38,11 @@ func TestOfflineWatchPeerFaults(t *testing.T) {
 	}{
 		{name: "healthy", advance: true, want: "ACCEPT"},
 		{name: "one-unavailable", peers: [3]string{"", "", "unavailable"}, advance: true, want: "ACCEPT"},
+		{name: "one-wrong-rpc-id", peers: [3]string{"wrong-rpc-id", "", ""}, advance: true, want: "ACCEPT"},
+		{name: "all-wrong-rpc-ids", peers: [3]string{"wrong-rpc-id", "wrong-rpc-id", "wrong-rpc-id"},
+			want: "REFUSED ReasonMissingEvidence", detail: "not enough peers"},
+		{name: "overwritten-rpc-error", peers: [3]string{"overwritten-rpc-error", "overwritten-rpc-error", "overwritten-rpc-error"},
+			want: "REFUSED ReasonMissingEvidence", detail: "duplicate control field"},
 		{name: "one-stale", peers: [3]string{"", "", "stale"}, advance: true, want: "ACCEPT"},
 		{name: "one-replayed-target", peers: [3]string{"replayed-target", "", ""}, advance: true, want: "ACCEPT"},
 		{name: "all-replayed-targets", peers: [3]string{"replayed-target", "replayed-target", "replayed-target"},
@@ -215,6 +221,18 @@ func startFaultPeer(t *testing.T, vectors []momentumVector, mode string, peer in
 		default:
 			t.Errorf("unexpected method: %s", req.Method)
 			http.Error(w, "unsupported method", http.StatusBadRequest)
+			return
+		}
+		if mode == "wrong-rpc-id" {
+			req.ID = json.RawMessage(`2`)
+		}
+		if mode == "overwritten-rpc-error" && req.Method == "ledger.getMomentumsByHeight" {
+			raw, err := json.Marshal(response)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"unavailable"},"error":null,"result":%s}`, raw)
 			return
 		}
 		if err := json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": req.ID, "result": response}); err != nil {
