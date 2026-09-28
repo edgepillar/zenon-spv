@@ -189,8 +189,8 @@ func cloneHeaderState(s HeaderState) HeaderState {
 }
 
 func freezeStateOptions(anchor GenesisTrustRoot, opts VerifyOptions) (VerifyOptions, error) {
-	if anchor.HeaderHash.IsZero() || anchor.Height == 0 {
-		return VerifyOptions{}, fmt.Errorf("%w: nonzero anchor hash and height required", ErrInvalidRetainedState)
+	if err := anchor.Validate(); err != nil {
+		return VerifyOptions{}, fmt.Errorf("%w: %v", ErrInvalidRetainedState, err)
 	}
 	if opts.Policy.W >= uint64(MaxPersistedHeaders) {
 		return VerifyOptions{}, fmt.Errorf("%w: policy window exceeds persistence limit", ErrInvalidRetainedState)

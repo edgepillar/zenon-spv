@@ -42,8 +42,9 @@
 // Default genesis is the embedded mainnet trust root
 // (chain_id=1, height=1; see internal/verify/genesis.go and
 // zenon-spv-vault/decisions/0002-genesis-trust-anchor.md). Override
-// with --genesis-config <path> or ZENON_SPV_GENESIS_HASH/CHAIN_ID env
-// vars when verifying testnet/devnet or pinning a different anchor.
+// with --genesis-config <path> or all three ZENON_SPV_GENESIS_HASH,
+// ZENON_SPV_CHAIN_ID, and ZENON_SPV_GENESIS_HEIGHT environment variables
+// when verifying testnet/devnet or pinning a different anchor.
 //
 // Exit codes:
 //
@@ -68,6 +69,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -117,10 +119,11 @@ Subcommands:
                       verify and persist. SIGINT/SIGTERM for graceful
                       shutdown.
 
-Genesis trust root defaults to the embedded mainnet anchor. Override
-via --genesis-config (JSON file) or ZENON_SPV_GENESIS_HASH +
-ZENON_SPV_CHAIN_ID env vars when verifying testnet/devnet (genesis
-height defaults to 0 if not given via ZENON_SPV_GENESIS_HEIGHT).
+Genesis trust root defaults to the embedded mainnet anchor only when no anchor
+override is configured. Override via --genesis-config (strict JSON, max 16 KiB)
+or all three environment variables: ZENON_SPV_GENESIS_HASH, ZENON_SPV_CHAIN_ID,
+and ZENON_SPV_GENESIS_HEIGHT. Partial or empty environment overrides fail.
+Height must be positive and the hash nonzero. A config file overrides env.
 
 --protocol-profile <path> loads an anchor-bound, operator-attested momentum
 activation profile for verify-* and watch. V2 requires this flag. Profiles
@@ -771,10 +774,17 @@ func loadGenesis(path string) (verify.GenesisTrustRoot, error) {
 	if path != "" {
 		return verify.LoadGenesisFromConfig(path)
 	}
-	hashHex := strings.TrimSpace(os.Getenv("ZENON_SPV_GENESIS_HASH"))
-	chainIDStr := strings.TrimSpace(os.Getenv("ZENON_SPV_CHAIN_ID"))
-	if hashHex == "" || chainIDStr == "" {
+	hashHex, hasHash := os.LookupEnv("ZENON_SPV_GENESIS_HASH")
+	chainIDStr, hasChainID := os.LookupEnv("ZENON_SPV_CHAIN_ID")
+	heightStr, hasHeight := os.LookupEnv("ZENON_SPV_GENESIS_HEIGHT")
+	if !hasHash && !hasChainID && !hasHeight {
 		return verify.MainnetGenesis()
+	}
+	hashHex = strings.TrimSpace(hashHex)
+	chainIDStr = strings.TrimSpace(chainIDStr)
+	heightStr = strings.TrimSpace(heightStr)
+	if hashHex == "" || chainIDStr == "" || heightStr == "" {
+		return verify.GenesisTrustRoot{}, errors.New("anchor environment override requires nonempty ZENON_SPV_GENESIS_HASH, ZENON_SPV_CHAIN_ID, and ZENON_SPV_GENESIS_HEIGHT")
 	}
 	hashHex = strings.TrimPrefix(hashHex, "0x")
 	if len(hashHex) != 2*chain.HashSize {
@@ -782,27 +792,28 @@ func loadGenesis(path string) (verify.GenesisTrustRoot, error) {
 	}
 	raw, err := hex.DecodeString(hashHex)
 	if err != nil {
-		return verify.GenesisTrustRoot{}, fmt.Errorf("ZENON_SPV_GENESIS_HASH: %w", err)
+		return verify.GenesisTrustRoot{}, errors.New("ZENON_SPV_GENESIS_HASH: invalid hex")
 	}
 	var hash chain.Hash
 	copy(hash[:], raw)
 
-	var chainID uint64
-	if _, err := fmt.Sscanf(chainIDStr, "%d", &chainID); err != nil {
-		return verify.GenesisTrustRoot{}, fmt.Errorf("ZENON_SPV_CHAIN_ID: %w", err)
+	chainID, err := strconv.ParseUint(chainIDStr, 10, 64)
+	if err != nil {
+		return verify.GenesisTrustRoot{}, errors.New("ZENON_SPV_CHAIN_ID: expected an unsigned decimal 64-bit integer")
 	}
-
-	var height uint64
-	if h := os.Getenv("ZENON_SPV_GENESIS_HEIGHT"); h != "" {
-		if _, err := fmt.Sscanf(h, "%d", &height); err != nil {
-			return verify.GenesisTrustRoot{}, fmt.Errorf("ZENON_SPV_GENESIS_HEIGHT: %w", err)
-		}
+	height, err := strconv.ParseUint(heightStr, 10, 64)
+	if err != nil {
+		return verify.GenesisTrustRoot{}, errors.New("ZENON_SPV_GENESIS_HEIGHT: expected an unsigned decimal 64-bit integer")
 	}
-	return verify.GenesisTrustRoot{
+	anchor := verify.GenesisTrustRoot{
 		ChainID:    chainID,
 		Height:     height,
 		HeaderHash: hash,
-	}, nil
+	}
+	if err := anchor.Validate(); err != nil {
+		return verify.GenesisTrustRoot{}, err
+	}
+	return anchor, nil
 }
 
 func configureProtocolProfile(policy *verify.Policy, path string, anchor verify.GenesisTrustRoot) error {

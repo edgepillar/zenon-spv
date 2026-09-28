@@ -25,6 +25,10 @@ to maintain provenance. `LoadTrustedState` explicitly relies on protected local
 file provenance; signature revalidation does not authenticate a substituted
 window or an attacker-chosen trust root.
 
+[Anchor configuration](anchor-configuration.md) fails on oversized or ambiguous
+files and incomplete environment overrides. These input checks prevent silent
+defaults and parsing mistakes; anchor provenance remains an external input.
+
 ## Result interpretation
 
 Consumers must inspect the outcome, required `Proven` guarantees, and the
