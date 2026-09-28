@@ -51,7 +51,7 @@ func failedMultiQueries() map[string]func(*testing.T, *MultiClient) error {
 			return err
 		},
 		"account blocks": func(t *testing.T, m *MultiClient) error {
-			blocks, err := m.FetchAccountBlocksByHeight(context.Background(), "synthetic-address", 1, 1)
+			blocks, err := m.FetchAccountBlocksByHeight(context.Background(), zeroQueryAddress, 1, 1)
 			if len(blocks) != 0 {
 				t.Fatal("failed query returned account blocks")
 			}

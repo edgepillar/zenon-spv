@@ -82,17 +82,24 @@ func (c *Client) FetchByHeight(ctx context.Context, start, count uint64) ([]chai
 
 // FetchByHeightDetailed is FetchByHeight that also returns each
 // momentum's parsed Content slice. Used to build CommitmentEvidence
-// without a second round-trip.
+// without a second round-trip. Start and count must be positive, and the
+// range must not overflow. Every returned height must match its query position.
 func (c *Client) FetchByHeightDetailed(ctx context.Context, start, count uint64) ([]DetailedHeader, error) {
+	if err := validateHeightRange(start, count); err != nil {
+		return nil, err
+	}
 	var list rpcMomentumList
 	if err := c.Call(ctx, "ledger.getMomentumsByHeight", []any{start, count}, &list); err != nil {
 		return nil, fmt.Errorf("getMomentumsByHeight: %w", err)
 	}
 	if uint64(len(list.List)) != count {
-		return nil, fmt.Errorf("rpc returned %d momentums, expected %d", len(list.List), count)
+		return nil, fmt.Errorf("%w: rpc returned %d momentums, expected %d", ErrQueryMismatch, len(list.List), count)
 	}
 	out := make([]DetailedHeader, count)
 	for i, m := range list.List {
+		if m.Height != start+uint64(i) {
+			return nil, fmt.Errorf("%w: momentum index %d has height %d, expected height %d", ErrQueryMismatch, i, m.Height, start+uint64(i))
+		}
 		d, err := convertAndVerifyDetailed(m)
 		if err != nil {
 			return nil, fmt.Errorf("momentum height=%d: %w", m.Height, err)
