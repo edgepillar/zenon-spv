@@ -572,9 +572,9 @@ func runWatch(args []string) int {
 	showContext := fs.Bool("show-context", false, "log captured verification settings without private provenance metadata")
 	statePath := fs.String("state", "", "path to persisted HeaderState (required)")
 	schedulePath := fs.String("schedule", "", "path to producer schedule JSON; when set, header producer authorization is required (tier-2 caveat)")
-	interval := fs.Duration("interval", syncer.DefaultInterval, "tick interval between iterations")
-	safetyMargin := fs.Uint64("safety-margin", syncer.DefaultSafetyMargin, "drop this many heights below min(frontier) per tick")
-	batchSize := fs.Uint64("batch-size", syncer.DefaultBatchSize, "max headers to fetch per tick (0 = no cap)")
+	interval := fs.Duration("interval", syncer.DefaultInterval, "tick interval between iterations (0 = default 10s; negative values invalid)")
+	safetyMargin := fs.Uint64("safety-margin", syncer.DefaultSafetyMargin, "drop this many heights below median(frontiers) per tick (0 = default 6)")
+	batchSize := fs.Uint64("batch-size", syncer.DefaultBatchSize, "max headers to fetch per tick, also capped by verifier policy (0 = default 60)")
 	if err := fs.Parse(args); err != nil {
 		return 64
 	}
@@ -585,6 +585,10 @@ func runWatch(args []string) int {
 	policy, err := parseWindowPolicy(*tier)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "watch: %v\n", err)
+		return 64
+	}
+	if *interval < 0 {
+		fmt.Fprintln(os.Stderr, "watch: --interval must not be negative")
 		return 64
 	}
 	if *statePath == "" {
