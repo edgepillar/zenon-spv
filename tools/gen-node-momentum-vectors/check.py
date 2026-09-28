@@ -91,20 +91,26 @@ def main():
     )
     corpus = json.loads(path.read_text(encoding="utf-8"))
     require(corpus["format_version"] == 1, "unsupported corpus format")
-    vectors = corpus["vectors"] + corpus["chain"]["vectors"]
+    vectors = corpus["vectors"] + corpus["chain"]["vectors"] + corpus["transition"]["vectors"]
     require(len(corpus["vectors"]) == 9 and len(corpus["chain"]["vectors"]) == 6, "incomplete corpus")
     for vector in vectors:
         try:
             check_vector(vector)
         except (KeyError, ValueError, struct.error) as error:
             raise ValueError(f"{vector['name']}: {error}") from error
-    previous = corpus["chain"]["anchor"]["header_hash"]
-    height = corpus["chain"]["anchor"]["height"]
-    for vector in corpus["chain"]["vectors"]:
-        header = vector["header"]
-        require(header["previousHash"] == previous and header["height"] == height + 1, "broken fixture chain")
-        require(header["chainIdentifier"] == corpus["chain"]["anchor"]["chain_id"], "chain identity mismatch")
-        previous, height = header["hash"], header["height"]
+    for name in ("chain", "transition"):
+        series = corpus[name]
+        require(len(series["vectors"]) == 6, "incomplete linked series")
+        previous = series["anchor"]["header_hash"]
+        height = series["anchor"]["height"]
+        for vector in series["vectors"]:
+            header = vector["header"]
+            require(header["previousHash"] == previous and header["height"] == height + 1, "broken fixture chain")
+            require(header["chainIdentifier"] == series["anchor"]["chain_id"], "chain identity mismatch")
+            if name == "transition":
+                expected_version = 2 if header["height"] >= series["v2_from_height"] else 1
+                require(header["version"] == expected_version, "fixture activation mismatch")
+            previous, height = header["hash"], header["height"]
     print(f"Verified {len(vectors)} node-derived momentum preimages with Python SHA3-256")
 
 

@@ -2,6 +2,8 @@ package chain
 
 import (
 	"encoding/binary"
+	"encoding/json"
+	"errors"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -24,7 +26,7 @@ func (h Hash) IsZero() bool {
 // Bytes returns a slice view of h. The returned slice aliases h.
 func (h Hash) Bytes() []byte { return h[:] }
 
-// Header is the verifier-required subset of a version-1 nom.Momentum.
+// Header is the verifier-required subset of a v1 or v2 nom.Momentum.
 //
 // Field order and semantics mirror reference/go-zenon/chain/nom/momentum.go:32-51.
 // The shim isolates the verifier from go-zenon's struct shape so the
@@ -45,12 +47,17 @@ type Header struct {
 
 	PublicKey []byte `json:"publicKey"` // 32B ed25519
 	Signature []byte `json:"signature"` // 64B ed25519
+
+	NextFusionPrice uint64 `json:"nextFusionPrice"`
+	NextWorkPrice   uint64 `json:"nextWorkPrice"`
 }
 
-// ComputeHash uses the version-1 nom.Momentum serialization
+// ComputeHash uses the version-aware nom.Momentum serialization
 // (reference/go-zenon/chain/nom/momentum.go:58-69). It is a low-level
 // hashing primitive and does not validate Version. Verification and
 // RPC entry points must call ValidateHeaderVersion before using it.
+// Version 2 appends NextFusionPrice and NextWorkPrice as uint64BE values.
+// Verification additionally requires an explicit activation profile for v2.
 //
 // The signed envelope is the byte concatenation of, in order:
 //
@@ -81,12 +88,41 @@ func (h *Header) ComputeHash() Hash {
 	buf = append(buf, h.DataHash.Bytes()...)
 	buf = append(buf, h.ContentHash.Bytes()...)
 	buf = append(buf, h.ChangesHash.Bytes()...)
+	if h.Version == MomentumVersion2 {
+		buf = appendUint64(buf, h.NextFusionPrice)
+		buf = appendUint64(buf, h.NextWorkPrice)
+	}
 
 	d := sha3.New256()
 	d.Write(buf)
 	var out Hash
 	copy(out[:], d.Sum(nil))
 	return out
+}
+
+// UnmarshalJSON requires explicit prices for v2. Missing or null prices must
+// not silently become zero through proof bundles or persisted state.
+func (h *Header) UnmarshalJSON(raw []byte) error {
+	type plain Header
+	var wire struct {
+		plain
+		Fusion *uint64 `json:"nextFusionPrice"`
+		Work   *uint64 `json:"nextWorkPrice"`
+	}
+	if err := json.Unmarshal(raw, &wire); err != nil {
+		return err
+	}
+	if wire.Version == MomentumVersion2 && (wire.Fusion == nil || wire.Work == nil) {
+		return errors.New("version 2 header requires nextFusionPrice and nextWorkPrice")
+	}
+	if wire.Fusion != nil {
+		wire.NextFusionPrice = *wire.Fusion
+	}
+	if wire.Work != nil {
+		wire.NextWorkPrice = *wire.Work
+	}
+	*h = Header(wire.plain)
+	return nil
 }
 
 // appendUint64 mirrors common.Uint64ToBytes (big-endian, 8 bytes).

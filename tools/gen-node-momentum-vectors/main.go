@@ -67,13 +67,17 @@ type anchor struct {
 }
 
 type corpus struct {
-	FormatVersion int      `json:"format_version"`
-	Source        source   `json:"source"`
-	Vectors       []vector `json:"vectors"`
-	Chain         struct {
-		Anchor  anchor   `json:"anchor"`
-		Vectors []vector `json:"vectors"`
-	} `json:"chain"`
+	FormatVersion int         `json:"format_version"`
+	Source        source      `json:"source"`
+	Vectors       []vector    `json:"vectors"`
+	Chain         chainCorpus `json:"chain"`
+	Transition    chainCorpus `json:"transition"`
+}
+
+type chainCorpus struct {
+	Anchor       anchor   `json:"anchor"`
+	V2FromHeight uint64   `json:"v2_from_height,omitempty"`
+	Vectors      []vector `json:"vectors"`
 }
 
 func main() {
@@ -130,6 +134,22 @@ func run() error {
 		m.Data, m.Content = []byte{0, byte(i), 255}, sampleContent()
 		v := makeVector(fmt.Sprintf("v1-chain-%d", i+1), m, key)
 		c.Chain.Vectors = append(c.Chain.Vectors, v)
+		previous = m.Hash
+	}
+	previous = types.NewHash([]byte("synthetic v1-to-v2 checkpoint"))
+	c.Transition.Anchor = anchor{ChainID: 99, Height: 2000, Hash: previous.String()}
+	c.Transition.V2FromHeight = 2003
+	for i := range 6 {
+		m := baseMomentum()
+		m.PreviousHash, m.Height = previous, 2001+uint64(i)
+		m.TimestampUnix += uint64(i) * 10
+		m.Content = sampleContent()
+		if m.Height >= c.Transition.V2FromHeight {
+			m.Version = 2
+			m.NextFusionPrice, m.NextWorkPrice = 1000+uint64(i)*100, 1000+uint64(i)*200
+		}
+		v := makeVector(fmt.Sprintf("transition-%d", i+1), m, key)
+		c.Transition.Vectors = append(c.Transition.Vectors, v)
 		previous = m.Hash
 	}
 	encoder := json.NewEncoder(os.Stdout)

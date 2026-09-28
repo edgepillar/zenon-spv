@@ -20,6 +20,8 @@ import (
 // the verifier serializes HeaderState to disk and resumes from its
 // LastVerified tip on next startup.
 type HeaderState struct {
+	ProtocolProfile *ProtocolProfile
+
 	Genesis        GenesisTrustRoot
 	RetainedWindow []chain.Header
 	Capacity       int
@@ -41,9 +43,10 @@ func capacityForPolicy(policy Policy) int {
 func NewHeaderState(g GenesisTrustRoot, policy Policy) HeaderState {
 	cap := capacityForPolicy(policy)
 	return HeaderState{
-		Genesis:        g,
-		RetainedWindow: make([]chain.Header, 0, cap),
-		Capacity:       cap,
+		ProtocolProfile: cloneProtocolProfile(policy.ProtocolProfile),
+		Genesis:         g,
+		RetainedWindow:  make([]chain.Header, 0, cap),
+		Capacity:        cap,
 	}
 }
 
@@ -53,10 +56,14 @@ func (s HeaderState) Empty() bool { return len(s.RetainedWindow) == 0 }
 
 // ValidateHeaderVersions checks the entire retained window before it
 // supplies an anchor, depth evidence, or persisted state. This is a
-// format-support check, not a substitute for header verification.
+// layout, activation-policy, and basic-price check, not a substitute for
+// hash/signature verification or trusted-state provenance.
 func (s HeaderState) ValidateHeaderVersions() error {
+	if err := validateProfileAnchor(s.ProtocolProfile, s.Genesis); err != nil {
+		return err
+	}
 	for i, h := range s.RetainedWindow {
-		if err := chain.ValidateHeaderVersion(h.Version); err != nil {
+		if err := validateProtocolHeader(h, s.ProtocolProfile); err != nil {
 			return fmt.Errorf("retained header[%d] height=%d: %w", i, h.Height, err)
 		}
 	}

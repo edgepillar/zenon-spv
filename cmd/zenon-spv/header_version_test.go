@@ -22,7 +22,7 @@ func TestVerifyHeadersCLI_UnsupportedVersionDoesNotPersist(t *testing.T) {
 		t.Fatal(err)
 	}
 	last := &bundle.Headers[len(bundle.Headers)-1]
-	last.Version = 2
+	last.Version = 3
 	last.HeaderHash = last.ComputeHash()
 	last.Signature = ed25519.Sign(ed25519.NewKeyFromSeed(make([]byte, ed25519.SeedSize)), last.HeaderHash[:])
 	raw, err = proof.MarshalHeaderBundleJSON(bundle)

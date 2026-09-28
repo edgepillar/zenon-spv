@@ -70,8 +70,8 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 		return refuse(ReasonOversizedHeaders,
 			fmt.Sprintf("input %d exceeds MaxHeaders=%d", len(headers), policy.MaxHeaders)), state
 	}
-	if err := state.ValidateHeaderVersions(); err != nil {
-		return refuse(ReasonUnsupportedHeaderVersion, err.Error()), state
+	if err := state.validateProtocolPolicy(policy); err != nil {
+		return protocolFailure(err), state
 	}
 
 	// Required mode with no authorizer is REFUSED — Codex review v1
@@ -85,9 +85,10 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 	// Work on a copy so a REJECT mid-loop leaves caller's state
 	// unmodified. Capacity is preserved.
 	working := HeaderState{
-		Genesis:        state.Genesis,
-		Capacity:       state.Capacity,
-		RetainedWindow: append(make([]chain.Header, 0, len(state.RetainedWindow)+len(headers)), state.RetainedWindow...),
+		ProtocolProfile: cloneProtocolProfile(state.ProtocolProfile),
+		Genesis:         state.Genesis,
+		Capacity:        state.Capacity,
+		RetainedWindow:  append(make([]chain.Header, 0, len(state.RetainedWindow)+len(headers)), state.RetainedWindow...),
 	}
 
 	// Embedded checkpoints apply only to mainnet (chain_id=1). Other
@@ -112,9 +113,10 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 	}
 
 	for i, h := range headers {
-		if err := chain.ValidateHeaderVersion(h.Version); err != nil {
-			return refuse(ReasonUnsupportedHeaderVersion,
-				fmt.Sprintf("header[%d] height=%d: %v", i, h.Height, err)), state
+		if err := validateProtocolHeader(h, state.ProtocolProfile); err != nil {
+			r := protocolFailure(fmt.Errorf("header[%d] height=%d: %w", i, h.Height, err))
+			r.FailedAt = i
+			return r, state
 		}
 		if h.ChainIdentifier != working.Genesis.ChainID {
 			return reject(ReasonChainIDMismatch, i,
@@ -221,6 +223,6 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 		result = result.WithTrust(TrustCheckpointAnchor)
 	}
 
-	return result, working
+	return withProtocolTrust(result, state.ProtocolProfile), working
 
 }

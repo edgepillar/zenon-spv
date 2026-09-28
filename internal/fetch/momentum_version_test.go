@@ -11,7 +11,7 @@ import (
 )
 
 func TestClient_UnsupportedMomentumVersion(t *testing.T) {
-	for _, version := range []uint64{0, 2, 3, ^uint64(0)} {
+	for _, version := range []uint64{0, 3, ^uint64(0)} {
 		t.Run(fmt.Sprint(version), func(t *testing.T) {
 			m := emptyContentMomentum(42)
 			if version == 0 {
@@ -36,7 +36,7 @@ func TestClient_UnsupportedMomentumVersion(t *testing.T) {
 
 func TestClient_UnsupportedVersionReturnsNoPartialBatch(t *testing.T) {
 	unsupported := emptyContentMomentum(43)
-	unsupported["version"] = uint64(2)
+	unsupported["version"] = uint64(3)
 	unsupported["hash"] = recomputeAlternateHash(unsupported)
 	rpc := &fakeRPC{responses: map[string]any{
 		"ledger.getMomentumsByHeight": map[string]any{

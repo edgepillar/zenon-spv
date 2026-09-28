@@ -57,8 +57,8 @@ func VerifyStateValue(state HeaderState, p proof.StateValueProof, policy Policy)
 		}
 		return r
 	}
-	if err := state.ValidateHeaderVersions(); err != nil {
-		return withEnvelope(refuse(ReasonUnsupportedHeaderVersion, err.Error()), false)
+	if err := state.validateProtocolPolicy(policy); err != nil {
+		return withEnvelope(protocolFailure(err), false)
 	}
 
 	// Step 1: chain-id binding. A proof from a different chain is

@@ -12,21 +12,26 @@ import (
 	"github.com/0x3639/zenon-spv/internal/chain"
 )
 
-// stateFileVersion is the on-disk schema version of a persisted
-// HeaderState. Bump on any breaking change; an unknown version on
+// stateFileVersion identifies legacy state without an activation profile.
+// profileStateFileVersion prevents older clients from ignoring a saved
+// profile. Bump on any breaking change; an unknown version on
 // load returns an error rather than best-effort parsing (mirrors
 // the refusal-semantics discipline of ADR 0001).
-const stateFileVersion uint32 = 1
+const (
+	stateFileVersion        uint32 = 1
+	profileStateFileVersion uint32 = 2
+)
 
 // persistedState is the on-disk shape of HeaderState. Only the
 // fields the verifier needs to resume are persisted; the Policy in
 // effect at load time governs Capacity (the loaded slice is
 // truncated to the current Capacity if W has shrunk).
 type persistedState struct {
-	Version  uint32           `json:"version"`
-	Genesis  GenesisTrustRoot `json:"genesis"`
-	Window   []chain.Header   `json:"retained_window"`
-	Capacity int              `json:"capacity"`
+	ProtocolProfile *ProtocolProfile `json:"protocol_profile,omitempty"`
+	Version         uint32           `json:"version"`
+	Genesis         GenesisTrustRoot `json:"genesis"`
+	Window          []chain.Header   `json:"retained_window"`
+	Capacity        int              `json:"capacity"`
 }
 
 // SaveHeaderState writes state to path as JSON. The sequence is:
@@ -72,10 +77,14 @@ func saveHeaderState(path string, state HeaderState, openDir func(string) (*os.F
 	enc := json.NewEncoder(tmp)
 	enc.SetIndent("", "  ")
 	body := persistedState{
-		Version:  stateFileVersion,
-		Genesis:  state.Genesis,
-		Window:   state.RetainedWindow,
-		Capacity: state.Capacity,
+		Version:         stateFileVersion,
+		ProtocolProfile: cloneProtocolProfile(state.ProtocolProfile),
+		Genesis:         state.Genesis,
+		Window:          state.RetainedWindow,
+		Capacity:        state.Capacity,
+	}
+	if body.ProtocolProfile != nil {
+		body.Version = profileStateFileVersion
 	}
 	if err := enc.Encode(body); err != nil {
 		_ = tmp.Close()
@@ -132,16 +141,20 @@ func LoadHeaderState(path string) (HeaderState, error) {
 	if err := json.Unmarshal(raw, &body); err != nil {
 		return HeaderState{}, fmt.Errorf("parse: %w", err)
 	}
-	if body.Version != stateFileVersion {
-		return HeaderState{}, fmt.Errorf("unsupported state-file version %d (expected %d)", body.Version, stateFileVersion)
+	if body.Version != stateFileVersion && body.Version != profileStateFileVersion {
+		return HeaderState{}, fmt.Errorf("unsupported state-file version %d (supported 1 and 2)", body.Version)
+	}
+	if (body.Version == profileStateFileVersion) != (body.ProtocolProfile != nil) {
+		return HeaderState{}, errors.New("state file schema/profile mismatch")
 	}
 	if body.Genesis.HeaderHash.IsZero() {
 		return HeaderState{}, errors.New("state file: genesis HeaderHash is zero — likely corrupted")
 	}
 	state := HeaderState{
-		Genesis:        body.Genesis,
-		RetainedWindow: body.Window,
-		Capacity:       body.Capacity,
+		ProtocolProfile: cloneProtocolProfile(body.ProtocolProfile),
+		Genesis:         body.Genesis,
+		RetainedWindow:  body.Window,
+		Capacity:        body.Capacity,
 	}
 	if err := state.ValidateHeaderVersions(); err != nil {
 		return HeaderState{}, fmt.Errorf("load state: %w", err)
@@ -164,12 +177,21 @@ func LoadHeaderState(path string) (HeaderState, error) {
 // §2.3 capacity that keeps the target plus W headers past it),
 // and Capacity is updated to match the new policy.
 func LoadOrInit(path string, genesis GenesisTrustRoot, policy Policy) (HeaderState, error) {
+	if err := validateProfileAnchor(policy.ProtocolProfile, genesis); err != nil {
+		return HeaderState{}, err
+	}
 	loaded, err := LoadHeaderState(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return NewHeaderState(genesis, policy), nil
 	}
 	if err != nil {
 		return HeaderState{}, err
+	}
+	if !sameProtocolProfile(loaded.ProtocolProfile, policy.ProtocolProfile) {
+		return HeaderState{}, ErrProtocolProfileMismatch
+	}
+	if loaded.Genesis.Height != genesis.Height {
+		return HeaderState{}, errors.New("state file anchor height differs from configured anchor")
 	}
 	if loaded.Genesis.ChainID != genesis.ChainID {
 		return HeaderState{}, fmt.Errorf("state file chain_id=%d != configured chain_id=%d (refuse to mix networks)",

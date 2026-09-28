@@ -31,11 +31,15 @@ type momentumCorpus struct {
 	Source        struct {
 		Commit string `json:"commit"`
 	} `json:"source"`
-	Vectors []momentumVector `json:"vectors"`
-	Chain   struct {
-		Anchor  verify.GenesisTrustRoot `json:"anchor"`
-		Vectors []momentumVector        `json:"vectors"`
-	} `json:"chain"`
+	Vectors    []momentumVector `json:"vectors"`
+	Chain      momentumSeries   `json:"chain"`
+	Transition momentumSeries   `json:"transition"`
+}
+
+type momentumSeries struct {
+	Anchor       verify.GenesisTrustRoot `json:"anchor"`
+	V2FromHeight uint64                  `json:"v2_from_height"`
+	Vectors      []momentumVector        `json:"vectors"`
 }
 
 func loadCorpus(t *testing.T) momentumCorpus {
@@ -51,7 +55,7 @@ func loadCorpus(t *testing.T) momentumCorpus {
 	if c.FormatVersion != 1 || c.Source.Commit != "3a4131e63881058b6ce2ee81d3a41d0033fafc99" {
 		t.Fatal("unexpected corpus format or source pin")
 	}
-	if len(c.Vectors) != 9 || len(c.Chain.Vectors) != 6 {
+	if len(c.Vectors) != 9 || len(c.Chain.Vectors) != 6 || len(c.Transition.Vectors) != 6 {
 		t.Fatal("incomplete momentum corpus")
 	}
 	return c
@@ -93,7 +97,7 @@ func fetchVectors(t *testing.T, vectors []momentumVector) ([]fetch.DetailedHeade
 
 func TestNodeMomentumHashVectors(t *testing.T) {
 	c := loadCorpus(t)
-	for _, v := range append(c.Vectors, c.Chain.Vectors...) {
+	for _, v := range slices.Concat(c.Vectors, c.Chain.Vectors, c.Transition.Vectors) {
 		t.Run(v.Name, func(t *testing.T) {
 			if got := chain.MomentumContentHash(v.Content); got != v.Header.ContentHash {
 				t.Fatalf("content hash = %x, node = %x", got, v.Header.ContentHash)
@@ -101,16 +105,8 @@ func TestNodeMomentumHashVectors(t *testing.T) {
 			if !ed25519.Verify(v.Header.PublicKey, v.Header.HeaderHash[:], v.Header.Signature) {
 				t.Fatal("invalid fixture signature")
 			}
-			if v.Header.Version == 1 {
-				if got := v.Header.ComputeHash(); got != v.Header.HeaderHash {
-					t.Fatalf("header hash = %x, node = %x", got, v.Header.HeaderHash)
-				}
-			} else {
-				// The real node v2 preimage appends both prices, even at zero.
-				// Applying the v1 preimage must not reproduce these hashes.
-				if v.Header.ComputeHash() == v.Header.HeaderHash {
-					t.Fatal("v2 node hash unexpectedly matches the v1 layout")
-				}
+			if got := v.Header.ComputeHash(); got != v.Header.HeaderHash {
+				t.Fatalf("header hash = %x, node = %x", got, v.Header.HeaderHash)
 			}
 		})
 	}
@@ -120,12 +116,7 @@ func TestNodeMomentumRPCVectors(t *testing.T) {
 	for _, v := range loadCorpus(t).Vectors {
 		t.Run(v.Name, func(t *testing.T) {
 			got, err := fetchVectors(t, []momentumVector{v})
-			if v.Header.Version != 1 {
-				if !errors.Is(err, chain.ErrUnsupportedHeaderVersion) || len(got) != 0 {
-					t.Fatalf("unsupported RPC version: headers=%d, err=%v", len(got), err)
-				}
-				return
-			}
+
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -148,15 +139,11 @@ func TestNodeMomentumV2RefusedWithoutPartialProgress(t *testing.T) {
 				ChainID: v.Header.ChainIdentifier, Height: v.Header.Height - 1, HeaderHash: v.Header.PreviousHash,
 			}, policy)
 			result, after := verify.VerifyHeaders([]chain.Header{v.Header}, state, policy)
-			if result.Outcome != verify.OutcomeRefused || result.Reason != verify.ReasonUnsupportedHeaderVersion ||
+			if result.Outcome != verify.OutcomeRefused || result.Reason != verify.ReasonProtocolProfileRequired ||
 				len(result.Proven) != 0 || !reflect.DeepEqual(after, state) {
 				t.Fatalf("v2 must refuse without guarantees or state changes: %s", result)
 			}
-			// A valid v1 prefix must not leak out of a failed mixed RPC batch.
-			got, err := fetchVectors(t, []momentumVector{c.Chain.Vectors[0], v})
-			if !errors.Is(err, chain.ErrUnsupportedHeaderVersion) || len(got) != 0 {
-				t.Fatalf("mixed RPC batch: headers=%d, err=%v", len(got), err)
-			}
+
 		})
 	}
 }
@@ -249,7 +236,7 @@ func TestNodeMomentumSignedFieldTampering(t *testing.T) {
 		{"claimed-hash", func(h *chain.Header) { h.HeaderHash[0] ^= 1 }, verify.ReasonInvalidHash},
 		{"signature", func(h *chain.Header) { h.Signature[0] ^= 1 }, verify.ReasonInvalidSignature},
 		{"public-key", func(h *chain.Header) { h.PublicKey[0] ^= 1 }, verify.ReasonInvalidSignature},
-		{"version", func(h *chain.Header) { h.Version = 2 }, verify.ReasonUnsupportedHeaderVersion},
+		{"version", func(h *chain.Header) { h.Version = 3 }, verify.ReasonUnsupportedHeaderVersion},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

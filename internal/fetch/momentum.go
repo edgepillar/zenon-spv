@@ -15,6 +15,8 @@ import (
 // rpcMomentum is the wire shape returned by ledger.* methods. Field
 // names match go-zenon's JSON tags (see chain/nom/momentum.go:32-51).
 type rpcMomentum struct {
+	NextFusionPrice *uint64         `json:"nextFusionPrice"`
+	NextWorkPrice   *uint64         `json:"nextWorkPrice"`
 	Version         uint64          `json:"version"`
 	ChainIdentifier uint64          `json:"chainIdentifier"`
 	Hash            string          `json:"hash"` // hex; treated as a CLAIM, not trusted
@@ -124,6 +126,9 @@ func convertAndVerifyDetailed(m rpcMomentum) (DetailedHeader, error) {
 	if err := chain.ValidateHeaderVersion(m.Version); err != nil {
 		return DetailedHeader{}, fmt.Errorf("momentum height=%d: %w", m.Height, err)
 	}
+	if m.Version == 2 && (m.NextFusionPrice == nil || m.NextWorkPrice == nil) {
+		return DetailedHeader{}, errors.New("version 2 momentum requires nextFusionPrice and nextWorkPrice")
+	}
 	prev, err := decodeHex32(m.PreviousHash)
 	if err != nil {
 		return DetailedHeader{}, fmt.Errorf("previous_hash: %w", err)
@@ -169,6 +174,12 @@ func convertAndVerifyDetailed(m rpcMomentum) (DetailedHeader, error) {
 		ChangesHash:     changes,
 		PublicKey:       pubkey,
 		Signature:       signature,
+	}
+	if m.NextFusionPrice != nil {
+		h.NextFusionPrice = *m.NextFusionPrice
+	}
+	if m.NextWorkPrice != nil {
+		h.NextWorkPrice = *m.NextWorkPrice
 	}
 	recomputed := h.ComputeHash()
 	if recomputed != claimed {
