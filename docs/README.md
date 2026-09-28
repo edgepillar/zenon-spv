@@ -12,6 +12,8 @@ audit history.
   not prove.
 - [`verification-contract.md`](verification-contract.md) — native-client
   trust inputs, bounded results, and acceptance gates for further work.
+- [`verified-state-api.md`](verified-state-api.md) — immutable application
+  state, captured policy, and trusted local resume.
 - [`conformance.md`](conformance.md) — implemented conformance cases,
   known gaps, and production follow-ups.
 - [`producer-set-verification.md`](producer-set-verification.md) —

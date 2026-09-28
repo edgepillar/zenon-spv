@@ -202,7 +202,7 @@ func TestLoop_TickAcceptAdvancesTip(t *testing.T) {
 		SafetyMargin: 0,
 		BatchSize:    DefaultBatchSize,
 	}
-	loadedState, err := verify.LoadOrInit(statePath, genesis, policy)
+	loadedState, err := verify.LoadTrustedState(statePath, genesis, verify.VerifyOptions{Policy: policy})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -235,7 +235,7 @@ func TestLoop_TickCaughtUpIsNoop(t *testing.T) {
 		Multi: fetch.NewMultiClient([]string{url}), StatePath: statePath,
 		Genesis: genesis, Policy: policy, SafetyMargin: 0, BatchSize: DefaultBatchSize,
 	}
-	loadedState, _ := verify.LoadOrInit(statePath, genesis, policy)
+	loadedState, _ := verify.LoadTrustedState(statePath, genesis, verify.VerifyOptions{Policy: policy})
 	res, _ := loop.tick(context.Background(), loadedState)
 	if res.Outcome != verify.OutcomeAccept || len(res.FetchedHeights) != 0 {
 		t.Fatalf("expected ACCEPT/no-fetch, got %+v", res)
@@ -261,7 +261,7 @@ func TestLoop_TickRespectsBatchSize(t *testing.T) {
 		Multi: fetch.NewMultiClient([]string{url}), StatePath: statePath,
 		Genesis: genesis, Policy: policy, SafetyMargin: 0, BatchSize: 5,
 	}
-	loadedState, _ := verify.LoadOrInit(statePath, genesis, policy)
+	loadedState, _ := verify.LoadTrustedState(statePath, genesis, verify.VerifyOptions{Policy: policy})
 	res, newState := loop.tick(context.Background(), loadedState)
 	if res.Outcome != verify.OutcomeAccept {
 		t.Fatalf("expected ACCEPT, got %+v", res)
@@ -295,7 +295,7 @@ func TestRun_ContextCancelStops(t *testing.T) {
 	}
 	out := &bytes.Buffer{}
 	loop := &Loop{
-		Multi:    fetch.NewMultiClient([]string{url}),
+		Multi:     fetch.NewMultiClient([]string{url}),
 		StatePath: statePath,
 		Genesis:   genesis,
 		Policy:    policy,

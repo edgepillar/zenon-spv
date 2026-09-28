@@ -81,7 +81,8 @@ type Loop struct {
 
 	// SaveState overrides persistence for embedding and fault injection.
 	// nil uses verify.SaveHeaderState. An override must return success
-	// only after completing its persistence contract.
+	// only after completing its persistence contract. It receives a detached
+	// snapshot, so retaining or mutating it cannot change loop state.
 	SaveState func(string, verify.HeaderState) error
 }
 
@@ -112,9 +113,9 @@ type TickResult struct {
 // logged but do not terminate the loop — a transient peer issue
 // shouldn't take down a long-running service.
 func (l *Loop) Run(ctx context.Context) error {
-	saveState := l.SaveState
-	if saveState == nil {
-		saveState = verify.SaveHeaderState
+	saveState := func(path string, state verify.VerifiedState) error { return state.Save(path) }
+	if adapter := l.SaveState; adapter != nil {
+		saveState = func(path string, state verify.VerifiedState) error { return adapter(path, state.Snapshot()) }
 	}
 	if l.Multi == nil {
 		return errors.New("syncer: Multi client required")
@@ -139,20 +140,6 @@ func (l *Loop) Run(ctx context.Context) error {
 		l.BatchSize = DefaultBatchSize
 	}
 
-	state, err := verify.LoadOrInit(l.StatePath, l.Genesis, l.Policy)
-	if err != nil {
-		return fmt.Errorf("load state: %w", err)
-	}
-	if state.Empty() {
-		return errors.New("syncer: refusing to bootstrap from empty state — pre-anchor with `verify-headers --genesis-config <checkpoint> --state <path>` first")
-	}
-
-	// Re-authorize the loaded retained window under the configured
-	// authorizer. Closes the downgrade hole where a state file built
-	// without --schedule (or under a different schedule) is resumed
-	// here — without this the tier-2 startup caveat would print
-	// while commitment/segment verification stays rooted in
-	// unauthorized momenta.
 	authOpts := verify.VerifyOptions{Policy: l.Policy}
 	if l.Authorizer != nil {
 		authOpts.ProducerAuth = verify.ProducerAuthOptions{
@@ -160,13 +147,19 @@ func (l *Loop) Run(ctx context.Context) error {
 			Authorizer: l.Authorizer,
 		}
 	}
-	if r := verify.AuthorizeRetainedWindow(state, authOpts); r.Outcome != verify.OutcomeAccept {
-		return fmt.Errorf("syncer: persisted state did not re-authorize under configured schedule: %s", r)
+	state, err := verify.LoadTrustedState(l.StatePath, l.Genesis, authOpts)
+	if err != nil {
+		return fmt.Errorf("load state: %w", err)
+	}
+	if state.Empty() {
+		return errors.New("syncer: refusing to bootstrap from empty state — pre-anchor with `verify-headers --genesis-config <checkpoint> --state <path>` first")
 	}
 
+	tip, _ := state.Tip()
 	l.logf("watching: tip=%d, peers=%d, quorum=%d, interval=%s\n",
-		state.RetainedWindow[len(state.RetainedWindow)-1].Height,
+		tip.Height,
 		len(l.Multi.Peers), l.Multi.Quorum, l.Interval)
+	l.logf("state: trust_assumptions=%v\n", state.TrustAssumptions())
 
 	timer := time.NewTimer(0) // fire immediately on first iteration
 	defer timer.Stop()
@@ -210,8 +203,12 @@ func (l *Loop) Run(ctx context.Context) error {
 
 // tick runs one iteration: fetch frontier, fetch headers, verify,
 // return result + maybe-updated state.
-func (l *Loop) tick(ctx context.Context, state verify.HeaderState) (TickResult, verify.HeaderState) {
-	tipHeader, _ := state.Tip()
+func (l *Loop) tick(ctx context.Context, state verify.VerifiedState) (TickResult, verify.VerifiedState) {
+	tipHeader, ok := state.Tip()
+	if !ok {
+		return TickResult{Outcome: verify.OutcomeRefused, Reason: verify.ReasonMissingEvidence,
+			Message: "watch requires a nonempty verified state"}, state
+	}
 	tip := tipHeader.Height
 	target, err := l.frontierTarget(ctx)
 	if err != nil {
@@ -236,14 +233,7 @@ func (l *Loop) tick(ctx context.Context, state verify.HeaderState) (TickResult, 
 	for i, h := range headers {
 		heights[i] = h.Height
 	}
-	opts := verify.VerifyOptions{Policy: l.Policy}
-	if l.Authorizer != nil {
-		opts.ProducerAuth = verify.ProducerAuthOptions{
-			Mode:       verify.ProducerAuthRequired,
-			Authorizer: l.Authorizer,
-		}
-	}
-	result, newState := verify.VerifyHeadersWithOptions(headers, state, opts)
+	result, newState := state.Extend(headers)
 	return TickResult{
 		Tip:            tip,
 		Target:         target,

@@ -82,6 +82,7 @@ const (
 	ReasonProtocolProfileCoverage
 	ReasonHeaderVersionInactive
 	ReasonInvalidResourcePrice
+	ReasonUninitializedState
 )
 
 // String returns a stable, snake-case-equivalent name for serialization.
@@ -165,6 +166,8 @@ func (r ReasonCode) String() string {
 		return "ReasonHeaderVersionInactive"
 	case ReasonInvalidResourcePrice:
 		return "ReasonInvalidResourcePrice"
+	case ReasonUninitializedState:
+		return "ReasonUninitializedState"
 	case ReasonUnsupportedHeaderVersion:
 		return "ReasonUnsupportedHeaderVersion"
 	default:

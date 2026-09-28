@@ -94,6 +94,9 @@ State-value layer:
       counter (`internal/syncer/syncer.go`).
 - [x] State save/load revalidate every retained header before truncation and
       enforce byte/capacity bounds; see [`watch-persistence.md`](watch-persistence.md).
+- [x] CLI and watch use immutable verified state with captured policy,
+      detached snapshots, zero-value refusal, and explicit trusted-local
+      resume; see [`verified-state-api.md`](verified-state-api.md).
 - [~] Measure σ_B, σ_π, σ_H from real samples — Branch 2a shipped a
       pragmatic header-size sample
       (`docs/resource-bound-measurements.md`); the full spec §10

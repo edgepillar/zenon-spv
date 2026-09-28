@@ -16,6 +16,7 @@ The verifier currently ships, in five surfaces:
 
 Plus:
 
+- **Verified state API** with immutable retained headers, captured policy, and explicit trusted-local resume; used by the CLI and watch. See [`docs/verified-state-api.md`](docs/verified-state-api.md).
 - **Multi-peer JSON-RPC fetcher** with k-of-n agreement (`internal/fetch`, `cmd/fetch-bundle`).
 - **Structured Result envelope** — every ACCEPT/REJECT/REFUSED carries machine-readable `proven:` / `not_proven:` / `trust_assumptions:` lists, so integrators can programmatically distinguish "this happened" from "I know the canonical chain state."
 - **Trust-anchor tooling** — embedded mainnet genesis trust root, multi-peer genesis recompute (`tools/verify-mainnet-genesis`), checkpoint derivation (`tools/derive-checkpoints`), producer-schedule derivation (`tools/derive-producer-schedule`).
@@ -155,6 +156,7 @@ not_proven:                ← what this path DELIBERATELY does not claim
   - HEADER_CHAIN_INTEGRITY  (proved in the parent `headers:` block)
 trust_assumptions:         ← external dependencies of this verdict
   - TRUST_RETAINED_WINDOW_DEPTH
+  - TRUST_CONFIGURED_ANCHOR
 ```
 
 Integrators must check the guarantees they require in `proven:` and the external trust assumptions they accept. An ACCEPT verdict or an operator-attested producer schedule alone does not establish canonicality or finality for irreversible settlement. See the [`verification contract`](docs/verification-contract.md) for the current integration boundary and [`trust model`](docs/trust-model.md) for the full taxonomy.
@@ -190,6 +192,7 @@ See [`docs/README.md`](docs/README.md) for the full index. Start here:
 - [`docs/architecture.md`](docs/architecture.md) — shipped components and roadmap.
 - [`docs/trust-model.md`](docs/trust-model.md) — what each ACCEPT does and does not prove.
 - [`docs/verification-contract.md`](docs/verification-contract.md) — native-client trust inputs, result interpretation, and next acceptance gates.
+- [`docs/verified-state-api.md`](docs/verified-state-api.md) — owned verification state, query policy, persistence, and trust boundaries.
 - [`docs/conformance.md`](docs/conformance.md) — spec conformance + known gaps.
 - [`docs/state-commitment-audit.md`](docs/state-commitment-audit.md) — source-cited audit of what go-zenon authenticates (and the external dependencies that would unblock balance proofs).
 - [`docs/sentry-sentinel-role.md`](docs/sentry-sentinel-role.md) — proof-availability vs. proof-authority boundary.

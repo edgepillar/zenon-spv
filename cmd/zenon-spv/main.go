@@ -168,7 +168,7 @@ func runVerifyCommitment(args []string) int {
 	if code != 0 {
 		return code
 	}
-	headerResult, newState := verify.VerifyHeadersWithOptions(ctx.bundle.Headers, ctx.state, ctx.opts)
+	headerResult, newState := ctx.state.Extend(ctx.bundle.Headers)
 	printResult("headers", headerResult)
 	if headerResult.Outcome != verify.OutcomeAccept {
 		return outcomeExitCode(headerResult.Outcome)
@@ -179,10 +179,9 @@ func runVerifyCommitment(args []string) int {
 		return 2
 	}
 
-	results := verify.VerifyCommitments(newState, ctx.bundle.Commitments, ctx.policy())
 	worst := verify.OutcomeAccept
-	for i, r := range results {
-		c := ctx.bundle.Commitments[i]
+	for i, c := range ctx.bundle.Commitments {
+		r := newState.VerifyCommitment(c)
 		printResult(fmt.Sprintf("commitment[%d] height=%d addr=%x", i, c.Height, c.Target.Address), r)
 		switch r.Outcome {
 		case verify.OutcomeRefused:
@@ -208,7 +207,7 @@ func runVerifyHeaders(args []string) int {
 	if code != 0 {
 		return code
 	}
-	result, newState := verify.VerifyHeadersWithOptions(ctx.bundle.Headers, ctx.state, ctx.opts)
+	result, newState := ctx.state.Extend(ctx.bundle.Headers)
 	printResult("", result)
 	if result.Outcome == verify.OutcomeAccept {
 		printAcceptCaveat(os.Stdout, ctx.opts)
@@ -225,7 +224,7 @@ func runVerifySegment(args []string) int {
 	if code != 0 {
 		return code
 	}
-	headerResult, newState := verify.VerifyHeadersWithOptions(ctx.bundle.Headers, ctx.state, ctx.opts)
+	headerResult, newState := ctx.state.Extend(ctx.bundle.Headers)
 	printResult("headers", headerResult)
 	if headerResult.Outcome != verify.OutcomeAccept {
 		return outcomeExitCode(headerResult.Outcome)
@@ -238,7 +237,7 @@ func runVerifySegment(args []string) int {
 
 	worst := verify.OutcomeAccept
 	for si, seg := range ctx.bundle.Segments {
-		segRes := verify.VerifySegment(newState, seg, ctx.bundle.Commitments, ctx.policy())
+		segRes := newState.VerifySegment(seg, ctx.bundle.Commitments)
 		fmt.Printf("segment[%d] address=%x blocks=%d:\n", si, seg.Address, len(seg.Blocks))
 		for bi, r := range segRes.Blocks {
 			printResult(segmentBlockLabel(bi, seg), r)
@@ -274,7 +273,7 @@ func runVerifyStateValue(args []string) int {
 	if code != 0 {
 		return code
 	}
-	headerResult, newState := verify.VerifyHeadersWithOptions(ctx.bundle.Headers, ctx.state, ctx.opts)
+	headerResult, newState := ctx.state.Extend(ctx.bundle.Headers)
 	printResult("headers", headerResult)
 	if headerResult.Outcome != verify.OutcomeAccept {
 		// Forked-chain / bad-genesis / etc. failures surface here
@@ -292,7 +291,7 @@ func runVerifyStateValue(args []string) int {
 
 	worst := verify.OutcomeAccept
 	for i, p := range ctx.bundle.StateValueProofs {
-		res := verify.VerifyStateValue(newState, p, ctx.policy())
+		res := newState.VerifyStateValue(p)
 		printResult(fmt.Sprintf("state_value_proof[%d] height=%d kind=%s",
 			i, p.MomentumHeight, p.CommitmentKind), res)
 		switch res.Outcome {
@@ -317,23 +316,17 @@ func runVerifyStateValue(args []string) int {
 	return outcomeExitCode(worst)
 }
 
-// verifierContext bundles everything the three verify-* subcommands
+// verifierContext bundles everything the verify-* subcommands
 // need from their shared prelude: parsed flags, loaded genesis,
-// loaded bundle, initialized HeaderState (loaded from --state if
+// loaded bundle, owned VerifiedState (loaded from --state if
 // present), and the active VerifyOptions (Policy + optional
 // producer authorizer loaded via --schedule).
 type verifierContext struct {
 	bundle    proof.HeaderBundle
-	state     verify.HeaderState
+	state     verify.VerifiedState
 	opts      verify.VerifyOptions
 	statePath string
 }
-
-// policy returns the embedded Policy for callers that still want
-// just the resource/finality knobs (VerifyCommitments,
-// VerifySegment). Keeps the call sites readable while opts carries
-// the producer-auth half.
-func (c *verifierContext) policy() verify.Policy { return c.opts.Policy }
 
 // prepareVerifierContext parses common flags, loads the bundle and
 // genesis, runs cross-bundle/trust-root sanity checks, and returns a
@@ -385,33 +378,6 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 			verify.ReasonChainIDMismatch, bundle.ChainID, genesis.ChainID)
 		return verifierContext{}, 1
 	}
-	resumed := false
-	var state verify.HeaderState
-	if *statePath != "" {
-		// LoadOrInit returns the persisted state if the file exists
-		// (and matches the configured trust root), or a fresh state
-		// otherwise. We only mark resumed=true when an actual file
-		// was loaded with non-empty retained window.
-		s, err := verify.LoadOrInit(*statePath, genesis, policy)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "state: %v\n", err)
-			return verifierContext{}, 70
-		}
-		state = s
-		resumed = !s.Empty()
-	} else {
-		state = verify.NewHeaderState(genesis, policy)
-	}
-
-	// On resume, the persisted state's Genesis is the trust root and
-	// the bundle's claimed_genesis is informational. On a fresh
-	// start, the bundle must declare the same genesis we trust.
-	if !resumed && bundle.ClaimedGenesis != genesis.HeaderHash {
-		fmt.Printf("REJECT %s claimed_genesis=%x != trust-root=%x\n",
-			verify.ReasonGenesisMismatch, bundle.ClaimedGenesis, genesis.HeaderHash)
-		return verifierContext{}, 1
-	}
-
 	opts := verify.VerifyOptions{Policy: policy}
 	if *schedulePath != "" {
 		sched, err := verify.LoadProducerSchedule(*schedulePath)
@@ -430,14 +396,27 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 		}
 	}
 
-	// Re-authorize the resumed retained window under the configured
-	// authorizer. Closes the downgrade hole where a state file built
-	// without --schedule is resumed with --schedule — without this
-	// check the tier-2 caveat would print while commitment/segment
-	// verification is still rooted in unauthorized momenta.
-	if r := verify.AuthorizeRetainedWindow(state, opts); r.Outcome != verify.OutcomeAccept {
-		fmt.Printf("state: %s\n", r)
-		return verifierContext{}, outcomeExitCode(r.Outcome)
+	var state verify.VerifiedState
+	if *statePath != "" {
+		state, err = verify.LoadTrustedState(*statePath, genesis, opts)
+	} else {
+		state, err = verify.NewVerifiedState(genesis, opts)
+	}
+	if err != nil {
+		var authorization *verify.StateAuthorizationError
+		if errors.As(err, &authorization) {
+			fmt.Printf("state: %s\n", authorization.Result)
+			return verifierContext{}, outcomeExitCode(authorization.Result.Outcome)
+		}
+		fmt.Fprintf(os.Stderr, "state: %v\n", err)
+		return verifierContext{}, 70
+	}
+	// A fresh start must bind the bundle to the configured anchor.
+	// On resume the file has already been checked against that anchor.
+	if state.Empty() && bundle.ClaimedGenesis != genesis.HeaderHash {
+		fmt.Printf("REJECT %s claimed_genesis=%x != trust-root=%x\n",
+			verify.ReasonGenesisMismatch, bundle.ClaimedGenesis, genesis.HeaderHash)
+		return verifierContext{}, 1
 	}
 
 	// Aggregate resource-bound preflight (Branch 2b). Per-item
@@ -549,11 +528,11 @@ func preflightBundleBounds(bundle proof.HeaderBundle, policy verify.Policy) veri
 
 // persistIfRequested writes state to path if path is non-empty.
 // A no-op when --state was not set.
-func persistIfRequested(path string, state verify.HeaderState) error {
+func persistIfRequested(path string, state verify.VerifiedState) error {
 	if path == "" {
 		return nil
 	}
-	return verify.SaveHeaderState(path, state)
+	return state.Save(path)
 }
 
 // runWatch is the watch-mode entry point. Runs until SIGINT/SIGTERM.
