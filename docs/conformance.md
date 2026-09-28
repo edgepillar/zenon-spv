@@ -105,6 +105,9 @@ State-value layer:
 - [x] CLI and watch use immutable verified state with captured policy,
       detached snapshots, zero-value refusal, and explicit trusted-local
       resume; see [`verified-state-api.md`](verified-state-api.md).
+- [x] Optional CLI/watch context diagnostics record captured verifier settings,
+      exclude private audit metadata, and identify opaque custom authorizers;
+      independent Python vectors check the fingerprint encoding.
 - [~] Measure σ_B, σ_π, σ_H from real samples — Branch 2a shipped a
       pragmatic header-size sample
       (`docs/resource-bound-measurements.md`); the full spec §10

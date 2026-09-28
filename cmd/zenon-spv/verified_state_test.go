@@ -25,6 +25,7 @@ func TestVerifyHeadersCLI_ReportsTrustedResumeSeparately(t *testing.T) {
 	}
 	all := bundle.Headers
 	statePath := filepath.Join(t.TempDir(), "state.json")
+	var fingerprint chain.Hash
 	for batch := range 2 {
 		bundle.Headers = all[batch*6 : (batch+1)*6]
 		encoded, err := proof.MarshalHeaderBundleJSON(bundle)
@@ -35,13 +36,19 @@ func TestVerifyHeadersCLI_ReportsTrustedResumeSeparately(t *testing.T) {
 			t.Fatal(err)
 		}
 		code, output := captureRun(t, func() int {
-			return runVerifyHeaders([]string{"--genesis-config", genesisPath, "--state", statePath, bundlePath})
+			return runVerifyHeaders([]string{"--genesis-config", genesisPath, "--state", statePath, "--show-context", bundlePath})
 		})
 		if code != 0 || !strings.Contains(output, string(verify.TrustConfiguredAnchor)) {
 			t.Fatalf("batch %d: exit=%d output=%s", batch, code, output)
 		}
 		if got := strings.Contains(output, string(verify.TrustPersistedState)); got != (batch == 1) {
 			t.Fatalf("batch %d: persisted-state trust=%v", batch, got)
+		}
+		context := readCLIContext(t, output)
+		if batch == 0 {
+			fingerprint = *context.Fingerprint
+		} else if *context.Fingerprint != fingerprint {
+			t.Fatal("resume changed the captured settings fingerprint")
 		}
 	}
 }
