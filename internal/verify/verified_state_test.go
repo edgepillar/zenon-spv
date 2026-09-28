@@ -256,3 +256,27 @@ func TestVerifiedState_ConcurrentReadersOwnTheirSnapshots(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func TestVerifiedState_SegmentKeepsBoundedGuaranteesAndStateTrust(t *testing.T) {
+	raw, segment, commitments, _ := segmentFixture(t)
+	path := filepath.Join(t.TempDir(), "state.json")
+	if err := SaveHeaderState(path, raw); err != nil {
+		t.Fatal(err)
+	}
+	state, err := LoadTrustedState(path, raw.Genesis, VerifyOptions{Policy: segmentFixturePolicy()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := state.VerifySegment(segment, commitments)
+	if result.Worst() != OutcomeAccept || len(result.Blocks) != len(segment.Blocks) {
+		t.Fatalf("valid segment failed: %+v", result)
+	}
+	for _, r := range result.Blocks {
+		assertHasGuarantee(t, r.Proven, GuaranteeContentInclusion)
+		assertHasGuarantee(t, r.Proven, GuaranteeSignatureAuthenticity)
+		assertLacksGuarantee(t, r.Proven, GuaranteeCanonicality)
+		assertLacksGuarantee(t, r.Proven, GuaranteeStateValueInclusion)
+		assertHasTrustAssumption(t, r.TrustAssumptions, TrustConfiguredAnchor)
+		assertHasTrustAssumption(t, r.TrustAssumptions, TrustPersistedState)
+	}
+}
