@@ -30,8 +30,15 @@ A profile JSON object has these fields:
 | `source` | Nonempty provenance description, at most 1024 bytes. Recording it does not authenticate it. |
 
 The profile loader accepts one JSON object of at most 16 KiB and rejects
-unknown fields and trailing JSON. The profile schema and anchor are checked
-again in the verifier, including for callers that construct policy directly.
+unknown, duplicate, or differently cased field names and trailing JSON. All
+five fields and all three fields inside `anchor` must be explicit and non-null;
+this includes an explicit zero for `v2_from_height` or a custom `chain_id`.
+The nested anchor follows the [anchor configuration](anchor-configuration.md)
+schema. Profile objects embedded in retained state obey the same field rules
+and 16 KiB limit. Failed decoding leaves an existing profile unchanged and
+does not echo private field names or values in profile parser diagnostics.
+The profile schema and anchor are checked again in the verifier, including
+for callers that construct policy directly.
 ACCEPT under a profile includes `TRUST_EXTERNAL_PROTOCOL_PROFILE`. This trust
 assumption is separate from an operator-attested producer schedule.
 
@@ -71,6 +78,13 @@ rather than silently changing trust policy. To adopt a different profile,
 verify the required history into a new state file from an independently
 trusted anchor. Automatic migration or profile renewal is not implemented.
 All retained headers are checked before a smaller window can discard any.
+
+Normal profile and state serialization is unchanged. Older manually authored
+files that relied on duplicate fields, case-insensitive names, or an omitted
+custom chain ID must be corrected before use. Oversized embedded profile
+objects are rejected even when the surrounding state file is within its own
+byte limit. These checks remove parsing ambiguity; they do not authenticate
+the profile's activation claims or renew expired coverage.
 
 | Condition | Verifier outcome |
 | --- | --- |

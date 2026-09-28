@@ -66,6 +66,8 @@ anchor height/hash, and provenance before using the result. A matching chain
 ID or a hash supplied by an untrusted RPC peer is not network authentication.
 `GenesisTrustRoot.Validate` checks only the nonzero hash and positive height;
 it cannot determine whether struct fields were explicit in some prior input.
-Generic JSON decoding of other schemas retains its existing behavior.
+The nested anchor in a [protocol profile](header-versions.md) follows the same
+strict field rules. Generic decoding of `GenesisTrustRoot` in other schemas
+retains its existing behavior.
 See the [verification contract](verification-contract.md) for the meaning of
 ACCEPT and the remaining trust assumptions.

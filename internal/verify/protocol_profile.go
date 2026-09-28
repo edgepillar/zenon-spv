@@ -23,24 +23,31 @@ type ProtocolProfile struct {
 	Source       string           `json:"source"`
 }
 
-// UnmarshalJSON requires an explicit activation choice, including an explicit
-// zero for a v1-only profile. It also applies to profiles stored in state files.
+// MaxProtocolProfileBytes bounds a profile file and an embedded profile object.
+const MaxProtocolProfileBytes = 16 * 1024
+
+// UnmarshalJSON requires every field, including an explicit zero for a v1-only
+// profile or a custom chain ID zero. It rejects ambiguous fields and applies
+// the same byte limit to profiles embedded in retained state. Validation of
+// the resulting policy remains separate; decoding alone grants no authority.
 func (p *ProtocolProfile) UnmarshalJSON(raw []byte) error {
-	type plain ProtocolProfile
-	var wire struct {
-		plain
-		Activation *uint64 `json:"v2_from_height"`
+	if len(raw) > MaxProtocolProfileBytes {
+		return fmt.Errorf("%w: profile exceeds 16 KiB", ErrInvalidProtocolProfile)
 	}
-	d := json.NewDecoder(strings.NewReader(string(raw)))
-	d.DisallowUnknownFields()
-	if err := d.Decode(&wire); err != nil {
+	var next ProtocolProfile
+	var anchor json.RawMessage
+	if err := decodeRequiredObject(raw, map[string]any{
+		"version": &next.Version, "anchor": &anchor, "valid_through": &next.ValidThrough,
+		"v2_from_height": &next.V2FromHeight, "source": &next.Source,
+	}); err != nil {
 		return fmt.Errorf("%w: %v", ErrInvalidProtocolProfile, err)
 	}
-	if wire.Activation == nil {
-		return fmt.Errorf("%w: explicit v2_from_height required", ErrInvalidProtocolProfile)
+	var err error
+	next.Anchor, err = decodeGenesisConfig(anchor)
+	if err != nil {
+		return fmt.Errorf("%w: anchor: %v", ErrInvalidProtocolProfile, err)
 	}
-	wire.V2FromHeight = *wire.Activation
-	*p = ProtocolProfile(wire.plain)
+	*p = next
 	return nil
 }
 
@@ -70,21 +77,19 @@ func LoadProtocolProfile(path string) (*ProtocolProfile, error) {
 		return nil, err
 	}
 	defer func() { _ = f.Close() }()
-	raw, err := io.ReadAll(io.LimitReader(f, 16*1024+1))
+	raw, err := io.ReadAll(io.LimitReader(f, MaxProtocolProfileBytes+1))
 	if err != nil {
 		return nil, err
 	}
-	if len(raw) > 16*1024 {
+	if len(raw) > MaxProtocolProfileBytes {
 		return nil, fmt.Errorf("%w: file exceeds 16 KiB", ErrInvalidProtocolProfile)
 	}
-	d := json.NewDecoder(strings.NewReader(string(raw)))
-	d.DisallowUnknownFields()
 	var p ProtocolProfile
-	if err := d.Decode(&p); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidProtocolProfile, err)
-	}
-	if err := d.Decode(new(any)); err != io.EOF {
-		return nil, fmt.Errorf("%w: trailing JSON", ErrInvalidProtocolProfile)
+	if err := json.Unmarshal(raw, &p); err != nil {
+		if errors.Is(err, ErrInvalidProtocolProfile) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("%w: malformed profile JSON", ErrInvalidProtocolProfile)
 	}
 	if err := p.Validate(); err != nil {
 		return nil, err
