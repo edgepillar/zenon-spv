@@ -60,7 +60,7 @@ func saveHeaderState(path string, state HeaderState, openDir func(string) (*os.F
 	if path == "" {
 		return errors.New("verify: SaveHeaderState: empty path")
 	}
-	if err := state.ValidateHeaderVersions(); err != nil {
+	if err := state.validateRetainedState(); err != nil {
 		return fmt.Errorf("save state: %w", err)
 	}
 	dir := filepath.Dir(path)
@@ -74,7 +74,7 @@ func saveHeaderState(path string, state HeaderState, openDir func(string) (*os.F
 	tmpPath := tmp.Name()
 	cleanup := func() { _ = os.Remove(tmpPath) }
 
-	enc := json.NewEncoder(tmp)
+	enc := json.NewEncoder(&limitedStateWriter{destination: tmp, remaining: MaxStateFileBytes})
 	enc.SetIndent("", "  ")
 	body := persistedState{
 		Version:         stateFileVersion,
@@ -124,8 +124,10 @@ func saveHeaderState(path string, state HeaderState, openDir func(string) (*os.F
 // LoadHeaderState reads a persisted state file. Returns an error if
 // the file does not exist (callers wanting "load if present" should
 // use LoadOrInit). Refuses unknown wire versions per ADR 0001's
-// versioning policy and unsupported momentum versions throughout
-// the stored window, before any policy-driven truncation.
+// versioning policy. It bounds input size and rechecks every retained header's
+// layout, activation profile, identity, hash, signature, linkage, and applicable
+// checkpoints before any policy-driven truncation. This cannot authenticate
+// the source of the file or re-prove ancestry that has already been evicted.
 func LoadHeaderState(path string) (HeaderState, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -133,7 +135,21 @@ func LoadHeaderState(path string) (HeaderState, error) {
 	}
 	defer func() { _ = f.Close() }()
 
-	raw, err := io.ReadAll(f)
+	info, err := f.Stat()
+	if err != nil {
+		return HeaderState{}, err
+	}
+	if info.Size() > MaxStateFileBytes {
+		return HeaderState{}, ErrStateFileTooLarge
+	}
+	return decodeHeaderState(f, MaxStateFileBytes)
+}
+
+func decodeHeaderState(r io.Reader, maxBytes int64) (HeaderState, error) {
+	raw, err := io.ReadAll(io.LimitReader(r, maxBytes+1))
+	if err == nil && int64(len(raw)) > maxBytes {
+		return HeaderState{}, ErrStateFileTooLarge
+	}
 	if err != nil {
 		return HeaderState{}, fmt.Errorf("read: %w", err)
 	}
@@ -156,7 +172,7 @@ func LoadHeaderState(path string) (HeaderState, error) {
 		RetainedWindow:  body.Window,
 		Capacity:        body.Capacity,
 	}
-	if err := state.ValidateHeaderVersions(); err != nil {
+	if err := state.validateRetainedState(); err != nil {
 		return HeaderState{}, fmt.Errorf("load state: %w", err)
 	}
 	return state, nil
@@ -177,6 +193,9 @@ func LoadHeaderState(path string) (HeaderState, error) {
 // §2.3 capacity that keeps the target plus W headers past it),
 // and Capacity is updated to match the new policy.
 func LoadOrInit(path string, genesis GenesisTrustRoot, policy Policy) (HeaderState, error) {
+	if policy.W >= uint64(MaxPersistedHeaders) {
+		return HeaderState{}, fmt.Errorf("%w: policy window exceeds persistence limit", ErrInvalidRetainedState)
+	}
 	if err := validateProfileAnchor(policy.ProtocolProfile, genesis); err != nil {
 		return HeaderState{}, err
 	}

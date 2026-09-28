@@ -11,18 +11,7 @@ import (
 
 func sampleState(t *testing.T) HeaderState {
 	t.Helper()
-	genesis := GenesisTrustRoot{
-		ChainID:    1,
-		Height:     1,
-		HeaderHash: chain.Hash{0x9e, 0x20, 0x46, 0x01},
-	}
-	state := NewHeaderState(genesis, Policy{W: 6})
-	for i := 0; i < 3; i++ {
-		state.Append(chain.Header{
-			Version: 1, Height: uint64(2 + i), HeaderHash: chain.Hash{byte(i + 1)},
-		})
-	}
-	return state
+	return signedRetainedState(t, 3, 6)
 }
 
 func TestSaveLoadHeaderState_RoundTrip(t *testing.T) {
@@ -176,17 +165,7 @@ func TestLoadOrInit_PolicyShrinkTruncates(t *testing.T) {
 // that the kept entries are the NEWEST three, not the oldest.
 func TestLoadOrInit_PolicyShrinkKeepsNewestTail(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
-	genesis := GenesisTrustRoot{ChainID: 1, Height: 1, HeaderHash: chain.Hash{0x9e}}
-	state := NewHeaderState(genesis, Policy{W: 6}) // capacity = 7
-	for i := 0; i < 6; i++ {
-		state.Append(chain.Header{
-			Version: 1,
-			Height:  uint64(2 + i),
-			// Distinct HeaderHash per entry so we can identify which
-			// three survived truncation.
-			HeaderHash: chain.Hash{byte(i + 1)},
-		})
-	}
+	state := signedRetainedState(t, 6, 6)
 	if err := SaveHeaderState(path, state); err != nil {
 		t.Fatal(err)
 	}
@@ -201,9 +180,8 @@ func TestLoadOrInit_PolicyShrinkKeepsNewestTail(t *testing.T) {
 	if resumed.Capacity != 3 {
 		t.Errorf("expected capacity=3 after shrink, got %d", resumed.Capacity)
 	}
-	// Newest three were heights 5..7 (entries 3..5 in original);
-	// truncation must keep those, not 2..4.
-	wantHeights := []uint64{5, 6, 7}
+	// Keep the newest three entries (indices 3..5 in the original).
+	wantHeights := []uint64{state.Genesis.Height + 4, state.Genesis.Height + 5, state.Genesis.Height + 6}
 	for i, want := range wantHeights {
 		if resumed.RetainedWindow[i].Height != want {
 			t.Errorf("retained[%d].Height = %d, want %d (truncation didn't keep tail)",

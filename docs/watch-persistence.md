@@ -18,12 +18,36 @@ canonicality, or finality guarantees to the verifier.
 - Embedders may set `Loop.MaxStateSaveFailures` to a positive limit.
   Zero selects three; negative limits are rejected. No new CLI flag is
   introduced.
-- Restart loads the state file through the existing trust-root and
-  producer-schedule checks.
+- Restart revalidates the complete stored window before reducing its size,
+  then applies the configured trust-root, protocol-profile, and producer
+  schedule checks.
 
 The existing caught-up tick also saves before reporting ACCEPT. Callers
 overriding `Loop.SaveState` must honor the persistence contract; a nil
 override uses `verify.SaveHeaderState`.
+
+## Retained-state validation
+
+Save and load reject invalid capacity, wrong chain identity, header hash or
+signature mismatches, broken links, noncontiguous heights, and applicable
+embedded checkpoint mismatches. If the oldest retained header immediately
+follows the configured anchor, its previous hash must match that anchor.
+Every stored header is checked before policy-driven truncation, so shrinking
+the window cannot discard a corrupt prefix to make a file acceptable.
+
+Input and output state files are limited to 64 MiB. Capacity is limited to
+100001 headers (`DefaultMaxHeaders + 1`), with the actual window no larger
+than the recorded capacity. The byte limit can be reached before the count
+limit. `LoadOrInit` refuses larger policy windows before allocating a fresh
+state. Invalid candidate states fail before replacement; oversized encoded
+output is confined to a temporary file, which is removed on failure.
+
+These checks detect corruption and inconsistent local records. A truncated
+window cannot reconstruct its evicted ancestry or independently establish
+that the retained chain is canonical. An attacker who can replace local
+trusted state with a different, internally valid chain is not defeated by
+rechecking signatures. State-file provenance, trusted checkpoints, and
+producer policy remain necessary. This is not a new verified-handle API.
 
 ## Filesystem boundary
 
@@ -51,6 +75,8 @@ counter reset, restart after a successful save, save-before-log ordering,
 caught-up failures, refusal behavior, and pacing after a failed save.
 `internal/verify/state_file_durability_test.go` covers errors opening and
 syncing the parent directory, including the post-replacement boundary.
+`internal/verify/state_validation_test.go` covers corrupt retained prefixes,
+save preservation, truncated valid windows, byte limits, and capacity bounds.
 
 The tests use synthetic signed headers, local HTTP fixtures, temporary
 files, and injected failures. They do not simulate a power cut, prove
