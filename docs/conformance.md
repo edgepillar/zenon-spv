@@ -92,6 +92,8 @@ State-value layer:
       retries at the normal interval, and stops after three consecutive
       failed save attempts by default. A successful save resets the
       counter (`internal/syncer/syncer.go`).
+- [x] State save/load revalidate every retained header before truncation and
+      enforce byte/capacity bounds; see [`watch-persistence.md`](watch-persistence.md).
 - [~] Measure σ_B, σ_π, σ_H from real samples — Branch 2a shipped a
       pragmatic header-size sample
       (`docs/resource-bound-measurements.md`); the full spec §10

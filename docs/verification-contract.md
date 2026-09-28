@@ -13,16 +13,16 @@ An integration must record these inputs alongside its verification result:
 | Network and anchor | Pin chain ID, anchor height/hash, and their provenance. A matching chain ID is not remote identity authentication. A hash fetched from the same untrusted peer is not an independent trust root. |
 | Header layout and activation | Layouts v1 and v2 are implemented. Without a profile, verification accepts only v1 and makes no activation claim. An explicit anchor-bound profile enforces the first v2 height and a coverage limit under external operator trust. Unsupported versions still refuse. |
 | Producer policy | Without an authorizer, signatures bind the claimed key only. With an operator schedule, authorization is relative to that schedule and inherits its external trust. Elected-producer derivation from authenticated chain data is not implemented. |
-| Checkpoints and retained state | Treat configured checkpoints and the persisted retained window as trusted local inputs. Protect their provenance and integrity. State-file parsing and version checks do not re-prove their history or authenticate a substituted file. |
+| Checkpoints and retained state | Treat configured checkpoints and the persisted retained window as trusted local inputs. Save/load recheck hashes, signatures, identity, links, profiles, and applicable checkpoints within resource limits. Protect provenance: these checks do not re-prove evicted history or authenticate a substituted, internally valid file. |
 | Resource and depth policy | Choose explicit `Policy` limits and `W` appropriate to the experiment. `W` is a strict-past depth requirement for commitments, not a consensus finality certificate. Header-chain ACCEPT alone does not establish that depth for a selected target. |
 | Peer observations | k-of-n RPC agreement detects disagreement. It cannot establish elected-producer quorum or canonical history. Record peer assumptions separately from cryptographic evidence. |
 
 `HeaderState` is currently caller-constructible. Functions consuming it assume
 that its headers came from successful verification under the intended trust
 inputs. Loading JSON, calling `Append`, or supplying `HeaderState` fields does
-not create that provenance. Validated handles and stronger resume validation
-remain implementation work; even complete signature revalidation would not
-authenticate an attacker-chosen trust root.
+not create that provenance. Persisted-state integrity is revalidated on load,
+but validated handles remain implementation work. Signature revalidation
+does not authenticate an attacker-chosen trust root.
 
 ## Result interpretation
 
@@ -71,8 +71,8 @@ does not establish activation on any public network.
 2. Review v2 application behavior against additional independently sourced
    network evidence. Local vectors establish serialization compatibility;
    they do not re-execute Dynamic Plasma price transitions.
-3. Strengthen retained-state provenance and resume validation before an
-   application pilot. Define which guarantees the application actually needs.
+3. Establish retained-state provenance and a validated application API before
+   a deployment pilot. Define which guarantees the application actually needs.
 4. Run a controlled read-only pilot with restart, stale/forked/malformed
    peers, producer-coverage gaps, resource limits, and persistence failures.
    Record the exact source, binary, trust inputs, and bounded outcomes.
