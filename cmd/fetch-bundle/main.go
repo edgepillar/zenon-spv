@@ -65,29 +65,54 @@ func run(args []string) error {
 	rpcURL := fs.String("rpc", os.Getenv("ZENON_SPV_RPC"), "single-peer RPC URL (or set ZENON_SPV_RPC)")
 	peersFlag := fs.String("peers", os.Getenv("ZENON_SPV_PEERS"), "comma-separated peer URLs for cross-check (or set ZENON_SPV_PEERS)")
 	quorum := fs.Int("quorum", 0, "minimum agreeing peers; 0 = require unanimous (len(peers))")
-	heightArg := fs.Int64("height", -1, "anchor height; -1 = use frontier (with safety margin in multi-peer mode)")
-	safetyMargin := fs.Uint64("safety-margin", 6, "in multi-peer frontier mode, drop this many heights below min(frontier) to ensure all peers have it")
-	count := fs.Int("count", 6, "number of momentums to include in the bundle")
+	heightArg := fs.Int64("height", -1, "last bundle momentum height; -1 = use frontier (with safety margin in multi-peer mode)")
+	safetyMargin := fs.Uint64("safety-margin", 6, "in multi-peer frontier mode, drop this many heights below median(frontiers)")
+	count := fs.Int("count", 6, "number of momentums to include in the bundle (1..100000)")
 	out := fs.String("out", "-", "bundle output path; '-' = stdout")
 	checkpointPath := fs.String("checkpoint", "", "if set, write the trust-anchor checkpoint to this path")
-	timeout := fs.Duration("timeout", 30*time.Second, "RPC timeout (per peer)")
+	timeout := fs.Duration("timeout", 30*time.Second, "overall fetch timeout (must be positive)")
 	commitmentsFlag := fs.String("commitments", "", "comma-separated z1... addresses to attest in the bundle window (also retains parsed Content slices)")
 	segmentsFlag := fs.String("segments", "", "comma-separated z1ADDR:HEIGHT or z1ADDR:START-END specs; fetched account blocks become AccountSegments and their addresses are auto-added to commitments")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	if *count < 1 {
-		return fmt.Errorf("--count must be >= 1 (got %d)", *count)
+	if fs.NArg() != 0 {
+		return errors.New("fetch-bundle does not accept positional arguments")
 	}
+	if *count < 1 || *count > verify.DefaultMaxHeaders {
+		return fmt.Errorf("--count must be between 1 and %d", verify.DefaultMaxHeaders)
+	}
+	if *heightArg < -1 || *heightArg == 0 {
+		return errors.New("--height must be -1 (frontier) or a positive height")
+	}
+	if *heightArg > 0 && uint64(*heightArg) <= uint64(*count) {
+		return errors.New("--height must exceed --count to leave a positive checkpoint height")
+	}
+	if *timeout <= 0 {
+		return errors.New("--timeout must be positive")
+	}
+	requestedCount := uint64(*count) + 1 // Include the checkpoint before the bundle.
 
 	urls := splitPeers(*peersFlag)
-	multi := len(urls) > 1
-	if !multi && *rpcURL == "" && len(urls) == 0 {
+	var rpcSet, peersSet bool
+	fs.Visit(func(f *flag.Flag) {
+		rpcSet = rpcSet || f.Name == "rpc"
+		peersSet = peersSet || f.Name == "peers"
+	})
+	if rpcSet && !peersSet {
+		urls = nil // An explicit RPC selection overrides an environment peer list.
+	}
+	if len(urls) == 0 && strings.TrimSpace(*rpcURL) != "" {
+		urls = []string{strings.TrimSpace(*rpcURL)}
+	}
+	if len(urls) == 0 {
 		return errors.New("either --rpc <url> or --peers <url1>,<url2>,... required")
 	}
-	if !multi && len(urls) == 1 && *rpcURL == "" {
-		*rpcURL = urls[0]
+	if *quorum < 0 || *quorum > len(urls) {
+		return errors.New("--quorum must be 0 (unanimous) or between 1 and the number of peers")
 	}
+	multi := len(urls) > 1
+	*rpcURL = urls[0] // Use the resolved selection consistently in all fetch paths.
 
 	targetAddresses, err := decodeTargetAddresses(*commitmentsFlag)
 	if err != nil {
@@ -119,11 +144,11 @@ func run(args []string) error {
 		if err != nil {
 			return err
 		}
-		if end < uint64(*count) {
-			return fmt.Errorf("end height %d too low for --count=%d", end, *count)
+		if end <= uint64(*count) {
+			return fmt.Errorf("end height %d too low for --count=%d and a positive checkpoint", end, *count)
 		}
 		start := end - uint64(*count)
-		detailed, err = mc.FetchByHeightDetailed(ctx, start, uint64(*count+1))
+		detailed, err = mc.FetchByHeightDetailed(ctx, start, requestedCount)
 		if err != nil {
 			return fmt.Errorf("multi-fetch [%d..%d]: %w", start, end, err)
 		}
@@ -134,19 +159,19 @@ func run(args []string) error {
 		if err != nil {
 			return err
 		}
-		if end < uint64(*count) {
-			return fmt.Errorf("end height %d too low for --count=%d", end, *count)
+		if end <= uint64(*count) {
+			return fmt.Errorf("end height %d too low for --count=%d and a positive checkpoint", end, *count)
 		}
 		start := end - uint64(*count)
-		detailed, err = client.FetchByHeightDetailed(ctx, start, uint64(*count+1))
+		detailed, err = client.FetchByHeightDetailed(ctx, start, requestedCount)
 		if err != nil {
 			return fmt.Errorf("fetch [%d..%d]: %w", start, end, err)
 		}
 		sourceLabel = "single-peer"
 	}
 
-	if uint64(len(detailed)) != uint64(*count+1) {
-		return fmt.Errorf("internal: got %d detailed momentums, expected %d", len(detailed), *count+1)
+	if uint64(len(detailed)) != requestedCount {
+		return fmt.Errorf("internal: got %d detailed momentums, expected %d", len(detailed), requestedCount)
 	}
 	anchor := detailed[0].Header
 	bundleDetailed := detailed[1:]
@@ -224,6 +249,7 @@ func parseSegmentSpecs(s string) ([]segmentSpec, error) {
 	}
 	parts := strings.Split(s, ",")
 	out := make([]segmentSpec, 0, len(parts))
+	var totalBlocks uint64
 	for _, p := range parts {
 		p = strings.TrimSpace(p)
 		if p == "" {
@@ -249,6 +275,9 @@ func parseSegmentSpecs(s string) ([]segmentSpec, error) {
 			if err != nil {
 				return nil, fmt.Errorf("--segments: end in %q: %w", p, err)
 			}
+			if s1 == 0 {
+				return nil, errors.New("--segments: start height must be positive")
+			}
 			if s2 < s1 {
 				return nil, fmt.Errorf("--segments: end %d < start %d in %q", s2, s1, p)
 			}
@@ -262,6 +291,16 @@ func parseSegmentSpecs(s string) ([]segmentSpec, error) {
 			start = h
 			count = 1
 		}
+		if start == 0 {
+			return nil, errors.New("--segments: start height must be positive")
+		}
+		if count > uint64(verify.DefaultMaxSegmentBlocks) {
+			return nil, fmt.Errorf("--segments: each range is limited to %d blocks", verify.DefaultMaxSegmentBlocks)
+		}
+		if len(out) >= verify.DefaultMaxSegments || count > uint64(verify.DefaultMaxTotalSegmentBlocks)-totalBlocks {
+			return nil, errors.New("--segments: segment count or aggregate block limit exceeded")
+		}
+		totalBlocks += count
 		out = append(out, segmentSpec{
 			addressBech32: addrStr,
 			address:       chain.Address(raw),

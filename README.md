@@ -91,6 +91,10 @@ Exit codes: **0** = ACCEPT, **1** = REJECT, **2** = REFUSED.
 
 The `fetch-bundle` tool builds a multi-peer HeaderBundle JSON that `zenon-spv` then verifies offline. Two-step flow:
 
+The generated checkpoint comes from the selected peers. Authenticate its
+provenance independently before treating it as a trust root. See
+[bundle fetching](docs/fetch-bundle.md) for peer selection and input limits.
+
 ```bash
 # Pick an address + block to verify. The address below is used in the
 # repo's example traces.
@@ -98,7 +102,7 @@ ADDR="z1qrztagl9rukq3ltdflnvg4zrvpfp84mydfejk9"
 HEIGHT=1466
 
 # Step 1: ask the network which momentum committed that account block.
-# (This RPC call is the only step that trusts a peer.)
+# This RPC metadata only locates a candidate committing momentum.
 COMMITTING=$(curl -sk -X POST -H "Content-Type: application/json" \
   --data "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ledger.getAccountBlocksByHeight\",\"params\":[\"$ADDR\",$HEIGHT,1]}" \
   https://my.hc1node.com:35997 \
