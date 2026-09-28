@@ -180,7 +180,10 @@ func run(args []string) error {
 		bundleHeaders[i] = d.Header
 	}
 
-	commitments := buildCommitments(bundleDetailed, targetAddresses)
+	commitments, err := buildCommitments(bundleDetailed, targetAddresses)
+	if err != nil {
+		return fmt.Errorf("build commitments: %w", err)
+	}
 
 	segments, err := fetchSegments(ctx, urls, multi, *rpcURL, *quorum, segmentSpecs)
 	if err != nil {
@@ -195,7 +198,11 @@ func run(args []string) error {
 		Commitments:    commitments,
 		Segments:       segments,
 	}
-	if err := writeJSON(*out, bundle); err != nil {
+	encoded, err := encodeBundleBounded(bundle, verify.DefaultMaxBundleBytes)
+	if err != nil {
+		return fmt.Errorf("encode bundle: %w", err)
+	}
+	if err := writeOutput(*out, encoded); err != nil {
 		return fmt.Errorf("write bundle: %w", err)
 	}
 
@@ -376,15 +383,16 @@ func decodeTargetAddresses(s string) ([]chain.Address, error) {
 // momentum's content. The full sorted Content slice is attached as
 // FlatContentEvidence — bandwidth O(m), per the spec-vs-impl Merkle
 // gap documented in zenon-spv-vault/notes/account-block-merkle-paths.md.
-func buildCommitments(details []fetch.DetailedHeader, targets []chain.Address) []proof.CommitmentEvidence {
+func buildCommitments(details []fetch.DetailedHeader, targets []chain.Address) ([]proof.CommitmentEvidence, error) {
 	if len(targets) == 0 {
-		return nil
+		return nil, nil
 	}
 	targetSet := make(map[chain.Address]struct{}, len(targets))
 	for _, a := range targets {
 		targetSet[a] = struct{}{}
 	}
 	var out []proof.CommitmentEvidence
+	var totalMembers int
 	for _, d := range details {
 		if len(d.Content) == 0 {
 			continue
@@ -392,18 +400,33 @@ func buildCommitments(details []fetch.DetailedHeader, targets []chain.Address) [
 		// Find every AccountHeader whose Address matches a target.
 		// One CommitmentEvidence per match; FlatContentEvidence is
 		// shared content but the Target differs per emitted evidence.
-		var matches []chain.AccountHeader
+		var matches int
 		for _, ah := range d.Content {
 			if _, ok := targetSet[ah.Address]; ok {
-				matches = append(matches, ah)
+				matches++
 			}
 		}
-		if len(matches) == 0 {
+		if matches == 0 {
 			continue
 		}
+		if matches > verify.DefaultMaxCommitments-len(out) {
+			return nil, errors.New("commitment count exceeds default verifier limit")
+		}
+		if len(d.Content) > verify.DefaultMaxFlatEvidenceMembers {
+			return nil, errors.New("flat evidence size exceeds default verifier limit")
+		}
+		// Count serialized repetitions, even though the in-memory slice is shared.
+		// Divide before multiplying so an adversarial shape cannot overflow.
+		if matches > (verify.DefaultMaxTotalFlatEvidenceMembers-totalMembers)/len(d.Content) {
+			return nil, errors.New("aggregate flat evidence size exceeds default verifier limit")
+		}
+		totalMembers += matches * len(d.Content)
 		sortedCopy := append([]chain.AccountHeader{}, d.Content...)
 		flat := &proof.FlatContentEvidence{SortedHeaders: sortedCopy}
-		for _, m := range matches {
+		for _, m := range d.Content {
+			if _, ok := targetSet[m.Address]; !ok {
+				continue
+			}
 			out = append(out, proof.CommitmentEvidence{
 				Height: d.Header.Height,
 				Target: m,
@@ -411,7 +434,7 @@ func buildCommitments(details []fetch.DetailedHeader, targets []chain.Address) [
 			})
 		}
 	}
-	return out
+	return out, nil
 }
 
 func splitPeers(s string) []string {
@@ -457,18 +480,17 @@ func resolveEndHeight(ctx context.Context, c *fetch.Client, requested int64) (ui
 }
 
 func writeJSON(path string, v any) error {
-	enc := func(w *os.File) error {
-		e := json.NewEncoder(w)
-		e.SetIndent("", "  ")
-		return e.Encode(v)
-	}
-	if path == "-" {
-		return enc(os.Stdout)
-	}
-	f, err := os.Create(path)
+	b, err := json.Marshal(v)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = f.Close() }()
-	return enc(f)
+	return writeOutput(path, append(b, '\n'))
+}
+
+func writeOutput(path string, data []byte) error {
+	if path == "-" {
+		_, err := os.Stdout.Write(data)
+		return err
+	}
+	return os.WriteFile(path, data, 0o644)
 }
