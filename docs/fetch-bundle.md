@@ -59,9 +59,35 @@ not process memory: RPC responses, decoded objects, buffer capacity, and
 per-item encoder scratch space require additional memory.
 
 The candidate can still fail signature, linkage, commitment, or policy checks.
-Output files are not an atomic pair: successful input and size validation does
-not make a later filesystem failure transactional. Authenticate checkpoint
-provenance and run the verifier before using the evidence.
+Authenticate checkpoint provenance and run the verifier before using evidence.
+
+## Output destinations and failures
+
+Bundle and checkpoint destinations must be distinct. Before RPC, the command
+resolves parent-directory symlinks and refuses duplicate paths, case-only
+aliases, existing hard-link aliases, missing parent directories, and existing
+non-regular destinations such as directories, symlinks, or devices. Case-only
+aliases are conservatively refused even on case-sensitive filesystems. `-`
+means stdout for either output, but may be selected only once.
+
+After encoding, every file is written to a private temporary file in its
+destination directory, synced, and closed before any destination is replaced.
+Staging failures leave existing outputs unchanged and new outputs absent,
+without emitting stdout. Temporary files are cleaned up on normal error returns.
+Destinations are rechecked after staging; renamed files have mode 0600 on Unix.
+Parent directories are synced after each rename on non-Windows hosts. Any file
+destinations are published before stdout.
+
+Each Unix rename replaces one complete file, but the bundle and checkpoint are
+**not an atomic pair**. A crash, later rename failure, newly observable filesystem
+alias, directory-sync failure, or stdout failure can leave new output visible.
+Errors after publication begins report this possibility and do not retry or
+roll back automatically. Directory-sync failure leaves durability unconfirmed;
+Windows does not receive the Unix rename/directory-sync guarantees. A crash may
+also leave a temporary file. Use trusted output directories: path checks do not
+provide isolation from concurrent directory replacement or concurrent writers.
+After an interrupted run, inspect both artifacts and verify their relationship
+before consuming or replacing them.
 
 ## Regression evidence
 
@@ -76,3 +102,10 @@ refusals, asserting unchanged or absent output files. These assembly tests do
 not claim valid signatures. Serializer tests compare compact output with the
 standard wire encoding, including nil versus empty arrays, optional fields,
 exact byte limits, and early termination when the cap is exceeded.
+
+Output tests reproduce path collisions and a bad checkpoint destination before
+the fix. Filesystem fault injection covers second-file creation, partial and
+short writes, file sync/close, both renames, directory sync, late aliases, and
+stdout failure. Tests check preserved bytes during staging, the visible prefix
+after publication starts, temporary-file cleanup, and output permissions. These
+are local filesystem tests, not power-loss or Windows durability experiments.

@@ -129,6 +129,10 @@ func run(args []string) error {
 			targetAddresses = append(targetAddresses, s.address)
 		}
 	}
+	outputs, err := resolveOutputDestinations(*out, *checkpointPath)
+	if err != nil {
+		return err
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
@@ -202,9 +206,7 @@ func run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("encode bundle: %w", err)
 	}
-	if err := writeOutput(*out, encoded); err != nil {
-		return fmt.Errorf("write bundle: %w", err)
-	}
+	outputData := [][]byte{encoded}
 
 	if *checkpointPath != "" {
 		ck := struct {
@@ -216,9 +218,14 @@ func run(args []string) error {
 			Height:     anchor.Height,
 			HeaderHash: anchor.HeaderHash,
 		}
-		if err := writeJSON(*checkpointPath, ck); err != nil {
-			return fmt.Errorf("write checkpoint: %w", err)
+		checkpointJSON, err := json.Marshal(ck)
+		if err != nil {
+			return fmt.Errorf("encode checkpoint: %w", err)
 		}
+		outputData = append(outputData, append(checkpointJSON, '\n'))
+	}
+	if err := publishOutputs(outputs, outputData, os.Stdout, defaultOutputIO()); err != nil {
+		return err
 	}
 
 	fmt.Fprintf(os.Stderr, "OK: source=%s\n", sourceLabel)
@@ -477,20 +484,4 @@ func resolveEndHeight(ctx context.Context, c *fetch.Client, requested int64) (ui
 		return 0, fmt.Errorf("frontier: %w", err)
 	}
 	return frontier.Height, nil
-}
-
-func writeJSON(path string, v any) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-	return writeOutput(path, append(b, '\n'))
-}
-
-func writeOutput(path string, data []byte) error {
-	if path == "-" {
-		_, err := os.Stdout.Write(data)
-		return err
-	}
-	return os.WriteFile(path, data, 0o644)
 }
