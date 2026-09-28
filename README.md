@@ -136,7 +136,10 @@ Each subcommand reads a HeaderBundle JSON and runs progressively more checks. Hi
 
 Optional flags shared across all verify-* subcommands:
 
-- `--window {low|medium|high}` — finality depth `W`. low=6, medium=60, high=360. Default `low`.
+- `--window {low|medium|high}` — retained-window depth `W`. low=6, medium=60,
+  high=360. Default `low`; names are case sensitive. Empty or unknown values
+  fail with exit 64 instead of selecting a lower depth. This depth is not a
+  consensus finality certificate.
 - `--genesis-config <path>` — override the embedded mainnet anchor with a strict,
   bounded JSON file. Custom networks require this file or a complete anchor
   environment override; see [anchor configuration](docs/anchor-configuration.md).
@@ -145,6 +148,9 @@ Optional flags shared across all verify-* subcommands:
 - `--show-context` — print captured verification settings with a reproducible
   fingerprint, excluding private audit metadata. Also available on `watch`;
   see [`verification context`](docs/verification-context.md).
+
+Place all verify-* flags before the bundle path. `watch` accepts no positional
+arguments; extra arguments fail before loading configuration or starting RPC.
 
 ## What ACCEPT actually proves
 
