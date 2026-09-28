@@ -34,7 +34,8 @@ func (r SegmentResult) Worst() Outcome {
 //
 // For each block, the verifier:
 //
-//  1. Confirms block.Address == segment.Address (consistency).
+//  1. Confirms block.Address == segment.Address (consistency) and rejects
+//     negative or greater-than-255-bit amounts before hashing.
 //  2. Recomputes block.ComputeHash() and compares against
 //     block.BlockHash. Mismatch → REJECT/InvalidHash.
 //  3. Binds block.PublicKey to block.Address per go-zenon
@@ -144,6 +145,11 @@ func VerifySegment(state HeaderState, segment proof.AccountSegment, commitments 
 				Message:  fmt.Sprintf("block address %x != segment address %x", b.Address, segment.Address),
 				FailedAt: i,
 			}
+			previousOutcome = OutcomeReject
+			continue
+		}
+		if err := chain.ValidateAccountAmount(b.Amount); err != nil {
+			out.Blocks[i] = Result{Outcome: OutcomeReject, Reason: ReasonInvalidAmount, Message: err.Error(), FailedAt: i}
 			previousOutcome = OutcomeReject
 			continue
 		}

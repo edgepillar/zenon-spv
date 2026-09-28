@@ -91,6 +91,12 @@ func run() error {
 	if err := checkNodePin(); err != nil {
 		return err
 	}
+	if len(os.Args) > 1 {
+		if len(os.Args) == 2 && os.Args[1] == "--account-amounts" {
+			return writeAccountAmountVectors()
+		}
+		return fmt.Errorf("usage: gen-node-momentum-vectors [--account-amounts]")
+	}
 	// Public, synthetic test key. Never use this all-zero seed for a wallet.
 	key := ed25519.NewKeyFromSeed(make([]byte, ed25519.SeedSize))
 	c := corpus{FormatVersion: 1, Source: source{

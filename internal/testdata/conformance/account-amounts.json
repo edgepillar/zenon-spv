@@ -1,0 +1,599 @@
+{
+  "format_version": 1,
+  "source": {
+    "repository": "https://github.com/zenon-network/go-zenon",
+    "commit": "3a4131e63881058b6ce2ee81d3a41d0033fafc99",
+    "module_version": "v0.0.8-alphanet.0.20260924192459-3a4131e63881",
+    "module_sum": "h1:7Yf9IL6y7T0gHnRrUs4oulsEcV6YXDRDiIKpUCurCHk="
+  },
+  "vectors": [
+    {
+      "name": "zero",
+      "scalar_valid": true,
+      "amount_bytes": "0000000000000000000000000000000000000000000000000000000000000000",
+      "rpc": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "438ce688e63e5633d22793d79eff3f5730d66a17e2be0dbd62d9da8ab24ba742",
+        "previousHash": "4dd216cc4b57ade0ecfa072d7c160cf3a8e1a6d4224504a2751d39aa0c399d52",
+        "height": 42,
+        "momentumAcknowledged": {
+          "hash": "0342cd5bd89093705e2031cf425650e86e994c14fd24c471582bdca2441761fa",
+          "height": 1000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "0",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [
+          {
+            "version": 0,
+            "chainIdentifier": 0,
+            "blockType": 0,
+            "hash": "953b9dced7c055a78ff7cf2fb4dba1ff503e79bd4dcd96f24ca845802dbe0265",
+            "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0,
+            "momentumAcknowledged": {
+              "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+              "height": 0
+            },
+            "address": "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f",
+            "toAddress": "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f",
+            "amount": "0",
+            "tokenStandard": "zts1qqqqqqqqqqqqqqqqtq587y",
+            "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "descendantBlocks": [],
+            "data": null,
+            "fusedPlasma": 0,
+            "difficulty": 0,
+            "nonce": "0000000000000000",
+            "basePlasma": 0,
+            "usedPlasma": 0,
+            "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "publicKey": null,
+            "signature": null
+          }
+        ],
+        "data": "AP8B",
+        "fusedPlasma": 4294967297,
+        "difficulty": 9007199254740993,
+        "nonce": "0102030000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "88OonktB4zuLyZprt3hiwxkOK3B+9DVNWwvt5tIcybH23fRTrmtt/7HrWckvf0QuXszC4/mzql3rzl91vG+YBg=="
+      },
+      "block": {
+        "address": "004f57405c0cc25ae5d2feef6a26e4e0ae26d535",
+        "amount": 0,
+        "blockType": 2,
+        "chainIdentifier": 99,
+        "dataHash": "a7c654aed64354e3bfb3590514e2728cf86665fb8f93228a7e41d966e3ede6e0",
+        "descendantBlocksHash": "282d55555e5a7add7aba33cb798403f29b00c0473bd6444c08c9f1bd91adb1bf",
+        "difficulty": 9007199254740993,
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "fusedPlasma": 4294967297,
+        "hash": "438ce688e63e5633d22793d79eff3f5730d66a17e2be0dbd62d9da8ab24ba742",
+        "height": 42,
+        "momentumAcknowledged": {
+          "hash": "0342cd5bd89093705e2031cf425650e86e994c14fd24c471582bdca2441761fa",
+          "height": 1000
+        },
+        "nonce": "0102030000000000",
+        "previousHash": "4dd216cc4b57ade0ecfa072d7c160cf3a8e1a6d4224504a2751d39aa0c399d52",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "88OonktB4zuLyZprt3hiwxkOK3B+9DVNWwvt5tIcybH23fRTrmtt/7HrWckvf0QuXszC4/mzql3rzl91vG+YBg==",
+        "toAddress": "01b3b6e5adcb4c127ffd198c6318c6318c6318c6",
+        "tokenStandard": "14e66318c6318c6318c6",
+        "version": 1
+      }
+    },
+    {
+      "name": "ordinary",
+      "scalar_valid": true,
+      "amount_bytes": "00000000000000000000000000000000000000000000000000000000000003e8",
+      "rpc": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "4d2d58157f60b9602dd51e182fbc6418d56fadf9c9e9e3cc964565b5881f8221",
+        "previousHash": "4dd216cc4b57ade0ecfa072d7c160cf3a8e1a6d4224504a2751d39aa0c399d52",
+        "height": 42,
+        "momentumAcknowledged": {
+          "hash": "0342cd5bd89093705e2031cf425650e86e994c14fd24c471582bdca2441761fa",
+          "height": 1000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [
+          {
+            "version": 0,
+            "chainIdentifier": 0,
+            "blockType": 0,
+            "hash": "953b9dced7c055a78ff7cf2fb4dba1ff503e79bd4dcd96f24ca845802dbe0265",
+            "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0,
+            "momentumAcknowledged": {
+              "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+              "height": 0
+            },
+            "address": "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f",
+            "toAddress": "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f",
+            "amount": "0",
+            "tokenStandard": "zts1qqqqqqqqqqqqqqqqtq587y",
+            "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "descendantBlocks": [],
+            "data": null,
+            "fusedPlasma": 0,
+            "difficulty": 0,
+            "nonce": "0000000000000000",
+            "basePlasma": 0,
+            "usedPlasma": 0,
+            "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "publicKey": null,
+            "signature": null
+          }
+        ],
+        "data": "AP8B",
+        "fusedPlasma": 4294967297,
+        "difficulty": 9007199254740993,
+        "nonce": "0102030000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "Q0oIxIBsUJrjKKFomj4ukkkhIvpiQuHcYe2q7xPkqPJC01gZtOyjtpNH4RNmnXJf/G1GuaTWKhPFC0gcgZWYDg=="
+      },
+      "block": {
+        "address": "004f57405c0cc25ae5d2feef6a26e4e0ae26d535",
+        "amount": 1000,
+        "blockType": 2,
+        "chainIdentifier": 99,
+        "dataHash": "a7c654aed64354e3bfb3590514e2728cf86665fb8f93228a7e41d966e3ede6e0",
+        "descendantBlocksHash": "282d55555e5a7add7aba33cb798403f29b00c0473bd6444c08c9f1bd91adb1bf",
+        "difficulty": 9007199254740993,
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "fusedPlasma": 4294967297,
+        "hash": "4d2d58157f60b9602dd51e182fbc6418d56fadf9c9e9e3cc964565b5881f8221",
+        "height": 42,
+        "momentumAcknowledged": {
+          "hash": "0342cd5bd89093705e2031cf425650e86e994c14fd24c471582bdca2441761fa",
+          "height": 1000
+        },
+        "nonce": "0102030000000000",
+        "previousHash": "4dd216cc4b57ade0ecfa072d7c160cf3a8e1a6d4224504a2751d39aa0c399d52",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "Q0oIxIBsUJrjKKFomj4ukkkhIvpiQuHcYe2q7xPkqPJC01gZtOyjtpNH4RNmnXJf/G1GuaTWKhPFC0gcgZWYDg==",
+        "toAddress": "01b3b6e5adcb4c127ffd198c6318c6318c6318c6",
+        "tokenStandard": "14e66318c6318c6318c6",
+        "version": 1
+      }
+    },
+    {
+      "name": "max-255-bits",
+      "scalar_valid": true,
+      "amount_bytes": "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "rpc": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "106a59446124501a669dfba36677418b7179d1cebad738e8b170947b712ffa58",
+        "previousHash": "4dd216cc4b57ade0ecfa072d7c160cf3a8e1a6d4224504a2751d39aa0c399d52",
+        "height": 42,
+        "momentumAcknowledged": {
+          "hash": "0342cd5bd89093705e2031cf425650e86e994c14fd24c471582bdca2441761fa",
+          "height": 1000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "57896044618658097711785492504343953926634992332820282019728792003956564819967",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [
+          {
+            "version": 0,
+            "chainIdentifier": 0,
+            "blockType": 0,
+            "hash": "953b9dced7c055a78ff7cf2fb4dba1ff503e79bd4dcd96f24ca845802dbe0265",
+            "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0,
+            "momentumAcknowledged": {
+              "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+              "height": 0
+            },
+            "address": "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f",
+            "toAddress": "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f",
+            "amount": "0",
+            "tokenStandard": "zts1qqqqqqqqqqqqqqqqtq587y",
+            "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "descendantBlocks": [],
+            "data": null,
+            "fusedPlasma": 0,
+            "difficulty": 0,
+            "nonce": "0000000000000000",
+            "basePlasma": 0,
+            "usedPlasma": 0,
+            "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "publicKey": null,
+            "signature": null
+          }
+        ],
+        "data": "AP8B",
+        "fusedPlasma": 4294967297,
+        "difficulty": 9007199254740993,
+        "nonce": "0102030000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "8GXBjT9xtHSvVybeDELgindOM2gvpqrf+eI4Y1Veh4GSdN5pOdo8b023OIbRzJvf9ZR8wcLGDGaETJOphFzUBw=="
+      },
+      "block": {
+        "address": "004f57405c0cc25ae5d2feef6a26e4e0ae26d535",
+        "amount": 57896044618658097711785492504343953926634992332820282019728792003956564819967,
+        "blockType": 2,
+        "chainIdentifier": 99,
+        "dataHash": "a7c654aed64354e3bfb3590514e2728cf86665fb8f93228a7e41d966e3ede6e0",
+        "descendantBlocksHash": "282d55555e5a7add7aba33cb798403f29b00c0473bd6444c08c9f1bd91adb1bf",
+        "difficulty": 9007199254740993,
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "fusedPlasma": 4294967297,
+        "hash": "106a59446124501a669dfba36677418b7179d1cebad738e8b170947b712ffa58",
+        "height": 42,
+        "momentumAcknowledged": {
+          "hash": "0342cd5bd89093705e2031cf425650e86e994c14fd24c471582bdca2441761fa",
+          "height": 1000
+        },
+        "nonce": "0102030000000000",
+        "previousHash": "4dd216cc4b57ade0ecfa072d7c160cf3a8e1a6d4224504a2751d39aa0c399d52",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "8GXBjT9xtHSvVybeDELgindOM2gvpqrf+eI4Y1Veh4GSdN5pOdo8b023OIbRzJvf9ZR8wcLGDGaETJOphFzUBw==",
+        "toAddress": "01b3b6e5adcb4c127ffd198c6318c6318c6318c6",
+        "tokenStandard": "14e66318c6318c6318c6",
+        "version": 1
+      }
+    },
+    {
+      "name": "first-256-bit-value",
+      "scalar_valid": false,
+      "amount_bytes": "8000000000000000000000000000000000000000000000000000000000000000",
+      "rpc": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "4a4ccb9c5be278e7b7fdc91ebaf8cd43068723a7fe70b94c6c4f6a652b6c485e",
+        "previousHash": "4dd216cc4b57ade0ecfa072d7c160cf3a8e1a6d4224504a2751d39aa0c399d52",
+        "height": 42,
+        "momentumAcknowledged": {
+          "hash": "0342cd5bd89093705e2031cf425650e86e994c14fd24c471582bdca2441761fa",
+          "height": 1000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "57896044618658097711785492504343953926634992332820282019728792003956564819968",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [
+          {
+            "version": 0,
+            "chainIdentifier": 0,
+            "blockType": 0,
+            "hash": "953b9dced7c055a78ff7cf2fb4dba1ff503e79bd4dcd96f24ca845802dbe0265",
+            "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0,
+            "momentumAcknowledged": {
+              "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+              "height": 0
+            },
+            "address": "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f",
+            "toAddress": "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f",
+            "amount": "0",
+            "tokenStandard": "zts1qqqqqqqqqqqqqqqqtq587y",
+            "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "descendantBlocks": [],
+            "data": null,
+            "fusedPlasma": 0,
+            "difficulty": 0,
+            "nonce": "0000000000000000",
+            "basePlasma": 0,
+            "usedPlasma": 0,
+            "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "publicKey": null,
+            "signature": null
+          }
+        ],
+        "data": "AP8B",
+        "fusedPlasma": 4294967297,
+        "difficulty": 9007199254740993,
+        "nonce": "0102030000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "HNn9oCviY94TCZr66aO928MTFhsTy63hftzDGG4rYVA4eUPQ+EbBpGhHZdTkMv/tN7B3OTXmaSGjHHjnQyZABg=="
+      },
+      "block": {
+        "address": "004f57405c0cc25ae5d2feef6a26e4e0ae26d535",
+        "amount": 57896044618658097711785492504343953926634992332820282019728792003956564819968,
+        "blockType": 2,
+        "chainIdentifier": 99,
+        "dataHash": "a7c654aed64354e3bfb3590514e2728cf86665fb8f93228a7e41d966e3ede6e0",
+        "descendantBlocksHash": "282d55555e5a7add7aba33cb798403f29b00c0473bd6444c08c9f1bd91adb1bf",
+        "difficulty": 9007199254740993,
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "fusedPlasma": 4294967297,
+        "hash": "4a4ccb9c5be278e7b7fdc91ebaf8cd43068723a7fe70b94c6c4f6a652b6c485e",
+        "height": 42,
+        "momentumAcknowledged": {
+          "hash": "0342cd5bd89093705e2031cf425650e86e994c14fd24c471582bdca2441761fa",
+          "height": 1000
+        },
+        "nonce": "0102030000000000",
+        "previousHash": "4dd216cc4b57ade0ecfa072d7c160cf3a8e1a6d4224504a2751d39aa0c399d52",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "HNn9oCviY94TCZr66aO928MTFhsTy63hftzDGG4rYVA4eUPQ+EbBpGhHZdTkMv/tN7B3OTXmaSGjHHjnQyZABg==",
+        "toAddress": "01b3b6e5adcb4c127ffd198c6318c6318c6318c6",
+        "tokenStandard": "14e66318c6318c6318c6",
+        "version": 1
+      }
+    },
+    {
+      "name": "overflow-alias",
+      "scalar_valid": false,
+      "amount_bytes": "0100000000000000000000000000000000000000000000000000000000000003e8",
+      "rpc": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "1cdccea9d7eab1893751954a40eccbca9d421a7abf3ffd7ef8aff698c547533c",
+        "previousHash": "4dd216cc4b57ade0ecfa072d7c160cf3a8e1a6d4224504a2751d39aa0c399d52",
+        "height": 42,
+        "momentumAcknowledged": {
+          "hash": "0342cd5bd89093705e2031cf425650e86e994c14fd24c471582bdca2441761fa",
+          "height": 1000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "115792089237316195423570985008687907853269984665640564039457584007913129640936",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [
+          {
+            "version": 0,
+            "chainIdentifier": 0,
+            "blockType": 0,
+            "hash": "953b9dced7c055a78ff7cf2fb4dba1ff503e79bd4dcd96f24ca845802dbe0265",
+            "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0,
+            "momentumAcknowledged": {
+              "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+              "height": 0
+            },
+            "address": "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f",
+            "toAddress": "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f",
+            "amount": "0",
+            "tokenStandard": "zts1qqqqqqqqqqqqqqqqtq587y",
+            "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "descendantBlocks": [],
+            "data": null,
+            "fusedPlasma": 0,
+            "difficulty": 0,
+            "nonce": "0000000000000000",
+            "basePlasma": 0,
+            "usedPlasma": 0,
+            "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "publicKey": null,
+            "signature": null
+          }
+        ],
+        "data": "AP8B",
+        "fusedPlasma": 4294967297,
+        "difficulty": 9007199254740993,
+        "nonce": "0102030000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "3SBNKaj6hYcwBxaMhGwl6uAg4iVwsLBNQZw7Lu2BfmmJ2afy7Aw1buiHIORQZdUDpJPc8e7il1ZqwjkhNyGGAA=="
+      },
+      "block": {
+        "address": "004f57405c0cc25ae5d2feef6a26e4e0ae26d535",
+        "amount": 115792089237316195423570985008687907853269984665640564039457584007913129640936,
+        "blockType": 2,
+        "chainIdentifier": 99,
+        "dataHash": "a7c654aed64354e3bfb3590514e2728cf86665fb8f93228a7e41d966e3ede6e0",
+        "descendantBlocksHash": "282d55555e5a7add7aba33cb798403f29b00c0473bd6444c08c9f1bd91adb1bf",
+        "difficulty": 9007199254740993,
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "fusedPlasma": 4294967297,
+        "hash": "1cdccea9d7eab1893751954a40eccbca9d421a7abf3ffd7ef8aff698c547533c",
+        "height": 42,
+        "momentumAcknowledged": {
+          "hash": "0342cd5bd89093705e2031cf425650e86e994c14fd24c471582bdca2441761fa",
+          "height": 1000
+        },
+        "nonce": "0102030000000000",
+        "previousHash": "4dd216cc4b57ade0ecfa072d7c160cf3a8e1a6d4224504a2751d39aa0c399d52",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "3SBNKaj6hYcwBxaMhGwl6uAg4iVwsLBNQZw7Lu2BfmmJ2afy7Aw1buiHIORQZdUDpJPc8e7il1ZqwjkhNyGGAA==",
+        "toAddress": "01b3b6e5adcb4c127ffd198c6318c6318c6318c6",
+        "tokenStandard": "14e66318c6318c6318c6",
+        "version": 1
+      }
+    },
+    {
+      "name": "wide-1025-bit-value",
+      "scalar_valid": false,
+      "amount_bytes": "0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e8",
+      "rpc": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "f345277a37f14032308e2b371295ddbfb495a6b407ce2fcacf85649dfc1647e2",
+        "previousHash": "4dd216cc4b57ade0ecfa072d7c160cf3a8e1a6d4224504a2751d39aa0c399d52",
+        "height": 42,
+        "momentumAcknowledged": {
+          "hash": "0342cd5bd89093705e2031cf425650e86e994c14fd24c471582bdca2441761fa",
+          "height": 1000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224138216",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [
+          {
+            "version": 0,
+            "chainIdentifier": 0,
+            "blockType": 0,
+            "hash": "953b9dced7c055a78ff7cf2fb4dba1ff503e79bd4dcd96f24ca845802dbe0265",
+            "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0,
+            "momentumAcknowledged": {
+              "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+              "height": 0
+            },
+            "address": "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f",
+            "toAddress": "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f",
+            "amount": "0",
+            "tokenStandard": "zts1qqqqqqqqqqqqqqqqtq587y",
+            "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "descendantBlocks": [],
+            "data": null,
+            "fusedPlasma": 0,
+            "difficulty": 0,
+            "nonce": "0000000000000000",
+            "basePlasma": 0,
+            "usedPlasma": 0,
+            "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "publicKey": null,
+            "signature": null
+          }
+        ],
+        "data": "AP8B",
+        "fusedPlasma": 4294967297,
+        "difficulty": 9007199254740993,
+        "nonce": "0102030000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "jvFb/mpM5fKHSiyn2RPvf4w8NlxFf39Psl2KPPGUZPNBI4Y7GUJPIp7nC35psTRpdj60/lI2cqnlzLBMG6G4CQ=="
+      },
+      "block": {
+        "address": "004f57405c0cc25ae5d2feef6a26e4e0ae26d535",
+        "amount": 179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224138216,
+        "blockType": 2,
+        "chainIdentifier": 99,
+        "dataHash": "a7c654aed64354e3bfb3590514e2728cf86665fb8f93228a7e41d966e3ede6e0",
+        "descendantBlocksHash": "282d55555e5a7add7aba33cb798403f29b00c0473bd6444c08c9f1bd91adb1bf",
+        "difficulty": 9007199254740993,
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "fusedPlasma": 4294967297,
+        "hash": "f345277a37f14032308e2b371295ddbfb495a6b407ce2fcacf85649dfc1647e2",
+        "height": 42,
+        "momentumAcknowledged": {
+          "hash": "0342cd5bd89093705e2031cf425650e86e994c14fd24c471582bdca2441761fa",
+          "height": 1000
+        },
+        "nonce": "0102030000000000",
+        "previousHash": "4dd216cc4b57ade0ecfa072d7c160cf3a8e1a6d4224504a2751d39aa0c399d52",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "jvFb/mpM5fKHSiyn2RPvf4w8NlxFf39Psl2KPPGUZPNBI4Y7GUJPIp7nC35psTRpdj60/lI2cqnlzLBMG6G4CQ==",
+        "toAddress": "01b3b6e5adcb4c127ffd198c6318c6318c6318c6",
+        "tokenStandard": "14e66318c6318c6318c6",
+        "version": 1
+      }
+    },
+    {
+      "name": "negative-alias",
+      "scalar_valid": false,
+      "amount_bytes": "00000000000000000000000000000000000000000000000000000000000003e8",
+      "rpc": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "4d2d58157f60b9602dd51e182fbc6418d56fadf9c9e9e3cc964565b5881f8221",
+        "previousHash": "4dd216cc4b57ade0ecfa072d7c160cf3a8e1a6d4224504a2751d39aa0c399d52",
+        "height": 42,
+        "momentumAcknowledged": {
+          "hash": "0342cd5bd89093705e2031cf425650e86e994c14fd24c471582bdca2441761fa",
+          "height": 1000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "-1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [
+          {
+            "version": 0,
+            "chainIdentifier": 0,
+            "blockType": 0,
+            "hash": "953b9dced7c055a78ff7cf2fb4dba1ff503e79bd4dcd96f24ca845802dbe0265",
+            "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0,
+            "momentumAcknowledged": {
+              "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+              "height": 0
+            },
+            "address": "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f",
+            "toAddress": "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f",
+            "amount": "0",
+            "tokenStandard": "zts1qqqqqqqqqqqqqqqqtq587y",
+            "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "descendantBlocks": [],
+            "data": null,
+            "fusedPlasma": 0,
+            "difficulty": 0,
+            "nonce": "0000000000000000",
+            "basePlasma": 0,
+            "usedPlasma": 0,
+            "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "publicKey": null,
+            "signature": null
+          }
+        ],
+        "data": "AP8B",
+        "fusedPlasma": 4294967297,
+        "difficulty": 9007199254740993,
+        "nonce": "0102030000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "Q0oIxIBsUJrjKKFomj4ukkkhIvpiQuHcYe2q7xPkqPJC01gZtOyjtpNH4RNmnXJf/G1GuaTWKhPFC0gcgZWYDg=="
+      },
+      "block": {
+        "address": "004f57405c0cc25ae5d2feef6a26e4e0ae26d535",
+        "amount": -1000,
+        "blockType": 2,
+        "chainIdentifier": 99,
+        "dataHash": "a7c654aed64354e3bfb3590514e2728cf86665fb8f93228a7e41d966e3ede6e0",
+        "descendantBlocksHash": "282d55555e5a7add7aba33cb798403f29b00c0473bd6444c08c9f1bd91adb1bf",
+        "difficulty": 9007199254740993,
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "fusedPlasma": 4294967297,
+        "hash": "4d2d58157f60b9602dd51e182fbc6418d56fadf9c9e9e3cc964565b5881f8221",
+        "height": 42,
+        "momentumAcknowledged": {
+          "hash": "0342cd5bd89093705e2031cf425650e86e994c14fd24c471582bdca2441761fa",
+          "height": 1000
+        },
+        "nonce": "0102030000000000",
+        "previousHash": "4dd216cc4b57ade0ecfa072d7c160cf3a8e1a6d4224504a2751d39aa0c399d52",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "Q0oIxIBsUJrjKKFomj4ukkkhIvpiQuHcYe2q7xPkqPJC01gZtOyjtpNH4RNmnXJf/G1GuaTWKhPFC0gcgZWYDg==",
+        "toAddress": "01b3b6e5adcb4c127ffd198c6318c6318c6318c6",
+        "tokenStandard": "14e66318c6318c6318c6",
+        "version": 1
+      }
+    }
+  ]
+}

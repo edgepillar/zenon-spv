@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"golang.org/x/crypto/sha3"
 
@@ -199,22 +200,36 @@ func convertAndVerifyAccountBlock(b rpcAccountBlock) (chain.AccountBlock, error)
 	return out, nil
 }
 
-// parseDecimalBigInt parses an Amount field from the wire as a
-// non-negative decimal *big.Int. Negative values are rejected at the
-// wire boundary (DOC1) — go-zenon's protobuf wire serializes Amount
-// via common.BigIntToBytes which strips the sign, so a negative on
-// the SPV's JSON wire has no consensus-valid representation upstream.
-// Allowing it would surface as silent envelope drift (A1/F7).
+// parseDecimalBigInt validates the scalar before hashing. Reject oversized
+// significant decimal input before big.Int parsing; leading zeroes and the
+// existing optional plus sign remain supported. Empty still means zero.
 func parseDecimalBigInt(s string) (*big.Int, error) {
 	if s == "" {
 		return new(big.Int), nil
 	}
-	v, ok := new(big.Int).SetString(s, 10)
-	if !ok {
-		return nil, fmt.Errorf("invalid decimal big-int %q", s)
+	digits := strings.TrimPrefix(s, "+")
+	if digits == "" || strings.HasPrefix(digits, "-") {
+		return nil, chain.ErrInvalidAccountAmount
 	}
-	if v.Sign() < 0 {
-		return nil, fmt.Errorf("amount must be non-negative, got %q", s)
+	digits = strings.TrimLeft(digits, "0")
+	if digits == "" {
+		return new(big.Int), nil
+	}
+	// 2^255-1 has 77 decimal digits. The bit check below resolves that edge.
+	if len(digits) > 77 {
+		return nil, chain.ErrInvalidAccountAmount
+	}
+	for _, digit := range digits {
+		if digit < '0' || digit > '9' {
+			return nil, chain.ErrInvalidAccountAmount
+		}
+	}
+	v, ok := new(big.Int).SetString(digits, 10)
+	if !ok {
+		return nil, chain.ErrInvalidAccountAmount
+	}
+	if err := chain.ValidateAccountAmount(v); err != nil {
+		return nil, err
 	}
 	return v, nil
 }

@@ -6,13 +6,13 @@ import (
 	"testing"
 )
 
-// TestBigIntToBytes32_MirrorsGoZenon confirms chain.bigIntToBytes32
+// TestAccountAmountBytes_MirrorsGoZenon confirms chain.accountAmountBytes
 // is byte-equivalent to reference/go-zenon/common/bytes.go's
 // BigIntToBytes (32-byte left-pad of int.Bytes()). This is the A1/F7
 // envelope-parity property; without it the SPV would silently
 // recompute a different account-block hash than go-zenon for the
 // same Amount and ACCEPT bundles a full node would REJECT.
-func TestBigIntToBytes32_MirrorsGoZenon(t *testing.T) {
+func TestAccountAmountBytes_MirrorsGoZenon(t *testing.T) {
 	cases := []struct {
 		name string
 		in   *big.Int
@@ -40,25 +40,24 @@ func TestBigIntToBytes32_MirrorsGoZenon(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		got := bigIntToBytes32(c.in)
+		got := accountAmountBytes(c.in)
 		if !bytes.Equal(got, c.want) {
 			t.Errorf("%s: got %x, want %x", c.name, got, c.want)
 		}
 	}
 }
 
-// TestBigIntToBytes32_NegativeUsesAbsoluteValue locks in the parity:
+// TestAccountAmountBytes_NegativeUsesAbsoluteValue locks in the parity:
 // (*big.Int).Bytes() drops the sign and returns absolute-value bytes.
 // go-zenon's BigIntToBytes calls .Bytes() unconditionally, so a
 // negative big.Int hashes the same as its absolute value. The SPV
-// rejects negatives at the wire (DOC1) so this path is unreachable
-// in practice, but the chain layer matches go-zenon byte-for-byte
-// to remove a refactor footgun (A1/F7).
-func TestBigIntToBytes32_NegativeUsesAbsoluteValue(t *testing.T) {
-	got := bigIntToBytes32(big.NewInt(-5))
+// rejects negatives in both RPC conversion and segment verification;
+// the low-level chain layer still matches the node's byte encoding.
+func TestAccountAmountBytes_NegativeUsesAbsoluteValue(t *testing.T) {
+	got := accountAmountBytes(big.NewInt(-5))
 	want := leftPadHex32([]byte{0x05})
 	if !bytes.Equal(got, want) {
-		t.Errorf("A1/F7: bigIntToBytes32(-5) = %x, want %x (abs-value parity with common.BigIntToBytes)", got, want)
+		t.Errorf("accountAmountBytes(-5) = %x, want %x", got, want)
 	}
 }
 

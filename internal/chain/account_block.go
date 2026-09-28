@@ -105,7 +105,7 @@ type AccountBlock struct {
 //	MomentumAcknowledged.Bytes() (40B = 32B hash + 8B BE height)
 //	Address (20B)
 //	ToAddress (20B)
-//	BigIntToBytes(Amount) (32B left-padded big-endian, treats nil as zero)
+//	BigIntToBytes(Amount) (at least 32B, left-padded big-endian, nil is zero)
 //	TokenStandard (10B)
 //	FromBlockHash (32B)
 //	DescendantBlocksHash (32B)
@@ -129,7 +129,7 @@ func (b *AccountBlock) ComputeHash() Hash {
 	buf = append(buf, b.MomentumAcknowledged.Bytes()...)
 	buf = append(buf, b.Address[:]...)
 	buf = append(buf, b.ToAddress[:]...)
-	buf = append(buf, bigIntToBytes32(b.Amount)...)
+	buf = append(buf, accountAmountBytes(b.Amount)...)
 	buf = append(buf, b.TokenStandard[:]...)
 	buf = append(buf, b.FromBlockHash[:]...)
 	buf = append(buf, b.DescendantBlocksHash[:]...)
@@ -156,25 +156,18 @@ func (b *AccountBlock) AccountHeader() AccountHeader {
 	}
 }
 
-// bigIntToBytes32 mirrors common.BigIntToBytes at
-// reference/go-zenon/common/bytes.go:33-39 byte-for-byte. Always
-// returns 32 bytes (left-padded big-endian).
-//
-// (*big.Int).Bytes() returns the absolute-value bytes (the sign is
-// dropped). go-zenon's reference unconditionally calls .Bytes() and
-// LeftPadBytes — so for parity we do the same, treating only nil and
-// zero as 32 zeros. Negative inputs are blocked upstream by
-// parseDecimalBigInt (DOC1) so this path is unreachable for negatives
-// in practice; the parity here removes a refactor footgun and keeps
-// the chain-layer envelope semantics identical to go-zenon (A1/F7).
-func bigIntToBytes32(i *big.Int) []byte {
+// accountAmountBytes mirrors common.BigIntToBytes and LeftPadBytes: pad short
+// absolute values to 32 bytes, but never truncate longer values. This low-level
+// serialization also handles invalid amounts for node parity; both RPC and
+// segment verification must call ValidateAccountAmount before trusting them.
+func accountAmountBytes(i *big.Int) []byte {
 	out := make([]byte, 32)
 	if i == nil || i.Sign() == 0 {
 		return out
 	}
 	src := i.Bytes()
-	if len(src) > 32 {
-		src = src[len(src)-32:]
+	if len(src) >= 32 {
+		return src
 	}
 	copy(out[32-len(src):], src)
 	return out
