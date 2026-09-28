@@ -75,6 +75,7 @@ const (
 	ReasonStateKeyMismatch           // state-proof: decoded key from proof does not match (Address, KeyKind, Key)
 	ReasonMalformedStateProof        // state-proof: structural defect in ProofNodes (empty, duplicate, bad encoding)
 	ReasonOversizedStateProof        // state-proof: ProofNodes exceeds MaxStateProofNodes or sum exceeds MaxStateProofBytes
+	ReasonUnsupportedHeaderVersion   // momentum layout is not implemented by this verifier
 )
 
 // String returns a stable, snake-case-equivalent name for serialization.
@@ -146,6 +147,8 @@ func (r ReasonCode) String() string {
 		return "ReasonMalformedStateProof"
 	case ReasonOversizedStateProof:
 		return "ReasonOversizedStateProof"
+	case ReasonUnsupportedHeaderVersion:
+		return "ReasonUnsupportedHeaderVersion"
 	default:
 		return fmt.Sprintf("ReasonCode(%d)", int(r))
 	}

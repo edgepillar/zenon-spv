@@ -55,6 +55,9 @@ func saveHeaderState(path string, state HeaderState, openDir func(string) (*os.F
 	if path == "" {
 		return errors.New("verify: SaveHeaderState: empty path")
 	}
+	if err := state.ValidateHeaderVersions(); err != nil {
+		return fmt.Errorf("save state: %w", err)
+	}
 	dir := filepath.Dir(path)
 	if dir == "" {
 		dir = "."
@@ -112,7 +115,8 @@ func saveHeaderState(path string, state HeaderState, openDir func(string) (*os.F
 // LoadHeaderState reads a persisted state file. Returns an error if
 // the file does not exist (callers wanting "load if present" should
 // use LoadOrInit). Refuses unknown wire versions per ADR 0001's
-// versioning policy.
+// versioning policy and unsupported momentum versions throughout
+// the stored window, before any policy-driven truncation.
 func LoadHeaderState(path string) (HeaderState, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -134,11 +138,15 @@ func LoadHeaderState(path string) (HeaderState, error) {
 	if body.Genesis.HeaderHash.IsZero() {
 		return HeaderState{}, errors.New("state file: genesis HeaderHash is zero — likely corrupted")
 	}
-	return HeaderState{
+	state := HeaderState{
 		Genesis:        body.Genesis,
 		RetainedWindow: body.Window,
 		Capacity:       body.Capacity,
-	}, nil
+	}
+	if err := state.ValidateHeaderVersions(); err != nil {
+		return HeaderState{}, fmt.Errorf("load state: %w", err)
+	}
+	return state, nil
 }
 
 // LoadOrInit returns the persisted state at path if it exists and

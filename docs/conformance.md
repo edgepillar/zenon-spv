@@ -19,6 +19,12 @@ Header-chain layer:
 - [x] Height non-monotonic / gap → REJECT.
 - [x] Window not satisfied (k < w) → REFUSED.
 - [x] Empty input → REFUSED.
+- [x] Unsupported incoming or retained momentum version →
+      REFUSED/`ReasonUnsupportedHeaderVersion`, without state advancement.
+- [x] RPC conversion refuses unsupported momentum versions and returns
+      no partial batch. State load checks the full stored window before
+      truncation; state save refuses before touching files. Only version 1
+      is supported; see [`header-versions.md`](header-versions.md).
 
 Commitment layer (Phase 2):
 

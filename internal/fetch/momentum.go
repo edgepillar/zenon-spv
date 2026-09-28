@@ -15,17 +15,17 @@ import (
 // rpcMomentum is the wire shape returned by ledger.* methods. Field
 // names match go-zenon's JSON tags (see chain/nom/momentum.go:32-51).
 type rpcMomentum struct {
-	Version         uint64           `json:"version"`
-	ChainIdentifier uint64           `json:"chainIdentifier"`
-	Hash            string           `json:"hash"` // hex; treated as a CLAIM, not trusted
-	PreviousHash    string           `json:"previousHash"`
-	Height          uint64           `json:"height"`
-	Timestamp       uint64           `json:"timestamp"`
-	Data            string           `json:"data"`        // base64
-	Content         []rpcAccountHdr  `json:"content"`
-	ChangesHash     string           `json:"changesHash"`
-	PublicKey       string           `json:"publicKey"`   // base64
-	Signature       string           `json:"signature"`   // base64
+	Version         uint64          `json:"version"`
+	ChainIdentifier uint64          `json:"chainIdentifier"`
+	Hash            string          `json:"hash"` // hex; treated as a CLAIM, not trusted
+	PreviousHash    string          `json:"previousHash"`
+	Height          uint64          `json:"height"`
+	Timestamp       uint64          `json:"timestamp"`
+	Data            string          `json:"data"` // base64
+	Content         []rpcAccountHdr `json:"content"`
+	ChangesHash     string          `json:"changesHash"`
+	PublicKey       string          `json:"publicKey"` // base64
+	Signature       string          `json:"signature"` // base64
 }
 
 type rpcAccountHdr struct {
@@ -121,6 +121,9 @@ var ErrHashMismatch = errors.New("momentum hash recomputed from signed envelope 
 // which is recomputed via chain.MomentumContentHash from the decoded
 // account headers.
 func convertAndVerifyDetailed(m rpcMomentum) (DetailedHeader, error) {
+	if err := chain.ValidateHeaderVersion(m.Version); err != nil {
+		return DetailedHeader{}, fmt.Errorf("momentum height=%d: %w", m.Height, err)
+	}
 	prev, err := decodeHex32(m.PreviousHash)
 	if err != nil {
 		return DetailedHeader{}, fmt.Errorf("previous_hash: %w", err)

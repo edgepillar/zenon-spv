@@ -16,7 +16,8 @@ import (
 //	ACCEPT   — every header in headers links, hashes, signs, and
 //	           the resulting retained window meets policy.W.
 //	REJECT   — at least one header is cryptographically invalid.
-//	REFUSED  — input is empty, or the policy window is not satisfied.
+//	REFUSED  — input is empty, a momentum version is unsupported,
+//	           or the policy window is not satisfied.
 //
 // The returned HeaderState is the new state IF the outcome is ACCEPT.
 // On REJECT or REFUSED the original state is returned unmodified.
@@ -69,6 +70,9 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 		return refuse(ReasonOversizedHeaders,
 			fmt.Sprintf("input %d exceeds MaxHeaders=%d", len(headers), policy.MaxHeaders)), state
 	}
+	if err := state.ValidateHeaderVersions(); err != nil {
+		return refuse(ReasonUnsupportedHeaderVersion, err.Error()), state
+	}
 
 	// Required mode with no authorizer is REFUSED — Codex review v1
 	// P2 lock-in. Surface this once at the input boundary rather than
@@ -108,6 +112,10 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 	}
 
 	for i, h := range headers {
+		if err := chain.ValidateHeaderVersion(h.Version); err != nil {
+			return refuse(ReasonUnsupportedHeaderVersion,
+				fmt.Sprintf("header[%d] height=%d: %v", i, h.Height, err)), state
+		}
 		if h.ChainIdentifier != working.Genesis.ChainID {
 			return reject(ReasonChainIDMismatch, i,
 				fmt.Sprintf("header chain_id=%d != genesis chain_id=%d", h.ChainIdentifier, working.Genesis.ChainID)), state

@@ -1,6 +1,10 @@
 package verify
 
-import "github.com/0x3639/zenon-spv/internal/chain"
+import (
+	"fmt"
+
+	"github.com/0x3639/zenon-spv/internal/chain"
+)
 
 // HeaderState carries the verifier's retained policy window and the
 // trust anchors needed to extend it.
@@ -46,6 +50,18 @@ func NewHeaderState(g GenesisTrustRoot, policy Policy) HeaderState {
 // Empty reports whether the state has no retained headers (i.e., the
 // next append anchors against Genesis).
 func (s HeaderState) Empty() bool { return len(s.RetainedWindow) == 0 }
+
+// ValidateHeaderVersions checks the entire retained window before it
+// supplies an anchor, depth evidence, or persisted state. This is a
+// format-support check, not a substitute for header verification.
+func (s HeaderState) ValidateHeaderVersions() error {
+	for i, h := range s.RetainedWindow {
+		if err := chain.ValidateHeaderVersion(h.Version); err != nil {
+			return fmt.Errorf("retained header[%d] height=%d: %w", i, h.Height, err)
+		}
+	}
+	return nil
+}
 
 // Tip returns the most recently appended header. ok is false when the
 // state is empty (caller should anchor against Genesis instead).

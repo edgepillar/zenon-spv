@@ -24,7 +24,7 @@ func (h Hash) IsZero() bool {
 // Bytes returns a slice view of h. The returned slice aliases h.
 func (h Hash) Bytes() []byte { return h[:] }
 
-// Header is the verifier-required subset of nom.Momentum.
+// Header is the verifier-required subset of a version-1 nom.Momentum.
 //
 // Field order and semantics mirror reference/go-zenon/chain/nom/momentum.go:32-51.
 // The shim isolates the verifier from go-zenon's struct shape so the
@@ -33,7 +33,7 @@ type Header struct {
 	Version         uint64 `json:"version"`
 	ChainIdentifier uint64 `json:"chainIdentifier"`
 
-	HeaderHash   Hash   `json:"hash"`         // claimed; verifier recomputes and compares
+	HeaderHash   Hash   `json:"hash"` // claimed; verifier recomputes and compares
 	PreviousHash Hash   `json:"previousHash"`
 	Height       uint64 `json:"height"`
 
@@ -47,8 +47,10 @@ type Header struct {
 	Signature []byte `json:"signature"` // 64B ed25519
 }
 
-// ComputeHash mirrors nom.Momentum.ComputeHash exactly
-// (reference/go-zenon/chain/nom/momentum.go:58-69).
+// ComputeHash uses the version-1 nom.Momentum serialization
+// (reference/go-zenon/chain/nom/momentum.go:58-69). It is a low-level
+// hashing primitive and does not validate Version. Verification and
+// RPC entry points must call ValidateHeaderVersion before using it.
 //
 // The signed envelope is the byte concatenation of, in order:
 //
