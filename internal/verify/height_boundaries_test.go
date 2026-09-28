@@ -3,6 +3,7 @@ package verify
 import (
 	"crypto/ed25519"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
@@ -66,5 +67,58 @@ func TestVerifyCommitment_DepthCannotOverflow(t *testing.T) {
 		} else if result.Outcome != OutcomeRefused || result.Reason != ReasonInsufficientFinality || len(result.Proven) != 0 {
 			t.Fatalf("overflow granted unearned depth: height=%d depth=%d: %s", tc.height, tc.depth, result)
 		}
+	}
+}
+
+func TestVerifySegment_HeightCannotWrapToZero(t *testing.T) {
+	const max = ^uint64(0)
+	for _, tc := range []struct {
+		name    string
+		heights []uint64
+		reasons []ReasonCode
+	}{
+		{"maximum-successor", []uint64{max - 1, max}, []ReasonCode{ReasonOK, ReasonOK}},
+		{"wrapped-successor", []uint64{max, 0, 1}, []ReasonCode{ReasonOK, ReasonHeightNonMonotonic, ReasonParentNotAccepted}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, segment, _, key := segmentFixture(t)
+			template := segment.Blocks[0]
+			segment.Blocks = make([]chain.AccountBlock, len(tc.heights))
+			flat := make([]chain.AccountHeader, len(tc.heights))
+			for i, height := range tc.heights {
+				b := template
+				b.Height = height
+				if i > 0 {
+					b.PreviousHash = segment.Blocks[i-1].BlockHash
+				}
+				b.BlockHash = b.ComputeHash()
+				b.Signature = ed25519.Sign(key, b.BlockHash[:])
+				segment.Blocks[i], flat[i] = b, b.AccountHeader()
+			}
+			sort.Slice(flat, func(i, j int) bool { return flat[i].Height < flat[j].Height })
+			anchor := GenesisTrustRoot{ChainID: template.ChainIdentifier, Height: 100, HeaderHash: chain.Hash{1}}
+			h := boundaryHeader(anchor, 101, chain.MomentumContentHash(flat))
+			policy := Policy{W: 0}
+			r, state := VerifyHeaders([]chain.Header{h}, NewHeaderState(anchor, policy), policy)
+			if r.Outcome != OutcomeAccept {
+				t.Fatalf("fixture momentum failed verification: %s", r)
+			}
+			commitments := make([]proof.CommitmentEvidence, len(flat))
+			for i, target := range flat {
+				commitments[i] = proof.CommitmentEvidence{Height: h.Height, Target: target,
+					Flat: &proof.FlatContentEvidence{SortedHeaders: flat}}
+			}
+			result := VerifySegment(state, segment, commitments, policy)
+			for i, want := range tc.reasons {
+				got := result.Blocks[i]
+				if want == ReasonOK {
+					if got.Outcome != OutcomeAccept {
+						t.Fatalf("block[%d] should accept: %s", i, got)
+					}
+				} else if got.Outcome != OutcomeReject || got.Reason != want || len(got.Proven) != 0 {
+					t.Errorf("block[%d] should reject with %s and no guarantees: %s", i, want, got)
+				}
+			}
+		})
 	}
 }
