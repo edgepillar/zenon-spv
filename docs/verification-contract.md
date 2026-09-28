@@ -17,19 +17,22 @@ An integration must record these inputs alongside its verification result:
 | Resource and depth policy | Choose explicit `Policy` limits and `W` appropriate to the experiment. `W` is a strict-past depth requirement for commitments, not a consensus finality certificate. Header-chain ACCEPT alone does not establish that depth for a selected target. |
 | Peer observations | k-of-n RPC agreement detects disagreement. It cannot establish elected-producer quorum or canonical history. Record peer assumptions separately from cryptographic evidence. |
 
-`HeaderState` is currently caller-constructible. Functions consuming it assume
-that its headers came from successful verification under the intended trust
-inputs. Loading JSON, calling `Append`, or supplying `HeaderState` fields does
-not create that provenance. Persisted-state integrity is revalidated on load,
-but validated handles remain implementation work. Signature revalidation
-does not authenticate an attacker-chosen trust root.
+The CLI and watch use the [verified state API](verified-state-api.md), which
+owns its headers and captures verification policy. Callers cannot inject raw
+state or mutate accepted evidence through input or snapshot aliases. The
+lower-level `HeaderState` remains caller-constructible and requires its callers
+to maintain provenance. `LoadTrustedState` explicitly relies on protected local
+file provenance; signature revalidation does not authenticate a substituted
+window or an attacker-chosen trust root.
 
 ## Result interpretation
 
 Consumers must inspect the outcome, required `Proven` guarantees, and the
 external assumptions they accept. The absence of a guarantee from `NotProven`
 does not mean that it is proven. Existing assumption tags are not a complete
-record of every integration input, especially custom anchors and local state.
+record of every integration input. The verified state API reports configured
+anchor and persisted-state trust explicitly; legacy free functions retain
+their earlier assumption reporting.
 
 | Path | Bounded meaning of ACCEPT |
 | --- | --- |
@@ -71,8 +74,9 @@ does not establish activation on any public network.
 2. Review v2 application behavior against additional independently sourced
    network evidence. Local vectors establish serialization compatibility;
    they do not re-execute Dynamic Plasma price transitions.
-3. Establish retained-state provenance and a validated application API before
-   a deployment pilot. Define which guarantees the application actually needs.
+3. Use the validated application API and establish external provenance for
+   anchors and persisted state before a deployment pilot. Define which
+   guarantees the application actually needs.
 4. Run a controlled read-only pilot with restart, stale/forked/malformed
    peers, producer-coverage gaps, resource limits, and persistence failures.
    Record the exact source, binary, trust inputs, and bounded outcomes.

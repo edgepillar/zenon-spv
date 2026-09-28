@@ -26,6 +26,11 @@ The existing caught-up tick also saves before reporting ACCEPT. Callers
 overriding `Loop.SaveState` must honor the persistence contract; a nil
 override uses `verify.SaveHeaderState`.
 
+Watch owns a `VerifiedState` handle and passes a detached snapshot to any
+persistence adapter. The adapter cannot mutate the retained state through
+its argument. Startup reports the handle's configured-anchor and persisted-
+state trust assumptions; see the [verified state API](verified-state-api.md).
+
 ## Retained-state validation
 
 Save and load reject invalid capacity, wrong chain identity, header hash or
@@ -47,7 +52,8 @@ window cannot reconstruct its evicted ancestry or independently establish
 that the retained chain is canonical. An attacker who can replace local
 trusted state with a different, internally valid chain is not defeated by
 rechecking signatures. State-file provenance, trusted checkpoints, and
-producer policy remain necessary. This is not a new verified-handle API.
+producer policy remain necessary. The verified state API preserves in-process
+ownership; it does not replace these external provenance requirements.
 
 ## Filesystem boundary
 

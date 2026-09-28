@@ -33,6 +33,8 @@ const (
 type TrustAssumption string
 
 const (
+	TrustConfiguredAnchor         TrustAssumption = "TRUST_CONFIGURED_ANCHOR"
+	TrustPersistedState           TrustAssumption = "TRUST_PERSISTED_STATE"
 	TrustExternalProtocolProfile  TrustAssumption = "TRUST_EXTERNAL_PROTOCOL_PROFILE"
 	TrustCheckpointAnchor         TrustAssumption = "TRUST_CHECKPOINT_ANCHOR"
 	TrustRPCQuorum                TrustAssumption = "TRUST_RPC_QUORUM"

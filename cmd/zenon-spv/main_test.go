@@ -464,12 +464,12 @@ func TestRunVerifyStateValue_ForkedHeaderChainRejectedBeforeStateProof(t *testin
 	bundlePath, _ := stateValueBundleFromValidHeaders(t, []proof.StateValueProof{p})
 
 	// Construct a bad genesis-config: chain_id matches but
-	// header_hash deliberately mismatches the bundle's
+	// nonzero header_hash deliberately mismatches the bundle's
 	// claimed_genesis. Triggers ReasonGenesisMismatch at the
 	// header-verification step.
 	badGenesis := map[string]any{
 		"chain_id":    3,
-		"header_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+		"header_hash": "0000000000000000000000000000000000000000000000000000000000000001",
 		"height":      100,
 	}
 	badGenesisRaw, err := json.Marshal(badGenesis)
