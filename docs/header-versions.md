@@ -1,71 +1,95 @@
-# Supported momentum versions
+# Momentum versions and activation profiles
 
-The verifier implements the **version-1 momentum serialization only**.
-It refuses version 0 (including an omitted RPC `version`), version 2,
-version 3, and every other unsupported value. A matching hash and valid
-signature over the version-1 layout do not make another version supported.
+The client implements v1 and v2 signed momentum layouts. Versions 0, 3,
+and all other unknown values are refused before hashing or trusting a
+retained header. `Header.ComputeHash` is a low-level primitive; callers must
+check layout support and activation policy separately.
 
-This is a serialization boundary, not proof that version 1 is valid at
-every height on a selected network. Network activation rules, producer
-selection, and canonicality remain separate requirements. See
-[`trust-model.md`](trust-model.md) for the existing trust boundaries.
+V2 appends `NextFusionPrice` and `NextWorkPrice` as big-endian uint64 values.
+Both fields are preserved through RPC conversion, bundles, retained state,
+and hashing. Missing or null v2 JSON prices fail decoding. The verifier
+requires zero prices in v1 and prices at least 1000 in v2. It does not
+re-execute the dynamic pricing state transition.
 
-## Source basis
+## Explicit operator policy
 
-These are pinned source observations, not live-network activation claims:
+`verify-*` and `watch` accept `--protocol-profile <path>`. The profile is a
+trusted local input, never supplied implicitly by a bundle or an RPC peer.
+Without it, verification remains v1-only and makes no claim that v1 is
+permitted at every height. Fetch tools can decode and hash both layouts;
+fetching a v2 header does not authorize its acceptance.
 
-- In go-zenon commit
-  [`667a69d`](https://github.com/zenon-network/go-zenon/blob/667a69d9e9a418edf7580b08492ba5dcb9efd63a/verifier/momentum.go),
-  `rawMomentumVerifier.version` permits only version 1.
-- In go-zenon commit
-  [`3a4131e`](https://github.com/zenon-network/go-zenon/blob/3a4131e63881058b6ce2ee81d3a41d0033fafc99/chain/nom/momentum.go),
-  `Momentum.ComputeHash` appends `NextFusionPrice` and `NextWorkPrice`
-  when `Version >= DynamicPlasmaMomentumVersion` (2). The
-  [version rule at that same commit](https://github.com/zenon-network/go-zenon/blob/3a4131e63881058b6ce2ee81d3a41d0033fafc99/verifier/momentum.go)
-  requires version 2 when Dynamic Plasma is active and version 1 otherwise.
+A profile JSON object has these fields:
 
-The SPV header type does not carry those price fields. Applying its existing
-preimage to a claimed version 2 would omit signed data. Future versions
-must not silently inherit the version-1 layout either.
+| Field | Meaning |
+| --- | --- |
+| `version` | Profile schema; must be `1`. |
+| `anchor` | The exact configured trust root: `chain_id`, `height`, and `header_hash`. The hash uses 64 hexadecimal characters. |
+| `valid_through` | Last covered momentum height, strictly greater than the anchor height. Coverage begins immediately after the anchor. |
+| `v2_from_height` | First momentum height required to use v2. Before it, v1 is required. Zero explicitly selects v1 throughout coverage. |
+| `source` | Nonempty provenance description, at most 1024 bytes. Recording it does not authenticate it. |
 
-## Enforcement and errors
+The profile loader accepts one JSON object of at most 16 KiB and rejects
+unknown fields and trailing JSON. The profile schema and anchor are checked
+again in the verifier, including for callers that construct policy directly.
+ACCEPT under a profile includes `TRUST_EXTERNAL_PROTOCOL_PROFILE`. This trust
+assumption is separate from an operator-attested producer schedule.
 
-`chain.ValidateHeaderVersion` is the shared support check. The low-level
-`Header.ComputeHash` still computes the version-1 preimage; it does not
-validate protocol support by itself.
+No mainnet or testnet activation height is hard-coded here. A profile must
+be established by the operator using evidence they explicitly trust. The
+synthetic transition in the conformance corpus is not a network configuration.
 
-| Boundary | Behavior |
-|---|---|
-| Header-chain verifier | Checks each incoming version before hashing and all retained versions before extending the window; unsupported input returns `REFUSED / ReasonUnsupportedHeaderVersion` with the original state. |
-| Commitment verification | Checks the entire retained window, including the target, intermediate headers, and tip. Segment verification inherits this check through its commitment verification. |
-| State-value verification | Refuses unsupported retained versions without claiming a trusted depth or any proven guarantee. State-value inclusion remains unsupported. |
-| Retained-window authorization | Checks versions even with producer authorization disabled. A producer schedule cannot enable an unsupported serialization. |
-| RPC conversion | Returns an error wrapping `chain.ErrUnsupportedHeaderVersion`; no header or partial batch is returned. A multi-peer caller may report insufficient healthy peers or quorum. |
-| State load | Checks every stored header before policy-driven truncation. A smaller window cannot discard an unsupported version to make the state usable. |
-| State save | Checks before creating or replacing files. An unsupported state cannot overwrite an existing valid state. |
+## Source basis and height semantics
 
-The momentum version is distinct from both the bundle wire version and the
-state-file schema version. Those formats and their existing version numbers
-are unchanged.
+The implementation and corpus pin go-zenon commit
+[`3a4131e63881058b6ce2ee81d3a41d0033fafc99`](https://github.com/zenon-network/go-zenon/tree/3a4131e63881058b6ce2ee81d3a41d0033fafc99):
 
-For `verify-headers`, an unsupported incoming header produces exit code 2
-and is not persisted. Loading an unsupported saved state remains a setup
-error (CLI exit code 70), following the existing state-load error convention.
-`watch` refuses such a saved state at startup. RPC errors during a running
-watch remain unsuccessful ticks under the existing retry behavior.
+- [`Momentum.ComputeHash`](https://github.com/zenon-network/go-zenon/blob/3a4131e63881058b6ce2ee81d3a41d0033fafc99/chain/nom/momentum.go)
+  adds both prices starting at version 2.
+- [`rawMomentumVerifier`](https://github.com/zenon-network/go-zenon/blob/3a4131e63881058b6ce2ee81d3a41d0033fafc99/verifier/momentum.go)
+  requires v2 when Dynamic Plasma is active and v1 otherwise, and checks
+  basic price limits. [`dp.MinResourcePrice`](https://github.com/zenon-network/go-zenon/blob/3a4131e63881058b6ce2ee81d3a41d0033fafc99/dp/dp.go)
+  is 1000 at this pin.
+- [`momentumStore.IsSporkActive`](https://github.com/zenon-network/go-zenon/blob/3a4131e63881058b6ce2ee81d3a41d0033fafc99/chain/momentum/embedded.go)
+  evaluates the stored frontier and has a genesis-frontier exception.
+  **Do not copy a spork enforcement height directly into `v2_from_height`.**
+  This profile names the first incoming momentum that must use v2; deriving
+  it requires the spork state and the relevant preceding frontier context.
 
-## Validation and further work
+These are source observations, not assertions of public-network activation.
 
-Regression tests construct deliberately invalid version-2/3 envelopes with
-valid Ed25519 signatures over the old preimage. These are adversarial
-fixtures, **not reference vectors for actual version-2/3 serialization**.
-They cover incoming headers, retained anchors and depth evidence, RPC
-conversion, persistence, and CLI refusal. Existing version-1 acceptance
-tests remain in place. All test traffic uses local fixtures or local HTTP
-servers; this does not establish live-node compatibility.
+## Persistence and failures
 
-Adding version-2 support requires carrying both price fields through RPC,
-bundles, retained state, and hashing, with independent reference vectors
-and explicit activation/trust rules. Merely adding `2` to the accepted
-version list is insufficient. Changes to account-block versions, state-root
-proof support, or network activation discovery are outside this change.
+Profile-bound state uses schema **2**, including the full profile. Older
+clients refuse that schema instead of ignoring activation constraints.
+Legacy v1-only state without a profile keeps schema 1. The bundle envelope
+remains at version 1; new clients require the price fields for v2 headers.
+
+Resume requires an exact match of the configured profile and anchor,
+including anchor height. Removing, changing, or extending a profile fails
+rather than silently changing trust policy. To adopt a different profile,
+verify the required history into a new state file from an independently
+trusted anchor. Automatic migration or profile renewal is not implemented.
+All retained headers are checked before a smaller window can discard any.
+
+| Condition | Verifier outcome |
+| --- | --- |
+| Unknown momentum layout | REFUSED / `ReasonUnsupportedHeaderVersion` |
+| V2 without a profile | REFUSED / `ReasonProtocolProfileRequired` |
+| Invalid profile or profile/state mismatch | REFUSED / `ReasonInvalidProtocolProfile` or `ReasonProtocolProfileMismatch` |
+| Header outside profile coverage | REFUSED / `ReasonProtocolProfileCoverage` |
+| Supported version conflicts with activation policy | REJECT / `ReasonHeaderVersionInactive` |
+| Basic resource-price bound fails | REJECT / `ReasonInvalidResourcePrice` |
+| Signed price changed without a matching hash/signature | REJECT through existing hash/signature checks |
+
+Failure does not advance header state or report proven guarantees. Bad
+configuration or saved state is a CLI setup error (exit 70); incoming
+REJECT and REFUSED retain exit codes 1 and 2. Decode errors, including missing
+v2 price fields in a bundle, follow the existing setup-error convention.
+RPC conversion errors return no partial batch.
+
+The [independent corpus](../internal/testdata/conformance/README.md) covers
+both layouts, activation boundaries, price tampering, CLI use, persistence,
+and a local HTTP watch/resume experiment. State provenance, producer election,
+canonicality, finality, balances, and Dynamic Plasma price-transition
+correctness remain outside these guarantees.

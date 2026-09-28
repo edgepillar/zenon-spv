@@ -76,6 +76,12 @@ const (
 	ReasonMalformedStateProof        // state-proof: structural defect in ProofNodes (empty, duplicate, bad encoding)
 	ReasonOversizedStateProof        // state-proof: ProofNodes exceeds MaxStateProofNodes or sum exceeds MaxStateProofBytes
 	ReasonUnsupportedHeaderVersion   // momentum layout is not implemented by this verifier
+	ReasonProtocolProfileRequired
+	ReasonInvalidProtocolProfile
+	ReasonProtocolProfileMismatch
+	ReasonProtocolProfileCoverage
+	ReasonHeaderVersionInactive
+	ReasonInvalidResourcePrice
 )
 
 // String returns a stable, snake-case-equivalent name for serialization.
@@ -147,6 +153,18 @@ func (r ReasonCode) String() string {
 		return "ReasonMalformedStateProof"
 	case ReasonOversizedStateProof:
 		return "ReasonOversizedStateProof"
+	case ReasonProtocolProfileRequired:
+		return "ReasonProtocolProfileRequired"
+	case ReasonInvalidProtocolProfile:
+		return "ReasonInvalidProtocolProfile"
+	case ReasonProtocolProfileMismatch:
+		return "ReasonProtocolProfileMismatch"
+	case ReasonProtocolProfileCoverage:
+		return "ReasonProtocolProfileCoverage"
+	case ReasonHeaderVersionInactive:
+		return "ReasonHeaderVersionInactive"
+	case ReasonInvalidResourcePrice:
+		return "ReasonInvalidResourcePrice"
 	case ReasonUnsupportedHeaderVersion:
 		return "ReasonUnsupportedHeaderVersion"
 	default:

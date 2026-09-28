@@ -41,8 +41,8 @@ import (
 // (NG1) or that this is the only block at that (address, height) on
 // the canonical chain (NG6). Effect-equivalence only.
 func VerifyCommitment(state HeaderState, evidence proof.CommitmentEvidence, policy Policy) Result {
-	if err := state.ValidateHeaderVersions(); err != nil {
-		return refuse(ReasonUnsupportedHeaderVersion, err.Error())
+	if err := state.validateProtocolPolicy(policy); err != nil {
+		return protocolFailure(err)
 	}
 	header, ok := state.HeaderAtHeight(evidence.Height)
 	if !ok {
@@ -104,7 +104,7 @@ func VerifyCommitment(state HeaderState, evidence proof.CommitmentEvidence, poli
 			FailedAt: -1,
 		}
 	}
-	return accept().
+	return withProtocolTrust(accept().
 		WithProven(
 			GuaranteeContentInclusion,
 		).
@@ -117,7 +117,7 @@ func VerifyCommitment(state HeaderState, evidence proof.CommitmentEvidence, poli
 		).
 		WithTrust(
 			TrustRetainedWindowDepth,
-		)
+		), state.ProtocolProfile)
 }
 
 // VerifyCommitments validates a batch and returns one Result per

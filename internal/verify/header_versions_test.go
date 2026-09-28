@@ -37,7 +37,7 @@ func requireUnsupportedHeader(t *testing.T, r Result) {
 }
 
 func TestVerifyHeaders_UnsupportedVersionWithValidLegacySignature(t *testing.T) {
-	for _, version := range []uint64{0, 2, 3, ^uint64(0)} {
+	for _, version := range []uint64{0, 3, ^uint64(0)} {
 		t.Run(fmt.Sprint(version), func(t *testing.T) {
 			genesis, headers, key := buildChain(t, 6)
 			headers[5].Version = version
@@ -57,7 +57,7 @@ func TestVerifyHeaders_UnsupportedRetainedVersionCannotBeEvictedIntoAcceptance(t
 	for _, index := range []int{0, 3, 5} {
 		t.Run(fmt.Sprint(index), func(t *testing.T) {
 			genesis, headers, key := buildChain(t, 9)
-			headers[index].Version = 2
+			headers[index].Version = 3
 			signLegacyHeaders(headers, key)
 			policy := Policy{W: WindowLow}
 			state := NewHeaderState(genesis, policy)
@@ -86,7 +86,7 @@ func TestVerifyCommitment_UnsupportedRetainedVersion(t *testing.T) {
 
 func TestVerifySegment_UnsupportedMomentumVersion(t *testing.T) {
 	state, segment, commitments, _ := segmentFixture(t)
-	state.RetainedWindow[1].Version = 2
+	state.RetainedWindow[1].Version = 3
 	result := VerifySegment(state, segment, commitments, Policy{W: WindowLow})
 	if len(result.Blocks) != len(segment.Blocks) {
 		t.Fatalf("result count = %d, want %d", len(result.Blocks), len(segment.Blocks))
@@ -113,13 +113,13 @@ func TestAuthorizeRetainedWindow_UnsupportedVersionWithAuthDisabled(t *testing.T
 	for _, h := range headers {
 		state.Append(h)
 	}
-	state.RetainedWindow[0].Version = 2
+	state.RetainedWindow[0].Version = 3
 	requireUnsupportedHeader(t, AuthorizeRetainedWindow(state, VerifyOptions{}))
 }
 
 func TestLoadOrInit_UnsupportedRetainedVersionBeforeTruncation(t *testing.T) {
 	state := sampleState(t)
-	state.RetainedWindow[0].Version = 2
+	state.RetainedWindow[0].Version = 3
 	path := filepath.Join(t.TempDir(), "state.json")
 	raw, err := json.Marshal(persistedState{
 		Version: stateFileVersion, Genesis: state.Genesis,

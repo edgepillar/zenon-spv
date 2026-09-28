@@ -2,7 +2,7 @@
 
 This document defines the current bounded verification scope and the gates
 for the next native light-client milestone. It describes existing behavior
-and integration requirements; it does not add a new enforced runtime profile.
+and integration requirements, including the explicit runtime activation profile.
 
 ## Trust inputs
 
@@ -11,7 +11,7 @@ An integration must record these inputs alongside its verification result:
 | Input | Required interpretation |
 | --- | --- |
 | Network and anchor | Pin chain ID, anchor height/hash, and their provenance. A matching chain ID is not remote identity authentication. A hash fetched from the same untrusted peer is not an independent trust root. |
-| Header layout and activation | Only v1 serialization is implemented. Versions 0, 2, 3, and unknown versions are refused. v1 support does not prove v1 is permitted at a particular network height. Network activation rules remain a separate gate. |
+| Header layout and activation | Layouts v1 and v2 are implemented. Without a profile, verification accepts only v1 and makes no activation claim. An explicit anchor-bound profile enforces the first v2 height and a coverage limit under external operator trust. Unsupported versions still refuse. |
 | Producer policy | Without an authorizer, signatures bind the claimed key only. With an operator schedule, authorization is relative to that schedule and inherits its external trust. Elected-producer derivation from authenticated chain data is not implemented. |
 | Checkpoints and retained state | Treat configured checkpoints and the persisted retained window as trusted local inputs. Protect their provenance and integrity. State-file parsing and version checks do not re-prove their history or authenticate a substituted file. |
 | Resource and depth policy | Choose explicit `Policy` limits and `W` appropriate to the experiment. `W` is a strict-past depth requirement for commitments, not a consensus finality certificate. Header-chain ACCEPT alone does not establish that depth for a selected target. |
@@ -55,7 +55,8 @@ see [watch persistence](watch-persistence.md) for the platform boundary.
 The [node-derived corpus](../internal/testdata/conformance/README.md) pins
 go-zenon commit `3a4131e63881058b6ce2ee81d3a41d0033fafc99`. Its v1 expected
 hashes are computed by the node implementation, not by this verifier. Real
-v2 preimages are included as refusal cases. A separate Python checker
+v2 preimages and a v1-to-v2 transition are covered. Missing profiles refuse,
+and configured profiles enforce activation and coverage. A separate Python checker
 reconstructs the hashes and wire encodings independently.
 
 The node's [momentum serializer](https://github.com/zenon-network/go-zenon/blob/3a4131e63881058b6ce2ee81d3a41d0033fafc99/chain/nom/momentum.go)
@@ -65,12 +66,11 @@ does not establish activation on any public network.
 
 ## Next acceptance gates
 
-1. Add v2 serialization as a separate change: preserve both prices through
-   RPC, proof bundles, persistence, and hash computation; test each field's
-   tampering and zero/nonzero/max values against this corpus.
-2. Specify and enforce network-specific activation profiles with trusted
-   provenance and tests before, at, and after the transition. Refuse unknown
-   profiles instead of inferring activation from an untrusted RPC response.
+1. Independently authenticate network-specific activation information. The
+   current profile is an operator attestation, not a chain-derived proof.
+2. Review v2 application behavior against additional independently sourced
+   network evidence. Local vectors establish serialization compatibility;
+   they do not re-execute Dynamic Plasma price transitions.
 3. Strengthen retained-state provenance and resume validation before an
    application pilot. Define which guarantees the application actually needs.
 4. Run a controlled read-only pilot with restart, stale/forked/malformed

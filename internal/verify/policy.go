@@ -24,6 +24,10 @@ package verify
 // happens at the call site (uint64(len(slice)) for the few places
 // that compare a slice length against W).
 type Policy struct {
+	// ProtocolProfile is an explicit operator-attested activation policy.
+	// Nil preserves legacy v1-only verification without an activation claim.
+	ProtocolProfile *ProtocolProfile
+
 	W uint64 // policy-window depth in headers
 
 	// Per-bundle wire-format cap. Enforced at JSON load time via

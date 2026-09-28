@@ -380,11 +380,11 @@ func (a *ScheduleAuthorizer) Source() ProducerSource { return ProducerSourceOper
 // window is capped at policy.W+1 (≤ a few hundred entries even at
 // the highest tier), so this is negligible compared to fetch/verify.
 func AuthorizeRetainedWindow(state HeaderState, opts VerifyOptions) Result {
-	if err := state.ValidateHeaderVersions(); err != nil {
-		return refuse(ReasonUnsupportedHeaderVersion, err.Error())
+	if err := state.validateProtocolPolicy(opts.Policy); err != nil {
+		return protocolFailure(err)
 	}
 	if opts.ProducerAuth.Mode != ProducerAuthRequired {
-		return accept().WithNotProven(GuaranteeProducerAuthorization)
+		return withProtocolTrust(accept().WithNotProven(GuaranteeProducerAuthorization), state.ProtocolProfile)
 	}
 	if opts.ProducerAuth.Authorizer == nil {
 		return refuse(ReasonProducerSetUnknown,
@@ -407,5 +407,5 @@ func AuthorizeRetainedWindow(state HeaderState, opts VerifyOptions) Result {
 	if opts.ProducerAuth.Authorizer.Source() == ProducerSourceOperatorAttested {
 		result = result.WithTrust(TrustExternalProducerSchedule)
 	}
-	return result
+	return withProtocolTrust(result, state.ProtocolProfile)
 }

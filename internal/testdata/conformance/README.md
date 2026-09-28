@@ -1,7 +1,8 @@
 # Node-derived momentum corpus
 
 `momentum-v1-v2.json` is corpus format 1. It contains nine standalone
-serialization cases and a six-header synthetic version-1 chain. All expected
+serialization cases, a six-header synthetic version-1 chain, and a six-header
+v1-to-v2 transition (21 momentums total). All expected
 hashes, content encodings, Bech32 addresses, and RPC JSON come from
 `zenon-network/go-zenon` at
 [`3a4131e63881058b6ce2ee81d3a41d0033fafc99`](https://github.com/zenon-network/go-zenon/tree/3a4131e63881058b6ce2ee81d3a41d0033fafc99).
@@ -18,10 +19,13 @@ output. The root module and normal test suite do not depend on go-zenon.
   ordering by address, big-endian height, and hash; integers above 2^32 and
   2^53 and at uint64 maximum; price fields excluded from the v1 hash.
 - Version 2: both price fields appended to the signed preimage, including
-  zero, large, and maximum values. **These are refusal vectors for the current
-  SPV implementation**, not an announcement of v2 support.
-- A linked v1 chain exercises RPC conversion, signatures, header extension,
-  content inclusion, strict-past depth, persistence, and tamper rejection.
+  zero, large, and maximum values. Hash/RPC tests cover the layout separately
+  from activation. Core verification requires an explicit profile and rejects
+  prices below the pinned node floor of 1000.
+- Linked v1 and transition chains exercise RPC conversion, signatures, header
+  extension, content inclusion, strict-past depth, persistence, and tamper
+  rejection. The transition changes at synthetic height 2003 and also runs
+  through the CLI and a local watch/resume experiment.
 - The public all-zero Ed25519 test seed is only for deterministic synthetic
   signatures. No wallet, operator key, live RPC endpoint, or captured user
   data is used.

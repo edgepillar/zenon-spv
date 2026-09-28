@@ -122,6 +122,11 @@ via --genesis-config (JSON file) or ZENON_SPV_GENESIS_HASH +
 ZENON_SPV_CHAIN_ID env vars when verifying testnet/devnet (genesis
 height defaults to 0 if not given via ZENON_SPV_GENESIS_HEIGHT).
 
+--protocol-profile <path> loads an anchor-bound, operator-attested momentum
+activation profile for verify-* and watch. V2 requires this flag. Profiles
+expire at their configured height and must match persisted state exactly.
+They do not independently prove activation. See docs/header-versions.md.
+
 --schedule <path> loads an operator-attested per-momentum producer
 schedule (Branch 5b). When set, the verifier requires each header's
 producer to match the schedule's expected (height, timestamp,
@@ -340,6 +345,7 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 	fs.SetOutput(os.Stderr)
 	tier := fs.String("window", "low", "policy window tier: low | medium | high")
 	genesisConfig := fs.String("genesis-config", "", "path to genesis trust root JSON file (overrides env)")
+	profilePath := fs.String("protocol-profile", "", "path to an operator-attested momentum activation profile")
 	statePath := fs.String("state", "", "path to persisted HeaderState; load if present, save after ACCEPT")
 	schedulePath := fs.String("schedule", "", "path to producer schedule JSON; when set, header producer authorization is required (tier-2 caveat)")
 	if err := fs.Parse(args); err != nil {
@@ -358,6 +364,10 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 		return verifierContext{}, 70
 	}
 	policy := verify.PolicyForTier(*tier)
+	if err := configureProtocolProfile(&policy, *profilePath, genesis); err != nil {
+		fmt.Fprintf(os.Stderr, "protocol profile: %v\n", err)
+		return verifierContext{}, 70
+	}
 	bundle, err := proof.LoadHeaderBundleBounded(bundlePath, policy.MaxBundleBytes)
 	if err != nil {
 		if errors.Is(err, proof.ErrBundleTooLarge) {
@@ -555,6 +565,7 @@ func runWatch(args []string) int {
 	quorum := fs.Int("quorum", 0, "minimum agreeing peers; 0 = require unanimous (len(peers))")
 	tier := fs.String("window", "low", "policy window tier: low | medium | high")
 	genesisConfig := fs.String("genesis-config", "", "path to genesis trust root JSON file (overrides env)")
+	profilePath := fs.String("protocol-profile", "", "path to an operator-attested momentum activation profile")
 	statePath := fs.String("state", "", "path to persisted HeaderState (required)")
 	schedulePath := fs.String("schedule", "", "path to producer schedule JSON; when set, header producer authorization is required (tier-2 caveat)")
 	interval := fs.Duration("interval", syncer.DefaultInterval, "tick interval between iterations")
@@ -587,6 +598,10 @@ func runWatch(args []string) int {
 		return 70
 	}
 	policy := verify.PolicyForTier(*tier)
+	if err := configureProtocolProfile(&policy, *profilePath, genesis); err != nil {
+		fmt.Fprintf(os.Stderr, "protocol profile: %v\n", err)
+		return 70
+	}
 
 	var authorizer verify.ProducerAuthorizer
 	if *schedulePath != "" {
@@ -727,6 +742,9 @@ func printSourceTrust(w io.Writer, xs []verify.TrustAssumption) {
 }
 
 func printAcceptCaveat(w io.Writer, opts verify.VerifyOptions) {
+	if opts.Policy.ProtocolProfile != nil {
+		_, _ = fmt.Fprintln(w, "CAVEAT: momentum activation is checked against an operator-attested protocol profile; network activation is not independently proven.")
+	}
 	caveat := verify.AcceptanceCaveatWithOptions(opts)
 	if caveat == "" {
 		// Tier 3 — locally derived; future phase. Skip the line
@@ -791,4 +809,19 @@ func loadGenesis(path string) (verify.GenesisTrustRoot, error) {
 		Height:     height,
 		HeaderHash: hash,
 	}, nil
+}
+
+func configureProtocolProfile(policy *verify.Policy, path string, anchor verify.GenesisTrustRoot) error {
+	if path == "" {
+		return nil
+	}
+	profile, err := verify.LoadProtocolProfile(path)
+	if err != nil {
+		return err
+	}
+	if profile.Anchor != anchor {
+		return verify.ErrProtocolProfileMismatch
+	}
+	policy.ProtocolProfile = profile
+	return nil
 }
