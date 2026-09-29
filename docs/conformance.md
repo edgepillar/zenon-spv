@@ -43,6 +43,11 @@ uses the same corpus through local single/multi-peer RPC and retained-state
 queries. It checks output preservation on bounded/source failures and rejects
 hash-consistent alternate content against the existing local commitment.
 
+The [compiled query workflow](compiled-query-conformance.md) also builds and
+runs both shipped CLIs as separate processes. It covers multi-peer collection,
+retained-query JSON reports, actual exit codes, stream separation, protected
+state, failed-output preservation, and the save/report failure boundary.
+
 ## §8 — Conformance test cases
 
 Header-chain layer:
