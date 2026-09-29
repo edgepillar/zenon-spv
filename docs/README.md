@@ -14,6 +14,8 @@ audit history.
   trust inputs, bounded results, and acceptance gates for further work.
 - [`verified-state-api.md`](verified-state-api.md) — immutable application
   state, captured policy, and trusted local resume.
+- [`retained-state-queries.md`](retained-state-queries.md) — explicit CLI proof
+  queries against a trusted local window, without state writes or new headers.
 - [`verification-context.md`](verification-context.md) — opt-in settings
   diagnostics, metadata exclusion, and reproducible configuration fingerprints.
 - [`conformance.md`](conformance.md) — implemented conformance cases,

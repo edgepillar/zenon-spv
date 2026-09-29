@@ -8,9 +8,9 @@ import (
 //
 // The Headers field is exercised by VerifyHeaders (Phase 1).
 // Commitments is exercised by VerifyCommitment (Phase 2). Either may
-// be empty: a header-only bundle still verifies; a commitment-only
-// bundle would need an externally-supplied HeaderState (not yet
-// supported on the CLI).
+// be empty: a header-only bundle still verifies; a proof-only bundle
+// needs an existing verified window. The CLI supports the latter with
+// --retained-only and an explicitly trusted local --state file.
 //
 // Canonical wire format is protobuf3 per ADR 0001 (zenon-spv-vault/
 // decisions/0001-proof-serialization.md). The MVP ships JSON only,

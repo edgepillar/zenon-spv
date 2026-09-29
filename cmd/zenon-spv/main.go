@@ -20,18 +20,20 @@
 // window's tip; if missing, it initializes from the configured
 // genesis trust root and persists after a successful ACCEPT.
 // On REJECT or REFUSED, the state file is unchanged.
+// Proof commands can select --retained-only to query a nonempty trusted
+// state without supplying headers or writing the state file on any outcome.
 //
 // On resume (state file loaded), the bundle's claimed_genesis field
 // is informational — the persisted state's genesis is authoritative.
 // On a fresh start, claimed_genesis must match the configured trust
 // root or REJECT/GenesisMismatch.
 //
-// verify-commitment runs verify-headers first and then validates each
-// CommitmentEvidence in the bundle's `commitments` array. verify-segment
-// runs verify-headers, verify-commitment, and then validates each
-// AccountSegment's blocks (per-block hash recompute, Ed25519 signature,
-// account-chain linkage, commitment lookup). verify-state-value runs
-// verify-headers and then validates each StateValueProof in the
+// By default proof commands extend verified headers first; --retained-only
+// instead revalidates an existing trusted local state. verify-commitment then
+// validates every CommitmentEvidence. verify-segment validates each account
+// block and its matching commitment candidates (hash, user signature,
+// account-chain linkage, and content inclusion). verify-state-value checks
+// each StateValueProof in the
 // bundle's `state_value_proofs` array — refused-by-design today
 // because no consensus-bound authenticated state root exists in
 // current-protocol go-zenon (see docs/state-commitment-audit.md).
@@ -100,7 +102,7 @@ Subcommands:
                       REJECT (including a header-level REJECT); 2 on
                       any REFUSED.
 
-  verify-segment      Verify the bundle's headers and commitments, then
+  verify-segment      Verify the bundle's headers, then
                       verify each block in every AccountSegment (hash
                       recompute, Ed25519 signature, account-chain
                       linkage, commitment lookup). Exit codes follow
@@ -137,6 +139,13 @@ They do not independently prove activation. See docs/header-versions.md.
 --show-context prints a diagnostic JSON object with captured verifier settings
 and a configuration fingerprint. Available on verify-* and watch; excludes
 private audit metadata and does not imply verification success.
+
+--retained-only is available on verify-commitment, verify-segment, and
+verify-state-value. It requires --state pointing to a nonempty trusted local
+window and a bundle with no headers. Queries revalidate the saved state and
+configured producer policy, apply the usual proof/depth/resource checks,
+and never rewrite the state file. No RPC refresh or freshness claim is made.
+Without this flag, empty header input remains REFUSED.
 
 --schedule <path> loads an operator-attested per-momentum producer
 schedule (Branch 5b). When set, the verifier requires each header's
@@ -179,10 +188,9 @@ func runVerifyCommitment(args []string) int {
 	if code != 0 {
 		return code
 	}
-	headerResult, newState := ctx.state.Extend(ctx.bundle.Headers)
-	printResult("headers", headerResult)
-	if headerResult.Outcome != verify.OutcomeAccept {
-		return outcomeExitCode(headerResult.Outcome)
+	newState, code := ctx.stateForProof()
+	if code != 0 {
+		return code
 	}
 
 	if len(ctx.bundle.Commitments) == 0 {
@@ -205,7 +213,7 @@ func runVerifyCommitment(args []string) int {
 	}
 	if worst == verify.OutcomeAccept {
 		printAcceptCaveat(os.Stdout, ctx.opts)
-		if err := persistIfRequested(ctx.statePath, newState); err != nil {
+		if err := ctx.persist(newState); err != nil {
 			fmt.Fprintf(os.Stderr, "state: %v\n", err)
 			return 70
 		}
@@ -222,7 +230,7 @@ func runVerifyHeaders(args []string) int {
 	printResult("", result)
 	if result.Outcome == verify.OutcomeAccept {
 		printAcceptCaveat(os.Stdout, ctx.opts)
-		if err := persistIfRequested(ctx.statePath, newState); err != nil {
+		if err := ctx.persist(newState); err != nil {
 			fmt.Fprintf(os.Stderr, "state: %v\n", err)
 			return 70
 		}
@@ -235,10 +243,9 @@ func runVerifySegment(args []string) int {
 	if code != 0 {
 		return code
 	}
-	headerResult, newState := ctx.state.Extend(ctx.bundle.Headers)
-	printResult("headers", headerResult)
-	if headerResult.Outcome != verify.OutcomeAccept {
-		return outcomeExitCode(headerResult.Outcome)
+	newState, code := ctx.stateForProof()
+	if code != 0 {
+		return code
 	}
 
 	if len(ctx.bundle.Segments) == 0 {
@@ -264,7 +271,7 @@ func runVerifySegment(args []string) int {
 	}
 	if worst == verify.OutcomeAccept {
 		printAcceptCaveat(os.Stdout, ctx.opts)
-		if err := persistIfRequested(ctx.statePath, newState); err != nil {
+		if err := ctx.persist(newState); err != nil {
 			fmt.Fprintf(os.Stderr, "state: %v\n", err)
 			return 70
 		}
@@ -284,15 +291,11 @@ func runVerifyStateValue(args []string) int {
 	if code != 0 {
 		return code
 	}
-	headerResult, newState := ctx.state.Extend(ctx.bundle.Headers)
-	printResult("headers", headerResult)
-	if headerResult.Outcome != verify.OutcomeAccept {
-		// Forked-chain / bad-genesis / etc. failures surface here
-		// BEFORE state-value verification runs. This is the
-		// structural reason the forked-chain attack is a CLI
-		// integration concern rather than a VerifyStateValue
-		// unit-test concern (see Commit 6's attacks file).
-		return outcomeExitCode(headerResult.Outcome)
+	newState, code := ctx.stateForProof()
+	if code != 0 {
+		// Header extension or trusted-state loading must succeed before
+		// the state-value verifier can examine the requested proof.
+		return code
 	}
 
 	if len(ctx.bundle.StateValueProofs) == 0 {
@@ -319,7 +322,7 @@ func runVerifyStateValue(args []string) int {
 		// The shape is preserved so a future accepting kind plugs in
 		// without an extra CLI edit.
 		printAcceptCaveat(os.Stdout, ctx.opts)
-		if err := persistIfRequested(ctx.statePath, newState); err != nil {
+		if err := ctx.persist(newState); err != nil {
 			fmt.Fprintf(os.Stderr, "state: %v\n", err)
 			return 70
 		}
@@ -333,10 +336,11 @@ func runVerifyStateValue(args []string) int {
 // present), and the active VerifyOptions (Policy + optional
 // producer authorizer loaded via --schedule).
 type verifierContext struct {
-	bundle    proof.HeaderBundle
-	state     verify.VerifiedState
-	opts      verify.VerifyOptions
-	statePath string
+	bundle       proof.HeaderBundle
+	state        verify.VerifiedState
+	opts         verify.VerifyOptions
+	statePath    string
+	retainedOnly bool
 }
 
 // prepareVerifierContext parses common flags, loads the bundle and
@@ -352,6 +356,7 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 	profilePath := fs.String("protocol-profile", "", "path to an operator-attested momentum activation profile")
 	showContext := fs.Bool("show-context", false, "print captured verification settings without private provenance metadata")
 	statePath := fs.String("state", "", "path to persisted HeaderState; load if present, save after ACCEPT")
+	retainedOnly := fs.Bool("retained-only", false, "query an existing trusted state without new headers or state writes (proof commands only)")
 	schedulePath := fs.String("schedule", "", "path to producer schedule JSON; when set, header producer authorization is required (tier-2 caveat)")
 	if err := fs.Parse(args); err != nil {
 		return verifierContext{}, 64
@@ -359,6 +364,11 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 	if fs.NArg() != 1 {
 		fmt.Fprintf(os.Stderr, "%s: expected exactly one bundle path\n", name)
 		fs.Usage()
+		return verifierContext{}, 64
+	}
+	proofCommand := name == "verify-commitment" || name == "verify-segment" || name == "verify-state-value"
+	if *retainedOnly && (!proofCommand || *statePath == "") {
+		fmt.Fprintln(os.Stderr, "--retained-only requires a proof command and --state <path>")
 		return verifierContext{}, 64
 	}
 	bundlePath := fs.Arg(0)
@@ -388,6 +398,10 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 		}
 		fmt.Fprintf(os.Stderr, "bundle: %v\n", err)
 		return verifierContext{}, 70
+	}
+	if *retainedOnly && len(bundle.Headers) != 0 {
+		fmt.Fprintln(os.Stderr, "--retained-only requires a bundle with no headers; supplied headers are never ignored")
+		return verifierContext{}, 64
 	}
 	if bundle.ChainID != genesis.ChainID {
 		fmt.Printf("REJECT %s bundle chain_id=%d != trust-root chain_id=%d\n",
@@ -427,6 +441,10 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 		fmt.Fprintf(os.Stderr, "state: %v\n", err)
 		return verifierContext{}, 70
 	}
+	if *retainedOnly && state.Empty() {
+		fmt.Printf("state: REFUSED %s --retained-only requires an existing nonempty trusted state\n", verify.ReasonMissingEvidence)
+		return verifierContext{}, 2
+	}
 	// A fresh start must bind the bundle to the configured anchor.
 	// On resume the file has already been checked against that anchor.
 	if state.Empty() && bundle.ClaimedGenesis != genesis.HeaderHash {
@@ -455,10 +473,11 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 		fmt.Printf("verification_context: %s\n", raw)
 	}
 	return verifierContext{
-		bundle:    bundle,
-		state:     state,
-		opts:      opts,
-		statePath: *statePath,
+		bundle:       bundle,
+		state:        state,
+		opts:         opts,
+		statePath:    *statePath,
+		retainedOnly: *retainedOnly,
 	}, 0
 }
 
@@ -512,15 +531,6 @@ func preflightBundleBounds(bundle proof.HeaderBundle, policy verify.Policy) veri
 		}
 	}
 	return verify.Result{Outcome: verify.OutcomeAccept, Reason: verify.ReasonOK, FailedAt: -1}
-}
-
-// persistIfRequested writes state to path if path is non-empty.
-// A no-op when --state was not set.
-func persistIfRequested(path string, state verify.VerifiedState) error {
-	if path == "" {
-		return nil
-	}
-	return state.Save(path)
 }
 
 // runWatch is the watch-mode entry point. Runs until SIGINT/SIGTERM.
