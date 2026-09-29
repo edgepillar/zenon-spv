@@ -38,17 +38,18 @@ type Policy struct {
 	// 0 disables.
 	MaxHeaders int
 
-	// Per-bundle cap on the number of CommitmentEvidence entries.
-	// Enforced in the CLI preflight before calling VerifyCommitment.
+	// Cap on the number of CommitmentEvidence entries in a bundle or a
+	// VerifySegment call. Enforced before commitment indexing/evaluation.
 	// 0 disables.
 	MaxCommitments int
 
 	// Per-commitment cap on the number of AccountHeaders inside one
-	// FlatContentEvidence. Enforced inside VerifyCommitment. 0
-	// disables.
+	// FlatContentEvidence. Enforced inside VerifyCommitment and by the
+	// commitment batch preflight used by VerifySegment and the CLI. 0 disables.
 	MaxFlatEvidenceMembers int
 
-	// Aggregate cap across ALL commitments in a bundle. Defends
+	// Aggregate cap across ALL commitments in a bundle or VerifySegment call.
+	// Repeated references count separately, including unused targets. Defends
 	// against the n × m flood (many commitments × many members each)
 	// that the per-commitment cap alone misses. 0 disables.
 	MaxTotalFlatEvidenceMembers int

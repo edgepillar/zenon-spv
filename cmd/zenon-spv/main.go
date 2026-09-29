@@ -462,49 +462,18 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 	}, 0
 }
 
-// preflightBundleBounds enforces the aggregate (per-bundle) resource
-// caps that are NOT visible to VerifyHeaders/VerifyCommitment/
-// VerifySegment in isolation. Per-item caps live inside the
-// verifier; this function catches the n × m shapes where each
-// individual item fits but the bundle as a whole is hostile.
+// preflightBundleBounds enforces per-bundle resource caps before evaluation.
+// Commitment limits share the core preflight used by VerifySegment. The
+// remaining checks cover counts and totals spanning separate segments/proofs
+// that an individual verifier call cannot see.
 //
 // Returns ACCEPT when every aggregate cap holds (or is disabled);
 // otherwise REFUSED with the appropriate ReasonOversized* code.
 // Per-item REJECT cases are not produced here — those are evaluation
 // outcomes, not preflight ones.
 func preflightBundleBounds(bundle proof.HeaderBundle, policy verify.Policy) verify.Result {
-	if policy.MaxCommitments > 0 && len(bundle.Commitments) > policy.MaxCommitments {
-		return verify.Result{
-			Outcome:  verify.OutcomeRefused,
-			Reason:   verify.ReasonOversizedEvidence,
-			Message:  fmt.Sprintf("commitments=%d > MaxCommitments=%d", len(bundle.Commitments), policy.MaxCommitments),
-			FailedAt: -1,
-		}
-	}
-	if policy.MaxTotalFlatEvidenceMembers > 0 {
-		var total int
-		for _, c := range bundle.Commitments {
-			if c.Flat == nil {
-				continue
-			}
-			n := len(c.Flat.SortedHeaders)
-			// Overflow-safe (int + int can overflow on 32-bit but
-			// not 64-bit Go; we still guard for clarity and parity
-			// with the design doc's "overflow-safe addition" note).
-			if n > 0 && total > policy.MaxTotalFlatEvidenceMembers-n {
-				total = policy.MaxTotalFlatEvidenceMembers + 1
-				break
-			}
-			total += n
-		}
-		if total > policy.MaxTotalFlatEvidenceMembers {
-			return verify.Result{
-				Outcome:  verify.OutcomeRefused,
-				Reason:   verify.ReasonOversizedEvidence,
-				Message:  fmt.Sprintf("aggregate flat evidence members > MaxTotalFlatEvidenceMembers=%d", policy.MaxTotalFlatEvidenceMembers),
-				FailedAt: -1,
-			}
-		}
+	if r := verify.PreflightCommitmentBounds(bundle.Commitments, policy); r.Outcome != verify.OutcomeAccept {
+		return r
 	}
 	if policy.MaxSegments > 0 && len(bundle.Segments) > policy.MaxSegments {
 		return verify.Result{
@@ -515,22 +484,17 @@ func preflightBundleBounds(bundle proof.HeaderBundle, policy verify.Policy) veri
 		}
 	}
 	if policy.MaxTotalSegmentBlocks > 0 {
-		var total int
-		for _, s := range bundle.Segments {
-			n := len(s.Blocks)
-			if n > 0 && total > policy.MaxTotalSegmentBlocks-n {
-				total = policy.MaxTotalSegmentBlocks + 1
-				break
+		remaining := policy.MaxTotalSegmentBlocks
+		for _, segment := range bundle.Segments {
+			if len(segment.Blocks) > remaining {
+				return verify.Result{
+					Outcome:  verify.OutcomeRefused,
+					Reason:   verify.ReasonOversizedSegment,
+					Message:  fmt.Sprintf("aggregate segment blocks > MaxTotalSegmentBlocks=%d", policy.MaxTotalSegmentBlocks),
+					FailedAt: -1,
+				}
 			}
-			total += n
-		}
-		if total > policy.MaxTotalSegmentBlocks {
-			return verify.Result{
-				Outcome:  verify.OutcomeRefused,
-				Reason:   verify.ReasonOversizedSegment,
-				Message:  fmt.Sprintf("aggregate segment blocks > MaxTotalSegmentBlocks=%d", policy.MaxTotalSegmentBlocks),
-				FailedAt: -1,
-			}
+			remaining -= len(segment.Blocks)
 		}
 	}
 	// State-value-proof aggregate cap (state-proof PR / Phase 2).

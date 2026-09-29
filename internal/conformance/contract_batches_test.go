@@ -158,3 +158,38 @@ func TestNodeContractBatchRPCDescendantTampering(t *testing.T) {
 		})
 	}
 }
+
+func TestNodeContractBatchCapturedEvidenceBudgets(t *testing.T) {
+	c, bundle := contractBatchBundle(t)
+	for _, tc := range []struct {
+		name              string
+		count, per, total int
+		accept            bool
+	}{
+		{"exact boundaries", 5, 5, 25, true},
+		{"count", 4, 5, 25, false},
+		{"per evidence", 5, 4, 25, false},
+		{"total repeated members", 5, 5, 24, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			policy := verify.DefaultPolicy()
+			policy.MaxCommitments, policy.MaxFlatEvidenceMembers, policy.MaxTotalFlatEvidenceMembers = tc.count, tc.per, tc.total
+			initial, err := verify.NewVerifiedState(c.Chain.Anchor, verify.VerifyOptions{Policy: policy})
+			if err != nil {
+				t.Fatal(err)
+			}
+			r, state := initial.Extend(bundle.Headers)
+			if r.Outcome != verify.OutcomeAccept {
+				t.Fatal(r)
+			}
+			result := state.VerifySegment(bundle.Segments[0], bundle.Commitments)
+			if tc.accept {
+				if len(result.Blocks) != 5 || result.Worst() != verify.OutcomeAccept {
+					t.Fatalf("within-budget node batch did not accept: %v", result)
+				}
+			} else if len(result.Blocks) != 1 || result.Blocks[0].Outcome != verify.OutcomeRefused || result.Blocks[0].Reason != verify.ReasonOversizedEvidence || result.Blocks[0].FailedAt != -1 || len(result.Blocks[0].Proven) != 0 {
+				t.Fatalf("node batch exceeded captured evidence budget: %v", result)
+			}
+		})
+	}
+}
