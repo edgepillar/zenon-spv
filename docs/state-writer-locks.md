@@ -39,6 +39,10 @@ Windows additionally refuses final names with trailing dots/spaces, colons,
 or tildes, and reserved device names. This excludes alternate data streams
 and DOS short-name aliases whose appended companion path could identify a
 different lock namespace.
+The device-name rule covers names before an extension, such as `COM1.json`
+and `NUL.backup.json`, even on Windows versions that permit these as files.
+This deliberately keeps the restriction consistent across hosts; see the
+[Windows naming guidance](https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file#naming-conventions).
 
 The parent directory must already exist. A missing state file can still be
 initialized by a successful verification, but a missing parent or unavailable

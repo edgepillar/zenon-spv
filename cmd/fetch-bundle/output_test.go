@@ -48,14 +48,10 @@ func TestOutputDestinationAliasesAndInvalidTypes(t *testing.T) {
 			case "cleaned alias":
 				checkpoint = dir + string(os.PathSeparator) + "." + string(os.PathSeparator) + "bundle.json"
 			case "relative alias":
-				cwd, err := os.Getwd()
-				if err != nil {
-					t.Fatal(err)
-				}
-				checkpoint, err = filepath.Rel(cwd, bundle)
-				if err != nil {
-					t.Fatal(err)
-				}
+				// The checkout and temporary directory can be on different
+				// Windows volumes, so resolve the alias from the fixture.
+				t.Chdir(dir)
+				checkpoint = filepath.Base(bundle)
 			case "parent symlink":
 				alias := filepath.Join(t.TempDir(), "alias")
 				if err := os.Symlink(dir, alias); err != nil {
