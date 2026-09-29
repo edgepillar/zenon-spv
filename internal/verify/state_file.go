@@ -51,6 +51,9 @@ type persistedState struct {
 //
 // Only call after a successful VerifyHeaders ACCEPT — persisting a
 // state that wasn't proven would silently lower the SPV's trust.
+// CLI writers and syncer.Loop coordinate with internal/statelock. Other
+// callers must hold ownership across the whole load/verify/save operation;
+// this low-level saver does not acquire a lock on their behalf.
 func SaveHeaderState(path string, state HeaderState) error {
 	return saveHeaderState(path, state, os.Open)
 }

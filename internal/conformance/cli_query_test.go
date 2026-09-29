@@ -184,7 +184,7 @@ func TestCompiledCLIQueryWorkflow(t *testing.T) {
 		stateUnchanged()
 	})
 	t.Run("accepted headers with failed save exit nonzero", func(t *testing.T) {
-		args := append(slices.Clone(common), "--state", filepath.Join(dir, "missing-parent", "state.json"), seedPath)
+		args := append(slices.Clone(common), "--state", unwritableCLIStatePath(t), seedPath)
 		result := runQueryCLI(t, bins["zenon-spv"], append([]string{"verify-headers"}, args...)...)
 		report := checkProcessReport(t, result, 70, "ACCEPT")
 		if report.Persistence != "failed" || report.Error == nil || report.Error.Stage != "persistence" {
@@ -253,7 +253,7 @@ func queryCLIEnvironment() []string {
 	return env
 }
 
-func buildQueryCLIs(t *testing.T) map[string]string {
+func buildQueryCLIs(t *testing.T, names ...string) map[string]string {
 	t.Helper()
 	// The test package does not import main packages. Register their files as
 	// test inputs so Go's result cache cannot reuse a pass after a CLI-only edit.
@@ -282,7 +282,10 @@ func buildQueryCLIs(t *testing.T) map[string]string {
 	}
 	binDir := t.TempDir()
 	bins := make(map[string]string)
-	for _, name := range []string{"zenon-spv", "fetch-bundle"} {
+	if len(names) == 0 {
+		names = []string{"zenon-spv", "fetch-bundle"}
+	}
+	for _, name := range names {
 		path := filepath.Join(binDir, name)
 		if runtime.GOOS == "windows" {
 			path += ".exe"
@@ -542,4 +545,22 @@ func newQueryCLIPeer(t *testing.T, c accountSegmentCorpus, initiallyBad bool) *q
 	t.Cleanup(server.Close)
 	p.url = strings.Replace(server.URL, "http://", "http://PRIVATE_RPC_USER:PRIVATE_RPC_PASSWORD@", 1) + "?token=PRIVATE_RPC_QUERY"
 	return p
+}
+
+func unwritableCLIStatePath(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "state.json")
+	if err := os.WriteFile(path+".lock", nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(dir, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+	if probe, err := os.CreateTemp(dir, "permission-probe-"); err == nil {
+		_ = probe.Close()
+		t.Skip("filesystem or process privileges allow writes in a read-only directory")
+	}
+	return path
 }

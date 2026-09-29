@@ -16,6 +16,8 @@ audit history.
   state, captured policy, and trusted local resume.
 - [`retained-state-queries.md`](retained-state-queries.md) — explicit CLI proof
   queries against a trusted local window, without state writes or new headers.
+- [`state-writer-locks.md`](state-writer-locks.md) — exclusive ownership across
+  stateful commands, read-only query coexistence, and companion-file rules.
 - [`verification-context.md`](verification-context.md) — opt-in settings
   diagnostics, metadata exclusion, and reproducible configuration fingerprints.
 - [`verification-reports.md`](verification-reports.md) — versioned JSON command

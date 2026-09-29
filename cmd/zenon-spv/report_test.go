@@ -245,25 +245,20 @@ func TestJSONReportOperationalFailuresAreNotVerificationOutcomes(t *testing.T) {
 
 func TestJSONReportPersistenceSuccessFailureAndOutputFailure(t *testing.T) {
 	bundlePath, anchorPath := stateValueBundleFromLongChain(t, 6, nil)
-	for _, fail := range []bool{false, true} {
-		dir := t.TempDir()
-		if fail {
-			dir = filepath.Join(dir, "missing-parent")
-		}
-		statePath := filepath.Join(dir, "state.json")
-		code := 0
-		if fail {
-			code = 70
-		}
-		r := readVerificationReport(t, "verify-headers", []string{"--genesis-config", anchorPath, "--state", statePath, bundlePath}, code)
-		assertReportOutcome(t, r, "ACCEPT")
-		if fail {
-			if r.Persistence != "failed" || r.Error == nil || r.Error.Stage != "persistence" {
-				t.Fatal("persistence failure looked like successful completion")
+	for _, name := range []string{"saved", "failed"} {
+		t.Run(name, func(t *testing.T) {
+			statePath := filepath.Join(t.TempDir(), "state.json")
+			code := 0
+			if name == "failed" {
+				statePath = unwritableReportStatePath(t)
+				code = 70
 			}
-		} else if r.Persistence != "saved" || r.Error != nil {
-			t.Fatal("successful persistence was not recorded")
-		}
+			r := readVerificationReport(t, "verify-headers", []string{"--genesis-config", anchorPath, "--state", statePath, bundlePath}, code)
+			assertReportOutcome(t, r, "ACCEPT")
+			if r.Persistence != name || name == "failed" && (r.Error == nil || r.Error.Stage != "persistence") || name == "saved" && r.Error != nil {
+				t.Fatal("report confused persistence with accepted evidence")
+			}
+		})
 	}
 	for _, short := range []bool{false, true} {
 		statePath := filepath.Join(t.TempDir(), "state.json")
@@ -380,4 +375,24 @@ func TestJSONReportBundleAndRetainedStateFailures(t *testing.T) {
 		t.Fatal("missing retained state was not refused")
 	}
 	check(t)
+}
+
+// Precreate the lock in a directory that can be read but not replaced. The
+// writer can take its existing lock and verify, then fail at the actual save.
+func unwritableReportStatePath(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "state.json")
+	if err := os.WriteFile(path+".lock", nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(dir, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+	if probe, err := os.CreateTemp(dir, "permission-probe-"); err == nil {
+		_ = probe.Close()
+		t.Skip("filesystem or process privileges allow writes in a read-only directory")
+	}
+	return path
 }

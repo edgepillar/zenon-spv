@@ -30,8 +30,9 @@ proof receipt or an authentication mechanism.
 | 1 | `REJECT` | `null` | At least one implemented validity check failed. |
 | 2 | `REFUSED` | `null` | The verifier could not establish the requested result. |
 | 64 | `null` | `usage` | The parsed invocation is invalid. |
-| 70 during setup | `null` | `operational` | Configuration, bundle decoding, or state loading failed. |
+| 70 during setup | `null` | `operational` | Configuration, bundle decoding, writer ownership, or state loading failed. |
 | 70 during saving | `ACCEPT` | `operational` at `persistence` | Evidence accepted, but saving failed. This is not successful command completion. |
+| 70 during lock release | Prior outcome, if available | `operational` at `state_lock` | Releasing writer ownership failed; state may already be saved. |
 
 Worst-result ordering remains REJECT, then REFUSED, then ACCEPT. Header or
 setup failure stops proof evaluation. An accepted header row followed by a
@@ -71,9 +72,14 @@ There is no transaction spanning the state file and the report destination.
 | `caveats` | Existing acceptance caveats when the overall verification accepted, even if saving subsequently failed. |
 
 Error stages are `arguments`, `genesis`, `protocol_profile`, `bundle`,
-`schedule`, `state`, `context`, `verification`, or `persistence`. These are
+`schedule`, `state_lock`, `state`, `context`, `verification`, or `persistence`. These are
 diagnostic stages, not proof reasons. Decoding an invalid/ambiguous bundle is
 an operational error; an oversized bundle is a resource REFUSED result.
+
+Stateful commands enforce [writer ownership](state-writer-locks.md) before
+loading state. Contention or an unavailable lock is an operational setup
+failure, not a proof REJECT or REFUSED. Retained-only queries do not take a
+writer lock or create its companion file.
 
 `not_requested` means no state destination was configured. `not_attempted`
 means a destination was configured but execution stopped before saving.

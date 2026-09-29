@@ -149,7 +149,9 @@ Optional flags shared across all verify-* subcommands:
 - `--genesis-config <path>` — override the embedded mainnet anchor with a strict,
   bounded JSON file. Custom networks require this file or a complete anchor
   environment override; see [anchor configuration](docs/anchor-configuration.md).
-- `--state <path>` — persist `HeaderState` across runs.
+- `--state <path>` — persist `HeaderState` across runs. Stateful writers hold
+  an exclusive OS lock; competing writers exit 70. See
+  [writer ownership](docs/state-writer-locks.md) for companion-file/path rules.
 - `--schedule <path>` — load an operator-attested per-momentum producer schedule (tier-2 caveat).
 - `--show-context` — print captured verification settings with a reproducible
   fingerprint, excluding private audit metadata. Also available on `watch`;

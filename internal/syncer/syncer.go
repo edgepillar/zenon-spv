@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/0x3639/zenon-spv/internal/fetch"
+	"github.com/0x3639/zenon-spv/internal/statelock"
 	"github.com/0x3639/zenon-spv/internal/verify"
 )
 
@@ -117,7 +118,7 @@ type TickResult struct {
 // failures (REJECT/REFUSED) are
 // logged but do not terminate the loop — a transient peer issue
 // shouldn't take down a long-running service.
-func (l *Loop) Run(ctx context.Context) error {
+func (l *Loop) Run(ctx context.Context) (runErr error) {
 	saveState := func(path string, state verify.VerifiedState) error { return state.Save(path) }
 	if adapter := l.SaveState; adapter != nil {
 		saveState = func(path string, state verify.VerifiedState) error { return adapter(path, state.Snapshot()) }
@@ -158,6 +159,15 @@ func (l *Loop) Run(ctx context.Context) error {
 			Authorizer: l.Authorizer,
 		}
 	}
+	lock, err := statelock.Acquire(l.StatePath)
+	if err != nil {
+		return fmt.Errorf("state lock: %w", err)
+	}
+	defer func() {
+		if err := lock.Close(); err != nil {
+			runErr = errors.Join(runErr, fmt.Errorf("release state lock: %w", err))
+		}
+	}()
 	state, err := verify.LoadTrustedState(l.StatePath, l.Genesis, authOpts)
 	if err != nil {
 		return fmt.Errorf("load state: %w", err)

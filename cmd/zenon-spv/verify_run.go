@@ -26,7 +26,14 @@ func runVerifyStateValue(args []string) int {
 
 func runVerification(command string, args []string, stdout, stderr io.Writer) int {
 	out := newVerificationOutput(command, stdout, stderr)
-	return out.finish(executeVerification(command, args, out))
+	defer func() { _ = out.releaseStateLock() }() // Also release on panic, without emitting a success report.
+	code := executeVerification(command, args, out)
+	out.outcomeForExit(code) // Preserve known verification outcomes if lock release fails.
+	if err := out.releaseStateLock(); err != nil {
+		_, _ = fmt.Fprintf(out.diagnostics, "state lock: %v\n", err)
+		out.stage, code = "state_lock", 70
+	}
+	return out.finish(code)
 }
 
 func executeVerification(command string, args []string, out *verificationOutput) int {

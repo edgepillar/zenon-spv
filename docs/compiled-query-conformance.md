@@ -53,6 +53,17 @@ alone: replacing a file through a writable parent must also be detected.
 Per-process timeouts bound a hung test; the closed-pipe check accepts platform
 error/signal behavior rather than prescribing one Unix shell exit number.
 
+`TestCompiledCLIStateWriterExclusion` synchronizes a watch process inside a
+local RPC request, then runs competing stateful commands and a read-only
+query. The writers must fail before verification/RPC; the query keeps its
+ordinary depth refusal. After watch shutdown, the next process can acquire
+ownership and advance the saved tip. This locks in the lost-update regression
+described in [state writer ownership](state-writer-locks.md).
+
+The actual save-failure scenario precreates a usable companion lock in a
+directory without write permission. It is skipped when the filesystem or
+process privileges still permit writes there; other scenarios continue.
+
 ## Evidence limits
 
 This is synthetic offline inclusion evidence against explicitly trusted local
