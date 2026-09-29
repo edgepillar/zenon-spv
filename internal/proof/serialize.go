@@ -68,7 +68,9 @@ func LoadHeaderBundleBounded(path string, maxBytes int64) (HeaderBundle, error) 
 	return UnmarshalHeaderBundleJSON(b)
 }
 
-// UnmarshalHeaderBundleJSON parses a JSON-encoded HeaderBundle.
+// UnmarshalHeaderBundleJSON parses a JSON-encoded HeaderBundle and checks its
+// wire version. The type's decoder refuses repeated known top-level fields,
+// including case and escaped aliases, before they can overwrite evidence.
 func UnmarshalHeaderBundleJSON(data []byte) (HeaderBundle, error) {
 	var hb HeaderBundle
 	if err := json.Unmarshal(data, &hb); err != nil {

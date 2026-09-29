@@ -128,14 +128,16 @@ A successful run prints `ACCEPT ReasonOK` with `CONTENT_INCLUSION` and `SIGNATUR
 
 ## Subcommand cheatsheet
 
-Each subcommand reads a HeaderBundle JSON and runs progressively more checks. Higher subcommands include all the work of the lower ones.
+Each verification command reads a HeaderBundle JSON and checks the evidence
+relevant to that command. Proof commands normally extend the header chain first;
+`--retained-only` selects an existing trusted local window instead.
 
 | Subcommand | Verifies | Returns ACCEPT when |
 |---|---|---|
 | `verify-headers` | Headers' linkage, hashes, signatures, checkpoint matches | The bundle's header chain is internally consistent against the genesis trust root. |
-| `verify-commitment` | Above + each `CommitmentEvidence` against a verified momentum's `ContentHash` | An account-block triple `(Address, Height, BlockHash)` was committed by Zenon consensus at the named momentum. |
-| `verify-segment` | Above + per-block hash/signature/linkage/commitment-lookup for every block in every segment | The account-block contents (amount, token, to_address, from_block_hash) are bit-identical to what the network signed. |
-| `verify-state-value` | Above + structural checks on each `StateValueProof` | **Never** today. Refuses on `ReasonUnsupportedStateCommitment` for every kind. Forward-compatible for a future protocol-level state root. |
+| `verify-commitment` | Every supplied commitment against a retained momentum's `ContentHash` and depth policy | The target account-header triple is included under the content hash of that trusted header view. |
+| `verify-segment` | Block hashes, user signatures, account linkage, and matching commitment candidates for each segment block | The implemented block and inclusion checks pass under the trusted header view; embedded blocks do not gain an account-signature guarantee. |
+| `verify-state-value` | Context and structural checks on each `StateValueProof` | **Never** today. Unsupported commitment kinds refuse; malformed or invalid input can fail earlier checks. |
 | `watch` | Streams new momentums from peers and verifies them at the chain's natural cadence | ACCEPT is logged only after a successful state save. Three consecutive save failures stop the service. SIGINT/SIGTERM exits cleanly. |
 
 Optional flags shared across all verify-* subcommands:
@@ -152,6 +154,12 @@ Optional flags shared across all verify-* subcommands:
 - `--show-context` — print captured verification settings with a reproducible
   fingerprint, excluding private audit metadata. Also available on `watch`;
   see [`verification context`](docs/verification-context.md).
+
+Proof commands also accept `--retained-only --state <path>` for queries against
+a nonempty trusted local state. The bundle must contain no headers. The query
+revalidates the state, applies the usual proof checks, and never rewrites it.
+See [retained state queries](docs/retained-state-queries.md) for outcomes and
+the distinction between a retained view and current network state.
 
 Place all verify-* flags before the bundle path. `watch` accepts no positional
 arguments; extra arguments fail before loading configuration or starting RPC.

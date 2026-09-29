@@ -6,6 +6,10 @@ profile, and producer authorization settings. The lower-level `HeaderState`
 and free verifier functions remain available for compatibility and testing;
 they still require callers to maintain verified-state provenance themselves.
 
+The CLI exposes existing-window queries through
+[`--retained-only`](retained-state-queries.md). It loads and revalidates the
+trusted state, queries these same API methods, and never saves on that path.
+
 ## Construct and extend
 
 `NewVerifiedState(anchor, opts)` creates an empty handle under explicitly

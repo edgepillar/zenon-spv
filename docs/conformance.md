@@ -133,6 +133,9 @@ State-value layer:
 - [x] CLI and watch use immutable verified state with captured policy,
       detached snapshots, zero-value refusal, and explicit trusted-local
       resume; see [`verified-state-api.md`](verified-state-api.md).
+- [x] Explicit [retained-state CLI queries](retained-state-queries.md) preserve
+      state files on every outcome, retain load/producer/depth/resource checks,
+      and do not treat absent or supplied headers as an implicit query mode.
 - [x] Optional CLI/watch context diagnostics record captured verifier settings,
       exclude private audit metadata, and identify opaque custom authorizers;
       independent Python vectors check the fingerprint encoding.
