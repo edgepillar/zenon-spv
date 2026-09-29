@@ -26,6 +26,8 @@ audit history.
   ambiguity prevention across RPC and offline proof inputs, with node vectors.
 - [`account-envelope-validation.md`](account-envelope-validation.md) — supported
   account layouts, anchor chain binding, and post-genesis block shape checks.
+- [`contract-batches.md`](contract-batches.md) — node-derived batch ordering,
+  direct child inclusion, and descendant-hash conformance boundaries.
 - [`fetch-bundle.md`](fetch-bundle.md) — explicit peer selection, bounded
   query options, output behavior, and checkpoint provenance for bundle assembly.
 - [`producer-set-verification.md`](producer-set-verification.md) —

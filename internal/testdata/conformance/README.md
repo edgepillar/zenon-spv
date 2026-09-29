@@ -119,3 +119,27 @@ These are linked serialization and inclusion fixtures, not an executed transfer
 or node-accepted ledger. They do not run a VM, validate contract descendants,
 prove account balances, derive elected producers, or establish finality. All
 keys and anchors are deterministic public synthetic inputs.
+
+## Contract batches
+
+`contract-batches.json` adds five unsigned embedded blocks in two batches, using
+the children-before-receive layout: send/send/receive followed by send/receive.
+The pinned node's `AccountBlockTransaction.GetCommits` produces their flattened
+order, and `NewMomentumContent` includes all five headers in the third of nine
+synthetic momentums. Batch metadata records the node's `Previous()` frontier,
+which differs from the receive's raw `PreviousHash`.
+
+```sh
+(cd tools/gen-node-momentum-vectors && go run -mod=readonly . --contract-batches) > /tmp/contract-batches.json
+cmp internal/testdata/conformance/contract-batches.json /tmp/contract-batches.json
+python3 tools/gen-node-momentum-vectors/check-contract-batches.py /tmp/contract-batches.json
+go test ./internal/conformance -run TestNodeContractBatch
+```
+
+Go checks RPC conversion, bundle round trips, full and partial batch verification,
+trusted resume, missing direct evidence, flat-content tampering, and descendant
+hash tampering. Python independently checks preimages, projections, child order,
+batch frontiers, membership, and depth. The tests preserve the existing direct
+inclusion path and bounded guarantees. See [contract batch inclusion](../../../docs/contract-batches.md)
+for source references and evidence limits. This corpus does not execute a VM or
+assert full-node transaction validity.

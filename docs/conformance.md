@@ -32,6 +32,12 @@ against these independently generated values. The Python checker also covers
 RPC projections and account/momentum hash preimages. This remains synthetic
 inclusion evidence, not full-node transaction execution or a finality proof.
 
+The [contract batch corpus](contract-batches.md) adds two batches with child sends
+before their receives. It checks the node's flattened transaction order, direct
+inclusion of every child, distinct batch and raw previous frontiers, partial
+segments, and refusal of receive-only evidence for a child. Tampered descendant
+hashes fail RPC conversion without returning a partial batch.
+
 ## §8 — Conformance test cases
 
 Header-chain layer:
