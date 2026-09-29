@@ -27,10 +27,10 @@ def uint64(value):
     return struct.pack(">Q", value)
 
 
-def address_bytes(text):
+def bech32_bytes(text, expected_hrp, size):
     require(text == text.lower(), "expected a lowercase Bech32 address")
     hrp, separator, encoded = text.rpartition("1")
-    require(separator and hrp == "z" and len(encoded) >= 6, "invalid address envelope")
+    require(separator and hrp == expected_hrp and len(encoded) >= 6, "invalid Bech32 envelope")
     alphabet = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
     values = [alphabet.index(char) for char in encoded]
     checksum = 1
@@ -52,8 +52,12 @@ def address_bytes(text):
             bits -= 8
             decoded.append((accumulator >> bits) & 255)
     require(bits < 5 and ((accumulator << (8 - bits)) & 255) == 0, "invalid Bech32 padding")
-    require(len(decoded) == 20, "invalid address length")
+    require(len(decoded) == size, "invalid Bech32 payload length")
     return bytes(decoded)
+
+
+def address_bytes(text):
+    return bech32_bytes(text, "z", 20)
 
 
 def check_vector(vector):

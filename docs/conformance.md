@@ -24,6 +24,14 @@ and sign aliases. RPC and offline segment tests enforce the scalar bound;
 Python independently reconstructs their complete hash preimages. These vectors
 do not imply complete account-block or state-transition validation.
 
+The [linked account corpus](../internal/testdata/conformance/README.md#linked-account-segments)
+adds all four post-genesis account types and nine node-derived momentums.
+Local RPC conversion, offline bundle decoding, owned-state verification,
+strict-past depth, partial segments, tamper refusal, and trusted resume run
+against these independently generated values. The Python checker also covers
+RPC projections and account/momentum hash preimages. This remains synthetic
+inclusion evidence, not full-node transaction execution or a finality proof.
+
 ## §8 — Conformance test cases
 
 Header-chain layer:
