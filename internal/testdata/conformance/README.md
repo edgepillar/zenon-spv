@@ -85,3 +85,37 @@ The Python checker independently verifies magnitude bytes, data and descendant
 digests, scalar classification, and full hash preimages. Signature checks remain
 in Go. The corpus contains no wallet or live-network observations and does not
 assert full-node validity, authenticated state transitions, or finality.
+
+## Linked account segments
+
+`account-segments.json` adds four node-derived account blocks: user send and
+receive, plus unsigned embedded-contract receive and send. Each address has a
+linked two-block segment. A nine-momentum synthetic v1 chain commits all four
+account headers at its third momentum and provides six strict-past headers.
+Expected account hashes, RPC fields, address/token encodings, content order,
+and momentum hashes come from the pinned node module without importing SPV code.
+
+```sh
+(cd tools/gen-node-momentum-vectors && go run -mod=readonly . --account-segments) > /tmp/account-segments.json
+cmp internal/testdata/conformance/account-segments.json /tmp/account-segments.json
+python3 tools/gen-node-momentum-vectors/check-account-segments.py /tmp/account-segments.json
+go test ./internal/conformance -run TestNodeAccountSegments
+```
+
+The Go test fetches both account segments and momentums from local RPC peers,
+compares them with node values, round-trips an offline bundle, and verifies full
+and partial segments through the owned state API before and after trusted local
+resume. It checks the strict-past boundary, parent-failure propagation, field and
+signature tampering, and the different signature guarantees for user and embedded
+accounts. Canonicality, producer authorization, and state-value/transition
+guarantees must remain absent.
+
+The independent Python checker validates the complete account hash preimages,
+RPC projections, Bech32 address and token bytes, account/momentum links, content
+membership, and depth. It shares standard-library byte primitives with the
+earlier checkers; Ed25519 verification remains in Go.
+
+These are linked serialization and inclusion fixtures, not an executed transfer
+or node-accepted ledger. They do not run a VM, validate contract descendants,
+prove account balances, derive elected producers, or establish finality. All
+keys and anchors are deterministic public synthetic inputs.

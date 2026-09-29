@@ -57,18 +57,22 @@ func writeAccountAmountVectors() error {
 		b.Hash = b.ComputeHash()
 		b.PublicKey = key.Public().(ed25519.PublicKey)
 		b.Signature = ed25519.Sign(key, b.Hash.Bytes())
-		block := map[string]any{
-			"version": b.Version, "chainIdentifier": b.ChainIdentifier, "blockType": b.BlockType,
-			"previousHash": b.PreviousHash.String(), "height": b.Height, "momentumAcknowledged": b.MomentumAcknowledged,
-			"address": hex.EncodeToString(b.Address.Bytes()), "toAddress": hex.EncodeToString(b.ToAddress.Bytes()),
-			"amount": json.Number(b.Amount.String()), "tokenStandard": hex.EncodeToString(b.TokenStandard.Bytes()),
-			"fromBlockHash": b.FromBlockHash.String(), "descendantBlocksHash": b.DescendantBlocksHash().String(),
-			"dataHash": types.NewHash(b.Data).String(), "fusedPlasma": b.FusedPlasma, "difficulty": b.Difficulty,
-			"nonce": hex.EncodeToString(b.Nonce.Data[:]), "hash": b.Hash.String(), "publicKey": b.PublicKey, "signature": b.Signature,
-		}
+		block := expectedAccountBlock(b)
 		corpus.Vectors = append(corpus.Vectors, amountVector{tc.name, tc.valid, hex.EncodeToString(common.BigIntToBytes(tc.amount)), b, block})
 	}
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(corpus)
+}
+
+func expectedAccountBlock(b *nom.AccountBlock) map[string]any {
+	return map[string]any{
+		"version": b.Version, "chainIdentifier": b.ChainIdentifier, "blockType": b.BlockType,
+		"previousHash": b.PreviousHash.String(), "height": b.Height, "momentumAcknowledged": b.MomentumAcknowledged,
+		"address": hex.EncodeToString(b.Address.Bytes()), "toAddress": hex.EncodeToString(b.ToAddress.Bytes()),
+		"amount": json.Number(b.Amount.String()), "tokenStandard": hex.EncodeToString(b.TokenStandard.Bytes()),
+		"fromBlockHash": b.FromBlockHash.String(), "descendantBlocksHash": b.DescendantBlocksHash().String(),
+		"dataHash": types.NewHash(b.Data).String(), "fusedPlasma": b.FusedPlasma, "difficulty": b.Difficulty,
+		"nonce": hex.EncodeToString(b.Nonce.Data[:]), "hash": b.Hash.String(), "publicKey": b.PublicKey, "signature": b.Signature,
+	}
 }
