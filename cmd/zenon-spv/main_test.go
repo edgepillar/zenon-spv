@@ -120,6 +120,23 @@ func TestPreflightBundleBounds_PerBundleCommitmentCount(t *testing.T) {
 	}
 }
 
+func TestPreflightBundleBoundsChecksEveryFlatBeforeEvaluation(t *testing.T) {
+	// A valid-size first candidate must not hide an unused oversized one.
+	bundle := proof.HeaderBundle{Commitments: []proof.CommitmentEvidence{
+		{Flat: &proof.FlatContentEvidence{SortedHeaders: make([]chain.AccountHeader, 1)}},
+		{Flat: &proof.FlatContentEvidence{SortedHeaders: make([]chain.AccountHeader, 3)}},
+	}}
+	policy := verify.Policy{MaxCommitments: 2, MaxFlatEvidenceMembers: 2, MaxTotalFlatEvidenceMembers: 4}
+	r := preflightBundleBounds(bundle, policy)
+	if r.Outcome != verify.OutcomeRefused || r.Reason != verify.ReasonOversizedEvidence || r.FailedAt != -1 || len(r.Proven) != 0 {
+		t.Fatalf("oversized unused evidence passed preflight: %v", r)
+	}
+	policy.MaxFlatEvidenceMembers = 3
+	if r := preflightBundleBounds(bundle, policy); r.Outcome != verify.OutcomeAccept || len(r.Proven) != 0 {
+		t.Fatalf("exact-boundary preflight failed or claimed proof: %v", r)
+	}
+}
+
 // TestPreflightBundleBounds_PerBundleSegmentCount mirrors the
 // above for MaxSegments.
 func TestPreflightBundleBounds_PerBundleSegmentCount(t *testing.T) {

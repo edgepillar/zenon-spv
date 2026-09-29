@@ -85,6 +85,9 @@ Account-segment layer (Phase 3):
       block — block after non-ACCEPT parent →
       `ReasonParentNotAccepted`.
 - [x] Empty segment → REFUSED/`MissingEvidence`.
+- [x] Whole commitment-batch resource bounds before segment indexing or block
+      evaluation, including unused candidates and repeated flat references.
+      Over-budget calls return one synthetic refusal without partial acceptance.
 
 Producer-authorization layer (opt-in):
 

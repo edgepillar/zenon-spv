@@ -109,6 +109,28 @@ MaxTotalSegmentBlocks       int   = 100_000            // batch cap across all s
   parallels the commitment caps for account-segment evidence.
   Same defense-in-depth rationale.
 
+## Commitment batch enforcement
+
+`PreflightCommitmentBounds` is shared by the CLI and `VerifySegment`. It checks
+the entry count, every flat list, and total flat members before segment result
+allocation or commitment indexing. Unmatched targets and later candidates count
+even when an earlier candidate could verify a block. Shared flat pointers count
+once per evidence entry, matching the repeated work/wire representation.
+
+Batch refusal is synthetic (`FailedAt=-1`) and carries no proven guarantees.
+Exact boundaries remain valid, and zero still disables the corresponding limit.
+Aggregate counters consume remaining capacity rather than using an overflowing
+sum or `limit+1` sentinel. The CLI's total-segment-block check uses the same
+subtraction pattern. These bounds do not cap caller allocations or repeated calls.
+
+Regression tests first reproduced six over-budget input shapes accepting in both
+the free and owned segment APIs. They now refuse before block evaluation. Tests
+also cover captured policy, state immutability, inclusive limits, zero and
+maximum-integer caps, nil proofs, shared flat objects, unused candidates, and
+valid fallback proofs. The node-derived five-block contract corpus accepts at
+5 evidence entries / 5 members each / 25 repeated members and refuses when any
+one limit is lowered. A fuzz oracle checks count semantics and order independence.
+
 ## Open follow-ups
 
 1. **Activity-rich commitment/segment sample.** Find a recent

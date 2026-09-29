@@ -11,6 +11,8 @@ import (
 // SegmentResult is one Result per block in the segment, in input order.
 // REJECT or REFUSED on any block does NOT short-circuit subsequent
 // blocks — a wallet wants to know which blocks were proven.
+// Empty segments and resource preflight failures return one synthetic result
+// with FailedAt=-1 and no per-block evaluation.
 type SegmentResult struct {
 	Blocks []Result
 }
@@ -31,6 +33,10 @@ func (r SegmentResult) Worst() Outcome {
 }
 
 // VerifySegment validates a contiguous range of an account's blocks.
+//
+// Resource bounds cover the segment length and the entire supplied commitment
+// batch, before result allocation, commitment indexing, or block evaluation.
+// Unused or duplicate commitment candidates still consume the batch budgets.
 //
 // For each block, the verifier:
 //
@@ -102,6 +108,9 @@ func VerifySegment(state HeaderState, segment proof.AccountSegment, commitments 
 			Message:  fmt.Sprintf("segment for %x has %d blocks > MaxSegmentBlocks=%d", segment.Address, len(segment.Blocks), policy.MaxSegmentBlocks),
 			FailedAt: -1,
 		}}}
+	}
+	if r := PreflightCommitmentBounds(commitments, policy); r.Outcome != OutcomeAccept {
+		return SegmentResult{Blocks: []Result{r}}
 	}
 	out := SegmentResult{Blocks: make([]Result, len(segment.Blocks))}
 	lookup := indexCommitments(commitments)

@@ -38,8 +38,25 @@ commitmentResult := state.VerifyCommitment(evidence)
 policy; callers cannot lower `W` or replace an activation profile at query
 time. `VerifySegment` and `VerifyStateValue` preserve the existing bounded
 semantics. State-value verification still has no accepting implementation.
-Per-item resource checks remain in the core; aggregate bundle checks remain
-in the CLI preflight. This API does not replace those bundle limits.
+`VerifySegment` checks its entire supplied commitment batch before allocating
+per-block results, building a target index, or evaluating any block. The captured
+`MaxCommitments`, `MaxFlatEvidenceMembers`, and `MaxTotalFlatEvidenceMembers`
+limits cover all entries, including unused targets, later candidates, and
+duplicates. Reusing one flat-content object does not reduce its repeated-member
+count. An oversized batch returns one `REFUSED / ReasonOversizedEvidence` result
+with `FailedAt=-1` and no proven guarantees. No partial block acceptance is returned.
+
+Exact limits are inclusive. Within budget, a stale candidate still cannot hide
+a later valid proof. Zero limits retain their disabled meaning. The CLI uses
+the same `PreflightCommitmentBounds` check, then enforces the other limits spanning
+the whole bundle. The legacy `VerifyCommitments` helper retains one result per
+input; its callers must invoke `PreflightCommitmentBounds` separately for batch
+budgets. A successful resource preflight proves no content inclusion.
+
+These are per-call decoded-input bounds, not a process-memory cap or a cumulative
+budget across calls. They do not undo memory allocated by the caller before
+verification. Applications loading wire data still need bounded decoding; the
+CLI retains its bundle-byte cap and aggregate segment/state-proof limits.
 
 The zero value refuses verification and persistence. Direct JSON encoding or
 decoding of a handle fails: use `Save` and `LoadTrustedState`. There is no

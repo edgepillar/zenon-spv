@@ -124,6 +124,8 @@ func VerifyCommitment(state HeaderState, evidence proof.CommitmentEvidence, poli
 // evidence in input order. A REFUSED or REJECT on any evidence does
 // NOT short-circuit subsequent evidence — wallets and explorers want
 // to know which targets were proven and which weren't.
+// Call PreflightCommitmentBounds first to apply batch resource limits; this
+// legacy helper preserves its one-result-per-evidence contract.
 func VerifyCommitments(state HeaderState, batch []proof.CommitmentEvidence, policy Policy) []Result {
 	out := make([]Result, len(batch))
 	for i, e := range batch {
