@@ -22,6 +22,8 @@ audit history.
   reports, per-proof guarantees, and separate persistence and error outcomes.
 - [`conformance.md`](conformance.md) — implemented conformance cases,
   known gaps, and production follow-ups.
+- [`compiled-query-conformance.md`](compiled-query-conformance.md) — compiled
+  collector/verifier processes, loopback peer faults, and retained-query reports.
 - [`local-watch-scenarios.md`](local-watch-scenarios.md) — reproducible
   multi-peer RPC faults, verification outcomes, and persistence checks.
 - [`rpc-query-binding.md`](rpc-query-binding.md) — local query validation,
