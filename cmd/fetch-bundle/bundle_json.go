@@ -14,6 +14,16 @@ import (
 // It is an output bound, not a process-wide memory limit: source objects and
 // encoding/json's per-item scratch allocations are additional memory.
 func encodeBundleBounded(b proof.HeaderBundle, maxBytes int64) ([]byte, error) {
+	return encodeBundleWithSegments(b, maxBytes, len(b.Segments), func(i int) (proof.AccountSegment, error) {
+		return b.Segments[i], nil
+	})
+}
+
+// encodeBundleWithSegments replaces b.Segments with lazily loaded segments.
+// Each segment is encoded before requesting the next one. It retains no decoded
+// segments across calls and stops loading on any encoding or source error.
+// Headers and commitments consume the same byte budget before the first load.
+func encodeBundleWithSegments(b proof.HeaderBundle, maxBytes int64, segmentCount int, loadSegment func(int) (proof.AccountSegment, error)) ([]byte, error) {
 	if maxBytes <= 0 {
 		return nil, errors.New("bundle output byte limit must be positive")
 	}
@@ -30,10 +40,14 @@ func encodeBundleBounded(b proof.HeaderBundle, maxBytes int64) ([]byte, error) {
 		w.raw(`,"commitments":`)
 		w.array(len(b.Commitments), false, func(i int) { w.value(b.Commitments[i]) })
 	}
-	if len(b.Segments) > 0 {
+	if segmentCount > 0 {
 		w.raw(`,"segments":`)
-		w.array(len(b.Segments), false, func(i int) {
-			s := b.Segments[i]
+		w.array(segmentCount, false, func(i int) {
+			s, err := loadSegment(i)
+			if err != nil {
+				w.err = err
+				return
+			}
 			w.raw(`{"address":`)
 			w.value(s.Address)
 			w.raw(`,"blocks":`)

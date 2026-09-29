@@ -80,6 +80,7 @@ func FuzzBoundedBundleJSON(f *testing.F) {
 			t.Skip()
 		}
 		b := proof.HeaderBundle{Version: proof.WireVersion, Headers: []chain.Header{{Version: 1, Signature: input}}}
+		b.Segments = []proof.AccountSegment{{Blocks: []chain.AccountBlock{{PublicKey: input, Signature: input}}}}
 		for _, v := range input {
 			b.Commitments = append(b.Commitments, proof.CommitmentEvidence{Height: uint64(v), Flat: &proof.FlatContentEvidence{SortedHeaders: []chain.AccountHeader{{Height: uint64(v)}}}})
 		}
