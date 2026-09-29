@@ -154,6 +154,9 @@ Optional flags shared across all verify-* subcommands:
 - `--show-context` — print captured verification settings with a reproducible
   fingerprint, excluding private audit metadata. Also available on `watch`;
   see [`verification context`](docs/verification-context.md).
+- `--json` — emit one versioned report with per-proof outcomes, guarantees,
+  captured settings, and separate persistence/error fields. Check the process
+  exit code as well as the report; see [verification reports](docs/verification-reports.md).
 
 Proof commands also accept `--retained-only --state <path>` for queries against
 a nonempty trusted local state. The bundle must contain no headers. The query

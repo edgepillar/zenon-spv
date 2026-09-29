@@ -140,6 +140,12 @@ They do not independently prove activation. See docs/header-versions.md.
 and a configuration fingerprint. Available on verify-* and watch; excludes
 private audit metadata and does not imply verification success.
 
+--json selects a single schema-versioned JSON report for verify-* commands.
+It includes captured settings, per-item outcomes and guarantees, and separate
+command-error and persistence fields. --show-context adds no extra output in
+this mode. Consumers must check both the process exit code and report contents.
+See docs/verification-reports.md for the schema and output-failure boundary.
+
 --retained-only is available on verify-commitment, verify-segment, and
 verify-state-value. It requires --state pointing to a nonempty trusted local
 window and a bundle with no headers. Queries revalidate the saved state and
@@ -183,153 +189,6 @@ func main() {
 	}
 }
 
-func runVerifyCommitment(args []string) int {
-	ctx, code := prepareVerifierContext("verify-commitment", args)
-	if code != 0 {
-		return code
-	}
-	newState, code := ctx.stateForProof()
-	if code != 0 {
-		return code
-	}
-
-	if len(ctx.bundle.Commitments) == 0 {
-		fmt.Println("commitments: REFUSED ReasonMissingEvidence (no commitments in bundle)")
-		return 2
-	}
-
-	worst := verify.OutcomeAccept
-	for i, c := range ctx.bundle.Commitments {
-		r := newState.VerifyCommitment(c)
-		printResult(fmt.Sprintf("commitment[%d] height=%d addr=%x", i, c.Height, c.Target.Address), r)
-		switch r.Outcome {
-		case verify.OutcomeRefused:
-			if worst != verify.OutcomeReject {
-				worst = verify.OutcomeRefused
-			}
-		case verify.OutcomeReject:
-			worst = verify.OutcomeReject
-		}
-	}
-	if worst == verify.OutcomeAccept {
-		printAcceptCaveat(os.Stdout, ctx.opts)
-		if err := ctx.persist(newState); err != nil {
-			fmt.Fprintf(os.Stderr, "state: %v\n", err)
-			return 70
-		}
-	}
-	return outcomeExitCode(worst)
-}
-
-func runVerifyHeaders(args []string) int {
-	ctx, code := prepareVerifierContext("verify-headers", args)
-	if code != 0 {
-		return code
-	}
-	result, newState := ctx.state.Extend(ctx.bundle.Headers)
-	printResult("", result)
-	if result.Outcome == verify.OutcomeAccept {
-		printAcceptCaveat(os.Stdout, ctx.opts)
-		if err := ctx.persist(newState); err != nil {
-			fmt.Fprintf(os.Stderr, "state: %v\n", err)
-			return 70
-		}
-	}
-	return outcomeExitCode(result.Outcome)
-}
-
-func runVerifySegment(args []string) int {
-	ctx, code := prepareVerifierContext("verify-segment", args)
-	if code != 0 {
-		return code
-	}
-	newState, code := ctx.stateForProof()
-	if code != 0 {
-		return code
-	}
-
-	if len(ctx.bundle.Segments) == 0 {
-		fmt.Println("segments: REFUSED ReasonMissingEvidence (no segments in bundle)")
-		return 2
-	}
-
-	worst := verify.OutcomeAccept
-	for si, seg := range ctx.bundle.Segments {
-		segRes := newState.VerifySegment(seg, ctx.bundle.Commitments)
-		fmt.Printf("segment[%d] address=%x blocks=%d:\n", si, seg.Address, len(seg.Blocks))
-		for bi, r := range segRes.Blocks {
-			printResult(segmentBlockLabel(bi, seg), r)
-		}
-		switch segRes.Worst() {
-		case verify.OutcomeReject:
-			worst = verify.OutcomeReject
-		case verify.OutcomeRefused:
-			if worst != verify.OutcomeReject {
-				worst = verify.OutcomeRefused
-			}
-		}
-	}
-	if worst == verify.OutcomeAccept {
-		printAcceptCaveat(os.Stdout, ctx.opts)
-		if err := ctx.persist(newState); err != nil {
-			fmt.Fprintf(os.Stderr, "state: %v\n", err)
-			return 70
-		}
-	}
-	return outcomeExitCode(worst)
-}
-
-// runVerifyStateValue verifies any StateValueProof entries in the
-// bundle. Every CommitmentKind is REFUSED today because no
-// consensus-bound authenticated state root exists in
-// current-protocol go-zenon (see docs/state-commitment-audit.md
-// and docs/state-proof-implementation-plan.md). The subcommand
-// exists for forward compatibility — when a real accepting kind
-// is added in a future PR, this CLI surface stays stable.
-func runVerifyStateValue(args []string) int {
-	ctx, code := prepareVerifierContext("verify-state-value", args)
-	if code != 0 {
-		return code
-	}
-	newState, code := ctx.stateForProof()
-	if code != 0 {
-		// Header extension or trusted-state loading must succeed before
-		// the state-value verifier can examine the requested proof.
-		return code
-	}
-
-	if len(ctx.bundle.StateValueProofs) == 0 {
-		fmt.Println("state_value_proofs: REFUSED ReasonMissingEvidence (no state_value_proofs in bundle)")
-		return 2
-	}
-
-	worst := verify.OutcomeAccept
-	for i, p := range ctx.bundle.StateValueProofs {
-		res := newState.VerifyStateValue(p)
-		printResult(fmt.Sprintf("state_value_proof[%d] height=%d kind=%s",
-			i, p.MomentumHeight, p.CommitmentKind), res)
-		switch res.Outcome {
-		case verify.OutcomeReject:
-			worst = verify.OutcomeReject
-		case verify.OutcomeRefused:
-			if worst != verify.OutcomeReject {
-				worst = verify.OutcomeRefused
-			}
-		}
-	}
-	if worst == verify.OutcomeAccept {
-		// Unreachable today — VerifyStateValue refuses every kind.
-		// The shape is preserved so a future accepting kind plugs in
-		// without an extra CLI edit.
-		printAcceptCaveat(os.Stdout, ctx.opts)
-		if err := ctx.persist(newState); err != nil {
-			fmt.Fprintf(os.Stderr, "state: %v\n", err)
-			return 70
-		}
-	}
-	return outcomeExitCode(worst)
-}
-
 // verifierContext bundles everything the verify-* subcommands
 // need from their shared prelude: parsed flags, loaded genesis,
 // loaded bundle, owned VerifiedState (loaded from --state if
@@ -341,6 +200,7 @@ type verifierContext struct {
 	opts         verify.VerifyOptions
 	statePath    string
 	retainedOnly bool
+	output       *verificationOutput
 }
 
 // prepareVerifierContext parses common flags, loads the bundle and
@@ -348,12 +208,13 @@ type verifierContext struct {
 // ready verifierContext or a non-zero exit code on failure. If the
 // returned exitCode is non-zero, the caller should return it
 // directly without further work.
-func prepareVerifierContext(name string, args []string) (verifierContext, int) {
+func prepareVerifierContext(name string, args []string, out *verificationOutput) (verifierContext, int) {
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
-	fs.SetOutput(os.Stderr)
+	fs.SetOutput(out.diagnostics)
 	tier := fs.String("window", "low", "policy window tier: low | medium | high")
 	genesisConfig := fs.String("genesis-config", "", "path to genesis trust root JSON file (overrides env)")
 	profilePath := fs.String("protocol-profile", "", "path to an operator-attested momentum activation profile")
+	jsonOutput := fs.Bool("json", false, "emit one versioned JSON verification report")
 	showContext := fs.Bool("show-context", false, "print captured verification settings without private provenance metadata")
 	statePath := fs.String("state", "", "path to persisted HeaderState; load if present, save after ACCEPT")
 	retainedOnly := fs.Bool("retained-only", false, "query an existing trusted state without new headers or state writes (proof commands only)")
@@ -361,62 +222,71 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 	if err := fs.Parse(args); err != nil {
 		return verifierContext{}, 64
 	}
+	out.configure(*jsonOutput, *retainedOnly, *statePath)
+	fs.SetOutput(out.diagnostics)
 	if fs.NArg() != 1 {
-		fmt.Fprintf(os.Stderr, "%s: expected exactly one bundle path\n", name)
+		_, _ = fmt.Fprintf(out.diagnostics, "%s: expected exactly one bundle path\n", name)
 		fs.Usage()
 		return verifierContext{}, 64
 	}
 	proofCommand := name == "verify-commitment" || name == "verify-segment" || name == "verify-state-value"
 	if *retainedOnly && (!proofCommand || *statePath == "") {
-		fmt.Fprintln(os.Stderr, "--retained-only requires a proof command and --state <path>")
+		_, _ = fmt.Fprintln(out.diagnostics, "--retained-only requires a proof command and --state <path>")
 		return verifierContext{}, 64
 	}
 	bundlePath := fs.Arg(0)
 	policy, err := parseWindowPolicy(*tier)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s: %v\n", name, err)
+		_, _ = fmt.Fprintf(out.diagnostics, "%s: %v\n", name, err)
 		return verifierContext{}, 64
 	}
 
+	out.stage = "genesis"
 	genesis, err := loadGenesis(*genesisConfig)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "genesis: %v\n", err)
+		_, _ = fmt.Fprintf(out.diagnostics, "genesis: %v\n", err)
 		return verifierContext{}, 70
 	}
+	out.stage = "protocol_profile"
 	if err := configureProtocolProfile(&policy, *profilePath, genesis); err != nil {
-		fmt.Fprintf(os.Stderr, "protocol profile: %v\n", err)
+		_, _ = fmt.Fprintf(out.diagnostics, "protocol profile: %v\n", err)
 		return verifierContext{}, 70
 	}
+	out.stage = "bundle"
 	bundle, err := proof.LoadHeaderBundleBounded(bundlePath, policy.MaxBundleBytes)
 	if err != nil {
 		if errors.Is(err, proof.ErrBundleTooLarge) {
 			// REFUSED, not REJECT: too-big is a guardrail breach,
 			// not proof of badness. Exit code 2 per the documented
 			// matrix.
-			fmt.Printf("REFUSED %s %v\n", verify.ReasonOversizedBundle, err)
+			_, _ = fmt.Fprintf(out.text, "REFUSED %s %v\n", verify.ReasonOversizedBundle, err)
+			out.record(reportReference{Scope: "bundle"}, verify.Result{Outcome: verify.OutcomeRefused, Reason: verify.ReasonOversizedBundle, FailedAt: -1})
 			return verifierContext{}, 2
 		}
-		fmt.Fprintf(os.Stderr, "bundle: %v\n", err)
+		_, _ = fmt.Fprintf(out.diagnostics, "bundle: %v\n", err)
 		return verifierContext{}, 70
 	}
 	if *retainedOnly && len(bundle.Headers) != 0 {
-		fmt.Fprintln(os.Stderr, "--retained-only requires a bundle with no headers; supplied headers are never ignored")
+		out.stage = "arguments"
+		_, _ = fmt.Fprintln(out.diagnostics, "--retained-only requires a bundle with no headers; supplied headers are never ignored")
 		return verifierContext{}, 64
 	}
 	if bundle.ChainID != genesis.ChainID {
-		fmt.Printf("REJECT %s bundle chain_id=%d != trust-root chain_id=%d\n",
+		out.record(reportReference{Scope: "bundle"}, verify.Result{Outcome: verify.OutcomeReject, Reason: verify.ReasonChainIDMismatch, FailedAt: -1})
+		_, _ = fmt.Fprintf(out.text, "REJECT %s bundle chain_id=%d != trust-root chain_id=%d\n",
 			verify.ReasonChainIDMismatch, bundle.ChainID, genesis.ChainID)
 		return verifierContext{}, 1
 	}
 	opts := verify.VerifyOptions{Policy: policy}
+	out.stage = "schedule"
 	if *schedulePath != "" {
 		sched, err := verify.LoadProducerSchedule(*schedulePath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "schedule: %v\n", err)
+			_, _ = fmt.Fprintf(out.diagnostics, "schedule: %v\n", err)
 			return verifierContext{}, 70
 		}
 		if sched.ChainID != genesis.ChainID {
-			fmt.Fprintf(os.Stderr, "schedule: chain_id=%d != trust-root chain_id=%d\n",
+			_, _ = fmt.Fprintf(out.diagnostics, "schedule: chain_id=%d != trust-root chain_id=%d\n",
 				sched.ChainID, genesis.ChainID)
 			return verifierContext{}, 70
 		}
@@ -426,6 +296,7 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 		}
 	}
 
+	out.stage = "state"
 	var state verify.VerifiedState
 	if *statePath != "" {
 		state, err = verify.LoadTrustedState(*statePath, genesis, opts)
@@ -435,20 +306,23 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 	if err != nil {
 		var authorization *verify.StateAuthorizationError
 		if errors.As(err, &authorization) {
-			fmt.Printf("state: %s\n", authorization.Result)
+			out.record(reportReference{Scope: "state"}, authorization.Result)
+			_, _ = fmt.Fprintf(out.text, "state: %s\n", authorization.Result)
 			return verifierContext{}, outcomeExitCode(authorization.Result.Outcome)
 		}
-		fmt.Fprintf(os.Stderr, "state: %v\n", err)
+		_, _ = fmt.Fprintf(out.diagnostics, "state: %v\n", err)
 		return verifierContext{}, 70
 	}
 	if *retainedOnly && state.Empty() {
-		fmt.Printf("state: REFUSED %s --retained-only requires an existing nonempty trusted state\n", verify.ReasonMissingEvidence)
+		out.record(reportReference{Scope: "state"}, verify.Result{Outcome: verify.OutcomeRefused, Reason: verify.ReasonMissingEvidence, FailedAt: -1})
+		_, _ = fmt.Fprintf(out.text, "state: REFUSED %s --retained-only requires an existing nonempty trusted state\n", verify.ReasonMissingEvidence)
 		return verifierContext{}, 2
 	}
 	// A fresh start must bind the bundle to the configured anchor.
 	// On resume the file has already been checked against that anchor.
 	if state.Empty() && bundle.ClaimedGenesis != genesis.HeaderHash {
-		fmt.Printf("REJECT %s claimed_genesis=%x != trust-root=%x\n",
+		out.record(reportReference{Scope: "bundle"}, verify.Result{Outcome: verify.OutcomeReject, Reason: verify.ReasonGenesisMismatch, FailedAt: -1})
+		_, _ = fmt.Fprintf(out.text, "REJECT %s claimed_genesis=%x != trust-root=%x\n",
 			verify.ReasonGenesisMismatch, bundle.ClaimedGenesis, genesis.HeaderHash)
 		return verifierContext{}, 1
 	}
@@ -460,17 +334,25 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 	// (many small items each under the per-item cap) is refused
 	// before any heavy work.
 	if r := preflightBundleBounds(bundle, policy); r.Outcome != verify.OutcomeAccept {
-		fmt.Printf("bundle: %s\n", r)
+		out.record(reportReference{Scope: "bundle"}, r)
+		_, _ = fmt.Fprintf(out.text, "bundle: %s\n", r)
 		return verifierContext{}, outcomeExitCode(r.Outcome)
 	}
 
-	if *showContext {
-		raw, err := state.VerificationContextJSON()
+	out.stage = "context"
+	if out.json {
+		c, err := state.VerificationContext()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "verification context: %v\n", err)
 			return verifierContext{}, 70
 		}
-		fmt.Printf("verification_context: %s\n", raw)
+		out.report.Context = &c
+	} else if *showContext {
+		raw, err := state.VerificationContextJSON()
+		if err != nil {
+			_, _ = fmt.Fprintf(out.diagnostics, "verification context: %v\n", err)
+			return verifierContext{}, 70
+		}
+		_, _ = fmt.Fprintf(out.text, "verification_context: %s\n", raw)
 	}
 	return verifierContext{
 		bundle:       bundle,
@@ -478,6 +360,7 @@ func prepareVerifierContext(name string, args []string) (verifierContext, int) {
 		opts:         opts,
 		statePath:    *statePath,
 		retainedOnly: *retainedOnly,
+		output:       out,
 	}, 0
 }
 
@@ -696,11 +579,8 @@ func segmentBlockLabel(bi int, seg proof.AccountSegment) string {
 	return fmt.Sprintf("  segment-result[%d]", bi)
 }
 
-func printResult(label string, r verify.Result) { printResultTo(os.Stdout, label, r) }
-
-// printResultTo is the io.Writer-parameterized form of printResult,
-// used by tests that need to capture the structured output into a
-// bytes.Buffer. Production callers should use printResult.
+// printResultTo renders the text result envelope. Verification commands route
+// this through their selected output mode; tests can use a bytes.Buffer.
 func printResultTo(w io.Writer, label string, r verify.Result) {
 	// Writes to w are best-effort: w is typically os.Stdout (where
 	// the error is unrecoverable) or a bytes.Buffer in tests
@@ -747,17 +627,21 @@ func printSourceTrust(w io.Writer, xs []verify.TrustAssumption) {
 	}
 }
 
-func printAcceptCaveat(w io.Writer, opts verify.VerifyOptions) {
+func acceptanceCaveats(opts verify.VerifyOptions) []string {
+	caveats := []string{}
 	if opts.Policy.ProtocolProfile != nil {
-		_, _ = fmt.Fprintln(w, "CAVEAT: momentum activation is checked against an operator-attested protocol profile; network activation is not independently proven.")
+		caveats = append(caveats, "CAVEAT: momentum activation is checked against an operator-attested protocol profile; network activation is not independently proven.")
 	}
-	caveat := verify.AcceptanceCaveatWithOptions(opts)
-	if caveat == "" {
-		// Tier 3 — locally derived; future phase. Skip the line
-		// rather than emit a noisy empty caveat.
-		return
+	if caveat := verify.AcceptanceCaveatWithOptions(opts); caveat != "" {
+		caveats = append(caveats, caveat)
 	}
-	_, _ = fmt.Fprintln(w, caveat)
+	return caveats
+}
+
+func printAcceptCaveat(w io.Writer, opts verify.VerifyOptions) {
+	for _, caveat := range acceptanceCaveats(opts) {
+		_, _ = fmt.Fprintln(w, caveat)
+	}
 }
 
 // outcomeExitCode maps an Outcome to the documented exit-code matrix:

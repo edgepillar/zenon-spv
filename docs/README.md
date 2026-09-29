@@ -18,6 +18,8 @@ audit history.
   queries against a trusted local window, without state writes or new headers.
 - [`verification-context.md`](verification-context.md) — opt-in settings
   diagnostics, metadata exclusion, and reproducible configuration fingerprints.
+- [`verification-reports.md`](verification-reports.md) — versioned JSON command
+  reports, per-proof guarantees, and separate persistence and error outcomes.
 - [`conformance.md`](conformance.md) — implemented conformance cases,
   known gaps, and production follow-ups.
 - [`local-watch-scenarios.md`](local-watch-scenarios.md) — reproducible

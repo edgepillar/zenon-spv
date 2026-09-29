@@ -38,6 +38,11 @@ record of every integration input. The verified state API reports configured
 anchor and persisted-state trust explicitly; legacy free functions retain
 their earlier assumption reporting.
 
+CLI integrations can use [JSON verification reports](verification-reports.md)
+with `--json`. Check the process exit code and each required result reference
+and guarantee. The report separates verification outcomes from command and
+persistence failures; evidence acceptance alone is not successful completion.
+
 Use the optional [verification context](verification-context.md) diagnostic
 to record captured settings and compare their fingerprints. It intentionally
 omits private audit metadata and is not a complete provenance record, a proof
