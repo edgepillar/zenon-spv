@@ -12,7 +12,15 @@ import (
 // Appending .lock must not create a different namespace for an alternate data
 // stream, trimmed final name, reserved device, or DOS short-name alias.
 func stateNameSupported(name string) bool {
-	return filepath.IsLocal(name) && !strings.ContainsAny(name, ":~") && strings.TrimRight(name, " .") == name
+	if !filepath.IsLocal(name) || strings.ContainsAny(name, ":~") || strings.TrimRight(name, " .") != name {
+		return false
+	}
+	// IsLocal can accept device names with extensions on newer Windows
+	// versions. Apply the same conservative rule on every supported host by
+	// checking the bare name too, including spaces before the first dot.
+	base, _, _ := strings.Cut(name, ".")
+	base = strings.TrimRight(base, " ")
+	return base == "" || filepath.IsLocal(base)
 }
 
 func openLockFile(path string) (*os.File, error) {

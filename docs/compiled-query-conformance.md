@@ -11,9 +11,11 @@ Run the focused workflow with the repository's Go toolchain on `PATH`:
 go test -race ./internal/conformance -run TestCompiledCLIQueryWorkflow -v
 ```
 
-It also runs as part of ordinary `go test ./...` and the existing CI test
-step. No additional service, workflow, public RPC, wallet, or credentials are
-required. Subprocess builds use the local Go toolchain and cached dependencies
+It also runs as part of ordinary `go test ./...`. CI executes the full suite
+on native Linux, macOS, and Windows runners. The macOS/Windows jobs disable
+test-result caching with `-count=1`; Linux retains its race-enabled test and
+lint job. No public RPC, wallet, or credentials are required.
+Subprocess builds use the local Go toolchain and cached dependencies
 with module/network lookup disabled. The normal repository dependencies must
 already be available, as they are after the parent test build.
 Command source files are registered as test inputs so a CLI-only edit
@@ -69,7 +71,7 @@ process privileges still permit writes there; other scenarios continue.
 This is synthetic offline inclusion evidence against explicitly trusted local
 anchor/state inputs. It does not validate VM execution, live activation,
 balance proofs, freshness, canonical-chain selection, or consensus finality.
-The `-race` flag instruments the Go test and its in-process peer handlers;
+When used, `-race` instruments the Go test and its in-process peer handlers;
 the compiled child CLIs are ordinary builds. Existing command/core race tests
 cover the code in-process separately. The workflow is a focused query-path
 conformance test, not the full CLI or platform conformance plan.
