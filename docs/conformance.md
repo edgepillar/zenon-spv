@@ -38,6 +38,11 @@ inclusion of every child, distinct batch and raw previous frontiers, partial
 segments, and refusal of receive-only evidence for a child. Tampered descendant
 hashes fail RPC conversion without returning a partial batch.
 
+[`fetch-bundle --proof-only`](fetch-bundle.md#evidence-for-an-existing-retained-window)
+uses the same corpus through local single/multi-peer RPC and retained-state
+queries. It checks output preservation on bounded/source failures and rejects
+hash-consistent alternate content against the existing local commitment.
+
 ## §8 — Conformance test cases
 
 Header-chain layer:

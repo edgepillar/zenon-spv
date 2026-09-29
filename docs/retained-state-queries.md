@@ -18,6 +18,12 @@ is informational once the saved state's anchor has been checked against the
 configured anchor. Supply the same protocol profile and any required producer
 schedule used for the query's trust policy.
 
+[`fetch-bundle --proof-only`](fetch-bundle.md#evidence-for-an-existing-retained-window)
+assembles this format directly from the selected RPC peers. Choose a range
+covering commitments inside the retained window with enough depth. The fetcher
+does not extend or authenticate the saved state, and successful collection is
+not a proof verdict. Missing matches do not establish absence or a zero balance.
+
 Known top-level bundle fields must occur at most once. Repeated `headers`,
 commitment/segment/proof arrays, or identity fields are parse errors, including
 case variants, escaped names, and equivalent Unicode case forms. A later empty
