@@ -86,7 +86,7 @@ func TestCLIWindowCapturesDocumentedDepth(t *testing.T) {
 			var context verifierContext
 			code, out, diagnostics := captureSetupRun(t, func() int {
 				var code int
-				context, code = prepareVerifierContext("verify-headers", args)
+				context, code = prepareVerifierContext("verify-headers", args, newVerificationOutput("verify-headers", os.Stdout, os.Stderr))
 				return code
 			})
 			if code != 0 || diagnostics != "" {

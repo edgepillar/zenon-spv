@@ -16,13 +16,17 @@ zenon-spv verify-headers --genesis-config anchor.json \
   --show-context bundle.json
 ```
 
-Verification commands emit one `verification_context: {JSON}` line on stdout
-after successful setup and bundle preflight, before evidence verification.
+In text mode, verification commands emit one `verification_context: {JSON}`
+line on stdout after successful setup and bundle preflight, before verification.
 The line can therefore precede REJECT or REFUSED; it does not mean ACCEPT.
 Setup/preflight errors do not produce a context. Watch emits the same line
 on its configured log writer once after loading and re-authorizing state,
 before its first tick. The default output and per-tick format are unchanged.
 Applications can set `syncer.Loop.ShowContext` for the same startup diagnostic.
+
+With `--json`, verification commands include the context inside the single
+[verification report](verification-reports.md). In that mode `--show-context`
+does not produce an extra line.
 
 An application can record the API value without logging raw configuration:
 
