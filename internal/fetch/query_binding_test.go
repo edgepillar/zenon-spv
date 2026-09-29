@@ -90,6 +90,13 @@ func queryAccountBlock(t *testing.T, height uint64, address string) rpcAccountBl
 		t.Fatal(err)
 	}
 	parsed.Height, parsed.Address = height, chain.Address(decoded)
+	if height > 1 {
+		parsed.PreviousHash = chain.Hash{1}
+	}
+	if parsed.Address.IsEmbeddedAddress() {
+		parsed.BlockType = chain.BlockTypeContractSend
+	}
+	block.PreviousHash, block.BlockType = hashHex(parsed.PreviousHash), parsed.BlockType
 	block.Height, block.Address, block.Hash = height, address, hashHex(parsed.ComputeHash())
 	block.PublicKey, block.Signature = "", ""
 	if _, err := convertAndVerifyAccountBlock(block); err != nil {

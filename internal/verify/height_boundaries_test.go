@@ -78,7 +78,8 @@ func TestVerifySegment_HeightCannotWrapToZero(t *testing.T) {
 		reasons []ReasonCode
 	}{
 		{"maximum-successor", []uint64{max - 1, max}, []ReasonCode{ReasonOK, ReasonOK}},
-		{"wrapped-successor", []uint64{max, 0, 1}, []ReasonCode{ReasonOK, ReasonHeightNonMonotonic, ReasonParentNotAccepted}},
+		// Height zero fails the envelope gate before successor arithmetic.
+		{"wrapped-successor", []uint64{max, 0, 1}, []ReasonCode{ReasonOK, ReasonInvalidAccountBlockEnvelope, ReasonParentNotAccepted}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, segment, _, key := segmentFixture(t)
@@ -88,6 +89,7 @@ func TestVerifySegment_HeightCannotWrapToZero(t *testing.T) {
 			for i, height := range tc.heights {
 				b := template
 				b.Height = height
+				b.PreviousHash = chain.Hash{42} // the segment starts after an unproven parent
 				if i > 0 {
 					b.PreviousHash = segment.Blocks[i-1].BlockHash
 				}

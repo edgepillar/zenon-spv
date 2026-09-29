@@ -107,6 +107,9 @@ func (c *Client) FetchAccountBlocksByHeight(ctx context.Context, addressBech32 s
 // descendant-blocks hash, which is recomputed via
 // descendantBlocksHash from the decoded descendants slice.
 func convertAndVerifyAccountBlock(b rpcAccountBlock) (chain.AccountBlock, error) {
+	if err := chain.ValidateAccountBlockVersion(b.Version); err != nil {
+		return chain.AccountBlock{}, err
+	}
 	prev, err := decodeHex32(b.PreviousHash)
 	if err != nil {
 		return chain.AccountBlock{}, fmt.Errorf("previous_hash: %w", err)
@@ -190,6 +193,9 @@ func convertAndVerifyAccountBlock(b rpcAccountBlock) (chain.AccountBlock, error)
 		Nonce:                nonce,
 		PublicKey:            pubkey,
 		Signature:            signature,
+	}
+	if err := chain.ValidateAccountBlockEnvelope(out); err != nil {
+		return chain.AccountBlock{}, err
 	}
 	recomputed := out.ComputeHash()
 	if recomputed != claimed {

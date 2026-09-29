@@ -57,6 +57,11 @@ Commitment layer (Phase 2):
 
 Account-segment layer (Phase 3):
 
+- [x] [Account envelope validation](account-envelope-validation.md): v1 only,
+      post-genesis types 2 through 5, account/address kind agreement, positive
+      height, first-block parent shape, and chain ID bound to the trusted anchor.
+- [x] [Account amount validation](account-amount-validation.md): nonnegative,
+      at most 255 bits before hash verification on RPC and offline inputs.
 - [x] Per-block hash recompute and Ed25519 signature.
 - [x] F1 binding: `PubKeyToAddress(pk) == block.Address` for user
       addresses; embedded-contract addresses must carry empty

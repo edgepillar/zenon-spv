@@ -84,6 +84,9 @@ const (
 	ReasonInvalidResourcePrice
 	ReasonUninitializedState
 	ReasonInvalidAmount
+	ReasonUnsupportedAccountBlockVersion
+	ReasonUnsupportedAccountBlockType
+	ReasonInvalidAccountBlockEnvelope
 )
 
 // String returns a stable, snake-case-equivalent name for serialization.
@@ -171,6 +174,12 @@ func (r ReasonCode) String() string {
 		return "ReasonUninitializedState"
 	case ReasonInvalidAmount:
 		return "ReasonInvalidAmount"
+	case ReasonUnsupportedAccountBlockVersion:
+		return "ReasonUnsupportedAccountBlockVersion"
+	case ReasonUnsupportedAccountBlockType:
+		return "ReasonUnsupportedAccountBlockType"
+	case ReasonInvalidAccountBlockEnvelope:
+		return "ReasonInvalidAccountBlockEnvelope"
 	case ReasonUnsupportedHeaderVersion:
 		return "ReasonUnsupportedHeaderVersion"
 	default:

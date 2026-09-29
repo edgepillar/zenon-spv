@@ -24,6 +24,8 @@ audit history.
   response height/account binding, and quorum treatment of mismatched replies.
 - [`account-amount-validation.md`](account-amount-validation.md) — signed-value
   ambiguity prevention across RPC and offline proof inputs, with node vectors.
+- [`account-envelope-validation.md`](account-envelope-validation.md) — supported
+  account layouts, anchor chain binding, and post-genesis block shape checks.
 - [`fetch-bundle.md`](fetch-bundle.md) — explicit peer selection, bounded
   query options, output behavior, and checkpoint provenance for bundle assembly.
 - [`producer-set-verification.md`](producer-set-verification.md) —

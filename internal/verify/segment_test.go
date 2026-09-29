@@ -18,6 +18,10 @@ func segmentFixture(t *testing.T) (HeaderState, proof.AccountSegment, []proof.Co
 }
 
 func segmentFixtureWithAmount(t *testing.T, amount *big.Int) (HeaderState, proof.AccountSegment, []proof.CommitmentEvidence, ed25519.PrivateKey) {
+	return segmentFixtureWithBlockEdit(t, func(b *chain.AccountBlock) { b.Amount = amount })
+}
+
+func segmentFixtureWithBlockEdit(t *testing.T, edit func(*chain.AccountBlock)) (HeaderState, proof.AccountSegment, []proof.CommitmentEvidence, ed25519.PrivateKey) {
 	t.Helper()
 	priv := ed25519.NewKeyFromSeed(make([]byte, ed25519.SeedSize))
 	pub := priv.Public().(ed25519.PublicKey)
@@ -43,10 +47,13 @@ func segmentFixtureWithAmount(t *testing.T, amount *big.Int) (HeaderState, proof
 		MomentumAcknowledged: momentumAck,
 		Address:              addr,
 		ToAddress:            chain.Address{0x99},
-		Amount:               amount,
+		Amount:               big.NewInt(1000),
 		TokenStandard:        chain.TokenStandard{0x01, 0x02, 0x03},
 		Nonce:                chain.Nonce{0xa1, 0xa2},
 		PublicKey:            append([]byte{}, pub...),
+	}
+	if edit != nil {
+		edit(&block1)
 	}
 	block1.BlockHash = block1.ComputeHash()
 	block1.Signature = ed25519.Sign(priv, block1.BlockHash[:])
@@ -69,8 +76,8 @@ func segmentFixtureWithAmount(t *testing.T, amount *big.Int) (HeaderState, proof
 	block2.Signature = ed25519.Sign(priv, block2.BlockHash[:])
 
 	committed := []chain.AccountHeader{
-		{Address: addr, Height: 1, Hash: block1.BlockHash},
-		{Address: addr, Height: 2, Hash: block2.BlockHash},
+		block1.AccountHeader(),
+		block2.AccountHeader(),
 	}
 	committedContentHash := chain.MomentumContentHash(committed)
 

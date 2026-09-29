@@ -34,8 +34,10 @@ func (r SegmentResult) Worst() Outcome {
 //
 // For each block, the verifier:
 //
-//  1. Confirms block.Address == segment.Address (consistency) and rejects
-//     negative or greater-than-255-bit amounts before hashing.
+//  1. Confirms block.Address == segment.Address (consistency), refuses
+//     unsupported layouts/types, and rejects contradictory fields. Binds the
+//     account chain ID to the configured anchor, then rejects negative or
+//     greater-than-255-bit amounts before hashing.
 //  2. Recomputes block.ComputeHash() and compares against
 //     block.BlockHash. Mismatch → REJECT/InvalidHash.
 //  3. Binds block.PublicKey to block.Address per go-zenon
@@ -146,6 +148,11 @@ func VerifySegment(state HeaderState, segment proof.AccountSegment, commitments 
 				FailedAt: i,
 			}
 			previousOutcome = OutcomeReject
+			continue
+		}
+		if r := validateSegmentEnvelope(*b, state.Genesis.ChainID, i); r.Outcome != OutcomeAccept {
+			out.Blocks[i] = r
+			previousOutcome = r.Outcome
 			continue
 		}
 		if err := chain.ValidateAccountAmount(b.Amount); err != nil {
