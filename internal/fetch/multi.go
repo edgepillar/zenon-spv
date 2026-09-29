@@ -73,7 +73,7 @@ func (m *MultiClient) requiredQuorum() (int, error) {
 	}
 	for i, p := range m.Peers {
 		if p == nil || p.HTTP == nil || strings.TrimSpace(p.URL) == "" {
-			return 0, fmt.Errorf("%w: peer %d requires a client, HTTP client, and nonempty URL", ErrInvalidPeerConfiguration, i)
+			return 0, fmt.Errorf("%w: %s requires a client, HTTP client, and nonempty URL", ErrInvalidPeerConfiguration, PeerLabel(i))
 		}
 	}
 	return q, nil
@@ -81,14 +81,14 @@ func (m *MultiClient) requiredQuorum() (int, error) {
 
 // peerResult captures one peer's response to a fan-out query.
 type peerResult struct {
-	url     string
+	label   string
 	headers []chain.Header
 	err     error
 }
 
 // peerDetailedResult captures one peer's detailed response.
 type peerDetailedResult struct {
-	url      string
+	label    string
 	detailed []DetailedHeader
 	err      error
 }
@@ -114,7 +114,7 @@ func (m *MultiClient) FetchByHeightDetailed(ctx context.Context, start, count ui
 		go func(i int, p *Client) {
 			defer wg.Done()
 			d, err := p.FetchByHeightDetailed(ctx, start, count)
-			results[i] = peerDetailedResult{url: p.URL, detailed: d, err: err}
+			results[i] = peerDetailedResult{label: PeerLabel(i), detailed: d, err: err}
 		}(i, p)
 	}
 	wg.Wait()
@@ -142,7 +142,7 @@ func (m *MultiClient) FetchByHeight(ctx context.Context, start, count uint64) ([
 		go func(i int, p *Client) {
 			defer wg.Done()
 			h, err := p.FetchByHeight(ctx, start, count)
-			results[i] = peerResult{url: p.URL, headers: h, err: err}
+			results[i] = peerResult{label: PeerLabel(i), headers: h, err: err}
 		}(i, p)
 	}
 	wg.Wait()
@@ -231,7 +231,7 @@ func reconcileDetailed(results []peerDetailedResult, q int) ([]DetailedHeader, e
 	var firstErrs []string
 	for _, r := range results {
 		if r.err != nil {
-			firstErrs = append(firstErrs, fmt.Sprintf("  %s: %v", r.url, r.err))
+			firstErrs = append(firstErrs, fmt.Sprintf("  %s: %v", r.label, r.err))
 			continue
 		}
 		good = append(good, r)
@@ -244,27 +244,27 @@ func reconcileDetailed(results []peerDetailedResult, q int) ([]DetailedHeader, e
 	for _, r := range good[1:] {
 		if len(r.detailed) != len(pin.detailed) {
 			return nil, fmt.Errorf("%w: %s returned %d momentums, %s returned %d",
-				ErrPeerDisagreement, r.url, len(r.detailed), pin.url, len(pin.detailed))
+				ErrPeerDisagreement, r.label, len(r.detailed), pin.label, len(pin.detailed))
 		}
 		for i := range pin.detailed {
 			if r.detailed[i].Header.Height != pin.detailed[i].Header.Height {
 				return nil, fmt.Errorf("%w: %s height[%d]=%d vs %s height[%d]=%d",
-					ErrPeerDisagreement, r.url, i, r.detailed[i].Header.Height,
-					pin.url, i, pin.detailed[i].Header.Height)
+					ErrPeerDisagreement, r.label, i, r.detailed[i].Header.Height,
+					pin.label, i, pin.detailed[i].Header.Height)
 			}
 			if r.detailed[i].Header.HeaderHash != pin.detailed[i].Header.HeaderHash {
 				return nil, fmt.Errorf("%w: at height %d, %s hash=%x vs %s hash=%x",
 					ErrPeerDisagreement, pin.detailed[i].Header.Height,
-					r.url, r.detailed[i].Header.HeaderHash,
-					pin.url, pin.detailed[i].Header.HeaderHash)
+					r.label, r.detailed[i].Header.HeaderHash,
+					pin.label, pin.detailed[i].Header.HeaderHash)
 			}
 			if !bytes.Equal(r.detailed[i].Header.PublicKey, pin.detailed[i].Header.PublicKey) {
 				return nil, fmt.Errorf("%w: at height %d, %s and %s disagree on public_key",
-					ErrPeerDisagreement, pin.detailed[i].Header.Height, r.url, pin.url)
+					ErrPeerDisagreement, pin.detailed[i].Header.Height, r.label, pin.label)
 			}
 			if !bytes.Equal(r.detailed[i].Header.Signature, pin.detailed[i].Header.Signature) {
 				return nil, fmt.Errorf("%w: at height %d, %s and %s disagree on signature",
-					ErrPeerDisagreement, pin.detailed[i].Header.Height, r.url, pin.url)
+					ErrPeerDisagreement, pin.detailed[i].Header.Height, r.label, pin.label)
 			}
 		}
 	}
@@ -284,7 +284,7 @@ func (m *MultiClient) FetchAccountBlocksByHeight(ctx context.Context, addressBec
 	}
 
 	type peerBlocksResult struct {
-		url    string
+		label  string
 		blocks []chain.AccountBlock
 		err    error
 	}
@@ -295,7 +295,7 @@ func (m *MultiClient) FetchAccountBlocksByHeight(ctx context.Context, addressBec
 		go func(i int, p *Client) {
 			defer wg.Done()
 			b, err := p.FetchAccountBlocksByHeight(ctx, addressBech32, start, count)
-			results[i] = peerBlocksResult{url: p.URL, blocks: b, err: err}
+			results[i] = peerBlocksResult{label: PeerLabel(i), blocks: b, err: err}
 		}(i, p)
 	}
 	wg.Wait()
@@ -304,7 +304,7 @@ func (m *MultiClient) FetchAccountBlocksByHeight(ctx context.Context, addressBec
 	var firstErrs []string
 	for _, r := range results {
 		if r.err != nil {
-			firstErrs = append(firstErrs, fmt.Sprintf("  %s: %v", r.url, r.err))
+			firstErrs = append(firstErrs, fmt.Sprintf("  %s: %v", r.label, r.err))
 			continue
 		}
 		good = append(good, r)
@@ -317,24 +317,24 @@ func (m *MultiClient) FetchAccountBlocksByHeight(ctx context.Context, addressBec
 	for _, r := range good[1:] {
 		if len(r.blocks) != len(pin.blocks) {
 			return nil, fmt.Errorf("%w: %s returned %d blocks, %s returned %d",
-				ErrPeerDisagreement, r.url, len(r.blocks), pin.url, len(pin.blocks))
+				ErrPeerDisagreement, r.label, len(r.blocks), pin.label, len(pin.blocks))
 		}
 		for i := range pin.blocks {
 			if r.blocks[i].BlockHash != pin.blocks[i].BlockHash {
 				return nil, fmt.Errorf("%w: at height %d, %s hash=%x vs %s hash=%x",
 					ErrPeerDisagreement, pin.blocks[i].Height,
-					r.url, r.blocks[i].BlockHash,
-					pin.url, pin.blocks[i].BlockHash)
+					r.label, r.blocks[i].BlockHash,
+					pin.label, pin.blocks[i].BlockHash)
 			}
 			// F3: account blocks carry pk/sig that ride along the
 			// hash; substitution by a malicious peer is caught here.
 			if !bytes.Equal(r.blocks[i].PublicKey, pin.blocks[i].PublicKey) {
 				return nil, fmt.Errorf("%w: at block height %d, %s and %s disagree on public_key",
-					ErrPeerDisagreement, pin.blocks[i].Height, r.url, pin.url)
+					ErrPeerDisagreement, pin.blocks[i].Height, r.label, pin.label)
 			}
 			if !bytes.Equal(r.blocks[i].Signature, pin.blocks[i].Signature) {
 				return nil, fmt.Errorf("%w: at block height %d, %s and %s disagree on signature",
-					ErrPeerDisagreement, pin.blocks[i].Height, r.url, pin.url)
+					ErrPeerDisagreement, pin.blocks[i].Height, r.label, pin.label)
 			}
 		}
 	}
@@ -352,7 +352,7 @@ func reconcileByHeight(results []peerResult, q int) ([]chain.Header, error) {
 	var firstErrs []string
 	for _, r := range results {
 		if r.err != nil {
-			firstErrs = append(firstErrs, fmt.Sprintf("  %s: %v", r.url, r.err))
+			firstErrs = append(firstErrs, fmt.Sprintf("  %s: %v", r.label, r.err))
 			continue
 		}
 		good = append(good, r)
@@ -367,27 +367,27 @@ func reconcileByHeight(results []peerResult, q int) ([]chain.Header, error) {
 	for _, r := range good[1:] {
 		if len(r.headers) != len(pin.headers) {
 			return nil, fmt.Errorf("%w: %s returned %d headers, %s returned %d",
-				ErrPeerDisagreement, r.url, len(r.headers), pin.url, len(pin.headers))
+				ErrPeerDisagreement, r.label, len(r.headers), pin.label, len(pin.headers))
 		}
 		for i := range pin.headers {
 			if r.headers[i].Height != pin.headers[i].Height {
 				return nil, fmt.Errorf("%w: %s height[%d]=%d vs %s height[%d]=%d",
-					ErrPeerDisagreement, r.url, i, r.headers[i].Height,
-					pin.url, i, pin.headers[i].Height)
+					ErrPeerDisagreement, r.label, i, r.headers[i].Height,
+					pin.label, i, pin.headers[i].Height)
 			}
 			if r.headers[i].HeaderHash != pin.headers[i].HeaderHash {
 				return nil, fmt.Errorf("%w: at height %d, %s hash=%x vs %s hash=%x",
 					ErrPeerDisagreement, pin.headers[i].Height,
-					r.url, r.headers[i].HeaderHash,
-					pin.url, pin.headers[i].HeaderHash)
+					r.label, r.headers[i].HeaderHash,
+					pin.label, pin.headers[i].HeaderHash)
 			}
 			if !bytes.Equal(r.headers[i].PublicKey, pin.headers[i].PublicKey) {
 				return nil, fmt.Errorf("%w: at height %d, %s and %s disagree on public_key",
-					ErrPeerDisagreement, pin.headers[i].Height, r.url, pin.url)
+					ErrPeerDisagreement, pin.headers[i].Height, r.label, pin.label)
 			}
 			if !bytes.Equal(r.headers[i].Signature, pin.headers[i].Signature) {
 				return nil, fmt.Errorf("%w: at height %d, %s and %s disagree on signature",
-					ErrPeerDisagreement, pin.headers[i].Height, r.url, pin.url)
+					ErrPeerDisagreement, pin.headers[i].Height, r.label, pin.label)
 			}
 		}
 	}

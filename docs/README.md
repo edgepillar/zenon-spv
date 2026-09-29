@@ -24,6 +24,8 @@ audit history.
   multi-peer RPC faults, verification outcomes, and persistence checks.
 - [`rpc-query-binding.md`](rpc-query-binding.md) — local query validation,
   response height/account binding, and quorum treatment of mismatched replies.
+- [`rpc-diagnostics.md`](rpc-diagnostics.md) — endpoint-free error formatting,
+  retained error causes, peer positions, and private-data boundaries.
 - [`account-amount-validation.md`](account-amount-validation.md) — signed-value
   ambiguity prevention across RPC and offline proof inputs, with node vectors.
 - [`account-envelope-validation.md`](account-envelope-validation.md) — supported

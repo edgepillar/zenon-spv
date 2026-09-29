@@ -98,7 +98,7 @@ func run(args []string) error {
 // error if any peer disagrees or fails.
 func crossCheckAtHeight(ctx context.Context, urls []string, h uint64) (chain.Hash, error) {
 	type result struct {
-		url    string
+		label  string
 		header chain.Header
 		err    error
 	}
@@ -111,35 +111,35 @@ func crossCheckAtHeight(ctx context.Context, urls []string, h uint64) (chain.Has
 			c := fetch.NewClient(u)
 			detailed, err := c.FetchByHeightDetailed(ctx, h, 1)
 			if err != nil {
-				results[i] = result{url: u, err: err}
+				results[i] = result{label: fetch.PeerLabel(i), err: err}
 				return
 			}
 			if len(detailed) != 1 {
-				results[i] = result{url: u, err: fmt.Errorf("expected 1, got %d", len(detailed))}
+				results[i] = result{label: fetch.PeerLabel(i), err: fmt.Errorf("expected 1, got %d", len(detailed))}
 				return
 			}
-			results[i] = result{url: u, header: detailed[0].Header}
+			results[i] = result{label: fetch.PeerLabel(i), header: detailed[0].Header}
 		}(i, u)
 	}
 	wg.Wait()
 
 	var (
-		first    chain.Hash
-		firstURL string
-		healthy  int
+		first     chain.Hash
+		firstPeer string
+		healthy   int
 	)
 	for _, r := range results {
 		if r.err != nil {
-			fmt.Printf("  %s: ERROR %v\n", r.url, r.err)
+			fmt.Printf("  %s: ERROR %v\n", r.label, r.err)
 			continue
 		}
-		fmt.Printf("  %s: hash=%s\n", r.url, hex.EncodeToString(r.header.HeaderHash[:]))
+		fmt.Printf("  %s: hash=%s\n", r.label, hex.EncodeToString(r.header.HeaderHash[:]))
 		if healthy == 0 {
 			first = r.header.HeaderHash
-			firstURL = r.url
+			firstPeer = r.label
 		} else if r.header.HeaderHash != first {
 			return chain.Hash{}, fmt.Errorf("DISAGREEMENT: %s -> %x  vs  %s -> %x",
-				firstURL, first, r.url, r.header.HeaderHash)
+				firstPeer, first, r.label, r.header.HeaderHash)
 		}
 		healthy++
 	}

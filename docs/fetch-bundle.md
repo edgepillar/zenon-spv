@@ -21,6 +21,10 @@ the generated checkpoint, validate the full chain, or establish finality.
 Endpoint counts do not establish independent operators. Multi-peer agreement
 does not make a checkpoint obtained from those peers an independent trust root.
 
+[RPC diagnostics](rpc-diagnostics.md) identify peers by their configured list
+positions and omit endpoint credentials and free-form server error messages.
+Status codes and failure categories remain available for troubleshooting.
+
 ## Input bounds
 
 Invalid options fail before RPC requests or output-file writes. The command
