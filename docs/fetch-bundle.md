@@ -69,6 +69,50 @@ own independent 64 MiB cap.
 The candidate can still fail signature, linkage, commitment, or policy checks.
 Authenticate checkpoint provenance and run the verifier before using evidence.
 
+## Evidence for an existing retained window
+
+Use `--proof-only` to emit a bundle for a later
+[`--retained-only` query](retained-state-queries.md). This avoids manually
+removing the fetched headers. At least one `--commitments` address or
+`--segments` range is required. `--checkpoint` is incompatible with this mode;
+invalid combinations fail before RPC or output writes. Omitting the flag or
+passing `--proof-only=false` preserves the normal header-bundle behavior.
+
+Choose a momentum range overlapping the trusted local window and containing
+the requested account blocks' commitments. A target must also have enough
+strict-past depth under the query policy. Pinning `--height` to the retained
+tip keeps this choice explicit; a newly fetched frontier may already be outside
+that window. For example, with the tip height, scan count, account address, and
+account heights selected for the application:
+
+```sh
+fetch-bundle --proof-only --rpc https://node.example \
+  --height "$RETAINED_TIP_HEIGHT" --count "$SCAN_COUNT" \
+  --segments "$ACCOUNT:$START_HEIGHT-$END_HEIGHT" --out proof.json
+
+zenon-spv verify-segment --retained-only \
+  --state state.json --genesis-config anchor.json proof.json
+```
+
+Pass the required protocol profile and producer schedule to the verifier as
+usual. The fetcher neither opens nor updates `state.json`; the later query
+revalidates that explicitly trusted state and does not write it.
+
+The fetch phase still obtains the usual `count+1` momentum range, recomputes
+RPC hashes, and builds flat-content evidence with the same peer, query, count,
+byte, timeout, and publication limits. The emitted `headers` array is empty.
+`chain_id` and the informational `claimed_genesis` retain their observed RPC
+values; neither creates a new trust root. No checkpoint file is exported and
+the diagnostics identify the evidence range rather than announce a new anchor.
+
+Fetch success only means candidate assembly succeeded. Even hash-consistent
+peer content must match a header in the independently retained state before
+it can gain a verification guarantee. Missing commitments or empty matches
+do not prove account inactivity, absence, or a zero balance. An unavailable
+target or insufficient depth still refuses in the verifier; refresh state
+separately when the application needs later headers. This mode does not add
+state-value proofs, freshness, canonicality, or consensus finality.
+
 ## Output destinations and failures
 
 Bundle and checkpoint destinations must be distinct. Before RPC, the command
@@ -124,3 +168,10 @@ short writes, file sync/close, both renames, directory sync, late aliases, and
 stdout failure. Tests check preserved bytes during staging, the visible prefix
 after publication starts, temporary-file cleanup, and output permissions. These
 are local filesystem tests, not power-loss or Windows durability experiments.
+
+Proof-only tests serve the pinned contract-batch corpus through single and
+multiple loopback peers, then verify the emitted commitments and all five
+embedded blocks against an existing trusted state. They also cover frontier
+selection, unchanged default mode, empty targets, forbidden checkpoint outputs,
+late account errors, aggregate evidence and encoded-byte limits, and a
+hash-consistent peer response whose altered content the retained state rejects.

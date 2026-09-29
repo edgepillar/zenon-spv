@@ -11,6 +11,9 @@
 // momentum as a checkpoint trust root. The bundle's `claimed_genesis`
 // is set to the checkpoint hash so verify-headers can be invoked with
 // `--genesis-config <checkpoint>` directly.
+// --proof-only omits the headers for a later --retained-only query. It
+// requires commitment or segment targets and cannot export a checkpoint.
+// Fetch success never authenticates the caller's local state or a proof.
 //
 // Single-peer (default):
 //
@@ -73,6 +76,7 @@ func run(args []string) error {
 	timeout := fs.Duration("timeout", 30*time.Second, "overall fetch timeout (must be positive)")
 	commitmentsFlag := fs.String("commitments", "", "comma-separated z1... addresses to attest in the bundle window (also retains parsed Content slices)")
 	segmentsFlag := fs.String("segments", "", "comma-separated z1ADDR:HEIGHT or z1ADDR:START-END specs; fetched account blocks become AccountSegments and their addresses are auto-added to commitments")
+	proofOnly := fs.Bool("proof-only", false, "emit evidence without headers for a retained-state query; requires targets and forbids --checkpoint")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -90,6 +94,9 @@ func run(args []string) error {
 	}
 	if *timeout <= 0 {
 		return errors.New("--timeout must be positive")
+	}
+	if *proofOnly && *checkpointPath != "" {
+		return errors.New("--proof-only cannot export a checkpoint; use the independently trusted anchor and state for verification")
 	}
 	requestedCount := uint64(*count) + 1 // Include the checkpoint before the bundle.
 
@@ -128,6 +135,9 @@ func run(args []string) error {
 		if !containsAddress(targetAddresses, s.address) {
 			targetAddresses = append(targetAddresses, s.address)
 		}
+	}
+	if *proofOnly && len(targetAddresses) == 0 {
+		return errors.New("--proof-only requires at least one --commitments or --segments target")
 	}
 	outputs, err := resolveOutputDestinations(*out, *checkpointPath)
 	if err != nil {
@@ -179,9 +189,12 @@ func run(args []string) error {
 	}
 	anchor := detailed[0].Header
 	bundleDetailed := detailed[1:]
-	bundleHeaders := make([]chain.Header, len(bundleDetailed))
-	for i, d := range bundleDetailed {
-		bundleHeaders[i] = d.Header
+	bundleHeaders := []chain.Header{}
+	if !*proofOnly {
+		bundleHeaders = make([]chain.Header, len(bundleDetailed))
+		for i, d := range bundleDetailed {
+			bundleHeaders[i] = d.Header
+		}
 	}
 
 	commitments, err := buildCommitments(bundleDetailed, targetAddresses)
@@ -235,9 +248,15 @@ func run(args []string) error {
 		fmt.Fprintf(os.Stderr, "source_trust:\n")
 		fmt.Fprintf(os.Stderr, "  - %s\n", verify.TrustRPCQuorum)
 	}
-	fmt.Fprintf(os.Stderr, "OK: anchor height=%d hash=%s\n", anchor.Height, hex.EncodeToString(anchor.HeaderHash[:]))
-	fmt.Fprintf(os.Stderr, "OK: bundle heights=[%d..%d] count=%d\n",
-		bundleHeaders[0].Height, bundleHeaders[len(bundleHeaders)-1].Height, len(bundleHeaders))
+	if *proofOnly {
+		fmt.Fprintf(os.Stderr, "OK: proof-only evidence from heights=[%d..%d]; no headers or checkpoint exported\n",
+			bundleDetailed[0].Header.Height, bundleDetailed[len(bundleDetailed)-1].Header.Height)
+		fmt.Fprintln(os.Stderr, "Verification required: run a proof command with --retained-only, the existing trusted state, and anchor")
+	} else {
+		fmt.Fprintf(os.Stderr, "OK: anchor height=%d hash=%s\n", anchor.Height, hex.EncodeToString(anchor.HeaderHash[:]))
+		fmt.Fprintf(os.Stderr, "OK: bundle heights=[%d..%d] count=%d\n",
+			bundleHeaders[0].Height, bundleHeaders[len(bundleHeaders)-1].Height, len(bundleHeaders))
+	}
 	if len(commitments) > 0 || len(targetAddresses) > 0 {
 		fmt.Fprintf(os.Stderr, "OK: commitments=%d (targets=%d)\n", len(commitments), len(targetAddresses))
 	}

@@ -161,6 +161,11 @@ revalidates the state, applies the usual proof checks, and never rewrites it.
 See [retained state queries](docs/retained-state-queries.md) for outcomes and
 the distinction between a retained view and current network state.
 
+`fetch-bundle --proof-only` produces these query bundles directly for requested
+commitment addresses or account segments, without exporting headers or a
+checkpoint. Select a range covered by the retained state and run the verifier
+after collection; see [proof-only fetching](docs/fetch-bundle.md#evidence-for-an-existing-retained-window).
+
 Place all verify-* flags before the bundle path. `watch` accepts no positional
 arguments; extra arguments fail before loading configuration or starting RPC.
 
