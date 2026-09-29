@@ -80,7 +80,8 @@ func TestNodeDerivedAccountAmountVectors(t *testing.T) {
 				t.Fatalf("invalid node amount survived RPC: %v", err)
 			}
 			segment := proof.AccountSegment{Address: v.Block.Address, Blocks: []chain.AccountBlock{v.Block}}
-			result := verify.VerifySegment(verify.HeaderState{}, segment, nil, verify.DefaultPolicy())
+			state := verify.HeaderState{Genesis: verify.GenesisTrustRoot{ChainID: v.Block.ChainIdentifier}}
+			result := verify.VerifySegment(state, segment, nil, verify.DefaultPolicy())
 			if !v.ScalarValid && (result.Worst() != verify.OutcomeReject || result.Blocks[0].Reason != verify.ReasonInvalidAmount) {
 				t.Fatalf("signed invalid amount was not rejected before proof lookup: %v", result.Blocks)
 			}
