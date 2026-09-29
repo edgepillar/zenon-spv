@@ -189,20 +189,22 @@ func run(args []string) error {
 		return fmt.Errorf("build commitments: %w", err)
 	}
 
-	segments, err := fetchSegments(ctx, urls, multi, *rpcURL, *quorum, segmentSpecs)
-	if err != nil {
-		return fmt.Errorf("fetch segments: %w", err)
-	}
-
 	bundle := proof.HeaderBundle{
 		Version:        proof.WireVersion,
 		ChainID:        anchor.ChainIdentifier,
 		ClaimedGenesis: anchor.HeaderHash,
 		Headers:        bundleHeaders,
 		Commitments:    commitments,
-		Segments:       segments,
 	}
-	encoded, err := encodeBundleBounded(bundle, verify.DefaultMaxBundleBytes)
+	var totalBlocks int
+	encoded, err := encodeBundleWithSegments(bundle, verify.DefaultMaxBundleBytes, len(segmentSpecs), func(i int) (proof.AccountSegment, error) {
+		segment, err := fetchSegment(ctx, urls, multi, *rpcURL, *quorum, segmentSpecs[i])
+		if err != nil {
+			return proof.AccountSegment{}, fmt.Errorf("fetch segment %d: %w", i+1, err)
+		}
+		totalBlocks += len(segment.Blocks)
+		return segment, nil
+	})
 	if err != nil {
 		return fmt.Errorf("encode bundle: %w", err)
 	}
@@ -239,12 +241,8 @@ func run(args []string) error {
 	if len(commitments) > 0 || len(targetAddresses) > 0 {
 		fmt.Fprintf(os.Stderr, "OK: commitments=%d (targets=%d)\n", len(commitments), len(targetAddresses))
 	}
-	if len(segments) > 0 {
-		var totalBlocks int
-		for _, s := range segments {
-			totalBlocks += len(s.Blocks)
-		}
-		fmt.Fprintf(os.Stderr, "OK: segments=%d (blocks=%d)\n", len(segments), totalBlocks)
+	if len(segmentSpecs) > 0 {
+		fmt.Fprintf(os.Stderr, "OK: segments=%d (blocks=%d)\n", len(segmentSpecs), totalBlocks)
 	}
 	return nil
 }
@@ -334,33 +332,23 @@ func containsAddress(set []chain.Address, a chain.Address) bool {
 	return false
 }
 
-func fetchSegments(ctx context.Context, peers []string, multi bool, singleRPC string, quorum int, specs []segmentSpec) ([]proof.AccountSegment, error) {
-	if len(specs) == 0 {
-		return nil, nil
-	}
-	out := make([]proof.AccountSegment, 0, len(specs))
-	for _, spec := range specs {
-		var blocks []chain.AccountBlock
-		var err error
-		if multi {
-			mc := fetch.NewMultiClient(peers)
-			if quorum > 0 {
-				mc.Quorum = quorum
-			}
-			blocks, err = mc.FetchAccountBlocksByHeight(ctx, spec.addressBech32, spec.startHeight, spec.count)
-		} else {
-			c := fetch.NewClient(singleRPC)
-			blocks, err = c.FetchAccountBlocksByHeight(ctx, spec.addressBech32, spec.startHeight, spec.count)
+func fetchSegment(ctx context.Context, peers []string, multi bool, singleRPC string, quorum int, spec segmentSpec) (proof.AccountSegment, error) {
+	var blocks []chain.AccountBlock
+	var err error
+	if multi {
+		mc := fetch.NewMultiClient(peers)
+		if quorum > 0 {
+			mc.Quorum = quorum
 		}
-		if err != nil {
-			return nil, fmt.Errorf("address %s: %w", spec.addressBech32, err)
-		}
-		out = append(out, proof.AccountSegment{
-			Address: spec.address,
-			Blocks:  blocks,
-		})
+		blocks, err = mc.FetchAccountBlocksByHeight(ctx, spec.addressBech32, spec.startHeight, spec.count)
+	} else {
+		c := fetch.NewClient(singleRPC)
+		blocks, err = c.FetchAccountBlocksByHeight(ctx, spec.addressBech32, spec.startHeight, spec.count)
 	}
-	return out, nil
+	if err != nil {
+		return proof.AccountSegment{}, fmt.Errorf("address %s: %w", spec.addressBech32, err)
+	}
+	return proof.AccountSegment{Address: spec.address, Blocks: blocks}, nil
 }
 
 // decodeTargetAddresses parses --commitments flag input. Empty input

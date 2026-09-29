@@ -53,10 +53,18 @@ or fetching account segments and returns no partial evidence on refusal.
 The emitted bundle uses compact JSON with a final newline, capped at 64 MiB
 including that newline. Encoding proceeds by individual headers, commitments,
 and account blocks so repeated flat evidence cannot create an unbounded
-whole-bundle JSON scratch buffer. No bundle bytes are written to files or stdout
-until this bounded encoding succeeds. This bounds accumulated encoded output,
-not process memory: RPC responses, decoded objects, buffer capacity, and
-per-item encoder scratch space require additional memory.
+whole-bundle JSON scratch buffer. Headers and commitments are encoded before
+account queries begin. Each fetched segment is encoded immediately, then its
+decoded objects can be released before the next query. The command does not
+retain a decoded list of all requested segments. A byte-limit or source error
+stops further segment queries and discards the encoded prefix.
+
+No bundle bytes are written to files or stdout until this bounded encoding
+succeeds. This bounds accumulated encoded output, not process memory: header
+and commitment objects, the current segment's RPC responses and decoded data
+(including per-peer responses for quorum), buffer capacity, and per-item encoder
+scratch space require additional memory. A single RPC response still has its
+own independent 64 MiB cap.
 
 The candidate can still fail signature, linkage, commitment, or policy checks.
 Authenticate checkpoint provenance and run the verifier before using evidence.
@@ -102,6 +110,13 @@ refusals, asserting unchanged or absent output files. These assembly tests do
 not claim valid signatures. Serializer tests compare compact output with the
 standard wire encoding, including nil versus empty arrays, optional fields,
 exact byte limits, and early termination when the cap is exceeded.
+
+Segment tests serve node-derived synthetic account blocks through local single-
+and multi-peer RPC. They cover exact-fit encoding, refusal after a retained
+prefix, late RPC errors, cancellation, and stopping later requests. CLI tests
+confirm account evidence survives serialization and that late source failures
+leave existing outputs unchanged or new outputs absent. Synthetic header
+verification does not establish account inclusion or full node validity.
 
 Output tests reproduce path collisions and a bad checkpoint destination before
 the fix. Filesystem fault injection covers second-file creation, partial and

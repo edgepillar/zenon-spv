@@ -166,7 +166,9 @@ func TestBundleEvidenceRefusalPreservesOutputs(t *testing.T) {
 						}
 					}
 				}
-				err := run([]string{"--rpc", peer, "--height", "1002", "--count", "1", "--commitments", "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f", "--out", paths[0], "--checkpoint", paths[1]})
+				// Already oversized header/commitment output must refuse before
+				// contacting the account-block method, as enforced by the peer.
+				err := run([]string{"--rpc", peer, "--height", "1002", "--count", "1", "--commitments", "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f", "--segments", "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f:1", "--out", paths[0], "--checkpoint", paths[1]})
 				if err == nil || !strings.Contains(err.Error(), tc.want) {
 					t.Fatalf("unexpected refusal: %v", err)
 				}
