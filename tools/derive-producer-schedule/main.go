@@ -150,14 +150,14 @@ func deriveSchedule(
 	for i, p := range multi.Peers {
 		f, err := p.FetchFrontier(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("peer %s: frontier fetch: %w", p.URL, err)
+			return nil, fmt.Errorf("%s: frontier fetch: %w", fetch.PeerLabel(i), err)
 		}
 		if f.Height < through {
-			return nil, fmt.Errorf("peer %s: frontier=%d below requested --through=%d (peer has not seen the range)",
-				p.URL, f.Height, through)
+			return nil, fmt.Errorf("%s: frontier=%d below requested --through=%d (peer has not seen the range)",
+				fetch.PeerLabel(i), f.Height, through)
 		}
 		if err := validateObservedHeader(f, chainID); err != nil {
-			return nil, fmt.Errorf("peer %s: frontier: %w", p.URL, err)
+			return nil, fmt.Errorf("%s: frontier: %w", fetch.PeerLabel(i), err)
 		}
 		sourceHeights[p.URL] = f.Height
 		frontiers[i] = f

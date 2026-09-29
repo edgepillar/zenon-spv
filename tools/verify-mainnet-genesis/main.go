@@ -80,7 +80,7 @@ func run(args []string) error {
 	defer cancel()
 
 	type result struct {
-		url    string
+		label  string
 		header chain.Header
 		err    error
 	}
@@ -94,14 +94,14 @@ func run(args []string) error {
 			// Genesis is height 1.
 			detailed, err := c.FetchByHeightDetailed(ctx, 1, 1)
 			if err != nil {
-				results[i] = result{url: u, err: err}
+				results[i] = result{label: fetch.PeerLabel(i), err: err}
 				return
 			}
 			if len(detailed) != 1 {
-				results[i] = result{url: u, err: fmt.Errorf("peer returned %d momentums, expected 1", len(detailed))}
+				results[i] = result{label: fetch.PeerLabel(i), err: fmt.Errorf("peer returned %d momentums, expected 1", len(detailed))}
 				return
 			}
-			results[i] = result{url: u, header: detailed[0].Header}
+			results[i] = result{label: fetch.PeerLabel(i), header: detailed[0].Header}
 		}(i, u)
 	}
 	wg.Wait()
@@ -109,19 +109,19 @@ func run(args []string) error {
 	// Per-peer report
 	fmt.Println("Per-peer fetch + local recompute:")
 	var firstHash chain.Hash
-	var firstURL string
+	var firstPeer string
 	healthy := 0
 	for _, r := range results {
 		if r.err != nil {
-			fmt.Printf("  %s: ERROR %v\n", r.url, r.err)
+			fmt.Printf("  %s: ERROR %v\n", r.label, r.err)
 			continue
 		}
 		hexed := hex.EncodeToString(r.header.HeaderHash[:])
 		fmt.Printf("  %s: chain_id=%d height=%d hash=%s\n",
-			r.url, r.header.ChainIdentifier, r.header.Height, hexed)
+			r.label, r.header.ChainIdentifier, r.header.Height, hexed)
 		if healthy == 0 {
 			firstHash = r.header.HeaderHash
-			firstURL = r.url
+			firstPeer = r.label
 		}
 		healthy++
 	}
@@ -136,7 +136,7 @@ func run(args []string) error {
 		}
 		if r.header.HeaderHash != firstHash {
 			return fmt.Errorf("DISAGREEMENT: %s -> %x  vs  %s -> %x",
-				firstURL, firstHash, r.url, r.header.HeaderHash)
+				firstPeer, firstHash, r.label, r.header.HeaderHash)
 		}
 	}
 

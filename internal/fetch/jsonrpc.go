@@ -66,7 +66,9 @@ type rpcError struct {
 }
 
 func (e *rpcError) Error() string {
-	return fmt.Sprintf("rpc error %d: %s", e.Code, e.Message)
+	// Message is untrusted remote text and may echo request credentials.
+	// Keep it available to explicit inspection, never ordinary logging.
+	return fmt.Sprintf("rpc error %d", e.Code)
 }
 
 type rpcResponse struct {
@@ -81,28 +83,27 @@ func (c *Client) Call(ctx context.Context, method string, params any, out any) e
 	request := rpcRequest{JSONRPC: "2.0", ID: 1, Method: method, Params: params}
 	body, err := json.Marshal(request)
 	if err != nil {
-		return fmt.Errorf("marshal request: %w", err)
+		return callFailure("marshal request", err)
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.URL, bytes.NewReader(body))
 	if err != nil {
-		return fmt.Errorf("new request: %w", err)
+		return callFailure("new request", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
-		return fmt.Errorf("post: %w", err)
+		return callFailure("post", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return fmt.Errorf("rpc http %d: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("rpc http %d", resp.StatusCode)
 	}
 	// D2: cap response body at MaxResponseBytes. Read one extra byte
 	// so we can distinguish "exactly at limit" from "exceeded limit".
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, MaxResponseBytes+1))
 	if err != nil {
-		return fmt.Errorf("read body: %w", err)
+		return callFailure("read body", err)
 	}
 	if int64(len(raw)) > MaxResponseBytes {
 		return fmt.Errorf("%w: read %d bytes, max %d", ErrResponseTooLarge, len(raw), MaxResponseBytes)
@@ -118,7 +119,7 @@ func (c *Client) Call(ctx context.Context, method string, params any, out any) e
 		return nil
 	}
 	if err := json.Unmarshal(r.Result, out); err != nil {
-		return fmt.Errorf("unmarshal result: %w", err)
+		return callFailure("unmarshal result", err)
 	}
 	return nil
 }
