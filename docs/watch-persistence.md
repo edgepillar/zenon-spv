@@ -117,8 +117,11 @@ is not an assertion that every save error preserves the previous file.
 
 Windows retains best-effort replacement behavior and skips directory
 sync. This path does not establish the same crash-durability guarantee.
-Concurrent writers to the same state file are unsupported; each watch
-process must have exclusive ownership of its state path.
+Watch and stateful verification commands enforce cooperating single-writer
+ownership with an OS advisory lock held from load through the final save.
+A competing writer fails at startup; retained-only queries remain read-only
+and can coexist. See [state writer locks](state-writer-locks.md) for companion
+files, path rules, platform support, and the limits of advisory coordination.
 
 ## Regression coverage
 

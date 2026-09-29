@@ -78,6 +78,7 @@ import (
 	"github.com/0x3639/zenon-spv/internal/chain"
 	"github.com/0x3639/zenon-spv/internal/fetch"
 	"github.com/0x3639/zenon-spv/internal/proof"
+	"github.com/0x3639/zenon-spv/internal/statelock"
 	"github.com/0x3639/zenon-spv/internal/syncer"
 	"github.com/0x3639/zenon-spv/internal/verify"
 )
@@ -152,6 +153,12 @@ window and a bundle with no headers. Queries revalidate the saved state and
 configured producer policy, apply the usual proof/depth/resource checks,
 and never rewrite the state file. No RPC refresh or freshness claim is made.
 Without this flag, empty header input remains REFUSED.
+
+Stateful writers take an exclusive OS lock before loading --state. A competing
+writer exits 70. The parent directory must exist; final symlinks and .lock state
+names are refused. Do not delete or replace <state-path>.lock while a writer
+may be running. Retained-only queries create no lock file and remain read-only.
+See docs/state-writer-locks.md for platform and filesystem boundaries.
 
 --schedule <path> loads an operator-attested per-momentum producer
 schedule (Branch 5b). When set, the verifier requires each header's
@@ -296,6 +303,14 @@ func prepareVerifierContext(name string, args []string, out *verificationOutput)
 		}
 	}
 
+	if *statePath != "" && !*retainedOnly {
+		out.stage = "state_lock"
+		out.stateLock, err = statelock.Acquire(*statePath)
+		if err != nil {
+			_, _ = fmt.Fprintf(out.diagnostics, "state lock: %v\n", err)
+			return verifierContext{}, 70
+		}
+	}
 	out.stage = "state"
 	var state verify.VerifiedState
 	if *statePath != "" {

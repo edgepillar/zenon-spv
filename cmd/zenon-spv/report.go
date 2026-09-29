@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
+	"github.com/0x3639/zenon-spv/internal/statelock"
 	"github.com/0x3639/zenon-spv/internal/verify"
 )
 
@@ -60,7 +61,14 @@ type verificationOutput struct {
 	destination io.Writer
 	errOutput   io.Writer
 	stage       string
+	stateLock   *statelock.Lock
 	report      verificationReport
+}
+
+func (o *verificationOutput) releaseStateLock() error {
+	lock := o.stateLock
+	o.stateLock = nil
+	return lock.Close()
 }
 
 func newVerificationOutput(command string, stdout, stderr io.Writer) *verificationOutput {
@@ -113,13 +121,7 @@ func (o *verificationOutput) outcome(outcome verify.Outcome) {
 	o.report.Outcome = &token
 }
 
-// finish emits one JSON value only after verification and any save attempt.
-// A failed write cannot reliably describe itself on stdout; the process exit
-// code is authoritative. Saving is not rolled back when report output fails.
-func (o *verificationOutput) finish(code int) int {
-	if !o.json {
-		return code
-	}
+func (o *verificationOutput) outcomeForExit(code int) {
 	switch code {
 	case 0:
 		o.outcome(verify.OutcomeAccept)
@@ -127,7 +129,18 @@ func (o *verificationOutput) finish(code int) int {
 		o.outcome(verify.OutcomeReject)
 	case 2:
 		o.outcome(verify.OutcomeRefused)
-	default:
+	}
+}
+
+// finish emits one JSON value only after verification and any save attempt.
+// A failed write cannot reliably describe itself on stdout; the process exit
+// code is authoritative. Saving is not rolled back when report output fails.
+func (o *verificationOutput) finish(code int) int {
+	if !o.json {
+		return code
+	}
+	o.outcomeForExit(code)
+	if code != 0 && code != 1 && code != 2 {
 		category := "operational"
 		if code == 64 {
 			category = "usage"
