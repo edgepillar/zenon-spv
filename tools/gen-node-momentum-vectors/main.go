@@ -98,7 +98,10 @@ func run() error {
 		if len(os.Args) == 2 && os.Args[1] == "--account-segments" {
 			return writeAccountSegmentVectors()
 		}
-		return fmt.Errorf("usage: gen-node-momentum-vectors [--account-amounts|--account-segments]")
+		if len(os.Args) == 2 && os.Args[1] == "--contract-batches" {
+			return writeContractBatchVectors()
+		}
+		return fmt.Errorf("usage: gen-node-momentum-vectors [--account-amounts|--account-segments|--contract-batches]")
 	}
 	// Public, synthetic test key. Never use this all-zero seed for a wallet.
 	key := ed25519.NewKeyFromSeed(make([]byte, ed25519.SeedSize))

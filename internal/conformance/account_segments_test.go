@@ -30,24 +30,36 @@ type accountSegmentVector struct {
 	} `json:"vectors"`
 }
 
-func nodeAccountBundle(t *testing.T) (verify.GenesisTrustRoot, proof.HeaderBundle) {
+type accountSegmentCorpus struct {
+	FormatVersion int                     `json:"format_version"`
+	Source        struct{ Commit string } `json:"source"`
+	Chain         momentumSeries          `json:"chain"`
+	Segments      []accountSegmentVector  `json:"segments"`
+	Batches       []struct {
+		ReceiveHeight uint64           `json:"receive_height"`
+		Previous      chain.HashHeight `json:"previous"`
+		CommitHeights []uint64         `json:"commit_heights"`
+	} `json:"batches"`
+}
+
+func loadNodeAccountCorpus(t *testing.T, filename string) accountSegmentCorpus {
 	t.Helper()
-	raw, err := os.ReadFile("../testdata/conformance/account-segments.json")
+	raw, err := os.ReadFile(filepath.Join("../testdata/conformance", filename))
 	if err != nil {
 		t.Fatal(err)
 	}
-	var c struct {
-		FormatVersion int                     `json:"format_version"`
-		Source        struct{ Commit string } `json:"source"`
-		Chain         momentumSeries          `json:"chain"`
-		Segments      []accountSegmentVector  `json:"segments"`
-	}
+	var c accountSegmentCorpus
 	if err := json.Unmarshal(raw, &c); err != nil {
 		t.Fatal(err)
 	}
-	if c.FormatVersion != 1 || c.Source.Commit != "3a4131e63881058b6ce2ee81d3a41d0033fafc99" || len(c.Chain.Vectors) != 9 || len(c.Segments) != 2 {
+	if c.FormatVersion != 1 || c.Source.Commit != "3a4131e63881058b6ce2ee81d3a41d0033fafc99" || len(c.Chain.Vectors) != 9 || len(c.Segments) == 0 {
 		t.Fatal("unexpected account segment corpus")
 	}
+	return c
+}
+
+func accountBundleFromCorpus(t *testing.T, c accountSegmentCorpus) proof.HeaderBundle {
+	t.Helper()
 	detailed, err := fetchVectors(t, c.Chain.Vectors)
 	if err != nil {
 		t.Fatal(err)
@@ -64,9 +76,8 @@ func nodeAccountBundle(t *testing.T) (verify.GenesisTrustRoot, proof.HeaderBundl
 			})
 		}
 	}
-	types := map[uint64]bool{}
 	for _, segment := range c.Segments {
-		if len(segment.Vectors) != 2 {
+		if len(segment.Vectors) == 0 {
 			t.Fatal("incomplete account segment")
 		}
 		blocks := fetchAccountSegmentVectors(t, segment)
@@ -75,12 +86,8 @@ func nodeAccountBundle(t *testing.T) (verify.GenesisTrustRoot, proof.HeaderBundl
 			if !reflect.DeepEqual(b, want) || b.ComputeHash() != want.BlockHash {
 				t.Fatalf("RPC conversion or hash differs for %s", segment.Vectors[i].Name)
 			}
-			types[b.BlockType] = true
 		}
 		bundle.Segments = append(bundle.Segments, proof.AccountSegment{Address: segment.Address, Blocks: blocks})
-	}
-	if len(types) != 4 || !types[2] || !types[3] || !types[4] || !types[5] || len(bundle.Commitments) != 4 {
-		t.Fatal("missing account types or inclusion evidence")
 	}
 	encoded, err := json.Marshal(bundle)
 	if err != nil {
@@ -90,10 +97,41 @@ func nodeAccountBundle(t *testing.T) (verify.GenesisTrustRoot, proof.HeaderBundl
 	if err != nil {
 		t.Fatal(err)
 	}
-	return c.Chain.Anchor, decoded
+	return decoded
+}
+
+func nodeAccountBundle(t *testing.T) (verify.GenesisTrustRoot, proof.HeaderBundle) {
+	t.Helper()
+	c := loadNodeAccountCorpus(t, "account-segments.json")
+	if len(c.Segments) != 2 {
+		t.Fatal("unexpected account segment count")
+	}
+	types := map[uint64]bool{}
+	for _, segment := range c.Segments {
+		if len(segment.Vectors) != 2 {
+			t.Fatal("incomplete account segment")
+		}
+		for _, v := range segment.Vectors {
+			types[v.Block.BlockType] = true
+		}
+	}
+	bundle := accountBundleFromCorpus(t, c)
+	if len(types) != 4 || !types[2] || !types[3] || !types[4] || !types[5] || len(bundle.Commitments) != 4 {
+		t.Fatal("missing account types or inclusion evidence")
+	}
+	return c.Chain.Anchor, bundle
 }
 
 func fetchAccountSegmentVectors(t *testing.T, segment accountSegmentVector) []chain.AccountBlock {
+	t.Helper()
+	blocks, err := tryFetchAccountSegmentVectors(t, segment)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return blocks
+}
+
+func tryFetchAccountSegmentVectors(t *testing.T, segment accountSegmentVector) ([]chain.AccountBlock, error) {
 	t.Helper()
 	wire := make([]json.RawMessage, len(segment.Vectors))
 	for i, v := range segment.Vectors {
@@ -121,11 +159,7 @@ func fetchAccountSegmentVectors(t *testing.T, segment accountSegmentVector) []ch
 		}
 	}))
 	defer peer.Close()
-	blocks, err := fetch.NewClient(peer.URL).FetchAccountBlocksByHeight(context.Background(), segment.RPCAddress, start, count)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return blocks
+	return fetch.NewClient(peer.URL).FetchAccountBlocksByHeight(context.Background(), segment.RPCAddress, start, count)
 }
 
 func TestNodeAccountSegmentsThroughRPCBundleAndTrustedResume(t *testing.T) {

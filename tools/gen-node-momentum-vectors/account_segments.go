@@ -13,26 +13,31 @@ import (
 	"github.com/zenon-network/go-zenon/common/types"
 )
 
+type accountVector struct {
+	Name  string            `json:"name"`
+	RPC   *nom.AccountBlock `json:"rpc"`
+	Block map[string]any    `json:"block"`
+}
+
+type segmentVector struct {
+	Name       string          `json:"name"`
+	Address    string          `json:"address"`
+	RPCAddress string          `json:"rpc_address"`
+	Vectors    []accountVector `json:"vectors"`
+}
+
+type accountCorpus struct {
+	FormatVersion int             `json:"format_version"`
+	Source        source          `json:"source"`
+	Chain         chainCorpus     `json:"chain"`
+	Segments      []segmentVector `json:"segments"`
+	Batches       []batchInfo     `json:"batches,omitempty"`
+}
+
 // These linked serialization fixtures do not execute account transactions or
 // claim that a node would accept the synthetic momentum/account sequences.
 func writeAccountSegmentVectors() error {
-	type accountVector struct {
-		Name  string            `json:"name"`
-		RPC   *nom.AccountBlock `json:"rpc"`
-		Block map[string]any    `json:"block"`
-	}
-	type segmentVector struct {
-		Name       string          `json:"name"`
-		Address    string          `json:"address"`
-		RPCAddress string          `json:"rpc_address"`
-		Vectors    []accountVector `json:"vectors"`
-	}
-	c := struct {
-		FormatVersion int             `json:"format_version"`
-		Source        source          `json:"source"`
-		Chain         chainCorpus     `json:"chain"`
-		Segments      []segmentVector `json:"segments"`
-	}{FormatVersion: 1, Source: source{
+	c := accountCorpus{FormatVersion: 1, Source: source{
 		Repository: "https://github.com/zenon-network/go-zenon", Commit: nodeCommit,
 		ModuleVersion: nodeVersion, ModuleSum: nodeSum,
 	}}
