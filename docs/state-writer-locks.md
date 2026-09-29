@@ -65,9 +65,12 @@ The implemented backends use `flock` on Linux/macOS and `LockFileEx` on Windows.
 Other platforms fail stateful writer startup instead of silently omitting
 coordination; ephemeral verification and retained-only queries remain
 available. Tests exercise process exclusion, normal exit, forced termination,
-parent aliases, unsafe paths, and lock-file preservation. Local runtime tests
-and Linux CI are distinct from Windows cross-compilation: compilation alone
-does not establish Windows runtime or filesystem behavior.
+parent aliases, unsafe paths, and lock-file preservation. CI runs the full suite
+on native Linux, macOS, and Windows runners, including the compiled CLI writer
+regression. Linux also runs the race detector and lint. Cross-compilation alone
+does not establish runtime or filesystem behavior. A passing native job covers
+its hosted runner environment, not arbitrary network filesystems or storage
+hardware; tests requiring unavailable symlink privileges report a skip.
 
 Normal release explicitly unlocks before closing the handle. Windows can
 delay OS cleanup after termination, so a brief contention error after a
