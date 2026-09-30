@@ -35,6 +35,9 @@
 //
 //	ZENON_SPV_RPC    — single-peer URL (used if --rpc and --peers omitted)
 //	ZENON_SPV_PEERS  — comma-separated peer URLs (used if --peers omitted)
+//
+// fetch-bundle version [--json] prints privacy-filtered build identity before
+// reading these settings or constructing any RPC client. --version is an alias.
 package main
 
 import (
@@ -49,6 +52,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0x3639/zenon-spv/internal/buildinfo"
 	"github.com/0x3639/zenon-spv/internal/chain"
 	"github.com/0x3639/zenon-spv/internal/fetch"
 	"github.com/0x3639/zenon-spv/internal/proof"
@@ -56,6 +60,9 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 && (os.Args[1] == "version" || os.Args[1] == "--version") {
+		os.Exit(buildinfo.Run("fetch-bundle", os.Args[2:], os.Stdout, os.Stderr))
+	}
 	if err := run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, "fetch-bundle:", err)
 		os.Exit(1)

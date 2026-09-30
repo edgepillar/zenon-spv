@@ -75,6 +75,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/0x3639/zenon-spv/internal/buildinfo"
 	"github.com/0x3639/zenon-spv/internal/chain"
 	"github.com/0x3639/zenon-spv/internal/fetch"
 	"github.com/0x3639/zenon-spv/internal/proof"
@@ -86,6 +87,7 @@ import (
 const usage = `zenon-spv — resource-bounded Zenon SPV verifier
 
 Usage:
+  zenon-spv version            [--json]
   zenon-spv verify-headers     [--window {low|medium|high}] [--genesis-config <path>] [--state <path>] [--schedule <path>] <bundle.json>
   zenon-spv verify-commitment  [--window ...] [--genesis-config ...] [--state <path>] [--schedule <path>] <bundle.json>
   zenon-spv verify-segment     [--window ...] [--genesis-config ...] [--state <path>] [--schedule <path>] <bundle.json>
@@ -94,6 +96,9 @@ Usage:
                                [--window ...] [--interval <dur>] [--safety-margin <n>] [--batch-size <n>] [--quorum <k>]
 
 Subcommands:
+  version            Print privacy-filtered build identity without loading
+                      configuration or state. --version is an alias.
+
   verify-headers      Verify a HeaderBundle JSON file. Exits 0 on ACCEPT,
                       1 on REJECT, 2 on REFUSED.
 
@@ -177,6 +182,8 @@ func main() {
 		os.Exit(64)
 	}
 	switch os.Args[1] {
+	case "version", "--version":
+		os.Exit(buildinfo.Run("zenon-spv", os.Args[2:], os.Stdout, os.Stderr))
 	case "verify-headers":
 		os.Exit(runVerifyHeaders(os.Args[2:]))
 	case "verify-commitment":
