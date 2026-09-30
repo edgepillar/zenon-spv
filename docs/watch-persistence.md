@@ -85,6 +85,11 @@ embedded checkpoint mismatches. If the oldest retained header immediately
 follows the configured anchor, its previous hash must match that anchor.
 Every stored header is checked before policy-driven truncation, so shrinking
 the window cannot discard a corrupt prefix to make a file acceptable.
+Repeated top-level state fields are rejected, including case-folded and
+escaped aliases. A later window, anchor, profile, version, or capacity cannot
+hide an earlier value. Single legacy aliases and unknown metadata fields
+remain compatible; this is not a general strict-JSON rule for every nested
+header field.
 
 Input and output state files are limited to 64 MiB. Capacity is limited to
 100001 headers (`DefaultMaxHeaders + 1`), with the actual window no larger
@@ -143,7 +148,10 @@ policy-truncation bypass attempts, and bounded parser fuzzing.
 startup reporting, or persistence, with the original file preserved and writer
 ownership released.
 `internal/conformance/cli_inspection_test.go` checks the compiled command's
-privacy-safe, read-only error report for an over-limit retained window.
+privacy-safe, read-only error report for over-limit or shadowed retained windows.
+`internal/verify/state_json_test.go` covers duplicate known fields, legacy
+aliases and metadata, unchanged receivers on failure, trusted resume, profile
+shadowing, and bounded parser fuzzing.
 `internal/fetch/multi_config_test.go` covers consistent quorum handling,
 outages, disagreement, and rejecting invalid clients before request fan-out.
 `internal/syncer/peer_config_test.go` covers startup validation and an RPC
