@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-
-	"github.com/0x3639/zenon-spv/internal/chain"
 )
 
 // stateFileVersion identifies legacy state without an activation profile.
@@ -27,11 +25,11 @@ const (
 // effect at load time governs Capacity (the loaded slice is
 // truncated to the current Capacity if W has shrunk).
 type persistedState struct {
-	ProtocolProfile *ProtocolProfile `json:"protocol_profile,omitempty"`
-	Version         uint32           `json:"version"`
-	Genesis         GenesisTrustRoot `json:"genesis"`
-	Window          []chain.Header   `json:"retained_window"`
-	Capacity        int              `json:"capacity"`
+	ProtocolProfile *ProtocolProfile     `json:"protocol_profile,omitempty"`
+	Version         uint32               `json:"version"`
+	Genesis         GenesisTrustRoot     `json:"genesis"`
+	Window          retainedHeaderWindow `json:"retained_window"`
+	Capacity        int                  `json:"capacity"`
 }
 
 // SaveHeaderState writes state to path as JSON. The sequence is:
@@ -127,10 +125,10 @@ func saveHeaderState(path string, state HeaderState, openDir func(string) (*os.F
 // LoadHeaderState reads a persisted state file. Returns an error if
 // the file does not exist (callers wanting "load if present" should
 // use LoadOrInit). Refuses unknown wire versions per ADR 0001's
-// versioning policy. It bounds input size and rechecks every retained header's
-// layout, activation profile, identity, hash, signature, linkage, and applicable
-// checkpoints before any policy-driven truncation. This cannot authenticate
-// the source of the file or re-prove ancestry that has already been evicted.
+// versioning policy. It bounds input size and decoded header count, and rechecks
+// every retained header's layout, activation profile, identity, hash, signature,
+// linkage, and applicable checkpoints before any policy-driven truncation.
+// This cannot authenticate the source of the file or re-prove evicted ancestry.
 func LoadHeaderState(path string) (HeaderState, error) {
 	f, err := os.Open(path)
 	if err != nil {
