@@ -147,6 +147,10 @@ State-value layer:
       state-value-proof counts before decoding excess rows. Nested flat members,
       segment blocks, and proof-node counts are bounded during decoding too,
       including aggregate member/block budgets shared across one load.
+- [x] Per-proof decoded node bytes are bounded during CLI bundle loading,
+      including base64, numeric arrays, and repeated node fields. Byte refusals
+      precede state loading and writer locks; other byte fields and parser
+      buffers still depend on the input-byte cap.
 - [x] CLI and watch use immutable verified state with captured policy,
       detached snapshots, zero-value refusal, and explicit trusted-local
       resume; see [`verified-state-api.md`](verified-state-api.md).

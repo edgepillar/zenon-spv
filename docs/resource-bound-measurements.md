@@ -85,13 +85,24 @@ also span all decoded rows in one load. Repeated nested arrays consume that
 budget even if a later field replaces them or clears the evidence. A new load
 starts with fresh counters; a failed load does not consume policy for the next.
 
-These are input and array-count bounds, not a cap on total process memory or
-time. Individual byte fields and per-proof byte totals are decoded under the
-overall input-byte cap and still checked by the verifier's existing preflights.
-Core verification retains its count checks for in-memory callers too.
-The legacy byte-only loader and zero count caps remain available for trusted
-tooling; direct JSON decoding does not automatically select production limits.
-Offline parser, CLI, and compiled-command regressions cover the count caps;
+The `MaxStateProofBytes` cap also applies during decoding to the sum of decoded
+`proof_nodes` bytes in each state-value proof. The parser checks base64 decoded
+length before allocating node storage, and checks numeric byte arrays before
+reading an excess element. Standard base64 padding, JSON escapes, ignored CR/LF,
+null, and empty values retain their existing meanings. Replaced or cleared node
+arrays consume the same per-proof byte budget; separate proofs get fresh budgets.
+Over-limit proof bytes produce a bundle-level `ReasonOversizedStateProof` refusal
+before loading state, even if the selected command would not evaluate that proof.
+
+These are input, count, and decoded-node-byte bounds, not a cap on total process
+memory or time. JSON buffers, string unescaping, and other byte fields (including
+proof keys and claimed values) remain under the overall input-byte cap. Base64
+output storage includes up to two padding bytes beyond its decoded length;
+numeric array capacity and parser buffers have their own allocation overhead.
+Core verification retains its count and byte checks for in-memory callers too.
+The legacy input-byte-only loader and zero decode caps remain available for
+trusted tooling; direct JSON decoding does not select production limits.
+Offline parser, CLI, compiled-command, and differential fuzz checks cover these caps;
 these checks do not add new mainnet performance measurements to this document.
 
 Based on the empirical and protocol-shape evidence above, the

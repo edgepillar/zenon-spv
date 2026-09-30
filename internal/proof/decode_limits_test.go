@@ -71,7 +71,7 @@ func TestLoadBundleByteAndCountLimits(t *testing.T) {
 	}
 	for _, limits := range []DecodeLimits{
 		{MaxHeaders: -1}, {MaxCommitments: -1}, {MaxSegments: -1}, {MaxStateValueProofs: -1},
-		{MaxFlatEvidenceMembers: -1}, {MaxTotalFlatEvidenceMembers: -1}, {MaxSegmentBlocks: -1}, {MaxTotalSegmentBlocks: -1}, {MaxStateProofNodes: -1},
+		{MaxFlatEvidenceMembers: -1}, {MaxTotalFlatEvidenceMembers: -1}, {MaxSegmentBlocks: -1}, {MaxTotalSegmentBlocks: -1}, {MaxStateProofNodes: -1}, {MaxStateProofBytes: -1},
 	} {
 		if _, err := LoadHeaderBundleWithLimits(path+"-absent", 1024, limits); err == nil || errors.Is(err, os.ErrNotExist) {
 			t.Fatalf("invalid limits reached the filesystem: %v", err)
@@ -120,7 +120,7 @@ func FuzzBundleDecodeLimits(f *testing.F) {
 		}
 		limit := int(count % 8)
 		limits := DecodeLimits{MaxHeaders: limit, MaxCommitments: limit, MaxSegments: limit, MaxStateValueProofs: limit,
-			MaxFlatEvidenceMembers: limit, MaxTotalFlatEvidenceMembers: limit, MaxSegmentBlocks: limit, MaxTotalSegmentBlocks: limit, MaxStateProofNodes: limit}
+			MaxFlatEvidenceMembers: limit, MaxTotalFlatEvidenceMembers: limit, MaxSegmentBlocks: limit, MaxTotalSegmentBlocks: limit, MaxStateProofNodes: limit, MaxStateProofBytes: limit}
 		before := sampleBundle()
 		got := before
 		if err := got.unmarshalJSON(raw, limits); err != nil {
@@ -153,6 +153,13 @@ func FuzzBundleDecodeLimits(f *testing.F) {
 			for _, proof := range got.StateValueProofs {
 				if len(proof.ProofNodes) > limit {
 					t.Fatal("successful decoding exceeded a proof-node count cap")
+				}
+				remaining := limit
+				for _, node := range proof.ProofNodes {
+					if len(node) > remaining {
+						t.Fatal("successful decoding exceeded a proof-node byte cap")
+					}
+					remaining -= len(node)
 				}
 			}
 		}

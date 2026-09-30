@@ -2,6 +2,7 @@ package conformance_test
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,6 +11,43 @@ import (
 
 	"github.com/0x3639/zenon-spv/internal/verify"
 )
+
+func TestCompiledCLIProofByteBounds(t *testing.T) {
+	binary := buildQueryCLIs(t, "zenon-spv")["zenon-spv"]
+	c, _ := contractBatchBundle(t)
+	anchor := writeCLIJSON(t, t.TempDir(), "anchor.json", c.Chain.Anchor)
+	exactNode := base64.StdEncoding.EncodeToString(make([]byte, verify.DefaultMaxStateProofBytes))
+	largeNode := base64.StdEncoding.EncodeToString(make([]byte, verify.DefaultMaxStateProofBytes+1))
+	for _, tc := range []struct{ name, command, fields string }{
+		{"one large node", "verify-state-value", fmt.Sprintf(`"proof_nodes":[%q]`, largeNode)},
+		{"aggregate bytes", "verify-state-value", fmt.Sprintf(`"proof_nodes":[%q,["PRIVATE_UNREACHED_BYTE"]]`, exactNode)},
+		{"replaced unused nodes", "verify-headers", fmt.Sprintf(`"proof_nodes":[%q],"proof_nodes":null,"PROOF_NODE\u017f":["AA=="]`, exactNode)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			state, bundle := filepath.Join(dir, "PRIVATE_STATE.json"), filepath.Join(dir, "PRIVATE_BUNDLE.json")
+			if err := os.WriteFile(state, []byte("PRIVATE_STATE_NOT_LOADED"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(protectCLIState(t, state))
+			raw := []byte(`{"version":1,"state_value_proofs":[{` + tc.fields + `}]}`)
+			if err := os.WriteFile(bundle, raw, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			result := runQueryCLI(t, binary, tc.command, "--json", "--genesis-config", anchor, "--state", state, bundle)
+			r := checkProcessReport(t, result, 2, "REFUSED")
+			if r.Error != nil || r.Persistence != "not_attempted" || r.Context != nil || r.Tip.Height != 0 || len(r.Results) != 1 || r.Results[0].Reference.Scope != "bundle" || r.Results[0].Reason != "ReasonOversizedStateProof" || len(r.Results[0].Proven) != 0 {
+				t.Fatal("byte refusal reached verification or lost its resource reason")
+			}
+			if bytes.Contains(result.stdout, []byte("PRIVATE")) || bytes.Contains(result.stderr, []byte("PRIVATE")) {
+				t.Fatal("byte refusal disclosed a private path or excess byte")
+			}
+			if _, err := os.Stat(state + ".lock"); !os.IsNotExist(err) {
+				t.Fatal("early byte refusal created a writer companion")
+			}
+		})
+	}
+}
 
 func TestCompiledCLIBundleCountBounds(t *testing.T) {
 	binary := buildQueryCLIs(t, "zenon-spv")["zenon-spv"]

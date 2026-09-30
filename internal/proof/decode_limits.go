@@ -8,9 +8,10 @@ import (
 	"io"
 )
 
-// DecodeLimits caps array allocation while reading a bundle. Zero disables a
-// count cap. Byte fields and cryptographic work still require the verifier's
-// policy preflight; these are not total process memory limits.
+// DecodeLimits caps array counts and decoded proof-node bytes while reading a
+// bundle. Zero disables a cap. Other byte fields, JSON input buffers, and
+// cryptographic work still need separate bounds; these are not total process
+// memory limits.
 type DecodeLimits struct {
 	MaxHeaders                  int
 	MaxCommitments              int
@@ -21,13 +22,14 @@ type DecodeLimits struct {
 	MaxSegmentBlocks            int
 	MaxTotalSegmentBlocks       int
 	MaxStateProofNodes          int
+	MaxStateProofBytes          int
 }
 
 func (limits DecodeLimits) validate() error {
 	if limits.MaxHeaders < 0 || limits.MaxCommitments < 0 || limits.MaxSegments < 0 || limits.MaxStateValueProofs < 0 ||
 		limits.MaxFlatEvidenceMembers < 0 || limits.MaxTotalFlatEvidenceMembers < 0 ||
-		limits.MaxSegmentBlocks < 0 || limits.MaxTotalSegmentBlocks < 0 || limits.MaxStateProofNodes < 0 {
-		return errors.New("bundle decode count limits must be nonnegative")
+		limits.MaxSegmentBlocks < 0 || limits.MaxTotalSegmentBlocks < 0 || limits.MaxStateProofNodes < 0 || limits.MaxStateProofBytes < 0 {
+		return errors.New("bundle decode limits must be nonnegative")
 	}
 	return nil
 }
@@ -41,6 +43,17 @@ type BundleCountLimitError struct {
 
 func (err *BundleCountLimitError) Error() string {
 	return fmt.Sprintf("bundle %s count exceeds limit %d", err.Field, err.Limit)
+}
+
+// BundleByteLimitError identifies a decoded-byte refusal without exposing
+// input values. Field is the canonical path of the bounded byte collection.
+type BundleByteLimitError struct {
+	Field string
+	Limit int
+}
+
+func (err *BundleByteLimitError) Error() string {
+	return fmt.Sprintf("bundle %s bytes exceed limit %d", err.Field, err.Limit)
 }
 
 type bundleRows[T any] struct {

@@ -44,10 +44,11 @@ func LoadHeaderBundleBounded(path string, maxBytes int64) (HeaderBundle, error) 
 	return LoadHeaderBundleWithLimits(path, maxBytes, DecodeLimits{})
 }
 
-// LoadHeaderBundleWithLimits applies byte, array-count, and aggregate row-count
-// caps before the verifier receives a bundle. Counts stop before decoding an
-// excess row. Zero counts and nonpositive maxBytes retain the legacy opt-out;
-// production callers should supply positive policy-derived limits.
+// LoadHeaderBundleWithLimits applies input bytes, array counts, aggregate row
+// counts, and per-proof decoded node bytes before the verifier receives a
+// bundle. Counts stop before decoding an excess row. Zero DecodeLimits fields
+// and nonpositive maxBytes retain the legacy opt-out; production callers should
+// supply positive policy-derived limits.
 func LoadHeaderBundleWithLimits(path string, maxBytes int64, limits DecodeLimits) (HeaderBundle, error) {
 	if err := limits.validate(); err != nil {
 		return HeaderBundle{}, err
