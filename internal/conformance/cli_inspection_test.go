@@ -3,6 +3,7 @@ package conformance_test
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
@@ -99,6 +100,19 @@ func TestCompiledCLIStateInspection(t *testing.T) {
 		!slices.Contains(r.StateTrust, verify.TrustPersistedState) || len(r.Caveats) < 3 {
 		t.Fatal("inspection differs from the independently pinned retained window")
 	}
+	text := runQueryCLI(t, binary, append([]string{"inspect-state"}, common[1:]...)...)
+	if text.code != 0 || len(text.stderr) != 0 {
+		t.Fatal("text inspection did not complete successfully")
+	}
+	for _, want := range []string{
+		"oldest: 4003 " + hex.EncodeToString(seed.Headers[2].HeaderHash[:]) + "\n",
+		"tip: 4009 " + hex.EncodeToString(seed.Headers[8].HeaderHash[:]) + "\n",
+	} {
+		if !bytes.Contains(text.stdout, []byte(want)) {
+			t.Fatal("compiled text report did not render full hexadecimal header identities")
+		}
+	}
+	stateUnchanged()
 	r = run(append(slices.Clone(common), "--window", "medium"), 0, "inspected")
 	if r.Window == nil || r.Window.DepthEligible != nil || r.Window.Capacity != 61 || r.Context.Policy.W != 60 {
 		t.Fatal("successful inspection claimed unavailable proof depth")

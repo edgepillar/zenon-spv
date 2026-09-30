@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"os"
@@ -268,6 +269,14 @@ func TestInspectStateTextAndOutputFailures(t *testing.T) {
 	var plain, selected, diagnostics bytes.Buffer
 	if runInspectState(f.args, &plain, &diagnostics) != 0 || runInspectState(append([]string{"--json=false"}, f.args...), &selected, &diagnostics) != 0 || diagnostics.Len() != 0 || !reflect.DeepEqual(plain.Bytes(), selected.Bytes()) || !strings.Contains(plain.String(), "INSPECTED") || strings.Contains(plain.String(), "ACCEPT") {
 		t.Fatal("text inspection became a proof result or changed with --json=false")
+	}
+	for _, want := range []string{
+		"oldest: 4003 " + hex.EncodeToString(f.headers[2].HeaderHash[:]) + "\n",
+		"tip: 4009 " + hex.EncodeToString(f.headers[8].HeaderHash[:]) + "\n",
+	} {
+		if !strings.Contains(plain.String(), want) {
+			t.Fatal("text inspection did not render a full hexadecimal header identity")
+		}
 	}
 	for _, jsonFlag := range []string{"--json", "--json=false"} {
 		for _, short := range []bool{false, true} {

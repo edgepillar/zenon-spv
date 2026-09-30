@@ -142,7 +142,7 @@ func finishInspection(report stateInspectionReport, code int, jsonOutput bool, s
 		return writeInspectionOutput(stderr, stderr, text.Bytes(), code)
 	}
 	w := report.Window
-	fmt.Fprintf(&text, "INSPECTED retained headers: %d/%d\noldest: %d %s\ntip: %d %s\n",
+	fmt.Fprintf(&text, "INSPECTED retained headers: %d/%d\noldest: %d %x\ntip: %d %x\n",
 		w.Count, w.Capacity, w.Oldest.Height, w.Oldest.Hash, w.Tip.Height, w.Tip.Hash)
 	if w.DepthEligible == nil {
 		fmt.Fprintln(&text, "depth-eligible heights: none")
