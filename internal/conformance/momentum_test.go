@@ -42,7 +42,7 @@ type momentumSeries struct {
 	Vectors      []momentumVector        `json:"vectors"`
 }
 
-func loadCorpus(t *testing.T) momentumCorpus {
+func loadCorpus(t testing.TB) momentumCorpus {
 	t.Helper()
 	raw, err := os.ReadFile("../testdata/conformance/momentum-v1-v2.json")
 	if err != nil {

@@ -1,9 +1,10 @@
-.PHONY: help build test vet lint fmt cover fixtures clean
+.PHONY: help build test bench vet lint fmt cover fixtures clean
 
 help:
 	@echo "Targets:"
-	@echo "  make build      Build the zenon-spv binary"
+	@echo "  make build      Build the zenon-spv and fetch-bundle binaries"
 	@echo "  make test       Run the test suite"
+	@echo "  make bench      Repeat native verification benchmarks"
 	@echo "  make vet        go vet ./..."
 	@echo "  make lint       golangci-lint run"
 	@echo "  make fmt        gofmt -w ."
@@ -17,6 +18,9 @@ build:
 
 test:
 	go test ./...
+
+bench:
+	go test -run '^$$' -bench '^BenchmarkNativeClient$$' -benchmem -count=5 ./internal/conformance
 
 vet:
 	go vet ./...
