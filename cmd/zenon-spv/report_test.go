@@ -162,8 +162,16 @@ func TestJSONReportMixedProofOutcomesAndSyntheticSegments(t *testing.T) {
 		writeQueryJSON(t, f.bundlePath, bundle)
 		r := readVerificationReport(t, "verify-segment", append(slices.Clone(f.args), "--retained-only", f.bundlePath), 2)
 		assertReportOutcome(t, r, "REFUSED")
-		if len(r.Results) != 1 || r.Results[0].Reference.Scope != "segment" || r.Results[0].Reference.Index == nil || *r.Results[0].Reference.Index != 0 || r.Results[0].Reference.BlockIndex != nil || r.Results[0].Reference.AccountHeader != nil || r.Results[0].FailedAt != -1 {
+		if len(r.Results) != 1 || r.Results[0].Reference.BlockIndex != nil || r.Results[0].Reference.AccountHeader != nil || r.Results[0].FailedAt != -1 {
 			t.Fatal("synthetic segment refusal was attributed to a block")
+		}
+		row := r.Results[0]
+		if n == 0 {
+			if row.Reference.Scope != "segment" || row.Reference.Index == nil || *row.Reference.Index != 0 {
+				t.Fatal("empty segment lost its synthetic segment reference")
+			}
+		} else if row.Reference.Scope != "bundle" || row.Reference.Index != nil || row.Reason != "ReasonOversizedSegment" || r.Context != nil || r.VerificationTip != nil || len(r.StateTrust) != 0 {
+			t.Fatal("early decode limit was presented as evaluated segment evidence")
 		}
 		check(t)
 	}
