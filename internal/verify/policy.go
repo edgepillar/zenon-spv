@@ -46,14 +46,16 @@ type Policy struct {
 	MaxCommitments int
 
 	// Per-commitment cap on the number of AccountHeaders inside one
-	// FlatContentEvidence. Enforced inside VerifyCommitment and by the
-	// commitment batch preflight used by VerifySegment and the CLI. 0 disables.
+	// FlatContentEvidence. Enforced during CLI decoding, inside VerifyCommitment,
+	// and by the commitment batch preflight used by VerifySegment and the CLI.
+	// 0 disables.
 	MaxFlatEvidenceMembers int
 
 	// Aggregate cap across ALL commitments in a bundle or VerifySegment call.
 	// Repeated references count separately, including unused targets. Defends
 	// against the n × m flood (many commitments × many members each)
 	// that the per-commitment cap alone misses. 0 disables.
+	// CLI decoding also counts replaced nested arrays against this cap.
 	MaxTotalFlatEvidenceMembers int
 
 	// Per-bundle cap on the number of AccountSegment entries.
@@ -61,13 +63,14 @@ type Policy struct {
 	MaxSegments int
 
 	// Per-segment cap on the number of AccountBlocks. Enforced
-	// inside VerifySegment via a synthetic REFUSED result. 0
-	// disables.
+	// during CLI decoding and inside VerifySegment via a synthetic REFUSED
+	// result. 0 disables.
 	MaxSegmentBlocks int
 
 	// Aggregate cap on AccountBlocks across all segments. Same
 	// defense-in-depth shape as MaxTotalFlatEvidenceMembers. 0
 	// disables.
+	// CLI decoding also counts replaced nested arrays against this cap.
 	MaxTotalSegmentBlocks int
 
 	// Per-bundle cap on the number of StateValueProof entries
@@ -77,7 +80,7 @@ type Policy struct {
 	MaxStateValueProofs int
 
 	// Per-state-proof cap on len(ProofNodes) (count). Enforced
-	// inside VerifyStateValue (subsequent commit). 0 disables.
+	// during CLI decoding and inside VerifyStateValue. 0 disables.
 	MaxStateProofNodes int
 
 	// Per-state-proof cap on sum(len(node)) across ProofNodes

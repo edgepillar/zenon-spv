@@ -23,16 +23,27 @@ func TestCompiledCLIBundleCountBounds(t *testing.T) {
 		{"verify-commitment", "commitments", "ReasonOversizedEvidence", verify.DefaultMaxCommitments},
 		{"verify-segment", "segments", "ReasonOversizedSegment", verify.DefaultMaxSegments},
 		{"verify-state-value", "state_value_proofs", "ReasonOversizedStateProof", verify.DefaultMaxStateValueProofs},
+		{"verify-segment", "segments.blocks", "ReasonOversizedSegment", verify.DefaultMaxSegmentBlocks},
+		{"verify-commitment", "commitments.flat.sorted_headers", "ReasonOversizedEvidence", verify.DefaultMaxFlatEvidenceMembers},
+		{"verify-state-value", "state_value_proofs.proof_nodes", "ReasonOversizedStateProof", verify.DefaultMaxStateProofNodes},
 	} {
-		t.Run(tc.command, func(t *testing.T) {
+		t.Run(tc.command+"/"+tc.field, func(t *testing.T) {
 			dir := t.TempDir()
 			state, bundle := filepath.Join(dir, "PRIVATE_STATE.json"), filepath.Join(dir, "PRIVATE_BUNDLE.json")
 			if err := os.WriteFile(state, []byte("PRIVATE_STATE_NOT_LOADED"), 0o600); err != nil {
 				t.Fatal(err)
 			}
 			t.Cleanup(protectCLIState(t, state))
-			raw := []byte(fmt.Sprintf(`{"version":1,"%s":[%s"PRIVATE_UNREACHED_ROW"]}`,
-				tc.field, strings.Repeat("null,", tc.limit)))
+			envelope := fmt.Sprintf(`{"version":1,"%s":[%%s"PRIVATE_UNREACHED_ROW"]}`, tc.field)
+			switch tc.field {
+			case "segments.blocks":
+				envelope = `{"version":1,"segments":[{"blocks":[%s"PRIVATE_UNREACHED_ROW"]}]}`
+			case "commitments.flat.sorted_headers":
+				envelope = `{"version":1,"commitments":[{"flat":{"sorted_headers":[%s"PRIVATE_UNREACHED_ROW"]}}]}`
+			case "state_value_proofs.proof_nodes":
+				envelope = `{"version":1,"state_value_proofs":[{"proof_nodes":[%s"PRIVATE_UNREACHED_ROW"]}]}`
+			}
+			raw := []byte(fmt.Sprintf(envelope, strings.Repeat("null,", tc.limit)))
 			if err := os.WriteFile(bundle, raw, 0o600); err != nil {
 				t.Fatal(err)
 			}

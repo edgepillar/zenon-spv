@@ -284,6 +284,9 @@ func prepareVerifierContext(name string, args []string, out *verificationOutput)
 	bundle, err := proof.LoadHeaderBundleWithLimits(bundlePath, policy.MaxBundleBytes, proof.DecodeLimits{
 		MaxHeaders: policy.MaxHeaders, MaxCommitments: policy.MaxCommitments,
 		MaxSegments: policy.MaxSegments, MaxStateValueProofs: policy.MaxStateValueProofs,
+		MaxFlatEvidenceMembers: policy.MaxFlatEvidenceMembers, MaxTotalFlatEvidenceMembers: policy.MaxTotalFlatEvidenceMembers,
+		MaxSegmentBlocks: policy.MaxSegmentBlocks, MaxTotalSegmentBlocks: policy.MaxTotalSegmentBlocks,
+		MaxStateProofNodes: policy.MaxStateProofNodes,
 	})
 	if err != nil {
 		if reason, oversized := bundleLoadLimitReason(err); oversized {
@@ -412,11 +415,11 @@ func bundleLoadLimitReason(err error) (verify.ReasonCode, bool) {
 		switch count.Field {
 		case "headers":
 			return verify.ReasonOversizedHeaders, true
-		case "commitments":
+		case "commitments", "commitments.flat.sorted_headers", "total_flat_evidence_members":
 			return verify.ReasonOversizedEvidence, true
-		case "segments":
+		case "segments", "segments.blocks", "total_segment_blocks":
 			return verify.ReasonOversizedSegment, true
-		case "state_value_proofs":
+		case "state_value_proofs", "state_value_proofs.proof_nodes":
 			return verify.ReasonOversizedStateProof, true
 		}
 	}

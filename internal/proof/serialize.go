@@ -44,7 +44,7 @@ func LoadHeaderBundleBounded(path string, maxBytes int64) (HeaderBundle, error) 
 	return LoadHeaderBundleWithLimits(path, maxBytes, DecodeLimits{})
 }
 
-// LoadHeaderBundleWithLimits applies the byte cap and top-level array count
+// LoadHeaderBundleWithLimits applies byte, array-count, and aggregate row-count
 // caps before the verifier receives a bundle. Counts stop before decoding an
 // excess row. Zero counts and nonpositive maxBytes retain the legacy opt-out;
 // production callers should supply positive policy-derived limits.

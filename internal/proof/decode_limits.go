@@ -8,25 +8,32 @@ import (
 	"io"
 )
 
-// DecodeLimits caps top-level array allocation while reading a bundle. Zero
-// disables a count cap. Nested evidence and aggregate work still require the
-// verifier's policy preflight; these are not total process memory limits.
+// DecodeLimits caps array allocation while reading a bundle. Zero disables a
+// count cap. Byte fields and cryptographic work still require the verifier's
+// policy preflight; these are not total process memory limits.
 type DecodeLimits struct {
-	MaxHeaders          int
-	MaxCommitments      int
-	MaxSegments         int
-	MaxStateValueProofs int
+	MaxHeaders                  int
+	MaxCommitments              int
+	MaxSegments                 int
+	MaxStateValueProofs         int
+	MaxFlatEvidenceMembers      int
+	MaxTotalFlatEvidenceMembers int
+	MaxSegmentBlocks            int
+	MaxTotalSegmentBlocks       int
+	MaxStateProofNodes          int
 }
 
 func (limits DecodeLimits) validate() error {
-	if limits.MaxHeaders < 0 || limits.MaxCommitments < 0 || limits.MaxSegments < 0 || limits.MaxStateValueProofs < 0 {
+	if limits.MaxHeaders < 0 || limits.MaxCommitments < 0 || limits.MaxSegments < 0 || limits.MaxStateValueProofs < 0 ||
+		limits.MaxFlatEvidenceMembers < 0 || limits.MaxTotalFlatEvidenceMembers < 0 ||
+		limits.MaxSegmentBlocks < 0 || limits.MaxTotalSegmentBlocks < 0 || limits.MaxStateProofNodes < 0 {
 		return errors.New("bundle decode count limits must be nonnegative")
 	}
 	return nil
 }
 
 // BundleCountLimitError identifies a count refusal without exposing input
-// values. Field is one of the four canonical top-level array field names.
+// values. Field is a canonical array path or an aggregate-count identifier.
 type BundleCountLimitError struct {
 	Field string
 	Limit int
@@ -40,6 +47,8 @@ type bundleRows[T any] struct {
 	target *[]T
 	field  string
 	limit  int
+	budget *rowBudget
+	decode func(*json.Decoder, *T) error
 }
 
 func (rows *bundleRows[T]) UnmarshalJSON(raw []byte) error {
@@ -54,15 +63,25 @@ func (rows *bundleRows[T]) UnmarshalJSON(raw []byte) error {
 			return fmt.Errorf("bundle %s must be an array or null", rows.field)
 		}
 		decoded = make([]T, 0)
+		decode := rows.decode
+		if decode == nil {
+			decode = func(d *json.Decoder, row *T) error { return d.Decode(row) }
+		}
 		for d.More() {
 			if rows.limit > 0 && len(decoded) >= rows.limit {
 				return &BundleCountLimitError{Field: rows.field, Limit: rows.limit}
 			}
+			if rows.budget != nil && rows.budget.remaining == 0 {
+				return &BundleCountLimitError{Field: rows.budget.field, Limit: rows.budget.limit}
+			}
 			var row T
-			if err := d.Decode(&row); err != nil {
+			if err := decode(d, &row); err != nil {
 				return err
 			}
 			decoded = append(decoded, row)
+			if rows.budget != nil {
+				rows.budget.remaining--
+			}
 		}
 		if _, err := d.Token(); err != nil {
 			return err

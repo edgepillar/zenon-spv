@@ -75,6 +75,10 @@ Error stages are `arguments`, `genesis`, `protocol_profile`, `bundle`,
 `schedule`, `state_lock`, `state`, `context`, `verification`, or `persistence`. These are
 diagnostic stages, not proof reasons. Decoding an invalid/ambiguous bundle is
 an operational error; an oversized bundle is a resource REFUSED result.
+Byte or array-count refusals during decoding use the `bundle` scope with the
+matching `ReasonOversized*` code. They precede state loading and context
+capture, so they do not identify an evaluated segment or block. Empty segments
+that reach evaluation retain their synthetic `segment` reference.
 
 Stateful commands enforce [writer ownership](state-writer-locks.md) before
 loading state. Contention or an unavailable lock is an operational setup
@@ -106,7 +110,7 @@ Reference scopes and indices:
 | `bundle`, `state`, `headers` | A whole-input, trusted-state, or header-extension result. |
 | `commitments`, `segments`, `state_value_proofs` | The requested proof array was missing or empty. |
 | `commitment` | Zero-based `index`, `momentum_height`, and input `account_header` triple. |
-| `segment` | Zero-based segment `index`; per-block results also include `block_index` and input `account_header`. Synthetic empty/oversized segment refusals have no block reference. |
+| `segment` | Zero-based segment `index`; per-block results also include `block_index` and input `account_header`. Synthetic segment refusals have no block reference. Decode-time resource refusals use `bundle` instead. |
 | `state_value_proof` | Zero-based proof `index` and input `momentum_height`. Consult the input entry for its other claim fields; none are authenticated today. |
 
 An `account_header` has raw hex `address`, unsigned `height`, and hex `hash`.

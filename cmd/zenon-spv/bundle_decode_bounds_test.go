@@ -50,3 +50,27 @@ func TestBundleCountRefusesBeforeDecodingExcessRow(t *testing.T) {
 		})
 	}
 }
+
+func TestNestedBundleCountRefusesBeforeDecodingExcessRow(t *testing.T) {
+	for _, tc := range []struct {
+		name, command, envelope, reason string
+		limit                           int
+	}{
+		{"blocks", "verify-segment", `{"version":1,"segments":[{"blocks":[%s"PRIVATE_UNREACHED_ROW"]}]}`, "ReasonOversizedSegment", verify.DefaultMaxSegmentBlocks},
+		{"flat members", "verify-commitment", `{"version":1,"commitments":[{"flat":{"sorted_headers":[%s"PRIVATE_UNREACHED_ROW"]}}]}`, "ReasonOversizedEvidence", verify.DefaultMaxFlatEvidenceMembers},
+		{"proof nodes", "verify-state-value", `{"version":1,"state_value_proofs":[{"proof_nodes":[%s"PRIVATE_UNREACHED_ROW"]}]}`, "ReasonOversizedStateProof", verify.DefaultMaxStateProofNodes},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "PRIVATE_BUNDLE.json")
+			raw := []byte(fmt.Sprintf(tc.envelope, strings.Repeat("null,", tc.limit)))
+			if err := os.WriteFile(path, raw, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			r := readVerificationReport(t, tc.command, []string{path}, 2)
+			assertReportOutcome(t, r, "REFUSED")
+			if len(r.Results) != 1 || r.Results[0].Reason != tc.reason || r.Error != nil {
+				t.Fatal("excess nested rows were decoded before the count refusal")
+			}
+		})
+	}
+}

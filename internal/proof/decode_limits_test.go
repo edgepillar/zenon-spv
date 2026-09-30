@@ -69,7 +69,10 @@ func TestLoadBundleByteAndCountLimits(t *testing.T) {
 	if _, err := LoadHeaderBundleWithLimits(path, int64(len(raw)), DecodeLimits{MaxHeaders: 1}); !errors.As(err, &count) {
 		t.Fatalf("file loader lost its count refusal: %v", err)
 	}
-	for _, limits := range []DecodeLimits{{MaxHeaders: -1}, {MaxCommitments: -1}, {MaxSegments: -1}, {MaxStateValueProofs: -1}} {
+	for _, limits := range []DecodeLimits{
+		{MaxHeaders: -1}, {MaxCommitments: -1}, {MaxSegments: -1}, {MaxStateValueProofs: -1},
+		{MaxFlatEvidenceMembers: -1}, {MaxTotalFlatEvidenceMembers: -1}, {MaxSegmentBlocks: -1}, {MaxTotalSegmentBlocks: -1}, {MaxStateProofNodes: -1},
+	} {
 		if _, err := LoadHeaderBundleWithLimits(path+"-absent", 1024, limits); err == nil || errors.Is(err, os.ErrNotExist) {
 			t.Fatalf("invalid limits reached the filesystem: %v", err)
 		}
@@ -105,6 +108,9 @@ func FuzzBundleDecodeLimits(f *testing.F) {
 		`{"version":1,"commitments":[{"flat":{"sorted_headers":[{}]}}]}`,
 		`{"version":1,"segments":[{"blocks":[]}]}`, `{"version":1,"state_value_proofs":[{}]}`,
 		`{"HEADERS":[{}],"headers":[]}`, `{"headers":[{},]}`, `{} {}`,
+		`{"segments":[{"blocks":[null],"blocks":[]}]}`,
+		`{"commitments":[{"flat":{"sorted_headers":[null]},"flat":{}}]}`,
+		`{"state_value_proofs":[{"proof_nodes":["AA==",null]}]}`,
 	} {
 		f.Add([]byte(raw), uint8(1))
 	}
@@ -113,7 +119,8 @@ func FuzzBundleDecodeLimits(f *testing.F) {
 			t.Skip()
 		}
 		limit := int(count % 8)
-		limits := DecodeLimits{MaxHeaders: limit, MaxCommitments: limit, MaxSegments: limit, MaxStateValueProofs: limit}
+		limits := DecodeLimits{MaxHeaders: limit, MaxCommitments: limit, MaxSegments: limit, MaxStateValueProofs: limit,
+			MaxFlatEvidenceMembers: limit, MaxTotalFlatEvidenceMembers: limit, MaxSegmentBlocks: limit, MaxTotalSegmentBlocks: limit, MaxStateProofNodes: limit}
 		before := sampleBundle()
 		got := before
 		if err := got.unmarshalJSON(raw, limits); err != nil {
@@ -129,6 +136,25 @@ func FuzzBundleDecodeLimits(f *testing.F) {
 		}
 		if limit > 0 && (len(got.Headers) > limit || len(got.Commitments) > limit || len(got.Segments) > limit || len(got.StateValueProofs) > limit) {
 			t.Fatal("successful decoding exceeded an array count cap")
+		}
+		if limit > 0 {
+			flat, blocks := 0, 0
+			for _, evidence := range got.Commitments {
+				if evidence.Flat != nil {
+					flat += len(evidence.Flat.SortedHeaders)
+				}
+			}
+			for _, segment := range got.Segments {
+				blocks += len(segment.Blocks)
+			}
+			if flat > limit || blocks > limit {
+				t.Fatal("successful decoding exceeded an aggregate count cap")
+			}
+			for _, proof := range got.StateValueProofs {
+				if len(proof.ProofNodes) > limit {
+					t.Fatal("successful decoding exceeded a proof-node count cap")
+				}
+			}
 		}
 	})
 }

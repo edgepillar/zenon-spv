@@ -24,16 +24,17 @@ func (b *HeaderBundle) unmarshalJSON(raw []byte, limits DecodeLimits) error {
 		return err
 	}
 	var decoded HeaderBundle
+	evidence := newEvidenceDecoder(limits)
 	fields := []struct {
 		name   string
 		target any
 	}{
 		{"version", &decoded.Version}, {"chain_id", &decoded.ChainID},
 		{"claimed_genesis", &decoded.ClaimedGenesis},
-		{"headers", &bundleRows[chain.Header]{&decoded.Headers, "headers", limits.MaxHeaders}},
-		{"commitments", &bundleRows[CommitmentEvidence]{&decoded.Commitments, "commitments", limits.MaxCommitments}},
-		{"segments", &bundleRows[AccountSegment]{&decoded.Segments, "segments", limits.MaxSegments}},
-		{"state_value_proofs", &bundleRows[StateValueProof]{&decoded.StateValueProofs, "state_value_proofs", limits.MaxStateValueProofs}},
+		{"headers", &bundleRows[chain.Header]{target: &decoded.Headers, field: "headers", limit: limits.MaxHeaders}},
+		{"commitments", &bundleRows[CommitmentEvidence]{target: &decoded.Commitments, field: "commitments", limit: limits.MaxCommitments, decode: evidence.commitment}},
+		{"segments", &bundleRows[AccountSegment]{target: &decoded.Segments, field: "segments", limit: limits.MaxSegments, decode: evidence.segment}},
+		{"state_value_proofs", &bundleRows[StateValueProof]{target: &decoded.StateValueProofs, field: "state_value_proofs", limit: limits.MaxStateValueProofs, decode: evidence.stateProof}},
 	}
 	d := json.NewDecoder(bytes.NewReader(raw))
 	if token, err := d.Token(); err != nil || token != json.Delim('{') {

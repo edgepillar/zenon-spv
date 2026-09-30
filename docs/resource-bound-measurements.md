@@ -71,7 +71,7 @@ Without empirical numbers, the implemented defaults for these caps use
 
 ## Implemented defaults
 
-The CLI passes policy-derived byte and top-level count caps to
+The CLI passes policy-derived byte and count caps to
 `proof.LoadHeaderBundleWithLimits`. Array decoding stops before the first
 excess header, commitment, segment, or state-value proof, including when the
 input uses case-folded or escaped field aliases. This prevents tiny JSON
@@ -79,9 +79,16 @@ elements from allocating an over-limit top-level struct slice before
 verification. A count breach returns the corresponding `ReasonOversized*`
 refusal and exit code 2 before state loading or writer-lock acquisition.
 
-These are input and top-level allocation bounds, not a cap on total process
-memory or time. Nested evidence counts, per-proof bytes, and aggregate work
-are still checked after parsing by the verifier's existing preflights.
+Nested flat-evidence members, segment blocks, and proof-node lists stop at
+their respective per-item count caps. Flat-member and segment-block budgets
+also span all decoded rows in one load. Repeated nested arrays consume that
+budget even if a later field replaces them or clears the evidence. A new load
+starts with fresh counters; a failed load does not consume policy for the next.
+
+These are input and array-count bounds, not a cap on total process memory or
+time. Individual byte fields and per-proof byte totals are decoded under the
+overall input-byte cap and still checked by the verifier's existing preflights.
+Core verification retains its count checks for in-memory callers too.
 The legacy byte-only loader and zero count caps remain available for trusted
 tooling; direct JSON decoding does not automatically select production limits.
 Offline parser, CLI, and compiled-command regressions cover the count caps;

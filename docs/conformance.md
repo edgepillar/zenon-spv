@@ -144,8 +144,9 @@ State-value layer:
 - [x] Saved-state decoding rejects duplicate top-level known fields, including
       escaped/case-folded aliases, before later values can hide earlier evidence.
 - [x] CLI bundle loading bounds top-level header, commitment, segment, and
-      state-value-proof counts before decoding excess rows. Nested evidence and
-      aggregate work retain their separate verifier preflights.
+      state-value-proof counts before decoding excess rows. Nested flat members,
+      segment blocks, and proof-node counts are bounded during decoding too,
+      including aggregate member/block budgets shared across one load.
 - [x] CLI and watch use immutable verified state with captured policy,
       detached snapshots, zero-value refusal, and explicit trusted-local
       resume; see [`verified-state-api.md`](verified-state-api.md).
