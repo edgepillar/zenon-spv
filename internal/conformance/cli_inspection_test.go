@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -34,6 +36,40 @@ type cliInspectionReport struct {
 	Window        *verify.RetainedSummary           `json:"retained_window"`
 	StateTrust    []verify.TrustAssumption          `json:"state_trust"`
 	Caveats       []string                          `json:"caveats"`
+}
+
+func TestCompiledCLIStateCountBound(t *testing.T) {
+	binary := buildQueryCLIs(t, "zenon-spv")["zenon-spv"]
+	c, _ := contractBatchBundle(t)
+	dir := t.TempDir()
+	anchor := writeCLIJSON(t, dir, "anchor.json", c.Chain.Anchor)
+	statePath := filepath.Join(dir, "PRIVATE_STATE.json")
+	raw := []byte(fmt.Sprintf(`{"version":1,"genesis":%s,"capacity":%d,"retained_window":[%s"PRIVATE_UNREACHED_ROW"]}`,
+		readCLIFile(t, anchor), verify.MaxPersistedHeaders, strings.Repeat("null,", verify.MaxPersistedHeaders)))
+	if err := os.WriteFile(statePath, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	unchanged := protectCLIState(t, statePath)
+	t.Cleanup(unchanged)
+	result := runQueryCLI(t, binary, "inspect-state", "--json", "--genesis-config", anchor, "--state", statePath)
+	if result.code != 70 || len(result.stderr) != 0 || bytes.Contains(result.stdout, []byte("PRIVATE")) {
+		t.Fatal("over-limit state did not produce a privacy-safe operational error")
+	}
+	var report cliInspectionReport
+	d := json.NewDecoder(bytes.NewReader(result.stdout))
+	d.DisallowUnknownFields()
+	if err := d.Decode(&report); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Decode(new(any)); err != io.EOF || report.SchemaVersion != 1 || report.Command != "inspect-state" || report.Status != "error" || report.ExitCode != 70 || report.Persistence != "read_only" {
+		t.Fatal("over-limit state lost its inspection error classification")
+	}
+	if report.Error == nil || report.Error.Stage != "state" || report.Error.Category != "operational" || report.Reason != nil || report.Context != nil || report.Window != nil || len(report.StateTrust) != 0 {
+		t.Fatal("over-limit state exposed partial retained evidence")
+	}
+	if _, err := os.Stat(statePath + ".lock"); !os.IsNotExist(err) {
+		t.Fatal("failed read-only inspection created a writer companion")
+	}
 }
 
 func TestCompiledCLIStateInspection(t *testing.T) {

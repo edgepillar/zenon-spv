@@ -139,7 +139,8 @@ State-value layer:
       failed save attempts by default. A successful save resets the
       counter (`internal/syncer/syncer.go`).
 - [x] State save/load revalidate every retained header before truncation and
-      enforce byte/capacity bounds; see [`watch-persistence.md`](watch-persistence.md).
+      enforce byte/capacity bounds, including the header count during JSON
+      decoding; see [`watch-persistence.md`](watch-persistence.md).
 - [x] CLI and watch use immutable verified state with captured policy,
       detached snapshots, zero-value refusal, and explicit trusted-local
       resume; see [`verified-state-api.md`](verified-state-api.md).

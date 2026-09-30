@@ -89,9 +89,13 @@ the window cannot discard a corrupt prefix to make a file acceptable.
 Input and output state files are limited to 64 MiB. Capacity is limited to
 100001 headers (`DefaultMaxHeaders + 1`), with the actual window no larger
 than the recorded capacity. The byte limit can be reached before the count
-limit. `LoadOrInit` refuses larger policy windows before allocating a fresh
-state. Invalid candidate states fail before replacement; oversized encoded
-output is confined to a temporary file, which is removed on failure.
+limit. Loading stops array decoding before the first header beyond that count,
+so a small file containing many tiny elements cannot allocate an unbounded
+header slice before validation. These input and count bounds are not a cap on
+total process memory or elapsed time. `LoadOrInit` refuses larger policy windows
+before allocating a fresh state. Invalid candidate states fail before
+replacement; oversized encoded output is confined to a temporary file,
+which is removed on failure.
 
 These checks detect corruption and inconsistent local records. A truncated
 window cannot reconstruct its evicted ancestry or independently establish
@@ -132,6 +136,14 @@ caught-up failures, refusal behavior, and pacing after a failed save.
 syncing the parent directory, including the post-replacement boundary.
 `internal/verify/state_validation_test.go` covers corrupt retained prefixes,
 save preservation, truncated valid windows, byte limits, and capacity bounds.
+`internal/verify/state_decode_bounds_test.go` covers count enforcement before
+decoding an excess row, empty-window compatibility, malformed arrays,
+policy-truncation bypass attempts, and bounded parser fuzzing.
+`internal/syncer/state_decode_bounds_test.go` checks rejection before RPC,
+startup reporting, or persistence, with the original file preserved and writer
+ownership released.
+`internal/conformance/cli_inspection_test.go` checks the compiled command's
+privacy-safe, read-only error report for an over-limit retained window.
 `internal/fetch/multi_config_test.go` covers consistent quorum handling,
 outages, disagreement, and rejecting invalid clients before request fan-out.
 `internal/syncer/peer_config_test.go` covers startup validation and an RPC
