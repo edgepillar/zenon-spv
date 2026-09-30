@@ -30,6 +30,23 @@ type diagnosticCodec struct{ err error }
 func (c diagnosticCodec) MarshalJSON() ([]byte, error) { return nil, c.err }
 func (c *diagnosticCodec) UnmarshalJSON([]byte) error  { return c.err }
 
+func TestRangeDiagnosticClassificationDoesNotEchoCause(t *testing.T) {
+	for _, cause := range []error{ErrQueryMismatch, ErrInvalidRPCResponse} {
+		wrapped := fmt.Errorf("%s: %w", privateDiagnosticMarker, cause)
+		err := callFailure("unmarshal result", wrapped)
+		if !errors.Is(err, cause) || strings.Contains(err.Error(), privateDiagnosticMarker) {
+			t.Fatal("range classification lost its cause or disclosed peer data")
+		}
+		want := "response does not match query"
+		if cause == ErrInvalidRPCResponse {
+			want = "invalid JSON-RPC response"
+		}
+		if !strings.Contains(err.Error(), want) {
+			t.Fatal("range classification was hidden from ordinary diagnostics")
+		}
+	}
+}
+
 func TestRPCDiagnosticPrivacyAndCausePreservation(t *testing.T) {
 	for _, stage := range []string{"marshal", "URL parse", "transport", "read", "decode", "HTTP status", "RPC error", "cancel", "deadline", "timeout"} {
 		t.Run(stage, func(t *testing.T) {

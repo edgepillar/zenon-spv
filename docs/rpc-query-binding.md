@@ -43,6 +43,20 @@ Wrong counts, shifted ranges, duplicate or missing heights, reordered blocks,
 and substituted accounts return `ErrQueryMismatch` without partial evidence.
 Existing hash recomputation still applies.
 
+Range-list decoding now stops before the first row beyond the requested count,
+so an oversized list cannot allocate all of its block structs before the count
+check. The response body is still read under the existing byte cap; unknown
+metadata and each permitted row's nested content retain that input-byte bound.
+This is not a total process-memory or decoding-time limit. A large requested
+count does not preallocate that many rows or narrow `uint64` to `int`.
+
+A repeated `list` field returns `ErrInvalidRPCResponse`, including an earlier
+null or empty list and escaped/case-folded aliases. A single legacy alias is
+still accepted. Other extension fields remain compatible. Decoding failures
+leave the destination list unchanged; missing, null, or short lists still fail
+the exact-count check. Ordinary diagnostics retain the error category without
+echoing peer values, and callers can inspect the wrapped cause with `errors.Is`.
+
 In multi-peer mode, a mismatched response is unusable and does not count
 toward quorum. Too few matching responses return `ErrNotEnoughPeers`.
 Conflicting usable responses still trigger the existing disagreement policy.
@@ -58,5 +72,6 @@ can still leave watch caught up relative to the configured peers.
 
 Regression tests use local HTTP servers, synthetic momentums, and synthetic
 mutations of the existing public account-block fixture. The offline watch
-campaign checks replayed targets and batches through verification, persistence,
-and trusted resume; see [local watch scenarios](local-watch-scenarios.md).
+campaign checks replayed targets, oversized batches, and replaced lists through
+verification, persistence, and trusted resume; see
+[local watch scenarios](local-watch-scenarios.md).

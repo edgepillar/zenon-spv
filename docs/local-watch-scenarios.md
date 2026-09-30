@@ -51,6 +51,9 @@ canonicality. Failed evidence must neither save nor log an ACCEPT tick.
 | All peers omit a required v2 price | REFUSED | No save; original bytes retained |
 | Activation profile expires at 2004 | REFUSED | No partial advance; original bytes retained |
 | Peers return three headers for a policy-capped two-header request | REFUSED | No save; original bytes retained |
+| Peers append a malformed extra row beyond the requested count | REFUSED | Excess row is not decoded; no save |
+| One peer replaces a range list with a second field, two healthy | ACCEPT | Advance using the two unambiguous responses |
+| All peers replace a range list with a second field | REFUSED | No save; original bytes retained |
 | All peers remain at 2002 | Caught-up ACCEPT | Existing window saved with identical bytes; no advance |
 
 The conflicting-fork case records the current strict disagreement policy:

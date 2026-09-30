@@ -262,7 +262,7 @@ func TestRun_RefusedTickDoesNotSave(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out.String(), "tick: REFUSED ReasonMissingEvidence") ||
-		!strings.Contains(out.String(), "rpc returned 2 momentums, expected 1") {
+		!strings.Contains(out.String(), "response does not match query") {
 		t.Fatalf("expected refusal of the oversized RPC response: %s", out.String())
 	}
 }
