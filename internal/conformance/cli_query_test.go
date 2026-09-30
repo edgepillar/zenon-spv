@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
@@ -168,6 +169,34 @@ func TestCompiledCLIQueryWorkflow(t *testing.T) {
 		}
 		stateUnchanged()
 	})
+	for _, tc := range []struct {
+		name string
+		mode int32
+	}{
+		{"replaced momentum lists", 1}, {"oversized momentum lists", 2},
+		{"replaced account lists", 3}, {"oversized account lists", 4},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			candidateUnchanged := protectCLIState(t, candidatePath)
+			t.Cleanup(candidateUnchanged)
+			for _, p := range peers {
+				p.rangeFault.Store(tc.mode)
+			}
+			t.Cleanup(func() {
+				for _, p := range peers {
+					p.rangeFault.Store(0)
+				}
+			})
+			for _, output := range []string{candidatePath, "-"} {
+				result := runQueryCLI(t, bins["fetch-bundle"], append(slices.Clone(collect), "--out", output)...)
+				if result.code != 1 || len(result.stdout) != 0 || bytes.Contains(result.stderr, []byte("PRIVATE")) {
+					t.Fatal("invalid range lists emitted evidence or accepted collection")
+				}
+				candidateUnchanged()
+			}
+			stateUnchanged()
+		})
+	}
 	t.Run("all invalid peers preserve the previous candidate", func(t *testing.T) {
 		before := readCLIFile(t, candidatePath)
 		for _, p := range peers {
@@ -461,9 +490,10 @@ func protectCLIState(t *testing.T, path string) func() {
 }
 
 type queryCLIPeer struct {
-	url   string
-	bad   atomic.Bool
-	calls atomic.Int64
+	url        string
+	bad        atomic.Bool
+	calls      atomic.Int64
+	rangeFault atomic.Int32 // 1/2: replaced/excess momentum list; 3/4: account list.
 }
 
 func newQueryCLIPeer(t *testing.T, c accountSegmentCorpus, initiallyBad bool) *queryCLIPeer {
@@ -537,6 +567,21 @@ func newQueryCLIPeer(t *testing.T, c accountSegmentCorpus, initiallyBad bool) *q
 		default:
 			t.Error("unexpected RPC method")
 			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		mode := p.rangeFault.Load()
+		if ((mode == 1 || mode == 2) && request.Method == "ledger.getMomentumsByHeight") ||
+			((mode == 3 || mode == 4) && request.Method == "ledger.getAccountBlocksByHeight") {
+			raw, err := json.Marshal(list)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if mode == 1 || mode == 3 {
+				_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"list":[null],"LI\u017fT":%s}}`, request.ID, raw)
+			} else {
+				_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"list":%s,"PRIVATE_UNREACHED_ROW"]}}`, request.ID, raw[:len(raw)-1])
+			}
 			return
 		}
 		if err := json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": request.ID, "result": map[string]any{"list": list}}); err != nil {

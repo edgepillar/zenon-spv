@@ -89,7 +89,8 @@ func (c *Client) FetchByHeightDetailed(ctx context.Context, start, count uint64)
 		return nil, err
 	}
 	var list rpcMomentumList
-	if err := c.Call(ctx, "ledger.getMomentumsByHeight", []any{start, count}, &list); err != nil {
+	decoder := rpcListDecoder[rpcMomentum]{target: &list.List, count: count}
+	if err := c.Call(ctx, "ledger.getMomentumsByHeight", []any{start, count}, &decoder); err != nil {
 		return nil, fmt.Errorf("getMomentumsByHeight: %w", err)
 	}
 	if uint64(len(list.List)) != count {

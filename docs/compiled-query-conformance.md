@@ -44,6 +44,9 @@ The workflow checks:
 - Keep state-value inclusion unsupported, with an explicit REFUSED report.
 - Preserve the prior candidate when all peers return invalid account evidence,
   emit no partial stdout bundle, and keep that prior candidate usable.
+- Reject replaced or oversized momentum/account range lists before collecting
+  evidence; preserve candidate bytes, identity, mode, and modification time,
+  and emit no partial stdout bundle.
 - Report usage/setup failures separately from proof outcomes and save failures
   separately from accepted header verification.
 - Return a nonzero process status for a closed stdout pipe while preserving

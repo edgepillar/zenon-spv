@@ -57,7 +57,12 @@ func TestOfflineWatchPeerFaults(t *testing.T) {
 		{name: "missing-v2-price", peers: [3]string{"price", "price", "price"}, want: "REFUSED ReasonMissingEvidence"},
 		{name: "expired-profile", expire: true, want: "REFUSED ReasonProtocolProfileCoverage"},
 		{name: "oversized-header-batch", peers: [3]string{"oversized", "oversized", "oversized"},
-			maxHeaders: 2, want: "REFUSED ReasonMissingEvidence", detail: "rpc returned 3 momentums, expected 2"},
+			maxHeaders: 2, want: "REFUSED ReasonMissingEvidence", detail: "response does not match query"},
+		{name: "one-replaced-range-list", peers: [3]string{"replaced-range-list", "", ""}, advance: true, want: "ACCEPT"},
+		{name: "all-replaced-range-lists", peers: [3]string{"replaced-range-list", "replaced-range-list", "replaced-range-list"},
+			want: "REFUSED ReasonMissingEvidence", detail: "invalid JSON-RPC response"},
+		{name: "oversized-malformed-batch", peers: [3]string{"oversized-malformed", "oversized-malformed", "oversized-malformed"},
+			maxHeaders: 2, want: "REFUSED ReasonMissingEvidence", detail: "response does not match query"},
 		{name: "all-stale", peers: [3]string{"stale", "stale", "stale"}, caughtUp: true, want: "ACCEPT (caught up"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -218,6 +223,19 @@ func startFaultPeer(t *testing.T, vectors []momentumVector, mode string, peer in
 				end++ // Ignore the requested count only for the incoming batch.
 			}
 			response = map[string]any{"list": wire[start:end]}
+			if req.Params[0] == 2003 && (mode == "replaced-range-list" || mode == "oversized-malformed") {
+				rows, err := json.Marshal(wire[start:end])
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if mode == "replaced-range-list" {
+					_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":1,"result":{"list":[null],"LI\u017fT":%s}}`, rows)
+				} else {
+					_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":1,"result":{"list":%s,"PRIVATE_UNREACHED_ROW"]}}`, rows[:len(rows)-1])
+				}
+				return
+			}
 		default:
 			t.Errorf("unexpected method: %s", req.Method)
 			http.Error(w, "unsupported method", http.StatusBadRequest)
