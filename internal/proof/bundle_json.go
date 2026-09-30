@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/0x3639/zenon-spv/internal/chain"
 )
 
 // UnmarshalJSON preserves the existing field matching and unknown-field
@@ -14,15 +16,24 @@ import (
 // nulls must not hide earlier evidence from resource or query-mode checks.
 // The receiver changes only after the complete object has decoded successfully.
 func (b *HeaderBundle) UnmarshalJSON(raw []byte) error {
+	return b.unmarshalJSON(raw, DecodeLimits{})
+}
+
+func (b *HeaderBundle) unmarshalJSON(raw []byte, limits DecodeLimits) error {
+	if err := limits.validate(); err != nil {
+		return err
+	}
 	var decoded HeaderBundle
 	fields := []struct {
 		name   string
 		target any
 	}{
 		{"version", &decoded.Version}, {"chain_id", &decoded.ChainID},
-		{"claimed_genesis", &decoded.ClaimedGenesis}, {"headers", &decoded.Headers},
-		{"commitments", &decoded.Commitments}, {"segments", &decoded.Segments},
-		{"state_value_proofs", &decoded.StateValueProofs},
+		{"claimed_genesis", &decoded.ClaimedGenesis},
+		{"headers", &bundleRows[chain.Header]{&decoded.Headers, "headers", limits.MaxHeaders}},
+		{"commitments", &bundleRows[CommitmentEvidence]{&decoded.Commitments, "commitments", limits.MaxCommitments}},
+		{"segments", &bundleRows[AccountSegment]{&decoded.Segments, "segments", limits.MaxSegments}},
+		{"state_value_proofs", &bundleRows[StateValueProof]{&decoded.StateValueProofs, "state_value_proofs", limits.MaxStateValueProofs}},
 	}
 	d := json.NewDecoder(bytes.NewReader(raw))
 	if token, err := d.Token(); err != nil || token != json.Delim('{') {

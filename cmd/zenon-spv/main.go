@@ -281,14 +281,17 @@ func prepareVerifierContext(name string, args []string, out *verificationOutput)
 		return verifierContext{}, 70
 	}
 	out.stage = "bundle"
-	bundle, err := proof.LoadHeaderBundleBounded(bundlePath, policy.MaxBundleBytes)
+	bundle, err := proof.LoadHeaderBundleWithLimits(bundlePath, policy.MaxBundleBytes, proof.DecodeLimits{
+		MaxHeaders: policy.MaxHeaders, MaxCommitments: policy.MaxCommitments,
+		MaxSegments: policy.MaxSegments, MaxStateValueProofs: policy.MaxStateValueProofs,
+	})
 	if err != nil {
-		if errors.Is(err, proof.ErrBundleTooLarge) {
+		if reason, oversized := bundleLoadLimitReason(err); oversized {
 			// REFUSED, not REJECT: too-big is a guardrail breach,
 			// not proof of badness. Exit code 2 per the documented
 			// matrix.
-			_, _ = fmt.Fprintf(out.text, "REFUSED %s %v\n", verify.ReasonOversizedBundle, err)
-			out.record(reportReference{Scope: "bundle"}, verify.Result{Outcome: verify.OutcomeRefused, Reason: verify.ReasonOversizedBundle, FailedAt: -1})
+			_, _ = fmt.Fprintf(out.text, "REFUSED %s %v\n", reason, err)
+			out.record(reportReference{Scope: "bundle"}, verify.Result{Outcome: verify.OutcomeRefused, Reason: reason, FailedAt: -1})
 			return verifierContext{}, 2
 		}
 		_, _ = fmt.Fprintf(out.diagnostics, "bundle: %v\n", err)
@@ -400,6 +403,26 @@ func prepareVerifierContext(name string, args []string, out *verificationOutput)
 	}, 0
 }
 
+func bundleLoadLimitReason(err error) (verify.ReasonCode, bool) {
+	if errors.Is(err, proof.ErrBundleTooLarge) {
+		return verify.ReasonOversizedBundle, true
+	}
+	var count *proof.BundleCountLimitError
+	if errors.As(err, &count) {
+		switch count.Field {
+		case "headers":
+			return verify.ReasonOversizedHeaders, true
+		case "commitments":
+			return verify.ReasonOversizedEvidence, true
+		case "segments":
+			return verify.ReasonOversizedSegment, true
+		case "state_value_proofs":
+			return verify.ReasonOversizedStateProof, true
+		}
+	}
+	return verify.ReasonOK, false
+}
+
 // preflightBundleBounds enforces per-bundle resource caps before evaluation.
 // Commitment limits share the core preflight used by VerifySegment. The
 // remaining checks cover counts and totals spanning separate segments/proofs
@@ -436,11 +459,8 @@ func preflightBundleBounds(bundle proof.HeaderBundle, policy verify.Policy) veri
 		}
 	}
 	// State-value-proof aggregate cap (state-proof PR / Phase 2).
-	// This lives in the CLI preflight, NOT in
-	// proof.LoadHeaderBundleBounded: `internal/proof` is already
-	// imported by `internal/verify`, so a verify.Policy reference
-	// inside proof would create a package cycle. The loader stays
-	// byte-only.
+	// Loading enforces the same top-level count while decoding arrays;
+	// retain this preflight for in-memory bundles and aggregate evaluation.
 	if policy.MaxStateValueProofs > 0 && len(bundle.StateValueProofs) > policy.MaxStateValueProofs {
 		return verify.Result{
 			Outcome:  verify.OutcomeRefused,

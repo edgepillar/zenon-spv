@@ -71,6 +71,22 @@ Without empirical numbers, the implemented defaults for these caps use
 
 ## Implemented defaults
 
+The CLI passes policy-derived byte and top-level count caps to
+`proof.LoadHeaderBundleWithLimits`. Array decoding stops before the first
+excess header, commitment, segment, or state-value proof, including when the
+input uses case-folded or escaped field aliases. This prevents tiny JSON
+elements from allocating an over-limit top-level struct slice before
+verification. A count breach returns the corresponding `ReasonOversized*`
+refusal and exit code 2 before state loading or writer-lock acquisition.
+
+These are input and top-level allocation bounds, not a cap on total process
+memory or time. Nested evidence counts, per-proof bytes, and aggregate work
+are still checked after parsing by the verifier's existing preflights.
+The legacy byte-only loader and zero count caps remain available for trusted
+tooling; direct JSON decoding does not automatically select production limits.
+Offline parser, CLI, and compiled-command regressions cover the count caps;
+these checks do not add new mainnet performance measurements to this document.
+
 Based on the empirical and protocol-shape evidence above, the
 following defaults are conservative ceilings (DoS guardrails)
 rather than tight typical-case bounds. They are unlikely to be
