@@ -71,6 +71,13 @@ executables and compares their reports with independently read binary metadata.
 It checks version dispatch before configuration or RPC access; see
 [build identity](build-identity.md).
 
+`TestCompiledCLIStateInspection` seeds state through the compiled verifier,
+then checks the separate [inspection report](state-inspection.md) against
+node-derived header identities. It checks policy changes, missing/invalid
+state, private error filtering, no companion-file creation, and read-only
+coexistence with a writer in another process. A counted loopback endpoint
+confirms that inspection makes no RPC requests.
+
 ## Evidence limits
 
 This is synthetic offline inclusion evidence against explicitly trusted local

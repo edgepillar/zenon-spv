@@ -70,6 +70,16 @@ peers:
 See [build identity](docs/build-identity.md) for unknown source metadata,
 modified builds, and the distinction from an authenticated binary digest.
 
+Inspect an existing trusted local state without a bundle or RPC refresh:
+
+```sh
+./zenon-spv inspect-state --state state.json --json
+```
+
+Supply the matching anchor/profile for non-default state. See
+[state inspection](docs/state-inspection.md) for effective window/depth ranges
+and the distinction between successful inspection and proof verification.
+
 Run a fixture-based smoke test (no network required):
 
 ```bash

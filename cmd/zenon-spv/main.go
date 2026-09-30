@@ -2,6 +2,8 @@
 //
 // Subcommands:
 //
+//	zenon-spv version            [--json]
+//	zenon-spv inspect-state      --state <path> [--genesis-config ...] [--window ...] [--protocol-profile ...] [--schedule ...] [--json]
 //	zenon-spv verify-headers     [--window {low|medium|high}] [--genesis-config <path>] [--state <path>] <bundle.json>
 //	zenon-spv verify-commitment  [--window ...] [--genesis-config ...] [--state <path>] <bundle.json>
 //	zenon-spv verify-segment     [--window ...] [--genesis-config ...] [--state <path>] <bundle.json>
@@ -50,7 +52,7 @@
 //
 // Exit codes:
 //
-//	0   ACCEPT
+//	0   ACCEPT for verification; successful completion for diagnostics/watch
 //	1   REJECT
 //	2   REFUSED
 //	64  EX_USAGE       — bad invocation
@@ -88,6 +90,7 @@ const usage = `zenon-spv — resource-bounded Zenon SPV verifier
 
 Usage:
   zenon-spv version            [--json]
+  zenon-spv inspect-state      --state <path> [--genesis-config <path>] [--window ...] [--protocol-profile <path>] [--schedule <path>] [--json]
   zenon-spv verify-headers     [--window {low|medium|high}] [--genesis-config <path>] [--state <path>] [--schedule <path>] <bundle.json>
   zenon-spv verify-commitment  [--window ...] [--genesis-config ...] [--state <path>] [--schedule <path>] <bundle.json>
   zenon-spv verify-segment     [--window ...] [--genesis-config ...] [--state <path>] [--schedule <path>] <bundle.json>
@@ -98,6 +101,10 @@ Usage:
 Subcommands:
   version            Print privacy-filtered build identity without loading
                       configuration or state. --version is an alias.
+
+  inspect-state       Revalidate and describe an existing trusted local state.
+                      No RPC requests, writer lock, or state writes. Success
+                      means inspection completed, not a proof ACCEPT.
 
   verify-headers      Verify a HeaderBundle JSON file. Exits 0 on ACCEPT,
                       1 on REJECT, 2 on REFUSED.
@@ -138,7 +145,7 @@ values fail with exit 64 before configuration or evidence is loaded. Put all
 verify-* flags before the bundle path; watch accepts flags only.
 
 --protocol-profile <path> loads an anchor-bound, operator-attested momentum
-activation profile for verify-* and watch. V2 requires this flag. Profiles
+activation profile for verify-*, inspect-state, and watch. V2 requires this flag. Profiles
 expire at their configured height and must match persisted state exactly.
 They do not independently prove activation. See docs/header-versions.md.
 
@@ -151,6 +158,11 @@ It includes captured settings, per-item outcomes and guarantees, and separate
 command-error and persistence fields. --show-context adds no extra output in
 this mode. Consumers must check both the process exit code and report contents.
 See docs/verification-reports.md for the schema and output-failure boundary.
+
+inspect-state --json emits a separate inspection report with the effective
+retained range, depth-eligible heights, settings, and external trust inputs.
+No bundle is accepted or proof outcome reported. A missing/empty state exits 2.
+See docs/state-inspection.md for interpretation and read-only boundaries.
 
 --retained-only is available on verify-commitment, verify-segment, and
 verify-state-value. It requires --state pointing to a nonempty trusted local
@@ -184,6 +196,8 @@ func main() {
 	switch os.Args[1] {
 	case "version", "--version":
 		os.Exit(buildinfo.Run("zenon-spv", os.Args[2:], os.Stdout, os.Stderr))
+	case "inspect-state":
+		os.Exit(runInspectState(os.Args[2:], os.Stdout, os.Stderr))
 	case "verify-headers":
 		os.Exit(runVerifyHeaders(os.Args[2:]))
 	case "verify-commitment":
