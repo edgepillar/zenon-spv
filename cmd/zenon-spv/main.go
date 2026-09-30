@@ -286,7 +286,7 @@ func prepareVerifierContext(name string, args []string, out *verificationOutput)
 		MaxSegments: policy.MaxSegments, MaxStateValueProofs: policy.MaxStateValueProofs,
 		MaxFlatEvidenceMembers: policy.MaxFlatEvidenceMembers, MaxTotalFlatEvidenceMembers: policy.MaxTotalFlatEvidenceMembers,
 		MaxSegmentBlocks: policy.MaxSegmentBlocks, MaxTotalSegmentBlocks: policy.MaxTotalSegmentBlocks,
-		MaxStateProofNodes: policy.MaxStateProofNodes,
+		MaxStateProofNodes: policy.MaxStateProofNodes, MaxStateProofBytes: policy.MaxStateProofBytes,
 	})
 	if err != nil {
 		if reason, oversized := bundleLoadLimitReason(err); oversized {
@@ -409,6 +409,10 @@ func prepareVerifierContext(name string, args []string, out *verificationOutput)
 func bundleLoadLimitReason(err error) (verify.ReasonCode, bool) {
 	if errors.Is(err, proof.ErrBundleTooLarge) {
 		return verify.ReasonOversizedBundle, true
+	}
+	var size *proof.BundleByteLimitError
+	if errors.As(err, &size) && size.Field == "state_value_proofs.proof_nodes" {
+		return verify.ReasonOversizedStateProof, true
 	}
 	var count *proof.BundleCountLimitError
 	if errors.As(err, &count) {

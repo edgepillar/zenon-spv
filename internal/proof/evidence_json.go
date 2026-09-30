@@ -57,12 +57,19 @@ func (e *evidenceDecoder) commitment(d *json.Decoder, commitment *CommitmentEvid
 }
 
 func (e *evidenceDecoder) stateProof(d *json.Decoder, proof *StateValueProof) error {
+	var decodeNode func(*json.Decoder, *[]byte) error
+	if limit := e.limits.MaxStateProofBytes; limit > 0 {
+		// One budget per proof, shared by repeated proof_nodes fields. A later
+		// array or null cannot refund bytes already decoded from this object.
+		budget := &proofByteBudget{limit: limit, remaining: limit}
+		decodeNode = budget.decodeNode
+	}
 	type plain StateValueProof
 	wire := struct {
 		*plain
 		Nodes bundleRows[[]byte] `json:"proof_nodes"`
 	}{plain: (*plain)(proof), Nodes: bundleRows[[]byte]{
-		target: &proof.ProofNodes, field: "state_value_proofs.proof_nodes", limit: e.limits.MaxStateProofNodes,
+		target: &proof.ProofNodes, field: "state_value_proofs.proof_nodes", limit: e.limits.MaxStateProofNodes, decode: decodeNode,
 	}}
 	return d.Decode(&wire)
 }

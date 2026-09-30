@@ -86,7 +86,8 @@ type Policy struct {
 	// Per-state-proof cap on sum(len(node)) across ProofNodes
 	// (byte total). Distinct from MaxStateProofNodes because a
 	// count-only cap is bypassable by one huge node. Enforced
-	// inside VerifyStateValue. 0 disables.
+	// during CLI decoding and inside VerifyStateValue. Repeated proof-node
+	// arrays consume the same byte budget during decoding. 0 disables.
 	MaxStateProofBytes int
 }
 
