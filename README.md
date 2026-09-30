@@ -59,6 +59,17 @@ Print the CLI surface:
 ./zenon-spv help
 ```
 
+Record the running tools' build metadata without loading state or contacting
+peers:
+
+```sh
+./zenon-spv version --json
+./fetch-bundle version --json
+```
+
+See [build identity](docs/build-identity.md) for unknown source metadata,
+modified builds, and the distinction from an authenticated binary digest.
+
 Run a fixture-based smoke test (no network required):
 
 ```bash

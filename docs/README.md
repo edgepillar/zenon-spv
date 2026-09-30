@@ -22,6 +22,8 @@ audit history.
   diagnostics, metadata exclusion, and reproducible configuration fingerprints.
 - [`verification-reports.md`](verification-reports.md) — versioned JSON command
   reports, per-proof guarantees, and separate persistence and error outcomes.
+- [`build-identity.md`](build-identity.md) — privacy-filtered executable source
+  metadata and explicit unknown/modified build handling.
 - [`conformance.md`](conformance.md) — implemented conformance cases,
   known gaps, and production follow-ups.
 - [`compiled-query-conformance.md`](compiled-query-conformance.md) — compiled

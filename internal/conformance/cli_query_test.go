@@ -255,9 +255,10 @@ func queryCLIEnvironment() []string {
 
 func buildQueryCLIs(t *testing.T, names ...string) map[string]string {
 	t.Helper()
-	// The test package does not import main packages. Register their files as
-	// test inputs so Go's result cache cannot reuse a pass after a CLI-only edit.
-	for _, dir := range []string{"../../cmd/zenon-spv", "../../cmd/fetch-bundle"} {
+	// Register CLI sources and their internal helpers as test inputs. Some
+	// helpers are only imported by the commands, not by this test package.
+	// Their edits must invalidate a previously cached compiled-workflow pass.
+	for _, dir := range []string{"../../cmd/zenon-spv", "../../cmd/fetch-bundle", "../../internal"} {
 		if err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, walkErr error) error {
 			if walkErr != nil {
 				return walkErr

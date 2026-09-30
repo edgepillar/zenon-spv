@@ -18,8 +18,8 @@ lint job. No public RPC, wallet, or credentials are required.
 Subprocess builds use the local Go toolchain and cached dependencies
 with module/network lookup disabled. The normal repository dependencies must
 already be available, as they are after the parent test build.
-Command source files are registered as test inputs so a CLI-only edit
-invalidates Go's cached result for this workflow.
+Command and internal helper source files are registered as test inputs so
+an edit to a package used only by the CLI invalidates Go's cached result.
 
 ## Exercised boundaries
 
@@ -65,6 +65,11 @@ described in [state writer ownership](state-writer-locks.md).
 The actual save-failure scenario precreates a usable companion lock in a
 directory without write permission. It is skipped when the filesystem or
 process privileges still permit writes there; other scenarios continue.
+
+`TestCompiledCLIBuildIdentity` also invokes the version commands in both
+executables and compares their reports with independently read binary metadata.
+It checks version dispatch before configuration or RPC access; see
+[build identity](build-identity.md).
 
 ## Evidence limits
 
