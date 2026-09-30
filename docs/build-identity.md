@@ -32,6 +32,10 @@ Source metadata is read from the running binary, not from the current checkout.
 An absent dirty marker is unknown, not `false`. Builds from an archive, builds
 with `-buildvcs=false`, and environments without usable VCS stamping may have
 `source: null`. Duplicate recognized source fields also produce `null`.
+VCS discovery also depends on the Go toolchain and checkout layout: a local
+Go 1.25.14 probe stamped a regular Git checkout but omitted source metadata
+in a linked worktree, even with `-buildvcs=true`. Check the built executable's
+report instead of assuming that a requested stamp was embedded.
 
 The report intentionally omits module and dependency paths, local replacements,
 build flags, environment values, timestamps, and arbitrary metadata. Development
