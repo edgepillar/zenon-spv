@@ -38,37 +38,51 @@ type cliInspectionReport struct {
 	Caveats       []string                          `json:"caveats"`
 }
 
-func TestCompiledCLIStateCountBound(t *testing.T) {
+func TestCompiledCLIInvalidRetainedState(t *testing.T) {
 	binary := buildQueryCLIs(t, "zenon-spv")["zenon-spv"]
-	c, _ := contractBatchBundle(t)
+	c, seed := contractBatchBundle(t)
 	dir := t.TempDir()
 	anchor := writeCLIJSON(t, dir, "anchor.json", c.Chain.Anchor)
-	statePath := filepath.Join(dir, "PRIVATE_STATE.json")
-	raw := []byte(fmt.Sprintf(`{"version":1,"genesis":%s,"capacity":%d,"retained_window":[%s"PRIVATE_UNREACHED_ROW"]}`,
+	valid, err := json.Marshal(map[string]any{
+		"version": 1, "genesis": c.Chain.Anchor, "capacity": len(seed.Headers), "retained_window": seed.Headers,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	countBound := []byte(fmt.Sprintf(`{"version":1,"genesis":%s,"capacity":%d,"retained_window":[%s"PRIVATE_UNREACHED_ROW"]}`,
 		readCLIFile(t, anchor), verify.MaxPersistedHeaders, strings.Repeat("null,", verify.MaxPersistedHeaders)))
-	if err := os.WriteFile(statePath, raw, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	unchanged := protectCLIState(t, statePath)
-	t.Cleanup(unchanged)
-	result := runQueryCLI(t, binary, "inspect-state", "--json", "--genesis-config", anchor, "--state", statePath)
-	if result.code != 70 || len(result.stderr) != 0 || bytes.Contains(result.stdout, []byte("PRIVATE")) {
-		t.Fatal("over-limit state did not produce a privacy-safe operational error")
-	}
-	var report cliInspectionReport
-	d := json.NewDecoder(bytes.NewReader(result.stdout))
-	d.DisallowUnknownFields()
-	if err := d.Decode(&report); err != nil {
-		t.Fatal(err)
-	}
-	if err := d.Decode(new(any)); err != io.EOF || report.SchemaVersion != 1 || report.Command != "inspect-state" || report.Status != "error" || report.ExitCode != 70 || report.Persistence != "read_only" {
-		t.Fatal("over-limit state lost its inspection error classification")
-	}
-	if report.Error == nil || report.Error.Stage != "state" || report.Error.Category != "operational" || report.Reason != nil || report.Context != nil || report.Window != nil || len(report.StateTrust) != 0 {
-		t.Fatal("over-limit state exposed partial retained evidence")
-	}
-	if _, err := os.Stat(statePath + ".lock"); !os.IsNotExist(err) {
-		t.Fatal("failed read-only inspection created a writer companion")
+	for name, raw := range map[string][]byte{
+		"count bound":             countBound,
+		"shadowed invalid prefix": append([]byte(`{"retained_window":[null],`), valid[1:]...),
+		"cleared window":          append(append([]byte(nil), valid[:len(valid)-1]...), []byte(`,"retained_window":null}`)...),
+	} {
+		t.Run(name, func(t *testing.T) {
+			statePath := filepath.Join(t.TempDir(), "PRIVATE_STATE.json")
+			if err := os.WriteFile(statePath, raw, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			unchanged := protectCLIState(t, statePath)
+			t.Cleanup(unchanged)
+			result := runQueryCLI(t, binary, "inspect-state", "--json", "--genesis-config", anchor, "--state", statePath)
+			if result.code != 70 || len(result.stderr) != 0 || bytes.Contains(result.stdout, []byte("PRIVATE")) {
+				t.Fatal("invalid state did not produce a privacy-safe operational error")
+			}
+			var report cliInspectionReport
+			d := json.NewDecoder(bytes.NewReader(result.stdout))
+			d.DisallowUnknownFields()
+			if err := d.Decode(&report); err != nil {
+				t.Fatal(err)
+			}
+			if err := d.Decode(new(any)); err != io.EOF || report.SchemaVersion != 1 || report.Command != "inspect-state" || report.Status != "error" || report.ExitCode != 70 || report.Persistence != "read_only" {
+				t.Fatal("invalid state lost its inspection error classification")
+			}
+			if report.Error == nil || report.Error.Stage != "state" || report.Error.Category != "operational" || report.Reason != nil || report.Context != nil || report.Window != nil || len(report.StateTrust) != 0 {
+				t.Fatal("invalid state exposed partial retained evidence")
+			}
+			if _, err := os.Stat(statePath + ".lock"); !os.IsNotExist(err) {
+				t.Fatal("failed read-only inspection created a writer companion")
+			}
+		})
 	}
 }
 
