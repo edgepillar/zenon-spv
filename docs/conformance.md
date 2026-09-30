@@ -153,7 +153,10 @@ State-value layer:
       pragmatic header-size sample
       (`docs/resource-bound-measurements.md`); the full spec §10
       σ characterization is still deferred.
-- [ ] Benchmark `C_verify` on target platforms — deferred.
+- [~] Fixed [native verification benchmarks](native-benchmarks.md) cover header
+      extension, inclusion, trusted resume, and diagnostic views. CI executes
+      functional smoke cases on Linux/macOS/Windows; representative target
+      hardware and larger/adversarial workload characterization remain deferred.
 - [~] Local multi-peer failures, disagreement, stale frontiers, invalid
       evidence, and bounded restart checks are covered by
       [`local-watch-scenarios.md`](local-watch-scenarios.md).

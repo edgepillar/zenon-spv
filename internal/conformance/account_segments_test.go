@@ -42,7 +42,7 @@ type accountSegmentCorpus struct {
 	} `json:"batches"`
 }
 
-func loadNodeAccountCorpus(t *testing.T, filename string) accountSegmentCorpus {
+func loadNodeAccountCorpus(t testing.TB, filename string) accountSegmentCorpus {
 	t.Helper()
 	raw, err := os.ReadFile(filepath.Join("../testdata/conformance", filename))
 	if err != nil {

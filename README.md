@@ -42,6 +42,7 @@ Every ACCEPT carries a machine-readable trust audit + a human-readable caveat. S
 ```bash
 make build      # builds ./zenon-spv and ./fetch-bundle
 make test       # full test suite
+make bench      # repeated local verification benchmarks
 make vet        # go vet
 make lint       # golangci-lint v2.6.2
 make cover      # coverage report
@@ -51,7 +52,13 @@ Requires Go 1.25+. The repo sits outside the parent `~/Github/go.work` workspace
 
 ## Quickstart
 
-After `make build` (or `go build ./cmd/zenon-spv ./cmd/fetch-bundle`), the binaries are at `./zenon-spv` and `./fetch-bundle`.
+After `make build`, the binaries are at `./zenon-spv` and `./fetch-bundle`.
+To build them without Make, use separate explicit output commands:
+
+```sh
+go build -o zenon-spv ./cmd/zenon-spv
+go build -o fetch-bundle ./cmd/fetch-bundle
+```
 
 Print the CLI surface:
 

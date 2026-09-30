@@ -24,6 +24,8 @@ jobs:
         run: go vet ./...
       - name: Test
         run: go test -race -coverprofile=coverage.out ./...
+      - name: Benchmark smoke
+        run: go test -run '^$' -bench '^BenchmarkNativeClient$' -benchtime=1x ./internal/conformance
       - name: Lint
         uses: golangci/golangci-lint-action@v7
         with:
@@ -49,3 +51,5 @@ jobs:
         run: go vet ./...
       - name: Native test
         run: go test -count=1 -timeout=5m ./...
+      - name: Benchmark smoke
+        run: go test -run '^$' -bench '^BenchmarkNativeClient$' -benchtime=1x ./internal/conformance

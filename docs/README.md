@@ -26,6 +26,8 @@ audit history.
   metadata and explicit unknown/modified build handling.
 - [`state-inspection.md`](state-inspection.md) — read-only retained-window
   diagnostics, effective depth ranges, and trusted-state boundaries.
+- [`native-benchmarks.md`](native-benchmarks.md) — reproducible local verification
+  costs, allocation reporting, and explicit workload limits.
 - [`conformance.md`](conformance.md) — implemented conformance cases,
   known gaps, and production follow-ups.
 - [`compiled-query-conformance.md`](compiled-query-conformance.md) — compiled
