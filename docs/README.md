@@ -24,6 +24,8 @@ audit history.
   reports, per-proof guarantees, and separate persistence and error outcomes.
 - [`build-identity.md`](build-identity.md) — privacy-filtered executable source
   metadata and explicit unknown/modified build handling.
+- [`state-inspection.md`](state-inspection.md) — read-only retained-window
+  diagnostics, effective depth ranges, and trusted-state boundaries.
 - [`conformance.md`](conformance.md) — implemented conformance cases,
   known gaps, and production follow-ups.
 - [`compiled-query-conformance.md`](compiled-query-conformance.md) — compiled
