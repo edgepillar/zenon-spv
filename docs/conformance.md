@@ -143,6 +143,9 @@ State-value layer:
       decoding; see [`watch-persistence.md`](watch-persistence.md).
 - [x] Saved-state decoding rejects duplicate top-level known fields, including
       escaped/case-folded aliases, before later values can hide earlier evidence.
+- [x] CLI bundle loading bounds top-level header, commitment, segment, and
+      state-value-proof counts before decoding excess rows. Nested evidence and
+      aggregate work retain their separate verifier preflights.
 - [x] CLI and watch use immutable verified state with captured policy,
       detached snapshots, zero-value refusal, and explicit trusted-local
       resume; see [`verified-state-api.md`](verified-state-api.md).

@@ -31,15 +31,17 @@ type Policy struct {
 	W uint64 // policy-window depth in headers
 
 	// Per-bundle wire-format cap. Enforced at JSON load time via
-	// proof.LoadHeaderBundleBounded (io.LimitReader). 0 disables.
+	// proof.LoadHeaderBundleWithLimits (io.LimitReader). 0 disables.
 	MaxBundleBytes int64
 
-	// Per-call cap on header count. Enforced inside VerifyHeaders.
+	// Per-call cap on header count. Enforced inside VerifyHeaders and
+	// during CLI bundle decoding.
 	// 0 disables.
 	MaxHeaders int
 
 	// Cap on the number of CommitmentEvidence entries in a bundle or a
-	// VerifySegment call. Enforced before commitment indexing/evaluation.
+	// VerifySegment call. Enforced during CLI bundle decoding and before
+	// commitment indexing/evaluation.
 	// 0 disables.
 	MaxCommitments int
 
@@ -55,7 +57,7 @@ type Policy struct {
 	MaxTotalFlatEvidenceMembers int
 
 	// Per-bundle cap on the number of AccountSegment entries.
-	// Enforced in the CLI preflight. 0 disables.
+	// Enforced during CLI bundle decoding and preflight. 0 disables.
 	MaxSegments int
 
 	// Per-segment cap on the number of AccountBlocks. Enforced
@@ -69,11 +71,9 @@ type Policy struct {
 	MaxTotalSegmentBlocks int
 
 	// Per-bundle cap on the number of StateValueProof entries
-	// (state-proof PR / Phase 2). Enforced in the CLI preflight,
-	// NOT in proof.LoadHeaderBundleBounded — that loader stays
-	// byte-only because `internal/proof` is already imported by
-	// `internal/verify`, so a Policy reference inside proof would
-	// create a package cycle. 0 disables.
+	// (state-proof PR / Phase 2). Enforced during CLI bundle decoding and
+	// preflight. The proof package's own DecodeLimits keeps policy wiring
+	// outside the parser without a package cycle. 0 disables.
 	MaxStateValueProofs int
 
 	// Per-state-proof cap on len(ProofNodes) (count). Enforced
