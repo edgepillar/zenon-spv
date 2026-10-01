@@ -154,6 +154,10 @@ State-value layer:
 - [x] CLI and watch use immutable verified state with captured policy,
       detached snapshots, zero-value refusal, and explicit trusted-local
       resume; see [`verified-state-api.md`](verified-state-api.md).
+- [x] Repeated configured peer URLs fail before RPC without rewriting quorum.
+      Watch rejects them before configuration/state loading; compiled-command
+      tests preserve state, bundle, and checkpoint files. URL-string uniqueness
+      does not establish independent operators or authenticated peers.
 - [x] Explicit [retained-state CLI queries](retained-state-queries.md) preserve
       state files on every outcome, retain load/producer/depth/resource checks,
       and do not treat absent or supplied headers as an implicit query mode.

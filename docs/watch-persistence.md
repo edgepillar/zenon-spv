@@ -19,15 +19,22 @@ disagreement among usable target responses still fails, even when the
 configured quorum is smaller than the peer count.
 
 `MultiClient.Validate` and every fetch method reject an empty peer set,
-negative or excessive quorum, nil peer, missing HTTP client, or empty URL
-with `ErrInvalidPeerConfiguration`. Validation makes no RPC requests and
+negative or excessive quorum, nil peer, missing HTTP client, empty URL, or
+repeated configured URL value with `ErrInvalidPeerConfiguration`.
+Validation makes no RPC requests and
 does not rewrite the caller's quorum. Watch also checks this configuration
 before loading retained state or reporting startup context. Negative quorum
 values that previously selected a fallback in some paths are now invalid.
 
-This checks local configuration only. It does not establish that endpoints
-or operators are independent, authenticate the network, or prove consensus
-finality. Keep transport configuration stable while queries or watch are
+Repeated URL values are compared after removing surrounding whitespace.
+Validation refuses the configuration without changing its peer list or quorum;
+it does not silently deduplicate votes. Watch's CLI returns exit 64 before
+loading anchors, profiles, schedules, or state. Diagnostics identify only the
+two list positions and do not echo URLs or credentials.
+
+Distinct URL strings can still resolve or redirect to the same service, or
+share an operator. These checks do not establish peer independence, authenticate
+the network, or prove consensus finality. Keep transport configuration stable while queries or watch are
 running; concurrent mutation of the public client fields is unsupported.
 
 ## Polling and request bounds

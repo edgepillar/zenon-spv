@@ -191,6 +191,9 @@ defense.
 ## Multi-peer agreement vs quorum proof
 
 The `MultiClient` requires k-of-n agreement across peer RPC responses.
+Repeated configured URL values are rejected before querying, so the same
+entry cannot contribute multiple votes. Different strings, aliases, or routes
+may still reach the same service; this local check does not prove independence.
 This is a peer-disagreement detector, not a consensus proof. Multiple
 peers can serve the same wrong chain (collusion, shared upstream,
 operator-controlled), and the verifier cannot distinguish that from

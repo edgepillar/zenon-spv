@@ -28,6 +28,7 @@ func TestRunInvalidPeerConfigStopsBeforeStateOrRPC(t *testing.T) {
 		"empty": {}, "negative quorum": {Peers: []*fetch.Client{peer}, Quorum: -1},
 		"excessive quorum": {Peers: []*fetch.Client{peer}, Quorum: 2},
 		"nil peer":         {Peers: []*fetch.Client{peer, nil}, Quorum: 1},
+		"duplicate URL":    fetch.NewMultiClient([]string{server.URL, server.URL}),
 	} {
 		t.Run(name, func(t *testing.T) {
 			path := tmpStateFile(t)

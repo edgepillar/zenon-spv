@@ -26,6 +26,27 @@ func TestMultiFrontierZeroQuorumAllPeersUnavailable(t *testing.T) {
 	}
 }
 
+func TestRepeatedPeerURLCannotSupplyQuorum(t *testing.T) {
+	var requests atomic.Int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests.Add(1)
+		_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": 1,
+			"result": map[string]any{"list": []any{emptyContentMomentum(99)}}})
+	}))
+	defer server.Close()
+	for _, quorum := range []int{0, 1, 2} {
+		multi := NewMultiClient([]string{server.URL, server.URL})
+		multi.Quorum = quorum
+		got, err := multi.FetchByHeight(context.Background(), 99, 1)
+		if !errors.Is(err, ErrInvalidPeerConfiguration) || len(got) != 0 || requests.Load() != 0 {
+			t.Fatalf("one endpoint supplied repeated peer votes: quorum=%d rows=%d requests=%d err=%v", quorum, len(got), requests.Load(), err)
+		}
+		if multi.Quorum != quorum || len(multi.Peers) != 2 {
+			t.Fatal("duplicate detection silently rewrote the requested quorum or peer list")
+		}
+	}
+}
+
 // These adapters assert that failure never returns partial evidence.
 func failedMultiQueries() map[string]func(*testing.T, *MultiClient) error {
 	return map[string]func(*testing.T, *MultiClient) error{
@@ -76,6 +97,9 @@ func TestMultiInvalidConfigurationMakesNoRequests(t *testing.T) {
 		"nil peer":            {Peers: []*Client{peer, nil}, Quorum: 1},
 		"missing HTTP client": {Peers: []*Client{peer, {URL: server.URL + "/private-peer-value"}}, Quorum: 1},
 		"empty URL":           {Peers: []*Client{peer, NewClient(" \t")}, Quorum: 1},
+		"same client twice":   {Peers: []*Client{peer, peer}, Quorum: 2},
+		"same URL twice":      NewMultiClient([]string{server.URL + "/private-peer-value", server.URL + "/private-peer-value"}),
+		"whitespace alias":    NewMultiClient([]string{server.URL, " \t" + server.URL + "\n"}),
 	} {
 		t.Run(name, func(t *testing.T) {
 			if err := multi.Validate(); !errors.Is(err, ErrInvalidPeerConfiguration) {
@@ -96,6 +120,25 @@ func TestMultiInvalidConfigurationMakesNoRequests(t *testing.T) {
 				})
 			}
 		})
+	}
+}
+
+func TestDistinctURLValuesDoNotClaimOperatorIndependence(t *testing.T) {
+	// Do not collapse routes, credentials, or query values into a hostname.
+	// Such endpoints may still share a server/operator; validation cannot tell.
+	urls := []string{
+		"https://peer.invalid/rpc", "https://peer.invalid/other-rpc",
+		"https://peer.invalid/rpc?network=another", "https://user:private-peer-value@peer.invalid/rpc",
+	}
+	multi := NewMultiClient(urls)
+	multi.Quorum = 0
+	if err := multi.Validate(); err != nil || multi.Quorum != 0 || len(multi.Peers) != len(urls) {
+		t.Fatalf("distinct routes were silently collapsed or changed: %v", err)
+	}
+	for i, peer := range multi.Peers {
+		if peer.URL != urls[i] {
+			t.Fatal("validation rewrote an outgoing endpoint")
+		}
 	}
 }
 
