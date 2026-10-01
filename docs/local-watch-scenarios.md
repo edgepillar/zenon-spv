@@ -57,6 +57,8 @@ canonicality. Failed evidence must neither save nor log an ACCEPT tick.
 | One peer exceeds the content-member cap, two healthy | ACCEPT | Advance using the two bounded responses |
 | All peers exceed the content-member cap in a batch or frontier | REFUSED | Excess member is not decoded; no save |
 | All peers replace a content list with a second field | REFUSED | No save; original bytes retained |
+| One peer returns a malformed content address containing private text, two healthy | ACCEPT | Advance using the two usable responses |
+| All peers return that malformed content address | REFUSED | No save; error logs omit the remote value |
 | All peers remain at 2002 | Caught-up ACCEPT | Existing window saved with identical bytes; no advance |
 
 The conflicting-fork case records the current strict disagreement policy:

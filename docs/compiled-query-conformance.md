@@ -49,6 +49,8 @@ The workflow checks:
   and emit no partial stdout bundle.
 - Reject oversized nested content and descendant lists during RPC decoding,
   with the same file and stdout guarantees and no private payload in diagnostics.
+- Reject malformed content addresses and token prefixes without copying private
+  remote values into conversion diagnostics or replacing existing evidence.
 - Report usage/setup failures separately from proof outcomes and save failures
   separately from accepted header verification.
 - Return a nonzero process status for a closed stdout pipe while preserving
