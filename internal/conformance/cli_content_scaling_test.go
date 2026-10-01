@@ -3,6 +3,7 @@ package conformance_test
 import (
 	"encoding/hex"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -16,6 +17,13 @@ import (
 // file decoding, trusted-state revalidation, inclusion checks and JSON output.
 // Parent-side fixture expansion and builds occur before the measured process.
 func TestCompiledContentScalingWorkflow(t *testing.T) {
+	// An empty GOFLAGS alone falls back to Go's saved user settings. Prove the
+	// measured child's build ignores that file rather than inheriting flags.
+	goEnv := filepath.Join(t.TempDir(), "PRIVATE_GO_ENV")
+	if err := os.WriteFile(goEnv, []byte("GOFLAGS=-not-a-real-build-flag\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GOENV", goEnv)
 	binary := buildQueryCLIs(t, "zenon-spv")["zenon-spv"]
 	for _, grid := range flatWorkloads {
 		name := flatWorkloadName(grid.members, grid.proofs)

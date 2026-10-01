@@ -73,7 +73,9 @@ The measured CLI process includes startup, configuration loading, bounded
 bundle decoding, full trusted-state revalidation, proof verification and JSON
 report emission. The parent constructs fixtures and builds the executable
 before starting that process. Those parent costs are excluded. The child is
-an ordinary build (`GOFLAGS` cleared), even when the test parent uses `-race`.
+an ordinary build (`GOFLAGS` cleared and saved user settings disabled with
+`GOENV=off`), even when the test parent uses `-race`. A hostile saved-flags fixture
+checks that the child build cannot silently inherit those settings.
 Input files normally remain in the filesystem cache. Runtime CPU parallelism
 for the CLI uses its ordinary environment; benchmark `-cpu=1` does not set it.
 
@@ -119,8 +121,8 @@ The [complete samples](flat-content-samples.json) contain five 1-second samples
 per benchmark operation and five separate ordinary CLI processes per workload
 on darwin/arm64 with Go 1.25.14, without competing builds/tests. Hardware identity
 is omitted. The benchmark uses `-cpu=1`; the CLI uses its ordinary runtime settings.
-The source-input fingerprint is `498c9a30854be47c6e667897d08b8617ca596945ca0fe8d258d39335531c5536`
-on modified base `1bd476806e44e88bf5138f3941b0bc4cfb452400`.
+The source-input fingerprint is `a0e323abaf427a0d334207afbca182e9741cb15762fba105faaca5fe83117469`
+on modified base `52203601878020e38bfa7c0ce3e8b94e52716f3a`.
 That fingerprint follows the offline-pilot Go/module/JSON scope, excluding docs,
 CI definitions and Python checkers. It is a measurement identity, not a clean release.
 
@@ -128,12 +130,12 @@ Values below are medians; MB uses 1,000,000 bytes:
 
 | Workload | Verify (ms) | Load + verify (ms) | Load + verify allocated MB/op | CLI elapsed (ms) | CLI peak RSS (MB) |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `M1_P1` | 0.001 | 0.027 | 0.010 | 6.260 | 11.076 |
-| `M1000_P1` | 0.095 | 3.759 | 2.274 | 9.156 | 13.206 |
-| `M100000_P1` | 8.821 | 306.667 | 213.359 | 318.973 | 101.384 |
-| `M100000_P4` | 34.812 | 1201.723 | 739.459 | 1246.658 | 307.724 |
+| `M1_P1` | 0.001 | 0.028 | 0.010 | 5.650 | 11.043 |
+| `M1000_P1` | 0.091 | 3.623 | 2.274 | 8.684 | 13.238 |
+| `M100000_P1` | 8.568 | 303.737 | 213.359 | 307.627 | 98.943 |
+| `M100000_P4` | 34.561 | 1184.753 | 739.459 | 1205.293 | 300.433 |
 
-The four-proof 57.6 MB input had a measured CLI peak range of 298.1–329.8 MB.
+The four-proof 57.6 MB input had a measured CLI peak range of 298.2–330.4 MB.
 Its roughly 739 MB allocated per benchmark operation is cumulative allocation
 volume, not the simultaneous RSS value. JSON loading/decoding dominates the
 local timing in this grid; already-decoded verification also grows with both

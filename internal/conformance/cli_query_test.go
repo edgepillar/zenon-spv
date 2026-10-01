@@ -336,7 +336,7 @@ func buildQueryCLIs(t *testing.T, names ...string) map[string]string {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		cmd := exec.CommandContext(ctx, goTool, "build", "-trimpath", "-o", path, pkg)
 		cmd.Dir = "../.."
-		cmd.Env = append(queryCLIEnvironment(), "GOTOOLCHAIN=local", "GOWORK=off", "GOPROXY=off", "GOSUMDB=off", "GOFLAGS=")
+		cmd.Env = append(queryCLIEnvironment(), "GOTOOLCHAIN=local", "GOWORK=off", "GOPROXY=off", "GOSUMDB=off", "GOFLAGS=", "GOENV=off")
 		output, err := cmd.CombinedOutput()
 		cancel()
 		if err != nil {
