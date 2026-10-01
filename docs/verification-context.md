@@ -7,6 +7,60 @@ The snapshot is not a proof, a signed receipt, or a way to import verified state
 
 ## Record settings with a result
 
+Inspect configuration before creating state or contacting a peer:
+
+```sh
+zenon-spv inspect-config --genesis-config anchor.json \
+  --protocol-profile activation.json --schedule producers.json --window low --json
+```
+
+This loads and validates the selected trust inputs, constructs an empty
+`VerifiedState`, and reports its captured context. It does not read a state
+file or bundle, acquire a writer lock, contact RPC, or check producer coverage
+for any requested evidence. Without an explicit anchor it follows the same
+environment/embedded-mainnet selection as verification. Use an explicit
+anchor for reproducible operator runs.
+
+The configuration report has `schema_version: 1`, `command: "inspect-config"`,
+`status: "configured"` on exit 0, `exit_code`, `error`, `verification_context`,
+`trust_assumptions`, and fixed `caveats`. There is no proof outcome or retained
+window. Invalid arguments exit 64; configuration/output errors exit 70.
+Errors expose only a fixed stage/category, with no context or trust claims.
+Text mode prints one `verification_context: {JSON}` line and caveats.
+
+After reviewing those settings, retain the reported fingerprint separately
+from editable configuration files and require it on subsequent commands:
+
+```sh
+zenon-spv verify-headers --genesis-config anchor.json \
+  --protocol-profile activation.json --schedule producers.json --window low \
+  --expect-context "$EXPECTED_CONTEXT" --json bundle.json
+```
+
+`--expect-context` is available on every `verify-*` command, `inspect-state`,
+and both watch modes. It accepts exactly 64 hexadecimal characters (either
+case), without a prefix or whitespace. Omission preserves existing behavior;
+an explicitly empty or malformed value exits 64 and cannot disable the check.
+All verification flags must precede the bundle path.
+
+A mismatch exits 70 before new evidence verification, watch startup/RPC, or
+state saving. Verification and state-inspection JSON reports identify
+`error.stage: "context_pin"`; they contain no proof outcome or usable context.
+JSON watch emits no event and the fixed stderr message `watch: operation failed`.
+Normal setup checks still apply first: the bundle can be decoded and rejected
+by its limits/identity checks, saved state can be loaded and re-authorized,
+and writers can acquire/create a companion lock before comparing settings.
+Those earlier failures retain their existing classifications. State bytes
+are not saved by a failed pin check; do not remove a companion lock file.
+
+The API equivalent is `state.RequireContextFingerprint(expectedHash)`;
+it checks the handle's owned settings, not a caller-created context object.
+An uninitialized handle fails; a required custom authorizer fails with
+`ErrContextFingerprintUnavailable`. `syncer.Loop.ExpectedContext` applies
+the same requirement after trusted-state loading and before startup output.
+A match adds no guarantees and preserves ordinary ACCEPT/REJECT/REFUSED
+outcomes. See the [operator workflow](operator-pilot.md) for the complete path.
+
 The optional `--show-context` flag is available on every `verify-*` command
 and on `watch`:
 

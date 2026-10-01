@@ -29,11 +29,14 @@ retain their own timeouts. This tool is not a process-tree supervisor.
 
 ## Selected coverage
 
-The 23 named scenarios are defined in
+The 24 named scenarios are defined in
 [`manifest.go`](../tools/offline-pilot/manifest.go). They cover:
 
 - Build identity, collection, retained commitment/segment queries, trusted
   resume, state inspection, and competing writers across compiled processes.
+- The [pinned operator workflow](operator-pilot.md): inspect explicit trust
+  inputs, initialize, advance and restart watch, collect, query, and refuse
+  dropped schedules or changed depth settings before RPC or state writes.
 - Continuous and single-step watch events; stale, unavailable, malformed,
   replayed, forked, or unauthorized peer evidence.
 - Activation/profile retention, producer coverage gaps, request limits,

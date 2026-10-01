@@ -12,6 +12,7 @@ type scenario struct {
 var scenarios = []scenario{
 	{"build_identity", "internal/conformance", "TestCompiledCLIBuildIdentity", []string{"zenon-spv", "fetch-bundle"}},
 	{"collect_query_resume", "internal/conformance", "TestCompiledCLIQueryWorkflow", []string{"zenon-spv", "fetch-bundle"}},
+	{"pinned_operator_workflow", "internal/conformance", "TestCompiledPinnedOperatorWorkflow", []string{"zenon-spv", "fetch-bundle"}},
 	{"state_inspection", "internal/conformance", "TestCompiledCLIStateInspection", []string{"zenon-spv"}},
 	{"writer_exclusion", "internal/conformance", "TestCompiledCLIStateWriterExclusion", []string{"zenon-spv"}},
 	{"watch_events", "internal/conformance", "TestCompiledWatchJSONEvents", []string{"zenon-spv"}},

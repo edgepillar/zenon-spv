@@ -91,6 +91,19 @@ confirms that inspection makes no RPC requests.
 
 ## Evidence limits
 
+`TestCompiledPinnedOperatorWorkflow` follows the [operator guide](operator-pilot.md)
+across real processes. It records build/configuration identity before state
+or RPC, pins an explicit anchor/profile/schedule, collects and initializes seven
+headers after the first corpus momentum, advances to the independently pinned ninth header with one watch
+tick, restarts into a caught-up tick, collects account evidence, verifies
+retained commitments/segments, and inspects the saved window. A synthetic
+frontier supplies only a height hint; fetched targets and headers retain
+the node corpus signatures. Dropping the schedule or changing the window
+must fail all six state commands without RPC or changes to state bytes,
+identity, mode, or modification time. Reports exclude private fixture paths,
+source labels, and credentialed endpoints. This scenario is included in each
+native platform's offline pilot artifact.
+
 This is synthetic offline inclusion evidence against explicitly trusted local
 anchor/state inputs. It does not validate VM execution, live activation,
 balance proofs, freshness, canonical-chain selection, or consensus finality.

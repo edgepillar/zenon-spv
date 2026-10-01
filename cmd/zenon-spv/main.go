@@ -3,6 +3,7 @@
 // Subcommands:
 //
 //	zenon-spv version            [--json]
+//	zenon-spv inspect-config     [--genesis-config ...] [--window ...] [--protocol-profile ...] [--schedule ...] [--json]
 //	zenon-spv inspect-state      --state <path> [--genesis-config ...] [--window ...] [--protocol-profile ...] [--schedule ...] [--json]
 //	zenon-spv verify-headers     [--window {low|medium|high}] [--genesis-config <path>] [--state <path>] <bundle.json>
 //	zenon-spv verify-commitment  [--window ...] [--genesis-config ...] [--state <path>] <bundle.json>
@@ -91,6 +92,7 @@ const usage = `zenon-spv — resource-bounded Zenon SPV verifier
 
 Usage:
   zenon-spv version            [--json]
+  zenon-spv inspect-config     [--genesis-config <path>] [--window ...] [--protocol-profile <path>] [--schedule <path>] [--json]
   zenon-spv inspect-state      --state <path> [--genesis-config <path>] [--window ...] [--protocol-profile <path>] [--schedule <path>] [--json]
   zenon-spv verify-headers     [--window {low|medium|high}] [--genesis-config <path>] [--state <path>] [--schedule <path>] <bundle.json>
   zenon-spv verify-commitment  [--window ...] [--genesis-config ...] [--state <path>] [--schedule <path>] <bundle.json>
@@ -102,6 +104,9 @@ Usage:
 Subcommands:
   version            Print privacy-filtered build identity without loading
                       configuration or state. --version is an alias.
+
+  inspect-config      Validate and describe configured verification settings
+                      without a bundle, state file, writer lock, or RPC request.
 
   inspect-state       Revalidate and describe an existing trusted local state.
                       No RPC requests, writer lock, or state writes. Success
@@ -146,13 +151,20 @@ values fail with exit 64 before configuration or evidence is loaded. Put all
 verify-* flags before the bundle path; watch accepts flags only.
 
 --protocol-profile <path> loads an anchor-bound, operator-attested momentum
-activation profile for verify-*, inspect-state, and watch. V2 requires this flag. Profiles
+activation profile for verify-*, inspect-config, inspect-state, and watch. V2 requires this flag. Profiles
 expire at their configured height and must match persisted state exactly.
 They do not independently prove activation. See docs/header-versions.md.
 
 --show-context prints a diagnostic JSON object with captured verifier settings
 and a configuration fingerprint. Available on verify-* and watch; excludes
 private audit metadata and does not imply verification success.
+
+--expect-context <64-hex> requires the captured verification context fingerprint
+to match before new evidence verification, watch RPC, or persistence. Available
+on verify-*, inspect-state, and watch. A mismatch is a setup error (exit 70),
+not a proof verdict. Obtain and review settings with inspect-config first.
+Existing state may be loaded/revalidated and a writer lock acquired before the
+comparison. The fingerprint does not authenticate provenance, peers, or binaries.
 
 --json selects a single schema-versioned JSON report for verify-* commands.
 It includes captured settings, per-item outcomes and guarantees, and separate
@@ -207,6 +219,8 @@ func main() {
 	switch os.Args[1] {
 	case "version", "--version":
 		os.Exit(buildinfo.Run("zenon-spv", os.Args[2:], os.Stdout, os.Stderr))
+	case "inspect-config":
+		os.Exit(runInspectConfig(os.Args[2:], os.Stdout, os.Stderr))
 	case "inspect-state":
 		os.Exit(runInspectState(os.Args[2:], os.Stdout, os.Stderr))
 	case "verify-headers":
@@ -255,6 +269,7 @@ func prepareVerifierContext(name string, args []string, out *verificationOutput)
 	profilePath := fs.String("protocol-profile", "", "path to an operator-attested momentum activation profile")
 	jsonOutput := fs.Bool("json", false, "emit one versioned JSON verification report")
 	showContext := fs.Bool("show-context", false, "print captured verification settings without private provenance metadata")
+	expectedContext := fs.String("expect-context", "", "require this 64-hex verification context fingerprint")
 	statePath := fs.String("state", "", "path to persisted HeaderState; load if present, save after ACCEPT")
 	retainedOnly := fs.Bool("retained-only", false, "query an existing trusted state without new headers or state writes (proof commands only)")
 	schedulePath := fs.String("schedule", "", "path to producer schedule JSON; when set, header producer authorization is required (tier-2 caveat)")
@@ -266,6 +281,11 @@ func prepareVerifierContext(name string, args []string, out *verificationOutput)
 	if fs.NArg() != 1 {
 		_, _ = fmt.Fprintf(out.diagnostics, "%s: expected exactly one bundle path\n", name)
 		fs.Usage()
+		return verifierContext{}, 64
+	}
+	pin, err := parseContextPin(fs, *expectedContext)
+	if err != nil {
+		_, _ = fmt.Fprintln(out.diagnostics, err)
 		return verifierContext{}, 64
 	}
 	proofCommand := name == "verify-commitment" || name == "verify-segment" || name == "verify-state-value"
@@ -365,6 +385,13 @@ func prepareVerifierContext(name string, args []string, out *verificationOutput)
 		}
 		_, _ = fmt.Fprintf(out.diagnostics, "state: %v\n", err)
 		return verifierContext{}, 70
+	}
+	if pin != nil {
+		out.stage = "context_pin"
+		if err := state.RequireContextFingerprint(*pin); err != nil {
+			_, _ = fmt.Fprintf(out.diagnostics, "verification context: %v\n", err)
+			return verifierContext{}, 70
+		}
 	}
 	if *retainedOnly && state.Empty() {
 		out.record(reportReference{Scope: "state"}, verify.Result{Outcome: verify.OutcomeRefused, Reason: verify.ReasonMissingEvidence, FailedAt: -1})
@@ -504,6 +531,7 @@ func runWatch(args []string) int {
 	genesisConfig := fs.String("genesis-config", "", "path to genesis trust root JSON file (overrides env)")
 	profilePath := fs.String("protocol-profile", "", "path to an operator-attested momentum activation profile")
 	showContext := fs.Bool("show-context", false, "log captured verification settings without private provenance metadata")
+	expectedContext := fs.String("expect-context", "", "require this 64-hex verification context fingerprint")
 	jsonOutput := fs.Bool("json", false, "emit versioned JSON Lines watch events on stdout")
 	once := fs.Bool("once", false, "attempt one bounded tick, save accepted state, and exit with its outcome")
 	statePath := fs.String("state", "", "path to persisted HeaderState (required)")
@@ -523,6 +551,11 @@ func runWatch(args []string) int {
 	}
 	if fs.NArg() != 0 {
 		fmt.Fprintln(os.Stderr, "watch does not accept positional arguments")
+		return 64
+	}
+	pin, err := parseContextPin(fs, *expectedContext)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		return 64
 	}
 	policy, err := parseWindowPolicy(*tier)
@@ -594,17 +627,18 @@ func runWatch(args []string) int {
 	}
 
 	loop := &syncer.Loop{
-		Multi:        multi,
-		StatePath:    *statePath,
-		Genesis:      genesis,
-		Policy:       policy,
-		Authorizer:   authorizer,
-		Interval:     *interval,
-		SafetyMargin: *safetyMargin,
-		BatchSize:    *batchSize,
-		Out:          os.Stderr,
-		ShowContext:  *showContext,
-		JSON:         *jsonOutput,
+		Multi:           multi,
+		StatePath:       *statePath,
+		Genesis:         genesis,
+		Policy:          policy,
+		Authorizer:      authorizer,
+		Interval:        *interval,
+		SafetyMargin:    *safetyMargin,
+		BatchSize:       *batchSize,
+		Out:             os.Stderr,
+		ShowContext:     *showContext,
+		JSON:            *jsonOutput,
+		ExpectedContext: pin,
 	}
 
 	// Surface the ACCEPT caveat once at startup. Per-tick ACCEPT logs
