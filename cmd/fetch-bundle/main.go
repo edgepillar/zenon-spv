@@ -41,6 +41,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
@@ -158,16 +159,19 @@ func run(args []string) error {
 	defer cancel()
 
 	var detailed []fetch.DetailedHeader
+	var selectedTarget *chain.Header
 	var sourceLabel string
 	if multi {
 		mc := fetch.NewMultiClient(urls)
 		if *quorum > 0 {
 			mc.Quorum = *quorum
 		}
-		end, err := resolveEndHeightMulti(ctx, mc, *heightArg, *safetyMargin)
+		target, err := resolveEndHeaderMulti(ctx, mc, *heightArg, *safetyMargin)
 		if err != nil {
 			return err
 		}
+		selectedTarget = &target
+		end := target.Height
 		if end <= uint64(*count) {
 			return fmt.Errorf("end height %d too low for --count=%d and a positive checkpoint", end, *count)
 		}
@@ -179,10 +183,11 @@ func run(args []string) error {
 		sourceLabel = fmt.Sprintf("multi-peer (n=%d, quorum=%d)", len(urls), mc.Quorum)
 	} else {
 		client := fetch.NewClient(*rpcURL)
-		end, err := resolveEndHeight(ctx, client, *heightArg)
+		end, observedTarget, err := resolveEndHeight(ctx, client, *heightArg)
 		if err != nil {
 			return err
 		}
+		selectedTarget = observedTarget
 		if end <= uint64(*count) {
 			return fmt.Errorf("end height %d too low for --count=%d and a positive checkpoint", end, *count)
 		}
@@ -196,6 +201,13 @@ func run(args []string) error {
 
 	if uint64(len(detailed)) != requestedCount {
 		return fmt.Errorf("internal: got %d detailed momentums, expected %d", len(detailed), requestedCount)
+	}
+	if selectedTarget != nil {
+		last := detailed[len(detailed)-1].Header
+		if last.Height != selectedTarget.Height || last.HeaderHash != selectedTarget.HeaderHash ||
+			!bytes.Equal(last.PublicKey, selectedTarget.PublicKey) || !bytes.Equal(last.Signature, selectedTarget.Signature) {
+			return errors.New("fetched range differs from the selected target")
+		}
 	}
 	anchor := detailed[0].Header
 	bundleDetailed := detailed[1:]
@@ -476,29 +488,26 @@ func splitPeers(s string) []string {
 	return out
 }
 
-func resolveEndHeightMulti(ctx context.Context, mc *fetch.MultiClient, requested int64, safety uint64) (uint64, error) {
+func resolveEndHeaderMulti(ctx context.Context, mc *fetch.MultiClient, requested int64, safety uint64) (chain.Header, error) {
 	if requested >= 0 {
 		// Caller pinned a height; just verify all peers agree at it.
 		headers, err := mc.FetchByHeight(ctx, uint64(requested), 1)
 		if err != nil {
-			return 0, err
+			return chain.Header{}, err
 		}
-		return headers[0].Height, nil
+		return headers[0], nil
 	}
-	h, err := mc.FetchFrontierAtAgreedHeight(ctx, safety)
-	if err != nil {
-		return 0, err
-	}
-	return h.Height, nil
+	return mc.FetchFrontierAtAgreedHeight(ctx, safety)
 }
 
-func resolveEndHeight(ctx context.Context, c *fetch.Client, requested int64) (uint64, error) {
+// An explicit single-peer height has no earlier observed envelope to compare.
+func resolveEndHeight(ctx context.Context, c *fetch.Client, requested int64) (uint64, *chain.Header, error) {
 	if requested >= 0 {
-		return uint64(requested), nil
+		return uint64(requested), nil, nil
 	}
 	frontier, err := c.FetchFrontier(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("frontier: %w", err)
+		return 0, nil, fmt.Errorf("frontier: %w", err)
 	}
-	return frontier.Height, nil
+	return frontier.Height, &frontier, nil
 }

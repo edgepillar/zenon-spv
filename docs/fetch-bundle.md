@@ -57,6 +57,19 @@ Nodes may impose smaller limits; response byte caps also apply.
 
 ## Evidence and output bounds
 
+When target selection observes a signed header, the fetched range must end
+with the same hash, public key, and signature. This covers single-peer frontier
+selection and both explicit-height and frontier selection with multiple peers.
+A conflict fails before fetching account segments, encoding candidate evidence,
+or publishing files/stdout, including `--proof-only` output. Existing bundle
+and checkpoint destinations remain untouched.
+
+An explicit single-peer height performs only the range query and has no earlier
+header to compare; no extra RPC request is added to that path. Matching the
+selected envelope is only a consistency check between observed responses. The
+candidate still requires the verifier's signature, linkage, and policy checks,
+and a fetched checkpoint is not an independent trust root.
+
 Assembly permits at most 10000 commitments, 100000 content members per flat
 evidence item, and 1000000 flat members in total. The aggregate counts every
 serialized repetition: sharing a content slice in memory does not reduce its
