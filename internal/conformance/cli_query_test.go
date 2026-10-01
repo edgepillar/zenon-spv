@@ -3,6 +3,7 @@ package conformance_test
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -339,6 +340,24 @@ func buildQueryCLIs(t *testing.T, names ...string) map[string]string {
 		if err != nil {
 			t.Fatalf("build %s: %v\n%s", name, err, output)
 		}
+		file, err := os.Open(path)
+		if err != nil {
+			t.Fatal("cannot open compiled CLI for its execution record")
+		}
+		digest := sha256.New()
+		_, hashErr := io.Copy(digest, file)
+		closeErr := file.Close()
+		if hashErr != nil || closeErr != nil {
+			t.Fatal("cannot hash compiled CLI for its execution record")
+		}
+		record, err := json.Marshal(struct {
+			Command string `json:"command"`
+			SHA256  string `json:"sha256"`
+		}{name, fmt.Sprintf("%x", digest.Sum(nil))})
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Logf("offline-pilot-binary %s", record)
 		bins[name] = path
 	}
 	return bins

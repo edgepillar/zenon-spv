@@ -12,14 +12,18 @@ go test -race ./internal/conformance -run TestCompiledCLIQueryWorkflow -v
 ```
 
 It also runs as part of ordinary `go test ./...`. CI executes the full suite
-on native Linux, macOS, and Windows runners. The macOS/Windows jobs disable
-test-result caching with `-count=1`; Linux retains its race-enabled test and
-lint job. No public RPC, wallet, or credentials are required.
+on native Linux, macOS, and Windows runners, with test-result caching disabled
+by `-count=1`. Linux also enables the race detector and lint job.
+No public RPC, wallet, or credentials are required.
 Subprocess builds use the local Go toolchain and cached dependencies
 with module/network lookup disabled. The normal repository dependencies must
 already be available, as they are after the parent test build.
 Command and internal helper source files are registered as test inputs so
 an edit to a package used only by the CLI invalidates Go's cached result.
+Successful executable builds emit a fixed command name and SHA-256 record
+through the test logger. The [offline pilot](offline-pilot.md) consumes these
+records alongside uncached test events; paths and raw output are not copied
+into its report.
 
 ## Exercised boundaries
 

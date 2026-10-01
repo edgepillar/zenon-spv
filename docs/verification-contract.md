@@ -95,6 +95,11 @@ does not establish activation on any public network.
    peers, producer-coverage gaps, resource limits, and persistence failures.
    Record the exact source, binary, trust inputs, and bounded outcomes.
 
+The [offline pilot](offline-pilot.md) makes a selected synthetic conformance
+run repeatable and records source/executable hashes, scenario results, and
+skipped checks on each native CI platform. Its loopback fixtures do not
+complete the independent network-provenance or deployment gates above.
+
 Chain-derived election inputs, fork selection/finality, and authenticated
 state-value proofs are separate research milestones. Bitcoin SPV and Portal
 are outside this native-client milestone. Passing the corpus or CI alone does
