@@ -107,6 +107,10 @@ func TestCompiledCLIStateWriterExclusion(t *testing.T) {
 	if otherWatch.code != 70 || !bytes.Contains(otherWatch.stderr, []byte("already has an active writer")) || requests.Load() != 1 {
 		t.Fatal("second watch reached RPC before rejecting state ownership")
 	}
+	oneStep := runQueryCLI(t, bin, append(slices.Clone(watchArgs), "--once", "--json")...)
+	if oneStep.code != 70 || len(oneStep.stdout) != 0 || string(oneStep.stderr) != "watch: operation failed\n" || requests.Load() != 1 {
+		t.Fatal("single-step watch bypassed writer ownership or exposed a private setup error")
+	}
 	query := append([]string{"verify-commitment"}, append(slices.Clone(common), "--retained-only", proofPath)...)
 	readOnly := checkProcessReport(t, runQueryCLI(t, bin, query...), 2, "REFUSED")
 	if readOnly.Error != nil || readOnly.Persistence != "read_only" || len(readOnly.Results) != 5 || readOnly.Results[0].Reason != "ReasonInsufficientFinality" {

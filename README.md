@@ -207,6 +207,12 @@ settings, explicit trust inputs, and separate verification and persistence
 results. A caught-up event does not claim fresh header verification. See
 [watch events](docs/watch-events.md) for the schema and delivery boundaries.
 
+`watch --once` performs one bounded synchronization step and returns its outcome:
+0 after saving accepted state, 1 for rejected evidence, 2 for insufficient
+evidence, or 70 for an operational failure. It works with `--json` and releases
+the writer lock before exiting. A successful step can leave more headers to
+fetch; see [single-step watch](docs/watch-persistence.md#single-step-watch).
+
 ## What ACCEPT actually proves
 
 After this PR set, every ACCEPT result carries machine-readable lists:

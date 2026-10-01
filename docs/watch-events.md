@@ -85,7 +85,11 @@ The stream starts only after successful state loading. It has no guaranteed
 terminal event. Consumers must read complete newline-terminated records and
 check the process exit status: graceful shutdown is 0, usage errors are 64,
 and returned operational errors are 70. REJECT and REFUSED ticks remain
-nonfatal and do not determine the eventual process exit status. Fatal setup
+nonfatal in continuous mode and do not determine its eventual process exit
+status. With `--once`, exactly one tick is attempted: saved ACCEPT exits 0,
+REJECT exits 1, and REFUSED exits 2; operational failures still take precedence
+with exit 70. See [single-step watch](watch-persistence.md#single-step-watch).
+Fatal setup
 or runtime failures after argument parsing use stage-only stderr diagnostics
 in JSON mode; parser/help output remains the ordinary CLI stderr interface.
 Cancellation observed between ticks stops before another RPC round, including

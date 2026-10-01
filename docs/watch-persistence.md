@@ -96,6 +96,47 @@ persistence adapter. The adapter cannot mutate the retained state through
 its argument. Startup reports the handle's configured-anchor and persisted-
 state trust assumptions; see the [verified state API](verified-state-api.md).
 
+## Single-step watch
+
+`watch --once` loads the existing trusted state and attempts one tick, using
+the same peer selection, quorum, verification, resource limits, writer lock,
+and persistence path as the continuous service. It does not bootstrap an empty
+state. `syncer.Loop.RunOnce(ctx)` supplies the same behavior for internal callers.
+
+```sh
+zenon-spv watch --once --json --peers "$ZENON_SPV_PEERS" \
+  --state trusted-state.json --genesis-config checkpoint.json --batch-size 60
+```
+
+| Exit | Meaning |
+| --- | --- |
+| 0 | The tick accepted and its state save and output completed. It may have advanced one batch or only saved an already caught-up state. |
+| 1 | New header evidence was rejected; no state save occurred. |
+| 2 | Evidence was unavailable or verification refused; no state save occurred. |
+| 64 | Invalid invocation or local options. |
+| 70 | Setup, persistence, reporting, or lock release failed. This takes precedence over a verification outcome. |
+
+The operation stops after this tick even when its batch leaves the retained
+tip below the target. It never waits for `--interval`, starts another catch-up
+batch, or retries a failed save. JSON startup settings report the effective
+save-failure limit of one. All options are still validated, including a
+negative interval or invalid embedder save-failure limit.
+
+For `RunOnce`, a nil error means the tick was reported and its required save
+completed; callers must separately inspect `TickResult.Outcome`. A non-nil
+error takes precedence even if header verification returned ACCEPT. Cancellation
+before any tick returns the context error, not a successful empty operation.
+Cancellation during RPC can produce a completed REFUSED tick. Output failure
+does not undo a completed save, and a save failure after replacement does not
+prove rollback. After acquisition, writer-lock release is attempted on every
+return path, and a release error takes precedence over the tick outcome.
+
+The bound is one batch of header work, not a total memory or wall-clock limit.
+RPC timeouts and the supplied context still control network waits. Caught-up
+state is relative to configured peers and does not establish independent
+freshness, canonicality, or finality. Continuous watch remains the default;
+`--once=false` preserves its polling and retry behavior.
+
 ## Output delivery
 
 When `Loop.Out` is configured, a write error or short write terminates `Run`

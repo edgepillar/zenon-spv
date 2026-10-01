@@ -127,7 +127,27 @@ type TickResult struct {
 // attempts, or on a startup/tick output failure. A successful save resets
 // the counter. Output failures do not roll back completed saves. Verification
 // failures (REJECT/REFUSED) remain nonfatal when reporting succeeds.
-func (l *Loop) Run(ctx context.Context) (runErr error) {
+func (l *Loop) Run(ctx context.Context) error {
+	return l.run(ctx, nil)
+}
+
+// RunOnce loads trusted state under its writer lock and attempts one tick.
+// It never polls again or retries a failed save. A nil error means the tick
+// was reported and any required save completed; callers must still inspect
+// Outcome for REJECT/REFUSED. ACCEPT can mean a partial advance or caught-up
+// state relative to configured peers, not independent freshness or finality.
+//
+// A non-nil error takes precedence over Outcome, including when verification
+// accepted but saving, reporting, or lock release failed. Cancellation before
+// a tick returns the context error, not a successful empty run. The result
+// has no completed-tick meaning when setup fails.
+func (l *Loop) RunOnce(ctx context.Context) (TickResult, error) {
+	result := TickResult{Outcome: verify.OutcomeRefused, Reason: verify.ReasonMissingEvidence}
+	err := l.run(ctx, &result)
+	return result, err
+}
+
+func (l *Loop) run(ctx context.Context, singleResult *TickResult) (runErr error) {
 	saveState := func(path string, state verify.VerifiedState) error { return state.Save(path) }
 	if adapter := l.SaveState; adapter != nil {
 		saveState = func(path string, state verify.VerifiedState) error { return adapter(path, state.Snapshot()) }
@@ -150,6 +170,9 @@ func (l *Loop) Run(ctx context.Context) (runErr error) {
 	maxSaveFailures := l.MaxStateSaveFailures
 	if maxSaveFailures == 0 {
 		maxSaveFailures = DefaultMaxStateSaveFailures
+	}
+	if singleResult != nil {
+		maxSaveFailures = 1
 	}
 	if l.Interval == 0 {
 		l.Interval = DefaultInterval
@@ -195,14 +218,23 @@ func (l *Loop) Run(ctx context.Context) (runErr error) {
 	for {
 		select {
 		case <-ctx.Done():
+			if singleResult != nil {
+				return ctx.Err()
+			}
 			return nil
 		case <-timer.C:
 			// An immediate catch-up timer and cancellation may both be ready.
 			// Observe shutdown before starting another query or emitting a tick.
 			if ctx.Err() != nil {
+				if singleResult != nil {
+					return ctx.Err()
+				}
 				return nil
 			}
 			res, newState := l.tick(ctx, state)
+			if singleResult != nil {
+				*singleResult = res
+			}
 			persistedProgress := false
 			if res.Outcome == verify.OutcomeAccept {
 				if err := saveState(l.StatePath, newState); err != nil {
@@ -225,6 +257,9 @@ func (l *Loop) Run(ctx context.Context) (runErr error) {
 				if err := l.logIteration(res, state, nil, saveFailures, maxSaveFailures); err != nil {
 					return err
 				}
+			}
+			if singleResult != nil {
+				return nil
 			}
 			// Only a successfully persisted advance can trigger immediate
 			// catch-up. Failed saves retry from the retained state after

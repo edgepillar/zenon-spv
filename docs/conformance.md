@@ -146,6 +146,10 @@ State-value layer:
       private paths or source metadata. Caught-up ticks do not invent header
       verification; failed saves retain the in-memory tip even after replacement.
       See [`watch-events.md`](watch-events.md) for the stream boundary.
+- [x] `watch --once` shares the service's verification and persistence path,
+      attempts only one bounded tick/save, returns distinct evidence outcomes,
+      and releases writer ownership. Failed saves/output take precedence over
+      ACCEPT; a partial batch does not claim full catch-up.
 - [x] State save/load revalidate every retained header before truncation and
       enforce byte/capacity bounds, including the header count during JSON
       decoding; see [`watch-persistence.md`](watch-persistence.md).
