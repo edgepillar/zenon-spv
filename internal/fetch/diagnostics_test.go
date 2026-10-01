@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
@@ -157,7 +158,7 @@ func TestMultiPeerDiagnosticsUsePositions(t *testing.T) {
 			if !errors.Is(err, ErrNotEnoughPeers) || strings.Contains(err.Error(), privateDiagnosticMarker) || strings.Contains(err.Error(), dead.URL) {
 				t.Error("quorum failure disclosed endpoint or remote response data")
 			}
-			if mode != "frontier" && (!strings.Contains(err.Error(), "peer[1]") || !strings.Contains(err.Error(), "peer[2]")) {
+			if !strings.Contains(err.Error(), "peer[1]") || !strings.Contains(err.Error(), "peer[2]") {
 				t.Error("quorum error did not identify configured positions")
 			}
 		})
@@ -174,5 +175,61 @@ func TestMultiPeerDiagnosticsUsePositions(t *testing.T) {
 		if !errors.Is(err, ErrPeerDisagreement) || strings.Contains(err.Error(), privateDiagnosticMarker) || !strings.Contains(err.Error(), "peer[1]") || !strings.Contains(err.Error(), "peer[2]") {
 			t.Error("disagreement disclosed endpoints or lost peer positions")
 		}
+	}
+}
+
+func TestFrontierQuorumFailureSummarizesOnlyFailedPositions(t *testing.T) {
+	var rangeRequests atomic.Int32
+	var urls []string
+	for _, mode := range []string{"HTTP", "good", "RPC", "envelope"} {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var request struct{ Method string }
+			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+				t.Error(err)
+				return
+			}
+			if request.Method != "ledger.getFrontierMomentum" {
+				rangeRequests.Add(1)
+			}
+			switch mode {
+			case "HTTP":
+				http.Error(w, privateDiagnosticMarker, http.StatusServiceUnavailable)
+			case "RPC":
+				_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": 1,
+					"error": map[string]any{"code": -32000, "message": privateDiagnosticMarker}})
+			default:
+				id := 1
+				if mode == "envelope" {
+					id++
+				}
+				_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": id,
+					"result": emptyContentMomentum(99)})
+			}
+		}))
+		t.Cleanup(server.Close)
+		urls = append(urls, privatePeerURL(server.URL))
+	}
+	multi := NewMultiClient(urls)
+	multi.Quorum = 2
+	header, err := multi.FetchFrontierAtAgreedHeight(context.Background(), 1)
+	if !errors.Is(err, ErrNotEnoughPeers) || header.Height != 0 || rangeRequests.Load() != 0 {
+		t.Fatalf("failed frontier quorum continued with evidence: %v", err)
+	}
+	message := err.Error()
+	for _, want := range []string{"1/4 peers reached on frontier", "quorum=2", "503", "-32000", "invalid JSON-RPC response"} {
+		if !strings.Contains(message, want) {
+			t.Errorf("frontier failure omitted %q: %s", want, message)
+		}
+	}
+	previous := -1
+	for _, position := range []int{0, 2, 3} {
+		index := strings.Index(message, PeerLabel(position))
+		if index <= previous {
+			t.Errorf("failed positions missing or out of configuration order: %s", message)
+		}
+		previous = index
+	}
+	if strings.Contains(message, PeerLabel(1)) || strings.Contains(message, privateDiagnosticMarker) || strings.Contains(message, "127.0.0.1") {
+		t.Fatal("frontier failure misidentified a usable peer or disclosed private data")
 	}
 }

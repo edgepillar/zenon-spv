@@ -196,7 +196,14 @@ func (m *MultiClient) FetchFrontierAtAgreedHeight(ctx context.Context, safetyMar
 		usable = append(usable, h)
 	}
 	if len(usable) < q {
-		return chain.Header{}, fmt.Errorf("%w: %d/%d peers reached on frontier", ErrNotEnoughPeers, len(usable), len(m.Peers))
+		var failures []string
+		for i, err := range errs {
+			if err != nil {
+				failures = append(failures, fmt.Sprintf("  %s: %v", PeerLabel(i), err))
+			}
+		}
+		return chain.Header{}, fmt.Errorf("%w: %d/%d peers reached on frontier; quorum=%d; errors:\n%s",
+			ErrNotEnoughPeers, len(usable), len(m.Peers), q, strings.Join(failures, "\n"))
 	}
 	// Median tolerates up to floor((n-1)/2) Byzantine peers without
 	// dragging the target. Sort in place (caller owns `usable`).
