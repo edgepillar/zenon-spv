@@ -39,6 +39,8 @@ audit history.
   K=16/256/4096 workload costs, saved size and measurement boundaries.
 - [`state-read-allocations.md`](state-read-allocations.md) — bounded file reads,
   allocation reductions and preserved saved-state verification checks.
+- [`bundle-read-allocations.md`](bundle-read-allocations.md) — bounded proof-file
+  allocation hints, unchanged read/decoding contracts and measured load costs.
 - [`content-hash-allocations.md`](content-hash-allocations.md) — shared canonical
   encoding, immutable index sorting, differential checks and before/after costs.
 - [`flat-content-resources.md`](flat-content-resources.md) — node-derived content

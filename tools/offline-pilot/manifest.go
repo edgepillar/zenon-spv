@@ -20,6 +20,7 @@ var scenarios = []scenario{
 	{"compiled_delayed_inclusion", "internal/conformance", "TestCompiledDelayedInclusionWorkflow", []string{"zenon-spv", "fetch-bundle"}},
 	{"retained_capacity_workloads", "internal/conformance", "TestRetainedCapacityWorkloads", nil},
 	{"bounded_state_reader", "internal/verify", "TestSizedStateReadContract", nil},
+	{"bounded_bundle_reader", "internal/proof", "TestSizedBundleReadContract", nil},
 	{"node_content_scaling", "internal/conformance", "TestNodeContentScaling", nil},
 	{"compiled_content_scaling", "internal/conformance", "TestCompiledContentScalingWorkflow", []string{"zenon-spv"}},
 	{"content_hash_serialization", "internal/chain", "TestMomentumContentHashSerializationContract", nil},

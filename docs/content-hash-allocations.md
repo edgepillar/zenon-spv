@@ -75,6 +75,10 @@ The offline pilot adds the serialization contract as its 34th scenario.
 
 ## Recorded comparison
 
+This records the hash implementation change. The subsequent
+[bundle input comparison](bundle-read-allocations.md) keeps these content
+workloads and measures the separate raw file-buffer allocation change.
+
 The source-input fingerprints are:
 
 - Before: `a904e1827f53c5d776142fded425b54c53960a8892351cc430097238fe6b7684`.

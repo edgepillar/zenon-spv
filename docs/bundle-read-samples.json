@@ -1,0 +1,1077 @@
+{
+  "schema_version": 1,
+  "mode": "local_synthetic_bundle_read_comparison",
+  "recorded_date": "2026-10-02",
+  "input_scope": "offline-pilot Go/module/JSON inputs; excludes docs, CI and Python checkers",
+  "runner": {
+    "os": "darwin",
+    "architecture": "arm64",
+    "go_version": "go1.25.14",
+    "benchmark_cpu": 1,
+    "cpu_identity": "omitted",
+    "race": false
+  },
+  "environment_controls": [
+    "GOENV=off",
+    "GOFLAGS=",
+    "GOWORK=off",
+    "GOTOOLCHAIN=local",
+    "GOPROXY=off",
+    "GOSUMDB=off"
+  ],
+  "benchmark_command": "go test -run '^$' -bench '^BenchmarkFlatContent$' -benchmem -cpu=1 -benchtime=1s -count=5 ./internal/conformance",
+  "process_command": "go test -json -count=5 -run '^TestCompiledContentScalingWorkflow$' ./internal/conformance",
+  "runs": [
+    {
+      "label": "before",
+      "source": {
+        "base_revision": "f90b4439b9a0d0e56e5cb830489880471764f83d",
+        "modified": false,
+        "benchmark_harness_sha256": "8511435fd1564478e2c5996f441c03fe13ae0dd0f9f1c9bd887605cd085ae199",
+        "inputs_sha256": "5330eaa50eeb3c8695a6b460a869c48dd67047763b81536c4af7d57865660eb2",
+        "production_sha256": {
+          "internal/proof/serialize.go": "bcff28d5a30787f26bda836cd9fbb53ad37f5a97584ead844c8ee19a3bc6750e",
+          "internal/proof/bundle_read.go": null
+        }
+      },
+      "compiled_binary": {
+        "command": "zenon-spv",
+        "sha256": "a764ab8ed659df651e11e82bde58c24e1b8e84664ad038a9c41166dc3917041e"
+      },
+      "benchmarks": [
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M1_P1",
+          "operation": "Verify",
+          "members": 1,
+          "samples": [
+            {
+              "iterations": 1000000,
+              "ns_per_op": 1106.0,
+              "allocated_bytes_per_op": 448,
+              "allocations_per_op": 11
+            },
+            {
+              "iterations": 1000000,
+              "ns_per_op": 1083.0,
+              "allocated_bytes_per_op": 448,
+              "allocations_per_op": 11
+            },
+            {
+              "iterations": 1000000,
+              "ns_per_op": 1085.0,
+              "allocated_bytes_per_op": 448,
+              "allocations_per_op": 11
+            },
+            {
+              "iterations": 1000000,
+              "ns_per_op": 1083.0,
+              "allocated_bytes_per_op": 448,
+              "allocations_per_op": 11
+            },
+            {
+              "iterations": 1000000,
+              "ns_per_op": 1077.0,
+              "allocated_bytes_per_op": 448,
+              "allocations_per_op": 11
+            }
+          ],
+          "proofs": 1,
+          "input_bytes": 476
+        },
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M1_P1",
+          "operation": "LoadAndVerify",
+          "members": 1,
+          "samples": [
+            {
+              "iterations": 46190,
+              "ns_per_op": 26363.0,
+              "allocated_bytes_per_op": 10144,
+              "allocations_per_op": 152
+            },
+            {
+              "iterations": 44732,
+              "ns_per_op": 26508.0,
+              "allocated_bytes_per_op": 10144,
+              "allocations_per_op": 152
+            },
+            {
+              "iterations": 45655,
+              "ns_per_op": 26546.0,
+              "allocated_bytes_per_op": 10144,
+              "allocations_per_op": 152
+            },
+            {
+              "iterations": 45961,
+              "ns_per_op": 26230.0,
+              "allocated_bytes_per_op": 10144,
+              "allocations_per_op": 152
+            },
+            {
+              "iterations": 44997,
+              "ns_per_op": 26667.0,
+              "allocated_bytes_per_op": 10144,
+              "allocations_per_op": 152
+            }
+          ],
+          "proofs": 1,
+          "input_bytes": 476
+        },
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M1000_P1",
+          "operation": "Verify",
+          "members": 1000,
+          "samples": [
+            {
+              "iterations": 16576,
+              "ns_per_op": 72205.0,
+              "allocated_bytes_per_op": 8640,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 16744,
+              "ns_per_op": 71898.0,
+              "allocated_bytes_per_op": 8640,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 16731,
+              "ns_per_op": 71816.0,
+              "allocated_bytes_per_op": 8640,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 16868,
+              "ns_per_op": 71425.0,
+              "allocated_bytes_per_op": 8640,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 16746,
+              "ns_per_op": 71800.0,
+              "allocated_bytes_per_op": 8640,
+              "allocations_per_op": 12
+            }
+          ],
+          "proofs": 1,
+          "input_bytes": 142232
+        },
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M1000_P1",
+          "operation": "LoadAndVerify",
+          "members": 1000,
+          "samples": [
+            {
+              "iterations": 324,
+              "ns_per_op": 3689928.0,
+              "allocated_bytes_per_op": 2193784,
+              "allocations_per_op": 5194
+            },
+            {
+              "iterations": 327,
+              "ns_per_op": 3710441.0,
+              "allocated_bytes_per_op": 2193784,
+              "allocations_per_op": 5194
+            },
+            {
+              "iterations": 324,
+              "ns_per_op": 3709242.0,
+              "allocated_bytes_per_op": 2193784,
+              "allocations_per_op": 5194
+            },
+            {
+              "iterations": 325,
+              "ns_per_op": 3700913.0,
+              "allocated_bytes_per_op": 2193784,
+              "allocations_per_op": 5194
+            },
+            {
+              "iterations": 326,
+              "ns_per_op": 3645806.0,
+              "allocated_bytes_per_op": 2193784,
+              "allocations_per_op": 5194
+            }
+          ],
+          "proofs": 1,
+          "input_bytes": 142232
+        },
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M100000_P1",
+          "operation": "Verify",
+          "members": 100000,
+          "samples": [
+            {
+              "iterations": 171,
+              "ns_per_op": 6957056.0,
+              "allocated_bytes_per_op": 803265,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 172,
+              "ns_per_op": 6911655.0,
+              "allocated_bytes_per_op": 803265,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 172,
+              "ns_per_op": 6946203.0,
+              "allocated_bytes_per_op": 803265,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 170,
+              "ns_per_op": 6944116.0,
+              "allocated_bytes_per_op": 803265,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 172,
+              "ns_per_op": 6910455.0,
+              "allocated_bytes_per_op": 803265,
+              "allocations_per_op": 12
+            }
+          ],
+          "proofs": 1,
+          "input_bytes": 14389236
+        },
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M100000_P1",
+          "operation": "LoadAndVerify",
+          "members": 100000,
+          "samples": [
+            {
+              "iterations": 4,
+              "ns_per_op": 301861438.0,
+              "allocated_bytes_per_op": 205361284,
+              "allocations_per_op": 500243
+            },
+            {
+              "iterations": 4,
+              "ns_per_op": 299393208.0,
+              "allocated_bytes_per_op": 205361276,
+              "allocations_per_op": 500243
+            },
+            {
+              "iterations": 4,
+              "ns_per_op": 304171552.0,
+              "allocated_bytes_per_op": 205361284,
+              "allocations_per_op": 500243
+            },
+            {
+              "iterations": 4,
+              "ns_per_op": 300357583.0,
+              "allocated_bytes_per_op": 205361284,
+              "allocations_per_op": 500243
+            },
+            {
+              "iterations": 4,
+              "ns_per_op": 300081562.0,
+              "allocated_bytes_per_op": 205361276,
+              "allocations_per_op": 500243
+            }
+          ],
+          "proofs": 1,
+          "input_bytes": 14389236
+        },
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M100000_P4",
+          "operation": "Verify",
+          "members": 100000,
+          "samples": [
+            {
+              "iterations": 42,
+              "ns_per_op": 26981067.0,
+              "allocated_bytes_per_op": 3213060,
+              "allocations_per_op": 48
+            },
+            {
+              "iterations": 44,
+              "ns_per_op": 27088704.0,
+              "allocated_bytes_per_op": 3213060,
+              "allocations_per_op": 48
+            },
+            {
+              "iterations": 44,
+              "ns_per_op": 27325927.0,
+              "allocated_bytes_per_op": 3213060,
+              "allocations_per_op": 48
+            },
+            {
+              "iterations": 43,
+              "ns_per_op": 27107781.0,
+              "allocated_bytes_per_op": 3213060,
+              "allocations_per_op": 48
+            },
+            {
+              "iterations": 43,
+              "ns_per_op": 27510304.0,
+              "allocated_bytes_per_op": 3213060,
+              "allocations_per_op": 48
+            }
+          ],
+          "proofs": 4,
+          "input_bytes": 57556508
+        },
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M100000_P4",
+          "operation": "LoadAndVerify",
+          "members": 100000,
+          "samples": [
+            {
+              "iterations": 1,
+              "ns_per_op": 1188835208.0,
+              "allocated_bytes_per_op": 707469040,
+              "allocations_per_op": 2000447
+            },
+            {
+              "iterations": 1,
+              "ns_per_op": 1177809292.0,
+              "allocated_bytes_per_op": 707469040,
+              "allocations_per_op": 2000447
+            },
+            {
+              "iterations": 1,
+              "ns_per_op": 1186180375.0,
+              "allocated_bytes_per_op": 707469040,
+              "allocations_per_op": 2000447
+            },
+            {
+              "iterations": 1,
+              "ns_per_op": 1171010125.0,
+              "allocated_bytes_per_op": 707469040,
+              "allocations_per_op": 2000447
+            },
+            {
+              "iterations": 1,
+              "ns_per_op": 1185556750.0,
+              "allocated_bytes_per_op": 707469040,
+              "allocations_per_op": 2000447
+            }
+          ],
+          "proofs": 4,
+          "input_bytes": 57556508
+        }
+      ],
+      "process_samples": [
+        {
+          "workload": "M1_P1",
+          "members_per_proof": 1,
+          "proofs": 1,
+          "input_bytes": 476,
+          "elapsed_ns": 6643459,
+          "peak_rss_bytes": 11091968,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1000_P1",
+          "members_per_proof": 1000,
+          "proofs": 1,
+          "input_bytes": 142232,
+          "elapsed_ns": 8219041,
+          "peak_rss_bytes": 13090816,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P1",
+          "members_per_proof": 100000,
+          "proofs": 1,
+          "input_bytes": 14389236,
+          "elapsed_ns": 320558583,
+          "peak_rss_bytes": 98025472,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P4",
+          "members_per_proof": 100000,
+          "proofs": 4,
+          "input_bytes": 57556508,
+          "elapsed_ns": 1241466583,
+          "peak_rss_bytes": 298483712,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1_P1",
+          "members_per_proof": 1,
+          "proofs": 1,
+          "input_bytes": 476,
+          "elapsed_ns": 6295333,
+          "peak_rss_bytes": 10993664,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1000_P1",
+          "members_per_proof": 1000,
+          "proofs": 1,
+          "input_bytes": 142232,
+          "elapsed_ns": 8469834,
+          "peak_rss_bytes": 13254656,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P1",
+          "members_per_proof": 100000,
+          "proofs": 1,
+          "input_bytes": 14389236,
+          "elapsed_ns": 320009917,
+          "peak_rss_bytes": 100433920,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P4",
+          "members_per_proof": 100000,
+          "proofs": 4,
+          "input_bytes": 57556508,
+          "elapsed_ns": 1222655709,
+          "peak_rss_bytes": 297926656,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1_P1",
+          "members_per_proof": 1,
+          "proofs": 1,
+          "input_bytes": 476,
+          "elapsed_ns": 6427750,
+          "peak_rss_bytes": 10993664,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1000_P1",
+          "members_per_proof": 1000,
+          "proofs": 1,
+          "input_bytes": 142232,
+          "elapsed_ns": 9260459,
+          "peak_rss_bytes": 13320192,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P1",
+          "members_per_proof": 100000,
+          "proofs": 1,
+          "input_bytes": 14389236,
+          "elapsed_ns": 317429000,
+          "peak_rss_bytes": 100384768,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P4",
+          "members_per_proof": 100000,
+          "proofs": 4,
+          "input_bytes": 57556508,
+          "elapsed_ns": 1236610916,
+          "peak_rss_bytes": 298106880,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1_P1",
+          "members_per_proof": 1,
+          "proofs": 1,
+          "input_bytes": 476,
+          "elapsed_ns": 6411125,
+          "peak_rss_bytes": 11173888,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1000_P1",
+          "members_per_proof": 1000,
+          "proofs": 1,
+          "input_bytes": 142232,
+          "elapsed_ns": 8626125,
+          "peak_rss_bytes": 13254656,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P1",
+          "members_per_proof": 100000,
+          "proofs": 1,
+          "input_bytes": 14389236,
+          "elapsed_ns": 312298334,
+          "peak_rss_bytes": 96747520,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P4",
+          "members_per_proof": 100000,
+          "proofs": 4,
+          "input_bytes": 57556508,
+          "elapsed_ns": 1233403416,
+          "peak_rss_bytes": 297943040,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1_P1",
+          "members_per_proof": 1,
+          "proofs": 1,
+          "input_bytes": 476,
+          "elapsed_ns": 6324542,
+          "peak_rss_bytes": 10993664,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1000_P1",
+          "members_per_proof": 1000,
+          "proofs": 1,
+          "input_bytes": 142232,
+          "elapsed_ns": 8376250,
+          "peak_rss_bytes": 13107200,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P1",
+          "members_per_proof": 100000,
+          "proofs": 1,
+          "input_bytes": 14389236,
+          "elapsed_ns": 310502584,
+          "peak_rss_bytes": 98287616,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P4",
+          "members_per_proof": 100000,
+          "proofs": 4,
+          "input_bytes": 57556508,
+          "elapsed_ns": 1233780625,
+          "peak_rss_bytes": 297959424,
+          "peak_rss_source": "process_rusage"
+        }
+      ],
+      "source_inputs_unchanged": true
+    },
+    {
+      "label": "after",
+      "source": {
+        "base_revision": "f90b4439b9a0d0e56e5cb830489880471764f83d",
+        "modified": true,
+        "benchmark_harness_sha256": "8511435fd1564478e2c5996f441c03fe13ae0dd0f9f1c9bd887605cd085ae199",
+        "inputs_sha256": "f4a7cd1f010e13c50219bbe326a9e897435589df3ea6dd199b26c3995c29456c",
+        "production_sha256": {
+          "internal/proof/serialize.go": "adc25c4e7bd9485fec2b31576b8d286ec68df04867fcd54098514a9d257b3f69",
+          "internal/proof/bundle_read.go": "65028537dd40ef9d928178bc69276f8e8f0e6894be5439cbd0897a2ac7746932"
+        }
+      },
+      "compiled_binary": {
+        "command": "zenon-spv",
+        "sha256": "00ad9b48e07f516d26f5727e1d4bd0da128463b1bf3a8b6842250bd480f0b48c"
+      },
+      "benchmarks": [
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M1_P1",
+          "operation": "Verify",
+          "members": 1,
+          "samples": [
+            {
+              "iterations": 1000000,
+              "ns_per_op": 1076.0,
+              "allocated_bytes_per_op": 448,
+              "allocations_per_op": 11
+            },
+            {
+              "iterations": 1000000,
+              "ns_per_op": 1087.0,
+              "allocated_bytes_per_op": 448,
+              "allocations_per_op": 11
+            },
+            {
+              "iterations": 1000000,
+              "ns_per_op": 1072.0,
+              "allocated_bytes_per_op": 448,
+              "allocations_per_op": 11
+            },
+            {
+              "iterations": 1000000,
+              "ns_per_op": 1106.0,
+              "allocated_bytes_per_op": 448,
+              "allocations_per_op": 11
+            },
+            {
+              "iterations": 1000000,
+              "ns_per_op": 1074.0,
+              "allocated_bytes_per_op": 448,
+              "allocations_per_op": 11
+            }
+          ],
+          "proofs": 1,
+          "input_bytes": 476
+        },
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M1_P1",
+          "operation": "LoadAndVerify",
+          "members": 1,
+          "samples": [
+            {
+              "iterations": 44587,
+              "ns_per_op": 27014.0,
+              "allocated_bytes_per_op": 10320,
+              "allocations_per_op": 153
+            },
+            {
+              "iterations": 44767,
+              "ns_per_op": 26765.0,
+              "allocated_bytes_per_op": 10320,
+              "allocations_per_op": 153
+            },
+            {
+              "iterations": 45132,
+              "ns_per_op": 26737.0,
+              "allocated_bytes_per_op": 10320,
+              "allocations_per_op": 153
+            },
+            {
+              "iterations": 45913,
+              "ns_per_op": 26875.0,
+              "allocated_bytes_per_op": 10320,
+              "allocations_per_op": 153
+            },
+            {
+              "iterations": 44422,
+              "ns_per_op": 26970.0,
+              "allocated_bytes_per_op": 10320,
+              "allocations_per_op": 153
+            }
+          ],
+          "proofs": 1,
+          "input_bytes": 476
+        },
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M1000_P1",
+          "operation": "Verify",
+          "members": 1000,
+          "samples": [
+            {
+              "iterations": 16764,
+              "ns_per_op": 71795.0,
+              "allocated_bytes_per_op": 8640,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 16892,
+              "ns_per_op": 71353.0,
+              "allocated_bytes_per_op": 8640,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 16741,
+              "ns_per_op": 71492.0,
+              "allocated_bytes_per_op": 8640,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 16586,
+              "ns_per_op": 92107.0,
+              "allocated_bytes_per_op": 8640,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 16515,
+              "ns_per_op": 72426.0,
+              "allocated_bytes_per_op": 8640,
+              "allocations_per_op": 12
+            }
+          ],
+          "proofs": 1,
+          "input_bytes": 142232
+        },
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M1000_P1",
+          "operation": "LoadAndVerify",
+          "members": 1000,
+          "samples": [
+            {
+              "iterations": 343,
+              "ns_per_op": 3468103.0,
+              "allocated_bytes_per_op": 1655112,
+              "allocations_per_op": 5177
+            },
+            {
+              "iterations": 348,
+              "ns_per_op": 3508739.0,
+              "allocated_bytes_per_op": 1655112,
+              "allocations_per_op": 5177
+            },
+            {
+              "iterations": 346,
+              "ns_per_op": 3507400.0,
+              "allocated_bytes_per_op": 1655112,
+              "allocations_per_op": 5177
+            },
+            {
+              "iterations": 349,
+              "ns_per_op": 3452678.0,
+              "allocated_bytes_per_op": 1655112,
+              "allocations_per_op": 5177
+            },
+            {
+              "iterations": 332,
+              "ns_per_op": 3527948.0,
+              "allocated_bytes_per_op": 1655112,
+              "allocations_per_op": 5177
+            }
+          ],
+          "proofs": 1,
+          "input_bytes": 142232
+        },
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M100000_P1",
+          "operation": "Verify",
+          "members": 100000,
+          "samples": [
+            {
+              "iterations": 171,
+              "ns_per_op": 6990799.0,
+              "allocated_bytes_per_op": 803265,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 169,
+              "ns_per_op": 7068622.0,
+              "allocated_bytes_per_op": 803265,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 171,
+              "ns_per_op": 6954730.0,
+              "allocated_bytes_per_op": 803265,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 169,
+              "ns_per_op": 7079681.0,
+              "allocated_bytes_per_op": 803265,
+              "allocations_per_op": 12
+            },
+            {
+              "iterations": 169,
+              "ns_per_op": 7080603.0,
+              "allocated_bytes_per_op": 803265,
+              "allocations_per_op": 12
+            }
+          ],
+          "proofs": 1,
+          "input_bytes": 14389236
+        },
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M100000_P1",
+          "operation": "LoadAndVerify",
+          "members": 100000,
+          "samples": [
+            {
+              "iterations": 4,
+              "ns_per_op": 304016886.0,
+              "allocated_bytes_per_op": 137771096,
+              "allocations_per_op": 500206
+            },
+            {
+              "iterations": 4,
+              "ns_per_op": 314087208.0,
+              "allocated_bytes_per_op": 137771092,
+              "allocations_per_op": 500206
+            },
+            {
+              "iterations": 3,
+              "ns_per_op": 424919597.0,
+              "allocated_bytes_per_op": 137771128,
+              "allocations_per_op": 500206
+            },
+            {
+              "iterations": 3,
+              "ns_per_op": 404813542.0,
+              "allocated_bytes_per_op": 137771112,
+              "allocations_per_op": 500206
+            },
+            {
+              "iterations": 4,
+              "ns_per_op": 329755510.0,
+              "allocated_bytes_per_op": 137771092,
+              "allocations_per_op": 500206
+            }
+          ],
+          "proofs": 1,
+          "input_bytes": 14389236
+        },
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M100000_P4",
+          "operation": "Verify",
+          "members": 100000,
+          "samples": [
+            {
+              "iterations": 40,
+              "ns_per_op": 28412007.0,
+              "allocated_bytes_per_op": 3213060,
+              "allocations_per_op": 48
+            },
+            {
+              "iterations": 42,
+              "ns_per_op": 28136085.0,
+              "allocated_bytes_per_op": 3213060,
+              "allocations_per_op": 48
+            },
+            {
+              "iterations": 44,
+              "ns_per_op": 27365321.0,
+              "allocated_bytes_per_op": 3213060,
+              "allocations_per_op": 48
+            },
+            {
+              "iterations": 44,
+              "ns_per_op": 27502779.0,
+              "allocated_bytes_per_op": 3213060,
+              "allocations_per_op": 48
+            },
+            {
+              "iterations": 43,
+              "ns_per_op": 27951196.0,
+              "allocated_bytes_per_op": 3213060,
+              "allocations_per_op": 48
+            }
+          ],
+          "proofs": 4,
+          "input_bytes": 57556508
+        },
+        {
+          "family": "BenchmarkFlatContent",
+          "workload": "M100000_P4",
+          "operation": "LoadAndVerify",
+          "members": 100000,
+          "samples": [
+            {
+              "iterations": 1,
+              "ns_per_op": 1273099041.0,
+              "allocated_bytes_per_op": 450397872,
+              "allocations_per_op": 2000404
+            },
+            {
+              "iterations": 1,
+              "ns_per_op": 1210528834.0,
+              "allocated_bytes_per_op": 450397888,
+              "allocations_per_op": 2000404
+            },
+            {
+              "iterations": 1,
+              "ns_per_op": 1194910875.0,
+              "allocated_bytes_per_op": 450397888,
+              "allocations_per_op": 2000404
+            },
+            {
+              "iterations": 1,
+              "ns_per_op": 1181511167.0,
+              "allocated_bytes_per_op": 450397888,
+              "allocations_per_op": 2000404
+            },
+            {
+              "iterations": 1,
+              "ns_per_op": 1201643292.0,
+              "allocated_bytes_per_op": 450397888,
+              "allocations_per_op": 2000404
+            }
+          ],
+          "proofs": 4,
+          "input_bytes": 57556508
+        }
+      ],
+      "process_samples": [
+        {
+          "workload": "M1_P1",
+          "members_per_proof": 1,
+          "proofs": 1,
+          "input_bytes": 476,
+          "elapsed_ns": 7984167,
+          "peak_rss_bytes": 10977280,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1000_P1",
+          "members_per_proof": 1000,
+          "proofs": 1,
+          "input_bytes": 142232,
+          "elapsed_ns": 10460209,
+          "peak_rss_bytes": 12435456,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P1",
+          "members_per_proof": 100000,
+          "proofs": 1,
+          "input_bytes": 14389236,
+          "elapsed_ns": 329602583,
+          "peak_rss_bytes": 94339072,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P4",
+          "members_per_proof": 100000,
+          "proofs": 4,
+          "input_bytes": 57556508,
+          "elapsed_ns": 1319669000,
+          "peak_rss_bytes": 286965760,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1_P1",
+          "members_per_proof": 1,
+          "proofs": 1,
+          "input_bytes": 476,
+          "elapsed_ns": 7152500,
+          "peak_rss_bytes": 10960896,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1000_P1",
+          "members_per_proof": 1000,
+          "proofs": 1,
+          "input_bytes": 142232,
+          "elapsed_ns": 9513834,
+          "peak_rss_bytes": 12435456,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P1",
+          "members_per_proof": 100000,
+          "proofs": 1,
+          "input_bytes": 14389236,
+          "elapsed_ns": 325487708,
+          "peak_rss_bytes": 94535680,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P4",
+          "members_per_proof": 100000,
+          "proofs": 4,
+          "input_bytes": 57556508,
+          "elapsed_ns": 1263278875,
+          "peak_rss_bytes": 296845312,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1_P1",
+          "members_per_proof": 1,
+          "proofs": 1,
+          "input_bytes": 476,
+          "elapsed_ns": 7048916,
+          "peak_rss_bytes": 11157504,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1000_P1",
+          "members_per_proof": 1000,
+          "proofs": 1,
+          "input_bytes": 142232,
+          "elapsed_ns": 10075125,
+          "peak_rss_bytes": 12599296,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P1",
+          "members_per_proof": 100000,
+          "proofs": 1,
+          "input_bytes": 14389236,
+          "elapsed_ns": 327183959,
+          "peak_rss_bytes": 94273536,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P4",
+          "members_per_proof": 100000,
+          "proofs": 4,
+          "input_bytes": 57556508,
+          "elapsed_ns": 1242876000,
+          "peak_rss_bytes": 287031296,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1_P1",
+          "members_per_proof": 1,
+          "proofs": 1,
+          "input_bytes": 476,
+          "elapsed_ns": 7402125,
+          "peak_rss_bytes": 10960896,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1000_P1",
+          "members_per_proof": 1000,
+          "proofs": 1,
+          "input_bytes": 142232,
+          "elapsed_ns": 10333333,
+          "peak_rss_bytes": 12435456,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P1",
+          "members_per_proof": 100000,
+          "proofs": 1,
+          "input_bytes": 14389236,
+          "elapsed_ns": 324619417,
+          "peak_rss_bytes": 94945280,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P4",
+          "members_per_proof": 100000,
+          "proofs": 4,
+          "input_bytes": 57556508,
+          "elapsed_ns": 1264428667,
+          "peak_rss_bytes": 287277056,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1_P1",
+          "members_per_proof": 1,
+          "proofs": 1,
+          "input_bytes": 476,
+          "elapsed_ns": 7495833,
+          "peak_rss_bytes": 11206656,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M1000_P1",
+          "members_per_proof": 1000,
+          "proofs": 1,
+          "input_bytes": 142232,
+          "elapsed_ns": 10261834,
+          "peak_rss_bytes": 12697600,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P1",
+          "members_per_proof": 100000,
+          "proofs": 1,
+          "input_bytes": 14389236,
+          "elapsed_ns": 327934541,
+          "peak_rss_bytes": 94584832,
+          "peak_rss_source": "process_rusage"
+        },
+        {
+          "workload": "M100000_P4",
+          "members_per_proof": 100000,
+          "proofs": 4,
+          "input_bytes": 57556508,
+          "elapsed_ns": 1198492750,
+          "peak_rss_bytes": 287326208,
+          "peak_rss_source": "process_rusage"
+        }
+      ],
+      "source_inputs_unchanged": true
+    }
+  ],
+  "limitations": [
+    "Synthetic serialization and resource stress only; not executed-ledger or network performance evidence",
+    "The baseline uses the clean preceding main revision; benchmark workloads are unchanged between versions",
+    "Allocation volume is not peak memory; CLI process RSS excludes parent fixtures and builds",
+    "Warm files; CLI runtime parallelism uses its ordinary environment",
+    "Five local samples per case are not a portable latency, peak-memory or concurrency guarantee"
+  ]
+}
