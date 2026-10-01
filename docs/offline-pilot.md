@@ -29,7 +29,7 @@ retain their own timeouts. This tool is not a process-tree supervisor.
 
 ## Selected coverage
 
-The 31 named scenarios are defined in
+The 33 named scenarios are defined in
 [`manifest.go`](../tools/offline-pilot/manifest.go). They cover:
 
 - Build identity, collection, retained commitment/segment queries, trusted
@@ -49,6 +49,8 @@ The 31 named scenarios are defined in
   migration with full saved-window authorization before resizing.
 - Node-derived mixed-height inclusion through v1/v2 and compiled delayed
   collection/watch/restart, plus full K=16/256/4096 state workloads.
+- Node-derived flat content with 1/1,000/100,000 members and repeated-list batches,
+  plus compiled read-only queries with process resource observations.
 - Saved-state read bounds with stale size hints, short reads, simultaneous
   data/errors, malformed suffixes and duplicate fields.
 
@@ -70,9 +72,20 @@ guarantees and their limits.
 | `test_parent_race_enabled` | Whether this run requested `-race` for Go test processes. |
 | `source` | Observed checkout revision/modified state, or null fields if Git metadata is unavailable; also a SHA-256 input fingerprint. |
 | `source_matches_after_run` | Whether a second source snapshot equals the initial snapshot. This checks the endpoints, not continuous filesystem history. |
-| `corpus` | Repository-relative names and SHA-256 hashes of the five compatibility corpus files. This is an input inventory, not a claim that every vector was exercised. |
-| `cases` | Fixed scenario IDs, package/test names, statuses, child test counts, and hashes of compiled executables actually built by that scenario. |
+| `corpus` | Repository-relative names and SHA-256 hashes of the six compatibility corpus files. This is an input inventory, not a claim that every vector was exercised. |
+| `cases` | Fixed scenario IDs, package/test names, statuses, child test counts, hashes of compiled executables actually built by that scenario, and optional bounded `resource_samples`. |
 | `caveats` | Fixed trust and interpretation limits. |
+
+Only `compiled_content_scaling` carries `resource_samples`: four fixed workload
+IDs, members per proof, proof count, encoded input bytes, whole-process elapsed
+nanoseconds, nullable peak RSS bytes, and an accounting source. Missing, repeated,
+malformed or unexpected records make the report incomplete or failed. Each
+record must come from its actively executing workload. Unknown fields, private
+strings and raw diagnostics are refused or discarded, not echoed. Linux/macOS
+require positive process RSS; other platforms use null and `unavailable`.
+See [flat-content resources](flat-content-resources.md) for counter semantics
+and the distinction between samples and performance guarantees. These fields
+are additive to schema 1; other cases omit them.
 
 The source fingerprint covers `go.mod`, `go.sum`, and `.go`, `.json`,
 `go.mod`, and `go.sum` files beneath `cmd`, `internal`, and `tools`. Sort

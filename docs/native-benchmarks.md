@@ -76,3 +76,7 @@ hardware, or steady-state watch behavior. They establish no public-network
 TPS, transfer completion, VM execution, activation, canonicality, producer
 elections, balance proof, or consensus-finality guarantee. Representative
 target-platform and workload measurements remain a separate gate.
+
+See [flat-content resources](flat-content-resources.md) for the separate
+`BenchmarkFlatContent` cardinality/batch grid and compiled-process RSS samples.
+`make bench` includes that family as well as the retained-capacity workloads.

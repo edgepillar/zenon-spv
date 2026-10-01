@@ -37,7 +37,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Benchmark smoke
-        run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity)$' -benchtime=1x ./internal/conformance
+        run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent)$' -benchtime=1x ./internal/conformance
       - name: Independent corpus checks
         run: |
           python3 tools/gen-node-momentum-vectors/check.py
@@ -45,6 +45,7 @@ jobs:
           python3 tools/gen-node-momentum-vectors/check-account-segments.py internal/testdata/conformance/account-segments.json
           python3 tools/gen-node-momentum-vectors/check-contract-batches.py internal/testdata/conformance/contract-batches.json
           python3 tools/gen-node-momentum-vectors/check-delayed-inclusion.py internal/testdata/conformance/delayed-inclusion.json
+          python3 tools/gen-node-momentum-vectors/check-content-scaling.py
           python3 tools/check-verification-context.py
       - name: Lint
         uses: golangci/golangci-lint-action@v7
@@ -84,4 +85,4 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Benchmark smoke
-        run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity)$' -benchtime=1x ./internal/conformance
+        run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent)$' -benchtime=1x ./internal/conformance

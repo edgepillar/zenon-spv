@@ -29,7 +29,7 @@ Run measurements without competing builds or tests:
 go test -run '^$' -bench '^BenchmarkRetainedCapacity$' -benchmem -cpu=1 -benchtime=1s -count=5 ./internal/conformance
 ```
 
-`make bench` includes both benchmark families. CI runs one iteration of every
+`make bench` includes the native, retained-capacity and flat-content families. CI runs one iteration of every
 workload on native Linux, macOS and Windows as a functional check. It does not
 enforce timing thresholds. `TestRetainedCapacityWorkloads` also exercises full
 windows, exact eviction, immutable predecessors, persistence and resumed
@@ -43,9 +43,11 @@ availability; it is not a constant-cost cache. The explicit maximum remains
 size. Hard input caps are not a process-memory ceiling.
 
 These measurements are a local baseline. Representative consumer workloads,
-content/proof scaling, peak-memory profiling, target hardware, cold I/O,
+consumer-specific content/proof scaling, target hardware, cold I/O,
 contention and real-network latency/bandwidth remain acceptance gates. Do not
 interpret local timings as network TPS, production capacity or finality.
+The separate [flat-content measurements](flat-content-resources.md) now cover
+a synthetic M/P grid and compiled Linux/macOS process RSS.
 
 ## Recorded local baseline
 

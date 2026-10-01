@@ -39,6 +39,8 @@ audit history.
   K=16/256/4096 workload costs, saved size and measurement boundaries.
 - [`state-read-allocations.md`](state-read-allocations.md) — bounded file reads,
   allocation reductions and preserved saved-state verification checks.
+- [`flat-content-resources.md`](flat-content-resources.md) — node-derived content
+  scaling, bounded repeated-list costs and compiled process memory observations.
 - [`delayed-inclusion.md`](delayed-inclusion.md) — independent node/Python
   mixed-height fixtures and compiled v1/v2 delayed-query coverage.
 - [`conformance.md`](conformance.md) — implemented conformance cases,

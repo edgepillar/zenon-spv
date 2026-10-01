@@ -155,3 +155,24 @@ hash/serialization routines and source guard as the other corpora. See
 independent Python checks, strict-past and eviction boundaries, and the compiled
 collector/watch/query workflow. This is independent byte-level compatibility
 evidence, not captured network history or VM execution.
+
+## Compact content scaling
+
+`content-scaling.json` holds three compact synthetic recipes with 1, 1,000 and
+100,000 account-header identities, sampled targets and seven signed v2 momentum
+projections per recipe. The node computes each content root and linked header;
+SPV expands the recipe and verifies the expected roots and signatures. The
+Python checker independently expands every member and reconstructs all content
+and momentum preimages. These identities have no executed account-block bodies;
+the largest recipe stresses a local policy bound, not network traffic limits.
+
+```sh
+cd tools/gen-node-momentum-vectors
+GOWORK=off GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off GOFLAGS= go run -mod=readonly . --content-scaling > ../../internal/testdata/conformance/content-scaling.json
+cd ../..
+python3 tools/gen-node-momentum-vectors/check-content-scaling.py
+```
+
+The pinned node module and dependencies must already be cached. See
+[flat-content resources](../../../docs/flat-content-resources.md) for measurement
+scope, encoded repeated-list sizes, trust inputs and known limitations.
