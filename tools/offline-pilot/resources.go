@@ -28,6 +28,10 @@ type resourceRecord struct {
 // reach a shareable report. Reject missing, repeated and unknown fields rather
 // than copying arbitrary test output, paths or malformed measurements.
 func parseResource(raw string) (resourceRecord, error) {
+	return parseResourceOnPlatform(raw, runtime.GOOS)
+}
+
+func parseResourceOnPlatform(raw, platform string) (resourceRecord, error) {
 	invalid := errors.New("invalid resource record")
 	var record resourceRecord
 	if len(raw) > 512 {
@@ -65,8 +69,15 @@ func parseResource(raw string) (resourceRecord, error) {
 		record.ElapsedNS <= 0 || record.ElapsedNS > 60_000_000_000 {
 		return record, invalid
 	}
-	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-		if record.PeakRSSSource != "process_rusage" || record.PeakRSSBytes == nil || *record.PeakRSSBytes == 0 || *record.PeakRSSBytes > 1<<50 {
+	source := "unavailable"
+	switch platform {
+	case "linux", "darwin":
+		source = "process_rusage"
+	case "windows":
+		source = "windows_peak_working_set"
+	}
+	if source != "unavailable" {
+		if record.PeakRSSSource != source || record.PeakRSSBytes == nil || *record.PeakRSSBytes == 0 || *record.PeakRSSBytes > 1<<50 {
 			return record, invalid
 		}
 	} else if record.PeakRSSSource != "unavailable" || record.PeakRSSBytes != nil {

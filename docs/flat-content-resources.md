@@ -79,16 +79,43 @@ checks that the child build cannot silently inherit those settings.
 Input files normally remain in the filesystem cache. Runtime CPU parallelism
 for the CLI uses its ordinary environment; benchmark `-cpu=1` does not set it.
 
-Peak RSS comes from the exited child's `os.ProcessState.SysUsage`, not a polling
-sampler or an aggregate of all test children. Linux's `ru_maxrss` is converted
-from KiB to bytes; Darwin's value is already bytes. See the
+On Linux/macOS, peak RSS comes from the exited child's `os.ProcessState.SysUsage`,
+with source `process_rusage`, not a polling sampler or an aggregate of all test
+children. Linux's `ru_maxrss` is converted from KiB to bytes; Darwin's value is
+already bytes. See the
 [Linux accounting documentation](https://man7.org/linux/man-pages/man2/getrusage.2.html)
 and [Darwin's accounting source](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_resource.c).
+
+On Windows, the resource harness opens a non-inheritable query handle immediately
+after `cmd.Start`, before `cmd.Wait` releases Go's original process handle. An
+open handle keeps the process object and its PID alive, even if the child has
+already exited; see [Microsoft's process-ID lifetime explanation](https://devblogs.microsoft.com/oldnewthing/20110107-00/?p=11803/)
+and [Go's Windows wait implementation](https://github.com/golang/go/blob/go1.25.14/src/os/exec_windows.go).
+There is no concurrent Wait/Release, no reopening a PID after Wait, and no access
+to Go's private handle representation. The harness retains its own handle through
+Wait, queries [GetProcessMemoryInfo](https://learn.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-getprocessmemoryinfo)
+once, and then closes it. The source `windows_peak_working_set` identifies
+[PeakWorkingSetSize in bytes](https://learn.microsoft.com/en-us/windows/win32/api/psapi/ns-psapi-process_memory_counters).
+It is neither a sampled maximum nor peak commit, pagefile usage or Go heap size.
+
+The memory observer runs only for resource measurements. Timing covers Start
+through Wait, including acquiring the Windows observation handle, but excludes
+the final accounting query and handle close. No CLI code or build flags change.
 Platform accounting differs; these values are not a normalized cross-platform
 heap measurement. They exclude the test parent and are not a process-tree or
-container memory limit. Windows still executes and validates all four queries,
-but its Go process accounting does not supply this counter: peak bytes remain
-null with source `unavailable`, never zero or an invented estimate.
+container memory limit. Native acquisition/query failure remains null with source
+`unavailable`, never zero or an invented estimate. Linux/macOS/Windows tests and
+the pilot require positive native counters, so missing accounting cannot produce
+a passing supported-platform measurement. Other platforms retain the explicit
+unavailable value.
+
+`TestProcessMemoryAccounting` exercises immediate success, nonzero exit,
+resident allocation, deadline cancellation and failed start. Windows additionally
+tests acquisition after confirmed child exit but before Go's Wait, matches the
+retained handle's creation time with Go's original child accounting, checks that
+the handle is not inheritable, and refuses measurements after query-access
+failure, missing completion or close. These probes run separately from the four
+ordinary compiled consumer workloads and supply no consumer benchmark numbers.
 
 The [offline pilot](offline-pilot.md) records four bounded `resource_samples`
 under `compiled_content_scaling`, alongside the actual executable digest,
@@ -157,6 +184,6 @@ preserving preflight accounting, content/target identity and captured trust
 settings, then repeating these measurements against unchanged expected roots.
 
 Real network traffic distributions, consumer-selected targets and trust inputs,
-network bandwidth/latency, target hardware, Windows peak memory and independent
+network bandwidth/latency, target hardware and independent
 release review remain open. Synthetic roots, successful queries and green CI
 do not supply any of those external gates.

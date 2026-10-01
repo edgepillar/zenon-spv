@@ -55,7 +55,7 @@ func TestCompiledContentScalingWorkflow(t *testing.T) {
 			}
 			args := append([]string{"verify-commitment"}, common...)
 			args = append(args, "--state", statePath, "--expect-context", hex.EncodeToString(context.Fingerprint[:]), "--retained-only", w.path)
-			result := runQueryCLIWithTimeout(t, time.Minute, binary, args...)
+			result := runQueryCLIWithResources(t, time.Minute, binary, args...)
 			assertOperatorPrivacy(t, result, dir)
 			report := checkProcessReport(t, result, 0, "ACCEPT")
 			if report.Mode != "retained_only" || report.Persistence != "read_only" || report.Tip.Height != 6007 ||
@@ -73,10 +73,8 @@ func TestCompiledContentScalingWorkflow(t *testing.T) {
 				}
 			}
 			unchanged()
-			peak, source := processPeakRSS(result.process), "unavailable"
-			if peak != nil {
-				source = "process_rusage"
-			} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+			peak, source := result.memory.bytes, result.memory.source
+			if peak == nil && (runtime.GOOS == "linux" || runtime.GOOS == "darwin" || runtime.GOOS == "windows") {
 				t.Fatal("missing supported process memory accounting")
 			}
 			record, err := json.Marshal(struct {

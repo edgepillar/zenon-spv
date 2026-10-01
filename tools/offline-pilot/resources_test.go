@@ -13,15 +13,45 @@ func sampleResource(t *testing.T, name string) string {
 	grid := resourceWorkloads[name]
 	record := resourceRecord{Workload: name, MembersPerProof: grid[0], Proofs: grid[1], InputBytes: 1000,
 		ElapsedNS: 1000000, PeakRSSSource: "unavailable"}
-	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+	switch runtime.GOOS {
+	case "linux", "darwin":
 		peak := uint64(1 << 20)
 		record.PeakRSSBytes, record.PeakRSSSource = &peak, "process_rusage"
+	case "windows":
+		peak := uint64(1 << 20)
+		record.PeakRSSBytes, record.PeakRSSSource = &peak, "windows_peak_working_set"
 	}
 	raw, err := json.Marshal(record)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return string(raw)
+}
+
+func TestResourceMemorySourceIsBoundToPlatform(t *testing.T) {
+	for _, platform := range []string{"linux", "darwin", "windows", "freebsd"} {
+		for _, source := range []string{"process_rusage", "windows_peak_working_set", "unavailable", "sampled_maximum", "PRIVATE_ENDPOINT"} {
+			for _, peak := range []string{"null", "0", "1048576", "1125899906842625"} {
+				var record map[string]json.RawMessage
+				if json.Unmarshal([]byte(sampleResource(t, "M1_P1")), &record) != nil {
+					t.Fatal("sample record malformed")
+				}
+				record["peak_rss_bytes"] = json.RawMessage(peak)
+				record["peak_rss_source"], _ = json.Marshal(source)
+				raw, err := json.Marshal(record)
+				if err != nil {
+					t.Fatal(err)
+				}
+				_, err = parseResourceOnPlatform(string(raw), platform)
+				want := (platform == "linux" || platform == "darwin") && source == "process_rusage" && peak == "1048576" ||
+					platform == "windows" && source == "windows_peak_working_set" && peak == "1048576" ||
+					platform == "freebsd" && source == "unavailable" && peak == "null"
+				if (err == nil) != want || (err != nil && strings.Contains(err.Error(), "PRIVATE")) {
+					t.Fatal("platform accepted a missing, substituted, impossible or private memory source")
+				}
+			}
+		}
+	}
 }
 
 func TestResourceRecordPrivacyAndCompleteness(t *testing.T) {

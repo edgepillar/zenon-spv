@@ -1,9 +1,15 @@
-//go:build !linux && !darwin
+//go:build !linux && !darwin && !windows
 
 package conformance_test
 
 import "os"
 
-// Windows still executes every workflow. Its Go ProcessState.SysUsage does
-// not expose peak resident memory; unavailable must not become a zero sample.
-func processPeakRSS(*os.ProcessState) *uint64 { return nil }
+type processMemoryObserver struct{}
+
+func startProcessMemory(*os.Process) processMemoryObserver { return processMemoryObserver{} }
+func (*processMemoryObserver) close()                      {}
+
+// Unsupported platforms must not turn unavailable accounting into zero.
+func (*processMemoryObserver) finish(*os.ProcessState) processMemorySample {
+	return unavailableProcessMemory()
+}
