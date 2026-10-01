@@ -138,6 +138,9 @@ State-value layer:
       retries at the normal interval, and stops after three consecutive
       failed save attempts by default. A successful save resets the
       counter (`internal/syncer/syncer.go`).
+- [x] Watch stops on output errors or short writes, releases writer ownership,
+      and preserves prior successful saves for trusted resume. Failed startup
+      reporting precedes RPC/saves; combined save/output errors retain both causes.
 - [x] State save/load revalidate every retained header before truncation and
       enforce byte/capacity bounds, including the header count during JSON
       decoding; see [`watch-persistence.md`](watch-persistence.md).

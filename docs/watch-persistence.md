@@ -84,6 +84,28 @@ persistence adapter. The adapter cannot mutate the retained state through
 its argument. Startup reports the handle's configured-anchor and persisted-
 state trust assumptions; see the [verified state API](verified-state-api.md).
 
+## Output delivery
+
+When `Loop.Out` is configured, a write error or short write terminates `Run`
+without retrying the message or starting another tick. Startup reporting must
+succeed before RPC queries or saves begin. Output failure releases the writer
+lock through the normal shutdown path; the companion file remains in place.
+The CLI maps returned loop errors to its operational-error exit code, 70.
+An embedder can still set `Out` to nil to explicitly discard output.
+
+State saves still precede ACCEPT reporting. If writing an ACCEPT line fails,
+the completed save remains valid and is not rolled back. Restart loads and
+revalidates that saved tip, even when the previous observer did not receive a
+complete line. A short write can leave partial output; it is not a receipt for
+successful completion of the watch process.
+
+REJECT and REFUSED output failures do not trigger a save. If both persistence
+and its error report fail, the returned error preserves both causes for
+`errors.Is`/`errors.As`; the post-replacement save boundary below still applies.
+Ordinary output-error formatting does not echo arbitrary writer messages, which
+may contain private local paths. Explicitly unwrapped causes remain private.
+Successful log formats are unchanged.
+
 ## Retained-state validation
 
 Save and load reject invalid capacity, wrong chain identity, header hash or
@@ -144,6 +166,13 @@ files, path rules, platform support, and the limits of advisory coordination.
 `internal/syncer/syncer_statesave_test.go` covers retry limits, failure
 counter reset, restart after a successful save, save-before-log ordering,
 caught-up failures, refusal behavior, and pacing after a failed save.
+`internal/syncer/output_failure_test.go` injects errors and short writes at each
+startup stage and across accepted, caught-up, rejected, refused, and failed-save
+ticks. It checks no RPC/save after failed startup, state/file preservation,
+writer-lock release, combined error causes, and resume from a completed save
+after losing its ACCEPT report.
+An embedded-buffer regression preserves wrappers that override `Write` while
+inheriting a `WriteString` method.
 `internal/verify/state_file_durability_test.go` covers errors opening and
 syncing the parent directory, including the post-replacement boundary.
 `internal/verify/state_validation_test.go` covers corrupt retained prefixes,
