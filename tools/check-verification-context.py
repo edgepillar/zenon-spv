@@ -8,7 +8,10 @@ import struct
 
 
 def fingerprint(context):
-    data = bytearray(b"zenon-spv/verification-context/v1\0")
+    version = context["schema_version"]
+    if version not in (1, 2):
+        raise ValueError("Unsupported verification context schema")
+    data = bytearray(f"zenon-spv/verification-context/v{version}\0".encode("ascii"))
 
     def u64(value):
         data.extend(struct.pack(">Q", value))
@@ -24,8 +27,11 @@ def fingerprint(context):
     u64(anchor["height"])
     data.extend(bytes.fromhex(anchor["header_hash"]))
     policy = context["policy"]
+    u64(policy["w"])
+    if version == 2:
+        u64(policy["retain_headers"])
     for name in (
-        "w", "max_bundle_bytes", "max_headers", "max_commitments",
+        "max_bundle_bytes", "max_headers", "max_commitments",
         "max_flat_evidence_members", "max_total_flat_evidence_members",
         "max_segments", "max_segment_blocks", "max_total_segment_blocks",
         "max_state_value_proofs", "max_state_proof_nodes", "max_state_proof_bytes",

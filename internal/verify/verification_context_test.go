@@ -69,7 +69,11 @@ func TestVerificationContextBindsEveryPolicyLimit(t *testing.T) {
 			field := reflect.ValueOf(&opts.Policy).Elem().Field(i)
 			switch field.Kind() {
 			case reflect.Int, reflect.Int64:
-				field.SetInt(field.Int() + 1)
+				if name == "RetainHeaders" {
+					field.SetInt(int64(base.Policy.W) + 2)
+				} else {
+					field.SetInt(field.Int() + 1)
+				}
 			case reflect.Uint64:
 				field.SetUint(field.Uint() + 1)
 			default:
@@ -226,7 +230,12 @@ func TestVerificationContextCustomAuthorizerIsNotFingerprintable(t *testing.T) {
 }
 
 func TestVerificationContextIndependentGolden(t *testing.T) {
-	state, _, _, _ := verifiedStateFixture(t)
+	state, _, _, opts := verifiedStateFixture(t)
+	opts.Policy.RetainHeaders = 16
+	explicit, err := NewVerifiedState(state.Snapshot().Genesis, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
 	entries := []ProducerEntry{
 		{Height: 101, TimestampUnix: 1700000010, ProducingAddr: chain.Address{1}},
 		{Height: 102, TimestampUnix: 1700000020, ProducingAddr: chain.Address{1}},
@@ -242,7 +251,7 @@ func TestVerificationContextIndependentGolden(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for file, state := range map[string]VerifiedState{"v1.json": state, "v1-schedule-checkpoints.json": mainnet} {
+	for file, state := range map[string]VerifiedState{"v1.json": state, "v1-schedule-checkpoints.json": mainnet, "v2-retention.json": explicit} {
 		t.Run(file, func(t *testing.T) {
 			raw, err := os.ReadFile(filepath.Join("../testdata/verification-context", file))
 			if err != nil {

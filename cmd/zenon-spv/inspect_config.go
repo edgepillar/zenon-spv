@@ -11,7 +11,7 @@ import (
 	"github.com/0x3639/zenon-spv/internal/verify"
 )
 
-const inspectConfigUsage = "Usage: zenon-spv inspect-config [--genesis-config <path>] [--window {low|medium|high}] [--protocol-profile <path>] [--schedule <path>] [--json]\n"
+const inspectConfigUsage = "Usage: zenon-spv inspect-config [--genesis-config <path>] [--window {low|medium|high}] [--retain-headers <K>] [--protocol-profile <path>] [--schedule <path>] [--json]\n"
 
 type configurationReport struct {
 	SchemaVersion uint32                      `json:"schema_version"`
@@ -39,6 +39,7 @@ func runInspectConfig(args []string, stdout, stderr io.Writer) int {
 	profilePath := fs.String("protocol-profile", "", "operator-attested activation profile")
 	schedulePath := fs.String("schedule", "", "operator-attested producer schedule")
 	tier := fs.String("window", "low", "policy window: low | medium | high")
+	retainHeaders := fs.String("retain-headers", "", "explicit retained header capacity K (W < K <= 4096)")
 	jsonOutput := fs.Bool("json", false, "emit a versioned configuration report")
 	if err := fs.Parse(args); errors.Is(err, flag.ErrHelp) {
 		return writeConfigOutput(stdout, stderr, []byte(inspectConfigUsage), 0)
@@ -47,6 +48,9 @@ func runInspectConfig(args []string, stdout, stderr io.Writer) int {
 		return finishConfiguration(report, 64, *jsonOutput, stdout, stderr)
 	}
 	policy, err := parseWindowPolicy(*tier)
+	if err == nil {
+		err = configureRetention(fs, *retainHeaders, &policy)
+	}
 	if err != nil {
 		report.Error = &reportError{Stage: "arguments", Category: "usage"}
 		return finishConfiguration(report, 64, *jsonOutput, stdout, stderr)

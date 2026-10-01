@@ -150,6 +150,12 @@ Height must be positive and the hash nonzero. A config file overrides env.
 values fail with exit 64 before configuration or evidence is loaded. Put all
 verify-* flags before the bundle path; watch accepts flags only.
 
+--retain-headers <K> selects retained capacity independently of depth W.
+Available on verify-*, inspect-config, inspect-state, and watch. Requires
+W < K <= 4096; omission keeps legacy W+1. Explicit K saves state schema 3
+and context schema 2. Resume must supply explicit K; changes require a new
+reviewed context pin. See docs/retention-policy.md.
+
 --protocol-profile <path> loads an anchor-bound, operator-attested momentum
 activation profile for verify-*, inspect-config, inspect-state, and watch. V2 requires this flag. Profiles
 expire at their configured height and must match persisted state exactly.
@@ -265,6 +271,7 @@ func prepareVerifierContext(name string, args []string, out *verificationOutput)
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
 	fs.SetOutput(out.diagnostics)
 	tier := fs.String("window", "low", "policy window tier: low | medium | high")
+	retainHeaders := fs.String("retain-headers", "", "explicit retained header capacity K (W < K <= 4096)")
 	genesisConfig := fs.String("genesis-config", "", "path to genesis trust root JSON file (overrides env)")
 	profilePath := fs.String("protocol-profile", "", "path to an operator-attested momentum activation profile")
 	jsonOutput := fs.Bool("json", false, "emit one versioned JSON verification report")
@@ -295,6 +302,9 @@ func prepareVerifierContext(name string, args []string, out *verificationOutput)
 	}
 	bundlePath := fs.Arg(0)
 	policy, err := parseWindowPolicy(*tier)
+	if err == nil {
+		err = configureRetention(fs, *retainHeaders, &policy)
+	}
 	if err != nil {
 		_, _ = fmt.Fprintf(out.diagnostics, "%s: %v\n", name, err)
 		return verifierContext{}, 64
@@ -528,6 +538,7 @@ func runWatch(args []string) int {
 	fs.Lookup("peers").DefValue = ""
 	quorum := fs.Int("quorum", 0, "minimum agreeing peers; 0 = require unanimous (len(peers))")
 	tier := fs.String("window", "low", "policy window tier: low | medium | high")
+	retainHeaders := fs.String("retain-headers", "", "explicit retained header capacity K (W < K <= 4096)")
 	genesisConfig := fs.String("genesis-config", "", "path to genesis trust root JSON file (overrides env)")
 	profilePath := fs.String("protocol-profile", "", "path to an operator-attested momentum activation profile")
 	showContext := fs.Bool("show-context", false, "log captured verification settings without private provenance metadata")
@@ -559,6 +570,9 @@ func runWatch(args []string) int {
 		return 64
 	}
 	policy, err := parseWindowPolicy(*tier)
+	if err == nil {
+		err = configureRetention(fs, *retainHeaders, &policy)
+	}
 	if err != nil {
 		diagnostic("watch", err)
 		return 64

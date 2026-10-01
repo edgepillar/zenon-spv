@@ -6,6 +6,25 @@ and integration requirements, including the explicit runtime activation profile.
 
 ## Trust inputs
 
+This is the current normative integration contract. Historical review briefs
+and vault proposals describe earlier designs; their wording does not add a
+guarantee to the shipped implementation. In particular:
+
+- Momentum verification checks implemented v1/v2 hashes, signatures and
+  linkage; it is not a Bitcoin-style momentum PoW verifier. Account-block PoW
+  and resource/state-transition execution are not established here.
+- Content inclusion uses the full sorted account-header list and its flat
+  SHA3 commitment. A compact Merkle content branch is not implemented.
+- Inclusion binds a specific `(address, height, hash)` identity. Historical
+  "effect equivalence only" wording must not hide that binding or suggest
+  that execution effects are proven.
+- `PRODUCER_AUTHORIZATION` means matching the supplied operator schedule;
+  `TRUST_EXTERNAL_PRODUCER_SCHEDULE` remains explicit. It does not prove
+  elections, canonicality or consensus finality.
+- `ReasonInsufficientFinality` is a retained compatibility token for failure
+  to meet local depth W. Its name is not a finality claim. K controls retained
+  availability independently; see [retention policy](retention-policy.md).
+
 An integration must record these inputs alongside its verification result:
 
 | Input | Required interpretation |

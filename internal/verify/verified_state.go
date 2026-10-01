@@ -64,12 +64,14 @@ func LoadTrustedState(path string, anchor GenesisTrustRoot, opts VerifyOptions) 
 	if err != nil {
 		return VerifiedState{}, err
 	}
-	state, err := LoadOrInit(path, anchor, opts.Policy)
+	state, err := loadOrInit(path, anchor, opts.Policy, func(full HeaderState) error {
+		if r := AuthorizeRetainedWindow(full, opts); r.Outcome != OutcomeAccept {
+			return &StateAuthorizationError{Result: r}
+		}
+		return nil
+	})
 	if err != nil {
 		return VerifiedState{}, err
-	}
-	if r := AuthorizeRetainedWindow(state, opts); r.Outcome != OutcomeAccept {
-		return VerifiedState{}, &StateAuthorizationError{Result: r}
 	}
 	return VerifiedState{data: &verifiedStateData{state: state, opts: opts, trustedLocal: !state.Empty()}}, nil
 }
@@ -203,8 +205,8 @@ func freezeStateOptions(anchor GenesisTrustRoot, opts VerifyOptions) (VerifyOpti
 	if err := anchor.Validate(); err != nil {
 		return VerifyOptions{}, fmt.Errorf("%w: %v", ErrInvalidRetainedState, err)
 	}
-	if opts.Policy.W >= uint64(MaxPersistedHeaders) {
-		return VerifyOptions{}, fmt.Errorf("%w: policy window exceeds persistence limit", ErrInvalidRetainedState)
+	if err := opts.Policy.ValidateRetention(); err != nil {
+		return VerifyOptions{}, fmt.Errorf("%w: %w", ErrInvalidRetainedState, err)
 	}
 	limits := []int64{opts.Policy.MaxBundleBytes, int64(opts.Policy.MaxHeaders), int64(opts.Policy.MaxCommitments),
 		int64(opts.Policy.MaxFlatEvidenceMembers), int64(opts.Policy.MaxTotalFlatEvidenceMembers),

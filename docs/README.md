@@ -6,6 +6,13 @@ audit history.
 
 ## Current guidance
 
+- [`native-roadmap.md`](native-roadmap.md) — adopted product milestones and
+  separate consensus/state-root research tracks.
+- [`retention-policy.md`](retention-policy.md) — independent K/W settings,
+  format compatibility, migration, and bounded history.
+- [`trust-input-lifecycle.md`](trust-input-lifecycle.md) — input provenance,
+  schedule/profile renewal, and controlled restart procedures.
+
 - [`architecture.md`](architecture.md) — shipped verifier components,
   current guarantees, and forward roadmap.
 - [`trust-model.md`](trust-model.md) — what each `ACCEPT` does and does

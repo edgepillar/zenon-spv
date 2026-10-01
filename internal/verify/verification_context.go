@@ -31,6 +31,7 @@ type VerificationContext struct {
 // operation enforces every limit; aggregate bundle checks remain in the CLI.
 type ContextPolicy struct {
 	W                           uint64 `json:"w"`
+	RetainHeaders               int64  `json:"retain_headers,omitempty"`
 	MaxBundleBytes              int64  `json:"max_bundle_bytes"`
 	MaxHeaders                  int64  `json:"max_headers"`
 	MaxCommitments              int64  `json:"max_commitments"`
@@ -105,6 +106,9 @@ func (s VerifiedState) VerificationContext() (VerificationContext, error) {
 		Producer:    ContextProducer{Mode: ProducerAuthDisabled.String(), Source: ProducerSourceNone.String(), Kind: "disabled"},
 		Checkpoints: []Checkpoint{},
 	}
+	if p.RetainHeaders != 0 {
+		c.SchemaVersion, c.Policy.RetainHeaders = 2, int64(p.RetainHeaders)
+	}
 	if p.ProtocolProfile != nil {
 		profile := p.ProtocolProfile
 		c.ProtocolProfile = &ContextProtocolRules{Version: profile.Version,
@@ -146,7 +150,11 @@ func (s VerifiedState) VerificationContextJSON() ([]byte, error) {
 // whitespace and object-key ordering must not change the settings identity.
 func contextFingerprint(c VerificationContext) chain.Hash {
 	d := sha3.New256()
-	d.Write([]byte("zenon-spv/verification-context/v1\x00"))
+	if c.SchemaVersion == 2 {
+		d.Write([]byte("zenon-spv/verification-context/v2\x00"))
+	} else {
+		d.Write([]byte("zenon-spv/verification-context/v1\x00"))
+	}
 	var buf [8]byte
 	u64 := func(v uint64) {
 		binary.BigEndian.PutUint64(buf[:], v)
@@ -159,6 +167,9 @@ func contextFingerprint(c VerificationContext) chain.Hash {
 	d.Write(c.Anchor.HeaderHash[:])
 	p := c.Policy
 	u64(p.W)
+	if c.SchemaVersion == 2 {
+		u64(uint64(p.RetainHeaders))
+	}
 	for _, v := range []int64{p.MaxBundleBytes, p.MaxHeaders, p.MaxCommitments, p.MaxFlatEvidenceMembers,
 		p.MaxTotalFlatEvidenceMembers, p.MaxSegments, p.MaxSegmentBlocks, p.MaxTotalSegmentBlocks,
 		p.MaxStateValueProofs, p.MaxStateProofNodes, p.MaxStateProofBytes} {

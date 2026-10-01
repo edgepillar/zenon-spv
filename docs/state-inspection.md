@@ -33,6 +33,11 @@ the loaded view without changing the saved file. A larger policy increases its
 capacity but cannot recover previously evicted headers. The report describes
 this effective view, not the original file's capacity or complete history.
 
+With explicit `--retain-headers K`, depth W and capacity K are independent.
+Schema 3 files require that option on resume; omission is an operational error.
+The full saved window is reauthorized before any resize. The nested context
+is schema 2 and identifies K. See [retention policy](retention-policy.md).
+
 ## JSON schema 1
 
 `--json` emits one object on stdout with no progress text. Omit it, or pass

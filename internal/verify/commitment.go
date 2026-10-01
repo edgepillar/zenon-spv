@@ -9,7 +9,7 @@ import (
 
 // VerifyCommitment proves that evidence.Target was committed in the
 // momentum at evidence.Height under that momentum's ContentHash, and
-// that the committing momentum is finality-deep per policy.W.
+// that the committing momentum is followed by at least policy.W retained headers.
 //
 // Per zenon-spv-vault/spec/spv-implementation-guide.md §2.3 and §4.3:
 //
@@ -19,7 +19,7 @@ import (
 //
 //  1. Find the verified momentum at evidence.Height in state.RetainedWindow.
 //     Not found → REFUSED/HeightOutOfWindow.
-//  2. Enforce policy finality: tip.Height >= evidence.Height + policy.W
+//  2. Enforce policy depth: tip.Height >= evidence.Height + policy.W
 //     (W consecutive verified headers AFTER the queried height per
 //     §2.3). Otherwise → REFUSED/InsufficientFinality (F2).
 //  3. Recompute MomentumContent.Hash() over evidence.Flat.SortedHeaders.
@@ -39,7 +39,8 @@ import (
 // the same r_C the verifier accepted in the header chain." It does
 // NOT verify that the underlying account block executed correctly
 // (NG1) or that this is the only block at that (address, height) on
-// the canonical chain (NG6). Effect-equivalence only.
+// the canonical chain (NG6). This binds a specific account-header identity;
+// execution effects and state values are not proven.
 func VerifyCommitment(state HeaderState, evidence proof.CommitmentEvidence, policy Policy) Result {
 	if err := state.validateProtocolPolicy(policy); err != nil {
 		return protocolFailure(err)
@@ -54,10 +55,8 @@ func VerifyCommitment(state HeaderState, evidence proof.CommitmentEvidence, poli
 		}
 	}
 	// F2: enforce spec §2.3 — W consecutive verified headers AFTER
-	// the queried height. With Capacity = W+1, the retained window
-	// always satisfies tip.Height - evidence.Height >= W when the
-	// commitment is at the oldest retained slot; this check makes
-	// the property load-bearing instead of incidentally true.
+	// the queried height. K controls availability; this separate check
+	// enforces depth even when a larger retained window contains the target.
 	if tip, hasTip := state.Tip(); hasTip {
 		if tip.Height < evidence.Height || tip.Height-evidence.Height < policy.W {
 			return Result{

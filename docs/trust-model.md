@@ -55,14 +55,13 @@ The exact proof depends on the verifier path that returned `ACCEPT`.
 
 1. **Producer-set / quorum authorization, when `--schedule` is not
    configured.** The verifier always checks the Ed25519 signature
-   matches the claimed `PublicKey`. Whether the signing key is
-   actually the elected producer for the header's slot depends on
-   whether an `--schedule <path>` was passed:
+   matches the claimed `PublicKey`. An operator schedule adds authorization
+   relative to that input; no configuration proves network election:
    - **Without `--schedule`** (default): the producer-set check is
      skipped. The CLI prints the tier-1 caveat. An attacker
      controlling any keypair can forge a valid-looking header
-     chain from an attacker-rooted point — this is the gap that
-     opt-in producer authorization closes.
+     chain from an attacker-rooted point. Required schedule matching restricts
+     accepted signers relative to an additional externally trusted input.
    - **With `--schedule`**: each header's
      `(height, TimestampUnix, PubKeyToAddress(PublicKey))` triple
      must match the operator-attested schedule. The CLI prints

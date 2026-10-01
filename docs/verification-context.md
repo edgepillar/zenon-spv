@@ -140,9 +140,21 @@ settings across different builds do not establish identical verifier behavior.
 These records add no canonicality, network activation, elected-producer, or
 consensus-finality guarantee.
 
-## Fingerprint encoding, schema 1
+## Fingerprint encodings
 
-Hash the following concatenation with SHA3-256. Integers, including presence
+Schema 1 remains byte-for-byte unchanged when `RetainHeaders` is zero (legacy
+`K=W+1`). Explicit `--retain-headers K` uses context **schema 2**, adds
+`policy.retain_headers`, changes the domain prefix to
+`zenon-spv/verification-context/v2` followed by zero, and encodes K as a
+big-endian uint64 immediately after W. All other fields and their ordering
+are unchanged. Equal effective capacities selected through legacy versus
+explicit mode have different fingerprints because their resume requirements
+differ. Existing default pins remain valid; opt-in requires a reviewed new pin.
+Outer command/event report schemas remain at version 1; consumers must check
+the nested context version separately. The independent Python checker covers
+both encodings, including the new `v2-retention.json` vector.
+
+For schema 1, hash the following concatenation with SHA3-256. Integers, including presence
 flags and schema versions, are unsigned 64-bit big-endian. Hashes are their
 32 raw bytes. Strings are UTF-8 prefixed by an unsigned 64-bit byte length.
 
@@ -173,7 +185,7 @@ schedule and checkpoint identity, detached views, custom callbacks, concurrent
 readers, CLI outcomes, and watch persistence. The node-derived v1/v2 corpus
 checks that context is stable through extension and trusted resume.
 
-Two [synthetic vectors](../internal/testdata/verification-context/README.md)
+Three [synthetic vectors](../internal/testdata/verification-context/README.md)
 were computed with Python's `hashlib.sha3_256`, independently of the Go
 fingerprint implementation. Check them with:
 

@@ -1,5 +1,12 @@
 # State-Value-Proof PR — Implementation Roadmap
 
+> Historical implementation plan for the pinned baseline in the
+> [state commitment audit](state-commitment-audit.md). Current priorities and
+> the separate, unapproved v3 state-root research candidate are in the
+> [native roadmap](native-roadmap.md). A future accepting state verifier needs
+> the complete protocol, trust and conformance gates there, not just a new
+> commitment-kind switch.
+
 ## Context
 
 `docs/state-proof-plan.md` lays out a six-phase plan to move zenon-spv closer to a real state-verifying SPV. The current verifier proves header continuity and account-header inclusion under `ContentHash`, but it does NOT prove balances, state values, or state transitions. The doc proposes: audit → tighten semantics → add wire type → add verifier skeleton → balance proofs → sentry-role doc → adversarial tests.

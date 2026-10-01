@@ -104,6 +104,14 @@ identity, mode, or modification time. Reports exclude private fixture paths,
 source labels, and credentialed endpoints. This scenario is included in each
 native platform's offline pilot artifact.
 
+`TestCompiledRetentionDepthWorkflow` independently selects K=16 with W=6,
+checks context schema 2 and a reviewed pin, saves/resumes schema 3 through
+watch, and queries multiple retained targets after their depth requirement is
+met. Inspection reports several eligible heights. Omitted K refuses before
+RPC, changed K fails the old pin, and queries preserve the saved file. Its
+node-derived account targets share one confirming momentum; the separate
+mixed-height core fixture in [retention policy](retention-policy.md) is synthetic.
+
 This is synthetic offline inclusion evidence against explicitly trusted local
 anchor/state inputs. It does not validate VM execution, live activation,
 balance proofs, freshness, canonical-chain selection, or consensus finality.

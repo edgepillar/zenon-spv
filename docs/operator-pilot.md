@@ -6,7 +6,8 @@ and restart watch, collect account evidence, and query a retained window.
 Network operations are read-only. Local state and report files are written;
 there is no wallet, signing, transaction submission, or balance-proof step.
 
-The executable conformance case is `TestCompiledPinnedOperatorWorkflow`.
+Executable conformance cases are `TestCompiledPinnedOperatorWorkflow` for
+trust-input pinning and `TestCompiledRetentionDepthWorkflow` for explicit K.
 Run it without public-network access using cached Go dependencies:
 
 ```sh
@@ -36,8 +37,8 @@ Prepare and retain these inputs privately:
 | Peer selection | Explicit endpoints and agreement threshold; record operator assumptions privately. Distinct URLs do not establish independent peers. |
 | Query targets | Expected account-header/segment identities and required guarantees. A successful report for another target is insufficient. |
 
-The procedure deliberately requires a schedule and profile. A legacy v1
-experiment can omit either only as a deliberate change in trust policy,
+The procedure deliberately requires a schedule and profile. Outside this pilot,
+a legacy v1 experiment can omit either only as a deliberate change in trust policy,
 followed by reviewing and recording a new context. A profile must match
 persisted state exactly, including its private source label. Extending a
 profile requires a new state built from a trusted anchor; fingerprint equality
@@ -89,15 +90,15 @@ record collector-build.json "$FETCH" version --json
 
 CONFIG=(--genesis-config "$PRIVATE/anchor.json"
         --protocol-profile "$PRIVATE/activation.json"
-        --schedule "$PRIVATE/producers.json" --window low)
+        --schedule "$PRIVATE/producers.json" --window low --retain-headers 256)
 record config.json "$SPV" inspect-config "${CONFIG[@]}" --json
 PIN=$(jq -er 'select(.schema_version == 1 and .status == "configured" and .exit_code == 0 and .error == null)
-  | .verification_context | select(.fingerprint_status == "available")
+  | .verification_context | select(.schema_version == 2 and .policy.retain_headers == 256 and .fingerprint_status == "available")
   | .fingerprint | select(test("^[0-9a-f]{64}$"))' "$RECORDS/config.json")
 printf '%s\n' "$PIN" > "$RECORDS/context-pin.txt"
 ```
 
-Review the context's anchor, depth/resource limits, profile range and v2
+Review the context's anchor, capacity, depth/resource limits, profile range and v2
 boundary, required producer mode, schedule hash, and applicable checkpoints.
 Store the approved pin with the protected run records. On resume use that
 saved pin; regenerating it from edited files would bless the drift being
@@ -145,6 +146,13 @@ Inspect the header result's guarantees and trust assumptions. Initial header
 ACCEPT does not yet establish inclusion or depth for an account target.
 
 ## Advance, restart, and inspect
+
+This example selects K=256 and W=6. It uses state schema 3 and context schema
+2; keep the explicit retention option on restart. Review the actual header
+count/range before querying: increasing K cannot recover evicted headers.
+See [retention policy](retention-policy.md). Before trust-input renewal, follow
+the [lifecycle procedure](trust-input-lifecycle.md), preserving the prior inputs,
+pin, state snapshot, and failure records.
 
 ```bash
 record watch-1.jsonl "$SPV" watch "${COMMON[@]}" --json --once \
@@ -223,7 +231,7 @@ $pin = (Get-Content -Raw "$records/context-pin.txt").Trim()
 $privateRun = New-Item -ItemType Directory -Path (Join-Path $private ([guid]::NewGuid().ToString()))
 $common = @('--genesis-config', "$private/anchor.json",
   '--protocol-profile', "$private/activation.json", '--schedule', "$private/producers.json",
-  '--window', 'low', '--expect-context', $pin, '--state', "$private/state.json")
+  '--window', 'low', '--retain-headers', '256', '--expect-context', $pin, '--state', "$private/state.json")
 & $spv watch @common --json --once --peers $peers --quorum $quorum `
   --safety-margin 6 --batch-size 60 > "$records/watch-next.jsonl" 2> "$privateRun/watch-next.stderr"
 $status = $LASTEXITCODE

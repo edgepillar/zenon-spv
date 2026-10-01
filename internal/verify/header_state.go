@@ -9,12 +9,10 @@ import (
 // HeaderState carries the verifier's retained policy window and the
 // trust anchors needed to extend it.
 //
-// Per zenon-spv-vault/spec/spv-implementation-guide.md §2 + §6.1,
-// retained-window storage is bounded by (w+1) * σ_H — the spec's
-// "k consecutive verified headers AFTER height h" definition (§2.3)
-// requires keeping the target plus W headers past it, so the window
-// holds W+1 entries. The window is a FIFO ring — when full, oldest
-// header is evicted on Append.
+// Storage capacity K is independent of the required subsequent-header depth W.
+// Zero Policy.RetainHeaders preserves legacy K=W+1. Explicit K permits
+// delayed queries at multiple heights. The oldest header is evicted on Append
+// when full. Neither capacity nor depth establishes consensus finality.
 //
 // This type is the unit of offline-resume state in later phases:
 // the verifier serializes HeaderState to disk and resumes from its
@@ -25,21 +23,23 @@ type HeaderState struct {
 	Genesis        GenesisTrustRoot
 	RetainedWindow []chain.Header
 	Capacity       int
+	// RetainHeaders records explicit K, or zero for legacy W+1 semantics.
+	RetainHeaders int
 }
 
-// capacityForPolicy returns the minimum retained-window capacity
-// needed to satisfy spec §2.3's "W headers after target" with the
-// target itself remaining addressable: W+1.
+// capacityForPolicy returns explicit K or legacy W+1; zero means invalid.
 func capacityForPolicy(policy Policy) int {
-	cap := int(policy.W) + 1
-	if cap < 1 {
-		cap = 1
+	if policy.ValidateRetention() != nil {
+		return 0 // Invalid low-level states cannot pass verification or saving.
 	}
-	return cap
+	if policy.RetainHeaders != 0 {
+		return policy.RetainHeaders
+	}
+	return int(policy.W) + 1
 }
 
 // NewHeaderState builds an empty state anchored at g, sized for
-// policy.W+1 headers of retention (target + W past).
+// explicit K or legacy W+1 headers of retention.
 func NewHeaderState(g GenesisTrustRoot, policy Policy) HeaderState {
 	cap := capacityForPolicy(policy)
 	return HeaderState{
@@ -47,6 +47,7 @@ func NewHeaderState(g GenesisTrustRoot, policy Policy) HeaderState {
 		Genesis:         g,
 		RetainedWindow:  make([]chain.Header, 0, cap),
 		Capacity:        cap,
+		RetainHeaders:   policy.RetainHeaders,
 	}
 }
 

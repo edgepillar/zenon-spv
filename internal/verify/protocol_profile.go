@@ -158,6 +158,16 @@ func validateProtocolHeader(h chain.Header, p *ProtocolProfile) error {
 }
 
 func (s HeaderState) validateProtocolPolicy(policy Policy) error {
+	if err := policy.ValidateRetention(); err != nil {
+		return err
+	}
+	if s.RetainHeaders != policy.RetainHeaders || (policy.RetainHeaders != 0 && s.Capacity != policy.RetainHeaders) {
+		return ErrInvalidRetentionPolicy
+	}
+	return s.validateProtocolRules(policy)
+}
+
+func (s HeaderState) validateProtocolRules(policy Policy) error {
 	if !sameProtocolProfile(s.ProtocolProfile, policy.ProtocolProfile) {
 		return ErrProtocolProfileMismatch
 	}
@@ -167,6 +177,8 @@ func (s HeaderState) validateProtocolPolicy(policy Policy) error {
 func protocolFailure(err error) Result {
 	reason := ReasonInvalidProtocolProfile
 	switch {
+	case errors.Is(err, ErrInvalidRetentionPolicy):
+		reason = ReasonInvalidRetentionPolicy
 	case errors.Is(err, chain.ErrUnsupportedHeaderVersion):
 		reason = ReasonUnsupportedHeaderVersion
 	case errors.Is(err, ErrProtocolProfileRequired):

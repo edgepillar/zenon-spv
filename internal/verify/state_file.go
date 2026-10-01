@@ -8,22 +8,26 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/0x3639/zenon-spv/internal/chain"
 )
 
 // stateFileVersion identifies legacy state without an activation profile.
 // profileStateFileVersion prevents older clients from ignoring a saved
-// profile. Bump on any breaking change; an unknown version on
+// profile. Version 3 records explicit K in capacity, with an optional profile.
+// Older clients reject it instead of reverting to W+1. An unknown version on
 // load returns an error rather than best-effort parsing (mirrors
 // the refusal-semantics discipline of ADR 0001).
 const (
-	stateFileVersion        uint32 = 1
-	profileStateFileVersion uint32 = 2
+	stateFileVersion          uint32 = 1
+	profileStateFileVersion   uint32 = 2
+	retentionStateFileVersion uint32 = 3
 )
 
 // persistedState is the on-disk shape of HeaderState. Only the
 // fields the verifier needs to resume are persisted; the Policy in
 // effect at load time governs Capacity (the loaded slice is
-// truncated to the current Capacity if W has shrunk).
+// resized only after complete validation; explicit retention cannot be omitted).
 type persistedState struct {
 	ProtocolProfile *ProtocolProfile     `json:"protocol_profile,omitempty"`
 	Version         uint32               `json:"version"`
@@ -86,6 +90,9 @@ func saveHeaderState(path string, state HeaderState, openDir func(string) (*os.F
 	}
 	if body.ProtocolProfile != nil {
 		body.Version = profileStateFileVersion
+	}
+	if state.RetainHeaders != 0 {
+		body.Version = retentionStateFileVersion
 	}
 	if err := enc.Encode(body); err != nil {
 		_ = tmp.Close()
@@ -158,10 +165,10 @@ func decodeHeaderState(r io.Reader, maxBytes int64) (HeaderState, error) {
 	if err := json.Unmarshal(raw, &body); err != nil {
 		return HeaderState{}, fmt.Errorf("parse: %w", err)
 	}
-	if body.Version != stateFileVersion && body.Version != profileStateFileVersion {
-		return HeaderState{}, fmt.Errorf("unsupported state-file version %d (supported 1 and 2)", body.Version)
+	if body.Version != stateFileVersion && body.Version != profileStateFileVersion && body.Version != retentionStateFileVersion {
+		return HeaderState{}, fmt.Errorf("unsupported state-file version %d (supported 1, 2, and 3)", body.Version)
 	}
-	if (body.Version == profileStateFileVersion) != (body.ProtocolProfile != nil) {
+	if body.Version != retentionStateFileVersion && (body.Version == profileStateFileVersion) != (body.ProtocolProfile != nil) {
 		return HeaderState{}, errors.New("state file schema/profile mismatch")
 	}
 	if body.Genesis.HeaderHash.IsZero() {
@@ -172,6 +179,9 @@ func decodeHeaderState(r io.Reader, maxBytes int64) (HeaderState, error) {
 		Genesis:         body.Genesis,
 		RetainedWindow:  body.Window,
 		Capacity:        body.Capacity,
+	}
+	if body.Version == retentionStateFileVersion {
+		state.RetainHeaders = body.Capacity
 	}
 	if err := state.validateRetainedState(); err != nil {
 		return HeaderState{}, fmt.Errorf("load state: %w", err)
@@ -188,14 +198,16 @@ func decodeHeaderState(r io.Reader, maxBytes int64) (HeaderState, error) {
 // requires a new state file by policy), or an attempt to point a
 // mainnet verifier at testnet state.
 //
-// If policy.W has shrunk since the file was written, the loaded
-// retained window is truncated to keep the most recent
-// capacityForPolicy(policy) == policy.W + 1 headers (the spec
-// §2.3 capacity that keeps the target plus W headers past it),
-// and Capacity is updated to match the new policy.
+// Explicit K, or legacy W+1, controls the resulting capacity. Increasing it
+// cannot recover evicted history. Schema 3 requires explicit K on resume.
+// The owned loader also authorizes the full saved window before resizing.
 func LoadOrInit(path string, genesis GenesisTrustRoot, policy Policy) (HeaderState, error) {
-	if policy.W >= uint64(MaxPersistedHeaders) {
-		return HeaderState{}, fmt.Errorf("%w: policy window exceeds persistence limit", ErrInvalidRetainedState)
+	return loadOrInit(path, genesis, policy, nil)
+}
+
+func loadOrInit(path string, genesis GenesisTrustRoot, policy Policy, authorize func(HeaderState) error) (HeaderState, error) {
+	if err := policy.ValidateRetention(); err != nil {
+		return HeaderState{}, fmt.Errorf("%w: %w", ErrInvalidRetainedState, err)
 	}
 	if err := validateProfileAnchor(policy.ProtocolProfile, genesis); err != nil {
 		return HeaderState{}, err
@@ -221,10 +233,24 @@ func LoadOrInit(path string, genesis GenesisTrustRoot, policy Policy) (HeaderSta
 		return HeaderState{}, fmt.Errorf("state file genesis hash %x != configured genesis hash %x (different trust roots)",
 			loaded.Genesis.HeaderHash, genesis.HeaderHash)
 	}
-	cap := capacityForPolicy(policy)
-	loaded.Capacity = cap
-	if len(loaded.RetainedWindow) > cap {
-		loaded.RetainedWindow = loaded.RetainedWindow[len(loaded.RetainedWindow)-cap:]
+	if loaded.RetainHeaders != 0 && policy.RetainHeaders == 0 {
+		return HeaderState{}, errors.New("state file requires explicit retention policy")
 	}
+	// Authenticate all stored producer slots before resizing can evict any.
+	if authorize != nil {
+		if err := authorize(loaded); err != nil {
+			return HeaderState{}, err
+		}
+	}
+	capacity := capacityForPolicy(policy)
+	loaded.Capacity = capacity
+	loaded.RetainHeaders = policy.RetainHeaders
+	window := loaded.RetainedWindow
+	if len(window) > capacity {
+		window = window[len(window)-capacity:]
+	}
+	// Detach from the decoded backing array, releasing evicted envelopes and
+	// bounding the resumed state's header storage to the selected capacity.
+	loaded.RetainedWindow = append(make([]chain.Header, 0, capacity), window...)
 	return loaded, nil
 }

@@ -2,7 +2,7 @@
 
 A resource-bounded SPV (Simplified Payment Verifier) for the Zenon Network of Momentum.
 
-This module is the implementation; the spec, notes, and architecture decisions live in the sibling [`zenon-spv-vault`](https://github.com/0x3639/zenon-spv-vault) repo. Read the vault first for spec context.
+This module is the implementation. The [verification contract](docs/verification-contract.md) defines current guarantees; the sibling [`zenon-spv-vault`](https://github.com/0x3639/zenon-spv-vault) provides design history and upstream context. See the [development roadmap](docs/native-roadmap.md) for the staged product and research tracks.
 
 ## Status
 

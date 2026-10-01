@@ -67,9 +67,11 @@ These are source observations, not assertions of public-network activation.
 
 ## Persistence and failures
 
-Profile-bound state uses schema **2**, including the full profile. Older
-clients refuse that schema instead of ignoring activation constraints.
-Legacy v1-only state without a profile keeps schema 1. The bundle envelope
+With legacy retention, profile-bound state uses schema **2**, including the full
+profile, and v1-only state without a profile keeps schema 1. Explicit retained
+capacity uses **schema 3**, with the profile included when selected; see
+[K/W separation](retention-policy.md). Older clients refuse unsupported schemas
+instead of ignoring activation or retention constraints. The bundle envelope
 remains at version 1; new clients require the price fields for v2 headers.
 
 Resume requires an exact match of the configured profile and anchor,

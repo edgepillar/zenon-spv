@@ -12,7 +12,7 @@ import (
 	"github.com/0x3639/zenon-spv/internal/verify"
 )
 
-const inspectStateUsage = "Usage: zenon-spv inspect-state --state <path> [--genesis-config <path>] [--window {low|medium|high}] [--protocol-profile <path>] [--schedule <path>] [--expect-context <64-hex>] [--json]\n"
+const inspectStateUsage = "Usage: zenon-spv inspect-state --state <path> [--genesis-config <path>] [--window {low|medium|high}] [--retain-headers <K>] [--protocol-profile <path>] [--schedule <path>] [--expect-context <64-hex>] [--json]\n"
 
 // Inspection deliberately has no ACCEPT outcome or proven guarantees. It
 // describes a trusted local snapshot under explicitly selected settings.
@@ -45,6 +45,7 @@ func runInspectState(args []string, stdout, stderr io.Writer) int {
 	profilePath := fs.String("protocol-profile", "", "operator-attested activation profile")
 	schedulePath := fs.String("schedule", "", "operator-attested producer schedule")
 	tier := fs.String("window", "low", "policy window: low | medium | high")
+	retainHeaders := fs.String("retain-headers", "", "explicit retained header capacity K (W < K <= 4096)")
 	jsonOutput := fs.Bool("json", false, "emit a versioned inspection report")
 	expectedContext := fs.String("expect-context", "", "require this 64-hex verification context fingerprint")
 	if err := fs.Parse(args); errors.Is(err, flag.ErrHelp) {
@@ -59,6 +60,9 @@ func runInspectState(args []string, stdout, stderr io.Writer) int {
 		return finishInspection(report, 64, *jsonOutput, stdout, stderr)
 	}
 	policy, err := parseWindowPolicy(*tier)
+	if err == nil {
+		err = configureRetention(fs, *retainHeaders, &policy)
+	}
 	if err != nil {
 		report.Error = &reportError{Stage: "arguments", Category: "usage"}
 		return finishInspection(report, 64, *jsonOutput, stdout, stderr)
