@@ -13,12 +13,14 @@ import (
 type rpcListDecoder[T any] struct {
 	target *[]T
 	count  uint64
+	// rowTarget optionally wraps each row with response-scoped decoding limits.
+	rowTarget func(*T) any
 }
 
 func (list *rpcListDecoder[T]) UnmarshalJSON(raw []byte) error {
 	wire := struct {
 		List rpcListRows[T] `json:"list"`
-	}{List: rpcListRows[T]{count: list.count}}
+	}{List: rpcListRows[T]{count: list.count, rowTarget: list.rowTarget}}
 	if err := json.Unmarshal(raw, &wire); err != nil {
 		return err
 	}
@@ -27,9 +29,10 @@ func (list *rpcListDecoder[T]) UnmarshalJSON(raw []byte) error {
 }
 
 type rpcListRows[T any] struct {
-	rows  []T
-	count uint64
-	seen  bool
+	rows      []T
+	count     uint64
+	seen      bool
+	rowTarget func(*T) any
 }
 
 func (list *rpcListRows[T]) UnmarshalJSON(raw []byte) error {
@@ -55,7 +58,11 @@ func (list *rpcListRows[T]) UnmarshalJSON(raw []byte) error {
 				return fmt.Errorf("%w: range list exceeds requested count %d", ErrQueryMismatch, list.count)
 			}
 			var row T
-			if err := d.Decode(&row); err != nil {
+			var target any = &row
+			if list.rowTarget != nil {
+				target = list.rowTarget(&row)
+			}
+			if err := d.Decode(target); err != nil {
 				return err
 			}
 			decoded = append(decoded, row)

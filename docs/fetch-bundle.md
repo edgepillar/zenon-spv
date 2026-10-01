@@ -72,7 +72,10 @@ succeeds. This bounds accumulated encoded output, not process memory: header
 and commitment objects, the current segment's RPC responses and decoded data
 (including per-peer responses for quorum), buffer capacity, and per-item encoder
 scratch space require additional memory. A single RPC response still has its
-own independent 64 MiB cap.
+own independent 64 MiB cap. Typed RPC decoding also caps content and descendant
+lists at 100,000 members each and 1,000,000 members across one response; see
+[RPC query binding](rpc-query-binding.md). These transport guardrails do not
+replace the collector's repeated-evidence or verifier policy checks.
 
 The candidate can still fail signature, linkage, commitment, or policy checks.
 Authenticate checkpoint provenance and run the verifier before using evidence.

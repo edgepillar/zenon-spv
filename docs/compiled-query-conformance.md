@@ -47,6 +47,8 @@ The workflow checks:
 - Reject replaced or oversized momentum/account range lists before collecting
   evidence; preserve candidate bytes, identity, mode, and modification time,
   and emit no partial stdout bundle.
+- Reject oversized nested content and descendant lists during RPC decoding,
+  with the same file and stdout guarantees and no private payload in diagnostics.
 - Report usage/setup failures separately from proof outcomes and save failures
   separately from accepted header verification.
 - Return a nonzero process status for a closed stdout pipe while preserving

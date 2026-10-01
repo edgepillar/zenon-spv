@@ -63,6 +63,13 @@ func TestOfflineWatchPeerFaults(t *testing.T) {
 			want: "REFUSED ReasonMissingEvidence", detail: "invalid JSON-RPC response"},
 		{name: "oversized-malformed-batch", peers: [3]string{"oversized-malformed", "oversized-malformed", "oversized-malformed"},
 			maxHeaders: 2, want: "REFUSED ReasonMissingEvidence", detail: "response does not match query"},
+		{name: "one-oversized-content", peers: [3]string{"oversized-content", "", ""}, advance: true, want: "ACCEPT"},
+		{name: "all-oversized-content", peers: [3]string{"oversized-content", "oversized-content", "oversized-content"},
+			want: "REFUSED ReasonMissingEvidence", detail: "response exceeds decoded entry limit"},
+		{name: "all-oversized-frontier-content", peers: [3]string{"oversized-frontier-content", "oversized-frontier-content", "oversized-frontier-content"},
+			want: "REFUSED ReasonMissingEvidence", detail: "0/3 peers reached on frontier"},
+		{name: "all-replaced-content", peers: [3]string{"replaced-content", "replaced-content", "replaced-content"},
+			want: "REFUSED ReasonMissingEvidence", detail: "invalid JSON-RPC response"},
 		{name: "all-stale", peers: [3]string{"stale", "stale", "stale"}, caughtUp: true, want: "ACCEPT (caught up"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -207,6 +214,9 @@ func startFaultPeer(t *testing.T, vectors []momentumVector, mode string, peer in
 		switch req.Method {
 		case "ledger.getFrontierMomentum":
 			response = wire[len(wire)-1]
+			if mode == "oversized-frontier-content" {
+				response = oversizedRPCMembers("content")
+			}
 		case "ledger.getMomentumsByHeight":
 			if len(req.Params) != 2 || req.Params[0] < 2001 || req.Params[0]-2001 >= uint64(len(wire)) ||
 				req.Params[1] == 0 || req.Params[1] > uint64(len(wire))-(req.Params[0]-2001) {
@@ -223,6 +233,15 @@ func startFaultPeer(t *testing.T, vectors []momentumVector, mode string, peer in
 				end++ // Ignore the requested count only for the incoming batch.
 			}
 			response = map[string]any{"list": wire[start:end]}
+			if req.Params[0] == 2003 && (mode == "oversized-content" || mode == "replaced-content") {
+				rows := slices.Clone(wire[start:end])
+				if mode == "oversized-content" {
+					rows[0] = oversizedRPCMembers("content")
+				} else {
+					rows[0] = json.RawMessage(fmt.Sprintf(`{"content":null,%s`, rows[0][1:]))
+				}
+				response = map[string]any{"list": rows}
+			}
 			if req.Params[0] == 2003 && (mode == "replaced-range-list" || mode == "oversized-malformed") {
 				rows, err := json.Marshal(wire[start:end])
 				if err != nil {
@@ -259,6 +278,11 @@ func startFaultPeer(t *testing.T, vectors []momentumVector, mode string, peer in
 	}))
 	t.Cleanup(server.Close)
 	return server.URL
+}
+
+func oversizedRPCMembers(field string) json.RawMessage {
+	return json.RawMessage(fmt.Sprintf(`{"%s":[%s"PRIVATE_UNREACHED_MEMBER"]}`, field,
+		strings.Repeat("null,", fetch.MaxEvidenceListMembers)))
 }
 
 func faultPeerWire(t *testing.T, vectors []momentumVector, mode string, peer int) []json.RawMessage {

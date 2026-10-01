@@ -35,6 +35,8 @@ func callFailure(stage string, cause error) error {
 		message += ": response does not match query"
 	case errors.Is(cause, ErrInvalidRPCResponse):
 		message += ": invalid JSON-RPC response"
+	case errors.Is(cause, ErrResponseTooComplex):
+		message += ": response exceeds decoded entry limit"
 	case errors.As(cause, &networkError) && networkError.Timeout():
 		message += ": timeout"
 	}

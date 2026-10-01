@@ -158,6 +158,9 @@ State-value layer:
       Watch rejects them before configuration/state loading; compiled-command
       tests preserve state, bundle, and checkpoint files. URL-string uniqueness
       does not establish independent operators or authenticated peers.
+- [x] RPC frontier/range decoding limits content and descendant lists before
+      excess entries, including a shared response budget. Replaced nested lists
+      fail; unusable responses cannot advance watch or overwrite a candidate.
 - [x] Explicit [retained-state CLI queries](retained-state-queries.md) preserve
       state files on every outcome, retain load/producer/depth/resource checks,
       and do not treat absent or supplied headers as an implicit query mode.
