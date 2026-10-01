@@ -80,3 +80,7 @@ target-platform and workload measurements remain a separate gate.
 See [flat-content resources](flat-content-resources.md) for the separate
 `BenchmarkFlatContent` cardinality/batch grid and compiled-process RSS samples.
 `make bench` includes that family as well as the retained-capacity workloads.
+
+The [content-hash allocation comparison](content-hash-allocations.md) adds
+`BenchmarkContentHashOrdering` with sorted, reversed and shuffled node-derived
+content at 1,000 and 100,000 members. CI and `make bench` include all four families.
