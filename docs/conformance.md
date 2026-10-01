@@ -158,6 +158,9 @@ State-value layer:
       signed envelope across RPC rounds. Changing answers refuses before
       verification or persistence, including a single-header batch; matching
       invalid signatures still fail normal cryptographic checks.
+- [x] Bundle collection preserves the observed target's hash, key, and signature
+      across RPC rounds. A conflict fails before candidate publication in normal
+      and proof-only modes; compiled CLI checks preserve files and emit no stdout.
 - [x] State save/load revalidate every retained header before truncation and
       enforce byte/capacity bounds, including the header count during JSON
       decoding; see [`watch-persistence.md`](watch-persistence.md).

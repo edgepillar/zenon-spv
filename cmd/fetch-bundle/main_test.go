@@ -13,12 +13,13 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/0x3639/zenon-spv/internal/chain"
 	"github.com/0x3639/zenon-spv/internal/proof"
 	"github.com/0x3639/zenon-spv/internal/verify"
 )
 
 // Serve the pinned node's synthetic v1 chain through the actual RPC path.
-func bundleFixturePeer(t *testing.T) (string, *atomic.Int64) {
+func bundleFixturePeer(t *testing.T, transforms ...func(string, []uint64, chain.Header, json.RawMessage) json.RawMessage) (string, *atomic.Int64) {
 	t.Helper()
 	raw, err := os.ReadFile("../../internal/testdata/conformance/momentum-v1-v2.json")
 	if err != nil {
@@ -27,9 +28,7 @@ func bundleFixturePeer(t *testing.T) (string, *atomic.Int64) {
 	var corpus struct {
 		Chain struct {
 			Vectors []struct {
-				Header struct {
-					Height uint64 `json:"height"`
-				} `json:"header"`
+				Header   chain.Header    `json:"header"`
 				Momentum json.RawMessage `json:"momentum"`
 			} `json:"vectors"`
 		} `json:"chain"`
@@ -38,11 +37,20 @@ func bundleFixturePeer(t *testing.T) (string, *atomic.Int64) {
 		t.Fatal(err)
 	}
 	wire := make(map[uint64]json.RawMessage)
+	headers := make(map[uint64]chain.Header)
 	for _, v := range corpus.Chain.Vectors {
 		wire[v.Header.Height] = v.Momentum
+		headers[v.Header.Height] = v.Header
 	}
 	if len(wire) != 6 || wire[1006] == nil {
 		t.Fatal("unexpected fixture chain")
+	}
+	render := func(method string, params []uint64, height uint64) json.RawMessage {
+		row := wire[height]
+		for _, transform := range transforms {
+			row = transform(method, params, headers[height], row)
+		}
+		return row
 	}
 	requests := &atomic.Int64{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +68,7 @@ func bundleFixturePeer(t *testing.T) (string, *atomic.Int64) {
 		var result any
 		switch req.Method {
 		case "ledger.getFrontierMomentum":
-			result = wire[1006]
+			result = render(req.Method, req.Params, 1006)
 		case "ledger.getMomentumsByHeight":
 			if len(req.Params) != 2 || req.Params[1] > 6 {
 				t.Error("unexpected range")
@@ -69,7 +77,7 @@ func bundleFixturePeer(t *testing.T) (string, *atomic.Int64) {
 			}
 			list := make([]json.RawMessage, req.Params[1])
 			for i := range list {
-				list[i] = wire[req.Params[0]+uint64(i)]
+				list[i] = render(req.Method, req.Params, req.Params[0]+uint64(i))
 				if list[i] == nil {
 					t.Error("height outside fixture")
 					w.WriteHeader(http.StatusNotFound)
@@ -148,7 +156,7 @@ func checkFixtureBundle(t *testing.T, bundlePath, anchorPath string) {
 }
 
 func TestBundleFetchModesProduceVerifiableFiles(t *testing.T) {
-	for _, mode := range []string{"rpc fallback", "multi pinned", "multi frontier"} {
+	for _, mode := range []string{"rpc fallback", "single frontier", "multi pinned", "multi frontier"} {
 		t.Run(mode, func(t *testing.T) {
 			a, requestsA := bundleFixturePeer(t)
 			b, requestsB := bundleFixturePeer(t)
@@ -168,11 +176,19 @@ func TestBundleFetchModesProduceVerifiableFiles(t *testing.T) {
 			if err := run(args); err != nil {
 				t.Fatal(err)
 			}
-			if requestsA.Load() == 0 || (mode != "rpc fallback" && requestsB.Load() == 0) {
-				t.Fatal("selected fetch mode was not exercised")
+			wantRequests := int64(2)
+			switch mode {
+			case "rpc fallback":
+				wantRequests = 1 // Explicit single-peer heights need no preliminary query.
+			case "multi frontier":
+				wantRequests = 3
 			}
-			if mode == "rpc fallback" && requestsB.Load() != 0 {
-				t.Fatal("single-peer fetch contacted another endpoint")
+			wantSecond := int64(0)
+			if strings.HasPrefix(mode, "multi") {
+				wantSecond = wantRequests
+			}
+			if requestsA.Load() != wantRequests || requestsB.Load() != wantSecond {
+				t.Fatal("selected fetch mode changed its RPC count or contacted an unrelated endpoint")
 			}
 			checkFixtureBundle(t, bundlePath, anchorPath)
 		})
