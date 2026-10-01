@@ -214,12 +214,32 @@ and 1,000,000 coverage ranges. These hard limits retain room for the
 million-momentum design; they are not typical memory-use estimates.
 Split longer observations into separate, explicitly selected schedules.
 The file-size check and bounded read precede JSON decoding. Array decoding
-stops at the count limit, before a compact list of empty objects can expand
-into arbitrarily many structs. Count checks also precede index allocation
+stops at the count limit; malformed or empty authority rows fail earlier.
+Count checks also precede index allocation
 and owned-state schedule copies. Validation walks
 sorted coverage and entries together in linear time, including terminal
 `uint64` heights; it does not iterate over a large claimed gap or rescan
 all coverage ranges for each entry.
+
+Schedule JSON requires `chain_id`, `coverage`, `entries`, and `schedule_hash`
+exactly once and non-null. Every coverage row requires `from_height` and
+`through_height`; every producer row requires `height`, `timestamp_unix`,
+and `producing_addr`, under the same rules. Field names must match the
+documented spelling and case. Unknown fields, case aliases, and duplicate
+fields (including escaped spellings of the same name) are rejected before
+validation can create an authorization index. Explicit zero scalar values
+remain available for custom schedules; missing values are never inferred.
+This intentionally rejects files that previously depended on JSON field
+overwriting or omitted authority fields.
+
+The audit metadata fields `generated_at`, `source_peers`, and `source_heights`
+remain optional and may be null, but cannot repeat at the top level. Metadata
+does not contribute to the schedule hash or authenticate producer elections.
+Parsing a schedule alone does not authorize it: `Validate` must still check
+coverage, dense entries, and the content hash. A failed parse leaves any
+existing in-memory schedule unchanged. CLI schedule failures precede state
+loading, writer locking, and watch RPC requests; JSON diagnostics exclude
+private filenames, arbitrary field names, and metadata values.
 
 ---
 

@@ -48,6 +48,15 @@ runs both shipped CLIs as separate processes. It covers multi-peer collection,
 retained-query JSON reports, actual exit codes, stream separation, protected
 state, failed-output preservation, and the save/report failure boundary.
 
+Producer-schedule decoding rejects duplicate or aliased authority fields,
+missing/null required values, and malformed nested rows before constructing
+an authorization index. Tests retain optional metadata and explicit-zero
+compatibility, transactional parsing, and byte/count bounds. Compiled CLI
+cases cover all four verification commands, inspection, and one-shot watch:
+invalid schedules fail before state loading, locking, or RPC, without exposing
+private input details. This tightens operator-attested input handling; it does
+not authenticate the schedule's claimed elections.
+
 ## §8 — Conformance test cases
 
 Header-chain layer:

@@ -108,13 +108,13 @@ func TestProducerScheduleStrictJSON(t *testing.T) {
 	}{
 		{"valid", string(raw), ""},
 		{"unknown top-level", `{"unexpected":true,` + string(raw[1:]), "unknown field"},
-		{"unknown entry", strings.Replace(string(raw), `"timestamp_unix":`, `"extra":true,"timestamp_unix":`, 1), "unknown field"},
-		{"unknown coverage", strings.Replace(string(raw), `"from_height":`, `"extra":true,"from_height":`, 1), "unknown field"},
-		{"non-array entries", `{"entries":{}}`, "expected an array"},
-		{"null entries", `{"coverage":[{"from_height":2,"through_height":2}],"entries":null}`, "has no entry"},
+		{"unknown entry", strings.Replace(string(raw), `"timestamp_unix":`, `"extra":true,"timestamp_unix":`, 1), "invalid entries"},
+		{"unknown coverage", strings.Replace(string(raw), `"from_height":`, `"extra":true,"from_height":`, 1), "invalid coverage"},
+		{"non-array entries", `{"entries":{}}`, "invalid entries"},
+		{"null entries", `{"coverage":[{"from_height":2,"through_height":2}],"entries":null}`, "entries must be non-null"},
 		{"trailing object", string(raw) + `{}`, "trailing JSON"},
 		{"trailing garbage", string(raw) + `x`, "trailing JSON"},
-		{"null", `null`, "empty coverage"},
+		{"null", `null`, "expected an object"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -136,12 +136,14 @@ func TestProducerScheduleStrictJSON(t *testing.T) {
 }
 
 func TestProducerScheduleJSONCountLimit(t *testing.T) {
-	// This small wire input would allocate more than a million structs if
-	// the loader checked counts only after a normal json.Unmarshal.
-	raw := `{"entries":[` + strings.Repeat(`{},`, MaxProducerScheduleEntries) + `{}]}`
-	s, err := decodeProducerSchedule(strings.NewReader(raw), int64(len(raw)))
-	if s != nil || !errors.Is(err, ErrProducerScheduleTooLarge) {
-		t.Fatalf("JSON entry limit: schedule=%v err=%v", s != nil, err)
+	// Exercise the production generic count decoder without materializing a
+	// million fully populated signed-authority rows. Empty authority rows are
+	// now structurally invalid and fail before the count cap is reached.
+	raw := `[` + strings.Repeat(`{},`, MaxProducerScheduleEntries) + `{}]`
+	var rows boundedScheduleRows[struct{}]
+	err := json.Unmarshal([]byte(raw), &rows)
+	if rows != nil || !errors.Is(err, ErrProducerScheduleTooLarge) {
+		t.Fatalf("JSON entry limit: published=%t err=%v", rows != nil, err)
 	}
 }
 
