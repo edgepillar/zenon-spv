@@ -17,6 +17,10 @@ the generated checkpoint, validate the full chain, or establish finality.
 - The same resolved selection is used for momentum and account-block queries.
   Quorum zero means unanimity; positive quorum must not exceed the selected
   endpoint count. A single peer therefore permits only quorum zero or one.
+- Repeated configured URL values fail before RPC or output writes. The list
+  and quorum are not silently reduced, and diagnostics name only list positions.
+  Comparison removes surrounding whitespace; distinct strings can still refer
+  to the same underlying peer.
 
 Endpoint counts do not establish independent operators. Multi-peer agreement
 does not make a checkpoint obtained from those peers an independent trust root.

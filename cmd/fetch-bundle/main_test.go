@@ -250,6 +250,7 @@ func TestBundleInvalidOptionsStopBeforeRPCOrOutput(t *testing.T) {
 		{"negative timeout", []string{"--timeout", "-1s"}, "--timeout"},
 		{"negative quorum", []string{"--quorum", "-1"}, "--quorum"},
 		{"excessive quorum", []string{"--quorum", "2"}, "--quorum"},
+		{"duplicate peers", []string{"--peers", server.URL + "," + server.URL}, "duplicates the configured URL"},
 		{"positional input", []string{"unexpected"}, "positional"},
 		{"zero segment height", []string{"--segments", address + ":0"}, "--segments"},
 		{"overflowing segment", []string{"--segments", address + ":0-18446744073709551615"}, "--segments"},

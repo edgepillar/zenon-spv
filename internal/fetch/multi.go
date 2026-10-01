@@ -53,8 +53,8 @@ func NewMultiClient(urls []string) *MultiClient {
 }
 
 // Validate checks the local peer configuration without making requests or
-// changing the caller's quorum. Distinct endpoints or independent operators
-// are not established by this check.
+// changing the caller's quorum. Repeated configured URL values are invalid;
+// different URL values do not establish independent endpoints or operators.
 func (m *MultiClient) Validate() error {
 	_, err := m.requiredQuorum()
 	return err
@@ -71,10 +71,16 @@ func (m *MultiClient) requiredQuorum() (int, error) {
 	if q < 1 || q > len(m.Peers) {
 		return 0, fmt.Errorf("%w: quorum must be zero (unanimous) or within the peer count", ErrInvalidPeerConfiguration)
 	}
+	seenURLs := make(map[string]int, len(m.Peers))
 	for i, p := range m.Peers {
 		if p == nil || p.HTTP == nil || strings.TrimSpace(p.URL) == "" {
 			return 0, fmt.Errorf("%w: %s requires a client, HTTP client, and nonempty URL", ErrInvalidPeerConfiguration, PeerLabel(i))
 		}
+		url := strings.TrimSpace(p.URL)
+		if earlier, duplicate := seenURLs[url]; duplicate {
+			return 0, fmt.Errorf("%w: %s duplicates the configured URL of %s", ErrInvalidPeerConfiguration, PeerLabel(i), PeerLabel(earlier))
+		}
+		seenURLs[url] = i
 	}
 	return q, nil
 }

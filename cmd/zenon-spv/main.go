@@ -532,6 +532,10 @@ func runWatch(args []string) int {
 	if *quorum > 0 {
 		multi.Quorum = *quorum
 	}
+	if err := multi.Validate(); err != nil {
+		fmt.Fprintf(os.Stderr, "watch: %v\n", err)
+		return 64
+	}
 
 	genesis, err := loadGenesis(*genesisConfig)
 	if err != nil {

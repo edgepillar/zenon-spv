@@ -41,3 +41,15 @@ func TestWatchQuorumValidationPrecedesConfiguration(t *testing.T) {
 		}
 	}
 }
+
+func TestWatchDuplicatePeersFailBeforeConfiguration(t *testing.T) {
+	const endpoint = "https://user:PRIVATE_PASSWORD@peer.invalid/rpc?token=PRIVATE_TOKEN"
+	dir := t.TempDir()
+	code, out, diagnostics := captureSetupRun(t, func() int {
+		return runWatch([]string{"--peers", endpoint + "," + endpoint, "--quorum", "2",
+			"--state", filepath.Join(dir, "PRIVATE_STATE"), "--genesis-config", filepath.Join(dir, "PRIVATE_ANCHOR"), "--show-context"})
+	})
+	if code != 64 || out != "" || !strings.Contains(diagnostics, "peer[2] duplicates the configured URL of peer[1]") || strings.Contains(diagnostics, "PRIVATE") {
+		t.Fatalf("duplicate peers were not refused before private configuration: code=%d", code)
+	}
+}
