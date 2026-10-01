@@ -159,6 +159,11 @@ command-error and persistence fields. --show-context adds no extra output in
 this mode. Consumers must check both the process exit code and report contents.
 See docs/verification-reports.md for the schema and output-failure boundary.
 
+watch --json streams versioned JSON Lines events to stdout. Each event separates
+header verification from persistence and includes the captured context and
+external trust inputs. Caught-up status does not verify a new header batch.
+Check the process exit status as well as complete events. See docs/watch-events.md.
+
 inspect-state --json emits a separate inspection report with the effective
 retained range, depth-eligible heights, settings, and external trust inputs.
 No bundle is accepted or proof outcome reported. A missing/empty state exits 2.
@@ -490,6 +495,7 @@ func runWatch(args []string) int {
 	genesisConfig := fs.String("genesis-config", "", "path to genesis trust root JSON file (overrides env)")
 	profilePath := fs.String("protocol-profile", "", "path to an operator-attested momentum activation profile")
 	showContext := fs.Bool("show-context", false, "log captured verification settings without private provenance metadata")
+	jsonOutput := fs.Bool("json", false, "emit versioned JSON Lines watch events on stdout")
 	statePath := fs.String("state", "", "path to persisted HeaderState (required)")
 	schedulePath := fs.String("schedule", "", "path to producer schedule JSON; when set, header producer authorization is required (tier-2 caveat)")
 	interval := fs.Duration("interval", syncer.DefaultInterval, "tick interval between iterations (0 = default 10s; negative values invalid)")
@@ -498,13 +504,20 @@ func runWatch(args []string) int {
 	if err := fs.Parse(args); err != nil {
 		return 64
 	}
+	diagnostic := func(stage string, err error) {
+		if *jsonOutput {
+			fmt.Fprintf(os.Stderr, "%s: operation failed\n", stage)
+		} else {
+			fmt.Fprintf(os.Stderr, "%s: %v\n", stage, err)
+		}
+	}
 	if fs.NArg() != 0 {
 		fmt.Fprintln(os.Stderr, "watch does not accept positional arguments")
 		return 64
 	}
 	policy, err := parseWindowPolicy(*tier)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "watch: %v\n", err)
+		diagnostic("watch", err)
 		return 64
 	}
 	if *interval < 0 {
@@ -533,17 +546,17 @@ func runWatch(args []string) int {
 		multi.Quorum = *quorum
 	}
 	if err := multi.Validate(); err != nil {
-		fmt.Fprintf(os.Stderr, "watch: %v\n", err)
+		diagnostic("watch", err)
 		return 64
 	}
 
 	genesis, err := loadGenesis(*genesisConfig)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "genesis: %v\n", err)
+		diagnostic("genesis", err)
 		return 70
 	}
 	if err := configureProtocolProfile(&policy, *profilePath, genesis); err != nil {
-		fmt.Fprintf(os.Stderr, "protocol profile: %v\n", err)
+		diagnostic("protocol profile", err)
 		return 70
 	}
 
@@ -551,7 +564,7 @@ func runWatch(args []string) int {
 	if *schedulePath != "" {
 		sched, err := verify.LoadProducerSchedule(*schedulePath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "schedule: %v\n", err)
+			diagnostic("schedule", err)
 			return 70
 		}
 		if sched.ChainID != genesis.ChainID {
@@ -573,6 +586,7 @@ func runWatch(args []string) int {
 		BatchSize:    *batchSize,
 		Out:          os.Stderr,
 		ShowContext:  *showContext,
+		JSON:         *jsonOutput,
 	}
 
 	// Surface the ACCEPT caveat once at startup. Per-tick ACCEPT logs
@@ -586,13 +600,17 @@ func runWatch(args []string) int {
 			Authorizer: authorizer,
 		}
 	}
-	printAcceptCaveat(os.Stderr, startupOpts)
-	printSourceTrust(os.Stderr, []verify.TrustAssumption{verify.TrustRPCQuorum})
+	if *jsonOutput {
+		loop.Out = os.Stdout
+	} else {
+		printAcceptCaveat(os.Stderr, startupOpts)
+		printSourceTrust(os.Stderr, []verify.TrustAssumption{verify.TrustRPCQuorum})
+	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	if err := loop.Run(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "watch: %v\n", err)
+		diagnostic("watch", err)
 		return 70
 	}
 	return 0

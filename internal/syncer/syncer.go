@@ -29,6 +29,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/0x3639/zenon-spv/internal/chain"
 	"github.com/0x3639/zenon-spv/internal/fetch"
 	"github.com/0x3639/zenon-spv/internal/statelock"
 	"github.com/0x3639/zenon-spv/internal/verify"
@@ -82,6 +83,11 @@ type Loop struct {
 	// short write stops Run; an earlier successful state save is not rolled back.
 	Out io.Writer
 
+	// JSON selects versioned JSON Lines events on Out instead of text logs.
+	// Events exclude arbitrary error text and separate verification from saving.
+	// Context is included in every event, regardless of ShowContext.
+	JSON bool
+
 	// MaxStateSaveFailures bounds consecutive failed save attempts.
 	// Zero selects the default of three; negative values are invalid.
 	MaxStateSaveFailures int
@@ -110,6 +116,9 @@ type TickResult struct {
 	Reason         verify.ReasonCode
 	Message        string
 	Err            error
+	verification   *verify.Result
+	candidateTip   *chain.HashHeight
+	failureStage   string
 }
 
 // Run executes the loop until ctx is cancelled. Returns nil on
@@ -176,23 +185,8 @@ func (l *Loop) Run(ctx context.Context) (runErr error) {
 		return errors.New("syncer: refusing to bootstrap from empty state — pre-anchor with `verify-headers --genesis-config <checkpoint> --state <path>` first")
 	}
 
-	tip, _ := state.Tip()
-	if err := l.logf("watching: tip=%d, peers=%d, quorum=%d, interval=%s\n",
-		tip.Height,
-		len(l.Multi.Peers), l.Multi.Quorum, l.Interval); err != nil {
+	if err := l.logStartup(state, maxSaveFailures); err != nil {
 		return err
-	}
-	if err := l.logf("state: trust_assumptions=%v\n", state.TrustAssumptions()); err != nil {
-		return err
-	}
-	if l.ShowContext {
-		raw, err := state.VerificationContextJSON()
-		if err != nil {
-			return fmt.Errorf("verification context: %w", err)
-		}
-		if err := l.logf("verification_context: %s\n", raw); err != nil {
-			return err
-		}
 	}
 
 	timer := time.NewTimer(0) // fire immediately on first iteration
@@ -208,8 +202,7 @@ func (l *Loop) Run(ctx context.Context) (runErr error) {
 			if res.Outcome == verify.OutcomeAccept {
 				if err := saveState(l.StatePath, newState); err != nil {
 					saveFailures++
-					if outputErr := l.logf("state: save failed (%d/%d), retaining tip=%d: %v\n",
-						saveFailures, maxSaveFailures, res.Tip, err); outputErr != nil {
+					if outputErr := l.logIteration(res, state, err, saveFailures, maxSaveFailures); outputErr != nil {
 						return errors.Join(fmt.Errorf("syncer: state save failed: %w", err), outputErr)
 					}
 					if saveFailures >= maxSaveFailures {
@@ -219,12 +212,12 @@ func (l *Loop) Run(ctx context.Context) (runErr error) {
 					state = newState
 					saveFailures = 0
 					persistedProgress = len(res.FetchedHeights) > 0
-					if err := l.logTick(res); err != nil {
+					if err := l.logIteration(res, state, nil, saveFailures, maxSaveFailures); err != nil {
 						return err
 					}
 				}
 			} else {
-				if err := l.logTick(res); err != nil {
+				if err := l.logIteration(res, state, nil, saveFailures, maxSaveFailures); err != nil {
 					return err
 				}
 			}
@@ -253,7 +246,7 @@ func (l *Loop) tick(ctx context.Context, state verify.VerifiedState) (TickResult
 	target, err := l.frontierTarget(ctx)
 	if err != nil {
 		return TickResult{Tip: tip, Err: err, Outcome: verify.OutcomeRefused, Reason: verify.ReasonMissingEvidence,
-			Message: fmt.Sprintf("frontier: %v", err)}, state
+			Message: fmt.Sprintf("frontier: %v", err), failureStage: "frontier"}, state
 	}
 	if target <= tip {
 		return TickResult{Tip: tip, Target: target, Outcome: verify.OutcomeAccept, Reason: verify.ReasonOK,
@@ -270,21 +263,27 @@ func (l *Loop) tick(ctx context.Context, state verify.VerifiedState) (TickResult
 	headers, err := l.Multi.FetchByHeight(ctx, start, count)
 	if err != nil {
 		return TickResult{Tip: tip, Target: target, Err: err, Outcome: verify.OutcomeRefused,
-			Reason: verify.ReasonMissingEvidence, Message: fmt.Sprintf("fetch: %v", err)}, state
+			Reason: verify.ReasonMissingEvidence, Message: fmt.Sprintf("fetch: %v", err), failureStage: "fetch"}, state
 	}
 	heights := make([]uint64, len(headers))
 	for i, h := range headers {
 		heights[i] = h.Height
 	}
 	result, newState := state.Extend(headers)
-	return TickResult{
+	r := TickResult{
 		Tip:            tip,
 		Target:         target,
 		FetchedHeights: heights,
 		Outcome:        result.Outcome,
 		Reason:         result.Reason,
 		Message:        result.Message,
-	}, newState
+		verification:   &result,
+	}
+	if result.Outcome == verify.OutcomeAccept {
+		tip, _ := newState.Tip()
+		r.candidateTip = &chain.HashHeight{Hash: tip.HeaderHash, Height: tip.Height}
+	}
+	return r, newState
 }
 
 func (l *Loop) frontierTarget(ctx context.Context) (uint64, error) {
@@ -306,9 +305,15 @@ func (l *Loop) logf(format string, args ...any) error {
 	if l.Out == nil {
 		return nil
 	}
-	message := fmt.Sprintf(format, args...)
+	return l.writeOutput([]byte(fmt.Sprintf(format, args...)))
+}
+
+func (l *Loop) writeOutput(message []byte) error {
+	if l.Out == nil {
+		return nil
+	}
 	// Preserve wrappers that override Write but inherit a WriteString method.
-	n, err := l.Out.Write([]byte(message))
+	n, err := l.Out.Write(message)
 	if err == nil && n != len(message) {
 		err = io.ErrShortWrite
 	}

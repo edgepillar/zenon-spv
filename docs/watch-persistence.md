@@ -106,6 +106,11 @@ Ordinary output-error formatting does not echo arbitrary writer messages, which
 may contain private local paths. Explicitly unwrapped causes remain private.
 Successful log formats are unchanged.
 
+`watch --json` selects a separate JSON Lines stream. It distinguishes saved
+progress, caught-up state, verification failures, and failed save attempts;
+see [watch events](watch-events.md). The same write-failure and persistence
+ordering rules apply to both formats.
+
 ## Retained-state validation
 
 Save and load reject invalid capacity, wrong chain identity, header hash or
