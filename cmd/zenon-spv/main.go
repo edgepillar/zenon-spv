@@ -15,7 +15,8 @@
 // multi-peer-fetching new momentums and verifying them with k-of-n
 // redundancy. State persists after each ACCEPT; REJECT and REFUSED
 // leave state untouched. Exits 0 on graceful shutdown
-// (SIGINT/SIGTERM), 70 on unrecoverable startup error.
+// (SIGINT/SIGTERM), 70 on operational failure. With --once, it attempts one
+// bounded tick and exits 0/1/2 for ACCEPT/REJECT/REFUSED; errors override to 70.
 //
 // --state <path> turns the verifier into a stateful service: if the
 // file exists, the verifier extends from the persisted retained
@@ -163,6 +164,11 @@ watch --json streams versioned JSON Lines events to stdout. Each event separates
 header verification from persistence and includes the captured context and
 external trust inputs. Caught-up status does not verify a new header batch.
 Check the process exit status as well as complete events. See docs/watch-events.md.
+
+watch --once attempts one bounded tick and exits: 0 after a saved ACCEPT,
+1 for REJECT, 2 for REFUSED, or 70 on a setup, save, output, or lock-release
+failure. It never retries a failed save. A partial advance can exit 0 while
+still below the peer-relative target; this is not a full catch-up guarantee.
 
 inspect-state --json emits a separate inspection report with the effective
 retained range, depth-eligible heights, settings, and external trust inputs.
@@ -484,7 +490,7 @@ func preflightBundleBounds(bundle proof.HeaderBundle, policy verify.Policy) veri
 	return verify.Result{Outcome: verify.OutcomeAccept, Reason: verify.ReasonOK, FailedAt: -1}
 }
 
-// runWatch is the watch-mode entry point. Runs until SIGINT/SIGTERM.
+// runWatch runs until SIGINT/SIGTERM, or attempts one bounded tick with --once.
 func runWatch(args []string) int {
 	fs := flag.NewFlagSet("watch", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
@@ -499,6 +505,7 @@ func runWatch(args []string) int {
 	profilePath := fs.String("protocol-profile", "", "path to an operator-attested momentum activation profile")
 	showContext := fs.Bool("show-context", false, "log captured verification settings without private provenance metadata")
 	jsonOutput := fs.Bool("json", false, "emit versioned JSON Lines watch events on stdout")
+	once := fs.Bool("once", false, "attempt one bounded tick, save accepted state, and exit with its outcome")
 	statePath := fs.String("state", "", "path to persisted HeaderState (required)")
 	schedulePath := fs.String("schedule", "", "path to producer schedule JSON; when set, header producer authorization is required (tier-2 caveat)")
 	interval := fs.Duration("interval", syncer.DefaultInterval, "tick interval between iterations (0 = default 10s; negative values invalid)")
@@ -620,6 +627,14 @@ func runWatch(args []string) int {
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+	if *once {
+		result, err := loop.RunOnce(ctx)
+		if err != nil {
+			diagnostic("watch", err)
+			return 70
+		}
+		return outcomeExitCode(result.Outcome)
+	}
 	if err := loop.Run(ctx); err != nil {
 		diagnostic("watch", err)
 		return 70

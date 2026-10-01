@@ -65,6 +65,15 @@ func (s *watchEventStream) Write(p []byte) (int, error) {
 }
 
 func TestCompiledWatchJSONEvents(t *testing.T) {
+	testCompiledWatchJSONEvents(t, false)
+}
+
+func TestCompiledWatchOnceJSONEvents(t *testing.T) {
+	testCompiledWatchJSONEvents(t, true)
+}
+
+func testCompiledWatchJSONEvents(t *testing.T, once bool) {
+	t.Helper()
 	binary := buildQueryCLIs(t, "zenon-spv")["zenon-spv"]
 	for _, mode := range []string{"advanced", "caught_up", "rejected", "profile_refused", "frontier_refused"} {
 		t.Run(mode, func(t *testing.T) {
@@ -108,6 +117,9 @@ func TestCompiledWatchJSONEvents(t *testing.T) {
 			endpoint := strings.Replace(peer, "://", "://PRIVATE_RPC_USER:PRIVATE_RPC_PASSWORD@", 1) + "/PRIVATE_RPC_PATH?token=PRIVATE_RPC_TOKEN"
 			args := []string{"watch", "--json", "--rpc", endpoint, "--state", statePath, "--genesis-config", anchor,
 				"--protocol-profile", profile, "--schedule", schedulePath, "--safety-margin", "1", "--batch-size", "3", "--interval", "1h", "--show-context"}
+			if once {
+				args = append(args, "--once")
+			}
 			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 			defer cancel()
 			watch := exec.CommandContext(ctx, binary, args...)
@@ -127,22 +139,35 @@ func TestCompiledWatchJSONEvents(t *testing.T) {
 				t.Fatal(err)
 			}
 			t.Cleanup(func() { _ = watch.Process.Kill(); _ = watch.Wait() })
-			select {
-			case <-stream.ticked:
-			case <-ctx.Done():
-				t.Fatal("watch did not emit startup and a complete tick")
-			}
-			if runtime.GOOS == "windows" {
-				err = watch.Process.Kill()
-			} else {
-				err = watch.Process.Signal(os.Interrupt)
-			}
-			if err != nil {
-				t.Fatal(err)
+			if !once {
+				select {
+				case <-stream.ticked:
+				case <-ctx.Done():
+					t.Fatal("watch did not emit startup and a complete tick")
+				}
+				if runtime.GOOS == "windows" {
+					err = watch.Process.Kill()
+				} else {
+					err = watch.Process.Signal(os.Interrupt)
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
 			err = watch.Wait()
-			if runtime.GOOS != "windows" && err != nil || ctx.Err() != nil {
+			if !once && runtime.GOOS != "windows" && err != nil || ctx.Err() != nil {
 				t.Fatalf("watch did not stop cleanly: %v", err)
+			}
+			if once {
+				wantExit := 0
+				if mode == "rejected" {
+					wantExit = 1
+				} else if strings.HasSuffix(mode, "refused") {
+					wantExit = 2
+				}
+				if watch.ProcessState.ExitCode() != wantExit {
+					t.Fatalf("single-step exit=%d, want %d", watch.ProcessState.ExitCode(), wantExit)
+				}
 			}
 			if diagnostics.Len() != 0 || bytes.Contains(stream.buffer.Bytes(), []byte("PRIVATE")) || bytes.Contains(stream.buffer.Bytes(), []byte(dir)) || bytes.Contains(stream.buffer.Bytes(), []byte(peer)) {
 				t.Fatal("JSON watch mixed text diagnostics or disclosed private input")
@@ -171,6 +196,14 @@ func TestCompiledWatchJSONEvents(t *testing.T) {
 			started, tick := events[0], events[1]
 			if started.Event != "started" || started.StateTip.Hash != headers[4].HeaderHash || started.Verification != nil {
 				t.Fatal("startup did not identify the trusted resume point")
+			}
+			if once {
+				var settings struct {
+					MaxStateSaveFailures int `json:"max_state_save_failures"`
+				}
+				if err := json.Unmarshal(started.Settings, &settings); err != nil || settings.MaxStateSaveFailures != 1 {
+					t.Fatal("single-step startup advertised repeated save attempts")
+				}
 			}
 			wantEvent, wantTip := mode, headers[4]
 			if strings.HasSuffix(mode, "refused") {
