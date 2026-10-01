@@ -42,11 +42,11 @@ guarantee and trust arrays use `[]` when empty.
 | `previous_tip_height` | Tip before the tick; null at startup. |
 | `candidate_tip` | Exact candidate `{hash, height}` after an accepted header extension, even if saving fails. Null when no extension was accepted. |
 | `target_height` | Selected and agreed query height; null when frontier selection failed or at startup. |
-| `fetched_count` | Number of headers handed to verification in this tick, including a failed batch. Zero does not prove that no RPC requests occurred. |
+| `fetched_count` | Number of headers returned by the tick's range fetch for processing, including a target-binding refusal before verification. Target-selection queries are not counted; zero does not prove that no RPC requests occurred. |
 | `reason` | Tick reason-code token; null at startup. `ReasonOK` is a verification/control-flow result, not a persistence guarantee. |
 | `persistence` | `not_attempted`, `saved`, or `failed`, independent of the verification result. |
 | `consecutive_save_failures` | Consecutive failed save attempts. A successful save resets it; rejection/refusal does not. |
-| `error` | Fixed `{stage, category}` for RPC, retained-target, or save failures; otherwise null. No arbitrary error text is included. |
+| `error` | Fixed `{stage, category}` for RPC, target-consistency, or save failures; otherwise null. No arbitrary error text is included. |
 | `verification` | Actual header-extension result, or null if no extension was attempted. Contains `outcome`, `reason`, `failed_at`, `proven`, `not_proven`, and `trust_assumptions`. |
 | `verification_context` | Captured anchor, policy, activation profile, producer settings, checkpoints, and diagnostic fingerprint. See [verification context](verification-context.md). |
 | `state_trust` | External trust inputs used by the retained state, including its local file provenance. |
@@ -54,12 +54,17 @@ guarantee and trust arrays use `[]` when empty.
 | `settings` | Startup-only peer count, effective quorum, interval, safety margin, batch size, and maximum save failures. Null on ticks. |
 | `caveats` | Fixed interpretation limits, present on every event. |
 
-Error stages are `frontier`, `fetch`, `retained_target`, and `persistence`. RPC categories are
+Error stages are `frontier`, `fetch`, `retained_target`, `target_binding`, and
+`persistence`. RPC categories are
 `quorum_unavailable`, `peer_disagreement`, or `unavailable`; persistence uses
 `operational`. A retained-target conflict uses `header_mismatch` and
 `ReasonRetainedHeaderMismatch`; an out-of-window target uses `height_unavailable`
 and `ReasonHeightOutOfWindow`. Both are refused ticks with no new verification
 or save. See [retained target consistency](watch-persistence.md#retained-target-consistency).
+If a fetched batch reaches the selected target with a different signed envelope,
+`target_binding / header_mismatch` and `ReasonTargetHeaderMismatch` report the
+conflict before verification or persistence. `fetched_count` can be positive
+while `verification` is null on this path.
 A verifier rejection/refusal is represented by `verification`
 and `reason`, without inventing an operational error. Detailed safe per-peer
 messages remain available in text mode.

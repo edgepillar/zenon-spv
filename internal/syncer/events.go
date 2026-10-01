@@ -127,6 +127,8 @@ func (l *Loop) logIteration(r TickResult, state verify.VerifiedState, saveErr er
 		switch {
 		case errors.Is(r.Err, errRetainedTargetMismatch):
 			category = "header_mismatch"
+		case errors.Is(r.Err, errFetchedTargetMismatch):
+			category = "header_mismatch"
 		case errors.Is(r.Err, errRetainedTargetUnavailable):
 			category = "height_unavailable"
 		case errors.Is(r.Err, fetch.ErrNotEnoughPeers):

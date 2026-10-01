@@ -69,6 +69,22 @@ This is a consistency check against trusted local history, not new header
 verification or independent evidence of network freshness or canonicality.
 Targets above the retained tip still require normal linked-header verification.
 
+## Binding the fetched batch to its target
+
+When a fetched batch reaches the selected target height, its last header must
+match the target's hash, public key, and signature from the earlier RPC round.
+Unanimous agreement within each round does not prevent a peer set from changing
+its answer between rounds. Such a conflict returns
+`REFUSED / ReasonTargetHeaderMismatch` before header extension or any state save.
+JSON reports `target_binding / header_mismatch` with no verification result.
+
+Matching the target does not replace cryptographic or producer-policy checks.
+For example, an identical invalid signature in both rounds is still rejected
+by normal verification. A partial batch ending before the target cannot yet
+check that target envelope; it retains the same bounded linked-header checks
+and can advance without claiming complete catch-up. No target is pinned across
+ticks, and this consistency check is not a canonical-chain or finality proof.
+
 ## Polling and request bounds
 
 Negative polling intervals are rejected before state loading or RPC requests.
