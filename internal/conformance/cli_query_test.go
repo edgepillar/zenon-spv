@@ -278,6 +278,7 @@ type queryCLIResult struct {
 	stdout, stderr []byte
 	elapsed        time.Duration
 	process        *os.ProcessState
+	memory         processMemorySample
 }
 
 func queryCLIEnvironment() []string {
@@ -372,15 +373,32 @@ func runQueryCLI(t *testing.T, binary string, args ...string) queryCLIResult {
 
 func runQueryCLIWithTimeout(t *testing.T, timeout time.Duration, binary string, args ...string) queryCLIResult {
 	t.Helper()
+	return runQueryCLIObserved(t, timeout, false, binary, args...)
+}
+
+func runQueryCLIWithResources(t *testing.T, timeout time.Duration, binary string, args ...string) queryCLIResult {
+	t.Helper()
+	return runQueryCLIObserved(t, timeout, true, binary, args...)
+}
+
+func runQueryCLIObserved(t *testing.T, timeout time.Duration, resources bool, binary string, args ...string) queryCLIResult {
+	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Env, cmd.WaitDelay = queryCLIEnvironment(), time.Second
 	var out, diagnostics bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &diagnostics
-	start := time.Now()
-	err := cmd.Run()
-	elapsed := time.Since(start)
+	var err error
+	var elapsed time.Duration
+	memory := unavailableProcessMemory()
+	if resources {
+		memory, elapsed, err = runProcessWithMemory(cmd)
+	} else {
+		start := time.Now()
+		err = cmd.Run()
+		elapsed = time.Since(start)
+	}
 	if ctx.Err() != nil {
 		t.Fatalf("CLI timed out: %v", ctx.Err())
 	}
@@ -401,7 +419,7 @@ func runQueryCLIWithTimeout(t *testing.T, timeout time.Duration, binary string, 
 	if len(args) > 0 {
 		command = args[0]
 	}
-	return queryCLIResult{code: code, command: command, stdout: out.Bytes(), stderr: diagnostics.Bytes(), elapsed: elapsed, process: cmd.ProcessState}
+	return queryCLIResult{code: code, command: command, stdout: out.Bytes(), stderr: diagnostics.Bytes(), elapsed: elapsed, process: cmd.ProcessState, memory: memory}
 }
 
 // Decode independently of the command package so field names, string outcome

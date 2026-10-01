@@ -29,7 +29,7 @@ retain their own timeouts. This tool is not a process-tree supervisor.
 
 ## Selected coverage
 
-The 35 named scenarios are defined in
+The 36 named scenarios are defined in
 [`manifest.go`](../tools/offline-pilot/manifest.go). They cover:
 
 - Build identity, collection, retained commitment/segment queries, trusted
@@ -51,6 +51,9 @@ The 35 named scenarios are defined in
   collection/watch/restart, plus full K=16/256/4096 state workloads.
 - Node-derived flat content with 1/1,000/100,000 members and repeated-list batches,
   plus compiled read-only queries with process resource observations.
+- Native process accounting across immediate/nonzero exit, a resident allocation,
+  deadline cancellation and failed start. Linux/macOS use child RSS accounting;
+  Windows uses a retained-handle peak working set, with a distinct source enum.
 - Content-hash serialization against an independent byte-concatenation oracle,
   full-width field boundaries, duplicates and shared immutable reads.
 - Saved-state read bounds with stale size hints, short reads, simultaneous

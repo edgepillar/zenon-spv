@@ -8,20 +8,25 @@ import (
 	"syscall"
 )
 
+type processMemoryObserver struct{}
+
+func startProcessMemory(*os.Process) processMemoryObserver { return processMemoryObserver{} }
+func (*processMemoryObserver) close()                      {}
+
 // Use this exited child's accounting, not aggregate RUSAGE_CHILDREN or a
 // sampler that can miss a short-lived maximum. Linux reports KiB; Darwin
 // reports bytes. This does not include the test parent's fixture allocations.
-func processPeakRSS(state *os.ProcessState) *uint64 {
+func (*processMemoryObserver) finish(state *os.ProcessState) processMemorySample {
 	if state == nil {
-		return nil
+		return unavailableProcessMemory()
 	}
 	usage, ok := state.SysUsage().(*syscall.Rusage)
 	if !ok || usage.Maxrss <= 0 {
-		return nil
+		return unavailableProcessMemory()
 	}
 	peak := uint64(usage.Maxrss)
 	if runtime.GOOS == "linux" {
 		peak *= 1024
 	}
-	return &peak
+	return processMemorySample{bytes: &peak, source: "process_rusage"}
 }
