@@ -72,6 +72,9 @@ uint64 content length, then its content bytes. Symlinked inputs are refused.
 This includes test/fixture inputs but excludes documentation, CI definitions,
 the module cache, toolchain, environment, and other external build inputs.
 A matching fingerprint is not a signed source attestation.
+Repository attributes keep these source/fixture inputs at LF line endings on
+native checkouts. Exported trees with CRLF module headers are also accepted;
+their fingerprints still bind the actual bytes, without normalizing them.
 
 The runner uses `-count=1` and checks every expected top-level test and
 package completion. Missing/renamed tests, missing executable records,

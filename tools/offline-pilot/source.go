@@ -33,7 +33,8 @@ type corpusRecord struct {
 func captureSource() (sourceRecord, error) {
 	var record sourceRecord
 	mod, err := os.ReadFile("go.mod")
-	if err != nil || !strings.HasPrefix(string(mod), "module "+modulePath+"\n") {
+	moduleLine, _, _ := strings.Cut(string(mod), "\n")
+	if err != nil || strings.TrimSuffix(moduleLine, "\r") != "module "+modulePath {
 		return record, errors.New("run the pilot from the repository root")
 	}
 	paths := []string{"go.mod", "go.sum"}

@@ -116,3 +116,21 @@ func TestSourceFingerprintBindsNamesBytesAndFixtures(t *testing.T) {
 		t.Fatal("source rename did not alter the input fingerprint")
 	}
 }
+
+func TestSourceModuleAcceptsWindowsLineEndings(t *testing.T) {
+	t.Chdir(t.TempDir())
+	for _, dir := range []string{"cmd", "internal", "tools"} {
+		if err := os.Mkdir(dir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile("go.mod", []byte("module "+modulePath+"\r\n\r\ngo 1.25.0\r\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("go.sum", nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if record, err := captureSource(); err != nil || !hexDigest(record.InputsSHA256, 64) {
+		t.Fatalf("valid CRLF module was refused: %v", err)
+	}
+}
