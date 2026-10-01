@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "mode": "local_synthetic_benchmark_comparison",
+  "recorded_date": "2026-10-01",
+  "input_scope": "offline-pilot Go/module/JSON source inputs; excludes docs, CI and Python checkers",
+  "runner": {
+    "os": "darwin",
+    "architecture": "arm64",
+    "go_version": "go1.25.14",
+    "benchmark_cpu": 1,
+    "cpu_identity": "omitted",
+    "race": false
+  },
+  "command": "go test -run '^$' -bench '^BenchmarkRetainedCapacity/K(16|256|4096)/TrustedResume$' -benchmem -cpu=1 -benchtime=1s -count=5 ./internal/conformance",
+  "runs": [
+    {
+      "label": "before",
+      "source": {
+        "base_revision": "8ff2ba7aea7ba0b2154ba585f3adf0781d722fd9",
+        "modified": false,
+        "inputs_sha256": "cf4f84156e936c47659154a4c26b6c598e5cb0b71d26e21108fcf5c9ab4c74b0"
+      },
+      "workloads": [
+        {
+          "capacity": 16,
+          "operation": "TrustedResume",
+          "samples": [
+            {
+              "iterations": 1638,
+              "ns_per_op": 750569.0,
+              "allocated_bytes_per_op": 149037,
+              "allocations_per_op": 684,
+              "state_file_bytes": 13139
+            },
+            {
+              "iterations": 1618,
+              "ns_per_op": 743057.0,
+              "allocated_bytes_per_op": 149032,
+              "allocations_per_op": 684,
+              "state_file_bytes": 13139
+            },
+            {
+              "iterations": 1650,
+              "ns_per_op": 744038.0,
+              "allocated_bytes_per_op": 149032,
+              "allocations_per_op": 684,
+              "state_file_bytes": 13139
+            },
+            {
+              "iterations": 1634,
+              "ns_per_op": 747836.0,
+              "allocated_bytes_per_op": 149032,
+              "allocations_per_op": 684,
+              "state_file_bytes": 13139
+            },
+            {
+              "iterations": 1620,
+              "ns_per_op": 743703.0,
+              "allocated_bytes_per_op": 149032,
+              "allocations_per_op": 684,
+              "state_file_bytes": 13139
+            }
+          ]
+        },
+        {
+          "capacity": 256,
+          "operation": "TrustedResume",
+          "samples": [
+            {
+              "iterations": 100,
+              "ns_per_op": 11417170.0,
+              "allocated_bytes_per_op": 2158378,
+              "allocations_per_op": 7421,
+              "state_file_bytes": 202500
+            },
+            {
+              "iterations": 100,
+              "ns_per_op": 11475838.0,
+              "allocated_bytes_per_op": 2158380,
+              "allocations_per_op": 7421,
+              "state_file_bytes": 202500
+            },
+            {
+              "iterations": 100,
+              "ns_per_op": 11466965.0,
+              "allocated_bytes_per_op": 2158380,
+              "allocations_per_op": 7421,
+              "state_file_bytes": 202500
+            },
+            {
+              "iterations": 100,
+              "ns_per_op": 11466720.0,
+              "allocated_bytes_per_op": 2158379,
+              "allocations_per_op": 7421,
+              "state_file_bytes": 202500
+            },
+            {
+              "iterations": 100,
+              "ns_per_op": 11386815.0,
+              "allocated_bytes_per_op": 2158378,
+              "allocations_per_op": 7421,
+              "state_file_bytes": 202500
+            }
+          ]
+        },
+        {
+          "capacity": 4096,
+          "operation": "TrustedResume",
+          "samples": [
+            {
+              "iterations": 6,
+              "ns_per_op": 178711194.0,
+              "allocated_bytes_per_op": 38277325,
+              "allocations_per_op": 114978,
+              "state_file_bytes": 3232261
+            },
+            {
+              "iterations": 6,
+              "ns_per_op": 176918465.0,
+              "allocated_bytes_per_op": 38277322,
+              "allocations_per_op": 114978,
+              "state_file_bytes": 3232261
+            },
+            {
+              "iterations": 6,
+              "ns_per_op": 178106486.0,
+              "allocated_bytes_per_op": 38277320,
+              "allocations_per_op": 114978,
+              "state_file_bytes": 3232261
+            },
+            {
+              "iterations": 6,
+              "ns_per_op": 178230264.0,
+              "allocated_bytes_per_op": 38277325,
+              "allocations_per_op": 114978,
+              "state_file_bytes": 3232261
+            },
+            {
+              "iterations": 6,
+              "ns_per_op": 179026028.0,
+              "allocated_bytes_per_op": 38277328,
+              "allocations_per_op": 114978,
+              "state_file_bytes": 3232261
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "after",
+      "source": {
+        "base_revision": "8ff2ba7aea7ba0b2154ba585f3adf0781d722fd9",
+        "modified": true,
+        "inputs_sha256": "102d89b0f050210d92dcf031a7a509a7c49b32b5b9efef6832a9c18a138fdb6b"
+      },
+      "workloads": [
+        {
+          "capacity": 16,
+          "operation": "TrustedResume",
+          "samples": [
+            {
+              "iterations": 1618,
+              "ns_per_op": 729320.0,
+              "allocated_bytes_per_op": 100117,
+              "allocations_per_op": 673,
+              "state_file_bytes": 13139
+            },
+            {
+              "iterations": 1632,
+              "ns_per_op": 723991.0,
+              "allocated_bytes_per_op": 100112,
+              "allocations_per_op": 673,
+              "state_file_bytes": 13139
+            },
+            {
+              "iterations": 1683,
+              "ns_per_op": 724747.0,
+              "allocated_bytes_per_op": 100112,
+              "allocations_per_op": 673,
+              "state_file_bytes": 13139
+            },
+            {
+              "iterations": 1596,
+              "ns_per_op": 742681.0,
+              "allocated_bytes_per_op": 100112,
+              "allocations_per_op": 673,
+              "state_file_bytes": 13139
+            },
+            {
+              "iterations": 1696,
+              "ns_per_op": 744584.0,
+              "allocated_bytes_per_op": 100112,
+              "allocations_per_op": 673,
+              "state_file_bytes": 13139
+            }
+          ]
+        },
+        {
+          "capacity": 256,
+          "operation": "TrustedResume",
+          "samples": [
+            {
+              "iterations": 100,
+              "ns_per_op": 11223970.0,
+              "allocated_bytes_per_op": 1455635,
+              "allocations_per_op": 7401,
+              "state_file_bytes": 202500
+            },
+            {
+              "iterations": 100,
+              "ns_per_op": 11246731.0,
+              "allocated_bytes_per_op": 1455634,
+              "allocations_per_op": 7401,
+              "state_file_bytes": 202500
+            },
+            {
+              "iterations": 100,
+              "ns_per_op": 11253794.0,
+              "allocated_bytes_per_op": 1455635,
+              "allocations_per_op": 7401,
+              "state_file_bytes": 202500
+            },
+            {
+              "iterations": 100,
+              "ns_per_op": 11306736.0,
+              "allocated_bytes_per_op": 1455635,
+              "allocations_per_op": 7401,
+              "state_file_bytes": 202500
+            },
+            {
+              "iterations": 100,
+              "ns_per_op": 11393742.0,
+              "allocated_bytes_per_op": 1455634,
+              "allocations_per_op": 7401,
+              "state_file_bytes": 202500
+            }
+          ]
+        },
+        {
+          "capacity": 4096,
+          "operation": "TrustedResume",
+          "samples": [
+            {
+              "iterations": 6,
+              "ns_per_op": 177761507.0,
+              "allocated_bytes_per_op": 24721330,
+              "allocations_per_op": 114946,
+              "state_file_bytes": 3232261
+            },
+            {
+              "iterations": 6,
+              "ns_per_op": 177016021.0,
+              "allocated_bytes_per_op": 24721328,
+              "allocations_per_op": 114946,
+              "state_file_bytes": 3232261
+            },
+            {
+              "iterations": 6,
+              "ns_per_op": 177918639.0,
+              "allocated_bytes_per_op": 24721330,
+              "allocations_per_op": 114946,
+              "state_file_bytes": 3232261
+            },
+            {
+              "iterations": 6,
+              "ns_per_op": 177185298.0,
+              "allocated_bytes_per_op": 24721330,
+              "allocations_per_op": 114946,
+              "state_file_bytes": 3232261
+            },
+            {
+              "iterations": 6,
+              "ns_per_op": 179476826.0,
+              "allocated_bytes_per_op": 24721328,
+              "allocations_per_op": 114946,
+              "state_file_bytes": 3232261
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Five samples per workload per revision on one local host without competing builds or tests",
+    "Synthetic full-window resume with normal warm filesystem reads",
+    "Allocated bytes per operation are not live heap or peak RSS",
+    "No network, consumer, cold-I/O or target-device measurement",
+    "Timing comparisons are descriptive, without a statistical significance claim",
+    "A source-input fingerprint is not authenticated build provenance"
+  ]
+}
