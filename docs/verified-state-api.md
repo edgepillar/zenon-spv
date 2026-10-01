@@ -70,8 +70,8 @@ constructor that turns an arbitrary `HeaderState` into a verified handle.
 
 - Accepted headers, including public-key and signature bytes, are detached
   from caller-owned input. Inputs must remain unchanged until the call returns.
-- `Tip` and `Snapshot` return detached copies. Editing them cannot change the
-  handle, its predecessor, or a later extension. `Snapshot` supports inspection
+- `Tip`, `HeaderAtHeight`, and `Snapshot` return detached copies. Editing them
+  cannot change the handle, its predecessor, or a later extension. `Snapshot` supports inspection
   and persistence adapters; it is not a route for importing verified state.
 - Activation profiles and built-in producer schedules are copied. Schedule
   structure, hash, and chain ID are checked, and its lookup index is rebuilt.
@@ -87,6 +87,11 @@ constructor that turns an arbitrary `HeaderState` into a verified handle.
 The watch persistence adapter receives a detached `HeaderState` snapshot.
 Its success still means the adapter fulfilled its persistence contract; the
 verifier cannot prove that an arbitrary adapter actually wrote durable bytes.
+
+`HeaderAtHeight(height)` looks up a retained header without copying the full
+window. Uninitialized or empty handles and unavailable heights return false.
+The returned signed envelope is an inspection view; lookup alone does not
+check depth eligibility or prove freshness, canonicality, or finality.
 
 ## Trusted local resume
 

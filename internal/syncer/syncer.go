@@ -23,6 +23,7 @@
 package syncer
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -274,6 +275,11 @@ func (l *Loop) run(ctx context.Context, singleResult *TickResult) (runErr error)
 	}
 }
 
+var (
+	errRetainedTargetMismatch    = errors.New("agreed target differs from the trusted retained header")
+	errRetainedTargetUnavailable = errors.New("agreed target is outside the trusted retained window")
+)
+
 // tick runs one iteration: fetch frontier, fetch headers, verify,
 // return result + maybe-updated state.
 func (l *Loop) tick(ctx context.Context, state verify.VerifiedState) (TickResult, verify.VerifiedState) {
@@ -283,12 +289,27 @@ func (l *Loop) tick(ctx context.Context, state verify.VerifiedState) (TickResult
 			Message: "watch requires a nonempty verified state"}, state
 	}
 	tip := tipHeader.Height
-	target, err := l.frontierTarget(ctx)
+	targetHeader, err := l.Multi.FetchFrontierAtAgreedHeight(ctx, l.SafetyMargin)
 	if err != nil {
 		return TickResult{Tip: tip, Err: err, Outcome: verify.OutcomeRefused, Reason: verify.ReasonMissingEvidence,
 			Message: fmt.Sprintf("frontier: %v", err), failureStage: "frontier"}, state
 	}
+	target := targetHeader.Height
 	if target <= tip {
+		retained, ok := state.HeaderAtHeight(target)
+		if !ok {
+			return TickResult{Tip: tip, Target: target, Err: errRetainedTargetUnavailable,
+				Outcome: verify.OutcomeRefused, Reason: verify.ReasonHeightOutOfWindow,
+				Message: errRetainedTargetUnavailable.Error(), failureStage: "retained_target"}, state
+		}
+		// Peer agreement alone does not bind this target to the trusted chain.
+		// Keys and signatures are not hashed into the momentum envelope.
+		if targetHeader.HeaderHash != retained.HeaderHash || !bytes.Equal(targetHeader.PublicKey, retained.PublicKey) ||
+			!bytes.Equal(targetHeader.Signature, retained.Signature) {
+			return TickResult{Tip: tip, Target: target, Err: errRetainedTargetMismatch,
+				Outcome: verify.OutcomeRefused, Reason: verify.ReasonRetainedHeaderMismatch,
+				Message: errRetainedTargetMismatch.Error(), failureStage: "retained_target"}, state
+		}
 		return TickResult{Tip: tip, Target: target, Outcome: verify.OutcomeAccept, Reason: verify.ReasonOK,
 			Message: "caught up"}, state
 	}
@@ -324,14 +345,6 @@ func (l *Loop) tick(ctx context.Context, state verify.VerifiedState) (TickResult
 		r.candidateTip = &chain.HashHeight{Hash: tip.HeaderHash, Height: tip.Height}
 	}
 	return r, newState
-}
-
-func (l *Loop) frontierTarget(ctx context.Context) (uint64, error) {
-	h, err := l.Multi.FetchFrontierAtAgreedHeight(ctx, l.SafetyMargin)
-	if err != nil {
-		return 0, err
-	}
-	return h.Height, nil
 }
 
 // outputFailure preserves writer error identity without echoing private paths

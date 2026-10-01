@@ -119,6 +119,49 @@ func TestVerifiedState_ExtensionsAreTransactional(t *testing.T) {
 	}
 }
 
+func TestVerifiedState_RetainedHeaderLookupIsDetachedAndBounded(t *testing.T) {
+	state, headers, _, opts := verifiedStateFixture(t)
+	before := state.Snapshot()
+	empty, err := NewVerifiedState(before.Genesis, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, handle := range []VerifiedState{{}, empty, state} {
+		for _, height := range []uint64{0, 100, 104, ^uint64(0)} {
+			if _, ok := handle.HeaderAtHeight(height); ok {
+				t.Fatal("lookup returned a header outside the retained range")
+			}
+		}
+	}
+	for _, want := range headers {
+		got, ok := state.HeaderAtHeight(want.Height)
+		if !ok || !reflect.DeepEqual(got, want) {
+			t.Fatal("lookup did not preserve the retained signed header")
+		}
+		got.PublicKey[0] ^= 1
+		got.Signature[0] ^= 1
+		got.PreviousHash = chain.Hash{}
+	}
+	if !reflect.DeepEqual(before, state.Snapshot()) {
+		t.Fatal("lookup exposed mutable retained-state memory")
+	}
+	tip, _ := state.Tip()
+	next := boundaryHeader(GenesisTrustRoot{ChainID: tip.ChainIdentifier, Height: tip.Height, HeaderHash: tip.HeaderHash}, 104, chain.Hash{2})
+	r, advanced := state.Extend([]chain.Header{next})
+	if r.Outcome != OutcomeAccept {
+		t.Fatal(r)
+	}
+	if _, ok := advanced.HeaderAtHeight(101); ok {
+		t.Fatal("lookup returned an evicted header")
+	}
+	if _, ok := state.HeaderAtHeight(101); !ok {
+		t.Fatal("extension changed the predecessor's retained lookup")
+	}
+	if got, ok := advanced.HeaderAtHeight(104); !ok || !reflect.DeepEqual(got, next) {
+		t.Fatal("lookup did not include the newly verified tip")
+	}
+}
+
 func TestVerifiedState_ConstructorRejectsInvalidInputs(t *testing.T) {
 	anchor := GenesisTrustRoot{ChainID: 3, Height: 100, HeaderHash: chain.Hash{1}}
 	for _, opts := range []VerifyOptions{

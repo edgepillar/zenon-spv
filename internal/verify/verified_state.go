@@ -128,14 +128,25 @@ func (s VerifiedState) TrustAssumptions() []TrustAssumption {
 	return withProtocolTrust(s.withStateTrust(accept()), s.data.state.ProtocolProfile).TrustAssumptions
 }
 
-// Tip and Snapshot return detached copies, including key/signature slices and
-// the protocol profile. Snapshot is for inspection or persistence adapters;
+// Tip, HeaderAtHeight, and Snapshot return detached copies, including
+// key/signature slices and the protocol profile. Snapshot is for inspection or persistence adapters;
 // mutating or deserializing one cannot construct another VerifiedState.
 func (s VerifiedState) Tip() (chain.Header, bool) {
 	if s.data == nil {
 		return chain.Header{}, false
 	}
 	h, ok := s.data.state.Tip()
+	return cloneStateHeader(h), ok
+}
+
+// HeaderAtHeight inspects one retained header without copying the full window.
+// It makes no depth, canonicality, freshness, or finality claim. An uninitialized
+// handle, empty window, or height outside the retained range returns false.
+func (s VerifiedState) HeaderAtHeight(height uint64) (chain.Header, bool) {
+	if s.data == nil {
+		return chain.Header{}, false
+	}
+	h, ok := s.data.state.HeaderAtHeight(height)
 	return cloneStateHeader(h), ok
 }
 

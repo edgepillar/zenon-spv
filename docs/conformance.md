@@ -150,6 +150,10 @@ State-value layer:
       attempts only one bounded tick/save, returns distinct evidence outcomes,
       and releases writer ownership. Failed saves/output take precedence over
       ACCEPT; a partial batch does not claim full catch-up.
+- [x] Caught-up ticks require the agreed target's hash, key, and signature to
+      match retained local history. Conflicting or evicted targets return
+      REFUSED without saving; immutable height lookup does not expose state
+      memory or claim fresh verification.
 - [x] State save/load revalidate every retained header before truncation and
       enforce byte/capacity bounds, including the header count during JSON
       decoding; see [`watch-persistence.md`](watch-persistence.md).
