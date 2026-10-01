@@ -37,7 +37,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Benchmark smoke
-        run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent)$' -benchtime=1x ./internal/conformance
+        run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering)$' -benchtime=1x ./internal/conformance
       - name: Independent corpus checks
         run: |
           python3 tools/gen-node-momentum-vectors/check.py
@@ -85,4 +85,4 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Benchmark smoke
-        run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent)$' -benchtime=1x ./internal/conformance
+        run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering)$' -benchtime=1x ./internal/conformance

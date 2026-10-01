@@ -22,6 +22,7 @@ var scenarios = []scenario{
 	{"bounded_state_reader", "internal/verify", "TestSizedStateReadContract", nil},
 	{"node_content_scaling", "internal/conformance", "TestNodeContentScaling", nil},
 	{"compiled_content_scaling", "internal/conformance", "TestCompiledContentScalingWorkflow", []string{"zenon-spv"}},
+	{"content_hash_serialization", "internal/chain", "TestMomentumContentHashSerializationContract", nil},
 	{"state_inspection", "internal/conformance", "TestCompiledCLIStateInspection", []string{"zenon-spv"}},
 	{"writer_exclusion", "internal/conformance", "TestCompiledCLIStateWriterExclusion", []string{"zenon-spv"}},
 	{"watch_events", "internal/conformance", "TestCompiledWatchJSONEvents", []string{"zenon-spv"}},

@@ -29,7 +29,7 @@ Run measurements without competing builds or tests:
 go test -run '^$' -bench '^BenchmarkRetainedCapacity$' -benchmem -cpu=1 -benchtime=1s -count=5 ./internal/conformance
 ```
 
-`make bench` includes the native, retained-capacity and flat-content families. CI runs one iteration of every
+`make bench` includes the native, retained-capacity, flat-content and content-ordering families. CI runs one iteration of every
 workload on native Linux, macOS and Windows as a functional check. It does not
 enforce timing thresholds. `TestRetainedCapacityWorkloads` also exercises full
 windows, exact eviction, immutable predecessors, persistence and resumed

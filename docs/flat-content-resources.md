@@ -117,6 +117,10 @@ are in the [corpus guide](../internal/testdata/conformance/README.md).
 
 ## Recorded local observations
 
+This is the original content-scaling baseline. The later
+[hash allocation comparison](content-hash-allocations.md) measures the same
+M/P workloads and adds unsorted inputs after changing the hash implementation.
+
 The [complete samples](flat-content-samples.json) contain five 1-second samples
 per benchmark operation and five separate ordinary CLI processes per workload
 on darwin/arm64 with Go 1.25.14, without competing builds/tests. Hardware identity

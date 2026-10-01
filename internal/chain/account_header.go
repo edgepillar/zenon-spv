@@ -26,13 +26,17 @@ type AccountHeader struct {
 //
 //	address (20B) || uint64BE(height) (8B) || hash (32B)
 func (a AccountHeader) Bytes() []byte {
-	out := make([]byte, 0, AccountHeaderRawLen)
-	out = append(out, a.Address[:]...)
-	var h [8]byte
-	binary.BigEndian.PutUint64(h[:], a.Height)
-	out = append(out, h[:]...)
-	out = append(out, a.Hash[:]...)
-	return out
+	var out [AccountHeaderRawLen]byte
+	a.putBytes(&out)
+	return out[:]
+}
+
+// putBytes fills the entire canonical row without allocating a member buffer.
+// Both Bytes and the content hasher use the same encoding.
+func (a AccountHeader) putBytes(out *[AccountHeaderRawLen]byte) {
+	copy(out[:AddressSize], a.Address[:])
+	binary.BigEndian.PutUint64(out[AddressSize:AddressSize+8], a.Height)
+	copy(out[AddressSize+8:], a.Hash[:])
 }
 
 // Equal reports whether a and b are byte-identical.

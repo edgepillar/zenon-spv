@@ -2,7 +2,8 @@ package chain
 
 import (
 	"bytes"
-	"sort"
+	"cmp"
+	"slices"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -37,15 +38,27 @@ func MomentumContentHash(headers []AccountHeader) Hash {
 		copy(out[:], d.Sum(nil))
 		return out
 	}
-	rows := make([][]byte, len(headers))
-	for i, h := range headers {
-		rows[i] = h.Bytes()
+	// Sort indices so the caller's headers stay immutable and no canonical
+	// byte slice needs to be allocated for each member. Numeric uint64 order
+	// matches lexicographic order of the big-endian height bytes.
+	order := make([]int, len(headers))
+	for i := range order {
+		order[i] = i
 	}
-	sort.Slice(rows, func(a, b int) bool {
-		return bytes.Compare(rows[a], rows[b]) < 0
+	slices.SortFunc(order, func(i, j int) int {
+		a, b := &headers[i], &headers[j]
+		if c := bytes.Compare(a.Address[:], b.Address[:]); c != 0 {
+			return c
+		}
+		if c := cmp.Compare(a.Height, b.Height); c != 0 {
+			return c
+		}
+		return bytes.Compare(a.Hash[:], b.Hash[:])
 	})
-	for _, r := range rows {
-		d.Write(r)
+	var row [AccountHeaderRawLen]byte
+	for _, i := range order {
+		headers[i].putBytes(&row)
+		d.Write(row[:])
 	}
 	var out Hash
 	copy(out[:], d.Sum(nil))
