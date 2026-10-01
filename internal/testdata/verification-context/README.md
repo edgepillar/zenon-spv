@@ -13,9 +13,11 @@ network activation, anchor authenticity, or consensus guarantee.
   are heights 101 and 102, timestamps 1700000010 and 1700000020, each with
   producing-address bytes `01` followed by 19 zero bytes. Coverage is 101..102.
   Its schedule hash follows the existing producer-schedule binary format.
+- `v2-retention.json`: the first vector with explicit K=16. Schema 2 binds
+  retained capacity independently of depth, using its own domain separator.
 
 Expected fingerprints, and the second vector's schedule hash, were calculated
 with Python SHA3-256 and big-endian integer packing. The root Go tests compare
 the complete API output with these files. `python3 tools/check-verification-context.py`
-independently checks both stored context fingerprints. Do not regenerate the
+independently checks all three stored context fingerprints. Do not regenerate the
 expected values from the Go function being tested.

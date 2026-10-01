@@ -29,7 +29,7 @@ retain their own timeouts. This tool is not a process-tree supervisor.
 
 ## Selected coverage
 
-The 24 named scenarios are defined in
+The 27 named scenarios are defined in
 [`manifest.go`](../tools/offline-pilot/manifest.go). They cover:
 
 - Build identity, collection, retained commitment/segment queries, trusted
@@ -44,6 +44,9 @@ The 24 named scenarios are defined in
 - Schedule export, checkpoint network binding, and explicit genesis pinning.
 - Injected save failures and recovery, event delivery failures, native writer
   locks, and lock release after process exit or termination.
+- Explicit retention/depth separation across compiled commands, delayed
+  synthetic segment evidence at different confirming heights, and schema
+  migration with full saved-window authorization before resizing.
 
 These reuse the same assertions as the ordinary test suite. The pilot does
 not add another implementation of header or proof verification. It is a

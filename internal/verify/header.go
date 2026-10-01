@@ -63,6 +63,9 @@ func VerifyHeaders(headers []chain.Header, state HeaderState, policy Policy) (Re
 // checkpoint, window) are identical to VerifyHeaders.
 func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts VerifyOptions) (Result, HeaderState) {
 	policy := opts.Policy
+	if policy.ValidateRetention() != nil || state.Capacity < 1 || state.Capacity > MaxPersistedHeaders || len(state.RetainedWindow) > state.Capacity {
+		return refuse(ReasonInvalidRetentionPolicy, "invalid retained header capacity"), state
+	}
 	if len(headers) == 0 {
 		return refuse(ReasonMissingEvidence, "no headers supplied"), state
 	}
@@ -86,7 +89,8 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 		ProtocolProfile: cloneProtocolProfile(state.ProtocolProfile),
 		Genesis:         state.Genesis,
 		Capacity:        state.Capacity,
-		RetainedWindow:  append(make([]chain.Header, 0, len(state.RetainedWindow)+len(headers)), state.RetainedWindow...),
+		RetainHeaders:   state.RetainHeaders,
+		RetainedWindow:  append(make([]chain.Header, 0, state.Capacity), state.RetainedWindow...),
 	}
 
 	// Embedded checkpoints apply only to mainnet (chain_id=1). Other
@@ -190,9 +194,8 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 
 	// VerifyHeaders ACCEPT requires the policy window to be built up
 	// (retained ≥ W). The strict "W headers past target" property
-	// per spec §2.3 is enforced by VerifyCommitment, not here — the
-	// retained-window capacity is sized to W+1 so the oldest retained
-	// momentum still has W strict-past headers available for queries.
+	// per spec §2.3 is enforced by VerifyCommitment, not here. K bounds
+	// history availability without relaxing the separate depth requirement.
 	if uint64(len(working.RetainedWindow)) < policy.W {
 		return refuse(ReasonWindowNotMet,
 			fmt.Sprintf("retained=%d < policy.W=%d", len(working.RetainedWindow), policy.W)), state

@@ -16,7 +16,10 @@ omitted and the relevant commitments/segments present. Its `chain_id` must
 match the configured anchor. As with normal trusted resume, `claimed_genesis`
 is informational once the saved state's anchor has been checked against the
 configured anchor. Supply the same protocol profile and any required producer
-schedule used for the query's trust policy.
+schedule used for the query's trust policy. With explicit retention, also
+supply the reviewed `--retain-headers K` and `--expect-context` pin; schema 3
+state refuses an omitted K. [K/W separation](retention-policy.md) allows
+several depth-eligible heights and delayed proofs without lowering W.
 
 [`fetch-bundle --proof-only`](fetch-bundle.md#evidence-for-an-existing-retained-window)
 assembles this format directly from the selected RPC peers. Choose a range

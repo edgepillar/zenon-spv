@@ -14,7 +14,10 @@ trusted state, queries these same API methods, and never saves on that path.
 
 `NewVerifiedState(anchor, opts)` creates an empty handle under explicitly
 trusted inputs. It checks the anchor, profile, producer configuration, and
-policy window before allocating state. Windows above 100,000 are refused.
+policy window before allocating state. Legacy depths above 100,000 are refused.
+`Policy.RetainHeaders` selects independent capacity K: zero keeps W+1, while
+explicit K requires W < K <= 4096. See [retention policy](retention-policy.md)
+for versioned state/context compatibility and resize behavior.
 Negative resource limits are invalid; zero limits retain their documented
 disabled meaning, so applications should start with `DefaultPolicy()`.
 
@@ -98,8 +101,8 @@ check depth eligibility or prove freshness, canonicality, or finality.
 `LoadTrustedState(path, anchor, opts)` explicitly crosses a local trust
 boundary. It initializes an empty handle if the file is absent. For an
 existing file it runs the bounded integrity checks, requires the configured
-anchor and activation profile to match, and re-authorizes retained producers
-under the requested policy. It does not trust a caller-supplied authorization
+anchor and activation profile to match, and re-authorizes all saved producers
+under the requested policy before resizing the retained window. It does not trust a caller-supplied authorization
 flag from JSON. Authorization failures retain their REJECT or REFUSED result
 in `StateAuthorizationError`; file/configuration errors return ordinary errors.
 

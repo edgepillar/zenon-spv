@@ -60,11 +60,15 @@ func TestVerifyCommitment_DepthCannotOverflow(t *testing.T) {
 		evidence := proof.CommitmentEvidence{Height: tc.height, Target: member,
 			Flat: &proof.FlatContentEvidence{SortedHeaders: flat}}
 		result := VerifyCommitment(state, evidence, Policy{W: tc.depth})
+		wantReason := ReasonInsufficientFinality
+		if tc.depth >= uint64(MaxPersistedHeaders) {
+			wantReason = ReasonInvalidRetentionPolicy
+		}
 		if tc.accept {
 			if result.Outcome != OutcomeAccept {
 				t.Fatalf("height=%d depth=%d: %s", tc.height, tc.depth, result)
 			}
-		} else if result.Outcome != OutcomeRefused || result.Reason != ReasonInsufficientFinality || len(result.Proven) != 0 {
+		} else if result.Outcome != OutcomeRefused || result.Reason != wantReason || len(result.Proven) != 0 {
 			t.Fatalf("overflow granted unearned depth: height=%d depth=%d: %s", tc.height, tc.depth, result)
 		}
 	}

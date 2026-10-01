@@ -89,6 +89,7 @@ const (
 	ReasonInvalidAccountBlockEnvelope
 	ReasonRetainedHeaderMismatch // agreed RPC target conflicts with a trusted retained header
 	ReasonTargetHeaderMismatch   // fetched range conflicts with the previously selected RPC target
+	ReasonInvalidRetentionPolicy
 )
 
 // String returns a stable, snake-case-equivalent name for serialization.
@@ -186,6 +187,8 @@ func (r ReasonCode) String() string {
 		return "ReasonRetainedHeaderMismatch"
 	case ReasonTargetHeaderMismatch:
 		return "ReasonTargetHeaderMismatch"
+	case ReasonInvalidRetentionPolicy:
+		return "ReasonInvalidRetentionPolicy"
 	case ReasonUnsupportedHeaderVersion:
 		return "ReasonUnsupportedHeaderVersion"
 	default:

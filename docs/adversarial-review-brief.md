@@ -5,6 +5,10 @@
 > then-current gaps such as deferred producer authorization. For current
 > behavior, read [`architecture.md`](architecture.md),
 > [`trust-model.md`](trust-model.md), and [`conformance.md`](conformance.md).
+> The normative [`verification-contract.md`](verification-contract.md) also
+> supersedes this brief's historical effect-equivalence and state-root wording:
+> current inclusion binds a specific account-header identity and proves no
+> state value or execution effect.
 
 **Audience:** an external reviewer (LLM or human) doing adversarial review against this codebase. You did not write this code; you should not assume it is correct.
 

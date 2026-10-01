@@ -1,5 +1,12 @@
 package verify
 
+import "errors"
+
+// MaxRetainHeaders bounds explicitly selected history independently of W.
+const MaxRetainHeaders = 4096
+
+var ErrInvalidRetentionPolicy = errors.New("retention requires W < K <= 4096; zero selects legacy retention")
+
 // Policy carries the verifier's risk-tier and resource bounds.
 //
 // W is the policy window depth from
@@ -29,6 +36,10 @@ type Policy struct {
 	ProtocolProfile *ProtocolProfile
 
 	W uint64 // policy-window depth in headers
+
+	// RetainHeaders is K, the maximum number of retained headers. Zero keeps
+	// legacy W+1 storage. Explicit K must exceed W and be at most 4096.
+	RetainHeaders int
 
 	// Per-bundle wire-format cap. Enforced at JSON load time via
 	// proof.LoadHeaderBundleWithLimits (io.LimitReader). 0 disables.
@@ -91,11 +102,22 @@ type Policy struct {
 	MaxStateProofBytes int
 }
 
+// ValidateRetention checks depth/capacity before allocation or truncation.
+func (p Policy) ValidateRetention() error {
+	if p.W >= uint64(MaxPersistedHeaders) || p.RetainHeaders < 0 || p.RetainHeaders > MaxRetainHeaders ||
+		(p.RetainHeaders != 0 && uint64(p.RetainHeaders) <= p.W) {
+		return ErrInvalidRetentionPolicy
+	}
+	return nil
+}
+
 // Window-tier constants per spec §2.3:
 //
-//	Low    — fast UI confidence, ~1 minute at 10s cadence
-//	Medium — payments / routine ops, ~10 minutes
-//	High   — bridges / exchanges, ~1 hour
+//	Low    — 6 subsequent headers
+//	Medium — 60 subsequent headers
+//	High   — 360 subsequent headers
+//
+// These are local depth policies, not settlement or finality guarantees.
 const (
 	WindowLow    uint64 = 6
 	WindowMedium uint64 = 60

@@ -473,10 +473,15 @@ func (a *ScheduleAuthorizer) Source() ProducerSource { return ProducerSourceOper
 // ReasonUnsupportedHeaderVersion even when producer auth is Disabled.
 //
 // Cost: O(len(RetainedWindow)) authorizer calls. The retained
-// window is capped at policy.W+1 (≤ a few hundred entries even at
-// the highest tier), so this is negligible compared to fetch/verify.
+// window is bounded by persistence limits. Reauthorization includes headers
+// that a smaller selected capacity will subsequently evict.
 func AuthorizeRetainedWindow(state HeaderState, opts VerifyOptions) Result {
-	if err := state.validateProtocolPolicy(opts.Policy); err != nil {
+	if err := opts.Policy.ValidateRetention(); err != nil {
+		return protocolFailure(err)
+	}
+	// Authorization also runs before resize on the full saved window. Its
+	// original capacity need not equal the newly selected retention policy.
+	if err := state.validateProtocolRules(opts.Policy); err != nil {
 		return protocolFailure(err)
 	}
 	if err := opts.ProducerAuth.validate(); err != nil {

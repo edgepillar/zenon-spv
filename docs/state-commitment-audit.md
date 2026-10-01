@@ -4,6 +4,11 @@ This document answers the five gating questions from `docs/state-proof-plan.md` 
 
 **Reference pin.** All citations are against `zenon-network/go-zenon` at commit `667a69d9e9a418edf7580b08492ba5dcb9efd63a` (master, 2026-04-28; tag-context `v0.0.8-alphanet-6-g667a69d`), as recorded in `zenon-spv-vault/reference/CLAUDE.md`. Excerpts below are reproduced unmodified from that pinned tree.
 
+**Scope:** these findings describe that pinned baseline, not every later fork.
+The [native roadmap](native-roadmap.md#separate-state-root-research) records a
+separate v3 root candidate and its unresolved review/activation gates. This
+client still refuses v3 and state-value proofs.
+
 ## TL;DR
 
 **No consensus-bound authenticated state root exists in current-protocol go-zenon.**

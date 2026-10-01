@@ -23,7 +23,8 @@ var (
 // anchor still require trusted provenance. Signatures do not elect producers.
 func (s HeaderState) validateRetainedState() error {
 	if s.Genesis.HeaderHash.IsZero() || s.Capacity < 1 || s.Capacity > MaxPersistedHeaders ||
-		len(s.RetainedWindow) > s.Capacity {
+		len(s.RetainedWindow) > s.Capacity || s.RetainHeaders < 0 || s.RetainHeaders > MaxRetainHeaders ||
+		(s.RetainHeaders != 0 && s.RetainHeaders != s.Capacity) {
 		return fmt.Errorf("%w: anchor or capacity", ErrInvalidRetainedState)
 	}
 	if err := s.ValidateHeaderVersions(); err != nil {

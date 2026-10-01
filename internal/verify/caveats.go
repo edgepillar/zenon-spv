@@ -10,7 +10,7 @@ const acceptanceCaveatTier1 = "CAVEAT: producer-set authorization is not enforce
 	"See docs/trust-model.md."
 
 // Tier 2: operator-attested per-momentum schedule. ACCEPT confirms
-// the elected producer signed at the expected slot timestamp, but
+// the scheduled producer signed at the expected slot timestamp, but
 // the schedule itself is an operator attestation, not consensus.
 const acceptanceCaveatTier2 = "CAVEAT: producer authorization is checked against an operator-" +
 	"attested per-momentum schedule derived from N peer RPC snapshots, " +
