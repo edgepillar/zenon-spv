@@ -20,6 +20,8 @@ var scenarios = []scenario{
 	{"compiled_delayed_inclusion", "internal/conformance", "TestCompiledDelayedInclusionWorkflow", []string{"zenon-spv", "fetch-bundle"}},
 	{"retained_capacity_workloads", "internal/conformance", "TestRetainedCapacityWorkloads", nil},
 	{"bounded_state_reader", "internal/verify", "TestSizedStateReadContract", nil},
+	{"node_content_scaling", "internal/conformance", "TestNodeContentScaling", nil},
+	{"compiled_content_scaling", "internal/conformance", "TestCompiledContentScalingWorkflow", []string{"zenon-spv"}},
 	{"state_inspection", "internal/conformance", "TestCompiledCLIStateInspection", []string{"zenon-spv"}},
 	{"writer_exclusion", "internal/conformance", "TestCompiledCLIStateWriterExclusion", []string{"zenon-spv"}},
 	{"watch_events", "internal/conformance", "TestCompiledWatchJSONEvents", []string{"zenon-spv"}},
@@ -52,4 +54,5 @@ var corpusPaths = []string{
 	"internal/testdata/conformance/account-segments.json",
 	"internal/testdata/conformance/contract-batches.json",
 	"internal/testdata/conformance/delayed-inclusion.json",
+	"internal/testdata/conformance/content-scaling.json",
 }

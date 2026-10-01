@@ -16,11 +16,12 @@ type binaryRecord struct {
 
 type caseResult struct {
 	scenario
-	Status   string         `json:"status"`
-	Passed   int            `json:"passed_subtests"`
-	Skipped  int            `json:"skipped_subtests"`
-	Failed   int            `json:"failed_subtests"`
-	Binaries []binaryRecord `json:"binaries"`
+	Status    string           `json:"status"`
+	Passed    int              `json:"passed_subtests"`
+	Skipped   int              `json:"skipped_subtests"`
+	Failed    int              `json:"failed_subtests"`
+	Binaries  []binaryRecord   `json:"binaries"`
+	Resources []resourceRecord `json:"resource_samples,omitempty"`
 }
 
 type testEvent struct {
@@ -130,6 +131,14 @@ func (c *eventCollector) event(e testEvent) error {
 			}
 		}
 	case "output":
+		if _, raw, ok := strings.Cut(e.Output, resourceMarker); ok {
+			record, err := parseResource(raw)
+			if err != nil || !c.active[key] || result.ID != "compiled_content_scaling" || e.Test != result.Test+"/"+record.Workload ||
+				slices.ContainsFunc(result.Resources, func(r resourceRecord) bool { return r.Workload == record.Workload }) {
+				return errors.New("invalid resource record")
+			}
+			result.Resources = append(result.Resources, record)
+		}
 		if _, raw, ok := strings.Cut(e.Output, binaryMarker); ok {
 			var record binaryRecord
 			if !c.active[key] || json.Unmarshal([]byte(raw), &record) != nil ||
@@ -164,6 +173,9 @@ func (c *eventCollector) finish(processOK bool) string {
 				if !slices.ContainsFunc(r.Binaries, func(b binaryRecord) bool { return b.Command == command }) {
 					r.Status = "incomplete"
 				}
+			}
+			if r.ID == "compiled_content_scaling" && len(r.Resources) != len(resourceWorkloads) {
+				r.Status = "incomplete"
 			}
 		case "fail":
 			r.Status = "failed"

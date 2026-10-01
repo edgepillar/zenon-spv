@@ -104,7 +104,10 @@ func run() error {
 		if len(os.Args) == 2 && os.Args[1] == "--delayed-inclusion" {
 			return writeDelayedInclusionVectors()
 		}
-		return fmt.Errorf("usage: gen-node-momentum-vectors [--account-amounts|--account-segments|--contract-batches|--delayed-inclusion]")
+		if len(os.Args) == 2 && os.Args[1] == "--content-scaling" {
+			return writeContentScalingVectors()
+		}
+		return fmt.Errorf("usage: gen-node-momentum-vectors [--account-amounts|--account-segments|--contract-batches|--delayed-inclusion|--content-scaling]")
 	}
 	// Public, synthetic test key. Never use this all-zero seed for a wallet.
 	key := ed25519.NewKeyFromSeed(make([]byte, ed25519.SeedSize))

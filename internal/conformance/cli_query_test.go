@@ -276,6 +276,8 @@ type queryCLIResult struct {
 	code           int
 	command        string
 	stdout, stderr []byte
+	elapsed        time.Duration
+	process        *os.ProcessState
 }
 
 func queryCLIEnvironment() []string {
@@ -334,7 +336,7 @@ func buildQueryCLIs(t *testing.T, names ...string) map[string]string {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		cmd := exec.CommandContext(ctx, goTool, "build", "-trimpath", "-o", path, pkg)
 		cmd.Dir = "../.."
-		cmd.Env = append(queryCLIEnvironment(), "GOTOOLCHAIN=local", "GOWORK=off", "GOPROXY=off", "GOSUMDB=off")
+		cmd.Env = append(queryCLIEnvironment(), "GOTOOLCHAIN=local", "GOWORK=off", "GOPROXY=off", "GOSUMDB=off", "GOFLAGS=")
 		output, err := cmd.CombinedOutput()
 		cancel()
 		if err != nil {
@@ -365,13 +367,20 @@ func buildQueryCLIs(t *testing.T, names ...string) map[string]string {
 
 func runQueryCLI(t *testing.T, binary string, args ...string) queryCLIResult {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	return runQueryCLIWithTimeout(t, 15*time.Second, binary, args...)
+}
+
+func runQueryCLIWithTimeout(t *testing.T, timeout time.Duration, binary string, args ...string) queryCLIResult {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Env, cmd.WaitDelay = queryCLIEnvironment(), time.Second
 	var out, diagnostics bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &diagnostics
+	start := time.Now()
 	err := cmd.Run()
+	elapsed := time.Since(start)
 	if ctx.Err() != nil {
 		t.Fatalf("CLI timed out: %v", ctx.Err())
 	}
@@ -392,7 +401,7 @@ func runQueryCLI(t *testing.T, binary string, args ...string) queryCLIResult {
 	if len(args) > 0 {
 		command = args[0]
 	}
-	return queryCLIResult{code: code, command: command, stdout: out.Bytes(), stderr: diagnostics.Bytes()}
+	return queryCLIResult{code: code, command: command, stdout: out.Bytes(), stderr: diagnostics.Bytes(), elapsed: elapsed, process: cmd.ProcessState}
 }
 
 // Decode independently of the command package so field names, string outcome
