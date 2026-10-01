@@ -490,6 +490,9 @@ func runWatch(args []string) int {
 	fs.SetOutput(os.Stderr)
 	rpcURL := fs.String("rpc", os.Getenv("ZENON_SPV_RPC"), "single-peer RPC URL (or set ZENON_SPV_RPC)")
 	peersFlag := fs.String("peers", os.Getenv("ZENON_SPV_PEERS"), "comma-separated peer URLs (or set ZENON_SPV_PEERS)")
+	// Environment defaults remain live values but must not appear in usage text.
+	fs.Lookup("rpc").DefValue = ""
+	fs.Lookup("peers").DefValue = ""
 	quorum := fs.Int("quorum", 0, "minimum agreeing peers; 0 = require unanimous (len(peers))")
 	tier := fs.String("window", "low", "policy window tier: low | medium | high")
 	genesisConfig := fs.String("genesis-config", "", "path to genesis trust root JSON file (overrides env)")
@@ -530,6 +533,14 @@ func runWatch(args []string) int {
 	}
 
 	urls := splitWatchPeers(*peersFlag)
+	var rpcSet, peersSet bool
+	fs.Visit(func(f *flag.Flag) {
+		rpcSet = rpcSet || f.Name == "rpc"
+		peersSet = peersSet || f.Name == "peers"
+	})
+	if rpcSet && !peersSet {
+		urls = nil // Explicit RPC selection overrides the environment peer list.
+	}
 	if len(urls) == 0 && *rpcURL != "" {
 		urls = []string{*rpcURL}
 	}

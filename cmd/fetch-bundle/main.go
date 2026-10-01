@@ -74,6 +74,9 @@ func run(args []string) error {
 	fs.SetOutput(os.Stderr)
 	rpcURL := fs.String("rpc", os.Getenv("ZENON_SPV_RPC"), "single-peer RPC URL (or set ZENON_SPV_RPC)")
 	peersFlag := fs.String("peers", os.Getenv("ZENON_SPV_PEERS"), "comma-separated peer URLs for cross-check (or set ZENON_SPV_PEERS)")
+	// Environment defaults remain live values but must not appear in usage text.
+	fs.Lookup("rpc").DefValue = ""
+	fs.Lookup("peers").DefValue = ""
 	quorum := fs.Int("quorum", 0, "minimum agreeing peers; 0 = require unanimous (len(peers))")
 	heightArg := fs.Int64("height", -1, "last bundle momentum height; -1 = use frontier (with safety margin in multi-peer mode)")
 	safetyMargin := fs.Uint64("safety-margin", 6, "in multi-peer frontier mode, drop this many heights below median(frontiers)")

@@ -7,6 +7,18 @@ canonicality, or finality guarantees to the verifier.
 
 ## Peer configuration
 
+An explicit `--rpc` without an explicit `--peers` selects that RPC endpoint
+instead of `ZENON_SPV_PEERS`. An explicitly empty RPC selection fails before
+configuration loading rather than using the environment peer list. When both
+flags are provided, a nonempty explicit peer list takes precedence; `--peers
+""` clears that list and permits the RPC fallback. Without transport flags,
+`ZENON_SPV_PEERS` takes precedence over `ZENON_SPV_RPC`. These rules match
+[fetch-bundle peer selection](fetch-bundle.md#peer-selection).
+
+Help and usage text name the environment variables but omit their configured
+endpoint values. The runtime defaults are unchanged. This does not redact
+arguments from a shell history, process list, or arbitrary argument errors.
+
 The CLI accepts `--quorum 0` for unanimous agreement, or a value from one
 through the configured peer count. Negative or excessive values fail with
 exit 64 before loading configuration or starting RPC requests.
