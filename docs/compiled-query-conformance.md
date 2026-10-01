@@ -112,6 +112,13 @@ RPC, changed K fails the old pin, and queries preserve the saved file. Its
 node-derived account targets share one confirming momentum; the separate
 mixed-height core fixture in [retention policy](retention-policy.md) is synthetic.
 
+`TestCompiledDelayedInclusionWorkflow` adds the independently node-derived
+[mixed-height corpus](delayed-inclusion.md), with six targets confirmed in
+three momentums across v1/v2. It checks shallow refusal, two watch processes,
+delayed proof collection, exact target identities and read-only query/inspection
+behavior under explicit K, profile, schedule and context pinning. Its frontiers
+and range responses are original fixture envelopes, without synthetic hash hints.
+
 This is synthetic offline inclusion evidence against explicitly trusted local
 anchor/state inputs. It does not validate VM execution, live activation,
 balance proofs, freshness, canonical-chain selection, or consensus finality.

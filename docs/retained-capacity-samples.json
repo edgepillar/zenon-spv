@@ -1,0 +1,521 @@
+{
+  "schema_version": 1,
+  "mode": "local_synthetic_benchmark",
+  "recorded_date": "2026-10-01",
+  "source": {
+    "base_revision": "6f8bd9f9ea60011ac60636272a0bee04a8161954",
+    "modified": true,
+    "inputs_sha256": "cf4f84156e936c47659154a4c26b6c598e5cb0b71d26e21108fcf5c9ab4c74b0",
+    "input_scope": "offline-pilot Go/module/JSON source inputs; excludes docs, CI and Python checkers"
+  },
+  "runner": {
+    "os": "darwin",
+    "architecture": "arm64",
+    "go_version": "go1.25.14",
+    "benchmark_cpu": 1,
+    "cpu_identity": "omitted",
+    "race": false
+  },
+  "command": "go test -run '^$' -bench '^BenchmarkRetainedCapacity$' -benchmem -cpu=1 -benchtime=1s -count=5 ./internal/conformance",
+  "workloads": [
+    {
+      "capacity": 16,
+      "operation": "ExtendOne",
+      "samples": [
+        {
+          "iterations": 36860,
+          "ns_per_op": 32852.0,
+          "allocated_bytes_per_op": 12616,
+          "allocations_per_op": 57,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 36708,
+          "ns_per_op": 33026.0,
+          "allocated_bytes_per_op": 12616,
+          "allocations_per_op": 57,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 36336,
+          "ns_per_op": 32966.0,
+          "allocated_bytes_per_op": 12616,
+          "allocations_per_op": 57,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 36372,
+          "ns_per_op": 33096.0,
+          "allocated_bytes_per_op": 12616,
+          "allocations_per_op": 57,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 35868,
+          "ns_per_op": 33091.0,
+          "allocated_bytes_per_op": 12616,
+          "allocations_per_op": 57,
+          "state_file_bytes": 13139
+        }
+      ]
+    },
+    {
+      "capacity": 16,
+      "operation": "CommitmentFlat",
+      "samples": [
+        {
+          "iterations": 1000000,
+          "ns_per_op": 1288.0,
+          "allocated_bytes_per_op": 560,
+          "allocations_per_op": 14,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 1000000,
+          "ns_per_op": 1090.0,
+          "allocated_bytes_per_op": 560,
+          "allocations_per_op": 14,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 1000000,
+          "ns_per_op": 1092.0,
+          "allocated_bytes_per_op": 560,
+          "allocations_per_op": 14,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 1000000,
+          "ns_per_op": 1097.0,
+          "allocated_bytes_per_op": 560,
+          "allocations_per_op": 14,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 1000000,
+          "ns_per_op": 1097.0,
+          "allocated_bytes_per_op": 560,
+          "allocations_per_op": 14,
+          "state_file_bytes": 13139
+        }
+      ]
+    },
+    {
+      "capacity": 16,
+      "operation": "TrustedResume",
+      "samples": [
+        {
+          "iterations": 1634,
+          "ns_per_op": 750328.0,
+          "allocated_bytes_per_op": 149037,
+          "allocations_per_op": 684,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 1617,
+          "ns_per_op": 748507.0,
+          "allocated_bytes_per_op": 149032,
+          "allocations_per_op": 684,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 1614,
+          "ns_per_op": 752235.0,
+          "allocated_bytes_per_op": 149032,
+          "allocations_per_op": 684,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 1632,
+          "ns_per_op": 750729.0,
+          "allocated_bytes_per_op": 149032,
+          "allocations_per_op": 684,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 1558,
+          "ns_per_op": 752617.0,
+          "allocated_bytes_per_op": 149032,
+          "allocations_per_op": 684,
+          "state_file_bytes": 13139
+        }
+      ]
+    },
+    {
+      "capacity": 16,
+      "operation": "Save",
+      "samples": [
+        {
+          "iterations": 96,
+          "ns_per_op": 12511743.0,
+          "allocated_bytes_per_op": 86797,
+          "allocations_per_op": 375,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 94,
+          "ns_per_op": 12805573.0,
+          "allocated_bytes_per_op": 86452,
+          "allocations_per_op": 375,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 94,
+          "ns_per_op": 12291168.0,
+          "allocated_bytes_per_op": 86450,
+          "allocations_per_op": 375,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 94,
+          "ns_per_op": 12222082.0,
+          "allocated_bytes_per_op": 86452,
+          "allocations_per_op": 375,
+          "state_file_bytes": 13139
+        },
+        {
+          "iterations": 94,
+          "ns_per_op": 12088663.0,
+          "allocated_bytes_per_op": 86452,
+          "allocations_per_op": 375,
+          "state_file_bytes": 13139
+        }
+      ]
+    },
+    {
+      "capacity": 256,
+      "operation": "ExtendOne",
+      "samples": [
+        {
+          "iterations": 20944,
+          "ns_per_op": 57406.0,
+          "allocated_bytes_per_op": 157000,
+          "allocations_per_op": 537,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 21002,
+          "ns_per_op": 57047.0,
+          "allocated_bytes_per_op": 157000,
+          "allocations_per_op": 537,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 20964,
+          "ns_per_op": 57137.0,
+          "allocated_bytes_per_op": 157000,
+          "allocations_per_op": 537,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 20749,
+          "ns_per_op": 57856.0,
+          "allocated_bytes_per_op": 157000,
+          "allocations_per_op": 537,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 21654,
+          "ns_per_op": 56198.0,
+          "allocated_bytes_per_op": 157000,
+          "allocations_per_op": 537,
+          "state_file_bytes": 202500
+        }
+      ]
+    },
+    {
+      "capacity": 256,
+      "operation": "CommitmentFlat",
+      "samples": [
+        {
+          "iterations": 379856,
+          "ns_per_op": 3155.0,
+          "allocated_bytes_per_op": 560,
+          "allocations_per_op": 14,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 373508,
+          "ns_per_op": 3166.0,
+          "allocated_bytes_per_op": 560,
+          "allocations_per_op": 14,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 392955,
+          "ns_per_op": 3166.0,
+          "allocated_bytes_per_op": 560,
+          "allocations_per_op": 14,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 379485,
+          "ns_per_op": 3161.0,
+          "allocated_bytes_per_op": 560,
+          "allocations_per_op": 14,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 383238,
+          "ns_per_op": 3183.0,
+          "allocated_bytes_per_op": 560,
+          "allocations_per_op": 14,
+          "state_file_bytes": 202500
+        }
+      ]
+    },
+    {
+      "capacity": 256,
+      "operation": "TrustedResume",
+      "samples": [
+        {
+          "iterations": 100,
+          "ns_per_op": 11432717.0,
+          "allocated_bytes_per_op": 2158378,
+          "allocations_per_op": 7421,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 100,
+          "ns_per_op": 11467710.0,
+          "allocated_bytes_per_op": 2158379,
+          "allocations_per_op": 7421,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 100,
+          "ns_per_op": 11517517.0,
+          "allocated_bytes_per_op": 2158379,
+          "allocations_per_op": 7421,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 100,
+          "ns_per_op": 11483751.0,
+          "allocated_bytes_per_op": 2158378,
+          "allocations_per_op": 7421,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 100,
+          "ns_per_op": 11521329.0,
+          "allocated_bytes_per_op": 2158380,
+          "allocations_per_op": 7421,
+          "state_file_bytes": 202500
+        }
+      ]
+    },
+    {
+      "capacity": 256,
+      "operation": "Save",
+      "samples": [
+        {
+          "iterations": 57,
+          "ns_per_op": 20784874.0,
+          "allocated_bytes_per_op": 1265336,
+          "allocations_per_op": 5426,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 57,
+          "ns_per_op": 20660060.0,
+          "allocated_bytes_per_op": 1256129,
+          "allocations_per_op": 5426,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 57,
+          "ns_per_op": 20572565.0,
+          "allocated_bytes_per_op": 1256126,
+          "allocations_per_op": 5426,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 57,
+          "ns_per_op": 20693496.0,
+          "allocated_bytes_per_op": 1256127,
+          "allocations_per_op": 5426,
+          "state_file_bytes": 202500
+        },
+        {
+          "iterations": 57,
+          "ns_per_op": 20921716.0,
+          "allocated_bytes_per_op": 1256120,
+          "allocations_per_op": 5425,
+          "state_file_bytes": 202500
+        }
+      ]
+    },
+    {
+      "capacity": 4096,
+      "operation": "ExtendOne",
+      "samples": [
+        {
+          "iterations": 2260,
+          "ns_per_op": 532784.0,
+          "allocated_bytes_per_op": 2491725,
+          "allocations_per_op": 8217,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 2304,
+          "ns_per_op": 540253.0,
+          "allocated_bytes_per_op": 2491725,
+          "allocations_per_op": 8217,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 2398,
+          "ns_per_op": 538889.0,
+          "allocated_bytes_per_op": 2491725,
+          "allocations_per_op": 8217,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 2302,
+          "ns_per_op": 542539.0,
+          "allocated_bytes_per_op": 2491725,
+          "allocations_per_op": 8217,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 1980,
+          "ns_per_op": 542337.0,
+          "allocated_bytes_per_op": 2491725,
+          "allocations_per_op": 8217,
+          "state_file_bytes": 3232261
+        }
+      ]
+    },
+    {
+      "capacity": 4096,
+      "operation": "CommitmentFlat",
+      "samples": [
+        {
+          "iterations": 29270,
+          "ns_per_op": 40912.0,
+          "allocated_bytes_per_op": 560,
+          "allocations_per_op": 14,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 29414,
+          "ns_per_op": 40856.0,
+          "allocated_bytes_per_op": 560,
+          "allocations_per_op": 14,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 29462,
+          "ns_per_op": 40828.0,
+          "allocated_bytes_per_op": 560,
+          "allocations_per_op": 14,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 29319,
+          "ns_per_op": 40865.0,
+          "allocated_bytes_per_op": 560,
+          "allocations_per_op": 14,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 29534,
+          "ns_per_op": 40918.0,
+          "allocated_bytes_per_op": 560,
+          "allocations_per_op": 14,
+          "state_file_bytes": 3232261
+        }
+      ]
+    },
+    {
+      "capacity": 4096,
+      "operation": "TrustedResume",
+      "samples": [
+        {
+          "iterations": 6,
+          "ns_per_op": 179591097.0,
+          "allocated_bytes_per_op": 38277328,
+          "allocations_per_op": 114978,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 6,
+          "ns_per_op": 180902868.0,
+          "allocated_bytes_per_op": 38277322,
+          "allocations_per_op": 114978,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 6,
+          "ns_per_op": 179479500.0,
+          "allocated_bytes_per_op": 38277320,
+          "allocations_per_op": 114978,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 6,
+          "ns_per_op": 178851833.0,
+          "allocated_bytes_per_op": 38277328,
+          "allocations_per_op": 114978,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 6,
+          "ns_per_op": 178725021.0,
+          "allocated_bytes_per_op": 38277320,
+          "allocations_per_op": 114978,
+          "state_file_bytes": 3232261
+        }
+      ]
+    },
+    {
+      "capacity": 4096,
+      "operation": "Save",
+      "samples": [
+        {
+          "iterations": 7,
+          "ns_per_op": 150373964.0,
+          "allocated_bytes_per_op": 23530861,
+          "allocations_per_op": 86086,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 7,
+          "ns_per_op": 149436089.0,
+          "allocated_bytes_per_op": 22332353,
+          "allocations_per_op": 86082,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 7,
+          "ns_per_op": 149666333.0,
+          "allocated_bytes_per_op": 22332348,
+          "allocations_per_op": 86082,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 7,
+          "ns_per_op": 149708214.0,
+          "allocated_bytes_per_op": 22332353,
+          "allocations_per_op": 86082,
+          "state_file_bytes": 3232261
+        },
+        {
+          "iterations": 7,
+          "ns_per_op": 150009286.0,
+          "allocated_bytes_per_op": 22332390,
+          "allocations_per_op": 86082,
+          "state_file_bytes": 3232261
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Synthetic stress data uses SPV hashing; separate node/Python corpora supply conformance evidence.",
+    "No competing builds or tests were run during sampling; this is not a controlled target-hardware study.",
+    "Bytes per operation are allocation volume, not peak RSS or retained heap.",
+    "Resume uses warm filesystem reads; save follows the local platform sync implementation.",
+    "No live network bandwidth, latency, throughput, consensus or deployment claim."
+  ]
+}

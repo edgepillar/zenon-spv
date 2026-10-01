@@ -16,6 +16,9 @@ var scenarios = []scenario{
 	{"retention_depth_workflow", "internal/conformance", "TestCompiledRetentionDepthWorkflow", []string{"zenon-spv"}},
 	{"delayed_multi_height_segment", "internal/verify", "TestRetentionSeparatesHistoryFromDepth", nil},
 	{"retention_migration", "internal/verify", "TestRetentionPersistenceMigrationAndAuthorizationBeforeShrink", nil},
+	{"node_delayed_inclusion", "internal/conformance", "TestNodeDelayedInclusionAcrossVersionsAndResume", nil},
+	{"compiled_delayed_inclusion", "internal/conformance", "TestCompiledDelayedInclusionWorkflow", []string{"zenon-spv", "fetch-bundle"}},
+	{"retained_capacity_workloads", "internal/conformance", "TestRetainedCapacityWorkloads", nil},
 	{"state_inspection", "internal/conformance", "TestCompiledCLIStateInspection", []string{"zenon-spv"}},
 	{"writer_exclusion", "internal/conformance", "TestCompiledCLIStateWriterExclusion", []string{"zenon-spv"}},
 	{"watch_events", "internal/conformance", "TestCompiledWatchJSONEvents", []string{"zenon-spv"}},
@@ -47,4 +50,5 @@ var corpusPaths = []string{
 	"internal/testdata/conformance/account-amounts.json",
 	"internal/testdata/conformance/account-segments.json",
 	"internal/testdata/conformance/contract-batches.json",
+	"internal/testdata/conformance/delayed-inclusion.json",
 }
