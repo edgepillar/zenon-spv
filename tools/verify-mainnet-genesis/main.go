@@ -7,40 +7,36 @@
 //
 // What it does:
 //
-//  1. Fetches the genesis Momentum (height 1) from each peer via
-//     ledger.getMomentumByHash on the height-1 hash returned by
+//  1. Fetches height 1 from every distinct configured endpoint using
 //     ledger.getMomentumsByHeight(1, 1).
-//  2. Recomputes each peer's claimed hash locally from the signed
-//     envelope (Momentum.ComputeHash) — peers cannot fabricate the
-//     hash without fabricating the entire signed envelope.
-//  3. Asserts every peer returned the same recomputed hash.
-//  4. If --expected is set, asserts the unanimous hash matches that
-//     value (so this tool can also cross-check an already-embedded
-//     hash against multiple operators).
+//  2. Recomputes each claimed hash from the genesis envelope and
+//     requires complete peer agreement through the shared RPC client.
+//  3. Requires the mainnet genesis shape and the embedded mainnet hash,
+//     or an explicitly supplied nonzero --expected hash.
 //
-// Output: a human-readable report + the hash literal suitable for
-// pasting into internal/verify/genesis.go.
+// Output: a human-readable report only after every check succeeds.
 //
 // This tool is NOT linked into the zenon-spv binary. It runs at
 // release time when the maintainer wants to bump or re-verify the
-// embedded mainnet anchor. Closes ADR 0002 follow-up #1 by giving
-// the embedded value a multi-peer attestation rather than relying
-// on a single-peer recompute.
+// embedded mainnet anchor. Peer agreement is an observation cross-check;
+// endpoint independence and anchor provenance remain external trust inputs.
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
 	"github.com/0x3639/zenon-spv/internal/fetch"
+	"github.com/0x3639/zenon-spv/internal/verify"
 )
 
 func main() {
@@ -51,112 +47,88 @@ func main() {
 }
 
 func run(args []string) error {
+	return runWithOutput(args, os.Stdout, os.Stderr)
+}
+
+func runWithOutput(args []string, stdout, diagnostics io.Writer) error {
+	anchor, err := verify.MainnetGenesis()
+	if err != nil {
+		return errors.New("cannot load embedded mainnet anchor")
+	}
 	fs := flag.NewFlagSet("verify-mainnet-genesis", flag.ContinueOnError)
-	fs.SetOutput(os.Stderr)
+	fs.SetOutput(diagnostics)
 	peersFlag := fs.String("peers", os.Getenv("ZENON_SPV_PEERS"), "comma-separated peer URLs (or set ZENON_SPV_PEERS)")
-	expected := fs.String("expected", "", "optional 64-hex hash to assert all peers return")
-	timeout := fs.Duration("timeout", 60*time.Second, "per-peer RPC timeout")
+	fs.Lookup("peers").DefValue = ""
+	expected := fs.String("expected", hex.EncodeToString(anchor.HeaderHash[:]), "expected nonzero 64-hex hash (defaults to the embedded mainnet anchor)")
+	timeout := fs.Duration("timeout", 60*time.Second, "overall RPC timeout")
 	if err := fs.Parse(args); err != nil {
 		return err
+	}
+	if fs.NArg() != 0 {
+		return errors.New("positional arguments are not supported")
+	}
+	if *timeout <= 0 {
+		return errors.New("timeout must be positive")
 	}
 	urls := splitPeers(*peersFlag)
 	if len(urls) < 2 {
 		return errors.New("at least two --peers required (single-peer means no cross-check)")
 	}
 	var expectedHash chain.Hash
-	if *expected != "" {
-		s := strings.TrimPrefix(*expected, "0x")
-		if len(s) != 2*chain.HashSize {
-			return fmt.Errorf("--expected: bad hex length %d (want %d)", len(s), 2*chain.HashSize)
-		}
-		raw, err := hex.DecodeString(s)
-		if err != nil {
-			return fmt.Errorf("--expected: %w", err)
-		}
-		copy(expectedHash[:], raw)
+	s := strings.TrimPrefix(*expected, "0x")
+	if len(s) != 2*chain.HashSize {
+		return errors.New("--expected requires a nonzero 64-hex hash")
+	}
+	raw, err := hex.DecodeString(s)
+	if err != nil {
+		return errors.New("--expected requires a nonzero 64-hex hash")
+	}
+	copy(expectedHash[:], raw)
+	if expectedHash.IsZero() {
+		return errors.New("--expected requires a nonzero 64-hex hash")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 
-	type result struct {
-		label  string
-		header chain.Header
-		err    error
+	multi := fetch.NewMultiClient(urls)
+	headers, err := multi.FetchByHeight(ctx, verify.MainnetHeight, 1)
+	if err != nil {
+		return err
 	}
-	results := make([]result, len(urls))
-	var wg sync.WaitGroup
-	for i, u := range urls {
-		wg.Add(1)
-		go func(i int, u string) {
-			defer wg.Done()
-			c := fetch.NewClient(u)
-			// Genesis is height 1.
-			detailed, err := c.FetchByHeightDetailed(ctx, 1, 1)
-			if err != nil {
-				results[i] = result{label: fetch.PeerLabel(i), err: err}
-				return
-			}
-			if len(detailed) != 1 {
-				results[i] = result{label: fetch.PeerLabel(i), err: fmt.Errorf("peer returned %d momentums, expected 1", len(detailed))}
-				return
-			}
-			results[i] = result{label: fetch.PeerLabel(i), header: detailed[0].Header}
-		}(i, u)
+	header := headers[0]
+	if header.ChainIdentifier != verify.MainnetChainID || header.Version != 1 || !header.PreviousHash.IsZero() {
+		return errors.New("observation does not match the mainnet genesis shape")
 	}
-	wg.Wait()
-
-	// Per-peer report
-	fmt.Println("Per-peer fetch + local recompute:")
-	var firstHash chain.Hash
-	var firstPeer string
-	healthy := 0
-	for _, r := range results {
-		if r.err != nil {
-			fmt.Printf("  %s: ERROR %v\n", r.label, r.err)
-			continue
-		}
-		hexed := hex.EncodeToString(r.header.HeaderHash[:])
-		fmt.Printf("  %s: chain_id=%d height=%d hash=%s\n",
-			r.label, r.header.ChainIdentifier, r.header.Height, hexed)
-		if healthy == 0 {
-			firstHash = r.header.HeaderHash
-			firstPeer = r.label
-		}
-		healthy++
-	}
-	if healthy < 2 {
-		return fmt.Errorf("only %d/%d peers responded healthily; need ≥2 for cross-check", healthy, len(results))
+	if header.HeaderHash != expectedHash {
+		return errors.New("genesis observation differs from the expected hash")
 	}
 
-	// Agreement check
-	for _, r := range results {
-		if r.err != nil {
-			continue
+	label := "the embedded mainnet anchor"
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "expected" {
+			label = "the explicit expected hash"
 		}
-		if r.header.HeaderHash != firstHash {
-			return fmt.Errorf("DISAGREEMENT: %s -> %x  vs  %s -> %x",
-				firstPeer, firstHash, r.label, r.header.HeaderHash)
-		}
+	})
+	var output bytes.Buffer
+	fmt.Fprintf(&output, "OK: %d/%d configured peers match %s.\n", len(urls), len(urls), label)
+	fmt.Fprintln(&output, "OK: chain_id=1 height=1 version=1; hash recomputed from the genesis envelope.")
+	fmt.Fprintf(&output, "Observed hash: %x\n", header.HeaderHash)
+	fmt.Fprintln(&output, "Peer agreement does not establish operator independence, canonical history, or finality.")
+	n, err := stdout.Write(output.Bytes())
+	if err == nil && n != output.Len() {
+		err = io.ErrShortWrite
 	}
-
-	// Optional pinned-value check
-	if *expected != "" && firstHash != expectedHash {
-		return fmt.Errorf("MISMATCH against --expected:\n  unanimous = %x\n  expected  = %x",
-			firstHash, expectedHash)
+	if err != nil {
+		return &genesisOutputError{cause: err}
 	}
-
-	fmt.Println()
-	fmt.Printf("OK: %d/%d peers agree on mainnet genesis.\n", healthy, len(results))
-	fmt.Printf("OK: hash recomputed from signed envelope on every peer.\n")
-	if *expected != "" {
-		fmt.Printf("OK: matches --expected.\n")
-	}
-	fmt.Println()
-	fmt.Println("Hash literal for embedding in internal/verify/genesis.go:")
-	fmt.Printf("  mainnetHeaderHash = %q\n", hex.EncodeToString(firstHash[:]))
 	return nil
 }
+
+type genesisOutputError struct{ cause error }
+
+func (e *genesisOutputError) Error() string { return "genesis report failed; stdout may be incomplete" }
+func (e *genesisOutputError) Unwrap() error { return e.cause }
 
 func splitPeers(s string) []string {
 	if s == "" {

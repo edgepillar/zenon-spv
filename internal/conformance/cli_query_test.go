@@ -292,7 +292,7 @@ func buildQueryCLIs(t *testing.T, names ...string) map[string]string {
 	// Register CLI sources and their internal helpers as test inputs. Some
 	// helpers are only imported by the commands, not by this test package.
 	// Their edits must invalidate a previously cached compiled-workflow pass.
-	for _, dir := range []string{"../../cmd/zenon-spv", "../../cmd/fetch-bundle", "../../tools/derive-producer-schedule", "../../tools/derive-checkpoints", "../../internal"} {
+	for _, dir := range []string{"../../cmd/zenon-spv", "../../cmd/fetch-bundle", "../../tools/derive-producer-schedule", "../../tools/derive-checkpoints", "../../tools/verify-mainnet-genesis", "../../internal"} {
 		if err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, walkErr error) error {
 			if walkErr != nil {
 				return walkErr
@@ -322,7 +322,8 @@ func buildQueryCLIs(t *testing.T, names ...string) map[string]string {
 	}
 	for _, name := range names {
 		pkg := "./cmd/" + name
-		if name == "derive-producer-schedule" || name == "derive-checkpoints" {
+		switch name {
+		case "derive-producer-schedule", "derive-checkpoints", "verify-mainnet-genesis":
 			pkg = "./tools/" + name
 		}
 		path := filepath.Join(binDir, name)

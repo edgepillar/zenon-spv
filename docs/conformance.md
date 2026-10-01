@@ -74,6 +74,13 @@ observation checks, not elected-producer or canonical-chain authentication,
 and do not re-derive the embedded historical checkpoints. See
 [`checkpoint derivation`](checkpoint-derivation.md).
 
+The [genesis cross-check](genesis-cross-check.md) defaults to the embedded
+mainnet hash and requires an explicit nonzero hash for an override. Unit and
+compiled-command tests reject learned or empty pins, incomplete peer agreement,
+wrong genesis shapes, and private diagnostic leakage. Successful unsigned
+synthetic genesis observations demonstrate pin matching only; these tests do
+not independently re-derive or authenticate the historical mainnet anchor.
+
 ## §8 — Conformance test cases
 
 Header-chain layer:
