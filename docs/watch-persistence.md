@@ -49,6 +49,26 @@ share an operator. These checks do not establish peer independence, authenticate
 the network, or prove consensus finality. Keep transport configuration stable while queries or watch are
 running; concurrent mutation of the public client fields is unsupported.
 
+## Retained target consistency
+
+A target at or below the local tip is reported as caught up only when its
+hash, public key, and signature match the header retained at that height.
+The key and signature matter because the momentum hash does not commit to
+them. Agreement among configured peers does not override contradictory local
+history. A mismatch returns `REFUSED / ReasonRetainedHeaderMismatch` without
+extending or saving the trusted state.
+
+If the target is older than the retained range, watch cannot compare it with
+local history and returns `REFUSED / ReasonHeightOutOfWindow`. This includes
+stale peers or a safety margin that moves the selected target out of range.
+Watch neither re-anchors nor silently rolls back. Continuous mode reports the
+refusal and polls again after the interval; `--once` exits 2. Matching retained
+targets still follow the ordinary caught-up save and reporting path.
+
+This is a consistency check against trusted local history, not new header
+verification or independent evidence of network freshness or canonicality.
+Targets above the retained tip still require normal linked-header verification.
+
 ## Polling and request bounds
 
 Negative polling intervals are rejected before state loading or RPC requests.

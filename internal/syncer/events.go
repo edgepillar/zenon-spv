@@ -125,6 +125,10 @@ func (l *Loop) logIteration(r TickResult, state verify.VerifiedState, saveErr er
 	if r.failureStage != "" {
 		category := "unavailable"
 		switch {
+		case errors.Is(r.Err, errRetainedTargetMismatch):
+			category = "header_mismatch"
+		case errors.Is(r.Err, errRetainedTargetUnavailable):
+			category = "height_unavailable"
 		case errors.Is(r.Err, fetch.ErrNotEnoughPeers):
 			category = "quorum_unavailable"
 		case errors.Is(r.Err, fetch.ErrPeerDisagreement):

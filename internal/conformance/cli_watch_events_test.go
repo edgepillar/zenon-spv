@@ -75,7 +75,8 @@ func TestCompiledWatchOnceJSONEvents(t *testing.T) {
 func testCompiledWatchJSONEvents(t *testing.T, once bool) {
 	t.Helper()
 	binary := buildQueryCLIs(t, "zenon-spv")["zenon-spv"]
-	for _, mode := range []string{"advanced", "caught_up", "rejected", "profile_refused", "frontier_refused"} {
+	for _, mode := range []string{"advanced", "caught_up", "rejected", "profile_refused", "frontier_refused",
+		"retained_hash_refused", "retained_key_refused", "retained_signature_refused"} {
 		t.Run(mode, func(t *testing.T) {
 			c, headers, policy := transitionFixture(t)
 			policy.W = 5 // Seed five headers; the CLI raises the depth to six.
@@ -228,6 +229,11 @@ func testCompiledWatchJSONEvents(t *testing.T, once bool) {
 				if mode == "profile_refused" && (tick.Verification == nil || tick.Verification.Reason != "ReasonProtocolProfileCoverage") {
 					t.Fatal("profile refusal lost its actual verification result")
 				}
+				if strings.HasPrefix(mode, "retained_") && (tick.Verification != nil || tick.CandidateTip != nil ||
+					tick.Reason == nil || *tick.Reason != "ReasonRetainedHeaderMismatch" || tick.Error == nil ||
+					tick.Error.Stage != "retained_target" || tick.Error.Category != "header_mismatch") {
+					t.Fatal("conflicting target claimed verification or lost its refusal category")
+				}
 			}
 			if tick.Event != wantEvent || tick.StateTip.Height != wantTip.Height || tick.StateTip.Hash != wantTip.HeaderHash {
 				t.Fatal("watch event differs from the independently pinned tip")
@@ -268,6 +274,33 @@ func startWatchJSONPeer(t *testing.T, vectors []momentumVector, headers []chain.
 		frontier[name] = raw
 	}
 	block := vectors[5].Momentum
+	retainedTarget := mode == "caught_up" || strings.HasPrefix(mode, "retained_")
+	if retainedTarget {
+		block = vectors[4].Momentum
+	}
+	if strings.HasPrefix(mode, "retained_") {
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(block, &fields); err != nil {
+			t.Fatal(err)
+		}
+		h := headers[4]
+		switch mode {
+		case "retained_hash_refused":
+			h.TimestampUnix++
+			h.HeaderHash = h.ComputeHash()
+			fields["timestamp"], _ = json.Marshal(h.TimestampUnix)
+			fields["hash"], _ = json.Marshal(h.HeaderHash)
+		case "retained_key_refused":
+			h.PublicKey = slices.Clone(h.PublicKey)
+			h.PublicKey[0] ^= 1
+			fields["publicKey"], _ = json.Marshal(h.PublicKey)
+		case "retained_signature_refused":
+			h.Signature = slices.Clone(h.Signature)
+			h.Signature[0] ^= 1
+			fields["signature"], _ = json.Marshal(h.Signature)
+		}
+		block, _ = json.Marshal(fields)
+	}
 	if mode == "rejected" {
 		var fields map[string]json.RawMessage
 		if err := json.Unmarshal(block, &fields); err != nil {
@@ -292,15 +325,14 @@ func startWatchJSONPeer(t *testing.T, vectors []momentumVector, headers []chain.
 		switch req.Method {
 		case "ledger.getFrontierMomentum":
 			result = frontier
-			switch mode {
-			case "caught_up":
+			if retainedTarget {
 				result = vectors[5].Momentum
-			case "frontier_refused":
+			} else if mode == "frontier_refused" {
 				result = privateRPCConversionValue(t, vectors[5].Momentum, "content")
 			}
 		case "ledger.getMomentumsByHeight":
 			expected := uint64(2006)
-			if mode == "caught_up" {
+			if retainedTarget {
 				expected--
 			}
 			if !slices.Equal(req.Params, []uint64{expected, 1}) {
@@ -308,11 +340,7 @@ func startWatchJSONPeer(t *testing.T, vectors []momentumVector, headers []chain.
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			row := block
-			if mode == "caught_up" {
-				row = vectors[4].Momentum
-			}
-			result = map[string]any{"list": []json.RawMessage{row}}
+			result = map[string]any{"list": []json.RawMessage{block}}
 		default:
 			t.Error("unexpected watch method")
 			w.WriteHeader(http.StatusBadRequest)
