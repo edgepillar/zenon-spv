@@ -141,6 +141,11 @@ State-value layer:
 - [x] Watch stops on output errors or short writes, releases writer ownership,
       and preserves prior successful saves for trusted resume. Failed startup
       reporting precedes RPC/saves; combined save/output errors retain both causes.
+- [x] `watch --json` emits versioned events with separate verification and
+      persistence results, captured context, explicit trust inputs, and no
+      private paths or source metadata. Caught-up ticks do not invent header
+      verification; failed saves retain the in-memory tip even after replacement.
+      See [`watch-events.md`](watch-events.md) for the stream boundary.
 - [x] State save/load revalidate every retained header before truncation and
       enforce byte/capacity bounds, including the header count during JSON
       decoding; see [`watch-persistence.md`](watch-persistence.md).

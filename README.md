@@ -202,6 +202,11 @@ after collection; see [proof-only fetching](docs/fetch-bundle.md#evidence-for-an
 Place all verify-* flags before the bundle path. `watch` accepts no positional
 arguments; extra arguments fail before loading configuration or starting RPC.
 
+`watch --json` streams versioned JSON Lines events to stdout, with captured
+settings, explicit trust inputs, and separate verification and persistence
+results. A caught-up event does not claim fresh header verification. See
+[watch events](docs/watch-events.md) for the schema and delivery boundaries.
+
 ## What ACCEPT actually proves
 
 After this PR set, every ACCEPT result carries machine-readable lists:
