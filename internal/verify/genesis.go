@@ -13,7 +13,7 @@ import (
 // Mainnet genesis trust root for Zenon Network of Momentum (chain_id=1).
 //
 // Source: ledger.getMomentumByHash on https://my.hc1node.com:35997
-// (fetched 2026-04-28). The hash recomputes from the signed envelope —
+// (fetched 2026-04-28). The hash recomputes from the genesis envelope —
 // see zenon-spv-vault/notes/mainnet-genesis.md for the proof and
 // zenon-spv-vault/decisions/0002-genesis-trust-anchor.md for the
 // trust-anchor decision.
