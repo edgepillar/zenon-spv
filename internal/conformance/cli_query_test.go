@@ -292,7 +292,7 @@ func buildQueryCLIs(t *testing.T, names ...string) map[string]string {
 	// Register CLI sources and their internal helpers as test inputs. Some
 	// helpers are only imported by the commands, not by this test package.
 	// Their edits must invalidate a previously cached compiled-workflow pass.
-	for _, dir := range []string{"../../cmd/zenon-spv", "../../cmd/fetch-bundle", "../../internal"} {
+	for _, dir := range []string{"../../cmd/zenon-spv", "../../cmd/fetch-bundle", "../../tools/derive-producer-schedule", "../../internal"} {
 		if err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, walkErr error) error {
 			if walkErr != nil {
 				return walkErr
@@ -321,12 +321,16 @@ func buildQueryCLIs(t *testing.T, names ...string) map[string]string {
 		names = []string{"zenon-spv", "fetch-bundle"}
 	}
 	for _, name := range names {
+		pkg := "./cmd/" + name
+		if name == "derive-producer-schedule" {
+			pkg = "./tools/" + name
+		}
 		path := filepath.Join(binDir, name)
 		if runtime.GOOS == "windows" {
 			path += ".exe"
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-		cmd := exec.CommandContext(ctx, goTool, "build", "-trimpath", "-o", path, "./cmd/"+name)
+		cmd := exec.CommandContext(ctx, goTool, "build", "-trimpath", "-o", path, pkg)
 		cmd.Dir = "../.."
 		cmd.Env = append(queryCLIEnvironment(), "GOTOOLCHAIN=local", "GOWORK=off", "GOPROXY=off", "GOSUMDB=off")
 		output, err := cmd.CombinedOutput()

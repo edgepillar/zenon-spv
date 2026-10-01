@@ -57,6 +57,13 @@ invalid schedules fail before state loading, locking, or RPC, without exposing
 private input details. This tightens operator-attested input handling; it does
 not authenticate the schedule's claimed elections.
 
+The compiled schedule exporter observes the pinned v1/v2 transition through
+three local RPC fixtures, publishes a private sidecar, and passes it to the
+verification CLI. Output tests inject create, short-write, write, sync, close,
+replacement, and directory-sync failures; distinguish old-file preservation
+from visible output with uncertain durability; and cover symlink refusal,
+hard-link isolation, private diagnostics, and invalid arguments before RPC.
+
 ## §8 — Conformance test cases
 
 Header-chain layer:
