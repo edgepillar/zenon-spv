@@ -25,6 +25,11 @@ the generated checkpoint, validate the full chain, or establish finality.
 Endpoint counts do not establish independent operators. Multi-peer agreement
 does not make a checkpoint obtained from those peers an independent trust root.
 
+Help and usage output omit the values of `ZENON_SPV_RPC` and `ZENON_SPV_PEERS`
+while preserving their runtime defaults. This keeps endpoint credentials out
+of the generated defaults listing; it does not redact shell history, process
+arguments, or arbitrary argument errors.
+
 [RPC diagnostics](rpc-diagnostics.md) identify peers by their configured list
 positions and omit endpoint credentials and free-form server error messages.
 Status codes and failure categories remain available for troubleshooting.

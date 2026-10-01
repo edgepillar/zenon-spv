@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -112,6 +113,15 @@ func TestCompiledWatchJSONEvents(t *testing.T) {
 			watch := exec.CommandContext(ctx, binary, args...)
 			stream, diagnostics := &watchEventStream{ticked: make(chan struct{})}, &bytes.Buffer{}
 			watch.Env, watch.Stdout, watch.Stderr = queryCLIEnvironment(), stream, diagnostics
+			var unwantedRequests atomic.Int64
+			if mode == "advanced" {
+				unwanted := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					unwantedRequests.Add(1)
+					w.WriteHeader(http.StatusServiceUnavailable)
+				}))
+				t.Cleanup(unwanted.Close)
+				watch.Env = append(watch.Env, "ZENON_SPV_PEERS="+unwanted.URL+"/PRIVATE_ENV_PEER")
+			}
 			watch.WaitDelay = time.Second
 			if err := watch.Start(); err != nil {
 				t.Fatal(err)
@@ -136,6 +146,9 @@ func TestCompiledWatchJSONEvents(t *testing.T) {
 			}
 			if diagnostics.Len() != 0 || bytes.Contains(stream.buffer.Bytes(), []byte("PRIVATE")) || bytes.Contains(stream.buffer.Bytes(), []byte(dir)) || bytes.Contains(stream.buffer.Bytes(), []byte(peer)) {
 				t.Fatal("JSON watch mixed text diagnostics or disclosed private input")
+			}
+			if unwantedRequests.Load() != 0 {
+				t.Fatal("explicit RPC selection contacted an environment peer")
 			}
 			lines := bytes.Split(bytes.TrimSuffix(stream.buffer.Bytes(), []byte{'\n'}), []byte{'\n'})
 			if len(lines) != 2 {
