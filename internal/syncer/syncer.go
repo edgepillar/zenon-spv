@@ -78,7 +78,8 @@ type Loop struct {
 	// A positive Policy.MaxHeaders additionally caps each incoming batch.
 	BatchSize uint64
 
-	// Out is where per-tick logs go. nil discards.
+	// Out receives startup and per-tick logs. nil discards. A write error or
+	// short write stops Run; an earlier successful state save is not rolled back.
 	Out io.Writer
 
 	// MaxStateSaveFailures bounds consecutive failed save attempts.
@@ -114,10 +115,9 @@ type TickResult struct {
 // Run executes the loop until ctx is cancelled. Returns nil on
 // graceful shutdown (ctx.Done) and a non-nil error on unrecoverable
 // setup failure or MaxStateSaveFailures consecutive failed save
-// attempts. A successful save resets the counter. Verification
-// failures (REJECT/REFUSED) are
-// logged but do not terminate the loop — a transient peer issue
-// shouldn't take down a long-running service.
+// attempts, or on a startup/tick output failure. A successful save resets
+// the counter. Output failures do not roll back completed saves. Verification
+// failures (REJECT/REFUSED) remain nonfatal when reporting succeeds.
 func (l *Loop) Run(ctx context.Context) (runErr error) {
 	saveState := func(path string, state verify.VerifiedState) error { return state.Save(path) }
 	if adapter := l.SaveState; adapter != nil {
@@ -177,16 +177,22 @@ func (l *Loop) Run(ctx context.Context) (runErr error) {
 	}
 
 	tip, _ := state.Tip()
-	l.logf("watching: tip=%d, peers=%d, quorum=%d, interval=%s\n",
+	if err := l.logf("watching: tip=%d, peers=%d, quorum=%d, interval=%s\n",
 		tip.Height,
-		len(l.Multi.Peers), l.Multi.Quorum, l.Interval)
-	l.logf("state: trust_assumptions=%v\n", state.TrustAssumptions())
+		len(l.Multi.Peers), l.Multi.Quorum, l.Interval); err != nil {
+		return err
+	}
+	if err := l.logf("state: trust_assumptions=%v\n", state.TrustAssumptions()); err != nil {
+		return err
+	}
 	if l.ShowContext {
 		raw, err := state.VerificationContextJSON()
 		if err != nil {
 			return fmt.Errorf("verification context: %w", err)
 		}
-		l.logf("verification_context: %s\n", raw)
+		if err := l.logf("verification_context: %s\n", raw); err != nil {
+			return err
+		}
 	}
 
 	timer := time.NewTimer(0) // fire immediately on first iteration
@@ -202,8 +208,10 @@ func (l *Loop) Run(ctx context.Context) (runErr error) {
 			if res.Outcome == verify.OutcomeAccept {
 				if err := saveState(l.StatePath, newState); err != nil {
 					saveFailures++
-					l.logf("state: save failed (%d/%d), retaining tip=%d: %v\n",
-						saveFailures, maxSaveFailures, res.Tip, err)
+					if outputErr := l.logf("state: save failed (%d/%d), retaining tip=%d: %v\n",
+						saveFailures, maxSaveFailures, res.Tip, err); outputErr != nil {
+						return errors.Join(fmt.Errorf("syncer: state save failed: %w", err), outputErr)
+					}
 					if saveFailures >= maxSaveFailures {
 						return fmt.Errorf("syncer: state save failed after %d consecutive attempts: %w", saveFailures, err)
 					}
@@ -211,10 +219,14 @@ func (l *Loop) Run(ctx context.Context) (runErr error) {
 					state = newState
 					saveFailures = 0
 					persistedProgress = len(res.FetchedHeights) > 0
-					l.logTick(res)
+					if err := l.logTick(res); err != nil {
+						return err
+					}
 				}
 			} else {
-				l.logTick(res)
+				if err := l.logTick(res); err != nil {
+					return err
+				}
 			}
 			// Only a successfully persisted advance can trigger immediate
 			// catch-up. Failed saves retry from the retained state after
@@ -283,25 +295,36 @@ func (l *Loop) frontierTarget(ctx context.Context) (uint64, error) {
 	return h.Height, nil
 }
 
-func (l *Loop) logf(format string, args ...any) {
+// outputFailure preserves writer error identity without echoing private paths
+// or other arbitrary writer messages in ordinary diagnostics.
+type outputFailure struct{ cause error }
+
+func (e *outputFailure) Error() string { return "syncer: cannot write watch output" }
+func (e *outputFailure) Unwrap() error { return e.cause }
+
+func (l *Loop) logf(format string, args ...any) error {
 	if l.Out == nil {
-		return
+		return nil
 	}
-	_, _ = fmt.Fprintf(l.Out, format, args...)
+	message := fmt.Sprintf(format, args...)
+	// Preserve wrappers that override Write but inherit a WriteString method.
+	n, err := l.Out.Write([]byte(message))
+	if err == nil && n != len(message) {
+		err = io.ErrShortWrite
+	}
+	if err != nil {
+		return &outputFailure{cause: err}
+	}
+	return nil
 }
 
-func (l *Loop) logTick(r TickResult) {
-	if l.Out == nil {
-		return
-	}
+func (l *Loop) logTick(r TickResult) error {
 	if r.Outcome == verify.OutcomeAccept && len(r.FetchedHeights) == 0 {
-		l.logf("tick: ACCEPT (caught up at tip=%d, frontier_target=%d)\n", r.Tip, r.Target)
-		return
+		return l.logf("tick: ACCEPT (caught up at tip=%d, frontier_target=%d)\n", r.Tip, r.Target)
 	}
 	if r.Outcome == verify.OutcomeAccept {
-		l.logf("tick: ACCEPT tip=%d -> %d (fetched %d, target=%d)\n",
+		return l.logf("tick: ACCEPT tip=%d -> %d (fetched %d, target=%d)\n",
 			r.Tip, r.FetchedHeights[len(r.FetchedHeights)-1], len(r.FetchedHeights), r.Target)
-		return
 	}
-	l.logf("tick: %s %s tip=%d target=%d %s\n", r.Outcome, r.Reason, r.Tip, r.Target, r.Message)
+	return l.logf("tick: %s %s tip=%d target=%d %s\n", r.Outcome, r.Reason, r.Tip, r.Target, r.Message)
 }
