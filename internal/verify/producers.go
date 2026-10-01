@@ -348,18 +348,10 @@ func decodeProducerSchedule(r io.Reader, maxBytes int64) (*ProducerSchedule, err
 		return nil, fmt.Errorf("%w: file exceeds %d bytes", ErrProducerScheduleTooLarge, maxBytes)
 	}
 	d := json.NewDecoder(bytes.NewReader(b))
-	d.DisallowUnknownFields()
 	var s ProducerSchedule
-	type plain ProducerSchedule
-	wire := struct {
-		*plain
-		Coverage boundedScheduleRows[ProducerCoverage] `json:"coverage"`
-		Entries  boundedScheduleRows[ProducerEntry]    `json:"entries"`
-	}{plain: (*plain)(&s)}
-	if err := d.Decode(&wire); err != nil {
+	if err := d.Decode(&s); err != nil {
 		return nil, fmt.Errorf("decode schedule: %w", err)
 	}
-	s.Coverage, s.Entries = wire.Coverage, wire.Entries
 	if err := d.Decode(new(any)); err != io.EOF {
 		return nil, errors.New("decode schedule: trailing JSON")
 	}
@@ -387,7 +379,7 @@ func (rows *boundedScheduleRows[T]) UnmarshalJSON(raw []byte) error {
 	if first != json.Delim('[') {
 		return errors.New("producer schedule: expected an array")
 	}
-	var decoded []T
+	decoded := make([]T, 0)
 	for d.More() {
 		if len(decoded) == MaxProducerScheduleEntries {
 			return ErrProducerScheduleTooLarge
