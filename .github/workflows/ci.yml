@@ -12,6 +12,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -23,7 +24,18 @@ jobs:
       - name: Vet
         run: go vet ./...
       - name: Test
-        run: go test -race -coverprofile=coverage.out ./...
+        run: go test -race -count=1 -coverprofile=coverage.out ./...
+      - name: Offline pilot report
+        id: pilot
+        run: go run ./tools/offline-pilot --race > "${{ runner.temp }}/offline-pilot.json"
+      - name: Upload offline pilot report
+        if: ${{ !cancelled() && steps.pilot.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: offline-pilot-linux
+          path: ${{ runner.temp }}/offline-pilot.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^BenchmarkNativeClient$' -benchtime=1x ./internal/conformance
       - name: Lint
@@ -51,5 +63,17 @@ jobs:
         run: go vet ./...
       - name: Native test
         run: go test -count=1 -timeout=5m ./...
+      - name: Offline pilot report
+        id: pilot
+        shell: bash
+        run: go run ./tools/offline-pilot > "${{ runner.temp }}/offline-pilot.json"
+      - name: Upload offline pilot report
+        if: ${{ !cancelled() && steps.pilot.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: offline-pilot-${{ matrix.os }}
+          path: ${{ runner.temp }}/offline-pilot.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^BenchmarkNativeClient$' -benchtime=1x ./internal/conformance

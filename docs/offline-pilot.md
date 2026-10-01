@@ -1,0 +1,114 @@
+# Reproducible offline pilot
+
+`offline-pilot` runs a fixed selection of existing native-client tests and
+writes one JSON execution report. It exercises real compiled CLIs, temporary
+state files, and loopback RPC servers. No public RPC endpoint, wallet, or live
+network credentials are used.
+
+From the repository root, with Go 1.25+ and the module dependencies already
+cached:
+
+```sh
+go run ./tools/offline-pilot > ../offline-pilot.json
+```
+
+Add `--race` to instrument the test processes and their in-process fixtures.
+The compiled child CLIs remain ordinary builds. Alternatively, build the
+tool first and run that executable from the repository root. The outer
+`go run` or `go build` follows the caller's Go configuration; only the pilot's
+test/build subprocesses disable module and toolchain downloads. Dependencies
+must already be cached. A local Go toolchain must be available on `PATH`.
+The runner uses that same resolved tool directory for compiled CLI tests.
+
+Keep source files unchanged during the run. Store the report outside the
+checkout so generating evidence does not itself change Git status. The
+default driver deadline is ten minutes (`--timeout`, positive and at most one
+hour); each selected test package also has a five-minute Go test deadline.
+The driver deadline stops the Go command, while spawned test/CLI processes
+retain their own timeouts. This tool is not a process-tree supervisor.
+
+## Selected coverage
+
+The 23 named scenarios are defined in
+[`manifest.go`](../tools/offline-pilot/manifest.go). They cover:
+
+- Build identity, collection, retained commitment/segment queries, trusted
+  resume, state inspection, and competing writers across compiled processes.
+- Continuous and single-step watch events; stale, unavailable, malformed,
+  replayed, forked, or unauthorized peer evidence.
+- Activation/profile retention, producer coverage gaps, request limits,
+  bounded proof decoding, and ambiguous producer schedule inputs.
+- Schedule export, checkpoint network binding, and explicit genesis pinning.
+- Injected save failures and recovery, event delivery failures, native writer
+  locks, and lock release after process exit or termination.
+
+These reuse the same assertions as the ordinary test suite. The pilot does
+not add another implementation of header or proof verification. It is a
+selected conformance run, not the full suite, benchmark, or live deployment
+acceptance gate. See [compiled query conformance](compiled-query-conformance.md)
+and the [verification contract](verification-contract.md) for the individual
+guarantees and their limits.
+
+## Report schema 1
+
+| Field | Meaning |
+| --- | --- |
+| `mode` | Always `offline_synthetic`. |
+| `status` | `passed`, `passed_with_skips`, `failed`, or `incomplete`. |
+| `error` | Fixed execution-stage category, or null. Raw diagnostics are omitted. |
+| `runner` | Privacy-filtered build identity of the pilot executable, including native OS/architecture. Embedded source metadata may be unavailable. |
+| `test_parent_race_enabled` | Whether this run requested `-race` for Go test processes. |
+| `source` | Observed checkout revision/modified state, or null fields if Git metadata is unavailable; also a SHA-256 input fingerprint. |
+| `source_matches_after_run` | Whether a second source snapshot equals the initial snapshot. This checks the endpoints, not continuous filesystem history. |
+| `corpus` | Repository-relative names and SHA-256 hashes of the four compatibility corpus files. This is an input inventory, not a claim that every vector was exercised. |
+| `cases` | Fixed scenario IDs, package/test names, statuses, child test counts, and hashes of compiled executables actually built by that scenario. |
+| `caveats` | Fixed trust and interpretation limits. |
+
+The source fingerprint covers `go.mod`, `go.sum`, and `.go`, `.json`,
+`go.mod`, and `go.sum` files beneath `cmd`, `internal`, and `tools`. Sort
+repository-relative names lexically with `/` separators; for each file hash
+the big-endian uint64 byte length of its name, its name bytes, the big-endian
+uint64 content length, then its content bytes. Symlinked inputs are refused.
+This includes test/fixture inputs but excludes documentation, CI definitions,
+the module cache, toolchain, environment, and other external build inputs.
+A matching fingerprint is not a signed source attestation.
+
+The runner uses `-count=1` and checks every expected top-level test and
+package completion. Missing/renamed tests, missing executable records,
+interrupted streams, changed source snapshots, or failed processes cannot
+produce a passing report. Tests with failed children fail the report even
+if their parent is reported as passing. A completely skipped scenario is
+incomplete. Child test counts include nested test groups, not just leaves.
+
+`passed_with_skips` means all selected scenarios ran but at least one child
+test was skipped. For example, the real read-only-directory save-failure
+check is skipped on filesystems or under privileges that still allow the
+write. Inspect the relevant scenario before using that boundary as evidence.
+The report deliberately does not copy dynamic child names or skip/error text.
+Run the named test privately with `go test -count=1 -v` for detailed diagnostics.
+
+The tool exits 0 for `passed` and `passed_with_skips`, 1 for `failed` or
+`incomplete`, 64 for invalid arguments, and 70 for setup/report-output errors.
+Setup failure may have no JSON report; partial output is not a complete
+report. `go run` may translate a child nonzero status into its own exit code.
+
+## CI artifacts and evidence boundary
+
+CI executes the pilot on native Linux, macOS, and Windows. Each job uploads
+only its JSON report as an `offline-pilot-*` artifact, retained for 14 days.
+Artifacts may contain a failed/incomplete report; successful upload alone
+does not establish a pass. Linux enables test-parent race instrumentation.
+
+Reports omit local paths, endpoints, credentials, environment values, and
+raw subprocess output. Fixed repository paths, source and binary hashes,
+runtime target, and scenario results are intentionally visible. Do not edit
+tests to log private values into executable identity records.
+
+The tests, source checkout, local toolchain, module cache, and execution
+environment remain trusted. Hashes identify locally observed bytes; they
+do not prove reproducible builds or authenticated execution. Test-derived
+anchors, producer schedules, activation profiles, and state provenance do
+not become independently authenticated network trust inputs. No result
+establishes network freshness, canonicality, consensus finality, state
+transition execution, or a state-value proof. The independently sourced
+network and deployment gates in the verification contract remain open.

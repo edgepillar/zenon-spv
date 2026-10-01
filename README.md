@@ -77,6 +77,16 @@ peers:
 See [build identity](docs/build-identity.md) for unknown source metadata,
 modified builds, and the distinction from an authenticated binary digest.
 
+Run the selected offline pilot and record its source, tested executable
+hashes, scenario results, and skipped checks:
+
+```sh
+go run ./tools/offline-pilot > ../offline-pilot.json
+```
+
+This uses synthetic fixtures and loopback RPC. See [offline pilot](docs/offline-pilot.md)
+for cached-dependency prerequisites, report interpretation, and native CI artifacts.
+
 Inspect an existing trusted local state without a bundle or RPC refresh:
 
 ```sh
