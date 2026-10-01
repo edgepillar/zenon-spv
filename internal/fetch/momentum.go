@@ -57,7 +57,7 @@ func (c *Client) FetchFrontier(ctx context.Context) (chain.Header, error) {
 	}
 	d, err := convertAndVerifyDetailed(m)
 	if err != nil {
-		return chain.Header{}, err
+		return chain.Header{}, callFailure("convert momentum", err)
 	}
 	return d.Header, nil
 }
@@ -105,7 +105,7 @@ func (c *Client) FetchByHeightDetailed(ctx context.Context, start, count uint64)
 		}
 		d, err := convertAndVerifyDetailed(m)
 		if err != nil {
-			return nil, fmt.Errorf("momentum height=%d: %w", m.Height, err)
+			return nil, fmt.Errorf("momentum height=%d: %w", m.Height, callFailure("convert momentum", err))
 		}
 		out[i] = d
 	}

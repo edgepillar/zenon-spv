@@ -85,7 +85,7 @@ func (c *Client) FetchAccountBlocksByHeight(ctx context.Context, addressBech32 s
 		}
 		bl, err := convertAndVerifyAccountBlock(b)
 		if err != nil {
-			return nil, fmt.Errorf("block height=%d: %w", b.Height, err)
+			return nil, fmt.Errorf("block height=%d: %w", b.Height, callFailure("convert account block", err))
 		}
 		if bl.Address != address {
 			return nil, fmt.Errorf("%w: account block index %d belongs to another address", ErrQueryMismatch, i)

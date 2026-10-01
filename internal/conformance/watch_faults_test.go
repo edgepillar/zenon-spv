@@ -70,6 +70,9 @@ func TestOfflineWatchPeerFaults(t *testing.T) {
 			want: "REFUSED ReasonMissingEvidence", detail: "0/3 peers reached on frontier"},
 		{name: "all-replaced-content", peers: [3]string{"replaced-content", "replaced-content", "replaced-content"},
 			want: "REFUSED ReasonMissingEvidence", detail: "invalid JSON-RPC response"},
+		{name: "one-private-content-error", peers: [3]string{"private-content-error", "", ""}, advance: true, want: "ACCEPT"},
+		{name: "all-private-content-errors", peers: [3]string{"private-content-error", "private-content-error", "private-content-error"},
+			want: "REFUSED ReasonMissingEvidence", detail: "rpc convert momentum failed"},
 		{name: "all-stale", peers: [3]string{"stale", "stale", "stale"}, caughtUp: true, want: "ACCEPT (caught up"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -128,6 +131,9 @@ func TestOfflineWatchPeerFaults(t *testing.T) {
 				t.Fatalf("watch did not complete a bounded tick: %v; %s", err, out.String())
 			}
 			log := out.String()
+			if strings.Contains(strings.ToUpper(log), "PRIVATE_RPC") {
+				t.Fatal("watch diagnostics disclosed a private remote value")
+			}
 			if !strings.Contains(log, "tick: "+tc.want) || !strings.Contains(log, tc.detail) {
 				t.Fatalf("unexpected outcome, want %q / %q: %s", tc.want, tc.detail, log)
 			}
@@ -233,6 +239,11 @@ func startFaultPeer(t *testing.T, vectors []momentumVector, mode string, peer in
 				end++ // Ignore the requested count only for the incoming batch.
 			}
 			response = map[string]any{"list": wire[start:end]}
+			if req.Params[0] == 2003 && mode == "private-content-error" {
+				rows := slices.Clone(wire[start:end])
+				rows[0] = privateRPCConversionValue(t, rows[0], "content")
+				response = map[string]any{"list": rows}
+			}
 			if req.Params[0] == 2003 && (mode == "oversized-content" || mode == "replaced-content") {
 				rows := slices.Clone(wire[start:end])
 				if mode == "oversized-content" {
@@ -283,6 +294,25 @@ func startFaultPeer(t *testing.T, vectors []momentumVector, mode string, peer in
 func oversizedRPCMembers(field string) json.RawMessage {
 	return json.RawMessage(fmt.Sprintf(`{"%s":[%s"PRIVATE_UNREACHED_MEMBER"]}`, field,
 		strings.Repeat("null,", fetch.MaxEvidenceListMembers)))
+}
+
+func privateRPCConversionValue(t *testing.T, raw json.RawMessage, field string) json.RawMessage {
+	t.Helper()
+	var row map[string]any
+	if err := json.Unmarshal(raw, &row); err != nil {
+		t.Fatal(err)
+	}
+	const privateValue = "PRIVATE_RPC_CONVERSION1QQQQQQ"
+	if field == "content" {
+		row[field] = []any{map[string]any{"address": privateValue, "height": 1, "hash": strings.Repeat("0", 64)}}
+	} else {
+		row[field] = privateValue
+	}
+	encoded, err := json.Marshal(row)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return encoded
 }
 
 func faultPeerWire(t *testing.T, vectors []momentumVector, mode string, peer int) []json.RawMessage {

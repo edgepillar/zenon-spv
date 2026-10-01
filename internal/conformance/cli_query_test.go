@@ -178,6 +178,8 @@ func TestCompiledCLIQueryWorkflow(t *testing.T) {
 		{"replaced account lists", 3, "invalid JSON-RPC response"}, {"oversized account lists", 4, "response does not match query"},
 		{"oversized content", 5, "response exceeds decoded entry limit"},
 		{"oversized descendants", 6, "response exceeds decoded entry limit"},
+		{"private content conversion errors", 7, "rpc convert momentum failed"},
+		{"private token conversion errors", 8, "rpc convert account block failed"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			candidateUnchanged := protectCLIState(t, candidatePath)
@@ -192,7 +194,7 @@ func TestCompiledCLIQueryWorkflow(t *testing.T) {
 			})
 			for _, output := range []string{candidatePath, "-"} {
 				result := runQueryCLI(t, bins["fetch-bundle"], append(slices.Clone(collect), "--out", output)...)
-				if result.code != 1 || len(result.stdout) != 0 || bytes.Contains(result.stderr, []byte("PRIVATE")) || !bytes.Contains(result.stderr, []byte(tc.detail)) {
+				if result.code != 1 || len(result.stdout) != 0 || bytes.Contains(bytes.ToUpper(result.stderr), []byte("PRIVATE")) || !bytes.Contains(result.stderr, []byte(tc.detail)) {
 					t.Fatal("invalid range lists emitted evidence or accepted collection")
 				}
 				candidateUnchanged()
@@ -493,10 +495,12 @@ func protectCLIState(t *testing.T, path string) func() {
 }
 
 type queryCLIPeer struct {
-	url        string
-	bad        atomic.Bool
-	calls      atomic.Int64
-	rangeFault atomic.Int32 // 1/2: replaced/excess momentum list; 3/4: account list; 5/6: oversized content/descendants.
+	url   string
+	bad   atomic.Bool
+	calls atomic.Int64
+	// 1/2: replaced/excess momentum list; 3/4: account list;
+	// 5/6: oversized content/descendants; 7/8: private conversion errors.
+	rangeFault atomic.Int32
 }
 
 func newQueryCLIPeer(t *testing.T, c accountSegmentCorpus, initiallyBad bool) *queryCLIPeer {
@@ -573,6 +577,15 @@ func newQueryCLIPeer(t *testing.T, c accountSegmentCorpus, initiallyBad bool) *q
 			return
 		}
 		mode := p.rangeFault.Load()
+		if (mode == 7 && request.Method == "ledger.getMomentumsByHeight") ||
+			(mode == 8 && request.Method == "ledger.getAccountBlocksByHeight") {
+			list = slices.Clone(list)
+			field := "content"
+			if mode == 8 {
+				field = "tokenStandard"
+			}
+			list[0] = privateRPCConversionValue(t, list[0], field)
+		}
 		if (mode == 5 && request.Method == "ledger.getMomentumsByHeight") ||
 			(mode == 6 && request.Method == "ledger.getAccountBlocksByHeight") {
 			list = slices.Clone(list)

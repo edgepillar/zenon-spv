@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net"
+
+	"github.com/0x3639/zenon-spv/internal/chain"
 )
 
 // PeerLabel identifies a zero-based configuration position without copying
@@ -37,6 +39,18 @@ func callFailure(stage string, cause error) error {
 		message += ": invalid JSON-RPC response"
 	case errors.Is(cause, ErrResponseTooComplex):
 		message += ": response exceeds decoded entry limit"
+	case errors.Is(cause, ErrHashMismatch):
+		message += ": recomputed hash mismatch"
+	case errors.Is(cause, chain.ErrUnsupportedHeaderVersion):
+		message += ": unsupported momentum version"
+	case errors.Is(cause, chain.ErrUnsupportedAccountBlockVersion):
+		message += ": unsupported account-block version"
+	case errors.Is(cause, chain.ErrUnsupportedAccountBlockType):
+		message += ": unsupported account-block type"
+	case errors.Is(cause, chain.ErrInvalidAccountBlockEnvelope):
+		message += ": invalid account-block envelope"
+	case errors.Is(cause, chain.ErrInvalidAccountAmount):
+		message += ": invalid account amount"
 	case errors.As(cause, &networkError) && networkError.Timeout():
 		message += ": timeout"
 	}

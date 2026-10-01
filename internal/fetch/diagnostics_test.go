@@ -12,6 +12,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/0x3639/zenon-spv/internal/chain"
 )
 
 const privateDiagnosticMarker = "private-rpc-marker"
@@ -30,16 +32,22 @@ type diagnosticCodec struct{ err error }
 func (c diagnosticCodec) MarshalJSON() ([]byte, error) { return nil, c.err }
 func (c *diagnosticCodec) UnmarshalJSON([]byte) error  { return c.err }
 
-func TestRangeDiagnosticClassificationDoesNotEchoCause(t *testing.T) {
-	for _, cause := range []error{ErrQueryMismatch, ErrInvalidRPCResponse} {
+func TestRPCDiagnosticClassificationDoesNotEchoCause(t *testing.T) {
+	for cause, want := range map[error]string{
+		ErrQueryMismatch:                        "response does not match query",
+		ErrInvalidRPCResponse:                   "invalid JSON-RPC response",
+		ErrResponseTooComplex:                   "response exceeds decoded entry limit",
+		ErrHashMismatch:                         "recomputed hash mismatch",
+		chain.ErrUnsupportedHeaderVersion:       "unsupported momentum version",
+		chain.ErrUnsupportedAccountBlockVersion: "unsupported account-block version",
+		chain.ErrUnsupportedAccountBlockType:    "unsupported account-block type",
+		chain.ErrInvalidAccountBlockEnvelope:    "invalid account-block envelope",
+		chain.ErrInvalidAccountAmount:           "invalid account amount",
+	} {
 		wrapped := fmt.Errorf("%s: %w", privateDiagnosticMarker, cause)
 		err := callFailure("unmarshal result", wrapped)
 		if !errors.Is(err, cause) || strings.Contains(err.Error(), privateDiagnosticMarker) {
 			t.Fatal("range classification lost its cause or disclosed peer data")
-		}
-		want := "response does not match query"
-		if cause == ErrInvalidRPCResponse {
-			want = "invalid JSON-RPC response"
 		}
 		if !strings.Contains(err.Error(), want) {
 			t.Fatal("range classification was hidden from ordinary diagnostics")
