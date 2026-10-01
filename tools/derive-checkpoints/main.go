@@ -19,16 +19,18 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"crypto/ed25519"
 	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
@@ -43,13 +45,24 @@ func main() {
 }
 
 func run(args []string) error {
+	return runWithOutput(args, os.Stdout, os.Stderr)
+}
+
+func runWithOutput(args []string, stdout, diagnostics io.Writer) error {
 	fs := flag.NewFlagSet("derive-checkpoints", flag.ContinueOnError)
-	fs.SetOutput(os.Stderr)
+	fs.SetOutput(diagnostics)
 	peersFlag := fs.String("peers", os.Getenv("ZENON_SPV_PEERS"), "comma-separated peer URLs (or set ZENON_SPV_PEERS)")
+	fs.Lookup("peers").DefValue = ""
 	heightsFlag := fs.String("heights", "", "comma-separated heights to derive checkpoints for")
-	timeout := fs.Duration("timeout", 60*time.Second, "per-peer RPC timeout")
+	timeout := fs.Duration("timeout", 60*time.Second, "overall RPC timeout for all requested heights")
 	if err := fs.Parse(args); err != nil {
 		return err
+	}
+	if fs.NArg() != 0 {
+		return errors.New("positional arguments are not supported")
+	}
+	if *timeout <= 0 {
+		return errors.New("timeout must be positive")
 	}
 	urls := splitPeers(*peersFlag)
 	if len(urls) < 2 {
@@ -62,6 +75,9 @@ func run(args []string) error {
 	if len(heights) == 0 {
 		return errors.New("--heights required (e.g. 1000000,5000000,10000000)")
 	}
+	if err := fetch.NewMultiClient(urls).Validate(); err != nil {
+		return err
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
@@ -73,81 +89,67 @@ func run(args []string) error {
 	derived := make([]derivedCP, 0, len(heights))
 
 	for _, h := range heights {
-		fmt.Printf("height=%d:\n", h)
 		hash, err := crossCheckAtHeight(ctx, urls, h)
 		if err != nil {
 			return fmt.Errorf("height %d: %w", h, err)
 		}
-		fmt.Printf("  hash=%s (unanimous across %d peers)\n", hex.EncodeToString(hash[:]), len(urls))
 		derived = append(derived, derivedCP{Height: h, Hash: hash})
 	}
 
-	fmt.Println()
-	fmt.Println("Paste into internal/verify/checkpoints.go (sorted by Height ascending):")
-	fmt.Println()
-	fmt.Println("var mainnetCheckpoints = []Checkpoint{")
+	// Publish only after the entire request succeeds. Hash agreement and valid
+	// signatures do not authenticate operator independence or canonical history.
+	var output bytes.Buffer
+	fmt.Fprintln(&output, "// Mainnet (chain_id=1) observations; external provenance review required.")
+	fmt.Fprintln(&output, "// Peer agreement does not prove elected producers, canonicality, or finality.")
+	fmt.Fprintln(&output, "var mainnetCheckpoints = []Checkpoint{")
 	for _, d := range derived {
-		fmt.Printf("\t{Height: %d, HeaderHash: mustHash(%q)},\n", d.Height, hex.EncodeToString(d.Hash[:]))
+		fmt.Fprintf(&output, "\t{Height: %d, HeaderHash: mustHash(%q)},\n", d.Height, hex.EncodeToString(d.Hash[:]))
 	}
-	fmt.Println("}")
+	fmt.Fprintln(&output, "}")
+	n, err := stdout.Write(output.Bytes())
+	if err == nil && n != output.Len() {
+		err = io.ErrShortWrite
+	}
+	if err != nil {
+		return &checkpointOutputError{cause: err}
+	}
 	return nil
 }
 
 // crossCheckAtHeight fetches the Momentum at h from each peer in
-// parallel, recomputes locally, and returns the unanimous hash or an
-// error if any peer disagrees or fails.
+// parallel and requires every configured endpoint to return the same signed
+// envelope. It returns a hash only for a valid post-genesis mainnet signature.
 func crossCheckAtHeight(ctx context.Context, urls []string, h uint64) (chain.Hash, error) {
-	type result struct {
-		label  string
-		header chain.Header
-		err    error
+	if len(urls) < 2 {
+		return chain.Hash{}, errors.New("at least two distinct peers required")
 	}
-	results := make([]result, len(urls))
-	var wg sync.WaitGroup
-	for i, u := range urls {
-		wg.Add(1)
-		go func(i int, u string) {
-			defer wg.Done()
-			c := fetch.NewClient(u)
-			detailed, err := c.FetchByHeightDetailed(ctx, h, 1)
-			if err != nil {
-				results[i] = result{label: fetch.PeerLabel(i), err: err}
-				return
-			}
-			if len(detailed) != 1 {
-				results[i] = result{label: fetch.PeerLabel(i), err: fmt.Errorf("expected 1, got %d", len(detailed))}
-				return
-			}
-			results[i] = result{label: fetch.PeerLabel(i), header: detailed[0].Header}
-		}(i, u)
+	if h < 2 {
+		return chain.Hash{}, errors.New("checkpoint height must be after genesis")
 	}
-	wg.Wait()
-
-	var (
-		first     chain.Hash
-		firstPeer string
-		healthy   int
-	)
-	for _, r := range results {
-		if r.err != nil {
-			fmt.Printf("  %s: ERROR %v\n", r.label, r.err)
-			continue
-		}
-		fmt.Printf("  %s: hash=%s\n", r.label, hex.EncodeToString(r.header.HeaderHash[:]))
-		if healthy == 0 {
-			first = r.header.HeaderHash
-			firstPeer = r.label
-		} else if r.header.HeaderHash != first {
-			return chain.Hash{}, fmt.Errorf("DISAGREEMENT: %s -> %x  vs  %s -> %x",
-				firstPeer, first, r.label, r.header.HeaderHash)
-		}
-		healthy++
+	// The shared client validates unique configured URLs, exact requested
+	// height/count, local hashes, and agreement on the hash, key, and signature.
+	multi := fetch.NewMultiClient(urls)
+	headers, err := multi.FetchByHeight(ctx, h, 1)
+	if err != nil {
+		return chain.Hash{}, err
 	}
-	if healthy < 2 {
-		return chain.Hash{}, fmt.Errorf("only %d/%d peers healthy", healthy, len(results))
+	header := headers[0]
+	if header.ChainIdentifier != 1 {
+		return chain.Hash{}, errors.New("checkpoint observation is not mainnet chain_id=1")
 	}
-	return first, nil
+	if len(header.PublicKey) != ed25519.PublicKeySize || !ed25519.Verify(header.PublicKey, header.HeaderHash[:], header.Signature) {
+		return chain.Hash{}, errors.New("invalid checkpoint signature")
+	}
+	return header.HeaderHash, nil
 }
+
+type checkpointOutputError struct{ cause error }
+
+func (e *checkpointOutputError) Error() string {
+	return "checkpoint output failed; stdout may be incomplete"
+}
+
+func (e *checkpointOutputError) Unwrap() error { return e.cause }
 
 func splitPeers(s string) []string {
 	if s == "" {
@@ -178,7 +180,10 @@ func parseHeights(s string) ([]uint64, error) {
 		}
 		v, err := strconv.ParseUint(p, 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("bad height %q: %w", p, err)
+			return nil, errors.New("invalid checkpoint height")
+		}
+		if v < 2 {
+			return nil, errors.New("checkpoint heights must be after genesis")
 		}
 		if _, dup := seen[v]; dup {
 			return nil, fmt.Errorf("duplicate height %d", v)

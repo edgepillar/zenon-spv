@@ -32,10 +32,13 @@ type Checkpoint struct {
 // mainnetCheckpoints is the embedded list for chain_id=1.
 //
 // Each entry was derived via tools/derive-checkpoints, which
-// fetches the Momentum at the target height from ≥2 independent
-// operators, recomputes the hash from the signed envelope, and
-// asserts unanimous agreement. The maintainer pastes the verified
-// literal here and re-runs the tool to confirm before each release.
+// fetches the Momentum at the target height from at least two selected
+// endpoints, recomputes the hash, checks the mainnet chain ID and signature,
+// and requires every endpoint to agree on the signed envelope. Endpoint
+// strings do not establish independent operators or canonical history.
+// The maintainer must independently justify provenance before pasting the
+// literal here and re-run the tool before each release. Tightening the tool
+// does not retroactively re-derive the historical entries below.
 //
 // Entries MUST be sorted by Height ascending.
 //

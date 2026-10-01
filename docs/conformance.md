@@ -64,6 +64,16 @@ replacement, and directory-sync failures; distinguish old-file preservation
 from visible output with uncertain durability; and cover symlink refusal,
 hard-link isolation, private diagnostics, and invalid arguments before RPC.
 
+Checkpoint derivation requires every configured endpoint to agree on the
+hash, public key, and signature of a mainnet (`chain_id=1`) post-genesis
+momentum. Tests reject invalid signatures, other chains, failed peers,
+different signers, and repeated endpoint strings; accept both implemented
+header layouts; and withhold stdout until every requested height succeeds.
+A compiled command also rejects the non-mainnet node corpus. These are
+observation checks, not elected-producer or canonical-chain authentication,
+and do not re-derive the embedded historical checkpoints. See
+[`checkpoint derivation`](checkpoint-derivation.md).
+
 ## §8 — Conformance test cases
 
 Header-chain layer:
