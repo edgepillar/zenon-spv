@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"math"
 	"os"
 )
 
@@ -62,23 +60,17 @@ func LoadHeaderBundleWithLimits(path string, maxBytes int64, limits DecodeLimits
 	// the read path above.
 	defer func() { _ = f.Close() }()
 
-	var src io.Reader = f
+	// Stat is optional allocation advice, never evidence of the input length.
+	// Nonregular files and failed stat calls retain the ordinary bounded read.
+	var sizeHint int64
 	if maxBytes > 0 {
-		// Read one overflow-probe byte, saturating at MaxInt64 instead
-		// of wrapping the reader limit into a negative number.
-		readLimit := maxBytes
-		if readLimit < math.MaxInt64 {
-			readLimit++
+		if info, err := f.Stat(); err == nil && info.Mode().IsRegular() {
+			sizeHint = info.Size()
 		}
-		src = io.LimitReader(f, readLimit)
 	}
-	b, err := io.ReadAll(src)
+	b, err := readBundleBytes(f, maxBytes, sizeHint)
 	if err != nil {
-		return HeaderBundle{}, fmt.Errorf("read bundle: %w", err)
-	}
-	if maxBytes > 0 && int64(len(b)) > maxBytes {
-		return HeaderBundle{}, fmt.Errorf("%w: max=%d bytes, file is at least %d bytes",
-			ErrBundleTooLarge, maxBytes, len(b))
+		return HeaderBundle{}, err
 	}
 	return unmarshalHeaderBundleJSON(b, limits)
 }

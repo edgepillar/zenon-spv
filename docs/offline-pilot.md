@@ -29,7 +29,7 @@ retain their own timeouts. This tool is not a process-tree supervisor.
 
 ## Selected coverage
 
-The 34 named scenarios are defined in
+The 35 named scenarios are defined in
 [`manifest.go`](../tools/offline-pilot/manifest.go). They cover:
 
 - Build identity, collection, retained commitment/segment queries, trusted
@@ -55,6 +55,8 @@ The 34 named scenarios are defined in
   full-width field boundaries, duplicates and shared immutable reads.
 - Saved-state read bounds with stale size hints, short reads, simultaneous
   data/errors, malformed suffixes and duplicate fields.
+- Proof-file allocation hints against the former bounded reader, preserving
+  legacy limits, read-error priority and full-document/count refusals.
 
 These reuse the same assertions as the ordinary test suite. The pilot does
 not add another implementation of header or proof verification. It is a
