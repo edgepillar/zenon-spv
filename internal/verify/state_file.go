@@ -150,16 +150,17 @@ func LoadHeaderState(path string) (HeaderState, error) {
 	if info.Size() > MaxStateFileBytes {
 		return HeaderState{}, ErrStateFileTooLarge
 	}
-	return decodeHeaderState(f, MaxStateFileBytes)
+	return decodeSizedHeaderState(f, MaxStateFileBytes, info.Size())
 }
 
 func decodeHeaderState(r io.Reader, maxBytes int64) (HeaderState, error) {
-	raw, err := io.ReadAll(io.LimitReader(r, maxBytes+1))
-	if err == nil && int64(len(raw)) > maxBytes {
-		return HeaderState{}, ErrStateFileTooLarge
-	}
+	return decodeSizedHeaderState(r, maxBytes, 0)
+}
+
+func decodeSizedHeaderState(r io.Reader, maxBytes, sizeHint int64) (HeaderState, error) {
+	raw, err := readStateBytes(r, maxBytes, sizeHint)
 	if err != nil {
-		return HeaderState{}, fmt.Errorf("read: %w", err)
+		return HeaderState{}, err
 	}
 	var body persistedState
 	if err := json.Unmarshal(raw, &body); err != nil {

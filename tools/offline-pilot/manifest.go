@@ -19,6 +19,7 @@ var scenarios = []scenario{
 	{"node_delayed_inclusion", "internal/conformance", "TestNodeDelayedInclusionAcrossVersionsAndResume", nil},
 	{"compiled_delayed_inclusion", "internal/conformance", "TestCompiledDelayedInclusionWorkflow", []string{"zenon-spv", "fetch-bundle"}},
 	{"retained_capacity_workloads", "internal/conformance", "TestRetainedCapacityWorkloads", nil},
+	{"bounded_state_reader", "internal/verify", "TestSizedStateReadContract", nil},
 	{"state_inspection", "internal/conformance", "TestCompiledCLIStateInspection", []string{"zenon-spv"}},
 	{"writer_exclusion", "internal/conformance", "TestCompiledCLIStateWriterExclusion", []string{"zenon-spv"}},
 	{"watch_events", "internal/conformance", "TestCompiledWatchJSONEvents", []string{"zenon-spv"}},

@@ -49,6 +49,10 @@ interpret local timings as network TPS, production capacity or finality.
 
 ## Recorded local baseline
 
+This records the original populated-window baseline. The later
+[state-read allocation comparison](state-read-allocations.md) measures the
+same resume workload after using bounded file-size hints.
+
 The [complete samples](retained-capacity-samples.json) record five 1-second
 samples per operation on darwin/arm64 with Go 1.25.14, `-cpu=1` and no race
 instrumentation or competing builds/tests. Host identity is omitted. Values
