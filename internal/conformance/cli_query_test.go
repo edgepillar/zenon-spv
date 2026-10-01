@@ -170,11 +170,14 @@ func TestCompiledCLIQueryWorkflow(t *testing.T) {
 		stateUnchanged()
 	})
 	for _, tc := range []struct {
-		name string
-		mode int32
+		name   string
+		mode   int32
+		detail string
 	}{
-		{"replaced momentum lists", 1}, {"oversized momentum lists", 2},
-		{"replaced account lists", 3}, {"oversized account lists", 4},
+		{"replaced momentum lists", 1, "invalid JSON-RPC response"}, {"oversized momentum lists", 2, "response does not match query"},
+		{"replaced account lists", 3, "invalid JSON-RPC response"}, {"oversized account lists", 4, "response does not match query"},
+		{"oversized content", 5, "response exceeds decoded entry limit"},
+		{"oversized descendants", 6, "response exceeds decoded entry limit"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			candidateUnchanged := protectCLIState(t, candidatePath)
@@ -189,7 +192,7 @@ func TestCompiledCLIQueryWorkflow(t *testing.T) {
 			})
 			for _, output := range []string{candidatePath, "-"} {
 				result := runQueryCLI(t, bins["fetch-bundle"], append(slices.Clone(collect), "--out", output)...)
-				if result.code != 1 || len(result.stdout) != 0 || bytes.Contains(result.stderr, []byte("PRIVATE")) {
+				if result.code != 1 || len(result.stdout) != 0 || bytes.Contains(result.stderr, []byte("PRIVATE")) || !bytes.Contains(result.stderr, []byte(tc.detail)) {
 					t.Fatal("invalid range lists emitted evidence or accepted collection")
 				}
 				candidateUnchanged()
@@ -493,7 +496,7 @@ type queryCLIPeer struct {
 	url        string
 	bad        atomic.Bool
 	calls      atomic.Int64
-	rangeFault atomic.Int32 // 1/2: replaced/excess momentum list; 3/4: account list.
+	rangeFault atomic.Int32 // 1/2: replaced/excess momentum list; 3/4: account list; 5/6: oversized content/descendants.
 }
 
 func newQueryCLIPeer(t *testing.T, c accountSegmentCorpus, initiallyBad bool) *queryCLIPeer {
@@ -570,6 +573,15 @@ func newQueryCLIPeer(t *testing.T, c accountSegmentCorpus, initiallyBad bool) *q
 			return
 		}
 		mode := p.rangeFault.Load()
+		if (mode == 5 && request.Method == "ledger.getMomentumsByHeight") ||
+			(mode == 6 && request.Method == "ledger.getAccountBlocksByHeight") {
+			list = slices.Clone(list)
+			field := "content"
+			if mode == 6 {
+				field = "descendantBlocks"
+			}
+			list[0] = oversizedRPCMembers(field)
+		}
 		if ((mode == 1 || mode == 2) && request.Method == "ledger.getMomentumsByHeight") ||
 			((mode == 3 || mode == 4) && request.Method == "ledger.getAccountBlocksByHeight") {
 			raw, err := json.Marshal(list)

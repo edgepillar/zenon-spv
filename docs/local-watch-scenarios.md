@@ -54,6 +54,9 @@ canonicality. Failed evidence must neither save nor log an ACCEPT tick.
 | Peers append a malformed extra row beyond the requested count | REFUSED | Excess row is not decoded; no save |
 | One peer replaces a range list with a second field, two healthy | ACCEPT | Advance using the two unambiguous responses |
 | All peers replace a range list with a second field | REFUSED | No save; original bytes retained |
+| One peer exceeds the content-member cap, two healthy | ACCEPT | Advance using the two bounded responses |
+| All peers exceed the content-member cap in a batch or frontier | REFUSED | Excess member is not decoded; no save |
+| All peers replace a content list with a second field | REFUSED | No save; original bytes retained |
 | All peers remain at 2002 | Caught-up ACCEPT | Existing window saved with identical bytes; no advance |
 
 The conflicting-fork case records the current strict disagreement policy:

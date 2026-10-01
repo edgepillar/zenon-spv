@@ -69,7 +69,8 @@ func (c *Client) FetchAccountBlocksByHeight(ctx context.Context, addressBech32 s
 		return nil, err
 	}
 	var list rpcAccountBlockList
-	decoder := rpcListDecoder[rpcAccountBlock]{target: &list.List, count: count}
+	evidence := newRPCEvidenceDecoder()
+	decoder := rpcListDecoder[rpcAccountBlock]{target: &list.List, count: count, rowTarget: evidence.account}
 	if err := c.Call(ctx, "ledger.getAccountBlocksByHeight",
 		[]any{addressBech32, start, count}, &decoder); err != nil {
 		return nil, fmt.Errorf("getAccountBlocksByHeight: %w", err)

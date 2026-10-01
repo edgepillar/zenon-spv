@@ -45,10 +45,8 @@ Existing hash recomputation still applies.
 
 Range-list decoding now stops before the first row beyond the requested count,
 so an oversized list cannot allocate all of its block structs before the count
-check. The response body is still read under the existing byte cap; unknown
-metadata and each permitted row's nested content retain that input-byte bound.
-This is not a total process-memory or decoding-time limit. A large requested
-count does not preallocate that many rows or narrow `uint64` to `int`.
+check. A large requested count does not preallocate that many rows or narrow
+`uint64` to `int`.
 
 A repeated `list` field returns `ErrInvalidRPCResponse`, including an earlier
 null or empty list and escaped/case-folded aliases. A single legacy alias is
@@ -56,6 +54,26 @@ still accepted. Other extension fields remain compatible. Decoding failures
 leave the destination list unchanged; missing, null, or short lists still fail
 the exact-count check. Ordinary diagnostics retain the error category without
 echoing peer values, and callers can inspect the wrapped cause with `errors.Is`.
+
+Frontier and range queries also bound each momentum's `content` and each
+account block's `descendantBlocks` during decoding. Each list permits at most
+100,000 members, and the lists across one response share a 1,000,000-member
+budget. Null members consume capacity just like objects. Both checks stop before
+decoding an excess member, return `ErrResponseTooComplex`, and discard the entire
+response. These fixed transport guardrails are separate from caller verification
+policy and are not Zenon consensus limits. Each response starts a fresh budget,
+including when a reusable client previously encountered a failed response.
+
+Repeated `content` or `descendantBlocks` fields return `ErrInvalidRPCResponse`,
+including a prior null/empty value and escaped/case-folded aliases. A single
+alias, null/empty lists, unknown metadata, and other scalar-field semantics
+remain compatible. The checks apply to the typed fetch methods; generic `Call`
+does not impose method-specific limits on arbitrary caller output.
+
+The 64 MiB input-byte cap and whole-result JSON syntax/depth checks remain in
+force. These bounds are not a total process-memory or decoding-time limit:
+response buffers, strings, slice capacity, conversion copies, and concurrent
+peers add overhead. Unknown metadata retains the input-byte bound.
 
 In multi-peer mode, a mismatched response is unusable and does not count
 toward quorum. Too few matching responses return `ErrNotEnoughPeers`.

@@ -51,7 +51,8 @@ type DetailedHeader struct {
 // FetchFrontier returns the frontier Momentum from the peer.
 func (c *Client) FetchFrontier(ctx context.Context) (chain.Header, error) {
 	var m rpcMomentum
-	if err := c.Call(ctx, "ledger.getFrontierMomentum", []any{}, &m); err != nil {
+	evidence := newRPCEvidenceDecoder()
+	if err := c.Call(ctx, "ledger.getFrontierMomentum", []any{}, evidence.momentum(&m)); err != nil {
 		return chain.Header{}, fmt.Errorf("getFrontierMomentum: %w", err)
 	}
 	d, err := convertAndVerifyDetailed(m)
@@ -89,7 +90,8 @@ func (c *Client) FetchByHeightDetailed(ctx context.Context, start, count uint64)
 		return nil, err
 	}
 	var list rpcMomentumList
-	decoder := rpcListDecoder[rpcMomentum]{target: &list.List, count: count}
+	evidence := newRPCEvidenceDecoder()
+	decoder := rpcListDecoder[rpcMomentum]{target: &list.List, count: count, rowTarget: evidence.momentum}
 	if err := c.Call(ctx, "ledger.getMomentumsByHeight", []any{start, count}, &decoder); err != nil {
 		return nil, fmt.Errorf("getMomentumsByHeight: %w", err)
 	}
