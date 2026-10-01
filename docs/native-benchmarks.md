@@ -9,19 +9,24 @@ verification improvement. It makes no RPC requests and needs no credentials.
 Run repeated measurements with the repository's Go toolchain on `PATH`:
 
 ```sh
-go test -run '^$' -bench '^BenchmarkNativeClient$' -benchmem -count=5 ./internal/conformance
+go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity)$' -benchmem -count=5 ./internal/conformance
 ```
 
 `make bench` runs the same command. For a quick functional check:
 
 ```sh
-go test -run '^$' -bench '^BenchmarkNativeClient$' -benchtime=1x ./internal/conformance
+go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity)$' -benchtime=1x ./internal/conformance
 ```
 
 CI runs the one-iteration check on native Linux, macOS, and Windows. That
 checks executable workloads and result semantics, not performance thresholds.
 Ordinary `go test` does not execute benchmark bodies. A CI smoke number is
 not a stable performance measurement.
+
+`BenchmarkRetainedCapacity` separately measures [populated K=16/256/4096
+windows](retained-capacity-benchmarks.md), including full-window extension,
+inclusion, resume and save. Its stress fixture is synthetic and is not generated
+by the node corpus module.
 
 ## Workload boundaries
 
@@ -64,7 +69,7 @@ without competing builds/tests. State whether CPU parallelism was fixed
 (for example, `-cpu=1`). Do not compare race-instrumented results to ordinary
 builds. Review logs for private paths or environment details before sharing.
 
-These small synthetic workloads provide a reproducible starting point for
+The small `BenchmarkNativeClient` workloads provide a reproducible starting point for
 verification-cost analysis. They do not characterize maximum resource bounds,
 large retained windows, content-size scaling, adversarial inputs, mobile
 hardware, or steady-state watch behavior. They establish no public-network

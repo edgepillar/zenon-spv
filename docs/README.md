@@ -35,6 +35,10 @@ audit history.
   diagnostics, effective depth ranges, and trusted-state boundaries.
 - [`native-benchmarks.md`](native-benchmarks.md) — reproducible local verification
   costs, allocation reporting, and explicit workload limits.
+- [`retained-capacity-benchmarks.md`](retained-capacity-benchmarks.md) — full
+  K=16/256/4096 workload costs, saved size and measurement boundaries.
+- [`delayed-inclusion.md`](delayed-inclusion.md) — independent node/Python
+  mixed-height fixtures and compiled v1/v2 delayed-query coverage.
 - [`conformance.md`](conformance.md) — implemented conformance cases,
   known gaps, and production follow-ups.
 - [`compiled-query-conformance.md`](compiled-query-conformance.md) — compiled

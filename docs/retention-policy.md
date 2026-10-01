@@ -74,7 +74,8 @@ check delayed segments, exact eviction boundaries, unchanged state on failure,
 profile/no-profile migration and authorization before shrinking. Compiled tests
 use the pinned node corpus for schema-3 startup, watch, restart, shallow/refused
 then accepted queries, multiple depth-eligible heights, and omitted/changed K.
-The pinned node corpus currently places its account targets at one confirming
-height; the mixed-height core fixture is not presented as independent node
-compatibility evidence. Independent node-derived mixed-height data and full
-capacity network measurements remain roadmap gates.
+The [delayed-inclusion corpus](delayed-inclusion.md) adds independently
+node-derived targets at three confirming heights across v1/v2. Its core and
+compiled workflows remain synthetic, with a separate Python preimage checker.
+[Populated capacity measurements](retained-capacity-benchmarks.md) exercise
+K=16/256/4096; peak-memory and full-capacity network measurements remain gates.

@@ -143,3 +143,15 @@ batch frontiers, membership, and depth. The tests preserve the existing direct
 inclusion path and bounded guarantees. See [contract batch inclusion](../../../docs/contract-batches.md)
 for source references and evidence limits. This corpus does not execute a VM or
 assert full-node transaction validity.
+
+## Delayed inclusion across versions
+
+`delayed-inclusion.json` contains nineteen momentums across an explicit v1/v2
+transition and two three-block account segments. User sends and embedded
+receives are committed at three distinct heights, with exact preceding-header
+acknowledgements. It uses the same pinned node module, public synthetic seed,
+hash/serialization routines and source guard as the other corpora. See
+[delayed inclusion](../../../docs/delayed-inclusion.md) for reproduction,
+independent Python checks, strict-past and eviction boundaries, and the compiled
+collector/watch/query workflow. This is independent byte-level compatibility
+evidence, not captured network history or VM execution.

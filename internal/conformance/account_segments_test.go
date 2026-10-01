@@ -52,7 +52,11 @@ func loadNodeAccountCorpus(t testing.TB, filename string) accountSegmentCorpus {
 	if err := json.Unmarshal(raw, &c); err != nil {
 		t.Fatal(err)
 	}
-	if c.FormatVersion != 1 || c.Source.Commit != "3a4131e63881058b6ce2ee81d3a41d0033fafc99" || len(c.Chain.Vectors) != 9 || len(c.Segments) == 0 {
+	wantHeaders := 9
+	if filename == "delayed-inclusion.json" {
+		wantHeaders = 19
+	}
+	if c.FormatVersion != 1 || c.Source.Commit != "3a4131e63881058b6ce2ee81d3a41d0033fafc99" || len(c.Chain.Vectors) != wantHeaders || len(c.Segments) == 0 {
 		t.Fatal("unexpected account segment corpus")
 	}
 	return c

@@ -29,7 +29,7 @@ retain their own timeouts. This tool is not a process-tree supervisor.
 
 ## Selected coverage
 
-The 27 named scenarios are defined in
+The 30 named scenarios are defined in
 [`manifest.go`](../tools/offline-pilot/manifest.go). They cover:
 
 - Build identity, collection, retained commitment/segment queries, trusted
@@ -47,6 +47,8 @@ The 27 named scenarios are defined in
 - Explicit retention/depth separation across compiled commands, delayed
   synthetic segment evidence at different confirming heights, and schema
   migration with full saved-window authorization before resizing.
+- Node-derived mixed-height inclusion through v1/v2 and compiled delayed
+  collection/watch/restart, plus full K=16/256/4096 state workloads.
 
 These reuse the same assertions as the ordinary test suite. The pilot does
 not add another implementation of header or proof verification. It is a
@@ -66,7 +68,7 @@ guarantees and their limits.
 | `test_parent_race_enabled` | Whether this run requested `-race` for Go test processes. |
 | `source` | Observed checkout revision/modified state, or null fields if Git metadata is unavailable; also a SHA-256 input fingerprint. |
 | `source_matches_after_run` | Whether a second source snapshot equals the initial snapshot. This checks the endpoints, not continuous filesystem history. |
-| `corpus` | Repository-relative names and SHA-256 hashes of the four compatibility corpus files. This is an input inventory, not a claim that every vector was exercised. |
+| `corpus` | Repository-relative names and SHA-256 hashes of the five compatibility corpus files. This is an input inventory, not a claim that every vector was exercised. |
 | `cases` | Fixed scenario IDs, package/test names, statuses, child test counts, and hashes of compiled executables actually built by that scenario. |
 | `caveats` | Fixed trust and interpretation limits. |
 
