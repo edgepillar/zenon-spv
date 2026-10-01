@@ -527,10 +527,26 @@ type queryCLIPeer struct {
 	rangeFault atomic.Int32
 }
 
-func newQueryCLIPeer(t *testing.T, c accountSegmentCorpus, initiallyBad bool) *queryCLIPeer {
+func newQueryCLIPeer(t *testing.T, c accountSegmentCorpus, initiallyBad bool, watchTip ...chain.Header) *queryCLIPeer {
 	t.Helper()
 	p := &queryCLIPeer{}
 	p.bad.Store(initiallyBad)
+	var frontier map[string]json.RawMessage
+	if len(watchTip) != 0 {
+		if err := json.Unmarshal(c.Chain.Vectors[8].Momentum, &frontier); err != nil {
+			t.Fatal(err)
+		}
+		// Only a height hint is synthetic. Every target/range reply below is
+		// a byte-for-byte node corpus momentum with its original signature.
+		hint := watchTip[0]
+		hint.Height++
+		hint.PreviousHash = hint.HeaderHash
+		hint.TimestampUnix += 10
+		hint.HeaderHash = hint.ComputeHash()
+		for key, value := range map[string]any{"height": hint.Height, "previousHash": hint.PreviousHash, "timestamp": hint.TimestampUnix, "hash": hint.HeaderHash} {
+			frontier[key], _ = json.Marshal(value)
+		}
+	}
 	var goodAccounts []json.RawMessage
 	for _, v := range c.Segments[0].Vectors {
 		goodAccounts = append(goodAccounts, v.RPC)
@@ -572,10 +588,25 @@ func newQueryCLIPeer(t *testing.T, c accountSegmentCorpus, initiallyBad bool) *q
 		}
 		var list []json.RawMessage
 		switch request.Method {
+		case "ledger.getFrontierMomentum":
+			if frontier == nil {
+				t.Error("unexpected frontier query")
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			if err := json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": request.ID, "result": frontier}); err != nil {
+				t.Error(err)
+			}
+			return
 		case "ledger.getMomentumsByHeight":
 			var start, count uint64
-			if len(request.Params) != 2 || json.Unmarshal(request.Params[0], &start) != nil || json.Unmarshal(request.Params[1], &count) != nil ||
-				(start != 4001 || count != 9) && (start != 4009 || count != 1) {
+			valid := len(request.Params) == 2 && json.Unmarshal(request.Params[0], &start) == nil && json.Unmarshal(request.Params[1], &count) == nil
+			if frontier != nil {
+				valid = valid && start >= 4001 && start <= 4009 && count > 0 && count <= 4010-start
+			} else {
+				valid = valid && (start == 4001 && count == 9 || start == 4009 && count == 1)
+			}
+			if !valid {
 				t.Error("unexpected momentum query")
 				w.WriteHeader(http.StatusBadRequest)
 				return

@@ -44,7 +44,8 @@ and guarantee. The report separates verification outcomes from command and
 persistence failures; evidence acceptance alone is not successful completion.
 
 Use the optional [verification context](verification-context.md) diagnostic
-to record captured settings and compare their fingerprints. It intentionally
+to record captured settings and enforce their fingerprint with `--expect-context`.
+`inspect-config` can describe those settings before state or RPC access. It intentionally
 omits private audit metadata and is not a complete provenance record, a proof
 receipt, or a substitute for the result's guarantees and trust assumptions.
 
@@ -99,6 +100,11 @@ The [offline pilot](offline-pilot.md) makes a selected synthetic conformance
 run repeatable and records source/executable hashes, scenario results, and
 skipped checks on each native CI platform. Its loopback fixtures do not
 complete the independent network-provenance or deployment gates above.
+
+The [operator workflow](operator-pilot.md) connects explicit trust selection,
+configuration pinning, initialization, bounded watch/restart, collection, and
+retained queries using the shipped commands. Its compiled conformance scenario
+is an executable integration check, not completion of those external gates.
 
 Chain-derived election inputs, fork selection/finality, and authenticated
 state-value proofs are separate research milestones. Bitcoin SPV and Portal

@@ -42,6 +42,11 @@ type Loop struct {
 	// diagnostic excludes peer URLs, file paths, and free-form profile Source.
 	ShowContext bool
 
+	// ExpectedContext optionally pins captured verification settings. It is
+	// checked after trusted state loading but before startup output, RPC, or
+	// saving. Nil disables the guard; custom authorizers cannot be fingerprinted.
+	ExpectedContext *chain.Hash
+
 	// Multi is the multi-peer client. May be a MultiClient with a
 	// single peer (degenerate but valid) or many peers with a quorum.
 	Multi *fetch.MultiClient
@@ -149,6 +154,11 @@ func (l *Loop) RunOnce(ctx context.Context) (TickResult, error) {
 }
 
 func (l *Loop) run(ctx context.Context, singleResult *TickResult) (runErr error) {
+	var expectedContext *chain.Hash
+	if l.ExpectedContext != nil {
+		pin := *l.ExpectedContext
+		expectedContext = &pin
+	}
 	saveState := func(path string, state verify.VerifiedState) error { return state.Save(path) }
 	if adapter := l.SaveState; adapter != nil {
 		saveState = func(path string, state verify.VerifiedState) error { return adapter(path, state.Snapshot()) }
@@ -204,6 +214,11 @@ func (l *Loop) run(ctx context.Context, singleResult *TickResult) (runErr error)
 	state, err := verify.LoadTrustedState(l.StatePath, l.Genesis, authOpts)
 	if err != nil {
 		return fmt.Errorf("load state: %w", err)
+	}
+	if expectedContext != nil {
+		if err := state.RequireContextFingerprint(*expectedContext); err != nil {
+			return fmt.Errorf("verification context: %w", err)
+		}
 	}
 	if state.Empty() {
 		return errors.New("syncer: refusing to bootstrap from empty state — pre-anchor with `verify-headers --genesis-config <checkpoint> --state <path>` first")

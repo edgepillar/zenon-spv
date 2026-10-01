@@ -3,6 +3,7 @@ package verify
 import (
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 
 	"golang.org/x/crypto/sha3"
 
@@ -57,6 +58,28 @@ type ContextProducer struct {
 	Source       string      `json:"source"`
 	Kind         string      `json:"kind"` // disabled, schedule, or custom
 	ScheduleHash *chain.Hash `json:"schedule_hash"`
+}
+
+var (
+	ErrContextFingerprintMismatch    = errors.New("verification context fingerprint does not match the expected settings")
+	ErrContextFingerprintUnavailable = errors.New("verification context fingerprint is unavailable")
+)
+
+// RequireContextFingerprint checks the settings owned by this handle, never a
+// caller-supplied diagnostic object. Matching settings do not authenticate the
+// anchor, schedule, activation, saved history, peers, or verifier executable.
+func (s VerifiedState) RequireContextFingerprint(expected chain.Hash) error {
+	c, err := s.VerificationContext()
+	if err != nil {
+		return err
+	}
+	if c.Fingerprint == nil || c.FingerprintStatus != "available" {
+		return ErrContextFingerprintUnavailable
+	}
+	if *c.Fingerprint != expected {
+		return ErrContextFingerprintMismatch
+	}
+	return nil
 }
 
 // VerificationContext returns detached settings, including the applicable

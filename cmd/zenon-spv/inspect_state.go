@@ -8,10 +8,11 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/0x3639/zenon-spv/internal/chain"
 	"github.com/0x3639/zenon-spv/internal/verify"
 )
 
-const inspectStateUsage = "Usage: zenon-spv inspect-state --state <path> [--genesis-config <path>] [--window {low|medium|high}] [--protocol-profile <path>] [--schedule <path>] [--json]\n"
+const inspectStateUsage = "Usage: zenon-spv inspect-state --state <path> [--genesis-config <path>] [--window {low|medium|high}] [--protocol-profile <path>] [--schedule <path>] [--expect-context <64-hex>] [--json]\n"
 
 // Inspection deliberately has no ACCEPT outcome or proven guarantees. It
 // describes a trusted local snapshot under explicitly selected settings.
@@ -45,9 +46,15 @@ func runInspectState(args []string, stdout, stderr io.Writer) int {
 	schedulePath := fs.String("schedule", "", "operator-attested producer schedule")
 	tier := fs.String("window", "low", "policy window: low | medium | high")
 	jsonOutput := fs.Bool("json", false, "emit a versioned inspection report")
+	expectedContext := fs.String("expect-context", "", "require this 64-hex verification context fingerprint")
 	if err := fs.Parse(args); errors.Is(err, flag.ErrHelp) {
 		return writeInspectionOutput(stdout, stderr, []byte(inspectStateUsage), 0)
 	} else if err != nil || fs.NArg() != 0 || *statePath == "" {
+		report.Error = &reportError{Stage: "arguments", Category: "usage"}
+		return finishInspection(report, 64, *jsonOutput, stdout, stderr)
+	}
+	pin, err := parseContextPin(fs, *expectedContext)
+	if err != nil {
 		report.Error = &reportError{Stage: "arguments", Category: "usage"}
 		return finishInspection(report, 64, *jsonOutput, stdout, stderr)
 	}
@@ -56,11 +63,11 @@ func runInspectState(args []string, stdout, stderr io.Writer) int {
 		report.Error = &reportError{Stage: "arguments", Category: "usage"}
 		return finishInspection(report, 64, *jsonOutput, stdout, stderr)
 	}
-	code := inspectTrustedState(&report, *statePath, *genesisPath, *profilePath, *schedulePath, policy)
+	code := inspectTrustedState(&report, *statePath, *genesisPath, *profilePath, *schedulePath, policy, pin)
 	return finishInspection(report, code, *jsonOutput, stdout, stderr)
 }
 
-func inspectTrustedState(report *stateInspectionReport, statePath, genesisPath, profilePath, schedulePath string, policy verify.Policy) int {
+func inspectTrustedState(report *stateInspectionReport, statePath, genesisPath, profilePath, schedulePath string, policy verify.Policy, pin *chain.Hash) int {
 	fail := func(stage string) int {
 		report.Error = &reportError{Stage: stage, Category: "operational"}
 		return 70
@@ -90,6 +97,11 @@ func inspectTrustedState(report *stateInspectionReport, statePath, genesisPath, 
 			return outcomeExitCode(authorization.Result.Outcome)
 		}
 		return fail("state")
+	}
+	if pin != nil {
+		if err := state.RequireContextFingerprint(*pin); err != nil {
+			return fail("context_pin")
+		}
 	}
 	if state.Empty() {
 		reason := verify.ReasonMissingEvidence.String()

@@ -87,6 +87,14 @@ go run ./tools/offline-pilot > ../offline-pilot.json
 This uses synthetic fixtures and loopback RPC. See [offline pilot](docs/offline-pilot.md)
 for cached-dependency prerequisites, report interpretation, and native CI artifacts.
 
+For a complete read-only operator run, follow the [operator workflow](docs/operator-pilot.md).
+It records explicit trust settings and build identity, initializes protected
+state, runs bounded watch/restart, and verifies collected evidence locally.
+Use `inspect-config --json` to review settings and `--expect-context <64-hex>`
+to require the same configuration on later verification, inspection, and watch
+commands. A matching fingerprint is configuration consistency, not independent
+authentication of the anchor, profile, schedule, peers, or binary.
+
 Inspect an existing trusted local state without a bundle or RPC refresh:
 
 ```sh
