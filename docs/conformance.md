@@ -154,6 +154,10 @@ State-value layer:
       match retained local history. Conflicting or evicted targets return
       REFUSED without saving; immutable height lookup does not expose state
       memory or claim fresh verification.
+- [x] A fetched watch batch that reaches the selected target must match its
+      signed envelope across RPC rounds. Changing answers refuses before
+      verification or persistence, including a single-header batch; matching
+      invalid signatures still fail normal cryptographic checks.
 - [x] State save/load revalidate every retained header before truncation and
       enforce byte/capacity bounds, including the header count during JSON
       decoding; see [`watch-persistence.md`](watch-persistence.md).

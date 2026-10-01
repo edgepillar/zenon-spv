@@ -76,7 +76,8 @@ func testCompiledWatchJSONEvents(t *testing.T, once bool) {
 	t.Helper()
 	binary := buildQueryCLIs(t, "zenon-spv")["zenon-spv"]
 	for _, mode := range []string{"advanced", "caught_up", "rejected", "profile_refused", "frontier_refused",
-		"retained_hash_refused", "retained_key_refused", "retained_signature_refused"} {
+		"retained_hash_refused", "retained_key_refused", "retained_signature_refused",
+		"changed_target_hash_refused", "changed_target_key_refused", "changed_target_signature_refused"} {
 		t.Run(mode, func(t *testing.T) {
 			c, headers, policy := transitionFixture(t)
 			policy.W = 5 // Seed five headers; the CLI raises the depth to six.
@@ -234,6 +235,11 @@ func testCompiledWatchJSONEvents(t *testing.T, once bool) {
 					tick.Error.Stage != "retained_target" || tick.Error.Category != "header_mismatch") {
 					t.Fatal("conflicting target claimed verification or lost its refusal category")
 				}
+				if strings.HasPrefix(mode, "changed_target_") && (tick.Verification != nil || tick.CandidateTip != nil ||
+					tick.FetchedCount != 1 || tick.Reason == nil || *tick.Reason != "ReasonTargetHeaderMismatch" ||
+					tick.Error == nil || tick.Error.Stage != "target_binding" || tick.Error.Category != "header_mismatch") {
+					t.Fatal("changed target claimed verification or lost its refusal category")
+				}
 			}
 			if tick.Event != wantEvent || tick.StateTip.Height != wantTip.Height || tick.StateTip.Hash != wantTip.HeaderHash {
 				t.Fatal("watch event differs from the independently pinned tip")
@@ -275,26 +281,30 @@ func startWatchJSONPeer(t *testing.T, vectors []momentumVector, headers []chain.
 	}
 	block := vectors[5].Momentum
 	retainedTarget := mode == "caught_up" || strings.HasPrefix(mode, "retained_")
+	changedTarget := strings.HasPrefix(mode, "changed_target_")
 	if retainedTarget {
 		block = vectors[4].Momentum
 	}
-	if strings.HasPrefix(mode, "retained_") {
+	if strings.HasPrefix(mode, "retained_") || changedTarget {
 		var fields map[string]json.RawMessage
 		if err := json.Unmarshal(block, &fields); err != nil {
 			t.Fatal(err)
 		}
-		h := headers[4]
-		switch mode {
-		case "retained_hash_refused":
+		h := headers[5]
+		if retainedTarget {
+			h = headers[4]
+		}
+		switch {
+		case strings.HasSuffix(mode, "hash_refused"):
 			h.TimestampUnix++
 			h.HeaderHash = h.ComputeHash()
 			fields["timestamp"], _ = json.Marshal(h.TimestampUnix)
 			fields["hash"], _ = json.Marshal(h.HeaderHash)
-		case "retained_key_refused":
+		case strings.HasSuffix(mode, "key_refused"):
 			h.PublicKey = slices.Clone(h.PublicKey)
 			h.PublicKey[0] ^= 1
 			fields["publicKey"], _ = json.Marshal(h.PublicKey)
-		case "retained_signature_refused":
+		case strings.HasSuffix(mode, "signature_refused"):
 			h.Signature = slices.Clone(h.Signature)
 			h.Signature[0] ^= 1
 			fields["signature"], _ = json.Marshal(h.Signature)
@@ -311,6 +321,7 @@ func startWatchJSONPeer(t *testing.T, vectors []momentumVector, headers []chain.
 		fields["signature"], _ = json.Marshal(signature)
 		block, _ = json.Marshal(fields)
 	}
+	var rangeRequests atomic.Int64
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			ID     json.RawMessage
@@ -340,7 +351,11 @@ func startWatchJSONPeer(t *testing.T, vectors []momentumVector, headers []chain.
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			result = map[string]any{"list": []json.RawMessage{block}}
+			row := block
+			if rangeRequests.Add(1) > 1 && changedTarget {
+				row = vectors[5].Momentum
+			}
+			result = map[string]any{"list": []json.RawMessage{row}}
 		default:
 			t.Error("unexpected watch method")
 			w.WriteHeader(http.StatusBadRequest)

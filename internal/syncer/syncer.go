@@ -278,6 +278,7 @@ func (l *Loop) run(ctx context.Context, singleResult *TickResult) (runErr error)
 var (
 	errRetainedTargetMismatch    = errors.New("agreed target differs from the trusted retained header")
 	errRetainedTargetUnavailable = errors.New("agreed target is outside the trusted retained window")
+	errFetchedTargetMismatch     = errors.New("fetched range differs from the previously agreed target")
 )
 
 // tick runs one iteration: fetch frontier, fetch headers, verify,
@@ -304,8 +305,7 @@ func (l *Loop) tick(ctx context.Context, state verify.VerifiedState) (TickResult
 		}
 		// Peer agreement alone does not bind this target to the trusted chain.
 		// Keys and signatures are not hashed into the momentum envelope.
-		if targetHeader.HeaderHash != retained.HeaderHash || !bytes.Equal(targetHeader.PublicKey, retained.PublicKey) ||
-			!bytes.Equal(targetHeader.Signature, retained.Signature) {
+		if !sameSignedHeader(targetHeader, retained) {
 			return TickResult{Tip: tip, Target: target, Err: errRetainedTargetMismatch,
 				Outcome: verify.OutcomeRefused, Reason: verify.ReasonRetainedHeaderMismatch,
 				Message: errRetainedTargetMismatch.Error(), failureStage: "retained_target"}, state
@@ -330,6 +330,14 @@ func (l *Loop) tick(ctx context.Context, state verify.VerifiedState) (TickResult
 	for i, h := range headers {
 		heights[i] = h.Height
 	}
+	// Agreement within each RPC round does not bind the rounds together.
+	// Partial batches cannot yet check the selected target's envelope.
+	if len(headers) > 0 && headers[len(headers)-1].Height == target &&
+		!sameSignedHeader(headers[len(headers)-1], targetHeader) {
+		return TickResult{Tip: tip, Target: target, FetchedHeights: heights, Err: errFetchedTargetMismatch,
+			Outcome: verify.OutcomeRefused, Reason: verify.ReasonTargetHeaderMismatch,
+			Message: errFetchedTargetMismatch.Error(), failureStage: "target_binding"}, state
+	}
 	result, newState := state.Extend(headers)
 	r := TickResult{
 		Tip:            tip,
@@ -345,6 +353,11 @@ func (l *Loop) tick(ctx context.Context, state verify.VerifiedState) (TickResult
 		r.candidateTip = &chain.HashHeight{Hash: tip.HeaderHash, Height: tip.Height}
 	}
 	return r, newState
+}
+
+func sameSignedHeader(a, b chain.Header) bool {
+	return a.Height == b.Height && a.HeaderHash == b.HeaderHash &&
+		bytes.Equal(a.PublicKey, b.PublicKey) && bytes.Equal(a.Signature, b.Signature)
 }
 
 // outputFailure preserves writer error identity without echoing private paths
