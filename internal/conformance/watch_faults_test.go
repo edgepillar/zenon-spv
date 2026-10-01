@@ -67,7 +67,10 @@ func TestOfflineWatchPeerFaults(t *testing.T) {
 		{name: "all-oversized-content", peers: [3]string{"oversized-content", "oversized-content", "oversized-content"},
 			want: "REFUSED ReasonMissingEvidence", detail: "response exceeds decoded entry limit"},
 		{name: "all-oversized-frontier-content", peers: [3]string{"oversized-frontier-content", "oversized-frontier-content", "oversized-frontier-content"},
-			want: "REFUSED ReasonMissingEvidence", detail: "0/3 peers reached on frontier"},
+			want: "REFUSED ReasonMissingEvidence", detail: "peer[3]: getFrontierMomentum: rpc unmarshal result failed: response exceeds decoded entry limit"},
+		{name: "one-private-frontier-error", peers: [3]string{"private-frontier-error", "", ""}, advance: true, want: "ACCEPT"},
+		{name: "all-private-frontier-errors", peers: [3]string{"private-frontier-error", "private-frontier-error", "private-frontier-error"},
+			want: "REFUSED ReasonMissingEvidence", detail: "peer[3]: rpc convert momentum failed"},
 		{name: "all-replaced-content", peers: [3]string{"replaced-content", "replaced-content", "replaced-content"},
 			want: "REFUSED ReasonMissingEvidence", detail: "invalid JSON-RPC response"},
 		{name: "one-private-content-error", peers: [3]string{"private-content-error", "", ""}, advance: true, want: "ACCEPT"},
@@ -222,6 +225,9 @@ func startFaultPeer(t *testing.T, vectors []momentumVector, mode string, peer in
 			response = wire[len(wire)-1]
 			if mode == "oversized-frontier-content" {
 				response = oversizedRPCMembers("content")
+			}
+			if mode == "private-frontier-error" {
+				response = privateRPCConversionValue(t, wire[len(wire)-1], "content")
 			}
 		case "ledger.getMomentumsByHeight":
 			if len(req.Params) != 2 || req.Params[0] < 2001 || req.Params[0]-2001 >= uint64(len(wire)) ||

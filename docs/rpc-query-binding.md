@@ -82,6 +82,15 @@ The agreed-frontier lookup also requires the returned header to match the
 selected target height, so replaying an older header cannot produce a
 caught-up watch tick for that request.
 
+If too few peers return a usable frontier, the error includes the usable and
+configured peer counts, required quorum, and each failed configuration position
+in order. The summaries use the typed client's safe error text, such as an HTTP
+status, RPC error code, or decoding category; they omit endpoint values and raw
+remote messages. Successful positions are not listed as failures. As with other
+multi-peer queries, the aggregate error retains `ErrNotEnoughPeers`, not the
+individual peers' private underlying causes. No target query starts after this
+failure. Position labels are not peer identities or independence evidence.
+
 These checks bind evidence to a local query. They do not authenticate peer
 identity, network freshness, canonicality, finality, or producer elections.
 The fetch layer recomputes hashes; full signature, linkage, anchor, and policy
