@@ -197,6 +197,11 @@ func (l *Loop) Run(ctx context.Context) (runErr error) {
 		case <-ctx.Done():
 			return nil
 		case <-timer.C:
+			// An immediate catch-up timer and cancellation may both be ready.
+			// Observe shutdown before starting another query or emitting a tick.
+			if ctx.Err() != nil {
+				return nil
+			}
 			res, newState := l.tick(ctx, state)
 			persistedProgress := false
 			if res.Outcome == verify.OutcomeAccept {

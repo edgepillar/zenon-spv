@@ -88,6 +88,9 @@ and returned operational errors are 70. REJECT and REFUSED ticks remain
 nonfatal and do not determine the eventual process exit status. Fatal setup
 or runtime failures after argument parsing use stage-only stderr diagnostics
 in JSON mode; parser/help output remains the ordinary CLI stderr interface.
+Cancellation observed between ticks stops before another RPC round, including
+when an immediate catch-up timer is ready. Cancellation during a running tick
+can still produce that tick's refusal event before shutdown.
 
 A write error or short write stops the loop without replaying the event.
 Partial output is not a complete record. An earlier completed save is not
