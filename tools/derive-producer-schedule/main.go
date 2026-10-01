@@ -52,6 +52,7 @@ func run(args []string) error {
 	fs := flag.NewFlagSet("derive-producer-schedule", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
 	peersFlag := fs.String("peers", os.Getenv("ZENON_SPV_PEERS"), "comma-separated peer URLs (or set ZENON_SPV_PEERS); at least 3 recommended")
+	fs.Lookup("peers").DefValue = "" // Help must not print environment credentials.
 	from := fs.Uint64("from", 0, "inclusive start height (at least 2; genesis has no elected signer)")
 	through := fs.Uint64("through", 0, "inclusive end height")
 	chainID := fs.Uint64("chain-id", 1, "expected chain id of all observations (default mainnet=1)")
@@ -61,6 +62,9 @@ func run(args []string) error {
 	timeout := fs.Duration("timeout", 5*time.Minute, "overall RPC timeout for the run")
 	if err := fs.Parse(args); err != nil {
 		return err
+	}
+	if fs.NArg() != 0 {
+		return errors.New("positional arguments are not supported")
 	}
 
 	urls := splitPeers(*peersFlag)
@@ -78,6 +82,10 @@ func run(args []string) error {
 	}
 	if *outPath == "" {
 		return errors.New("--out is required")
+	}
+	destination, err := resolveScheduleOutput(*outPath)
+	if err != nil {
+		return err
 	}
 	if *batchSize == 0 {
 		*batchSize = 100
@@ -100,12 +108,12 @@ func run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("marshal schedule: %w", err)
 	}
-	if err := os.WriteFile(*outPath, buf, 0o644); err != nil {
-		return fmt.Errorf("write %s: %w", *outPath, err)
+	if err := publishScheduleOutput(destination, buf, defaultScheduleOutputIO()); err != nil {
+		return err
 	}
 
-	fmt.Fprintf(os.Stderr, "wrote %s: %d entries, schedule_hash=%x\n",
-		*outPath, len(schedule.Entries), schedule.ScheduleHash)
+	fmt.Fprintf(os.Stderr, "wrote schedule: %d entries, schedule_hash=%x\n",
+		len(schedule.Entries), schedule.ScheduleHash)
 	return nil
 }
 
@@ -210,7 +218,7 @@ func deriveSchedule(
 	for i, f := range frontiers {
 		if f.Height == through && (f.HeaderHash != previous.HeaderHash ||
 			!bytes.Equal(f.PublicKey, previous.PublicKey) || !bytes.Equal(f.Signature, previous.Signature)) {
-			return nil, fmt.Errorf("peer %s: frontier differs from observed range at height %d", urls[i], through)
+			return nil, fmt.Errorf("%s: frontier differs from observed range at height %d", fetch.PeerLabel(i), through)
 		}
 	}
 

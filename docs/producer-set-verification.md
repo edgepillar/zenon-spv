@@ -177,7 +177,22 @@ including its signer and signature. Higher frontier observations are not
 linked back to the range because the intervening headers are not fetched.
 
 The tool produces a JSON file only after all observations pass, so a
-derivation failure preserves any existing output. The file contains the
+derivation failure preserves any existing output. Destination checks precede
+RPC: the parent must exist, and an existing destination must be a regular file,
+not a symlink or special file. Publication writes a same-directory temporary
+file, checks a complete write, syncs and closes it, rechecks the destination,
+then replaces the destination and syncs its directory on non-Windows systems.
+Staging failures preserve existing bytes and file identity; replacing a hard
+link does not modify its other names. A failure after replacement reports that
+new bytes are visible with durability unconfirmed. Windows directory durability
+remains best-effort. This does not coordinate concurrent exporters; use a trusted
+output directory and one writer per destination.
+
+New and replaced schedules use private `0600` permissions where the filesystem
+supports Unix modes. CLI progress, completion, and runtime errors after argument
+parsing omit output paths and configured endpoint values; help defaults also
+omit environment endpoints. Output errors retain their
+underlying causes for programmatic inspection. The file itself contains the
 per-height table plus metadata (§3). Metadata records the actual configured
 endpoints and their observed frontier heights, not per-header endorsements.
 Each schedule explicitly declares which height range
