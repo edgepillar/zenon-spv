@@ -150,6 +150,11 @@ object keys to 128 bytes. Inputs must be regular files, not directories or
 symlinks. These are input bounds, not a total process heap or RSS guarantee;
 stable private file ownership remains the caller's responsibility.
 
+The [consumer resource workload](query-consumer-resources.md) records whole
+compiled-process elapsed time and native peak memory for 1, 16 and 256 matched
+targets. It excludes preparation and verifier execution, uses recently written
+files, and makes no latency, concurrency or maximum-RSS guarantee.
+
 Unit tests cover full-width integers, ambiguous JSON, published context
 fingerprints and fixed private output. A compiled node-corpus workflow covers
 commitments and flattened segments, explicit retention, reordered rows,

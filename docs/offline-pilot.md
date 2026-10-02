@@ -29,14 +29,15 @@ retain their own timeouts. This tool is not a process-tree supervisor.
 
 ## Selected coverage
 
-The 39 named scenarios are defined in
+The 40 named scenarios are defined in
 [`manifest.go`](../tools/offline-pilot/manifest.go). They cover:
 
 - Build identity, collection, retained commitment/segment queries, trusted
   resume, state inspection, and competing writers across compiled processes.
 - The [reference query consumer](query-report-consumer.md), with whole-batch
   target/guarantee/trust matching, lossless integers, context digest checks,
-  explicit retention and actual process-failure handling.
+  explicit retention and actual process-failure handling, plus separate native
+  consumer process measurements at 1/16/256 matched targets.
 - The [pinned operator workflow](operator-pilot.md): inspect explicit trust
   inputs, initialize, advance and restart watch, collect, query, and refuse
   dropped schedules or changed depth settings before RPC or state writes.
@@ -90,7 +91,7 @@ guarantees and their limits.
 | `source` | Observed checkout revision/modified state, or null fields if Git metadata is unavailable; also a SHA-256 input fingerprint. |
 | `source_matches_after_run` | Whether a second source snapshot equals the initial snapshot. This checks the endpoints, not continuous filesystem history. |
 | `corpus` | Repository-relative names and SHA-256 hashes of the six compatibility corpus files. This is an input inventory, not a claim that every vector was exercised. |
-| `cases` | Fixed scenario IDs, package/test names, statuses, child test counts, hashes of compiled executables actually built by that scenario, and optional bounded `resource_samples`. |
+| `cases` | Fixed scenario IDs, package/test names, statuses, child test counts, hashes of compiled executables actually built by that scenario, and optional bounded `resource_samples` or `query_resource_samples`. |
 | `caveats` | Fixed trust and interpretation limits. |
 
 Only `compiled_content_scaling` carries `resource_samples`: four fixed workload
@@ -99,10 +100,20 @@ nanoseconds, nullable peak RSS bytes, and an accounting source. Missing, repeate
 malformed or unexpected records make the report incomplete or failed. Each
 record must come from its actively executing workload. Unknown fields, private
 strings and raw diagnostics are refused or discarded, not echoed. Linux/macOS
-require positive process RSS; other platforms use null and `unavailable`.
+require positive process RSS; Windows requires its positive native peak working
+set counter with source `windows_peak_working_set`. Other platforms use null
+and `unavailable`.
 See [flat-content resources](flat-content-resources.md) for counter semantics
 and the distinction between samples and performance guarantees. These fields
 are additive to schema 1; other cases omit them.
+
+Only `compiled_query_consumer_scaling` carries `query_resource_samples`: three
+fixed workload IDs, matched target count, report and expectations byte sizes,
+whole consumer-process elapsed nanoseconds, nullable peak memory bytes and the
+same platform-specific accounting sources. These measurements exclude verifier
+execution and fixture generation. The same execution, completeness and privacy
+checks apply. See [query-consumer resources](query-consumer-resources.md) for
+the input/memory boundary and remaining consumer acceptance gates.
 
 The source fingerprint covers `go.mod`, `go.sum`, and `.go`, `.json`,
 `go.mod`, and `go.sum` files beneath `cmd`, `internal`, and `tools`. Sort
