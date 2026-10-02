@@ -33,6 +33,7 @@ func TestManifestSelectionIsExactAndUncached(t *testing.T) {
 
 func TestPilotEnvironmentDisablesAmbientSelectionAndDownloads(t *testing.T) {
 	t.Setenv("ZENON_SPV_PEERS", "PRIVATE_ENDPOINT")
+	t.Setenv(candidateExportEnvironment, "PRIVATE_EXPORT_DIRECTORY")
 	t.Setenv("GOFLAGS", "-run=Nothing")
 	t.Setenv("GOPROXY", "PRIVATE_PROXY")
 	t.Setenv("GONOPROXY", "*")
@@ -51,7 +52,9 @@ func TestPilotEnvironmentDisablesAmbientSelectionAndDownloads(t *testing.T) {
 }
 
 func TestPilotUsageDoesNotExposeArguments(t *testing.T) {
-	for _, args := range [][]string{{"--PRIVATE_FLAG"}, {"--timeout", "PRIVATE_DURATION"}, {"--timeout", "0"}, {"--timeout", "2h"}, {"PRIVATE_PATH"}} {
+	for _, args := range [][]string{{"--PRIVATE_FLAG"}, {"--timeout", "PRIVATE_DURATION"}, {"--timeout", "0"}, {"--timeout", "2h"}, {"PRIVATE_PATH"},
+		{"--export-binaries", "relative_PRIVATE_PATH"}, {"--export-binaries", ""},
+		{"--export-binaries", filepath.Join(t.TempDir(), "first"), "--export-binaries", filepath.Join(t.TempDir(), "second")}} {
 		var out, diagnostics bytes.Buffer
 		if code := run(args, &out, &diagnostics); code != 64 || out.Len() != 0 || strings.Contains(diagnostics.String(), "PRIVATE") {
 			t.Fatal("invalid arguments did not fail privately before setup")

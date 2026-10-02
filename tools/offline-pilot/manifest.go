@@ -16,6 +16,8 @@ var scenarios = []scenario{
 	{"compiled_query_consumer_scaling", "internal/conformance", "TestCompiledQueryConsumerScaling", []string{"zenon-spv", "consume-query-report"}},
 	{"block_observer", "internal/conformance", "TestCompiledBlockObserver", []string{"zenon-spv", "consume-query-report", "observe-block"}},
 	{"block_observer_process_boundaries", "tools/observe-block", "TestObservationProcessBoundaries", nil},
+	{"candidate_binary_export", "internal/conformance", "TestCandidateBinaryExport", nil},
+	{"candidate_manifest", "tools/offline-pilot", "TestCandidateManifest", nil},
 	{"pinned_operator_workflow", "internal/conformance", "TestCompiledPinnedOperatorWorkflow", []string{"zenon-spv", "fetch-bundle"}},
 	{"rpc_redirect_boundary", "internal/conformance", "TestCompiledRPCRedirectBoundary", []string{"zenon-spv", "fetch-bundle"}},
 	{"retention_depth_workflow", "internal/conformance", "TestCompiledRetentionDepthWorkflow", []string{"zenon-spv"}},

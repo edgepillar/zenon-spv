@@ -42,9 +42,17 @@ func run(args []string, stdout, stderr io.Writer) int {
 	fs.SetOutput(io.Discard)
 	timeout := fs.Duration("timeout", 10*time.Minute, "overall test timeout")
 	race := fs.Bool("race", false, "instrument test parents with the race detector")
+	var exportDir string
+	fs.Func("export-binaries", "new absolute directory outside the checkout", func(value string) error {
+		if exportDir != "" || value == "" || len(value) > 4096 || !filepath.IsAbs(value) {
+			return errors.New("invalid candidate directory")
+		}
+		exportDir = filepath.Clean(value)
+		return nil
+	})
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
-			return writeReport(stdout, stderr, []byte("Usage: offline-pilot [--race] [--timeout 10m]\nRun from the repository root with dependencies already cached.\n"), 0)
+			return writeReport(stdout, stderr, []byte("Usage: offline-pilot [--race] [--timeout 10m] [--export-binaries ABSOLUTE_NEW_DIRECTORY]\nRun from the repository root with dependencies already cached.\n"), 0)
 		}
 		_, _ = fmt.Fprintln(stderr, "offline-pilot: invalid arguments; use --help")
 		return 64
@@ -84,8 +92,18 @@ func run(args []string, stdout, stderr io.Writer) int {
 		_, _ = fmt.Fprintln(stderr, "offline-pilot: Go toolchain is unavailable on PATH")
 		return 70
 	}
+	if exportDir != "" {
+		exportDir, err = prepareCandidateDirectory(exportDir)
+		if err != nil {
+			_, _ = fmt.Fprintln(stderr, "offline-pilot: candidate directory setup failed")
+			return 70
+		}
+	}
 	cmd := exec.CommandContext(ctx, goTool, testArguments(scenarios, *race)...)
 	cmd.Env, cmd.Stderr = pilotEnvironment(goTool), io.Discard
+	if exportDir != "" {
+		cmd.Env = append(cmd.Env, candidateExportEnvironment+"="+exportDir)
+	}
 	cmd.WaitDelay = 2 * time.Second
 	stream, err := cmd.StdoutPipe()
 	processOK := false
@@ -128,7 +146,19 @@ func run(args []string, stdout, stderr io.Writer) int {
 		_, _ = fmt.Fprintln(stderr, "offline-pilot: report encoding failed")
 		return 70
 	}
-	return writeReport(stdout, stderr, append(raw, '\n'), code)
+	raw = append(raw, '\n')
+	if exportDir != "" && code == 0 {
+		if err := finalizeCandidate(exportDir, report, raw); err != nil {
+			report.Status, report.Error = "failed", errorCategory("candidate_export")
+			raw, err = json.MarshalIndent(report, "", "  ")
+			if err != nil {
+				_, _ = fmt.Fprintln(stderr, "offline-pilot: report encoding failed")
+				return 70
+			}
+			raw, code = append(raw, '\n'), 70
+		}
+	}
+	return writeReport(stdout, stderr, raw, code)
 }
 
 func testArguments(manifest []scenario, race bool) []string {
