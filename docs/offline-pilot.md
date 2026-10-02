@@ -105,6 +105,14 @@ guarantees and their limits.
 | `cases` | Fixed scenario IDs, package/test names, statuses, child test counts, hashes of compiled executables actually built by that scenario, and optional bounded `resource_samples` or `query_resource_samples`. |
 | `caveats` | Fixed trust and interpretation limits. |
 
+Executable records contain exactly `command` and `sha256`, with nonempty
+string values, a lowercase 64-character digest, and at most 256 encoded bytes.
+The command must belong to the actively executing case. Duplicate fields,
+case aliases, unknown fields, missing values and conflicting digests for one
+command within a case fail the run. Identical repeated observations are
+accepted and recorded once. These are local build observations; they do not
+authenticate execution or binary provenance.
+
 Only `compiled_content_scaling` carries `resource_samples`: four fixed workload
 IDs, members per proof, proof count, encoded input bytes, whole-process elapsed
 nanoseconds, nullable peak RSS bytes, and an accounting source. Missing, repeated,
