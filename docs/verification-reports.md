@@ -24,6 +24,11 @@ inputs. It does not establish a balance, state execution, canonicality, or
 consensus finality. A report is an unsigned local diagnostic, not a portable
 proof receipt or an authentication mechanism.
 
+The [reference query consumer](query-report-consumer.md) provides a strict,
+bounded whole-batch check for retained-only commitment and segment reports,
+including actual process status and independently selected expectations.
+Report-file and executable integrity remain caller responsibilities.
+
 | Process exit | Top-level `outcome` | `error` | Meaning |
 | --- | --- | --- | --- |
 | 0 | `ACCEPT` | `null` | All requested checks accepted and any requested state save returned success. |

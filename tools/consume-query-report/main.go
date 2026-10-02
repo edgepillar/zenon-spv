@@ -1,0 +1,113 @@
+// Command consume-query-report is a reference consumer of trusted, local,
+// retained-only query diagnostics. It does not authenticate reports or execute
+// the verifier. Expectations and the actual verifier process status are inputs.
+package main
+
+import (
+	"encoding/json"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+)
+
+const (
+	maxReportBytes       = 4 << 20
+	maxExpectationsBytes = 256 << 10
+	maxTargets           = 256
+)
+
+type consumption struct {
+	Version        uint32  `json:"schema_version"`
+	Status         string  `json:"status"`
+	Category       *string `json:"category"`
+	CheckedTargets int     `json:"checked_targets"`
+}
+
+func main() { os.Exit(run(os.Args[1:], os.Stdout, os.Stderr)) }
+
+func run(args []string, stdout, diagnostics io.Writer) int {
+	fs := flag.NewFlagSet("consume-query-report", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	reportPath := fs.String("report", "", "private verifier JSON report")
+	expectationsPath := fs.String("expectations", "", "independently selected expectations")
+	processExit := fs.Int64("verifier-exit-code", 0, "actual verifier process exit status")
+	parseErr := fs.Parse(args)
+	statusProvided := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "verifier-exit-code" {
+			statusProvided = true
+		}
+	})
+	if parseErr != nil || fs.NArg() != 0 || *reportPath == "" || *expectationsPath == "" || !statusProvided {
+		_, _ = fmt.Fprintln(diagnostics, "consume-query-report: require --report, --expectations and --verifier-exit-code")
+		return 64
+	}
+	if *processExit != 0 {
+		return writeConsumption(stdout, diagnostics, "process_failure", 0, 2)
+	}
+	expectedRaw, err := readInput(*expectationsPath, maxExpectationsBytes)
+	if err != nil {
+		return writeConsumption(stdout, diagnostics, "input_unavailable", 0, 70)
+	}
+	var expected expectations
+	if !decodeExact(expectedRaw, &expected) || !validExpectations(expected) {
+		return writeConsumption(stdout, diagnostics, "invalid_expectations", 0, 2)
+	}
+	reportRaw, err := readInput(*reportPath, maxReportBytes)
+	if err != nil {
+		return writeConsumption(stdout, diagnostics, "input_unavailable", 0, 70)
+	}
+	var report queryReport
+	if !decodeExact(reportRaw, &report) || !validReport(report) {
+		return writeConsumption(stdout, diagnostics, "invalid_report", 0, 2)
+	}
+	if category := matchReport(report, expected); category != "" {
+		return writeConsumption(stdout, diagnostics, category, 0, 2)
+	}
+	return writeConsumption(stdout, diagnostics, "", len(expected.Targets), 0)
+}
+
+// Inputs must be regular files. A private, stable report path remains a caller
+// responsibility; these checks are not a file authenticity or race guarantee.
+func readInput(path string, limit int64) ([]byte, error) {
+	info, err := os.Lstat(path)
+	if err != nil || !info.Mode().IsRegular() {
+		return nil, os.ErrInvalid
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = f.Close() }()
+	info, err = f.Stat()
+	if err != nil || !info.Mode().IsRegular() || info.Size() > limit {
+		return nil, os.ErrInvalid
+	}
+	raw, err := io.ReadAll(io.LimitReader(f, limit+1))
+	if err != nil || int64(len(raw)) > limit {
+		return nil, os.ErrInvalid
+	}
+	return raw, nil
+}
+
+func writeConsumption(stdout, diagnostics io.Writer, category string, count, code int) int {
+	r := consumption{Version: 1, Status: "matched", CheckedTargets: count}
+	if category != "" {
+		r.Status, r.Category = "not_matched", &category
+	}
+	raw, err := json.Marshal(r)
+	if err == nil {
+		raw = append(raw, '\n')
+		var n int
+		n, err = stdout.Write(raw)
+		if err == nil && n != len(raw) {
+			err = io.ErrShortWrite
+		}
+	}
+	if err != nil {
+		_, _ = fmt.Fprintln(diagnostics, "consume-query-report: cannot write result")
+		return 70
+	}
+	return code
+}
