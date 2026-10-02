@@ -1,0 +1,2016 @@
+{
+  "schema_version": 1,
+  "production_base": "267d2034d993a27ea389b070f047a30dce516dc9",
+  "node_corpus_commit": "3a4131e63881058b6ce2ee81d3a41d0033fafc99",
+  "method": "Same added test and benchmark harness, toolchain and host; only the two production hash files differ between measured versions. Five 500-ms samples per operation, CPU parallelism 1, ordinary non-race builds, no competing tests or builds. Repeated retained-state reads normally use filesystem caching. Hardware identity is omitted.",
+  "harness_sha256": {
+    "internal/chain/envelope_hash_contract_test.go": "c6811e6205ff374a6bc792bc25f7314106ca20be02bd7ac3783b1d7dba81842c",
+    "internal/conformance/envelope_benchmark_test.go": "a08f16ca83668abab39fe0415ce91fa62354aca9b7ae95a4a6485c541105c359",
+    "tools/offline-pilot/manifest.go": "4ca301ea8d62df008f5c6ffb932a013b22e6266948de29a223198b38195c31ff"
+  },
+  "source_fingerprint_scope": "go.mod, go.sum, and Go/JSON/module files recursively under cmd, internal and tools. Relative paths and contents are length-prefixed with uint64BE in lexical path order. Docs and CI configuration are outside this scope.",
+  "versions": [
+    {
+      "schema_version": 1,
+      "phase": "before",
+      "recorded_at": "2026-10-02T13:53:39.531384+00:00",
+      "production_base": "267d2034d993a27ea389b070f047a30dce516dc9",
+      "checkout_revision": "267d2034d993a27ea389b070f047a30dce516dc9",
+      "checkout_modified": true,
+      "source_input_sha256": "22484f628894c92fae4c0cd27e9137d880b78bec8804566bd4e27f015f334da3",
+      "production_sha256": {
+        "internal/chain/header.go": "cd289ef259ad9274d3f7d41844d5648b1c7d1817527f7d7b9e35333bf9397a98",
+        "internal/chain/account_block.go": "6208b21d6e1f64efb088cffcaefa5c434576af1cb4d0d38e1517475771ca0bfe"
+      },
+      "toolchain": "go version go1.25.14 darwin/arm64",
+      "os": "darwin",
+      "architecture": "arm64",
+      "cpu_parallelism": 1,
+      "race_enabled": false,
+      "command": [
+        "go",
+        "test",
+        "-run",
+        "^$",
+        "-bench",
+        "^(BenchmarkEnvelopeHash|BenchmarkNativeClient|BenchmarkRetainedCapacity)$",
+        "-benchmem",
+        "-cpu=1",
+        "-benchtime=500ms",
+        "-count=5",
+        "./internal/conformance"
+      ],
+      "duration_seconds": 73.74641441600001,
+      "samples": [
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV1",
+          "iterations": 1487302,
+          "ns_per_op": 398.7,
+          "bytes_per_op": 392,
+          "allocations_per_op": 6
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV1",
+          "iterations": 1484722,
+          "ns_per_op": 399.2,
+          "bytes_per_op": 392,
+          "allocations_per_op": 6
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV1",
+          "iterations": 1503922,
+          "ns_per_op": 397.6,
+          "bytes_per_op": 392,
+          "allocations_per_op": 6
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV1",
+          "iterations": 1493769,
+          "ns_per_op": 406.8,
+          "bytes_per_op": 392,
+          "allocations_per_op": 6
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV1",
+          "iterations": 1485680,
+          "ns_per_op": 400.8,
+          "bytes_per_op": 392,
+          "allocations_per_op": 6
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV2",
+          "iterations": 1510509,
+          "ns_per_op": 394.8,
+          "bytes_per_op": 392,
+          "allocations_per_op": 6
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV2",
+          "iterations": 1504040,
+          "ns_per_op": 395.7,
+          "bytes_per_op": 392,
+          "allocations_per_op": 6
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV2",
+          "iterations": 1494703,
+          "ns_per_op": 397.5,
+          "bytes_per_op": 392,
+          "allocations_per_op": 6
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV2",
+          "iterations": 1528560,
+          "ns_per_op": 400.4,
+          "bytes_per_op": 392,
+          "allocations_per_op": 6
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV2",
+          "iterations": 1505578,
+          "ns_per_op": 397.6,
+          "bytes_per_op": 392,
+          "allocations_per_op": 6
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountZero",
+          "iterations": 938079,
+          "ns_per_op": 666.6,
+          "bytes_per_op": 1080,
+          "allocations_per_op": 9
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountZero",
+          "iterations": 1000000,
+          "ns_per_op": 638.5,
+          "bytes_per_op": 1080,
+          "allocations_per_op": 9
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountZero",
+          "iterations": 971581,
+          "ns_per_op": 638.2,
+          "bytes_per_op": 1080,
+          "allocations_per_op": 9
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountZero",
+          "iterations": 980551,
+          "ns_per_op": 636.8,
+          "bytes_per_op": 1080,
+          "allocations_per_op": 9
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountZero",
+          "iterations": 998197,
+          "ns_per_op": 636.1,
+          "bytes_per_op": 1080,
+          "allocations_per_op": 9
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountMax255",
+          "iterations": 966780,
+          "ns_per_op": 665.7,
+          "bytes_per_op": 1112,
+          "allocations_per_op": 10
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountMax255",
+          "iterations": 817596,
+          "ns_per_op": 682.0,
+          "bytes_per_op": 1112,
+          "allocations_per_op": 10
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountMax255",
+          "iterations": 895884,
+          "ns_per_op": 678.3,
+          "bytes_per_op": 1112,
+          "allocations_per_op": 10
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountMax255",
+          "iterations": 957828,
+          "ns_per_op": 671.0,
+          "bytes_per_op": 1112,
+          "allocations_per_op": 10
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountMax255",
+          "iterations": 943903,
+          "ns_per_op": 650.3,
+          "bytes_per_op": 1112,
+          "allocations_per_op": 10
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/claimed_key",
+          "iterations": 2224,
+          "ns_per_op": 268213.0,
+          "bytes_per_op": 8744,
+          "allocations_per_op": 77
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/claimed_key",
+          "iterations": 2217,
+          "ns_per_op": 269065.0,
+          "bytes_per_op": 8744,
+          "allocations_per_op": 77
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/claimed_key",
+          "iterations": 2260,
+          "ns_per_op": 270409.0,
+          "bytes_per_op": 8744,
+          "allocations_per_op": 77
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/claimed_key",
+          "iterations": 2229,
+          "ns_per_op": 270232.0,
+          "bytes_per_op": 8744,
+          "allocations_per_op": 77
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/claimed_key",
+          "iterations": 2274,
+          "ns_per_op": 265781.0,
+          "bytes_per_op": 8744,
+          "allocations_per_op": 77
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/operator_schedule",
+          "iterations": 2206,
+          "ns_per_op": 271405.0,
+          "bytes_per_op": 9144,
+          "allocations_per_op": 89
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/operator_schedule",
+          "iterations": 2258,
+          "ns_per_op": 273254.0,
+          "bytes_per_op": 9144,
+          "allocations_per_op": 89
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/operator_schedule",
+          "iterations": 2226,
+          "ns_per_op": 268699.0,
+          "bytes_per_op": 9144,
+          "allocations_per_op": 89
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/operator_schedule",
+          "iterations": 2256,
+          "ns_per_op": 268236.0,
+          "bytes_per_op": 9144,
+          "allocations_per_op": 89
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/operator_schedule",
+          "iterations": 2262,
+          "ns_per_op": 272151.0,
+          "bytes_per_op": 9144,
+          "allocations_per_op": 89
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1V2/operator_profile",
+          "iterations": 3262,
+          "ns_per_op": 178875.0,
+          "bytes_per_op": 7184,
+          "allocations_per_op": 60
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1V2/operator_profile",
+          "iterations": 3168,
+          "ns_per_op": 180531.0,
+          "bytes_per_op": 7184,
+          "allocations_per_op": 60
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1V2/operator_profile",
+          "iterations": 3442,
+          "ns_per_op": 178122.0,
+          "bytes_per_op": 7184,
+          "allocations_per_op": 60
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1V2/operator_profile",
+          "iterations": 3339,
+          "ns_per_op": 179603.0,
+          "bytes_per_op": 7184,
+          "allocations_per_op": 60
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1V2/operator_profile",
+          "iterations": 3358,
+          "ns_per_op": 178271.0,
+          "bytes_per_op": 7184,
+          "allocations_per_op": 60
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/CommitmentFlat",
+          "iterations": 533358,
+          "ns_per_op": 1125.0,
+          "bytes_per_op": 384,
+          "allocations_per_op": 10
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/CommitmentFlat",
+          "iterations": 549186,
+          "ns_per_op": 1121.0,
+          "bytes_per_op": 384,
+          "allocations_per_op": 10
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/CommitmentFlat",
+          "iterations": 523758,
+          "ns_per_op": 1139.0,
+          "bytes_per_op": 384,
+          "allocations_per_op": 10
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/CommitmentFlat",
+          "iterations": 530767,
+          "ns_per_op": 1124.0,
+          "bytes_per_op": 384,
+          "allocations_per_op": 10
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/CommitmentFlat",
+          "iterations": 539307,
+          "ns_per_op": 1139.0,
+          "bytes_per_op": 384,
+          "allocations_per_op": 10
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/ContractSegment",
+          "iterations": 46077,
+          "ns_per_op": 13149.0,
+          "bytes_per_op": 10960,
+          "allocations_per_op": 139
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/ContractSegment",
+          "iterations": 46736,
+          "ns_per_op": 13169.0,
+          "bytes_per_op": 10960,
+          "allocations_per_op": 139
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/ContractSegment",
+          "iterations": 47793,
+          "ns_per_op": 12915.0,
+          "bytes_per_op": 10960,
+          "allocations_per_op": 139
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/ContractSegment",
+          "iterations": 45289,
+          "ns_per_op": 13524.0,
+          "bytes_per_op": 10960,
+          "allocations_per_op": 139
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/ContractSegment",
+          "iterations": 45249,
+          "ns_per_op": 13204.0,
+          "bytes_per_op": 10960,
+          "allocations_per_op": 139
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/TrustedResume/operator_schedule",
+          "iterations": 1668,
+          "ns_per_op": 338454.0,
+          "bytes_per_op": 45472,
+          "allocations_per_op": 284
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/TrustedResume/operator_schedule",
+          "iterations": 1825,
+          "ns_per_op": 339425.0,
+          "bytes_per_op": 45472,
+          "allocations_per_op": 284
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/TrustedResume/operator_schedule",
+          "iterations": 1794,
+          "ns_per_op": 342461.0,
+          "bytes_per_op": 45472,
+          "allocations_per_op": 284
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/TrustedResume/operator_schedule",
+          "iterations": 1857,
+          "ns_per_op": 343444.0,
+          "bytes_per_op": 45472,
+          "allocations_per_op": 284
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/TrustedResume/operator_schedule",
+          "iterations": 1760,
+          "ns_per_op": 344414.0,
+          "bytes_per_op": 45472,
+          "allocations_per_op": 284
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/RetainedSummary",
+          "iterations": 12211969,
+          "ns_per_op": 47.79,
+          "bytes_per_op": 112,
+          "allocations_per_op": 3
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/RetainedSummary",
+          "iterations": 13475385,
+          "ns_per_op": 45.71,
+          "bytes_per_op": 112,
+          "allocations_per_op": 3
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/RetainedSummary",
+          "iterations": 13572254,
+          "ns_per_op": 46.14,
+          "bytes_per_op": 112,
+          "allocations_per_op": 3
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/RetainedSummary",
+          "iterations": 13379592,
+          "ns_per_op": 44.34,
+          "bytes_per_op": 112,
+          "allocations_per_op": 3
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/RetainedSummary",
+          "iterations": 13562692,
+          "ns_per_op": 76.76,
+          "bytes_per_op": 112,
+          "allocations_per_op": 3
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/VerificationContext",
+          "iterations": 1231654,
+          "ns_per_op": 487.3,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/VerificationContext",
+          "iterations": 1000000,
+          "ns_per_op": 544.4,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/VerificationContext",
+          "iterations": 1000000,
+          "ns_per_op": 501.3,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/VerificationContext",
+          "iterations": 1234424,
+          "ns_per_op": 483.8,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/VerificationContext",
+          "iterations": 1233595,
+          "ns_per_op": 488.2,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/ExtendOne",
+          "iterations": 17793,
+          "ns_per_op": 34155.0,
+          "bytes_per_op": 12616,
+          "allocations_per_op": 57
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/ExtendOne",
+          "iterations": 18010,
+          "ns_per_op": 33598.0,
+          "bytes_per_op": 12616,
+          "allocations_per_op": 57
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/ExtendOne",
+          "iterations": 16692,
+          "ns_per_op": 35306.0,
+          "bytes_per_op": 12616,
+          "allocations_per_op": 57
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/ExtendOne",
+          "iterations": 17763,
+          "ns_per_op": 34205.0,
+          "bytes_per_op": 12616,
+          "allocations_per_op": 57
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/ExtendOne",
+          "iterations": 17500,
+          "ns_per_op": 34220.0,
+          "bytes_per_op": 12616,
+          "allocations_per_op": 57
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/CommitmentFlat",
+          "iterations": 582667,
+          "ns_per_op": 1051.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/CommitmentFlat",
+          "iterations": 601892,
+          "ns_per_op": 1052.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/CommitmentFlat",
+          "iterations": 612614,
+          "ns_per_op": 1057.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/CommitmentFlat",
+          "iterations": 608541,
+          "ns_per_op": 1077.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/CommitmentFlat",
+          "iterations": 591243,
+          "ns_per_op": 1045.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/TrustedResume",
+          "iterations": 808,
+          "ns_per_op": 758902.0,
+          "bytes_per_op": 100112,
+          "allocations_per_op": 673
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/TrustedResume",
+          "iterations": 806,
+          "ns_per_op": 749687.0,
+          "bytes_per_op": 100112,
+          "allocations_per_op": 673
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/TrustedResume",
+          "iterations": 801,
+          "ns_per_op": 754711.0,
+          "bytes_per_op": 100112,
+          "allocations_per_op": 673
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/TrustedResume",
+          "iterations": 780,
+          "ns_per_op": 755383.0,
+          "bytes_per_op": 100112,
+          "allocations_per_op": 673
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/TrustedResume",
+          "iterations": 788,
+          "ns_per_op": 751581.0,
+          "bytes_per_op": 100112,
+          "allocations_per_op": 673
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/Save",
+          "iterations": 45,
+          "ns_per_op": 12601929.0,
+          "bytes_per_op": 87176,
+          "allocations_per_op": 375
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/Save",
+          "iterations": 50,
+          "ns_per_op": 12420345.0,
+          "bytes_per_op": 86437,
+          "allocations_per_op": 375
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/Save",
+          "iterations": 43,
+          "ns_per_op": 12630945.0,
+          "bytes_per_op": 86438,
+          "allocations_per_op": 375
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/Save",
+          "iterations": 46,
+          "ns_per_op": 11797774.0,
+          "bytes_per_op": 86438,
+          "allocations_per_op": 375
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/Save",
+          "iterations": 56,
+          "ns_per_op": 11760882.0,
+          "bytes_per_op": 86431,
+          "allocations_per_op": 375
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/ExtendOne",
+          "iterations": 9896,
+          "ns_per_op": 60263.0,
+          "bytes_per_op": 157000,
+          "allocations_per_op": 537
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/ExtendOne",
+          "iterations": 10000,
+          "ns_per_op": 61343.0,
+          "bytes_per_op": 157000,
+          "allocations_per_op": 537
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/ExtendOne",
+          "iterations": 10000,
+          "ns_per_op": 61792.0,
+          "bytes_per_op": 157000,
+          "allocations_per_op": 537
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/ExtendOne",
+          "iterations": 9228,
+          "ns_per_op": 63013.0,
+          "bytes_per_op": 157000,
+          "allocations_per_op": 537
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/ExtendOne",
+          "iterations": 9088,
+          "ns_per_op": 63142.0,
+          "bytes_per_op": 157000,
+          "allocations_per_op": 537
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/CommitmentFlat",
+          "iterations": 200386,
+          "ns_per_op": 3149.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/CommitmentFlat",
+          "iterations": 189104,
+          "ns_per_op": 3207.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/CommitmentFlat",
+          "iterations": 191720,
+          "ns_per_op": 3169.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/CommitmentFlat",
+          "iterations": 191881,
+          "ns_per_op": 3170.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/CommitmentFlat",
+          "iterations": 194218,
+          "ns_per_op": 3167.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/TrustedResume",
+          "iterations": 54,
+          "ns_per_op": 11726867.0,
+          "bytes_per_op": 1455634,
+          "allocations_per_op": 7401
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/TrustedResume",
+          "iterations": 55,
+          "ns_per_op": 11601995.0,
+          "bytes_per_op": 1455635,
+          "allocations_per_op": 7401
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/TrustedResume",
+          "iterations": 52,
+          "ns_per_op": 11702649.0,
+          "bytes_per_op": 1455635,
+          "allocations_per_op": 7401
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/TrustedResume",
+          "iterations": 51,
+          "ns_per_op": 11534426.0,
+          "bytes_per_op": 1455634,
+          "allocations_per_op": 7401
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/TrustedResume",
+          "iterations": 55,
+          "ns_per_op": 11768295.0,
+          "bytes_per_op": 1455634,
+          "allocations_per_op": 7401
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/Save",
+          "iterations": 25,
+          "ns_per_op": 21255333.0,
+          "bytes_per_op": 1277128,
+          "allocations_per_op": 5427
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/Save",
+          "iterations": 28,
+          "ns_per_op": 20913118.0,
+          "bytes_per_op": 1256124,
+          "allocations_per_op": 5426
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/Save",
+          "iterations": 27,
+          "ns_per_op": 21203730.0,
+          "bytes_per_op": 1256130,
+          "allocations_per_op": 5426
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/Save",
+          "iterations": 28,
+          "ns_per_op": 19947016.0,
+          "bytes_per_op": 1256122,
+          "allocations_per_op": 5426
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/Save",
+          "iterations": 28,
+          "ns_per_op": 21263058.0,
+          "bytes_per_op": 1256126,
+          "allocations_per_op": 5426
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/ExtendOne",
+          "iterations": 1168,
+          "ns_per_op": 477121.0,
+          "bytes_per_op": 2491722,
+          "allocations_per_op": 8217
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/ExtendOne",
+          "iterations": 1029,
+          "ns_per_op": 583280.0,
+          "bytes_per_op": 2491727,
+          "allocations_per_op": 8217
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/ExtendOne",
+          "iterations": 1200,
+          "ns_per_op": 503975.0,
+          "bytes_per_op": 2491722,
+          "allocations_per_op": 8217
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/ExtendOne",
+          "iterations": 1143,
+          "ns_per_op": 558189.0,
+          "bytes_per_op": 2491727,
+          "allocations_per_op": 8217
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/ExtendOne",
+          "iterations": 1192,
+          "ns_per_op": 491654.0,
+          "bytes_per_op": 2491722,
+          "allocations_per_op": 8217
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/CommitmentFlat",
+          "iterations": 14701,
+          "ns_per_op": 40988.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/CommitmentFlat",
+          "iterations": 14625,
+          "ns_per_op": 41057.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/CommitmentFlat",
+          "iterations": 14550,
+          "ns_per_op": 41296.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/CommitmentFlat",
+          "iterations": 14694,
+          "ns_per_op": 41052.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/CommitmentFlat",
+          "iterations": 14481,
+          "ns_per_op": 41270.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/TrustedResume",
+          "iterations": 3,
+          "ns_per_op": 181856625.0,
+          "bytes_per_op": 24721320,
+          "allocations_per_op": 114946
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/TrustedResume",
+          "iterations": 3,
+          "ns_per_op": 184503917.0,
+          "bytes_per_op": 24721330,
+          "allocations_per_op": 114946
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/TrustedResume",
+          "iterations": 3,
+          "ns_per_op": 181991236.0,
+          "bytes_per_op": 24721325,
+          "allocations_per_op": 114946
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/TrustedResume",
+          "iterations": 3,
+          "ns_per_op": 179972472.0,
+          "bytes_per_op": 24721330,
+          "allocations_per_op": 114946
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/TrustedResume",
+          "iterations": 3,
+          "ns_per_op": 181806930.0,
+          "bytes_per_op": 24721341,
+          "allocations_per_op": 114946
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/Save",
+          "iterations": 4,
+          "ns_per_op": 153218125.0,
+          "bytes_per_op": 24429802,
+          "allocations_per_op": 86091
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/Save",
+          "iterations": 4,
+          "ns_per_op": 152629229.0,
+          "bytes_per_op": 22332370,
+          "allocations_per_op": 86082
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/Save",
+          "iterations": 4,
+          "ns_per_op": 154004042.0,
+          "bytes_per_op": 22332404,
+          "allocations_per_op": 86083
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/Save",
+          "iterations": 4,
+          "ns_per_op": 152056115.0,
+          "bytes_per_op": 22332370,
+          "allocations_per_op": 86082
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/Save",
+          "iterations": 4,
+          "ns_per_op": 151074771.0,
+          "bytes_per_op": 22332370,
+          "allocations_per_op": 86082
+        }
+      ],
+      "medians": {
+        "BenchmarkEnvelopeHash/AccountMax255": {
+          "ns_per_op": 671.0,
+          "bytes_per_op": 1112,
+          "allocations_per_op": 10
+        },
+        "BenchmarkEnvelopeHash/AccountZero": {
+          "ns_per_op": 638.2,
+          "bytes_per_op": 1080,
+          "allocations_per_op": 9
+        },
+        "BenchmarkEnvelopeHash/HeaderV1": {
+          "ns_per_op": 399.2,
+          "bytes_per_op": 392,
+          "allocations_per_op": 6
+        },
+        "BenchmarkEnvelopeHash/HeaderV2": {
+          "ns_per_op": 397.5,
+          "bytes_per_op": 392,
+          "allocations_per_op": 6
+        },
+        "BenchmarkNativeClient/CommitmentFlat": {
+          "ns_per_op": 1125.0,
+          "bytes_per_op": 384,
+          "allocations_per_op": 10
+        },
+        "BenchmarkNativeClient/ContractSegment": {
+          "ns_per_op": 13169.0,
+          "bytes_per_op": 10960,
+          "allocations_per_op": 139
+        },
+        "BenchmarkNativeClient/HeadersV1/claimed_key": {
+          "ns_per_op": 269065.0,
+          "bytes_per_op": 8744,
+          "allocations_per_op": 77
+        },
+        "BenchmarkNativeClient/HeadersV1/operator_schedule": {
+          "ns_per_op": 271405.0,
+          "bytes_per_op": 9144,
+          "allocations_per_op": 89
+        },
+        "BenchmarkNativeClient/HeadersV1V2/operator_profile": {
+          "ns_per_op": 178875.0,
+          "bytes_per_op": 7184,
+          "allocations_per_op": 60
+        },
+        "BenchmarkNativeClient/RetainedSummary": {
+          "ns_per_op": 46.14,
+          "bytes_per_op": 112,
+          "allocations_per_op": 3
+        },
+        "BenchmarkNativeClient/TrustedResume/operator_schedule": {
+          "ns_per_op": 342461.0,
+          "bytes_per_op": 45472,
+          "allocations_per_op": 284
+        },
+        "BenchmarkNativeClient/VerificationContext": {
+          "ns_per_op": 488.2,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        "BenchmarkRetainedCapacity/K16/CommitmentFlat": {
+          "ns_per_op": 1052.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        "BenchmarkRetainedCapacity/K16/ExtendOne": {
+          "ns_per_op": 34205.0,
+          "bytes_per_op": 12616,
+          "allocations_per_op": 57
+        },
+        "BenchmarkRetainedCapacity/K16/Save": {
+          "ns_per_op": 12420345.0,
+          "bytes_per_op": 86438,
+          "allocations_per_op": 375
+        },
+        "BenchmarkRetainedCapacity/K16/TrustedResume": {
+          "ns_per_op": 754711.0,
+          "bytes_per_op": 100112,
+          "allocations_per_op": 673
+        },
+        "BenchmarkRetainedCapacity/K256/CommitmentFlat": {
+          "ns_per_op": 3169.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        "BenchmarkRetainedCapacity/K256/ExtendOne": {
+          "ns_per_op": 61792.0,
+          "bytes_per_op": 157000,
+          "allocations_per_op": 537
+        },
+        "BenchmarkRetainedCapacity/K256/Save": {
+          "ns_per_op": 21203730.0,
+          "bytes_per_op": 1256126,
+          "allocations_per_op": 5426
+        },
+        "BenchmarkRetainedCapacity/K256/TrustedResume": {
+          "ns_per_op": 11702649.0,
+          "bytes_per_op": 1455634,
+          "allocations_per_op": 7401
+        },
+        "BenchmarkRetainedCapacity/K4096/CommitmentFlat": {
+          "ns_per_op": 41057.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        "BenchmarkRetainedCapacity/K4096/ExtendOne": {
+          "ns_per_op": 503975.0,
+          "bytes_per_op": 2491722,
+          "allocations_per_op": 8217
+        },
+        "BenchmarkRetainedCapacity/K4096/Save": {
+          "ns_per_op": 152629229.0,
+          "bytes_per_op": 22332370,
+          "allocations_per_op": 86082
+        },
+        "BenchmarkRetainedCapacity/K4096/TrustedResume": {
+          "ns_per_op": 181856625.0,
+          "bytes_per_op": 24721330,
+          "allocations_per_op": 114946
+        }
+      },
+      "limitations": [
+        "Local repeated warm-file measurements; no timing thresholds or portable latency claim.",
+        "Allocation volume per operation is not peak heap or resident memory.",
+        "No network throughput, canonicality, activation or finality claim."
+      ]
+    },
+    {
+      "schema_version": 1,
+      "phase": "after",
+      "recorded_at": "2026-10-02T13:54:52.749312+00:00",
+      "production_base": "267d2034d993a27ea389b070f047a30dce516dc9",
+      "checkout_revision": "267d2034d993a27ea389b070f047a30dce516dc9",
+      "checkout_modified": true,
+      "source_input_sha256": "a14b3eb374f6ae4ac46e856309271d22d7537f596b8865aafe0e34b387c7f4e9",
+      "production_sha256": {
+        "internal/chain/header.go": "37666b7f497900b22a474d7708a08bfa95bea33e2907ad6ba72db235265c27bc",
+        "internal/chain/account_block.go": "19b6db8f65edbffca103060ee80cbb62cc656f83e255c6e398b1549d24cb9999"
+      },
+      "toolchain": "go version go1.25.14 darwin/arm64",
+      "os": "darwin",
+      "architecture": "arm64",
+      "cpu_parallelism": 1,
+      "race_enabled": false,
+      "command": [
+        "go",
+        "test",
+        "-run",
+        "^$",
+        "-bench",
+        "^(BenchmarkEnvelopeHash|BenchmarkNativeClient|BenchmarkRetainedCapacity)$",
+        "-benchmem",
+        "-cpu=1",
+        "-benchtime=500ms",
+        "-count=5",
+        "./internal/conformance"
+      ],
+      "duration_seconds": 73.15418737499999,
+      "samples": [
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV1",
+          "iterations": 2046190,
+          "ns_per_op": 298.6,
+          "bytes_per_op": 0,
+          "allocations_per_op": 0
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV1",
+          "iterations": 2088717,
+          "ns_per_op": 291.9,
+          "bytes_per_op": 0,
+          "allocations_per_op": 0
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV1",
+          "iterations": 2077615,
+          "ns_per_op": 290.0,
+          "bytes_per_op": 0,
+          "allocations_per_op": 0
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV1",
+          "iterations": 2012124,
+          "ns_per_op": 296.1,
+          "bytes_per_op": 0,
+          "allocations_per_op": 0
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV1",
+          "iterations": 2052100,
+          "ns_per_op": 289.2,
+          "bytes_per_op": 0,
+          "allocations_per_op": 0
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV2",
+          "iterations": 2035252,
+          "ns_per_op": 295.1,
+          "bytes_per_op": 0,
+          "allocations_per_op": 0
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV2",
+          "iterations": 2069802,
+          "ns_per_op": 292.6,
+          "bytes_per_op": 0,
+          "allocations_per_op": 0
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV2",
+          "iterations": 2048084,
+          "ns_per_op": 298.1,
+          "bytes_per_op": 0,
+          "allocations_per_op": 0
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV2",
+          "iterations": 2034152,
+          "ns_per_op": 294.6,
+          "bytes_per_op": 0,
+          "allocations_per_op": 0
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/HeaderV2",
+          "iterations": 2008375,
+          "ns_per_op": 294.6,
+          "bytes_per_op": 0,
+          "allocations_per_op": 0
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountZero",
+          "iterations": 1364866,
+          "ns_per_op": 439.9,
+          "bytes_per_op": 32,
+          "allocations_per_op": 1
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountZero",
+          "iterations": 1371174,
+          "ns_per_op": 440.6,
+          "bytes_per_op": 32,
+          "allocations_per_op": 1
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountZero",
+          "iterations": 1362465,
+          "ns_per_op": 437.5,
+          "bytes_per_op": 32,
+          "allocations_per_op": 1
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountZero",
+          "iterations": 1364940,
+          "ns_per_op": 438.5,
+          "bytes_per_op": 32,
+          "allocations_per_op": 1
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountZero",
+          "iterations": 1354096,
+          "ns_per_op": 442.3,
+          "bytes_per_op": 32,
+          "allocations_per_op": 1
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountMax255",
+          "iterations": 1264821,
+          "ns_per_op": 476.7,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountMax255",
+          "iterations": 1248088,
+          "ns_per_op": 479.1,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountMax255",
+          "iterations": 1262233,
+          "ns_per_op": 472.0,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountMax255",
+          "iterations": 1270681,
+          "ns_per_op": 469.4,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        {
+          "benchmark": "BenchmarkEnvelopeHash/AccountMax255",
+          "iterations": 1283922,
+          "ns_per_op": 465.9,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/claimed_key",
+          "iterations": 2216,
+          "ns_per_op": 271264.0,
+          "bytes_per_op": 5216,
+          "allocations_per_op": 23
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/claimed_key",
+          "iterations": 2253,
+          "ns_per_op": 267576.0,
+          "bytes_per_op": 5216,
+          "allocations_per_op": 23
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/claimed_key",
+          "iterations": 2284,
+          "ns_per_op": 266894.0,
+          "bytes_per_op": 5216,
+          "allocations_per_op": 23
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/claimed_key",
+          "iterations": 2164,
+          "ns_per_op": 268437.0,
+          "bytes_per_op": 5216,
+          "allocations_per_op": 23
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/claimed_key",
+          "iterations": 2137,
+          "ns_per_op": 269486.0,
+          "bytes_per_op": 5216,
+          "allocations_per_op": 23
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/operator_schedule",
+          "iterations": 2170,
+          "ns_per_op": 269329.0,
+          "bytes_per_op": 5616,
+          "allocations_per_op": 35
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/operator_schedule",
+          "iterations": 2152,
+          "ns_per_op": 269061.0,
+          "bytes_per_op": 5616,
+          "allocations_per_op": 35
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/operator_schedule",
+          "iterations": 2299,
+          "ns_per_op": 267517.0,
+          "bytes_per_op": 5616,
+          "allocations_per_op": 35
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/operator_schedule",
+          "iterations": 2212,
+          "ns_per_op": 269984.0,
+          "bytes_per_op": 5616,
+          "allocations_per_op": 35
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1/operator_schedule",
+          "iterations": 2256,
+          "ns_per_op": 269173.0,
+          "bytes_per_op": 5616,
+          "allocations_per_op": 35
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1V2/operator_profile",
+          "iterations": 3369,
+          "ns_per_op": 178700.0,
+          "bytes_per_op": 4832,
+          "allocations_per_op": 24
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1V2/operator_profile",
+          "iterations": 3142,
+          "ns_per_op": 178856.0,
+          "bytes_per_op": 4832,
+          "allocations_per_op": 24
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1V2/operator_profile",
+          "iterations": 3177,
+          "ns_per_op": 178599.0,
+          "bytes_per_op": 4832,
+          "allocations_per_op": 24
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1V2/operator_profile",
+          "iterations": 3429,
+          "ns_per_op": 177938.0,
+          "bytes_per_op": 4832,
+          "allocations_per_op": 24
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/HeadersV1V2/operator_profile",
+          "iterations": 3438,
+          "ns_per_op": 179499.0,
+          "bytes_per_op": 4832,
+          "allocations_per_op": 24
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/CommitmentFlat",
+          "iterations": 548983,
+          "ns_per_op": 1141.0,
+          "bytes_per_op": 384,
+          "allocations_per_op": 10
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/CommitmentFlat",
+          "iterations": 524976,
+          "ns_per_op": 1129.0,
+          "bytes_per_op": 384,
+          "allocations_per_op": 10
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/CommitmentFlat",
+          "iterations": 533109,
+          "ns_per_op": 1111.0,
+          "bytes_per_op": 384,
+          "allocations_per_op": 10
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/CommitmentFlat",
+          "iterations": 576943,
+          "ns_per_op": 1126.0,
+          "bytes_per_op": 384,
+          "allocations_per_op": 10
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/CommitmentFlat",
+          "iterations": 549703,
+          "ns_per_op": 1120.0,
+          "bytes_per_op": 384,
+          "allocations_per_op": 10
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/ContractSegment",
+          "iterations": 49366,
+          "ns_per_op": 11930.0,
+          "bytes_per_op": 5720,
+          "allocations_per_op": 99
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/ContractSegment",
+          "iterations": 50425,
+          "ns_per_op": 11802.0,
+          "bytes_per_op": 5720,
+          "allocations_per_op": 99
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/ContractSegment",
+          "iterations": 50434,
+          "ns_per_op": 12232.0,
+          "bytes_per_op": 5720,
+          "allocations_per_op": 99
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/ContractSegment",
+          "iterations": 48892,
+          "ns_per_op": 11973.0,
+          "bytes_per_op": 5720,
+          "allocations_per_op": 99
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/ContractSegment",
+          "iterations": 52161,
+          "ns_per_op": 11662.0,
+          "bytes_per_op": 5720,
+          "allocations_per_op": 99
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/TrustedResume/operator_schedule",
+          "iterations": 1771,
+          "ns_per_op": 334735.0,
+          "bytes_per_op": 42728,
+          "allocations_per_op": 242
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/TrustedResume/operator_schedule",
+          "iterations": 1694,
+          "ns_per_op": 336174.0,
+          "bytes_per_op": 42728,
+          "allocations_per_op": 242
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/TrustedResume/operator_schedule",
+          "iterations": 1867,
+          "ns_per_op": 330505.0,
+          "bytes_per_op": 42728,
+          "allocations_per_op": 242
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/TrustedResume/operator_schedule",
+          "iterations": 1808,
+          "ns_per_op": 336661.0,
+          "bytes_per_op": 42728,
+          "allocations_per_op": 242
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/TrustedResume/operator_schedule",
+          "iterations": 1742,
+          "ns_per_op": 338367.0,
+          "bytes_per_op": 42728,
+          "allocations_per_op": 242
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/RetainedSummary",
+          "iterations": 13307580,
+          "ns_per_op": 43.49,
+          "bytes_per_op": 112,
+          "allocations_per_op": 3
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/RetainedSummary",
+          "iterations": 13809624,
+          "ns_per_op": 44.9,
+          "bytes_per_op": 112,
+          "allocations_per_op": 3
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/RetainedSummary",
+          "iterations": 14114200,
+          "ns_per_op": 44.55,
+          "bytes_per_op": 112,
+          "allocations_per_op": 3
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/RetainedSummary",
+          "iterations": 13562539,
+          "ns_per_op": 43.48,
+          "bytes_per_op": 112,
+          "allocations_per_op": 3
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/RetainedSummary",
+          "iterations": 13801471,
+          "ns_per_op": 43.21,
+          "bytes_per_op": 112,
+          "allocations_per_op": 3
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/VerificationContext",
+          "iterations": 1230561,
+          "ns_per_op": 487.7,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/VerificationContext",
+          "iterations": 1220913,
+          "ns_per_op": 489.7,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/VerificationContext",
+          "iterations": 1242730,
+          "ns_per_op": 482.6,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/VerificationContext",
+          "iterations": 1233214,
+          "ns_per_op": 485.8,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        {
+          "benchmark": "BenchmarkNativeClient/VerificationContext",
+          "iterations": 1243195,
+          "ns_per_op": 484.6,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/ExtendOne",
+          "iterations": 17611,
+          "ns_per_op": 33934.0,
+          "bytes_per_op": 12224,
+          "allocations_per_op": 51
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/ExtendOne",
+          "iterations": 17887,
+          "ns_per_op": 33833.0,
+          "bytes_per_op": 12224,
+          "allocations_per_op": 51
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/ExtendOne",
+          "iterations": 17845,
+          "ns_per_op": 33824.0,
+          "bytes_per_op": 12224,
+          "allocations_per_op": 51
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/ExtendOne",
+          "iterations": 17426,
+          "ns_per_op": 34032.0,
+          "bytes_per_op": 12224,
+          "allocations_per_op": 51
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/ExtendOne",
+          "iterations": 17538,
+          "ns_per_op": 33862.0,
+          "bytes_per_op": 12224,
+          "allocations_per_op": 51
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/CommitmentFlat",
+          "iterations": 603411,
+          "ns_per_op": 1066.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/CommitmentFlat",
+          "iterations": 605636,
+          "ns_per_op": 1067.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/CommitmentFlat",
+          "iterations": 589772,
+          "ns_per_op": 1058.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/CommitmentFlat",
+          "iterations": 601878,
+          "ns_per_op": 1093.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/CommitmentFlat",
+          "iterations": 587614,
+          "ns_per_op": 1067.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/TrustedResume",
+          "iterations": 808,
+          "ns_per_op": 747670.0,
+          "bytes_per_op": 93840,
+          "allocations_per_op": 577
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/TrustedResume",
+          "iterations": 823,
+          "ns_per_op": 743793.0,
+          "bytes_per_op": 93840,
+          "allocations_per_op": 577
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/TrustedResume",
+          "iterations": 824,
+          "ns_per_op": 748224.0,
+          "bytes_per_op": 93840,
+          "allocations_per_op": 577
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/TrustedResume",
+          "iterations": 813,
+          "ns_per_op": 736859.0,
+          "bytes_per_op": 93840,
+          "allocations_per_op": 577
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/TrustedResume",
+          "iterations": 830,
+          "ns_per_op": 742538.0,
+          "bytes_per_op": 93840,
+          "allocations_per_op": 577
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/Save",
+          "iterations": 45,
+          "ns_per_op": 13006166.0,
+          "bytes_per_op": 80922,
+          "allocations_per_op": 279
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/Save",
+          "iterations": 43,
+          "ns_per_op": 13216159.0,
+          "bytes_per_op": 80185,
+          "allocations_per_op": 279
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/Save",
+          "iterations": 45,
+          "ns_per_op": 13039754.0,
+          "bytes_per_op": 80184,
+          "allocations_per_op": 279
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/Save",
+          "iterations": 48,
+          "ns_per_op": 12177438.0,
+          "bytes_per_op": 80183,
+          "allocations_per_op": 279
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K16/Save",
+          "iterations": 46,
+          "ns_per_op": 12943919.0,
+          "bytes_per_op": 80184,
+          "allocations_per_op": 279
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/ExtendOne",
+          "iterations": 9916,
+          "ns_per_op": 60460.0,
+          "bytes_per_op": 156608,
+          "allocations_per_op": 531
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/ExtendOne",
+          "iterations": 8685,
+          "ns_per_op": 62978.0,
+          "bytes_per_op": 156608,
+          "allocations_per_op": 531
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/ExtendOne",
+          "iterations": 10000,
+          "ns_per_op": 65453.0,
+          "bytes_per_op": 156608,
+          "allocations_per_op": 531
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/ExtendOne",
+          "iterations": 8239,
+          "ns_per_op": 107226.0,
+          "bytes_per_op": 156608,
+          "allocations_per_op": 531
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/ExtendOne",
+          "iterations": 10000,
+          "ns_per_op": 61854.0,
+          "bytes_per_op": 156608,
+          "allocations_per_op": 531
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/CommitmentFlat",
+          "iterations": 187855,
+          "ns_per_op": 3173.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/CommitmentFlat",
+          "iterations": 187726,
+          "ns_per_op": 3174.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/CommitmentFlat",
+          "iterations": 188719,
+          "ns_per_op": 3227.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/CommitmentFlat",
+          "iterations": 197337,
+          "ns_per_op": 3155.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/CommitmentFlat",
+          "iterations": 187798,
+          "ns_per_op": 3207.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/TrustedResume",
+          "iterations": 50,
+          "ns_per_op": 11442459.0,
+          "bytes_per_op": 1355281,
+          "allocations_per_op": 5865
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/TrustedResume",
+          "iterations": 52,
+          "ns_per_op": 11596859.0,
+          "bytes_per_op": 1355282,
+          "allocations_per_op": 5865
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/TrustedResume",
+          "iterations": 54,
+          "ns_per_op": 11501128.0,
+          "bytes_per_op": 1355282,
+          "allocations_per_op": 5865
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/TrustedResume",
+          "iterations": 50,
+          "ns_per_op": 11587155.0,
+          "bytes_per_op": 1355282,
+          "allocations_per_op": 5865
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/TrustedResume",
+          "iterations": 50,
+          "ns_per_op": 11585549.0,
+          "bytes_per_op": 1355281,
+          "allocations_per_op": 5865
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/Save",
+          "iterations": 28,
+          "ns_per_op": 19922522.0,
+          "bytes_per_op": 1174508,
+          "allocations_per_op": 3890
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/Save",
+          "iterations": 28,
+          "ns_per_op": 21022539.0,
+          "bytes_per_op": 1155772,
+          "allocations_per_op": 3890
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/Save",
+          "iterations": 26,
+          "ns_per_op": 20834040.0,
+          "bytes_per_op": 1155771,
+          "allocations_per_op": 3890
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/Save",
+          "iterations": 28,
+          "ns_per_op": 21439403.0,
+          "bytes_per_op": 1155772,
+          "allocations_per_op": 3890
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K256/Save",
+          "iterations": 28,
+          "ns_per_op": 21032024.0,
+          "bytes_per_op": 1155761,
+          "allocations_per_op": 3889
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/ExtendOne",
+          "iterations": 1252,
+          "ns_per_op": 510187.0,
+          "bytes_per_op": 2491328,
+          "allocations_per_op": 8211
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/ExtendOne",
+          "iterations": 1135,
+          "ns_per_op": 543050.0,
+          "bytes_per_op": 2491328,
+          "allocations_per_op": 8211
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/ExtendOne",
+          "iterations": 1101,
+          "ns_per_op": 512990.0,
+          "bytes_per_op": 2491328,
+          "allocations_per_op": 8211
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/ExtendOne",
+          "iterations": 1244,
+          "ns_per_op": 487798.0,
+          "bytes_per_op": 2491328,
+          "allocations_per_op": 8211
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/ExtendOne",
+          "iterations": 1188,
+          "ns_per_op": 509312.0,
+          "bytes_per_op": 2491328,
+          "allocations_per_op": 8211
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/CommitmentFlat",
+          "iterations": 14610,
+          "ns_per_op": 40939.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/CommitmentFlat",
+          "iterations": 14466,
+          "ns_per_op": 41178.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/CommitmentFlat",
+          "iterations": 14478,
+          "ns_per_op": 41672.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/CommitmentFlat",
+          "iterations": 14816,
+          "ns_per_op": 40848.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/CommitmentFlat",
+          "iterations": 14524,
+          "ns_per_op": 41072.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/TrustedResume",
+          "iterations": 3,
+          "ns_per_op": 183660375.0,
+          "bytes_per_op": 23115693,
+          "allocations_per_op": 90370
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/TrustedResume",
+          "iterations": 3,
+          "ns_per_op": 179015403.0,
+          "bytes_per_op": 23115693,
+          "allocations_per_op": 90370
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/TrustedResume",
+          "iterations": 3,
+          "ns_per_op": 179540222.0,
+          "bytes_per_op": 23115688,
+          "allocations_per_op": 90370
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/TrustedResume",
+          "iterations": 3,
+          "ns_per_op": 180442847.0,
+          "bytes_per_op": 23115693,
+          "allocations_per_op": 90370
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/TrustedResume",
+          "iterations": 3,
+          "ns_per_op": 180046028.0,
+          "bytes_per_op": 23115693,
+          "allocations_per_op": 90370
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/Save",
+          "iterations": 4,
+          "ns_per_op": 153237479.0,
+          "bytes_per_op": 22824104,
+          "allocations_per_op": 61513
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/Save",
+          "iterations": 4,
+          "ns_per_op": 150484500.0,
+          "bytes_per_op": 20726780,
+          "allocations_per_op": 61506
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/Save",
+          "iterations": 4,
+          "ns_per_op": 150709167.0,
+          "bytes_per_op": 20726780,
+          "allocations_per_op": 61506
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/Save",
+          "iterations": 4,
+          "ns_per_op": 150016792.0,
+          "bytes_per_op": 20726780,
+          "allocations_per_op": 61506
+        },
+        {
+          "benchmark": "BenchmarkRetainedCapacity/K4096/Save",
+          "iterations": 4,
+          "ns_per_op": 151875156.0,
+          "bytes_per_op": 20726780,
+          "allocations_per_op": 61506
+        }
+      ],
+      "medians": {
+        "BenchmarkEnvelopeHash/AccountMax255": {
+          "ns_per_op": 472.0,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        "BenchmarkEnvelopeHash/AccountZero": {
+          "ns_per_op": 439.9,
+          "bytes_per_op": 32,
+          "allocations_per_op": 1
+        },
+        "BenchmarkEnvelopeHash/HeaderV1": {
+          "ns_per_op": 291.9,
+          "bytes_per_op": 0,
+          "allocations_per_op": 0
+        },
+        "BenchmarkEnvelopeHash/HeaderV2": {
+          "ns_per_op": 294.6,
+          "bytes_per_op": 0,
+          "allocations_per_op": 0
+        },
+        "BenchmarkNativeClient/CommitmentFlat": {
+          "ns_per_op": 1126.0,
+          "bytes_per_op": 384,
+          "allocations_per_op": 10
+        },
+        "BenchmarkNativeClient/ContractSegment": {
+          "ns_per_op": 11930.0,
+          "bytes_per_op": 5720,
+          "allocations_per_op": 99
+        },
+        "BenchmarkNativeClient/HeadersV1/claimed_key": {
+          "ns_per_op": 268437.0,
+          "bytes_per_op": 5216,
+          "allocations_per_op": 23
+        },
+        "BenchmarkNativeClient/HeadersV1/operator_schedule": {
+          "ns_per_op": 269173.0,
+          "bytes_per_op": 5616,
+          "allocations_per_op": 35
+        },
+        "BenchmarkNativeClient/HeadersV1V2/operator_profile": {
+          "ns_per_op": 178700.0,
+          "bytes_per_op": 4832,
+          "allocations_per_op": 24
+        },
+        "BenchmarkNativeClient/RetainedSummary": {
+          "ns_per_op": 43.49,
+          "bytes_per_op": 112,
+          "allocations_per_op": 3
+        },
+        "BenchmarkNativeClient/TrustedResume/operator_schedule": {
+          "ns_per_op": 336174.0,
+          "bytes_per_op": 42728,
+          "allocations_per_op": 242
+        },
+        "BenchmarkNativeClient/VerificationContext": {
+          "ns_per_op": 485.8,
+          "bytes_per_op": 64,
+          "allocations_per_op": 2
+        },
+        "BenchmarkRetainedCapacity/K16/CommitmentFlat": {
+          "ns_per_op": 1067.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        "BenchmarkRetainedCapacity/K16/ExtendOne": {
+          "ns_per_op": 33862.0,
+          "bytes_per_op": 12224,
+          "allocations_per_op": 51
+        },
+        "BenchmarkRetainedCapacity/K16/Save": {
+          "ns_per_op": 13006166.0,
+          "bytes_per_op": 80184,
+          "allocations_per_op": 279
+        },
+        "BenchmarkRetainedCapacity/K16/TrustedResume": {
+          "ns_per_op": 743793.0,
+          "bytes_per_op": 93840,
+          "allocations_per_op": 577
+        },
+        "BenchmarkRetainedCapacity/K256/CommitmentFlat": {
+          "ns_per_op": 3174.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        "BenchmarkRetainedCapacity/K256/ExtendOne": {
+          "ns_per_op": 62978.0,
+          "bytes_per_op": 156608,
+          "allocations_per_op": 531
+        },
+        "BenchmarkRetainedCapacity/K256/Save": {
+          "ns_per_op": 21022539.0,
+          "bytes_per_op": 1155772,
+          "allocations_per_op": 3890
+        },
+        "BenchmarkRetainedCapacity/K256/TrustedResume": {
+          "ns_per_op": 11585549.0,
+          "bytes_per_op": 1355282,
+          "allocations_per_op": 5865
+        },
+        "BenchmarkRetainedCapacity/K4096/CommitmentFlat": {
+          "ns_per_op": 41072.0,
+          "bytes_per_op": 448,
+          "allocations_per_op": 11
+        },
+        "BenchmarkRetainedCapacity/K4096/ExtendOne": {
+          "ns_per_op": 510187.0,
+          "bytes_per_op": 2491328,
+          "allocations_per_op": 8211
+        },
+        "BenchmarkRetainedCapacity/K4096/Save": {
+          "ns_per_op": 150709167.0,
+          "bytes_per_op": 20726780,
+          "allocations_per_op": 61506
+        },
+        "BenchmarkRetainedCapacity/K4096/TrustedResume": {
+          "ns_per_op": 180046028.0,
+          "bytes_per_op": 23115693,
+          "allocations_per_op": 90370
+        }
+      },
+      "limitations": [
+        "Local repeated warm-file measurements; no timing thresholds or portable latency claim.",
+        "Allocation volume per operation is not peak heap or resident memory.",
+        "No network throughput, canonicality, activation or finality claim."
+      ]
+    }
+  ]
+}

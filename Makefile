@@ -20,7 +20,7 @@ test:
 	go test ./...
 
 bench:
-	go test -run '^$$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering)$$' -benchmem -count=5 ./internal/conformance
+	go test -run '^$$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$$' -benchmem -count=5 ./internal/conformance
 
 vet:
 	go vet ./...

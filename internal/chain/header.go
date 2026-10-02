@@ -79,7 +79,9 @@ type Header struct {
 // retained subset only, matching the spec's "verifier-required subset"
 // intent (spec/spv-implementation-guide.md §3.1).
 func (h *Header) ComputeHash() Hash {
-	var buf []byte
+	// The longest supported envelope is 176 bytes: four hashes and six uint64s.
+	var preimage [4*HashSize + 6*8]byte
+	buf := preimage[:0]
 	buf = appendUint64(buf, h.Version)
 	buf = appendUint64(buf, h.ChainIdentifier)
 	buf = append(buf, h.PreviousHash.Bytes()...)
@@ -93,11 +95,7 @@ func (h *Header) ComputeHash() Hash {
 		buf = appendUint64(buf, h.NextWorkPrice)
 	}
 
-	d := sha3.New256()
-	d.Write(buf)
-	var out Hash
-	copy(out[:], d.Sum(nil))
-	return out
+	return Hash(sha3.Sum256(buf))
 }
 
 // UnmarshalJSON requires explicit prices for v2. Missing or null prices must

@@ -29,7 +29,7 @@ retain their own timeouts. This tool is not a process-tree supervisor.
 
 ## Selected coverage
 
-The 37 named scenarios are defined in
+The 38 named scenarios are defined in
 [`manifest.go`](../tools/offline-pilot/manifest.go). They cover:
 
 - Build identity, collection, retained commitment/segment queries, trusted
@@ -59,6 +59,10 @@ The 37 named scenarios are defined in
   Windows uses a retained-handle peak working set, with a distinct source enum.
 - Content-hash serialization against an independent byte-concatenation oracle,
   full-width field boundaries, duplicates and shared immutable reads.
+- Signed momentum/account envelopes against fixed-offset byte oracles, including
+  the v2 price suffix, full-width integers, nil/negative/wide amounts, unsigned
+  fields and shared immutable reads. Invalid scalar cases only exercise the
+  low-level hash primitive; verification still rejects them.
 - Saved-state read bounds with stale size hints, short reads, simultaneous
   data/errors, malformed suffixes and duplicate fields.
 - Proof-file allocation hints against the former bounded reader, preserving
