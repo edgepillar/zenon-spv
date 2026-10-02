@@ -14,6 +14,7 @@ import (
 
 // Measure only the ordinary report-consumer process. Node-derived workload
 // expansion, verifier execution, file capture and compilation happen first.
+// Preserve every ordered observation; do not retry failures or select outliers.
 // These synthetic batches are not a real application's traffic distribution.
 func TestCompiledQueryConsumerScaling(t *testing.T) {
 	bins := buildQueryCLIs(t, "zenon-spv", "consume-query-report")
@@ -62,25 +63,39 @@ func TestCompiledQueryConsumerScaling(t *testing.T) {
 			reportUnchanged, expectedUnchanged := protectCLIState(t, reportPath), protectCLIState(t, expectedPath)
 			defer reportUnchanged()
 			defer expectedUnchanged()
-			result := runQueryCLIWithResources(t, time.Minute, bins["consume-query-report"], "--report", reportPath,
-				"--expectations", expectedPath, "--verifier-exit-code", strconv.Itoa(verified.code))
 			want := fmt.Sprintf("{\"schema_version\":1,\"status\":\"matched\",\"category\":null,\"checked_targets\":%d}\n", targets)
-			if result.code != 0 || len(result.stderr) != 0 || string(result.stdout) != want {
-				t.Fatal("measured consumer did not match the complete selected batch")
+			type observation struct {
+				ElapsedNS     int64   `json:"elapsed_ns"`
+				PeakRSSBytes  *uint64 `json:"peak_rss_bytes"`
+				PeakRSSSource string  `json:"peak_rss_source"`
 			}
-			peak, source := result.memory.bytes, result.memory.source
-			if peak == nil && (runtime.GOOS == "linux" || runtime.GOOS == "darwin" || runtime.GOOS == "windows") {
-				t.Fatal("missing supported consumer process memory accounting")
+			observations := make([]observation, 0, 21)
+			for range 21 {
+				result := runQueryCLIWithResources(t, time.Minute, bins["consume-query-report"], "--report", reportPath,
+					"--expectations", expectedPath, "--verifier-exit-code", strconv.Itoa(verified.code))
+				if result.code != 0 || len(result.stderr) != 0 || string(result.stdout) != want {
+					t.Fatal("measured consumer did not match the complete selected batch")
+				}
+				peak, source := result.memory.bytes, result.memory.source
+				if peak == nil && (runtime.GOOS == "linux" || runtime.GOOS == "darwin" || runtime.GOOS == "windows") {
+					t.Fatal("missing supported consumer process memory accounting")
+				}
+				observations = append(observations, observation{int64(result.elapsed), peak, source})
+				stateUnchanged()
+				reportUnchanged()
+				expectedUnchanged()
 			}
 			record, err := json.Marshal(struct {
-				Workload          string  `json:"workload"`
-				Targets           int     `json:"targets"`
-				ReportBytes       int     `json:"report_bytes"`
-				ExpectationsBytes int     `json:"expectations_bytes"`
-				ElapsedNS         int64   `json:"elapsed_ns"`
-				PeakRSSBytes      *uint64 `json:"peak_rss_bytes"`
-				PeakRSSSource     string  `json:"peak_rss_source"`
-			}{name, targets, len(verified.stdout), expectedBytes, int64(result.elapsed), peak, source})
+				Workload          string        `json:"workload"`
+				Targets           int           `json:"targets"`
+				ReportBytes       int           `json:"report_bytes"`
+				ExpectationsBytes int           `json:"expectations_bytes"`
+				ElapsedNS         int64         `json:"elapsed_ns"`
+				PeakRSSBytes      *uint64       `json:"peak_rss_bytes"`
+				PeakRSSSource     string        `json:"peak_rss_source"`
+				Observations      []observation `json:"observations"`
+			}{name, targets, len(verified.stdout), expectedBytes, observations[0].ElapsedNS,
+				observations[0].PeakRSSBytes, observations[0].PeakRSSSource, observations})
 			if err != nil {
 				t.Fatal(err)
 			}
