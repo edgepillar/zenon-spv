@@ -120,7 +120,10 @@ type AccountBlock struct {
 // so the SPV doesn't need raw Data; nom.AccountBlock takes raw Data
 // and does types.NewHash(Data) inline.
 func (b *AccountBlock) ComputeHash() Hash {
-	var buf []byte
+	// Valid amounts fit the 306-byte envelope. append still grows for wide
+	// amounts, preserving the low-level node serialization before validation.
+	var preimage [306]byte
+	buf := preimage[:0]
 	buf = appendUint64(buf, b.Version)
 	buf = appendUint64(buf, b.ChainIdentifier)
 	buf = appendUint64(buf, b.BlockType)
@@ -138,11 +141,7 @@ func (b *AccountBlock) ComputeHash() Hash {
 	buf = appendUint64(buf, b.Difficulty)
 	buf = append(buf, b.Nonce[:]...)
 
-	d := sha3.New256()
-	d.Write(buf)
-	var out Hash
-	copy(out[:], d.Sum(nil))
-	return out
+	return Hash(sha3.Sum256(buf))
 }
 
 // AccountHeader returns the (Address, Height, BlockHash) triple this

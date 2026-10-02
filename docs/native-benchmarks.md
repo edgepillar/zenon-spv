@@ -9,13 +9,13 @@ verification improvement. It makes no RPC requests and needs no credentials.
 Run repeated measurements with the repository's Go toolchain on `PATH`:
 
 ```sh
-go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity)$' -benchmem -count=5 ./internal/conformance
+go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchmem -count=5 ./internal/conformance
 ```
 
 `make bench` runs the same command. For a quick functional check:
 
 ```sh
-go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity)$' -benchtime=1x ./internal/conformance
+go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchtime=1x ./internal/conformance
 ```
 
 CI runs the one-iteration check on native Linux, macOS, and Windows. That
@@ -83,4 +83,10 @@ See [flat-content resources](flat-content-resources.md) for the separate
 
 The [content-hash allocation comparison](content-hash-allocations.md) adds
 `BenchmarkContentHashOrdering` with sorted, reversed and shuffled node-derived
-content at 1,000 and 100,000 members. CI and `make bench` include all four families.
+content at 1,000 and 100,000 members.
+
+The [signed-envelope comparison](envelope-hash-allocations.md) adds
+`BenchmarkEnvelopeHash`: one v1 or v2 momentum hash and one zero or maximum
+valid 255-bit account-amount hash. The input is already decoded; every iteration
+must match the pinned node digest. CI and `make bench` include all five families
+and 38 workloads. Functional CI runs do not impose allocation or timing limits.
