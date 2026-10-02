@@ -151,6 +151,30 @@ func TestCompiledQueryReportConsumer(t *testing.T) {
 		}
 		consume(t, segment.stdout, makeExpected("verify-segment", pin), failed.code, 2)
 	})
+	// A whole valid node-derived report cannot make ambiguous process status
+	// or file selections valid. Exercise the ordinary compiled consumer.
+	duplicateReport := writeCLIJSON(t, dir, "duplicate-options-report.json", losslessObject(t, segment.stdout))
+	duplicateExpected := writeCLIJSON(t, dir, "duplicate-options-expectations.json", makeExpected("verify-segment", pin))
+	duplicateBase := []string{"--report", duplicateReport, "--expectations", duplicateExpected}
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{"duplicate failure then zero", []string{"--verifier-exit-code", "70", "--verifier-exit-code", "0"}},
+		{"duplicate zero then failure", []string{"--verifier-exit-code", "0", "--verifier-exit-code", "70"}},
+		{"duplicate identical status", []string{"--verifier-exit-code=0", "--verifier-exit-code=0"}},
+		{"duplicate mixed status spelling", []string{"-verifier-exit-code=70", "--verifier-exit-code=0"}},
+		{"duplicate report selection", []string{"--verifier-exit-code=0", "-report=" + duplicateReport}},
+		{"duplicate expectations selection", []string{"--verifier-exit-code=0", "--expectations", duplicateExpected}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result := runQueryCLI(t, bins["consume-query-report"], append(slices.Clone(duplicateBase), tc.args...)...)
+			if result.code != 64 || len(result.stdout) != 0 || string(result.stderr) != "consume-query-report: require --report, --expectations and --verifier-exit-code\n" {
+				t.Fatal("ambiguous consumer options overrode a process failure or input selection")
+			}
+			unchanged()
+		})
+	}
 	for _, tc := range []struct {
 		name   string
 		report func(map[string]any)

@@ -243,6 +243,73 @@ func TestConsumerIOAndPrivacy(t *testing.T) {
 
 type brokenOutput struct{ short bool }
 
+func TestUniqueConsumerOptions(t *testing.T) {
+	r, e := matchingInputs(t)
+	dir := t.TempDir()
+	reportPath, expectedPath := filepath.Join(dir, "PRIVATE_REPORT.json"), filepath.Join(dir, "PRIVATE_EXPECTATIONS.json")
+	for path, raw := range map[string][]byte{reportPath: encode(t, r), expectedPath: encode(t, e)} {
+		if err := os.WriteFile(path, raw, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	base := []string{"--report", reportPath, "--expectations", expectedPath, "--verifier-exit-code", "0"}
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{"separated", base},
+		{"equals", []string{"--report=" + reportPath, "--expectations=" + expectedPath, "--verifier-exit-code=0"}},
+		{"single dash", []string{"-report", reportPath, "-expectations", expectedPath, "-verifier-exit-code", "0"}},
+		{"mixed reordered", []string{"-verifier-exit-code=0", "--expectations", expectedPath, "-report=" + reportPath}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var out, diagnostics bytes.Buffer
+			if run(tc.args, &out, &diagnostics) != 0 || out.String() != "{\"schema_version\":1,\"status\":\"matched\",\"category\":null,\"checked_targets\":1}\n" || diagnostics.Len() != 0 {
+				t.Fatal("unique selections did not preserve the fixed matching summary")
+			}
+		})
+	}
+	for _, option := range []struct{ name, value, different string }{
+		{"report", reportPath, "PRIVATE_OTHER_REPORT"},
+		{"expectations", expectedPath, "PRIVATE_OTHER_EXPECTATIONS"},
+		{"verifier-exit-code", "0", "70"},
+	} {
+		for _, form := range []struct {
+			name   string
+			values []string
+		}{
+			{"identical separated", []string{"--" + option.name, option.value}},
+			{"different separated", []string{"--" + option.name, option.different}},
+			{"identical equals", []string{"--" + option.name + "=" + option.value}},
+			{"different equals single dash", []string{"-" + option.name + "=" + option.different}},
+		} {
+			t.Run(option.name+"/"+form.name, func(t *testing.T) {
+				var out, diagnostics bytes.Buffer
+				if run(append(slices.Clone(base), form.values...), &out, &diagnostics) != 64 || out.Len() != 0 || diagnostics.String() != "consume-query-report: require --report, --expectations and --verifier-exit-code\n" {
+					t.Fatal("repeated selection matched, read files, or changed the private usage diagnostic")
+				}
+			})
+		}
+	}
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{"failure then zero", append(slices.Clone(base[:4]), "--verifier-exit-code", "70", "--verifier-exit-code", "0")},
+		{"mixed failure then zero", append(slices.Clone(base[:4]), "-verifier-exit-code=70", "--verifier-exit-code=0")},
+		{"signal then zero", append(slices.Clone(base[:4]), "--verifier-exit-code=-1", "-verifier-exit-code=0")},
+		{"exception then zero", append(slices.Clone(base[:4]), "--verifier-exit-code=3221225786", "--verifier-exit-code", "0")},
+		{"before unavailable inputs", []string{"--report", "PRIVATE_MISSING_REPORT", "--expectations", "PRIVATE_MISSING_EXPECTATIONS", "--verifier-exit-code=70", "--verifier-exit-code=0"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var out, diagnostics bytes.Buffer
+			if run(tc.args, &out, &diagnostics) != 64 || out.Len() != 0 || diagnostics.String() != "consume-query-report: require --report, --expectations and --verifier-exit-code\n" {
+				t.Fatal("repeated process status replaced an earlier failure or attempted input consumption")
+			}
+		})
+	}
+}
+
 func (w brokenOutput) Write(p []byte) (int, error) {
 	if w.short {
 		return len(p) - 1, nil

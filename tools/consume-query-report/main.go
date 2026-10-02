@@ -5,10 +5,12 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 )
 
 const (
@@ -29,24 +31,43 @@ func main() { os.Exit(run(os.Args[1:], os.Stdout, os.Stderr)) }
 func run(args []string, stdout, diagnostics io.Writer) int {
 	fs := flag.NewFlagSet("consume-query-report", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
-	reportPath := fs.String("report", "", "private verifier JSON report")
-	expectationsPath := fs.String("expectations", "", "independently selected expectations")
-	processExit := fs.Int64("verifier-exit-code", 0, "actual verifier process exit status")
-	parseErr := fs.Parse(args)
-	statusProvided := false
-	fs.Visit(func(f *flag.Flag) {
-		if f.Name == "verifier-exit-code" {
-			statusProvided = true
-		}
+	var reportPath, expectationsPath string
+	var processExit int64
+	provided := make(map[string]bool)
+	// Presence alone cannot distinguish a supplied failure status from one
+	// overwritten by a later zero. Refuse every repeated selection, including
+	// identical values and mixed flag spellings, before reading either file.
+	once := func(name, usage string, set func(string) error) {
+		fs.Func(name, usage, func(value string) error {
+			if provided[name] {
+				return errors.New("duplicate option")
+			}
+			provided[name] = true
+			return set(value)
+		})
+	}
+	once("report", "private verifier JSON report", func(value string) error {
+		reportPath = value
+		return nil
 	})
-	if parseErr != nil || fs.NArg() != 0 || *reportPath == "" || *expectationsPath == "" || !statusProvided {
+	once("expectations", "independently selected expectations", func(value string) error {
+		expectationsPath = value
+		return nil
+	})
+	once("verifier-exit-code", "actual verifier process exit status", func(value string) error {
+		var err error
+		processExit, err = strconv.ParseInt(value, 0, 64)
+		return err
+	})
+	parseErr := fs.Parse(args)
+	if parseErr != nil || fs.NArg() != 0 || reportPath == "" || expectationsPath == "" || !provided["verifier-exit-code"] {
 		_, _ = fmt.Fprintln(diagnostics, "consume-query-report: require --report, --expectations and --verifier-exit-code")
 		return 64
 	}
-	if *processExit != 0 {
+	if processExit != 0 {
 		return writeConsumption(stdout, diagnostics, "process_failure", 0, 2)
 	}
-	expectedRaw, err := readInput(*expectationsPath, maxExpectationsBytes)
+	expectedRaw, err := readInput(expectationsPath, maxExpectationsBytes)
 	if err != nil {
 		return writeConsumption(stdout, diagnostics, "input_unavailable", 0, 70)
 	}
@@ -54,7 +75,7 @@ func run(args []string, stdout, diagnostics io.Writer) int {
 	if !decodeExact(expectedRaw, &expected) || !validExpectations(expected) {
 		return writeConsumption(stdout, diagnostics, "invalid_expectations", 0, 2)
 	}
-	reportRaw, err := readInput(*reportPath, maxReportBytes)
+	reportRaw, err := readInput(reportPath, maxReportBytes)
 	if err != nil {
 		return writeConsumption(stdout, diagnostics, "input_unavailable", 0, 70)
 	}
