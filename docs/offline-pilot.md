@@ -20,6 +20,11 @@ test/build subprocesses disable module and toolchain downloads. Dependencies
 must already be cached. A local Go toolchain must be available on `PATH`.
 The runner uses that same resolved tool directory for compiled CLI tests.
 
+To retain those exact tested binaries with a report-bound manifest, supply
+`--export-binaries` with a new absolute directory outside the checkout.
+See [tested candidate artifacts](candidate-artifacts.md) for package layout,
+failure handling, native CI artifacts and independent ZIP checks.
+
 Keep source files unchanged during the run. Store the report outside the
 checkout so generating evidence does not itself change Git status. The
 default driver deadline is ten minutes (`--timeout`, positive and at most one
@@ -29,7 +34,7 @@ retain their own timeouts. This tool is not a process-tree supervisor.
 
 ## Selected coverage
 
-The 42 named scenarios are defined in
+The 44 named scenarios are defined in
 [`manifest.go`](../tools/offline-pilot/manifest.go). They cover:
 
 - Build identity, collection, retained commitment/segment queries, trusted
@@ -42,6 +47,8 @@ The 42 named scenarios are defined in
   and consumer completion under explicit binary/context/trust pins, preserving
   read-only inputs, and refusing drift or target/tip/guarantee mismatches. Its
   native child-process tests cover nonzero exits, stream bounds and deadlines.
+- Exact compiled-binary exports, nonreplacement of existing files, bounded
+  copies and report-bound manifest refusal of incomplete or conflicting inputs.
 - The [pinned operator workflow](operator-pilot.md): inspect explicit trust
   inputs, initialize, advance and restart watch, collect, query, and refuse
   dropped schedules or changed depth settings before RPC or state writes.
@@ -153,9 +160,12 @@ report. `go run` may translate a child nonzero status into its own exit code.
 ## CI artifacts and evidence boundary
 
 CI executes the pilot on native Linux, macOS, and Windows. Each job uploads
-only its JSON report as an `offline-pilot-*` artifact, retained for 14 days.
+its JSON report as an `offline-pilot-*` artifact, retained for 14 days.
 Artifacts may contain a failed/incomplete report; successful upload alone
 does not establish a pass. Linux enables test-parent race instrumentation.
+Successful pilot runs also upload the exact tested binaries, report and
+manifest as a separate `tested-candidate-*` artifact. These unsigned packages
+prepare review; they do not complete independent review or a network pilot.
 
 Reports omit local paths, endpoints, credentials, environment values, and
 raw subprocess output. Fixed repository paths, source and binary hashes,

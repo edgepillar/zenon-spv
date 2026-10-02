@@ -27,13 +27,21 @@ jobs:
         run: go test -race -count=1 -coverprofile=coverage.out ./...
       - name: Offline pilot report
         id: pilot
-        run: go run ./tools/offline-pilot --race > "${{ runner.temp }}/offline-pilot.json"
+        run: go run ./tools/offline-pilot --race --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
       - name: Upload offline pilot report
         if: ${{ !cancelled() && steps.pilot.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: offline-pilot-linux
           path: ${{ runner.temp }}/offline-pilot.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload tested candidate
+        if: ${{ !cancelled() && steps.pilot.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tested-candidate-linux
+          path: ${{ runner.temp }}/tested-candidate/*
           if-no-files-found: error
           retention-days: 14
       - name: Benchmark smoke
@@ -47,6 +55,7 @@ jobs:
           python3 tools/gen-node-momentum-vectors/check-delayed-inclusion.py internal/testdata/conformance/delayed-inclusion.json
           python3 tools/gen-node-momentum-vectors/check-content-scaling.py
           python3 tools/check-verification-context.py
+          python3 tools/check-candidate-archive_test.py
       - name: Lint
         uses: golangci/golangci-lint-action@v7
         with:
@@ -75,13 +84,21 @@ jobs:
       - name: Offline pilot report
         id: pilot
         shell: bash
-        run: go run ./tools/offline-pilot > "${{ runner.temp }}/offline-pilot.json"
+        run: go run ./tools/offline-pilot --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
       - name: Upload offline pilot report
         if: ${{ !cancelled() && steps.pilot.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: offline-pilot-${{ matrix.os }}
           path: ${{ runner.temp }}/offline-pilot.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload tested candidate
+        if: ${{ !cancelled() && steps.pilot.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tested-candidate-${{ matrix.os }}
+          path: ${{ runner.temp }}/tested-candidate/*
           if-no-files-found: error
           retention-days: 14
       - name: Benchmark smoke

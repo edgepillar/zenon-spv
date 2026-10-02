@@ -31,6 +31,8 @@ audit history.
   reports, per-proof guarantees, and separate persistence and error outcomes.
 - [`build-identity.md`](build-identity.md) — privacy-filtered executable source
   metadata and explicit unknown/modified build handling.
+- [`candidate-artifacts.md`](candidate-artifacts.md) — exact tested native
+  executables, report-bound manifests and independent archive/pin checks.
 - [`state-inspection.md`](state-inspection.md) — read-only retained-window
   diagnostics, effective depth ranges, and trusted-state boundaries.
 - [`native-benchmarks.md`](native-benchmarks.md) — reproducible local verification

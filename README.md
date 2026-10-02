@@ -86,6 +86,10 @@ go run ./tools/offline-pilot > ../offline-pilot.json
 
 This uses synthetic fixtures and loopback RPC. See [offline pilot](docs/offline-pilot.md)
 for cached-dependency prerequisites, report interpretation, and native CI artifacts.
+For the exact ordinary executables used by that run, see
+[tested candidate artifacts](docs/candidate-artifacts.md) and their independent
+archive/pin checker. These packages prepare review and retain the pilot's
+synthetic evidence limits.
 
 For a complete read-only operator run, follow the [operator workflow](docs/operator-pilot.md).
 It records explicit trust settings and build identity, initializes protected

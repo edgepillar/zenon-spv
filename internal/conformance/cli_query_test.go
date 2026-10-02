@@ -353,10 +353,16 @@ func buildQueryCLIs(t *testing.T, names ...string) map[string]string {
 		if hashErr != nil || closeErr != nil {
 			t.Fatal("cannot hash compiled CLI for its execution record")
 		}
+		digestHex := fmt.Sprintf("%x", digest.Sum(nil))
+		if dir := os.Getenv(candidateExportEnvironment); dir != "" {
+			if err := exportCandidateBinary(dir, name, path, digestHex); err != nil {
+				t.Fatal("cannot export compiled CLI for the offline candidate")
+			}
+		}
 		record, err := json.Marshal(struct {
 			Command string `json:"command"`
 			SHA256  string `json:"sha256"`
-		}{name, fmt.Sprintf("%x", digest.Sum(nil))})
+		}{name, digestHex})
 		if err != nil {
 			t.Fatal(err)
 		}
