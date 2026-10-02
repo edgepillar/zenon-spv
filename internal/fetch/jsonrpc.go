@@ -31,6 +31,8 @@ var ErrResponseTooLarge = errors.New("rpc response exceeds size limit")
 // constructs requests that mutate node state, and never trusts the
 // server's claimed `hash` field — every Momentum is recomputed locally
 // before being returned upstream (see momentum.go).
+// Calls do not follow HTTP redirects, even with a caller-supplied HTTP client.
+// Select the final RPC URL explicitly; a peer must not replay queries elsewhere.
 type Client struct {
 	URL  string
 	HTTP *http.Client
@@ -77,8 +79,8 @@ type rpcResponse struct {
 }
 
 // Call performs a JSON-RPC POST, validates its response envelope, and unmarshals
-// result into out. Envelope failures leave out untouched. Validation also applies
-// when out is nil.
+// result into out. HTTP redirects and envelope failures leave out untouched.
+// Validation also applies when out is nil.
 func (c *Client) Call(ctx context.Context, method string, params any, out any) error {
 	request := rpcRequest{JSONRPC: "2.0", ID: 1, Method: method, Params: params}
 	body, err := json.Marshal(request)
@@ -90,7 +92,15 @@ func (c *Client) Call(ctx context.Context, method string, params any, out any) e
 		return callFailure("new request", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := c.HTTP.Do(req)
+	// Keep the selected endpoint fixed without mutating the supplied client.
+	// Share its transport, timeout and cookie jar, but refuse every redirect.
+	// ErrUseLastResponse lets the normal status check close the response body
+	// and report only its status, without copying Location into diagnostics.
+	httpClient := *c.HTTP
+	httpClient.CheckRedirect = func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return callFailure("post", err)
 	}

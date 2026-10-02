@@ -44,10 +44,14 @@ it does not silently deduplicate votes. Watch's CLI returns exit 64 before
 loading anchors, profiles, schedules, or state. Diagnostics identify only the
 two list positions and do not echo URLs or credentials.
 
-Distinct URL strings can still resolve or redirect to the same service, or
-share an operator. These checks do not establish peer independence, authenticate
-the network, or prove consensus finality. Keep transport configuration stable while queries or watch are
-running; concurrent mutation of the public client fields is unsupported.
+RPC calls refuse HTTP redirects, including same-origin and relative redirects;
+select the final endpoint explicitly. A redirect supplies no quorum response
+and cannot advance or save state. See [RPC diagnostics](rpc-diagnostics.md).
+
+Distinct URL strings can still resolve to the same service or share an operator.
+These checks do not establish peer independence, authenticate the network, or
+prove consensus finality. Keep transport configuration stable while queries or
+watch are running; concurrent mutation of the public client fields is unsupported.
 
 ## Retained target consistency
 

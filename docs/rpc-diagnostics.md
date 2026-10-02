@@ -11,6 +11,21 @@ or printing the error body. JSON-RPC failures report the numeric code without
 printing the remote message. Envelope parsing retains its existing fixed,
 field-independent diagnostic messages.
 
+`Client.Call` refuses all HTTP redirects, including same-origin and relative
+redirects, and never forwards a query to the response's `Location`. Ordinary
+redirect failures report only the numeric HTTP status. A malformed `Location`
+can fail during HTTP parsing; its wrapped cause is private, like other URL
+errors. No redirect or parse failure changes the caller's decoded output.
+
+This boundary also applies when an embedder replaces `Client.HTTP` with a
+custom HTTP client. Each call copies its stable configuration, shares its
+transport, timeout and cookie jar, and replaces `CheckRedirect` for that call.
+The supplied client and its redirect callback remain unchanged; that callback
+is not invoked. Select the final RPC URL explicitly instead of configuring
+redirect handling. A custom transport can still choose how it performs requests
+and remains trusted. This is not remote network authentication or a general
+network access policy.
+
 Typed fetch methods also wrap momentum and account-block conversion failures.
 The ordinary message identifies the conversion stage and, when available, a
 fixed category for hash mismatch, unsupported layout/type, invalid account

@@ -25,6 +25,14 @@ the generated checkpoint, validate the full chain, or establish finality.
 Endpoint counts do not establish independent operators. Multi-peer agreement
 does not make a checkpoint obtained from those peers an independent trust root.
 
+RPC calls refuse HTTP redirects, including same-origin and relative redirects.
+Select the final endpoint explicitly when a provider moves its RPC service.
+A 301, 302, 303, 307, or 308 response is an HTTP failure; no request is sent to
+its `Location`. This also prevents 307/308 responses from replaying query bodies
+to an unselected service. A refused peer supplies no quorum response and cannot
+publish a candidate or checkpoint. DNS resolution, a configured proxy, and
+shared operators remain transport and independence assumptions.
+
 Help and usage output omit the values of `ZENON_SPV_RPC` and `ZENON_SPV_PEERS`
 while preserving their runtime defaults. This keeps endpoint credentials out
 of the generated defaults listing; it does not redact shell history, process
