@@ -175,9 +175,9 @@ func (c *eventCollector) event(e testEvent) error {
 			result.Resources = append(result.Resources, record)
 		}
 		if _, raw, ok := strings.Cut(e.Output, binaryMarker); ok {
-			var record binaryRecord
-			if !c.active[key] || json.Unmarshal([]byte(raw), &record) != nil ||
-				!slices.Contains(result.Commands, record.Command) || !hexDigest(record.SHA256, 64) {
+			record, err := parseBinaryRecord(raw)
+			if err != nil || !c.active[key] || !slices.Contains(result.Commands, record.Command) ||
+				slices.ContainsFunc(result.Binaries, func(b binaryRecord) bool { return b.Command == record.Command && b.SHA256 != record.SHA256 }) {
 				return errors.New("invalid executable record")
 			}
 			if !slices.Contains(result.Binaries, record) {
