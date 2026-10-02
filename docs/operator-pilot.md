@@ -220,6 +220,14 @@ guarantees. Top-level ACCEPT alone is insufficient. Targets outside retained
 coverage/depth must not be treated as absent or zero. `verify-state-value`
 continues to REFUSE because no accepting state-root proof exists.
 
+The [reference query consumer](query-report-consumer.md) automates these checks
+for the entire commitment or segment batch. Prepare its private expectations
+from the approved pin and independently selected tip/targets, then supply the
+actual query exit status recorded above. It refuses a nonzero process exit
+even if the diagnostic contains ACCEPT. This prepares the local consumption
+step; a real consumer, trusted file channel and network inputs still need
+independent selection and review.
+
 ## Native Windows invocation and evidence boundary
 
 The same arguments work directly in PowerShell. Use arrays for common flags
