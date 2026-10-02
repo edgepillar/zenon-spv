@@ -6,14 +6,18 @@ independently selected expectations. It supports `verify-commitment` and
 one fixed JSON summary; it makes no RPC requests, invokes no subprocess, and
 does not load or write verifier state.
 
+The [block observer](block-observer.md) supplies a selected reference application
+that runs this consumer and the verifier with actual process-status capture,
+bounded streams/deadlines, explicit binary pins and private temporary files.
+
 This is a reference for a read-only integration, not a signed receipt, public
 SDK, or real consumer pilot. The caller must trust the local verifier executable,
 capture its actual process status, and preserve the integrity of the report and
 expectations files. An attacker who can replace these inputs can fabricate a
 matching diagnostic. Neither the context digest nor this tool authenticates
 the report, anchor, saved history, activation, schedule, peer selection, or
-network freshness. Real consumer selection and independently authenticated
-trust inputs remain external gates.
+network freshness. The selected observer's network pilot and independently
+authenticated trust inputs remain external gates.
 
 ## Independent expectations
 
@@ -160,5 +164,5 @@ fingerprints and fixed private output. A compiled node-corpus workflow covers
 commitments and flattened segments, explicit retention, reordered rows,
 actual process failure, and target/guarantee/trust mismatches. Mutated diagnostics
 test consumption only. Native offline CI establishes bounded synthetic
-compatibility; it does not select a real consumer, authenticate trust inputs,
+compatibility; it does not complete a network pilot, authenticate trust inputs,
 prove finality or state values, or perform a network pilot.

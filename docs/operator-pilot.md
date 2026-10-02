@@ -225,8 +225,14 @@ for the entire commitment or segment batch. Prepare its private expectations
 from the approved pin and independently selected tip/targets, then supply the
 actual query exit status recorded above. It refuses a nonzero process exit
 even if the diagnostic contains ACCEPT. This prepares the local consumption
-step; a real consumer, trusted file channel and network inputs still need
-independent selection and review.
+step; the selected observer still needs a trusted file channel, independently
+selected network inputs and review before a controlled network pilot.
+
+The selected [block observer](block-observer.md) connects the query and consumer
+processes into one bounded local application check. It requires explicit binary
+hashes, every selected trust/state setting, K/W, the approved context pin and
+independently prepared expectations. It makes no RPC requests and does not
+replace the network-input provenance, controlled pilot or review gates above.
 
 ## Native Windows invocation and evidence boundary
 
