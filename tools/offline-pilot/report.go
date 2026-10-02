@@ -16,12 +16,13 @@ type binaryRecord struct {
 
 type caseResult struct {
 	scenario
-	Status    string           `json:"status"`
-	Passed    int              `json:"passed_subtests"`
-	Skipped   int              `json:"skipped_subtests"`
-	Failed    int              `json:"failed_subtests"`
-	Binaries  []binaryRecord   `json:"binaries"`
-	Resources []resourceRecord `json:"resource_samples,omitempty"`
+	Status         string                `json:"status"`
+	Passed         int                   `json:"passed_subtests"`
+	Skipped        int                   `json:"skipped_subtests"`
+	Failed         int                   `json:"failed_subtests"`
+	Binaries       []binaryRecord        `json:"binaries"`
+	Resources      []resourceRecord      `json:"resource_samples,omitempty"`
+	QueryResources []queryResourceRecord `json:"query_resource_samples,omitempty"`
 }
 
 type testEvent struct {
@@ -131,6 +132,14 @@ func (c *eventCollector) event(e testEvent) error {
 			}
 		}
 	case "output":
+		if _, raw, ok := strings.Cut(e.Output, queryResourceMarker); ok {
+			record, err := parseQueryResource(raw)
+			if err != nil || !c.active[key] || result.ID != "compiled_query_consumer_scaling" || e.Test != result.Test+"/"+record.Workload ||
+				slices.ContainsFunc(result.QueryResources, func(r queryResourceRecord) bool { return r.Workload == record.Workload }) {
+				return errors.New("invalid query resource record")
+			}
+			result.QueryResources = append(result.QueryResources, record)
+		}
 		if _, raw, ok := strings.Cut(e.Output, resourceMarker); ok {
 			record, err := parseResource(raw)
 			if err != nil || !c.active[key] || result.ID != "compiled_content_scaling" || e.Test != result.Test+"/"+record.Workload ||
@@ -175,6 +184,9 @@ func (c *eventCollector) finish(processOK bool) string {
 				}
 			}
 			if r.ID == "compiled_content_scaling" && len(r.Resources) != len(resourceWorkloads) {
+				r.Status = "incomplete"
+			}
+			if r.ID == "compiled_query_consumer_scaling" && len(r.QueryResources) != len(queryResourceWorkloads) {
 				r.Status = "incomplete"
 			}
 		case "fail":

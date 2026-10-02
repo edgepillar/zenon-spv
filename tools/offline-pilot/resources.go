@@ -69,6 +69,13 @@ func parseResourceOnPlatform(raw, platform string) (resourceRecord, error) {
 		record.ElapsedNS <= 0 || record.ElapsedNS > 60_000_000_000 {
 		return record, invalid
 	}
+	if !validResourceMemory(record.PeakRSSBytes, record.PeakRSSSource, platform) {
+		return record, invalid
+	}
+	return record, nil
+}
+
+func validResourceMemory(peak *uint64, reportedSource, platform string) bool {
 	source := "unavailable"
 	switch platform {
 	case "linux", "darwin":
@@ -77,11 +84,7 @@ func parseResourceOnPlatform(raw, platform string) (resourceRecord, error) {
 		source = "windows_peak_working_set"
 	}
 	if source != "unavailable" {
-		if record.PeakRSSSource != source || record.PeakRSSBytes == nil || *record.PeakRSSBytes == 0 || *record.PeakRSSBytes > 1<<50 {
-			return record, invalid
-		}
-	} else if record.PeakRSSSource != "unavailable" || record.PeakRSSBytes != nil {
-		return record, invalid
+		return reportedSource == source && peak != nil && *peak > 0 && *peak <= 1<<50
 	}
-	return record, nil
+	return reportedSource == "unavailable" && peak == nil
 }
