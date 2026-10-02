@@ -200,6 +200,16 @@ class CandidateCheckTests(unittest.TestCase):
                 self.assertEqual(code, 64)
                 self.assertEqual(result["category"], "arguments")
 
+    def test_actual_go_identifiers_allow_underscores_without_paths(self):
+        for name in ("TestVerifyHeadersWithOptions_RequiredUnknownHeightRefuses",
+                     "TestAuthorizeRetainedWindow_RequiredRefusesUncoveredHeight",
+                     "TestExample/PRIVATE_PATH", "../PRIVATE_PATH", "Test PRIVATE_NAME"):
+            with self.subTest(test_name=name):
+                files, manifest, report = fixture()
+                report["cases"][0]["test"] = name
+                code, _ = self.invoke(pack(files, manifest, report))
+                self.assertEqual(code, 0 if name.startswith(("TestVerifyHeaders", "TestAuthorizeRetained")) else 2)
+
 
 if __name__ == "__main__":
     unittest.main()

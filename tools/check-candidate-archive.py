@@ -203,7 +203,7 @@ def check_contents(source, revision, inputs_sha256, os_name, architecture):
                               "failed_subtests", "binaries"), ("resource_samples", "query_resource_samples"))
             require(type(case["id"]) is str and re.fullmatch(r"[a-z0-9_]{1,128}", case["id"])
                     and case["id"] not in seen and case["package"] in PACKAGES
-                    and type(case["test"]) is str and re.fullmatch(r"Test[A-Za-z0-9]+", case["test"]))
+                    and type(case["test"]) is str and re.fullmatch(r"Test[A-Za-z0-9_]+", case["test"]))
             seen.add(case["id"])
             require(integer(case["passed_subtests"]) and integer(case["skipped_subtests"])
                     and type(case["failed_subtests"]) is int and case["failed_subtests"] == 0
