@@ -21,6 +21,7 @@ PACKAGES = {"internal/conformance", "internal/chain", "internal/verify", "intern
             "internal/syncer", "internal/statelock", "tools/observe-block", "tools/offline-pilot"}
 BINARY_LIMIT = 128 << 20
 ARCHIVE_LIMIT = 256 << 20
+QUERY_WORKLOADS = {"T1": 1, "T16": 16, "T256": 256}
 
 
 class Rejected(Exception):
@@ -110,6 +111,34 @@ def entry_bytes(archive, info, limit):
         raw = stream.read(limit + 1)
     require(len(raw) == info.file_size and len(raw) <= limit, "archive")
     return raw
+
+
+def query_resources(case, os_name):
+    if case["id"] != "compiled_query_consumer_scaling":
+        require("query_resource_samples" not in case)
+        return
+    samples = case.get("query_resource_samples")
+    require(type(samples) is list and len(samples) == len(QUERY_WORKLOADS)
+            and case["status"] == "passed" and case["passed_subtests"] == 3 and case["skipped_subtests"] == 0)
+    seen = set()
+    expected_source = "windows_peak_working_set" if os_name == "windows" else "process_rusage"
+    measurement_fields = ("elapsed_ns", "peak_rss_bytes", "peak_rss_source")
+    for sample in samples:
+        exact_keys(sample, ("workload", "targets", "report_bytes", "expectations_bytes", "observations") + measurement_fields)
+        name = sample["workload"]
+        require(type(name) is str and name in QUERY_WORKLOADS and name not in seen
+                and type(sample["targets"]) is int and sample["targets"] == QUERY_WORKLOADS[name]
+                and integer(sample["report_bytes"], 1, 4 << 20) and integer(sample["expectations_bytes"], 1, 256 << 10))
+        seen.add(name)
+        points = sample["observations"]
+        require(type(points) is list and len(points) == 21)
+        for point in points:
+            exact_keys(point, measurement_fields)
+            require(integer(point["elapsed_ns"], 1, 60_000_000_000)
+                    and integer(point["peak_rss_bytes"], 1, 1 << 50) and point["peak_rss_source"] == expected_source)
+        require(all(sample[field] == points[0][field] and type(sample[field]) is type(points[0][field])
+                    for field in measurement_fields))
+    require(seen == set(QUERY_WORKLOADS))
 
 
 def check(path, archive_sha256, revision, inputs_sha256, os_name, architecture):
@@ -209,6 +238,7 @@ def check_contents(source, revision, inputs_sha256, os_name, architecture):
                     and type(case["failed_subtests"]) is int and case["failed_subtests"] == 0
                     and case["status"] in ("passed", "passed_with_skips")
                     and (case["status"] == "passed_with_skips") == (case["skipped_subtests"] > 0))
+            query_resources(case, os_name)
             skipped += case["skipped_subtests"]
             require(integer(skipped))
             require(type(case["binaries"]) is list and len(case["binaries"]) <= len(COMMANDS))

@@ -121,9 +121,14 @@ are additive to schema 1; other cases omit them.
 Only `compiled_query_consumer_scaling` carries `query_resource_samples`: three
 fixed workload IDs, matched target count, report and expectations byte sizes,
 whole consumer-process elapsed nanoseconds, nullable peak memory bytes and the
-same platform-specific accounting sources. These measurements exclude verifier
-execution and fixture generation. The same execution, completeness and privacy
-checks apply. See [query-consumer resources](query-consumer-resources.md) for
+same platform-specific accounting sources. Each record also contains exactly
+21 ordered `observations` from sequential fresh processes against unchanged
+inputs. Every observation has its own elapsed/memory fields; the first matches
+the retained scalar fields. Failures are not retried and samples are not
+filtered. These measurements exclude verifier execution, fixture generation
+and parent-side preservation checks. The same execution, completeness and
+privacy checks apply to the bounded nested observations. See
+[query-consumer resources](query-consumer-resources.md) for
 the input/memory boundary and remaining consumer acceptance gates.
 
 The source fingerprint covers `go.mod`, `go.sum`, and `.go`, `.json`,

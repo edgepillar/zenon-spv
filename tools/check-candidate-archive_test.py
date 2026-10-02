@@ -210,6 +210,73 @@ class CandidateCheckTests(unittest.TestCase):
                 code, _ = self.invoke(pack(files, manifest, report))
                 self.assertEqual(code, 0 if name.startswith(("TestVerifyHeaders", "TestAuthorizeRetained")) else 2)
 
+    def test_repeated_query_measurements_are_complete_and_native(self):
+        for os_name in ("linux", "darwin", "windows"):
+            for mode in ("complete", "missing", "short", "long", "duplicate_workload", "unknown_workload", "wrong_targets",
+                         "oversize_report", "zero_expectations", "wrong_source", "zero_peak", "overflow_peak", "zero_elapsed",
+                         "overlong_elapsed", "float_elapsed", "bool_elapsed", "null_point", "missing_point_field",
+                         "unknown_point_field", "first_mismatch", "bool_first", "hidden_skip", "wrong_case"):
+                with self.subTest(os=os_name, mutation=mode):
+                    files, manifest, report = fixture(os_name)
+                    case = {"id": "compiled_query_consumer_scaling", "package": "internal/conformance",
+                            "test": "TestCompiledQueryConsumerScaling", "status": "passed", "passed_subtests": 3,
+                            "skipped_subtests": 0, "failed_subtests": 0, "binaries": [], "query_resource_samples": []}
+                    for name, targets in (("T1", 1), ("T16", 16), ("T256", 256)):
+                        point = {"elapsed_ns": 1000000, "peak_rss_bytes": 1048576,
+                                 "peak_rss_source": "windows_peak_working_set" if os_name == "windows" else "process_rusage"}
+                        case["query_resource_samples"].append(dict(workload=name, targets=targets, report_bytes=1000,
+                            expectations_bytes=500, observations=[dict(point, elapsed_ns=1000000 + i) for i in range(21)], **point))
+                    report["cases"].append(case)
+                    sample = case["query_resource_samples"][0]
+                    point = sample["observations"][20]
+                    if mode == "missing":
+                        del sample["observations"]
+                    elif mode == "short":
+                        sample["observations"].pop()
+                    elif mode == "long":
+                        sample["observations"].append(copy.deepcopy(point))
+                    elif mode == "duplicate_workload":
+                        case["query_resource_samples"][1] = copy.deepcopy(sample)
+                    elif mode == "unknown_workload":
+                        sample["workload"] = "PRIVATE_PATH"
+                    elif mode == "wrong_targets":
+                        sample["targets"] = 16
+                    elif mode == "oversize_report":
+                        sample["report_bytes"] = (4 << 20) + 1
+                    elif mode == "zero_expectations":
+                        sample["expectations_bytes"] = 0
+                    elif mode == "wrong_source":
+                        point["peak_rss_source"] = "process_rusage" if os_name == "windows" else "windows_peak_working_set"
+                    elif mode == "zero_peak":
+                        point["peak_rss_bytes"] = 0
+                    elif mode == "overflow_peak":
+                        point["peak_rss_bytes"] = (1 << 50) + 1
+                    elif mode == "zero_elapsed":
+                        point["elapsed_ns"] = 0
+                    elif mode == "overlong_elapsed":
+                        point["elapsed_ns"] = 60_000_000_001
+                    elif mode == "float_elapsed":
+                        point["elapsed_ns"] = 1000020.0
+                    elif mode == "bool_elapsed":
+                        point["elapsed_ns"] = True
+                    elif mode == "null_point":
+                        sample["observations"][20] = None
+                    elif mode == "missing_point_field":
+                        del point["peak_rss_source"]
+                    elif mode == "unknown_point_field":
+                        point["PRIVATE_FIELD"] = "PRIVATE_PATH"
+                    elif mode == "first_mismatch":
+                        sample["elapsed_ns"] += 1
+                    elif mode == "bool_first":
+                        sample["elapsed_ns"] = True
+                    elif mode == "hidden_skip":
+                        case["skipped_subtests"] = 1
+                    elif mode == "wrong_case":
+                        case["id"] = "example_other"
+                    code, result = self.invoke(pack(files, manifest, report), os_name)
+                    self.assertEqual(code, 0 if mode == "complete" else 2)
+                    self.assertEqual(result["status"], "verified" if mode == "complete" else "rejected")
+
 
 if __name__ == "__main__":
     unittest.main()

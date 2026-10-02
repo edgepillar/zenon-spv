@@ -33,13 +33,14 @@ type testEvent struct {
 }
 
 type eventCollector struct {
-	cases    []caseResult
-	active   map[string]bool
-	packages map[string]string
+	cases          []caseResult
+	active         map[string]bool
+	packages       map[string]string
+	queryFragments map[string]string
 }
 
 func newCollector(manifest []scenario) *eventCollector {
-	c := &eventCollector{active: make(map[string]bool), packages: make(map[string]string)}
+	c := &eventCollector{active: make(map[string]bool), packages: make(map[string]string), queryFragments: make(map[string]string)}
 	for _, s := range manifest {
 		c.cases = append(c.cases, caseResult{scenario: s, Status: "missing", Binaries: []binaryRecord{}})
 		c.packages[modulePath+"/"+s.Package] = "missing"
@@ -115,6 +116,9 @@ func (c *eventCollector) event(e testEvent) error {
 			result.Status = "running"
 		}
 	case "pass", "fail", "skip":
+		if _, pending := c.queryFragments[key]; pending {
+			return errors.New("unfinished query resource record")
+		}
 		if !c.active[key] {
 			return errors.New("test completion without execution")
 		}
@@ -132,7 +136,29 @@ func (c *eventCollector) event(e testEvent) error {
 			}
 		}
 	case "output":
+		// test2json can split a single long Log line into multiple output events.
+		// Reassemble only recognized, bounded query records from the same active
+		// workload. Never retain unrelated diagnostics or emit fragment text.
+		if fragment, pending := c.queryFragments[key]; pending {
+			if !c.active[key] || len(fragment)+len(e.Output) > queryResourceRecordLimit {
+				return errors.New("invalid query resource fragment")
+			}
+			e.Output = queryResourceMarker + fragment + e.Output
+			delete(c.queryFragments, key)
+		}
 		if _, raw, ok := strings.Cut(e.Output, queryResourceMarker); ok {
+			if len(raw) > queryResourceRecordLimit {
+				return errors.New("invalid query resource record")
+			}
+			decodeErr := json.NewDecoder(strings.NewReader(raw)).Decode(new(json.RawMessage))
+			if (decodeErr == io.ErrUnexpectedEOF || decodeErr == io.EOF) && !strings.HasSuffix(raw, "\n") {
+				_, workload := queryResourceWorkloads[strings.TrimPrefix(e.Test, result.Test+"/")]
+				if !c.active[key] || result.ID != "compiled_query_consumer_scaling" || !workload {
+					return errors.New("invalid query resource fragment")
+				}
+				c.queryFragments[key] = raw
+				return nil
+			}
 			record, err := parseQueryResource(raw)
 			if err != nil || !c.active[key] || result.ID != "compiled_query_consumer_scaling" || e.Test != result.Test+"/"+record.Workload ||
 				slices.ContainsFunc(result.QueryResources, func(r queryResourceRecord) bool { return r.Workload == record.Workload }) {
@@ -214,6 +240,9 @@ func (c *eventCollector) finish(processOK bool) string {
 		if active {
 			status = "incomplete"
 		}
+	}
+	if len(c.queryFragments) != 0 {
+		status = "incomplete"
 	}
 	if !processOK || slices.ContainsFunc(c.cases, func(r caseResult) bool { return r.Status == "failed" }) {
 		status = "failed"

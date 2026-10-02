@@ -96,7 +96,12 @@ refuses duplicate/extra/path-traversal ZIP entries, directory/symlink entries,
 encrypted/unsupported compression, duplicate or unknown metadata fields,
 floats and non-uint64 numbers, inconsistent status/source/platform metadata,
 and report/executable hashes that disagree with the recorded execution. It
-streams opaque binary hashes; it does not validate executable semantics or
+also checks the three fixed query-consumer workloads and all 21 native
+observations per workload, including completeness and first-process agreement.
+Use the checker from the selected candidate revision; older reports without
+the repeated observations cannot pass this complete-series check.
+The checker streams opaque binary hashes; it does not validate executable
+semantics or
 authenticate test execution or the scenario selection. Archive input is at
 most 256 MiB, manifest input 256 KiB and report input 4 MiB, with bounded JSON
 depth, strings, collections and nodes. Keep the open archive stable during

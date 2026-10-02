@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"slices"
 	"strings"
@@ -15,6 +16,9 @@ func sampleQueryResource(t *testing.T, name string) string {
 	}
 	record := queryResourceRecord{Workload: name, Targets: queryResourceWorkloads[name], ReportBytes: 1000, ExpectationsBytes: 500,
 		ElapsedNS: 1000000, PeakRSSBytes: memory.PeakRSSBytes, PeakRSSSource: memory.PeakRSSSource}
+	for i := range queryResourceObservations {
+		record.Observations = append(record.Observations, queryResourceObservation{1000000 + int64(i), memory.PeakRSSBytes, memory.PeakRSSSource})
+	}
 	raw, err := json.Marshal(record)
 	if err != nil {
 		t.Fatal(err)
@@ -93,6 +97,15 @@ func TestQueryResourceMemorySourceIsBoundToPlatform(t *testing.T) {
 				}
 				fields["peak_rss_bytes"] = json.RawMessage(peak)
 				fields["peak_rss_source"], _ = json.Marshal(source)
+				var points []map[string]json.RawMessage
+				if json.Unmarshal(fields["observations"], &points) != nil {
+					t.Fatal("sample observations malformed")
+				}
+				for _, point := range points {
+					point["peak_rss_bytes"] = fields["peak_rss_bytes"]
+					point["peak_rss_source"] = fields["peak_rss_source"]
+				}
+				fields["observations"], _ = json.Marshal(points)
 				raw, err := json.Marshal(fields)
 				if err != nil {
 					t.Fatal(err)
@@ -106,6 +119,101 @@ func TestQueryResourceMemorySourceIsBoundToPlatform(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestQueryResourceRepeatedObservationContract(t *testing.T) {
+	raw := sampleQueryResource(t, "T1")
+	var original map[string]json.RawMessage
+	if json.Unmarshal([]byte(raw), &original) != nil {
+		t.Fatal("sample record malformed")
+	}
+	for _, mode := range []string{"complete", "order preserved", "missing", "empty", "null series", "short", "long", "null point",
+		"missing point field", "duplicate point field", "escaped duplicate", "case alias", "unknown point field", "null elapsed",
+		"zero elapsed", "overlong elapsed", "float elapsed", "overflow elapsed", "private elapsed", "null source",
+		"private source", "zero peak", "overflow peak", "first elapsed mismatch", "first peak mismatch", "oversized"} {
+		t.Run(mode, func(t *testing.T) {
+			fields := make(map[string]json.RawMessage)
+			for key, value := range original {
+				fields[key] = value
+			}
+			var points []json.RawMessage
+			if json.Unmarshal(fields["observations"], &points) != nil {
+				t.Fatal("sample observations malformed")
+			}
+			point := string(points[20])
+			switch mode {
+			case "order preserved":
+				points[1], points[2] = points[2], points[1]
+			case "empty":
+				points = []json.RawMessage{}
+			case "short":
+				points = points[:20]
+			case "long":
+				points = append(points, points[20])
+			case "null point":
+				points[20] = json.RawMessage("null")
+			case "missing point field":
+				points[20] = json.RawMessage(strings.Replace(point, `"elapsed_ns":1000020,`, "", 1))
+			case "duplicate point field":
+				points[20] = json.RawMessage(strings.Replace(point, `"elapsed_ns":`, `"elapsed_ns":1000020,"elapsed_ns":`, 1))
+			case "escaped duplicate":
+				points[20] = json.RawMessage(strings.Replace(point, `"elapsed_ns":`, `"elapsed_\u006es":1000020,"elapsed_ns":`, 1))
+			case "case alias":
+				points[20] = json.RawMessage(strings.Replace(point, `"elapsed_ns":`, `"Elapsed_NS":`, 1))
+			case "unknown point field":
+				points[20] = json.RawMessage(strings.Replace(point, `"elapsed_ns":`, `"path":"PRIVATE_PATH","elapsed_ns":`, 1))
+			case "null elapsed", "zero elapsed", "overlong elapsed", "float elapsed", "overflow elapsed", "private elapsed":
+				value := map[string]string{"null elapsed": "null", "zero elapsed": "0", "overlong elapsed": "60000000001",
+					"float elapsed": "1000020.0", "overflow elapsed": "18446744073709551616", "private elapsed": `"PRIVATE_VALUE"`}[mode]
+				points[20] = json.RawMessage(strings.Replace(point, `"elapsed_ns":1000020`, `"elapsed_ns":`+value, 1))
+			case "null source", "private source", "zero peak", "overflow peak":
+				var p map[string]json.RawMessage
+				if json.Unmarshal(points[20], &p) != nil {
+					t.Fatal("sample observation malformed")
+				}
+				switch mode {
+				case "null source":
+					p["peak_rss_source"] = json.RawMessage("null")
+				case "private source":
+					p["peak_rss_source"] = json.RawMessage(`"PRIVATE_ENDPOINT"`)
+				case "zero peak":
+					p["peak_rss_bytes"] = json.RawMessage("0")
+				case "overflow peak":
+					p["peak_rss_bytes"] = json.RawMessage("18446744073709551616")
+				}
+				points[20], _ = json.Marshal(p)
+			case "first elapsed mismatch":
+				fields["elapsed_ns"] = json.RawMessage("1000001")
+			case "first peak mismatch":
+				fields["peak_rss_bytes"] = json.RawMessage("1048577")
+			case "oversized":
+				points[20] = json.RawMessage(strings.Repeat(" ", 16<<10) + point)
+			}
+			fields["observations"], _ = json.Marshal(points)
+			switch mode {
+			case "missing":
+				delete(fields, "observations")
+			case "null series":
+				fields["observations"] = json.RawMessage("null")
+			}
+			input, err := json.Marshal(fields)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if mode == "oversized" {
+				input = append(input, []byte(strings.Repeat(" ", 16<<10))...)
+			}
+			record, err := parseQueryResource(string(input))
+			if mode == "complete" || mode == "order preserved" {
+				if err != nil || len(record.Observations) != 21 || record.Observations[20].ElapsedNS != 1000020 ||
+					(mode == "order preserved" && record.Observations[1].ElapsedNS != 1000002) {
+					t.Fatal("complete ordered consumer observations lost")
+				}
+			} else if err == nil || strings.Contains(err.Error(), "PRIVATE") {
+				t.Fatal("incomplete or malformed consumer observations accepted or echoed")
+			}
+		})
 	}
 }
 
@@ -157,6 +265,89 @@ func TestQueryResourceReportRequiresEveryExecutedBatch(t *testing.T) {
 			default:
 				if eventErr == nil {
 					t.Fatal("ambiguous consumer measurement execution accepted")
+				}
+			}
+		})
+	}
+}
+
+func TestQueryResourceFragmentsRequireCompleteBoundExecution(t *testing.T) {
+	manifest := []scenario{{"compiled_query_consumer_scaling", "internal/conformance", "TestExample", []string{"zenon-spv"}}}
+	for _, mode := range []string{"1024 byte events", "64 byte events", "single event", "missing final fragment", "closed stream",
+		"wrong child", "wrong package", "completion before final fragment", "oversized fragment", "duplicate record", "newline in partial record"} {
+		t.Run(mode, func(t *testing.T) {
+			base := sampleEvents()
+			events := slices.Clone(base[:3])
+			for _, name := range []string{"T1", "T16", "T256"} {
+				child := "TestExample/" + name
+				events = append(events, testEvent{Action: "run", Package: base[0].Package, Test: child})
+				line := "    helper.go:1: " + queryResourceMarker + sampleQueryResource(t, name) + "\n"
+				chunkSize := 1024
+				switch mode {
+				case "64 byte events":
+					chunkSize = 64
+				case "single event":
+					chunkSize = len(line)
+				}
+				var chunks []testEvent
+				for start := 0; start < len(line); start += chunkSize {
+					end := min(start+chunkSize, len(line))
+					chunks = append(chunks, testEvent{Action: "output", Package: base[0].Package, Test: child, Output: line[start:end]})
+				}
+				if name == "T1" {
+					switch mode {
+					case "missing final fragment":
+						chunks = chunks[:len(chunks)-1]
+					case "closed stream":
+						events = append(events, chunks[0])
+					case "wrong child":
+						chunks[len(chunks)-1].Test = "TestExample/T16"
+					case "wrong package":
+						chunks[len(chunks)-1].Package = modulePath + "/internal/verify"
+					case "completion before final fragment":
+						chunks = slices.Insert(chunks, 1, testEvent{Action: "pass", Package: base[0].Package, Test: child})
+					case "oversized fragment":
+						chunks[1].Output = strings.Repeat(" ", queryResourceRecordLimit)
+					case "duplicate record":
+						chunks = append(chunks, testEvent{Action: "output", Package: base[0].Package, Test: child, Output: line})
+					case "newline in partial record":
+						chunks[0].Output += "\n"
+					}
+					if mode == "closed stream" {
+						break
+					}
+				}
+				events = append(events, chunks...)
+				events = append(events, testEvent{Action: "pass", Package: base[0].Package, Test: child})
+			}
+			if mode != "closed stream" {
+				events = append(events, base[5:]...)
+			}
+			var stream bytes.Buffer
+			for _, event := range events {
+				if json.NewEncoder(&stream).Encode(event) != nil {
+					t.Fatal("event encoding failed")
+				}
+			}
+			c := newCollector(manifest)
+			err := c.read(&stream)
+			switch mode {
+			case "1024 byte events", "64 byte events", "single event":
+				if err != nil || c.finish(true) != "passed" || len(c.queryFragments) != 0 || len(c.cases[0].QueryResources) != 3 {
+					t.Fatal("complete bounded fragmented observations were lost")
+				}
+				for _, sample := range c.cases[0].QueryResources {
+					if len(sample.Observations) != 21 || sample.Observations[20].ElapsedNS != 1000020 {
+						t.Fatal("fragment assembly changed observation order or completeness")
+					}
+				}
+			case "closed stream":
+				if err != nil || c.finish(true) != "incomplete" {
+					t.Fatal("unfinished event stream reported complete")
+				}
+			default:
+				if err == nil || c.finish(true) == "passed" {
+					t.Fatal("invalid or misbound resource fragments accepted")
 				}
 			}
 		})
