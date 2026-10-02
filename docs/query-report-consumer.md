@@ -97,6 +97,10 @@ signal exit. Do not use the report's internal `exit_code` as the process status.
 The status flag is mandatory even for zero. Any nonzero signed 64-bit status,
 including Windows exception codes or a process API's negative signal status,
 refuses the match before reading the files.
+Each of the three options must occur exactly once. Repeated report paths,
+expectations paths or process statuses are invalid invocation, even when their
+values agree or their single/double-dash and equals/separated spellings differ.
+No later option can replace a supplied failure status or input selection.
 A Bash example uses `PRIVATE`, `PRIVATE_RUN` and `COMMON` from the operator
 workflow. Keep the independently prepared expectations outside the candidate
 report's output file:
