@@ -114,6 +114,83 @@ def entry_bytes(archive, info, limit):
     return raw
 
 
+def central_zip_metadata(source, expected_names):
+    # ZipFile materializes the whole central directory before infolist() can
+    # enforce our nine-file limit. Bound and count the actual records first;
+    # an EOCD entry count alone does not constrain the stdlib parser.
+    source.seek(0, os.SEEK_END)
+    size = source.tell()
+    require(22 <= size <= ARCHIVE_LIMIT, "layout")
+    tail_start = max(0, size - (22 + 0xffff))
+    source.seek(tail_start)
+    tail = source.read(size - tail_start)
+    # Match ZipFile's no-comment fast path before searching a commented tail.
+    # The signature bytes can also occur inside an otherwise valid offset.
+    if tail[-22:-18] == b"PK\x05\x06" and tail[-2:] == b"\0\0":
+        position = len(tail) - 22
+    else:
+        position = tail.rfind(b"PK\x05\x06")
+    require(position >= 0 and len(tail) - position >= 22, "layout")
+    end = struct.unpack("<4s4H2IH", tail[position:position + 22])
+    _signature, disk, central_disk, disk_count, count, central_bytes, central_offset, comment_bytes = end
+    require(disk == central_disk == 0 and position + 22 + comment_bytes == len(tail), "layout")
+    central_end = tail_start + position
+
+    # The supported single-disk ZIP64 end record has no extensible data sector.
+    # Its offset is relative to the ZIP start, as are central/local offsets; a
+    # prepended payload is permitted only when all inferred offsets agree.
+    if central_end >= 20:
+        source.seek(central_end - 20)
+        locator = source.read(20)
+        if locator.startswith(b"PK\x06\x07"):
+            _signature, zip64_disk, zip64_offset, disks = struct.unpack("<4sIQI", locator)
+            require(zip64_disk == 0 and disks == 1 and central_end >= 76, "layout")
+            fixed_position = central_end - 76
+            require(zip64_offset <= fixed_position, "layout")
+            if zip64_offset != fixed_position:
+                # Modern ZipFile first tries the locator offset as an absolute
+                # position before falling back to the fixed record near EOF.
+                # A prefixed ZIP must not supply a competing record there.
+                source.seek(zip64_offset)
+                require(source.read(4) != b"PK\x06\x06", "layout")
+            source.seek(fixed_position)
+            raw = source.read(56)
+            require(len(raw) == 56, "layout")
+            record = struct.unpack("<4sQ2H2I4Q", raw)
+            signature, record_bytes, _made, needed, disk64, central_disk64, disk_count64, count64, bytes64, offset64 = record
+            require(signature == b"PK\x06\x06" and record_bytes == 44 and needed >= 45
+                    and disk64 == central_disk64 == 0 and disk_count in (0xffff, disk_count64)
+                    and count in (0xffff, count64) and central_bytes in (0xffffffff, bytes64)
+                    and central_offset in (0xffffffff, offset64) and zip64_offset == offset64 + bytes64, "layout")
+            disk_count, count, central_bytes, central_offset = disk_count64, count64, bytes64, offset64
+            central_end -= 76
+
+    require(disk_count == count == len(expected_names), "layout")
+    # Each permitted record has a fixed name and at most two uint16-sized
+    # variable fields. This bounds any later stdlib central-directory read.
+    max_central_bytes = sum(46 + len(name) + 2 * 0xffff for name in expected_names)
+    require(0 < central_bytes <= max_central_bytes and central_bytes <= central_end, "layout")
+    central_start = central_end - central_bytes
+    require(0 <= central_offset <= central_start, "layout")
+    source.seek(central_start)
+    seen = set()
+    encoded_names = {name.encode("ascii") for name in expected_names}
+    longest_name = max(map(len, encoded_names))
+    for _ in range(len(expected_names)):
+        require(source.tell() + 46 <= central_end, "layout")
+        raw = source.read(46)
+        require(len(raw) == 46 and raw[:4] == b"PK\x01\x02", "layout")
+        name_bytes, extra_bytes, entry_comment_bytes = struct.unpack_from("<3H", raw, 28)
+        require(0 < name_bytes <= longest_name
+                and source.tell() + name_bytes + extra_bytes + entry_comment_bytes <= central_end, "layout")
+        name = source.read(name_bytes)
+        require(name in encoded_names and name not in seen, "layout")
+        seen.add(name)
+        source.seek(extra_bytes + entry_comment_bytes, os.SEEK_CUR)
+    require(source.tell() == central_end and len(seen) == len(expected_names), "layout")
+    source.seek(0)
+
+
 def local_zip_metadata(source, archive, infos):
     # zipfile checks central-directory CRCs while reading payloads. Also bind
     # local records, which other ZIP readers can use for methods and sizes.
@@ -201,10 +278,11 @@ def check(path, archive_sha256, revision, inputs_sha256, os_name, architecture):
 
 
 def check_contents(source, revision, inputs_sha256, os_name, architecture):
+    suffix = ".exe" if os_name == "windows" else ""
+    expected_names = {command + suffix for command in COMMANDS} | {"manifest.json", "offline-pilot.json"}
+    central_zip_metadata(source, expected_names)
     with zipfile.ZipFile(source) as archive:
         infos = archive.infolist()
-        suffix = ".exe" if os_name == "windows" else ""
-        expected_names = {command + suffix for command in COMMANDS} | {"manifest.json", "offline-pilot.json"}
         require(len(infos) == len(expected_names) and {i.filename for i in infos} == expected_names, "layout")
         for info in infos:
             mode = stat.S_IFMT(info.external_attr >> 16)
