@@ -7,6 +7,7 @@ import json
 import os
 import re
 import stat
+import struct
 import sys
 import zipfile
 from pathlib import Path
@@ -113,12 +114,61 @@ def entry_bytes(archive, info, limit):
     return raw
 
 
+def local_zip_metadata(source, archive, infos):
+    # zipfile checks central-directory CRCs while reading payloads. Also bind
+    # local records, which other ZIP readers can use for methods and sizes.
+    ordered = sorted(infos, key=lambda info: info.header_offset)
+    for index, info in enumerate(ordered):
+        boundary = ordered[index + 1].header_offset if index + 1 < len(ordered) else archive.start_dir
+        require(0 <= info.header_offset and info.header_offset + 30 <= boundary, "layout")
+        source.seek(info.header_offset)
+        raw = source.read(30)
+        require(len(raw) == 30, "layout")
+        header = struct.unpack("<4s5H3I2H", raw)
+        signature, _version, flags, method, _time, _date, crc, compressed, size, name_bytes, extra_bytes = header
+        require(signature == b"PK\x03\x04" and flags == info.flag_bits and method == info.compress_type
+                and not flags & ~0x080e and (method == zipfile.ZIP_DEFLATED or not flags & 6), "layout")
+        data_offset = info.header_offset + 30 + name_bytes + extra_bytes
+        require(data_offset <= boundary, "layout")
+        require(source.read(name_bytes) == info.filename.encode("ascii"), "layout")
+        extra = source.read(extra_bytes)
+        require(len(extra) == extra_bytes, "layout")
+        extended = None
+        while extra:
+            require(len(extra) >= 4, "layout")
+            kind, length = struct.unpack("<HH", extra[:4])
+            require(length <= len(extra) - 4, "layout")
+            if kind == 1:
+                # ZIP64 local extras carry both original and compressed sizes.
+                require(extended is None and length == 16, "layout")
+                extended = struct.unpack("<QQ", extra[4:20])
+            extra = extra[4 + length:]
+        require((size != 0xffffffff and compressed != 0xffffffff) or extended is not None, "layout")
+        local_size, local_compressed = extended if extended is not None else (size, compressed)
+        payload_end = data_offset + info.compress_size
+        require(payload_end <= boundary, "layout")
+        if flags & 8:
+            require(crc == 0 and size in (0, 0xffffffff) and compressed in (0, 0xffffffff)
+                    and local_size in (0, info.file_size) and local_compressed in (0, info.compress_size), "layout")
+            source.seek(payload_end)
+            descriptor = source.read(min(24, boundary - payload_end))
+            expected = struct.pack("<IQQ" if extended is not None else "<III",
+                                   info.CRC, info.compress_size, info.file_size)
+            require(descriptor.startswith(b"PK\x07\x08" + expected) or descriptor.startswith(expected), "layout")
+        else:
+            require(crc == info.CRC and local_size == info.file_size and local_compressed == info.compress_size
+                    and (size == 0xffffffff or size == info.file_size)
+                    and (compressed == 0xffffffff or compressed == info.compress_size), "layout")
+
+
 def query_resources(case, os_name):
     if case["id"] != "compiled_query_consumer_scaling":
         require("query_resource_samples" not in case)
         return
     samples = case.get("query_resource_samples")
     require(type(samples) is list and len(samples) == len(QUERY_WORKLOADS)
+            and case["package"] == "internal/conformance" and case["test"] == "TestCompiledQueryConsumerScaling"
+            and {record["command"] for record in case["binaries"]} == {"zenon-spv", "consume-query-report"}
             and case["status"] == "passed" and case["passed_subtests"] == 3 and case["skipped_subtests"] == 0)
     seen = set()
     expected_source = "windows_peak_working_set" if os_name == "windows" else "process_rusage"
@@ -160,6 +210,7 @@ def check_contents(source, revision, inputs_sha256, os_name, architecture):
             mode = stat.S_IFMT(info.external_attr >> 16)
             require(not info.is_dir() and mode in (0, stat.S_IFREG) and not info.flag_bits & 1
                     and info.compress_type in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED), "layout")
+        local_zip_metadata(source, archive, infos)
         by_name = {info.filename: info for info in infos}
         manifest = metadata(entry_bytes(archive, by_name["manifest.json"], 256 << 10))
         exact_keys(manifest, ("schema_version", "mode", "test_status", "os", "architecture", "go_version",
@@ -238,7 +289,6 @@ def check_contents(source, revision, inputs_sha256, os_name, architecture):
                     and type(case["failed_subtests"]) is int and case["failed_subtests"] == 0
                     and case["status"] in ("passed", "passed_with_skips")
                     and (case["status"] == "passed_with_skips") == (case["skipped_subtests"] > 0))
-            query_resources(case, os_name)
             skipped += case["skipped_subtests"]
             require(integer(skipped))
             require(type(case["binaries"]) is list and len(case["binaries"]) <= len(COMMANDS))
@@ -249,6 +299,8 @@ def check_contents(source, revision, inputs_sha256, os_name, architecture):
                 require(command in binary_map and command not in recorded and binary["sha256"] == binary_map[command], "execution_pin")
                 recorded.add(command)
                 observed.add(command)
+            query_resources(case, os_name)
+        require("compiled_query_consumer_scaling" in seen)
         require(observed == set(COMMANDS) and (report["status"] == "passed_with_skips") == (skipped > 0), "execution_pin")
     return {"schema_version": 1, "status": "verified", "category": None, "binaries": len(COMMANDS),
             "test_status": report["status"], "skipped_subtests": skipped}

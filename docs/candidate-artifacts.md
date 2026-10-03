@@ -96,14 +96,31 @@ refuses duplicate/extra/path-traversal ZIP entries, directory/symlink entries,
 encrypted/unsupported compression, duplicate or unknown metadata fields,
 floats and non-uint64 numbers, inconsistent status/source/platform metadata,
 and report/executable hashes that disagree with the recorded execution. It
-also checks the three fixed query-consumer workloads and all 21 native
+requires the `compiled_query_consumer_scaling` case from `internal/conformance`,
+named `TestCompiledQueryConsumerScaling`, with records for both `zenon-spv` and
+`consume-query-report`. It checks all three fixed workloads and all 21 native
 observations per workload, including completeness and first-process agreement.
-Use the checker from the selected candidate revision; older reports without
-the repeated observations cannot pass this complete-series check.
+Removing or renaming that case cannot bypass these checks. Use the checker
+from the selected candidate revision; older reports without the repeated
+observations cannot pass this complete-series check.
+
+Local ZIP names, compression methods and supported flags must agree with the
+central directory. Without a data descriptor, local CRC and sizes must match;
+when general-purpose flag bit 3 is set, the required descriptor must supply the
+matching CRC and sizes. Signed and unsigned descriptors, and ZIP64 local size extras with
+64-bit descriptor sizes, are supported. Malformed placeholders, missing
+extended sizes and contradictory records are refused. These layout checks
+follow the [PKWARE ZIP specification](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT),
+sections 4.3.9, 4.4.7-9 and 4.5.3.
+
+The checker regression suite runs with Python 3.13 on Linux, macOS and Windows
+CI. Its opaque-byte fixtures test archive consistency, not executable behavior
+or authenticated test execution.
+
 The checker streams opaque binary hashes; it does not validate executable
-semantics or
-authenticate test execution or the scenario selection. Archive input is at
-most 256 MiB, manifest input 256 KiB and report input 4 MiB, with bounded JSON
+semantics or authenticate test execution or the overall scenario selection.
+Archive input is at most 256 MiB, manifest input 256 KiB and report input 4 MiB,
+with bounded JSON
 depth, strings, collections and nodes. Keep the open archive stable during
 checking; in-place replacement by an untrusted writer is outside this tool.
 

@@ -6,6 +6,7 @@ import importlib.util
 import io
 import json
 import stat
+import struct
 import sys
 import tempfile
 import unittest
@@ -26,6 +27,37 @@ def sha(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
+def query_fixture(os_name, binaries):
+    case = {"id": "compiled_query_consumer_scaling", "package": "internal/conformance",
+            "test": "TestCompiledQueryConsumerScaling", "status": "passed", "passed_subtests": 3,
+            "skipped_subtests": 0, "failed_subtests": 0,
+            "binaries": [{"command": b["command"], "sha256": b["sha256"]} for b in binaries
+                         if b["command"] in ("zenon-spv", "consume-query-report")], "query_resource_samples": []}
+    for name, targets in (("T1", 1), ("T16", 16), ("T256", 256)):
+        point = {"elapsed_ns": 1000000, "peak_rss_bytes": 1048576,
+                 "peak_rss_source": "windows_peak_working_set" if os_name == "windows" else "process_rusage"}
+        case["query_resource_samples"].append(dict(workload=name, targets=targets, report_bytes=1000,
+            expectations_bytes=500, observations=[dict(point, elapsed_ns=1000000 + i) for i in range(21)], **point))
+    return case
+
+
+class StreamingZIP(io.BytesIO):
+    def __init__(self, unsigned):
+        super().__init__()
+        self.unsigned = unsigned
+
+    def seek(self, *_args):
+        raise io.UnsupportedOperation()
+
+    def write(self, raw):
+        # Strip only the descriptor signature emitted as its own fixture write.
+        original = len(raw)
+        if self.unsigned and len(raw) in (16, 24) and raw.startswith(b"PK\x07\x08"):
+            raw = raw[4:]
+        super().write(raw)
+        return original
+
+
 def fixture(os_name="linux"):
     suffix = ".exe" if os_name == "windows" else ""
     files = {name + suffix: (name + " opaque bytes").encode() for name in checker.COMMANDS}
@@ -43,13 +75,15 @@ def fixture(os_name="linux"):
                    "passed_subtests": 1, "skipped_subtests": 0, "failed_subtests": 0,
                    "binaries": [{"command": b["command"], "sha256": b["sha256"]} for b in binaries]}],
         "caveats": ["Synthetic archive-check fixture; not live-network evidence."]}
+    report["cases"].append(query_fixture(os_name, binaries))
     manifest = {"schema_version": 1, "mode": "offline_synthetic_candidate", "test_status": "passed",
                 "os": os_name, "architecture": "amd64", "go_version": "go1.25.14",
                 "source": source, "corpus": corpus, "report": {}, "binaries": binaries}
     return files, manifest, report
 
 
-def pack(files, manifest, report, mutate_manifest=None, mutate_raw=None, extra=None):
+def pack(files, manifest, report, mutate_manifest=None, mutate_raw=None, extra=None,
+         compression=zipfile.ZIP_DEFLATED, descriptor=False, zip64=False, unsigned=False):
     manifest = copy.deepcopy(manifest)
     raw_report = json.dumps(report).encode()
     manifest["report"] = {"filename": "offline-pilot.json", "sha256": sha(raw_report), "bytes": len(raw_report)}
@@ -58,14 +92,16 @@ def pack(files, manifest, report, mutate_manifest=None, mutate_raw=None, extra=N
     raw_manifest = json.dumps(manifest).encode()
     if mutate_raw:
         raw_manifest = mutate_raw(raw_manifest)
-    stream = io.BytesIO()
+    stream = StreamingZIP(unsigned) if descriptor else io.BytesIO()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
-        with zipfile.ZipFile(stream, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-            for filename, raw in files.items():
-                archive.writestr(filename, raw)
-            archive.writestr("manifest.json", raw_manifest)
-            archive.writestr("offline-pilot.json", raw_report)
+        with zipfile.ZipFile(stream, "w", compression=compression) as archive:
+            for filename, raw in list(files.items()) + [("manifest.json", raw_manifest), ("offline-pilot.json", raw_report)]:
+                if zip64:
+                    with archive.open(filename, "w", force_zip64=True) as entry:
+                        entry.write(raw)
+                else:
+                    archive.writestr(filename, raw)
             if extra:
                 archive.writestr(*extra)
     return stream.getvalue()
@@ -148,7 +184,8 @@ class CandidateCheckTests(unittest.TestCase):
                 elif mode == "execution_hash":
                     report["cases"][0]["binaries"][0]["sha256"] = "a" * 64
                 else:
-                    report["cases"][0]["binaries"].pop()
+                    report["cases"][0]["binaries"] = [b for b in report["cases"][0]["binaries"]
+                                                       if b["command"] != "fetch-bundle"]
                 code, _ = self.invoke(pack(files, manifest, report, mutate_manifest=mutate))
                 self.assertEqual(code, 2)
 
@@ -218,15 +255,7 @@ class CandidateCheckTests(unittest.TestCase):
                          "unknown_point_field", "first_mismatch", "bool_first", "hidden_skip", "wrong_case"):
                 with self.subTest(os=os_name, mutation=mode):
                     files, manifest, report = fixture(os_name)
-                    case = {"id": "compiled_query_consumer_scaling", "package": "internal/conformance",
-                            "test": "TestCompiledQueryConsumerScaling", "status": "passed", "passed_subtests": 3,
-                            "skipped_subtests": 0, "failed_subtests": 0, "binaries": [], "query_resource_samples": []}
-                    for name, targets in (("T1", 1), ("T16", 16), ("T256", 256)):
-                        point = {"elapsed_ns": 1000000, "peak_rss_bytes": 1048576,
-                                 "peak_rss_source": "windows_peak_working_set" if os_name == "windows" else "process_rusage"}
-                        case["query_resource_samples"].append(dict(workload=name, targets=targets, report_bytes=1000,
-                            expectations_bytes=500, observations=[dict(point, elapsed_ns=1000000 + i) for i in range(21)], **point))
-                    report["cases"].append(case)
+                    case = report["cases"][1]
                     sample = case["query_resource_samples"][0]
                     point = sample["observations"][20]
                     if mode == "missing":
@@ -276,6 +305,130 @@ class CandidateCheckTests(unittest.TestCase):
                     code, result = self.invoke(pack(files, manifest, report), os_name)
                     self.assertEqual(code, 0 if mode == "complete" else 2)
                     self.assertEqual(result["status"], "verified" if mode == "complete" else "rejected")
+
+    def test_query_case_cannot_be_removed_or_reidentified(self):
+        for os_name in ("linux", "darwin", "windows"):
+            for mode in ("removed", "renamed", "relabeled_samples", "wrong_package", "wrong_test",
+                         "missing_verifier", "missing_consumer", "extra_command"):
+                with self.subTest(os=os_name, mutation=mode):
+                    files, manifest, report = fixture(os_name)
+                    case = report["cases"][1]
+                    if mode == "removed":
+                        report["cases"].pop()
+                    elif mode == "renamed":
+                        case["id"] = "other_case"
+                        del case["query_resource_samples"]
+                    elif mode == "relabeled_samples":
+                        case["id"] = "other_case"
+                        case["resource_samples"] = case.pop("query_resource_samples")
+                    elif mode == "wrong_package":
+                        case["package"] = "internal/proof"
+                    elif mode == "wrong_test":
+                        case["test"] = "TestOther"
+                    elif mode == "missing_verifier":
+                        case["binaries"] = [b for b in case["binaries"] if b["command"] != "zenon-spv"]
+                    elif mode == "missing_consumer":
+                        case["binaries"] = [b for b in case["binaries"] if b["command"] != "consume-query-report"]
+                    else:
+                        case["binaries"].append(next(b for b in report["cases"][0]["binaries"] if b["command"] == "fetch-bundle"))
+                    code, result = self.invoke(pack(files, manifest, report), os_name)
+                    self.assertEqual((code, result["status"]), (2, "rejected"))
+
+    def test_local_zip_metadata_supports_fixed_native_layouts(self):
+        for os_name in ("linux", "darwin", "windows"):
+            for compression in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED):
+                for descriptor, zip64, unsigned in ((False, False, False), (False, True, False),
+                        (True, False, False), (True, False, True), (True, True, False), (True, True, True)):
+                    with self.subTest(os=os_name, method=compression, descriptor=descriptor, zip64=zip64, unsigned=unsigned):
+                        raw = pack(*fixture(os_name), compression=compression, descriptor=descriptor, zip64=zip64, unsigned=unsigned)
+                        code, result = self.invoke(raw, os_name)
+                        self.assertEqual((code, result["status"]), (0, "verified"))
+                        if zip64:
+                            # Exercise explicit ZIP64 sentinels independently of writer-version choices.
+                            changed = bytearray(raw)
+                            with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+                                for info in archive.infolist():
+                                    struct.pack_into("<II", changed, info.header_offset + 18, 0xffffffff, 0xffffffff)
+                            code, result = self.invoke(bytes(changed), os_name)
+                            self.assertEqual((code, result["status"]), (0, "verified"))
+
+    def test_local_zip_metadata_rejects_contradictions(self):
+        for descriptor, zip64 in ((False, False), (False, True), (True, False), (True, True)):
+            for mode in ("method", "flags", "crc", "compressed_size", "original_size", "name", "signature", "name_bound", "extra_bound"):
+                with self.subTest(descriptor=descriptor, zip64=zip64, mutation=mode):
+                    raw = pack(*fixture(), descriptor=descriptor, zip64=zip64)
+                    with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+                        info = archive.getinfo("zenon-spv")
+                    changed = bytearray(raw)
+                    start = info.header_offset
+                    if mode == "method":
+                        struct.pack_into("<H", changed, start + 8, 99)
+                    elif mode == "flags":
+                        struct.pack_into("<H", changed, start + 6, info.flag_bits | 1)
+                    elif mode == "crc":
+                        struct.pack_into("<I", changed, start + 14, info.CRC ^ 1)
+                    elif mode == "compressed_size":
+                        struct.pack_into("<I", changed, start + 18, info.compress_size + 1)
+                    elif mode == "original_size":
+                        struct.pack_into("<I", changed, start + 22, info.file_size + 1)
+                    elif mode == "name":
+                        changed[start + 30] = ord("X")
+                    elif mode == "name_bound":
+                        struct.pack_into("<H", changed, start + 26, 0xffff)
+                    elif mode == "extra_bound":
+                        struct.pack_into("<H", changed, start + 28, 0xffff)
+                    else:
+                        changed[start] = ord("X")
+                    code, result = self.invoke(bytes(changed))
+                    self.assertEqual((code, result["category"]), (2, "layout"))
+
+    def test_data_descriptors_and_zip64_sizes_are_bound(self):
+        for zip64 in (False, True):
+            for unsigned in (False, True):
+                for mode in ("descriptor_crc", "descriptor_compressed", "descriptor_original", "missing_descriptor"):
+                    with self.subTest(zip64=zip64, unsigned=unsigned, mutation=mode):
+                        raw = pack(*fixture(), descriptor=True, zip64=zip64, unsigned=unsigned)
+                        with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+                            info = archive.getinfo("zenon-spv")
+                        changed = bytearray(raw)
+                        name_bytes, extra_bytes = struct.unpack_from("<HH", changed, info.header_offset + 26)
+                        start = info.header_offset + 30 + name_bytes + extra_bytes + info.compress_size
+                        content = start if unsigned else start + 4
+                        if mode == "descriptor_crc":
+                            struct.pack_into("<I", changed, content, info.CRC ^ 1)
+                        elif mode == "descriptor_compressed":
+                            struct.pack_into("<Q" if zip64 else "<I", changed, content + 4, info.compress_size + 1)
+                        elif mode == "descriptor_original":
+                            struct.pack_into("<Q" if zip64 else "<I", changed, content + (12 if zip64 else 8), info.file_size + 1)
+                        else:
+                            changed[start: start + 12] = b"X" * 12
+                        code, result = self.invoke(bytes(changed))
+                        self.assertEqual((code, result["category"]), (2, "layout"))
+        for descriptor in (False, True):
+            for mode in ("missing_extra", "short_extra", "original", "compressed", "duplicate_extra"):
+                with self.subTest(descriptor=descriptor, mutation=mode):
+                    raw = pack(*fixture(), descriptor=descriptor, zip64=True)
+                    with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+                        info = archive.getinfo("zenon-spv")
+                    changed = bytearray(raw)
+                    name_bytes, extra_bytes = struct.unpack_from("<HH", changed, info.header_offset + 26)
+                    start = info.header_offset + 30 + name_bytes
+                    if mode == "missing_extra":
+                        # Require extended sizes even when the fixture writer emits small 32-bit sizes.
+                        struct.pack_into("<II", changed, info.header_offset + 18, 0xffffffff, 0xffffffff)
+                        struct.pack_into("<H", changed, start, 0xffff)
+                    elif mode == "short_extra":
+                        struct.pack_into("<H", changed, start + 2, 8)
+                    elif mode == "original":
+                        struct.pack_into("<Q", changed, start + 4, info.file_size + 1)
+                    elif mode == "compressed":
+                        struct.pack_into("<Q", changed, start + 12, info.compress_size + 1)
+                    else:
+                        # Reinterpret the 16-byte size payload as two empty ZIP64 extras.
+                        struct.pack_into("<H", changed, start + 2, 0)
+                        struct.pack_into("<HH", changed, start + 4, 1, 0)
+                    code, result = self.invoke(bytes(changed))
+                    self.assertEqual((code, result["category"]), (2, "layout"))
 
 
 if __name__ == "__main__":
