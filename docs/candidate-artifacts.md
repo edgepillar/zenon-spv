@@ -104,6 +104,18 @@ Removing or renaming that case cannot bypass these checks. Use the checker
 from the selected candidate revision; older reports without the repeated
 observations cannot pass this complete-series check.
 
+Before constructing the standard ZIP reader, the checker scans at most the
+last 65,557 bytes for end metadata and counts the actual central-directory
+records. Exactly nine fixed filenames must consume the declared directory;
+an end record claiming nine entries cannot hide additional records. The
+preflight reads fixed headers and names, skips bounded extras/comments, and
+rejects malformed directory boundaries before the reader can allocate its
+entry list. Ordinary archive comments, prepended ZIP bytes and complete
+single-disk ZIP64 end records are supported. ZIP64 end records with extensible
+data sectors, competing records at locator-selected offsets, and multi-disk
+archives are refused. This bounds ZIP metadata
+parsing; it does not prescribe a whole-process peak-memory acceptance limit.
+
 Local ZIP names, compression methods and supported flags must agree with the
 central directory. Without a data descriptor, local CRC and sizes must match;
 when general-purpose flag bit 3 is set, the required descriptor must supply the

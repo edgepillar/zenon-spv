@@ -10,6 +10,7 @@ import struct
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import warnings
 import zipfile
 from pathlib import Path
@@ -83,7 +84,7 @@ def fixture(os_name="linux"):
 
 
 def pack(files, manifest, report, mutate_manifest=None, mutate_raw=None, extra=None,
-         compression=zipfile.ZIP_DEFLATED, descriptor=False, zip64=False, unsigned=False):
+         compression=zipfile.ZIP_DEFLATED, descriptor=False, zip64=False, unsigned=False, comment=b""):
     manifest = copy.deepcopy(manifest)
     raw_report = json.dumps(report).encode()
     manifest["report"] = {"filename": "offline-pilot.json", "sha256": sha(raw_report), "bytes": len(raw_report)}
@@ -96,6 +97,7 @@ def pack(files, manifest, report, mutate_manifest=None, mutate_raw=None, extra=N
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         with zipfile.ZipFile(stream, "w", compression=compression) as archive:
+            archive.comment = comment
             for filename, raw in list(files.items()) + [("manifest.json", raw_manifest), ("offline-pilot.json", raw_report)]:
                 if zip64:
                     with archive.open(filename, "w", force_zip64=True) as entry:
@@ -105,6 +107,32 @@ def pack(files, manifest, report, mutate_manifest=None, mutate_raw=None, extra=N
             if extra:
                 archive.writestr(*extra)
     return stream.getvalue()
+
+
+def zip64_end(raw, sentinel=True):
+    # Add a complete, small ZIP64 end record independently of local extras.
+    position = raw.rfind(b"PK\x05\x06")
+    end = list(struct.unpack("<4s4H2IH", raw[position:position + 22]))
+    record = struct.pack("<4sQ2H2I4Q", b"PK\x06\x06", 44, 45, 45,
+                         end[1], end[2], end[3], end[4], end[5], end[6])
+    locator = struct.pack("<4sIQI", b"PK\x06\x07", 0, position, 1)
+    if sentinel:
+        end[3:7] = [0xffff, 0xffff, 0xffffffff, 0xffffffff]
+    return raw[:position] + record + locator + struct.pack("<4s4H2IH", *end) + raw[position + 22:]
+
+
+def central_records(raw):
+    end = raw.rfind(b"PK\x05\x06")
+    size, offset = struct.unpack_from("<II", raw, end + 12)
+    records = []
+    position = offset
+    while position < end:
+        lengths = struct.unpack_from("<3H", raw, position + 28)
+        length = 46 + sum(lengths)
+        records.append((position, raw[position:position + length]))
+        position += length
+    assert position == end and sum(len(record) for _, record in records) == size
+    return end, records
 
 
 class CandidateCheckTests(unittest.TestCase):
@@ -351,6 +379,135 @@ class CandidateCheckTests(unittest.TestCase):
                                     struct.pack_into("<II", changed, info.header_offset + 18, 0xffffffff, 0xffffffff)
                             code, result = self.invoke(bytes(changed), os_name)
                             self.assertEqual((code, result["status"]), (0, "verified"))
+
+    def test_central_directory_is_bounded_before_zipfile_allocation(self):
+        raw = pack(*fixture())
+        end, records = central_records(raw)
+        count_lie = None
+        for copies, claim_actual in ((1, False), (10000, False), (10000, True)):
+            with self.subTest(extra_records=copies, claimed_count=claim_actual):
+                extra = records[0][1] * copies
+                trailer = bytearray(raw[end:])
+                struct.pack_into("<I", trailer, 12, end - records[0][0] + len(extra))
+                if claim_actual:
+                    struct.pack_into("<HH", trailer, 8, 9 + copies, 9 + copies)
+                changed = raw[:end] + extra + trailer
+                if copies == 10000 and not claim_actual:
+                    count_lie = changed
+                # The ordinary reader ignores EOCD counts and materializes
+                # every actual record, including a count lie of nine.
+                with zipfile.ZipFile(io.BytesIO(changed)) as archive:
+                    self.assertEqual(len(archive.infolist()), 9 + copies)
+                with mock.patch.object(checker.zipfile, "ZipFile") as constructor:
+                    code, result = self.invoke(changed)
+                    self.assertEqual((code, result["category"]), (2, "layout"))
+                    constructor.assert_not_called()
+
+        class BoundedReads(io.BytesIO):
+            def read(self, size=-1):
+                if not 0 <= size <= 22 + 0xffff:
+                    raise AssertionError("unbounded central-directory preflight read")
+                return super().read(size)
+
+        with mock.patch.object(checker.zipfile, "ZipFile") as constructor:
+            with self.assertRaises(checker.Rejected) as failure:
+                checker.check_contents(BoundedReads(count_lie), REVISION, INPUTS, "linux", "amd64")
+            self.assertEqual(failure.exception.category, "layout")
+            constructor.assert_not_called()
+
+    def test_central_directory_malformed_boundaries_precede_zipfile(self):
+        raw = pack(*fixture())
+        end, records = central_records(raw)
+        for mode in ("disk", "central_disk", "disk_count", "count", "zero_size", "large_size", "offset",
+                     "truncated_directory", "record_signature", "zero_name", "name_bound", "extra_bound",
+                     "entry_comment_bound", "comment_bound", "trailing_bytes", "short_end"):
+            with self.subTest(mutation=mode):
+                changed = bytearray(raw)
+                if mode in ("disk", "central_disk", "disk_count", "count"):
+                    offset = {"disk": 4, "central_disk": 6, "disk_count": 8, "count": 10}[mode]
+                    struct.pack_into("<H", changed, end + offset, 1)
+                elif mode in ("zero_size", "large_size", "truncated_directory"):
+                    value = {"zero_size": 0, "large_size": 0xffffffff,
+                             "truncated_directory": end - records[0][0] + 1}[mode]
+                    struct.pack_into("<I", changed, end + 12, value)
+                elif mode == "offset":
+                    struct.pack_into("<I", changed, end + 16, records[0][0] + 1)
+                elif mode == "record_signature":
+                    changed[records[0][0]] = ord("X")
+                elif mode in ("zero_name", "name_bound", "extra_bound", "entry_comment_bound"):
+                    offset = {"zero_name": 28, "name_bound": 28, "extra_bound": 30, "entry_comment_bound": 32}[mode]
+                    struct.pack_into("<H", changed, records[-1][0] + offset, 0 if mode == "zero_name" else 0xffff)
+                elif mode == "comment_bound":
+                    struct.pack_into("<H", changed, end + 20, 1)
+                elif mode == "trailing_bytes":
+                    changed += b"PRIVATE_TRAILER"
+                else:
+                    changed = changed[:-1]
+                with mock.patch.object(checker.zipfile, "ZipFile") as constructor:
+                    code, result = self.invoke(bytes(changed))
+                    self.assertEqual((code, result["category"]), (2, "layout"))
+                    constructor.assert_not_called()
+
+    def test_central_end_comments_prefixes_and_complete_zip64(self):
+        for os_name in ("linux", "darwin", "windows"):
+            for compression in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED):
+                for descriptor, local_zip64 in ((False, False), (False, True), (True, False), (True, True)):
+                    for comment in (b"", b"bounded archive comment", b"x" * 0xffff):
+                        raw = pack(*fixture(os_name), compression=compression, descriptor=descriptor,
+                                   zip64=local_zip64, comment=comment)
+                        for end_zip64 in (None, False, True):
+                            with self.subTest(os=os_name, method=compression, descriptor=descriptor,
+                                    local_zip64=local_zip64, comment_bytes=len(comment), end_zip64=end_zip64):
+                                changed = raw if end_zip64 is None else zip64_end(raw, sentinel=end_zip64)
+                                for prefix in (b"", b"opaque prepended ZIP bytes"):
+                                    code, result = self.invoke(prefix + changed, os_name)
+                                    self.assertEqual((code, result["status"]), (0, "verified"))
+
+    def test_zip64_end_contradictions_precede_zipfile(self):
+        raw = zip64_end(pack(*fixture()))
+        end = raw.rfind(b"PK\x05\x06")
+        record, locator = end - 76, end - 20
+        mutations = ((record, "<4s", b"XXXX"), (record + 4, "<Q", 45), (record + 14, "<H", 44),
+                     (record + 16, "<I", 1), (record + 20, "<I", 1), (record + 24, "<Q", 8),
+                     (record + 32, "<Q", 8), (record + 40, "<Q", 0xffffffffffffffff),
+                     (record + 48, "<Q", 0xffffffffffffffff), (locator + 4, "<I", 1),
+                     (locator + 8, "<Q", 0xffffffffffffffff), (locator + 16, "<I", 2),
+                     (end + 8, "<H", 8), (end + 10, "<H", 8),
+                     (end + 12, "<I", 1), (end + 16, "<I", 1))
+        for offset, fmt, value in mutations:
+            with self.subTest(offset=offset, value=value):
+                changed = bytearray(raw)
+                struct.pack_into(fmt, changed, offset, value)
+                with mock.patch.object(checker.zipfile, "ZipFile") as constructor:
+                    code, result = self.invoke(bytes(changed))
+                    self.assertEqual((code, result["category"]), (2, "layout"))
+                    constructor.assert_not_called()
+
+    def test_prefixed_zip64_cannot_select_another_directory(self):
+        raw = pack(*fixture(), compression=zipfile.ZIP_STORED)
+        end, records = central_records(raw)
+        copies = 10000
+        competing_directory = records[0][1] * copies
+        locator_offset = len(competing_directory)
+        padding = locator_offset - end
+        self.assertGreaterEqual(padding, 0)
+        central_start = records[0][0]
+        padded = bytearray(raw[:central_start] + b"\0" * padding + raw[central_start:])
+        struct.pack_into("<I", padded, locator_offset + 16, central_start + padding)
+        genuine = zip64_end(bytes(padded))
+        prefix_bytes = locator_offset + 56
+        competing_record = struct.pack("<4sQ2H2I4Q", b"PK\x06\x06", 44 + prefix_bytes,
+                                       45, 45, 0, 0, copies, copies, locator_offset, 0)
+        changed = competing_directory + competing_record + genuine
+        # Older readers fall back to the genuine fixed record; modern readers
+        # can interpret the relative locator as an absolute competing record.
+        # Refuse that ambiguity without constructing either reader's list.
+        self.assertEqual(changed[locator_offset:locator_offset + 4], b"PK\x06\x06")
+        self.assertEqual(changed[-98:-94], b"PK\x06\x06")
+        with mock.patch.object(checker.zipfile, "ZipFile") as constructor:
+            code, result = self.invoke(changed)
+            self.assertEqual((code, result["category"]), (2, "layout"))
+            constructor.assert_not_called()
 
     def test_local_zip_metadata_rejects_contradictions(self):
         for descriptor, zip64 in ((False, False), (False, True), (True, False), (True, True)):
