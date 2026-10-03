@@ -42,6 +42,21 @@ def query_fixture(os_name, binaries):
     return case
 
 
+def verifier_resource_fixture(os_name, binaries):
+    # Opaque serialization controls, not genuine performance observations.
+    case = {"id": "compiled_content_scaling", "package": "internal/conformance",
+            "test": "TestCompiledContentScalingWorkflow", "status": "passed", "passed_subtests": 4,
+            "skipped_subtests": 0, "failed_subtests": 0,
+            "binaries": [{"command": b["command"], "sha256": b["sha256"]} for b in binaries
+                         if b["command"] == "zenon-spv"], "resource_samples": []}
+    for name, members, proofs in (("M1_P1", 1, 1), ("M1000_P1", 1000, 1),
+                                 ("M100000_P1", 100000, 1), ("M100000_P4", 100000, 4)):
+        case["resource_samples"].append({"workload": name, "members_per_proof": members, "proofs": proofs,
+            "input_bytes": 1000, "elapsed_ns": 1000000, "peak_rss_bytes": 1048576,
+            "peak_rss_source": "windows_peak_working_set" if os_name == "windows" else "process_rusage"})
+    return case
+
+
 class StreamingZIP(io.BytesIO):
     def __init__(self, unsigned):
         super().__init__()
@@ -77,6 +92,7 @@ def fixture(os_name="linux"):
                    "binaries": [{"command": b["command"], "sha256": b["sha256"]} for b in binaries]}],
         "caveats": ["Synthetic archive-check fixture; not live-network evidence."]}
     report["cases"].append(query_fixture(os_name, binaries))
+    report["cases"].append(verifier_resource_fixture(os_name, binaries))
     manifest = {"schema_version": 1, "mode": "offline_synthetic_candidate", "test_status": "passed",
                 "os": os_name, "architecture": "amd64", "go_version": "go1.25.14",
                 "source": source, "corpus": corpus, "report": {}, "binaries": binaries}
@@ -84,9 +100,12 @@ def fixture(os_name="linux"):
 
 
 def pack(files, manifest, report, mutate_manifest=None, mutate_raw=None, extra=None,
-         compression=zipfile.ZIP_DEFLATED, descriptor=False, zip64=False, unsigned=False, comment=b""):
+         compression=zipfile.ZIP_DEFLATED, descriptor=False, zip64=False, unsigned=False, comment=b"",
+         mutate_report_raw=None):
     manifest = copy.deepcopy(manifest)
     raw_report = json.dumps(report).encode()
+    if mutate_report_raw:
+        raw_report = mutate_report_raw(raw_report)
     manifest["report"] = {"filename": "offline-pilot.json", "sha256": sha(raw_report), "bytes": len(raw_report)}
     if mutate_manifest:
         mutate_manifest(manifest)
@@ -342,7 +361,7 @@ class CandidateCheckTests(unittest.TestCase):
                     files, manifest, report = fixture(os_name)
                     case = report["cases"][1]
                     if mode == "removed":
-                        report["cases"].pop()
+                        report["cases"].pop(1)
                     elif mode == "renamed":
                         case["id"] = "other_case"
                         del case["query_resource_samples"]
@@ -361,6 +380,158 @@ class CandidateCheckTests(unittest.TestCase):
                         case["binaries"].append(next(b for b in report["cases"][0]["binaries"] if b["command"] == "fetch-bundle"))
                     code, result = self.invoke(pack(files, manifest, report), os_name)
                     self.assertEqual((code, result["status"]), (2, "rejected"))
+
+    def test_verifier_resource_case_cannot_be_removed_or_reidentified(self):
+        for os_name in ("linux", "darwin", "windows"):
+            for mode in ("removed", "renamed", "renamed_without_samples", "foreign_example", "foreign_query",
+                         "foreign_null", "foreign_empty", "wrong_package", "wrong_test", "missing_verifier", "extra_command"):
+                with self.subTest(os=os_name, mutation=mode):
+                    files, manifest, report = fixture(os_name)
+                    case = report["cases"][2]
+                    if mode == "removed":
+                        report["cases"].pop(2)
+                    elif mode in ("renamed", "renamed_without_samples"):
+                        case["id"] = "other_case"
+                        if mode == "renamed_without_samples":
+                            del case["resource_samples"]
+                    elif mode in ("foreign_example", "foreign_query", "foreign_null", "foreign_empty"):
+                        target = report["cases"][1 if mode == "foreign_query" else 0]
+                        target["resource_samples"] = (None if mode == "foreign_null" else
+                            [] if mode == "foreign_empty" else copy.deepcopy(case["resource_samples"]))
+                    elif mode == "wrong_package":
+                        case["package"] = "internal/proof"
+                    elif mode == "wrong_test":
+                        case["test"] = "TestOther"
+                    elif mode == "missing_verifier":
+                        case["binaries"] = []
+                    else:
+                        case["binaries"].append(next(b for b in report["cases"][0]["binaries"]
+                                                      if b["command"] == "fetch-bundle"))
+                    code, result = self.invoke(pack(files, manifest, report), os_name)
+                    self.assertEqual((code, result["status"]), (2, "rejected"))
+
+    def test_verifier_resource_case_requires_exact_completion(self):
+        for os_name in ("linux", "darwin", "windows"):
+            for mode in ("too_few_passes", "too_many_passes", "bool_passes", "float_passes", "hidden_skip", "explicit_skip", "failure"):
+                with self.subTest(os=os_name, mutation=mode):
+                    files, manifest, report = fixture(os_name)
+                    case = report["cases"][2]
+                    if mode in ("too_few_passes", "too_many_passes", "bool_passes", "float_passes"):
+                        case["passed_subtests"] = {"too_few_passes": 3, "too_many_passes": 5,
+                                                  "bool_passes": True, "float_passes": 4.0}[mode]
+                    elif mode in ("hidden_skip", "explicit_skip"):
+                        case["skipped_subtests"] = 1
+                        if mode == "explicit_skip":
+                            case["status"] = report["status"] = manifest["test_status"] = "passed_with_skips"
+                    else:
+                        case["failed_subtests"] = 1
+                    code, result = self.invoke(pack(files, manifest, report), os_name)
+                    self.assertEqual((code, result["status"]), (2, "rejected"))
+
+    def test_verifier_resource_workloads_are_complete_and_unique(self):
+        for os_name in ("linux", "darwin", "windows"):
+            for mode in ("missing", "null", "empty", "short", "long", "duplicate", "unknown", "null_point", "object_list"):
+                with self.subTest(os=os_name, mutation=mode):
+                    files, manifest, report = fixture(os_name)
+                    case = report["cases"][2]
+                    samples = case["resource_samples"]
+                    if mode == "missing":
+                        del case["resource_samples"]
+                    elif mode == "null":
+                        case["resource_samples"] = None
+                    elif mode == "empty":
+                        samples.clear()
+                    elif mode == "short":
+                        samples.pop()
+                    elif mode == "long":
+                        samples.append(copy.deepcopy(samples[0]))
+                    elif mode == "duplicate":
+                        samples[1] = copy.deepcopy(samples[0])
+                    elif mode == "unknown":
+                        samples[0]["workload"] = "PRIVATE_WORKLOAD"
+                    elif mode == "null_point":
+                        samples[0] = None
+                    else:
+                        case["resource_samples"] = {sample["workload"]: sample for sample in samples}
+                    code, result = self.invoke(pack(files, manifest, report), os_name)
+                    self.assertEqual((code, result["status"]), (2, "rejected"))
+
+    def test_verifier_resource_dimensions_require_exact_json_integers(self):
+        for os_name in ("linux", "darwin", "windows"):
+            for index in range(4):
+                for field in ("members_per_proof", "proofs"):
+                    for alias in (True, False, None, "1", 1.0, 0, -1, 2**64):
+                        with self.subTest(os=os_name, workload=index, field=field, value=alias):
+                            files, manifest, report = fixture(os_name)
+                            report["cases"][2]["resource_samples"][index][field] = alias
+                            code, result = self.invoke(pack(files, manifest, report), os_name)
+                            self.assertEqual((code, result["status"]), (2, "rejected"))
+            # These remain valid integers but name a different workload grid.
+            for field, value in (("members_per_proof", 1000), ("proofs", 4)):
+                with self.subTest(os=os_name, wrong_dimension=field):
+                    files, manifest, report = fixture(os_name)
+                    report["cases"][2]["resource_samples"][0][field] = value
+                    code, result = self.invoke(pack(files, manifest, report), os_name)
+                    self.assertEqual((code, result["status"]), (2, "rejected"))
+
+    def test_verifier_resource_measurements_require_bounded_native_values(self):
+        for os_name in ("linux", "darwin", "windows"):
+            for field, ceiling in (("input_bytes", 64 << 20), ("elapsed_ns", 60_000_000_000), ("peak_rss_bytes", 1 << 50)):
+                for value in (0, -1, ceiling + 1, 2**64, True, False, None, "1", 1.0):
+                    with self.subTest(os=os_name, field=field, value=value):
+                        files, manifest, report = fixture(os_name)
+                        report["cases"][2]["resource_samples"][0][field] = value
+                        code, result = self.invoke(pack(files, manifest, report), os_name)
+                        self.assertEqual((code, result["status"]), (2, "rejected"))
+            wrong_source = "process_rusage" if os_name == "windows" else "windows_peak_working_set"
+            for value in (wrong_source, "unavailable", "PRIVATE_MEMORY_SOURCE", None, False, []):
+                with self.subTest(os=os_name, memory_source=value):
+                    files, manifest, report = fixture(os_name)
+                    report["cases"][2]["resource_samples"][0]["peak_rss_source"] = value
+                    code, result = self.invoke(pack(files, manifest, report), os_name)
+                    self.assertEqual((code, result["status"]), (2, "rejected"))
+
+    def test_verifier_resource_fields_cannot_be_missing_repeated_or_private(self):
+        for os_name in ("linux", "darwin", "windows"):
+            fields = ("workload", "members_per_proof", "proofs", "input_bytes", "elapsed_ns", "peak_rss_bytes", "peak_rss_source")
+            for field in fields:
+                with self.subTest(os=os_name, missing=field):
+                    files, manifest, report = fixture(os_name)
+                    del report["cases"][2]["resource_samples"][0][field]
+                    code, result = self.invoke(pack(files, manifest, report), os_name)
+                    self.assertEqual((code, result["status"]), (2, "rejected"))
+            files, manifest, report = fixture(os_name)
+            report["cases"][2]["resource_samples"][0]["PRIVATE_FIELD"] = "PRIVATE_PATH"
+            code, result = self.invoke(pack(files, manifest, report), os_name)
+            self.assertEqual((code, result["status"]), (2, "rejected"))
+            for field in fields:
+                with self.subTest(os=os_name, repeated=field):
+                    files, manifest, report = fixture(os_name)
+                    sample = report["cases"][2]["resource_samples"][0]
+                    fragment = json.dumps({field: sample[field]})[1:-1].encode()
+                    # Locate this resource record rather than the earlier query
+                    # sample's identically named elapsed or memory fields.
+                    needle = json.dumps(sample).encode()
+                    replaced = needle.replace(fragment, fragment + b", " + fragment, 1)
+                    mutate = lambda raw, a=needle, b=replaced: raw.replace(a, b, 1)
+                    code, result = self.invoke(pack(files, manifest, report, mutate_report_raw=mutate), os_name)
+                    self.assertEqual((code, result["status"]), (2, "rejected"))
+
+    def test_verifier_resource_boundaries_and_order_independence(self):
+        for os_name in ("linux", "darwin", "windows"):
+            for upper in (False, True):
+                with self.subTest(os=os_name, upper_boundary=upper):
+                    files, manifest, report = fixture(os_name)
+                    samples = report["cases"][2]["resource_samples"]
+                    for sample in samples:
+                        sample.update(input_bytes=64 << 20 if upper else 1,
+                                      elapsed_ns=60_000_000_000 if upper else 1,
+                                      peak_rss_bytes=1 << 50 if upper else 1)
+                    # The Go collector validates workload identities and does
+                    # not require resource input records in a fixed order.
+                    samples[:] = [samples[i] for i in (3, 1, 0, 2)]
+                    code, result = self.invoke(pack(files, manifest, report), os_name)
+                    self.assertEqual((code, result["status"]), (0, "verified"))
 
     def test_local_zip_metadata_supports_fixed_native_layouts(self):
         for os_name in ("linux", "darwin", "windows"):

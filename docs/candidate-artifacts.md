@@ -106,9 +106,20 @@ requires the `compiled_query_consumer_scaling` case from `internal/conformance`,
 named `TestCompiledQueryConsumerScaling`, with records for both `zenon-spv` and
 `consume-query-report`. It checks all three fixed workloads and all 21 native
 observations per workload, including completeness and first-process agreement.
-Removing or renaming that case cannot bypass these checks. Use the checker
-from the selected candidate revision; older reports without the repeated
-observations cannot pass this complete-series check.
+It also requires `compiled_content_scaling`, named
+`TestCompiledContentScalingWorkflow` in `internal/conformance`, with only the
+`zenon-spv` executable record, four completed subtests and no skips. Its four
+unique verifier workloads must have the declared member/proof dimensions,
+exact record fields, positive input bytes up to 64 MiB, elapsed time up to
+60 seconds, and a positive native peak-memory counter up to 2^50 bytes.
+Linux/macOS use `process_rusage`; Windows uses `windows_peak_working_set`.
+Missing/null records, unknown fields and measurements attached to a different
+case fail consistency checks. Removing or renaming either measurement case
+cannot bypass these checks. These bounds validate record shape; they do not
+establish actual execution or target-hardware performance acceptance.
+Use the checker from the selected candidate revision; reports without either
+the verifier grid or the repeated consumer observations cannot pass these
+completeness checks.
 
 Before constructing the standard ZIP reader, the checker scans at most the
 last 65,557 bytes for end metadata and counts the actual central-directory
