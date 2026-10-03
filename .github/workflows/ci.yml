@@ -59,6 +59,8 @@ jobs:
           python3 tools/gen-node-momentum-vectors/check-contract-batches.py internal/testdata/conformance/contract-batches.json
           python3 tools/gen-node-momentum-vectors/check-delayed-inclusion.py internal/testdata/conformance/delayed-inclusion.json
           python3 tools/gen-node-momentum-vectors/check-content-scaling.py
+          python3 tools/gen-node-momentum-vectors/check-genesis.py
+          python3 tools/gen-node-momentum-vectors/check-genesis_test.py
           python3 tools/check-verification-context.py
       - name: Lint
         uses: golangci/golangci-lint-action@9fae48acfc02a90574d7c304a1758ef9895495fa # v7

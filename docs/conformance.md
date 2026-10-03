@@ -75,11 +75,48 @@ and do not re-derive the embedded historical checkpoints. See
 [`checkpoint derivation`](checkpoint-derivation.md).
 
 The [genesis cross-check](genesis-cross-check.md) defaults to the embedded
-mainnet hash and requires an explicit nonzero hash for an override. Unit and
+mainnet hash and requires an explicit nonzero hash for an override. The opt-in
+`--genesis-config` mode instead selects a strict height-1 chain ID/hash pair.
+Unit and
 compiled-command tests reject learned or empty pins, incomplete peer agreement,
 wrong genesis shapes, and private diagnostic leakage. Successful unsigned
 synthetic genesis observations demonstrate pin matching only; these tests do
 not independently re-derive or authenticate the historical mainnet anchor.
+
+The [historical testnet genesis corpus](../internal/testdata/conformance/historical-testnet-genesis.json)
+adds an independently constructed unsigned genesis: chain ID 3, layout v1,
+height 1, and 47 ordered content members. Its node source is
+[`go-zenon` at `3a4131e`](https://github.com/zenon-network/go-zenon/tree/3a4131e63881058b6ce2ee81d3a41d0033fafc99),
+with the module version and checksum recorded in the fixture. Its unchanged
+configuration is
+[`dockerized-testnet` at `a8db3e7`](https://github.com/HyperCore-Team/dockerized-testnet/blob/a8db3e7e42718fc025e604dcb45e4690fd2f3d7a/data/configs/genesis.json),
+SHA-256 `a293ee85c4273e5119f18e23f5929f8382981be904109b53070f0fe6a89e1240`.
+The oracle uses the node's full configuration validation, account-pool and genesis
+VM path, then checks the changes-patch and momentum hashes without SPV imports.
+It rejects any different configuration bytes before construction. To reproduce,
+save the exact source file above and run inside the isolated generator module:
+
+```sh
+cd tools/gen-node-momentum-vectors
+go run -mod=readonly . --historical-testnet-genesis ./historical-genesis.json
+```
+
+[`check-genesis.py`](../tools/gen-node-momentum-vectors/check-genesis.py) independently
+recomputes SHA3-256 data/content/header preimages with standard-library bytes and
+checks the wire/header/content projections. Its 14-method corruption suite checks
+source pins, unsigned nullable fields, order/address encodings, full-width fields,
+paired projection tampering, and v1 price exclusion. It does not re-execute genesis
+contracts. The Go API test compares the node values with SPV decoding; a compiled
+command serves the unchanged node wire object through local peers and rejects
+wrong pins, incomplete observations, malformed files and private diagnostic leaks.
+Internally consistent negative unit fixtures separately exercise the chain/layout/
+previous-hash shape checks. All peer requests in these tests are local.
+
+This is compatibility evidence for a historical configuration under the pinned
+node. It does not establish a current testnet anchor, activation profile, producer
+schedule, authenticated deployment, canonicality, finality, or state-value proofs.
+An actual read-only network pilot still requires independently chosen network,
+trust and consumer inputs plus target-device acceptance criteria.
 
 ## §8 — Conformance test cases
 

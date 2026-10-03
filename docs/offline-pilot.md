@@ -45,11 +45,11 @@ rejection during a buffered flood, failed exit, deadline expiry after complete
 events and failed start. Helpers use no shell or network and have finite lifetimes;
 the owning tests wait for their OS-released fixture locks before cleanup.
 These runner helper tests execute in the native Go package suite, outside the
-fixed 44-scenario pilot selection.
+fixed 45-scenario pilot selection.
 
 ## Selected coverage
 
-The 44 named scenarios are defined in
+The 45 named scenarios are defined in
 [`manifest.go`](../tools/offline-pilot/manifest.go). They cover:
 
 - Build identity, collection, retained commitment/segment queries, trusted
@@ -74,7 +74,9 @@ The 44 named scenarios are defined in
   replayed, forked, or unauthorized peer evidence.
 - Activation/profile retention, producer coverage gaps, request limits,
   bounded proof decoding, and ambiguous producer schedule inputs.
-- Schedule export, checkpoint network binding, and explicit genesis pinning.
+- Schedule export, checkpoint network binding, explicit mainnet genesis pinning,
+  and opt-in custom genesis observation using a pinned node's historical testnet
+  genesis through local peers. This does not select or authenticate a live testnet.
 - Injected save failures and recovery, event delivery failures, native writer
   locks, and lock release after process exit or termination.
 - Explicit retention/depth separation across compiled commands, delayed
@@ -116,7 +118,7 @@ guarantees and their limits.
 | `test_parent_race_enabled` | Whether this run requested `-race` for Go test processes. |
 | `source` | Observed checkout revision/modified state, or null fields if Git metadata is unavailable; also a SHA-256 input fingerprint. |
 | `source_matches_after_run` | Whether a second source snapshot equals the initial snapshot. This checks the endpoints, not continuous filesystem history. |
-| `corpus` | Repository-relative names and SHA-256 hashes of the six compatibility corpus files. This is an input inventory, not a claim that every vector was exercised. |
+| `corpus` | Repository-relative names and SHA-256 hashes of the seven compatibility corpus files. This is an input inventory, not a claim that every vector was exercised. |
 | `cases` | Fixed scenario IDs, package/test names, statuses, child test counts, hashes of compiled executables actually built by that scenario, and optional bounded `resource_samples` or `query_resource_samples`. |
 | `caveats` | Fixed trust and interpretation limits. |
 
