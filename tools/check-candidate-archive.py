@@ -23,6 +23,8 @@ PACKAGES = {"internal/conformance", "internal/chain", "internal/verify", "intern
 BINARY_LIMIT = 128 << 20
 ARCHIVE_LIMIT = 256 << 20
 QUERY_WORKLOADS = {"T1": 1, "T16": 16, "T256": 256}
+RESOURCE_WORKLOADS = {"M1_P1": (1, 1), "M1000_P1": (1000, 1),
+                      "M100000_P1": (100000, 1), "M100000_P4": (100000, 4)}
 
 
 class Rejected(Exception):
@@ -238,6 +240,33 @@ def local_zip_metadata(source, archive, infos):
                     and (compressed == 0xffffffff or compressed == info.compress_size), "layout")
 
 
+def verifier_resources(case, os_name):
+    if case["id"] != "compiled_content_scaling":
+        require("resource_samples" not in case)
+        return
+    samples = case.get("resource_samples")
+    require(type(samples) is list and len(samples) == len(RESOURCE_WORKLOADS)
+            and case["package"] == "internal/conformance" and case["test"] == "TestCompiledContentScalingWorkflow"
+            and {record["command"] for record in case["binaries"]} == {"zenon-spv"}
+            and case["status"] == "passed" and case["passed_subtests"] == 4 and case["skipped_subtests"] == 0)
+    seen = set()
+    expected_source = "windows_peak_working_set" if os_name == "windows" else "process_rusage"
+    for sample in samples:
+        exact_keys(sample, ("workload", "members_per_proof", "proofs", "input_bytes", "elapsed_ns",
+                            "peak_rss_bytes", "peak_rss_source"))
+        name = sample["workload"]
+        require(type(name) is str and name in RESOURCE_WORKLOADS and name not in seen)
+        members, proofs = RESOURCE_WORKLOADS[name]
+        require(integer(sample["members_per_proof"]) and sample["members_per_proof"] == members
+                and integer(sample["proofs"]) and sample["proofs"] == proofs
+                and integer(sample["input_bytes"], 1, 64 << 20)
+                and integer(sample["elapsed_ns"], 1, 60_000_000_000)
+                and integer(sample["peak_rss_bytes"], 1, 1 << 50)
+                and sample["peak_rss_source"] == expected_source)
+        seen.add(name)
+    require(seen == set(RESOURCE_WORKLOADS))
+
+
 def query_resources(case, os_name):
     if case["id"] != "compiled_query_consumer_scaling":
         require("query_resource_samples" not in case)
@@ -377,7 +406,9 @@ def check_contents(source, revision, inputs_sha256, os_name, architecture):
                 require(command in binary_map and command not in recorded and binary["sha256"] == binary_map[command], "execution_pin")
                 recorded.add(command)
                 observed.add(command)
+            verifier_resources(case, os_name)
             query_resources(case, os_name)
+        require("compiled_content_scaling" in seen)
         require("compiled_query_consumer_scaling" in seen)
         require(observed == set(COMMANDS) and (report["status"] == "passed_with_skips") == (skipped > 0), "execution_pin")
     return {"schema_version": 1, "status": "verified", "category": None, "binaries": len(COMMANDS),
