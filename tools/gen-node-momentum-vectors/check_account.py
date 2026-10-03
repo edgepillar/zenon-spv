@@ -5,7 +5,19 @@ import base64
 from check import address_bytes, bech32_bytes, digest, require, uint64
 
 
+def check_unsigned_projection(projection):
+    for field in ("version", "chainIdentifier", "blockType", "height", "fusedPlasma", "difficulty"):
+        uint64(projection[field])
+    uint64(projection["momentumAcknowledged"]["height"])
+
+
 def check_account(block, rpc):
+    check_unsigned_projection(block)
+    pending = [rpc]
+    while pending:
+        projection = pending.pop()
+        check_unsigned_projection(projection)
+        pending.extend(projection["descendantBlocks"])
     amount = block["amount"]
     require(amount == int(rpc["amount"]), "amount differs across wire forms")
     magnitude = abs(amount)
