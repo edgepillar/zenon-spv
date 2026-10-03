@@ -24,7 +24,21 @@ def digest(data):
 
 
 def uint64(value):
+    require(type(value) is int and 0 <= value < 1 << 64, "expected a uint64 JSON integer")
     return struct.pack(">Q", value)
+
+
+def hash_bytes(value):
+    require(type(value) is str and len(value) == 64, "expected a 32-byte hex hash")
+    parsed = bytes.fromhex(value)
+    require(len(parsed) == 32, "expected a 32-byte hex hash")
+    return parsed
+
+
+def check_anchor(anchor):
+    uint64(anchor["chain_id"])
+    uint64(anchor["height"])
+    hash_bytes(anchor["header_hash"])
 
 
 def bech32_bytes(text, expected_hrp, size):
@@ -62,13 +76,22 @@ def address_bytes(text):
 
 def check_vector(vector):
     wire, expected = vector["momentum"], vector["header"]
+    for projection in (wire, expected):
+        for field in ("version", "chainIdentifier", "height", "timestamp", "nextFusionPrice", "nextWorkPrice"):
+            uint64(projection[field])
+        for field in ("hash", "previousHash", "changesHash"):
+            hash_bytes(projection[field])
     rows = []
     require(len(wire["content"]) == len(vector["content"]), "content length mismatch")
     for member, header in zip(wire["content"], vector["content"]):
+        uint64(member["height"])
+        uint64(header["height"])
+        member_hash = hash_bytes(member["hash"])
+        hash_bytes(header["hash"])
         address = address_bytes(member["address"])
         require(address.hex() == header["address"], "address representation mismatch")
         require(member["height"] == header["height"] and member["hash"] == header["hash"], "content mismatch")
-        rows.append(address + uint64(member["height"]) + bytes.fromhex(member["hash"]))
+        rows.append(address + uint64(member["height"]) + member_hash)
     require(rows == sorted(rows), "fixture content is not in canonical order")
     data_hash = digest(base64.b64decode(wire["data"], validate=True))
     content_hash = digest(b"".join(rows))
@@ -76,9 +99,9 @@ def check_vector(vector):
     require(content_hash.hex() == expected["contentHash"], "content hash mismatch")
     preimage = b"".join([
         uint64(wire["version"]), uint64(wire["chainIdentifier"]),
-        bytes.fromhex(wire["previousHash"]), uint64(wire["height"]),
+        hash_bytes(wire["previousHash"]), uint64(wire["height"]),
         uint64(wire["timestamp"]), data_hash, content_hash,
-        bytes.fromhex(wire["changesHash"]),
+        hash_bytes(wire["changesHash"]),
     ])
     require(wire["version"] in (1, 2), "unsupported checker profile")
     if wire["version"] == 2:
@@ -105,6 +128,9 @@ def main():
     for name in ("chain", "transition"):
         series = corpus[name]
         require(len(series["vectors"]) == 6, "incomplete linked series")
+        check_anchor(series["anchor"])
+        if name == "transition":
+            uint64(series["v2_from_height"])
         previous = series["anchor"]["header_hash"]
         height = series["anchor"]["height"]
         for vector in series["vectors"]:

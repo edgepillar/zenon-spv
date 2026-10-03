@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 import sys
 
-from check import digest, require, uint64
+from check import check_anchor, digest, hash_bytes, require, uint64
 
 
 def check(corpus):
@@ -23,19 +23,28 @@ def check(corpus):
     address = bytes.fromhex(corpus["member_address"])
     require(len(address) == 20 and address[0] == 0, "expected synthetic user address")
     anchor = corpus["anchor"]
+    check_anchor(anchor)
     require(anchor == {"chain_id": 99, "height": 6000,
                        "header_hash": digest(b"synthetic flat content checkpoint").hex()}, "unexpected anchor")
     require([s["members"] for s in corpus["samples"]] == [1, 1000, 100000], "incomplete workloads")
     for sample in corpus["samples"]:
         count = sample["members"]
+        require(type(count) is int and count > 0, "expected a positive JSON integer member count")
         hashes = [digest(corpus["member_prefix"].encode("ascii") + uint64(i)) for i in range(1, count + 1)]
         rows = [address + uint64(i + 1) + h for i, h in enumerate(hashes)]
         require(rows == sorted(rows), "recipe is not canonically ordered")
+        for target in sample["targets"]:
+            uint64(target["height"])
+            hash_bytes(target["hash"])
         require(sample["targets"] == [{"address": address.hex(), "height": i + 1, "hash": hashes[i].hex()}
                                       for i in (0, count // 2, count - 1)], "target mismatch")
         require(len(sample["headers"]) == 7, "incomplete header series")
         previous = anchor["header_hash"]
         for i, header in enumerate(sample["headers"]):
+            for field in ("version", "chainIdentifier", "height", "timestamp", "nextFusionPrice", "nextWorkPrice"):
+                uint64(header[field])
+            for field in ("hash", "previousHash", "dataHash", "contentHash", "changesHash"):
+                hash_bytes(header[field])
             require(header["version"] == 2 and header["chainIdentifier"] == 99 and
                     header["height"] == 6001 + i and header["previousHash"] == previous and
                     header["timestamp"] == 1700000000 + 10 * i and
@@ -43,9 +52,9 @@ def check(corpus):
             require(header["dataHash"] == digest(b"").hex(), "data mismatch")
             require(header["contentHash"] == digest(b"".join(rows) if i == 0 else b"").hex(), "content mismatch")
             require(header["changesHash"] == digest(b"synthetic changes").hex(), "changes mismatch")
-            preimage = b"".join((uint64(2), uint64(99), bytes.fromhex(previous), uint64(6001 + i),
-                                 uint64(header["timestamp"]), bytes.fromhex(header["dataHash"]),
-                                 bytes.fromhex(header["contentHash"]), bytes.fromhex(header["changesHash"]),
+            preimage = b"".join((uint64(2), uint64(99), hash_bytes(previous), uint64(6001 + i),
+                                 uint64(header["timestamp"]), hash_bytes(header["dataHash"]),
+                                 hash_bytes(header["contentHash"]), hash_bytes(header["changesHash"]),
                                  uint64(1000), uint64(1000)))
             require(digest(preimage).hex() == header["hash"], "header hash mismatch")
             previous = header["hash"]

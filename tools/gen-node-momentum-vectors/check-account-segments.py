@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 import sys
 
-from check import address_bytes, check_vector, digest, require
+from check import address_bytes, check_anchor, check_vector, digest, require
 from check_account import check_account
 
 
@@ -20,6 +20,7 @@ def check(path):
     series = corpus["chain"]
     require(len(series["vectors"]) == 9 and len(corpus["segments"]) == 2, "incomplete corpus")
     anchor = series["anchor"]
+    check_anchor(anchor)
     previous, height = anchor["header_hash"], anchor["height"]
     for vector in series["vectors"]:
         check_vector(vector)

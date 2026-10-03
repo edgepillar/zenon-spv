@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 import sys
 
-from check import address_bytes, check_vector, require
+from check import address_bytes, check_anchor, check_vector, hash_bytes, require, uint64
 from check_account import check_account
 
 
@@ -21,6 +21,7 @@ def check(path):
     series = corpus["chain"]
     require(len(series["vectors"]) == 9 and len(corpus["segments"]) == 1, "incomplete corpus")
     anchor = series["anchor"]
+    check_anchor(anchor)
     previous, height = anchor["header_hash"], anchor["height"]
     for vector in series["vectors"]:
         check_vector(vector)
@@ -50,6 +51,11 @@ def check(path):
         members.append({field: block[field] for field in ("address", "height", "hash")})
     before = {"hash": "00" * 32, "height": 0}
     for batch, heights in zip(corpus["batches"], ([1, 2, 3], [4, 5])):
+        for commit_height in batch["commit_heights"]:
+            uint64(commit_height)
+        uint64(batch["receive_height"])
+        uint64(batch["previous"]["height"])
+        hash_bytes(batch["previous"]["hash"])
         receive = vectors[heights[-1] - 1]
         require(batch["commit_heights"] == heights and batch["receive_height"] == heights[-1], "wrong transaction commit order")
         require(batch["previous"] == before, "wrong transaction previous frontier")

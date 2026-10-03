@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 import sys
 
-from check import address_bytes, check_vector, digest, require
+from check import address_bytes, check_anchor, check_vector, digest, require, uint64
 from check_account import check_account
 
 
@@ -21,6 +21,8 @@ def check(path):
     series, segments = corpus["chain"], corpus["segments"]
     require(len(series["vectors"]) == 19 and len(segments) == 2, "incomplete corpus")
     anchor = series["anchor"]
+    check_anchor(anchor)
+    uint64(series["v2_from_height"])
     require(anchor["height"] == 5000 and anchor["chain_id"] == 99 and series["v2_from_height"] == 5009, "wrong domain or activation")
     by_height = {}
     previous, height = anchor["header_hash"], anchor["height"]
