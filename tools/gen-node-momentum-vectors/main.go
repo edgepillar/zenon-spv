@@ -1,5 +1,5 @@
-// Command gen-node-momentum-vectors generates synthetic serialization vectors
-// with the pinned node implementation. It does not import the SPV verifier.
+// Command gen-node-momentum-vectors generates serialization and historical genesis
+// vectors with the pinned node implementation. It does not import the SPV verifier.
 package main
 
 import (
@@ -107,7 +107,10 @@ func run() error {
 		if len(os.Args) == 2 && os.Args[1] == "--content-scaling" {
 			return writeContentScalingVectors()
 		}
-		return fmt.Errorf("usage: gen-node-momentum-vectors [--account-amounts|--account-segments|--contract-batches|--delayed-inclusion|--content-scaling]")
+		if len(os.Args) == 3 && os.Args[1] == "--historical-testnet-genesis" {
+			return writeHistoricalTestnetGenesisVector(os.Args[2])
+		}
+		return fmt.Errorf("usage: gen-node-momentum-vectors [--account-amounts|--account-segments|--contract-batches|--delayed-inclusion|--content-scaling|--historical-testnet-genesis CONFIG_FILE]")
 	}
 	// Public, synthetic test key. Never use this all-zero seed for a wallet.
 	key := ed25519.NewKeyFromSeed(make([]byte, ed25519.SeedSize))
@@ -203,6 +206,12 @@ func makeVector(name string, m *nom.Momentum, key ed25519.PrivateKey) vector {
 	m.Hash = m.ComputeHash()
 	m.PublicKey = key.Public().(ed25519.PublicKey)
 	m.Signature = ed25519.Sign(key, m.Hash.Bytes())
+	return projectVector(name, m)
+}
+
+// projectVector only projects node values. In particular, unsigned genesis
+// must not pass through makeVector, which supplies synthetic signatures.
+func projectVector(name string, m *nom.Momentum) vector {
 	content := make([]expectedContent, len(m.Content))
 	for i, h := range m.Content {
 		content[i] = expectedContent{Address: hex.EncodeToString(h.Address.Bytes()), Height: h.Height, Hash: h.Hash.String()}

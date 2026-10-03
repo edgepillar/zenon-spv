@@ -1,4 +1,4 @@
-# Mainnet genesis cross-check
+# Genesis observation cross-check
 
 `tools/verify-mainnet-genesis` compares observations from selected RPC endpoints
 with an expected mainnet genesis hash. With no `--expected` option, it uses the
@@ -23,6 +23,34 @@ empty, malformed, or all-zero values fail before RPC. An override does not
 relax the mainnet genesis shape checks. Independently justify any override:
 a value obtained from the same queried peers is not an independent trust root.
 
+For an explicitly chosen custom network, use `--genesis-config <file>` instead
+of `--expected`. The file uses the verifier's strict trust-root schema:
+
+```json
+{"chain_id": 3, "height": 1, "header_hash": "<independently authenticated 64-hex hash>"}
+```
+
+```sh
+go run ./tools/verify-mainnet-genesis \
+  --peers https://peer-a.example,https://peer-b.example \
+  --genesis-config ./genesis.json
+```
+
+The example chain ID is illustrative. Select the actual network and authenticate
+its genesis provenance independently before choosing peers. This option changes
+both the chain ID and expected hash; it requires height 1, layout v1, and a zero
+previous hash. It cannot be combined with an explicitly supplied `--expected`,
+and repeated `--genesis-config` options are rejected. Empty, oversized,
+ambiguous, or otherwise invalid files fail before RPC. File paths and raw loader
+errors are omitted from diagnostics. The default remains the embedded mainnet
+anchor; this command does not install a testnet default or change verifier state.
+
+The [historical testnet corpus](conformance.md) exercises this opt-in path through
+compiled local HTTP peers using an unsigned genesis constructed by a pinned node
+from an unchanged, pinned historical configuration. It checks serialization and
+explicit pin matching; it does not identify the genesis of a current public
+testnet, authenticate that historical deployment, or complete a network pilot.
+
 The timeout covers the overall RPC operation. Invalid peer configuration,
 nonpositive timeouts, and positional arguments fail before requests. Environment
 endpoints from `ZENON_SPV_PEERS` are supported but are not printed by help.
@@ -37,6 +65,7 @@ as a normally signed producer momentum: the report claims hash recomputation
 and pin matching, not signature authorization.
 
 This tool does not change the embedded anchor. Matching observations do not
-authenticate endpoint independence, canonical history, or finality. The code
+authenticate endpoint independence, canonical history, finality, a header-version
+activation profile, or a producer schedule. The code
 and offline tests do not constitute a fresh live-network verification of the
 historical mainnet value or its provenance.

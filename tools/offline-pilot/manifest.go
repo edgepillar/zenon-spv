@@ -46,6 +46,7 @@ var scenarios = []scenario{
 	{"schedule_export", "internal/conformance", "TestCompiledScheduleExportAndVerification", []string{"derive-producer-schedule", "zenon-spv"}},
 	{"checkpoint_network_binding", "internal/conformance", "TestCompiledCheckpointRefusesNonMainnetCorpus", []string{"derive-checkpoints"}},
 	{"genesis_pinning", "internal/conformance", "TestCompiledGenesisRequiresExpectedHashAndEveryPeer", []string{"verify-mainnet-genesis"}},
+	{"custom_genesis_observation", "internal/conformance", "TestCompiledNodeDerivedCustomGenesis", []string{"verify-mainnet-genesis"}},
 	{"save_failure_events", "internal/syncer", "TestWatchJSONEventsRespectVerificationAndPersistence", nil},
 	{"save_recovery", "internal/syncer", "TestWatchJSONSaveRecoveryRetainsAttemptBoundaries", nil},
 	{"event_delivery_failure", "internal/syncer", "TestWatchJSONOutputFailureStopsWithoutRetry", nil},
@@ -66,4 +67,5 @@ var corpusPaths = []string{
 	"internal/testdata/conformance/contract-batches.json",
 	"internal/testdata/conformance/delayed-inclusion.json",
 	"internal/testdata/conformance/content-scaling.json",
+	"internal/testdata/conformance/historical-testnet-genesis.json",
 }

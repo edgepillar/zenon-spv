@@ -2,7 +2,10 @@ module github.com/edgepillar/zenon-spv/tools/gen-node-momentum-vectors
 
 go 1.25.0
 
-require github.com/zenon-network/go-zenon v0.0.8-alphanet.0.20260924192459-3a4131e63881
+require (
+	github.com/inconshreveable/log15 v0.0.0-20201112154412-8562bdadbbac
+	github.com/zenon-network/go-zenon v0.0.8-alphanet.0.20260924192459-3a4131e63881
+)
 
 require (
 	github.com/btcsuite/btcd/btcutil v1.1.3 // indirect
@@ -13,7 +16,6 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
-	github.com/inconshreveable/log15 v0.0.0-20201112154412-8562bdadbbac // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -21,6 +23,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.4.0 // indirect
+	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
