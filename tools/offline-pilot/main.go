@@ -99,35 +99,12 @@ func run(args []string, stdout, stderr io.Writer) int {
 			return 70
 		}
 	}
-	cmd := exec.CommandContext(ctx, goTool, testArguments(scenarios, *race)...)
-	cmd.Env, cmd.Stderr = pilotEnvironment(goTool), io.Discard
+	env := pilotEnvironment(goTool)
 	if exportDir != "" {
-		cmd.Env = append(cmd.Env, candidateExportEnvironment+"="+exportDir)
+		env = append(env, candidateExportEnvironment+"="+exportDir)
 	}
-	cmd.WaitDelay = 2 * time.Second
-	stream, err := cmd.StdoutPipe()
-	processOK := false
-	if err == nil {
-		err = cmd.Start()
-	}
-	if err != nil {
-		report.Error = errorCategory("test_start")
-	} else {
-		readErr := collector.read(stream)
-		if readErr != nil {
-			cancel() // Stop producing data before waiting on a rejected stream.
-		}
-		waitErr := cmd.Wait()
-		processOK = waitErr == nil
-		switch {
-		case readErr != nil:
-			report.Error = errorCategory("test_stream")
-		case ctx.Err() != nil:
-			report.Error = errorCategory("test_timeout")
-		case waitErr != nil:
-			report.Error = errorCategory("test_process")
-		}
-	}
+	processOK, processError := runTestProcess(ctx, goTool, testArguments(scenarios, *race), env, collector.read)
+	report.Error = processError
 	report.Status = collector.finish(processOK)
 	report.Cases = collector.cases
 	after, err := captureSource()
