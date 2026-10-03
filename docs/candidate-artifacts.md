@@ -71,6 +71,12 @@ that created the artifact. A pull-request run can test a synthetic merge
 checkout; its revision can differ from the PR feature head. Use the verified
 checkout revision and compare its tree with the reviewed candidate.
 
+The native workflow pins each external action to a full commit SHA. Review
+action changes as executable build inputs and confirm the downloaded action
+identities in the selected run's setup logs. These pins do not freeze runner
+images, the selected Go/Python version ranges, downloaded tools or module-cache
+contents, and do not authenticate a candidate release.
+
 Obtain the ZIP SHA-256 from that selected artifact's GitHub metadata, and
 verify the downloaded bytes. A digest copied out of the downloaded manifest
 cannot authenticate its own provenance. Do not derive every expected pin from
