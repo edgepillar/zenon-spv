@@ -1,0 +1,1170 @@
+{
+  "baseline": {
+    "runtime": {
+      "os": "darwin",
+      "architecture": "arm64",
+      "go_version": "go1.25.14"
+    },
+    "cpu_selection": 1,
+    "benchtime": "1s",
+    "samples_per_operation": 5,
+    "race_enabled": false,
+    "source": {
+      "revision": "1b6918a92387221b8215e6f1f7fe320b5b0d8c8d",
+      "modified": false,
+      "source_input_sha256": "f57ea471cdba25d6cf72fb27bd8b7f4e83fb38f3b25549478eb2ad2aa0a2d893",
+      "corpus": [
+        {
+          "path": "internal/testdata/conformance/momentum-v1-v2.json",
+          "sha256": "91747c6b7adba4e256fcb397d64348117edc9df874df7f25e2c56b776426dec9"
+        },
+        {
+          "path": "internal/testdata/conformance/account-amounts.json",
+          "sha256": "55e6d89f2ad3a25f7f7a6232fe99a5a572e2937d844fc9a3828d9e4cdad4a6aa"
+        },
+        {
+          "path": "internal/testdata/conformance/account-segments.json",
+          "sha256": "1faca6715c3865bae726a7a07f56ef2c43bd8a5a5c9816f618373312de43b048"
+        },
+        {
+          "path": "internal/testdata/conformance/contract-batches.json",
+          "sha256": "d85809454d0e8c3cf21aed055ef3e6b0668d89c2923e2a41021b3713f1e9dcdf"
+        },
+        {
+          "path": "internal/testdata/conformance/delayed-inclusion.json",
+          "sha256": "97b2278c2dbf4368281fae4cf3013e8160830d64d7103903b1ebc1292b06183f"
+        },
+        {
+          "path": "internal/testdata/conformance/content-scaling.json",
+          "sha256": "4d0960de634218616903cf16e32188da3de8d60c811b04908c6af99bcddddfa8"
+        }
+      ]
+    },
+    "samples": [
+      {
+        "capacity": 16,
+        "operation": "ExtendOne",
+        "iterations": 33003,
+        "ns_per_operation": 35793.0,
+        "bytes_per_operation": 12224,
+        "allocations_per_operation": 51,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "ExtendOne",
+        "iterations": 34017,
+        "ns_per_operation": 35898.0,
+        "bytes_per_operation": 12224,
+        "allocations_per_operation": 51,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "ExtendOne",
+        "iterations": 34178,
+        "ns_per_operation": 39550.0,
+        "bytes_per_operation": 12224,
+        "allocations_per_operation": 51,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "ExtendOne",
+        "iterations": 33295,
+        "ns_per_operation": 35327.0,
+        "bytes_per_operation": 12224,
+        "allocations_per_operation": 51,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "ExtendOne",
+        "iterations": 34005,
+        "ns_per_operation": 35275.0,
+        "bytes_per_operation": 12224,
+        "allocations_per_operation": 51,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "CommitmentFlat",
+        "iterations": 1000000,
+        "ns_per_operation": 1110.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "CommitmentFlat",
+        "iterations": 1000000,
+        "ns_per_operation": 1097.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "CommitmentFlat",
+        "iterations": 1000000,
+        "ns_per_operation": 1119.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "CommitmentFlat",
+        "iterations": 1000000,
+        "ns_per_operation": 1111.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "CommitmentFlat",
+        "iterations": 1000000,
+        "ns_per_operation": 1105.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "TrustedResume",
+        "iterations": 1536,
+        "ns_per_operation": 775417.0,
+        "bytes_per_operation": 93845,
+        "allocations_per_operation": 577,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "TrustedResume",
+        "iterations": 1621,
+        "ns_per_operation": 792105.0,
+        "bytes_per_operation": 93840,
+        "allocations_per_operation": 577,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "TrustedResume",
+        "iterations": 1446,
+        "ns_per_operation": 789824.0,
+        "bytes_per_operation": 93840,
+        "allocations_per_operation": 577,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "TrustedResume",
+        "iterations": 1486,
+        "ns_per_operation": 771599.0,
+        "bytes_per_operation": 93840,
+        "allocations_per_operation": 577,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "TrustedResume",
+        "iterations": 1586,
+        "ns_per_operation": 783919.0,
+        "bytes_per_operation": 93840,
+        "allocations_per_operation": 577,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "Save",
+        "iterations": 97,
+        "ns_per_operation": 12158188.0,
+        "bytes_per_operation": 80524,
+        "allocations_per_operation": 279,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "Save",
+        "iterations": 94,
+        "ns_per_operation": 12389068.0,
+        "bytes_per_operation": 80180,
+        "allocations_per_operation": 279,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "Save",
+        "iterations": 100,
+        "ns_per_operation": 11945700.0,
+        "bytes_per_operation": 80179,
+        "allocations_per_operation": 279,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "Save",
+        "iterations": 94,
+        "ns_per_operation": 12294234.0,
+        "bytes_per_operation": 80180,
+        "allocations_per_operation": 279,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "Save",
+        "iterations": 93,
+        "ns_per_operation": 12577126.0,
+        "bytes_per_operation": 80181,
+        "allocations_per_operation": 279,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 256,
+        "operation": "ExtendOne",
+        "iterations": 18627,
+        "ns_per_operation": 65809.0,
+        "bytes_per_operation": 156608,
+        "allocations_per_operation": 531,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "ExtendOne",
+        "iterations": 18459,
+        "ns_per_operation": 64154.0,
+        "bytes_per_operation": 156608,
+        "allocations_per_operation": 531,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "ExtendOne",
+        "iterations": 18597,
+        "ns_per_operation": 64278.0,
+        "bytes_per_operation": 156608,
+        "allocations_per_operation": 531,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "ExtendOne",
+        "iterations": 19167,
+        "ns_per_operation": 69778.0,
+        "bytes_per_operation": 156608,
+        "allocations_per_operation": 531,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "ExtendOne",
+        "iterations": 19022,
+        "ns_per_operation": 64348.0,
+        "bytes_per_operation": 156608,
+        "allocations_per_operation": 531,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "CommitmentFlat",
+        "iterations": 356060,
+        "ns_per_operation": 3403.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "CommitmentFlat",
+        "iterations": 362164,
+        "ns_per_operation": 3425.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "CommitmentFlat",
+        "iterations": 361554,
+        "ns_per_operation": 3305.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "CommitmentFlat",
+        "iterations": 364786,
+        "ns_per_operation": 3321.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "CommitmentFlat",
+        "iterations": 360933,
+        "ns_per_operation": 3347.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "TrustedResume",
+        "iterations": 100,
+        "ns_per_operation": 12016389.0,
+        "bytes_per_operation": 1355281,
+        "allocations_per_operation": 5865,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "TrustedResume",
+        "iterations": 98,
+        "ns_per_operation": 12141428.0,
+        "bytes_per_operation": 1355282,
+        "allocations_per_operation": 5865,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "TrustedResume",
+        "iterations": 100,
+        "ns_per_operation": 12014668.0,
+        "bytes_per_operation": 1355281,
+        "allocations_per_operation": 5865,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "TrustedResume",
+        "iterations": 100,
+        "ns_per_operation": 12034367.0,
+        "bytes_per_operation": 1355282,
+        "allocations_per_operation": 5865,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "TrustedResume",
+        "iterations": 98,
+        "ns_per_operation": 12049603.0,
+        "bytes_per_operation": 1355280,
+        "allocations_per_operation": 5865,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "Save",
+        "iterations": 54,
+        "ns_per_operation": 21998113.0,
+        "bytes_per_operation": 1165483,
+        "allocations_per_operation": 3890,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "Save",
+        "iterations": 57,
+        "ns_per_operation": 21779920.0,
+        "bytes_per_operation": 1155764,
+        "allocations_per_operation": 3889,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "Save",
+        "iterations": 55,
+        "ns_per_operation": 21884815.0,
+        "bytes_per_operation": 1155763,
+        "allocations_per_operation": 3889,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "Save",
+        "iterations": 57,
+        "ns_per_operation": 21467873.0,
+        "bytes_per_operation": 1155765,
+        "allocations_per_operation": 3889,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "Save",
+        "iterations": 57,
+        "ns_per_operation": 21883678.0,
+        "bytes_per_operation": 1155764,
+        "allocations_per_operation": 3889,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 4096,
+        "operation": "ExtendOne",
+        "iterations": 2121,
+        "ns_per_operation": 562078.0,
+        "bytes_per_operation": 2491328,
+        "allocations_per_operation": 8211,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "ExtendOne",
+        "iterations": 2113,
+        "ns_per_operation": 582477.0,
+        "bytes_per_operation": 2491328,
+        "allocations_per_operation": 8211,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "ExtendOne",
+        "iterations": 2023,
+        "ns_per_operation": 588311.0,
+        "bytes_per_operation": 2491328,
+        "allocations_per_operation": 8211,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "ExtendOne",
+        "iterations": 2041,
+        "ns_per_operation": 588678.0,
+        "bytes_per_operation": 2491328,
+        "allocations_per_operation": 8211,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "ExtendOne",
+        "iterations": 2082,
+        "ns_per_operation": 571260.0,
+        "bytes_per_operation": 2491328,
+        "allocations_per_operation": 8211,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "CommitmentFlat",
+        "iterations": 26911,
+        "ns_per_operation": 44699.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "CommitmentFlat",
+        "iterations": 27428,
+        "ns_per_operation": 43842.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "CommitmentFlat",
+        "iterations": 27648,
+        "ns_per_operation": 43243.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "CommitmentFlat",
+        "iterations": 27436,
+        "ns_per_operation": 43836.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "CommitmentFlat",
+        "iterations": 27642,
+        "ns_per_operation": 43587.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "TrustedResume",
+        "iterations": 6,
+        "ns_per_operation": 194820667.0,
+        "bytes_per_operation": 23115693,
+        "allocations_per_operation": 90370,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "TrustedResume",
+        "iterations": 6,
+        "ns_per_operation": 189761979.0,
+        "bytes_per_operation": 23115696,
+        "allocations_per_operation": 90370,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "TrustedResume",
+        "iterations": 6,
+        "ns_per_operation": 217836132.0,
+        "bytes_per_operation": 23115688,
+        "allocations_per_operation": 90370,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "TrustedResume",
+        "iterations": 6,
+        "ns_per_operation": 195389479.0,
+        "bytes_per_operation": 23115698,
+        "allocations_per_operation": 90370,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "TrustedResume",
+        "iterations": 6,
+        "ns_per_operation": 201895833.0,
+        "bytes_per_operation": 23115698,
+        "allocations_per_operation": 90370,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "Save",
+        "iterations": 7,
+        "ns_per_operation": 166018452.0,
+        "bytes_per_operation": 21925196,
+        "allocations_per_operation": 61509,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "Save",
+        "iterations": 6,
+        "ns_per_operation": 167020326.0,
+        "bytes_per_operation": 20726768,
+        "allocations_per_operation": 61506,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "Save",
+        "iterations": 7,
+        "ns_per_operation": 160413810.0,
+        "bytes_per_operation": 20726745,
+        "allocations_per_operation": 61506,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "Save",
+        "iterations": 7,
+        "ns_per_operation": 164738024.0,
+        "bytes_per_operation": 20726745,
+        "allocations_per_operation": 61506,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "Save",
+        "iterations": 5,
+        "ns_per_operation": 207365308.0,
+        "bytes_per_operation": 20726766,
+        "allocations_per_operation": 61506,
+        "state_bytes": 3232261
+      }
+    ]
+  },
+  "candidate": {
+    "runtime": {
+      "os": "darwin",
+      "architecture": "arm64",
+      "go_version": "go1.25.14"
+    },
+    "cpu_selection": 1,
+    "benchtime": "1s",
+    "samples_per_operation": 5,
+    "race_enabled": false,
+    "source": {
+      "revision": "1b6918a92387221b8215e6f1f7fe320b5b0d8c8d",
+      "modified": true,
+      "source_input_sha256": "497ba666e2f14e7986f7dc35276a710d1949620e06c20539e2b0eb559c895834",
+      "corpus": [
+        {
+          "path": "internal/testdata/conformance/momentum-v1-v2.json",
+          "sha256": "91747c6b7adba4e256fcb397d64348117edc9df874df7f25e2c56b776426dec9"
+        },
+        {
+          "path": "internal/testdata/conformance/account-amounts.json",
+          "sha256": "55e6d89f2ad3a25f7f7a6232fe99a5a572e2937d844fc9a3828d9e4cdad4a6aa"
+        },
+        {
+          "path": "internal/testdata/conformance/account-segments.json",
+          "sha256": "1faca6715c3865bae726a7a07f56ef2c43bd8a5a5c9816f618373312de43b048"
+        },
+        {
+          "path": "internal/testdata/conformance/contract-batches.json",
+          "sha256": "d85809454d0e8c3cf21aed055ef3e6b0668d89c2923e2a41021b3713f1e9dcdf"
+        },
+        {
+          "path": "internal/testdata/conformance/delayed-inclusion.json",
+          "sha256": "97b2278c2dbf4368281fae4cf3013e8160830d64d7103903b1ebc1292b06183f"
+        },
+        {
+          "path": "internal/testdata/conformance/content-scaling.json",
+          "sha256": "4d0960de634218616903cf16e32188da3de8d60c811b04908c6af99bcddddfa8"
+        }
+      ]
+    },
+    "samples": [
+      {
+        "capacity": 16,
+        "operation": "ExtendOne",
+        "iterations": 36938,
+        "ns_per_operation": 32291.0,
+        "bytes_per_operation": 5824,
+        "allocations_per_operation": 19,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "ExtendOne",
+        "iterations": 37140,
+        "ns_per_operation": 32503.0,
+        "bytes_per_operation": 5824,
+        "allocations_per_operation": 19,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "ExtendOne",
+        "iterations": 37124,
+        "ns_per_operation": 32293.0,
+        "bytes_per_operation": 5824,
+        "allocations_per_operation": 19,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "ExtendOne",
+        "iterations": 37272,
+        "ns_per_operation": 32483.0,
+        "bytes_per_operation": 5824,
+        "allocations_per_operation": 19,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "ExtendOne",
+        "iterations": 36884,
+        "ns_per_operation": 32515.0,
+        "bytes_per_operation": 5824,
+        "allocations_per_operation": 19,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "CommitmentFlat",
+        "iterations": 1000000,
+        "ns_per_operation": 1082.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "CommitmentFlat",
+        "iterations": 1000000,
+        "ns_per_operation": 1073.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "CommitmentFlat",
+        "iterations": 1000000,
+        "ns_per_operation": 1077.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "CommitmentFlat",
+        "iterations": 1000000,
+        "ns_per_operation": 1093.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "CommitmentFlat",
+        "iterations": 1000000,
+        "ns_per_operation": 1090.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "TrustedResume",
+        "iterations": 1557,
+        "ns_per_operation": 753221.0,
+        "bytes_per_operation": 93845,
+        "allocations_per_operation": 577,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "TrustedResume",
+        "iterations": 1646,
+        "ns_per_operation": 749691.0,
+        "bytes_per_operation": 93840,
+        "allocations_per_operation": 577,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "TrustedResume",
+        "iterations": 1552,
+        "ns_per_operation": 772866.0,
+        "bytes_per_operation": 93840,
+        "allocations_per_operation": 577,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "TrustedResume",
+        "iterations": 1608,
+        "ns_per_operation": 761262.0,
+        "bytes_per_operation": 93840,
+        "allocations_per_operation": 577,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "TrustedResume",
+        "iterations": 1605,
+        "ns_per_operation": 755062.0,
+        "bytes_per_operation": 93840,
+        "allocations_per_operation": 577,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "Save",
+        "iterations": 94,
+        "ns_per_operation": 12735864.0,
+        "bytes_per_operation": 80533,
+        "allocations_per_operation": 279,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "Save",
+        "iterations": 94,
+        "ns_per_operation": 12444451.0,
+        "bytes_per_operation": 80180,
+        "allocations_per_operation": 279,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "Save",
+        "iterations": 94,
+        "ns_per_operation": 12313726.0,
+        "bytes_per_operation": 80179,
+        "allocations_per_operation": 279,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "Save",
+        "iterations": 94,
+        "ns_per_operation": 12300879.0,
+        "bytes_per_operation": 80180,
+        "allocations_per_operation": 279,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 16,
+        "operation": "Save",
+        "iterations": 100,
+        "ns_per_operation": 12045819.0,
+        "bytes_per_operation": 80180,
+        "allocations_per_operation": 279,
+        "state_bytes": 13139
+      },
+      {
+        "capacity": 256,
+        "operation": "ExtendOne",
+        "iterations": 27757,
+        "ns_per_operation": 43342.0,
+        "bytes_per_operation": 66496,
+        "allocations_per_operation": 19,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "ExtendOne",
+        "iterations": 27304,
+        "ns_per_operation": 44780.0,
+        "bytes_per_operation": 66496,
+        "allocations_per_operation": 19,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "ExtendOne",
+        "iterations": 27301,
+        "ns_per_operation": 43948.0,
+        "bytes_per_operation": 66496,
+        "allocations_per_operation": 19,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "ExtendOne",
+        "iterations": 27222,
+        "ns_per_operation": 43689.0,
+        "bytes_per_operation": 66496,
+        "allocations_per_operation": 19,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "ExtendOne",
+        "iterations": 27342,
+        "ns_per_operation": 43992.0,
+        "bytes_per_operation": 66496,
+        "allocations_per_operation": 19,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "CommitmentFlat",
+        "iterations": 383926,
+        "ns_per_operation": 3221.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "CommitmentFlat",
+        "iterations": 372390,
+        "ns_per_operation": 3217.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "CommitmentFlat",
+        "iterations": 377234,
+        "ns_per_operation": 3209.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "CommitmentFlat",
+        "iterations": 385693,
+        "ns_per_operation": 3217.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "CommitmentFlat",
+        "iterations": 383089,
+        "ns_per_operation": 3201.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "TrustedResume",
+        "iterations": 100,
+        "ns_per_operation": 11772952.0,
+        "bytes_per_operation": 1355281,
+        "allocations_per_operation": 5865,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "TrustedResume",
+        "iterations": 100,
+        "ns_per_operation": 11575494.0,
+        "bytes_per_operation": 1355281,
+        "allocations_per_operation": 5865,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "TrustedResume",
+        "iterations": 100,
+        "ns_per_operation": 11690158.0,
+        "bytes_per_operation": 1355282,
+        "allocations_per_operation": 5865,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "TrustedResume",
+        "iterations": 100,
+        "ns_per_operation": 11643808.0,
+        "bytes_per_operation": 1355282,
+        "allocations_per_operation": 5865,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "TrustedResume",
+        "iterations": 100,
+        "ns_per_operation": 11929828.0,
+        "bytes_per_operation": 1355282,
+        "allocations_per_operation": 5865,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "Save",
+        "iterations": 46,
+        "ns_per_operation": 24151066.0,
+        "bytes_per_operation": 1167176,
+        "allocations_per_operation": 3890,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "Save",
+        "iterations": 55,
+        "ns_per_operation": 21407486.0,
+        "bytes_per_operation": 1155764,
+        "allocations_per_operation": 3889,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "Save",
+        "iterations": 55,
+        "ns_per_operation": 25807912.0,
+        "bytes_per_operation": 1155764,
+        "allocations_per_operation": 3889,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "Save",
+        "iterations": 57,
+        "ns_per_operation": 21536866.0,
+        "bytes_per_operation": 1155763,
+        "allocations_per_operation": 3889,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 256,
+        "operation": "Save",
+        "iterations": 57,
+        "ns_per_operation": 21203390.0,
+        "bytes_per_operation": 1155764,
+        "allocations_per_operation": 3889,
+        "state_bytes": 202500
+      },
+      {
+        "capacity": 4096,
+        "operation": "ExtendOne",
+        "iterations": 5283,
+        "ns_per_operation": 236598.0,
+        "bytes_per_operation": 1049536,
+        "allocations_per_operation": 19,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "ExtendOne",
+        "iterations": 4918,
+        "ns_per_operation": 253935.0,
+        "bytes_per_operation": 1049536,
+        "allocations_per_operation": 19,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "ExtendOne",
+        "iterations": 5427,
+        "ns_per_operation": 242329.0,
+        "bytes_per_operation": 1049536,
+        "allocations_per_operation": 19,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "ExtendOne",
+        "iterations": 5262,
+        "ns_per_operation": 240214.0,
+        "bytes_per_operation": 1049536,
+        "allocations_per_operation": 19,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "ExtendOne",
+        "iterations": 5054,
+        "ns_per_operation": 236950.0,
+        "bytes_per_operation": 1049536,
+        "allocations_per_operation": 19,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "CommitmentFlat",
+        "iterations": 28804,
+        "ns_per_operation": 41681.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "CommitmentFlat",
+        "iterations": 28549,
+        "ns_per_operation": 42514.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "CommitmentFlat",
+        "iterations": 28458,
+        "ns_per_operation": 42223.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "CommitmentFlat",
+        "iterations": 28516,
+        "ns_per_operation": 41986.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "CommitmentFlat",
+        "iterations": 24585,
+        "ns_per_operation": 45318.0,
+        "bytes_per_operation": 448,
+        "allocations_per_operation": 11,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "TrustedResume",
+        "iterations": 6,
+        "ns_per_operation": 183151319.0,
+        "bytes_per_operation": 23115693,
+        "allocations_per_operation": 90370,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "TrustedResume",
+        "iterations": 5,
+        "ns_per_operation": 213401933.0,
+        "bytes_per_operation": 23115691,
+        "allocations_per_operation": 90370,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "TrustedResume",
+        "iterations": 6,
+        "ns_per_operation": 188927979.0,
+        "bytes_per_operation": 23115688,
+        "allocations_per_operation": 90370,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "TrustedResume",
+        "iterations": 6,
+        "ns_per_operation": 184909125.0,
+        "bytes_per_operation": 23115696,
+        "allocations_per_operation": 90370,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "TrustedResume",
+        "iterations": 6,
+        "ns_per_operation": 187250833.0,
+        "bytes_per_operation": 23115696,
+        "allocations_per_operation": 90370,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "Save",
+        "iterations": 7,
+        "ns_per_operation": 159492101.0,
+        "bytes_per_operation": 21925213,
+        "allocations_per_operation": 61510,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "Save",
+        "iterations": 7,
+        "ns_per_operation": 159082714.0,
+        "bytes_per_operation": 20726764,
+        "allocations_per_operation": 61506,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "Save",
+        "iterations": 7,
+        "ns_per_operation": 154423464.0,
+        "bytes_per_operation": 20726745,
+        "allocations_per_operation": 61506,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "Save",
+        "iterations": 7,
+        "ns_per_operation": 167614524.0,
+        "bytes_per_operation": 20726764,
+        "allocations_per_operation": 61506,
+        "state_bytes": 3232261
+      },
+      {
+        "capacity": 4096,
+        "operation": "Save",
+        "iterations": 7,
+        "ns_per_operation": 154255637.0,
+        "bytes_per_operation": 20726764,
+        "allocations_per_operation": 61506,
+        "state_bytes": 3232261
+      }
+    ]
+  }
+}

@@ -87,8 +87,15 @@ func (s VerifiedState) Extend(headers []chain.Header) (Result, VerifiedState) {
 	if r.Outcome != OutcomeAccept {
 		return r, s
 	}
+	// Verification already created a fresh header array and profile. Earlier
+	// envelopes are private immutable state; only the retained incoming tail
+	// still aliases caller-owned key/signature bytes and needs detachment.
+	incoming := min(len(headers), len(next.RetainedWindow))
+	for i := len(next.RetainedWindow) - incoming; i < len(next.RetainedWindow); i++ {
+		next.RetainedWindow[i] = cloneStateHeader(next.RetainedWindow[i])
+	}
 	return s.withStateTrust(r), VerifiedState{data: &verifiedStateData{
-		state: cloneHeaderState(next), opts: s.data.opts, trustedLocal: s.data.trustedLocal,
+		state: next, opts: s.data.opts, trustedLocal: s.data.trustedLocal,
 	}}
 }
 
