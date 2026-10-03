@@ -29,8 +29,23 @@ Keep source files unchanged during the run. Store the report outside the
 checkout so generating evidence does not itself change Git status. The
 default driver deadline is ten minutes (`--timeout`, positive and at most one
 hour); each selected test package also has a five-minute Go test deadline.
-The driver deadline stops the Go command, while spawned test/CLI processes
-retain their own timeouts. This tool is not a process-tree supervisor.
+The driver deadline stops the direct Go command. Its stdout copy is owned by
+`os/exec` and consumed concurrently; command waiting joins that copy before
+closing the collector channel. A two-second wait limit also releases inherited
+stdio pipes after direct-command exit or cancellation. Truncated/malformed
+streams and actual process/timeout failures prevent successful reports and
+candidate export, even when all observed test events appear to pass.
+Spawned test/CLI processes retain their own timeouts; the driver does not
+terminate descendants. This is not a process-tree supervisor or a hard deadline
+for source/corpus filesystem reads before and after test execution.
+
+Native helper tests exercise ordinary exit with buffered trailing events,
+retained stdout after direct exit and cancellation, malformed streams, collector
+rejection during a buffered flood, failed exit, deadline expiry after complete
+events and failed start. Helpers use no shell or network and have finite lifetimes;
+the owning tests wait for their OS-released fixture locks before cleanup.
+These runner helper tests execute in the native Go package suite, outside the
+fixed 44-scenario pilot selection.
 
 ## Selected coverage
 
