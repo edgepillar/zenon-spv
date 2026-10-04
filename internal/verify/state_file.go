@@ -135,21 +135,14 @@ func saveHeaderState(path string, state HeaderState, openDir func(string) (*os.F
 // versioning policy. It bounds input size and decoded header count, and rechecks
 // every retained header's layout, activation profile, identity, hash, signature,
 // linkage, and applicable checkpoints before any policy-driven truncation.
+// Only regular file targets are accepted; stream inputs have no read deadline.
 // This cannot authenticate the source of the file or re-prove evicted ancestry.
 func LoadHeaderState(path string) (HeaderState, error) {
-	f, err := os.Open(path)
+	f, info, err := openStateInput(path, openReadOnlyStateFile)
 	if err != nil {
 		return HeaderState{}, err
 	}
 	defer func() { _ = f.Close() }()
-
-	info, err := f.Stat()
-	if err != nil {
-		return HeaderState{}, err
-	}
-	if info.Size() > MaxStateFileBytes {
-		return HeaderState{}, ErrStateFileTooLarge
-	}
 	return decodeSizedHeaderState(f, MaxStateFileBytes, info.Size())
 }
 
