@@ -177,6 +177,12 @@ fixed signed-capture runs at K=256/4096 and concurrency one/four, including ever
 actual process outcome, sampled RSS and group elapsed time. Their local limits
 and macOS sampling boundary do not establish network or production capacity.
 
+[Five-block resource observations](signed-batch-observer-resources.md) measure
+five distinct signed blocks as one complete batch with the same K/concurrency
+choices. All predeclared local limits passed, with every raw sample and actual
+process outcome preserved. The fixed loopback replies measure replay costs;
+live network latency and qualification remain separate.
+
 [Five-block live findings](live-signed-batch-observation.md) record three complete
 signed testnet batch matches, exact position/completeness refusals and an offline
 missing-commitment refusal before consumption. Identities and byte oracles were
