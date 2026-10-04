@@ -45,6 +45,15 @@ func VerifyCommitment(state HeaderState, evidence proof.CommitmentEvidence, poli
 	if err := state.validateProtocolPolicy(policy); err != nil {
 		return protocolFailure(err)
 	}
+	return verifyCommitmentInValidatedWindow(state, evidence, policy)
+}
+
+// verifyCommitmentInValidatedWindow requires a fully checked retention policy,
+// profile and retained window. VerifiedState supplies privately owned immutable
+// data checked at construction, resume and extension. The public low-level
+// entry point above must validate its caller-owned state before using this path.
+// Evidence remains caller-owned and is checked on every invocation.
+func verifyCommitmentInValidatedWindow(state HeaderState, evidence proof.CommitmentEvidence, policy Policy) Result {
 	header, ok := state.HeaderAtHeight(evidence.Height)
 	if !ok {
 		return Result{
