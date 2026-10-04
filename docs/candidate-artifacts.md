@@ -44,7 +44,7 @@ as part of packaging after the tests complete.
 
 The fixed mode is `offline_synthetic_candidate`. The manifest records native
 OS/architecture, filtered Go version, observed source revision/modified state
-and input fingerprint, six corpus identities, the report's relative filename,
+and input fingerprint, pinned corpus identities, the report's relative filename,
 SHA-256 and byte size, and each executable's fixed relative filename, SHA-256
 and size. Its `test_status` preserves `passed_with_skips`; inspect the report's
 scenario counts and skip reasons in the corresponding CI logs.
