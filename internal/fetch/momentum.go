@@ -84,32 +84,26 @@ func (c *Client) FetchByHeight(ctx context.Context, start, count uint64) ([]chai
 // FetchByHeightDetailed is FetchByHeight that also returns each
 // momentum's parsed Content slice. Used to build CommitmentEvidence
 // without a second round-trip. Start and count must be positive, and the
-// range must not overflow. Every returned height must match its query position.
+// range must fit MaxRangeQueryCount and not overflow. Every returned height must
+// match its query position. Pages share byte and nested-evidence budgets; an
+// unusable page discards the entire range.
 func (c *Client) FetchByHeightDetailed(ctx context.Context, start, count uint64) ([]DetailedHeader, error) {
 	if err := validateHeightRange(start, count); err != nil {
 		return nil, err
 	}
-	var list rpcMomentumList
 	evidence := newRPCEvidenceDecoder()
-	decoder := rpcListDecoder[rpcMomentum]{target: &list.List, count: count, rowTarget: evidence.momentum}
-	if err := c.Call(ctx, "ledger.getMomentumsByHeight", []any{start, count}, &decoder); err != nil {
-		return nil, fmt.Errorf("getMomentumsByHeight: %w", err)
-	}
-	if uint64(len(list.List)) != count {
-		return nil, fmt.Errorf("%w: rpc returned %d momentums, expected %d", ErrQueryMismatch, len(list.List), count)
-	}
-	out := make([]DetailedHeader, count)
-	for i, m := range list.List {
-		if m.Height != start+uint64(i) {
-			return nil, fmt.Errorf("%w: momentum index %d has height %d, expected height %d", ErrQueryMismatch, i, m.Height, start+uint64(i))
-		}
-		d, err := convertAndVerifyDetailed(m)
-		if err != nil {
-			return nil, fmt.Errorf("momentum height=%d: %w", m.Height, callFailure("convert momentum", err))
-		}
-		out[i] = d
-	}
-	return out, nil
+	return fetchHeightRange(ctx, c, "ledger.getMomentumsByHeight", start, count,
+		func(height, size uint64) []any { return []any{height, size} }, evidence.momentum,
+		func(m rpcMomentum, i uint64) (DetailedHeader, error) {
+			if m.Height != start+i {
+				return DetailedHeader{}, fmt.Errorf("%w: momentum index %d has height %d, expected height %d", ErrQueryMismatch, i, m.Height, start+i)
+			}
+			d, err := convertAndVerifyDetailed(m)
+			if err != nil {
+				return DetailedHeader{}, fmt.Errorf("momentum height=%d: %w", m.Height, callFailure("convert momentum", err))
+			}
+			return d, nil
+		}, newRPCResponseBudget())
 }
 
 // ErrHashMismatch is returned when a peer-claimed hash does not

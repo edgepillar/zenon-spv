@@ -172,7 +172,7 @@ func TestInvalidQueriesMakeNoRPCRequests(t *testing.T) {
 		"single": NewClient(server.URL), "multi": NewMultiClient([]string{server.URL}),
 	} {
 		t.Run(name, func(t *testing.T) {
-			for _, bounds := range [][2]uint64{{0, 1}, {1, 0}, {0, 0}, {math.MaxUint64, 2}, {2, math.MaxUint64}} {
+			for _, bounds := range [][2]uint64{{0, 1}, {1, 0}, {0, 0}, {math.MaxUint64, 2}, {2, math.MaxUint64}, {1, MaxRangeQueryCount + 1}} {
 				h, err := client.FetchByHeight(context.Background(), bounds[0], bounds[1])
 				if !errors.Is(err, ErrInvalidQuery) || len(h) != 0 {
 					t.Fatalf("invalid header query: bounds=%v err=%v", bounds, err)
