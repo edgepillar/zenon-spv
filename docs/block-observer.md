@@ -193,6 +193,18 @@ context and target mismatch, explicit endpoint precedence, recovery, private
 cleanup and unchanged inputs/state. It is synthetic conformance, not a live
 testnet or independent-operator result.
 
+`TestCompiledRPCObserverDelayedInclusion` exercises the joined command using
+the existing mixed v1/v2 node corpus, with separate confirming momentums and
+preselected signed and embedded segments. It requires signature authenticity
+for the signed segment and refuses that requirement for the embedded segment.
+Depth and retained-history refusals stop before consumption; fetched evicted
+evidence cannot restore state, and a newer collection cannot advance the
+selected tip. A changed v2 price fails collection before verification. Every
+case preserves the fixed trust inputs, contexts, expectations and states,
+checks actual child exits and removes private files. These remain local
+synthetic-attestation checks; they do not establish network activation or
+finality.
+
 The next acceptance gate is this selected application's controlled network run:
 independently authenticated chain/anchor/profile/schedule and approved peers,
 real selected block identities, target hardware and memory/latency/concurrency

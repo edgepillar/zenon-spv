@@ -66,6 +66,9 @@ The named scenarios are defined in
   verifier and consumer, both target commands, failed collection/deadline/start,
   all binary pins, context/target mismatch, endpoint precedence and unchanged
   private state/inputs. This uses one loopback operator and synthetic trust.
+- The same joined RPC mode over mixed v1/v2 delayed-inclusion envelopes,
+  preselected signed/embedded segments, exact depth and evicted-history
+  refusals, no implicit state advance, and a changed v2 price control.
 - Exact compiled-binary exports, nonreplacement of existing files, bounded
   copies and report-bound manifest refusal of incomplete or conflicting inputs.
 - The [pinned operator workflow](operator-pilot.md): inspect explicit trust
