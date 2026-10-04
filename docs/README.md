@@ -45,6 +45,9 @@ audit history.
 - [`live-signed-batch-observation.md`](live-signed-batch-observation.md) — five
   real signed blocks consumed as a complete read-only batch, with exact target
   refusals, preserved raw evidence and explicit one-gateway limits.
+- [`signed-batch-observer-resources.md`](signed-batch-observer-resources.md) —
+  fixed replay costs for five distinct signed blocks at K=256/4096 and
+  concurrency one/four, with all raw samples and process outcomes preserved.
 - [`state-read-allocations.md`](state-read-allocations.md) — bounded file reads,
   allocation reductions and preserved saved-state verification checks.
 - [`bundle-read-allocations.md`](bundle-read-allocations.md) — bounded proof-file
