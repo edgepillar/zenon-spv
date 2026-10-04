@@ -57,7 +57,7 @@ func TestCollectionRequiresCompleteExplicitSelection(t *testing.T) {
 			t.Fatal("ambiguous proof source or target mode accepted")
 		}
 	}
-	for _, name := range []string{"collector", "collector-sha256", "rpc", "height", "count", "commitments", "segments"} {
+	for _, name := range []string{"collector", "collector-sha256", "rpc", "height", "count", "commitments", "segments", "momentum-heights"} {
 		if _, ok := parseConfiguration(append(selectedArguments(), "--"+name, "PRIVATE_UNUSED")); ok {
 			t.Fatal("local-file observation accepted unused RPC inputs")
 		}
@@ -87,6 +87,25 @@ func TestCollectionRequiresCompleteExplicitSelection(t *testing.T) {
 	var out, diagnostics bytes.Buffer
 	if run(ctx, args, &out, &diagnostics) != 2 || diagnostics.Len() != 0 || bytes.Contains(out.Bytes(), []byte("PRIVATE")) || !bytes.Contains(out.Bytes(), []byte(`"schema_version":2`)) {
 		t.Fatal("cancelled collection executed, changed schema or leaked")
+	}
+}
+
+func TestCollectionExplicitMomentumSelection(t *testing.T) {
+	args := selectedCollectionArguments()
+	selected := append(slices.Clone(args), "--momentum-heights", "85,90,100")
+	c, ok := parseConfiguration(selected)
+	if !ok || !slices.Equal(collectionArguments(c), []string{"--rpc", c.collection.rpc, "--height", "100", "--count", "16",
+		"--proof-only", "--out", "-", "--timeout", "30s", "--momentum-heights", "85,90,100", "--segments", c.collection.segments}) {
+		t.Fatal("explicit height selection changed collection arguments")
+	}
+	if _, ok := parseConfiguration(append(selected, "--momentum-heights", "90")); ok {
+		t.Fatal("duplicate selection accepted")
+	}
+	for _, value := range []string{"", "84", "101", "85,85", "90,85", " 90", "090", strings.Repeat("1,", 1024) + "90"} {
+		var out, diagnostics bytes.Buffer
+		if run(context.Background(), append(slices.Clone(args), "--momentum-heights", value), &out, &diagnostics) != 64 || out.Len() != 0 || strings.Contains(diagnostics.String(), "PRIVATE") {
+			t.Fatal("invalid selected evidence executed or disclosed private inputs")
+		}
 	}
 }
 
