@@ -11,7 +11,8 @@ def check_unsigned_projection(projection):
     uint64(projection["momentumAcknowledged"]["height"])
 
 
-def check_account(block, rpc):
+def account_bytes(block, rpc):
+    """Return the checked amount encoding and complete signed-envelope bytes."""
     check_unsigned_projection(block)
     pending = [rpc]
     while pending:
@@ -19,6 +20,7 @@ def check_account(block, rpc):
         check_unsigned_projection(projection)
         pending.extend(projection["descendantBlocks"])
     amount = block["amount"]
+    require(type(amount) is int, "expected an integer account amount")
     require(amount == int(rpc["amount"]), "amount differs across wire forms")
     magnitude = abs(amount)
     encoded = magnitude.to_bytes(max(32, (magnitude.bit_length() + 7) // 8), "big")
@@ -53,4 +55,8 @@ def check_account(block, rpc):
         uint64(block["fusedPlasma"]), uint64(block["difficulty"]), field_bytes("nonce", 8),
     ])
     require(digest(preimage).hex() == block["hash"] == rpc["hash"], "account-block preimage mismatch")
-    return encoded
+    return encoded, preimage
+
+
+def check_account(block, rpc):
+    return account_bytes(block, rpc)[0]
