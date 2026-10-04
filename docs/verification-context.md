@@ -191,5 +191,23 @@ fingerprint implementation. Check them with:
 
 ```sh
 python3 tools/check-verification-context.py
+python3 tools/check-verification-context_test.py
 go test -race ./...
 ```
+
+The independent encoder requires exact JSON integers, excluding booleans,
+floating-point values, strings and nulls. Context/profile versions fit uint32;
+anchor IDs/heights, W, activation heights and checkpoint heights fit uint64.
+Encoded resource limits and schema 2 retained capacity fit nonnegative int64. These
+source field ranges apply before encoding the values as big-endian uint64.
+Anchor, schedule and checkpoint hashes require exactly 64 hexadecimal digits
+without prefixes or whitespace, representing 32 raw bytes. Uppercase digits
+retain the same byte identity. In particular, redistributing bytes across
+adjacent checkpoint hashes cannot preserve a valid typed input.
+
+The corruption suite runs on Linux, macOS and Windows and retains the three
+stored golden fingerprints. Its numeric boundary controls check representation,
+including values that verified-state constructors would refuse. This encoder
+does not validate constructor policy, fingerprintability, retained-state
+compatibility or input provenance. The vectors remain synthetic configuration
+evidence, separate from node conformance and network activation.
