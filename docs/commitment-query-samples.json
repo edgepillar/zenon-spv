@@ -1,0 +1,225 @@
+{
+  "benchtime": "300ms",
+  "external_rpc_requests": 0,
+  "historical_experiment_drivers_reexecuted": false,
+  "notes": [
+    "Both phases use W=6, an explicit v2 profile and required producer authorization.",
+    "The baseline K=16 sample of 2731 ns/op is retained without filtering.",
+    "Only individual commitment queries changed; segment queries, extension, save and resume retain their full-window checks.",
+    "Allocation volume is not peak resident memory. Local timings do not establish portable performance, canonicality, finality or network qualification."
+  ],
+  "other_repository_checks_completed_before_measurement": true,
+  "phases": {
+    "after": {
+      "actual_exit_code": 0,
+      "base_revision": "769c38c7d0475992f042f26e0224a1df1f195b8e",
+      "inputs_sha256": "f248ea8b2fe48268c3513ccd758eead09b1553379306f60c484a9cc293a9ec90",
+      "modified": true,
+      "source_input_count": 319,
+      "stdout_sha256": "be7b7aa041e26ce7414ad9758bf7cef785a3a392d0d2224adbc59771e79ead30"
+    },
+    "baseline": {
+      "actual_exit_code": 0,
+      "base_revision": "769c38c7d0475992f042f26e0224a1df1f195b8e",
+      "inputs_sha256": "95cdf4f32886a9dc558734ff8c2341116330bb69c8e5a72642f59f701805e10e",
+      "modified": false,
+      "source_input_count": 318,
+      "stdout_sha256": "7967bb71a529062f36135218796634a17e212a25b1c52b972106ac52aaf2bdf6"
+    }
+  },
+  "purpose": "Individual commitment queries through an immutable VerifiedState with one synthetic flat-content member.",
+  "runner": {
+    "architecture": "arm64",
+    "go_version": "go1.25.14",
+    "gomaxprocs": 1,
+    "host_identity_omitted": true,
+    "os": "darwin",
+    "race_enabled": false
+  },
+  "samples": [
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 16,
+      "iterations": 319705,
+      "ns_per_op": 1119.0,
+      "phase": "baseline",
+      "sample": 1,
+      "state_bytes": 13139
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 16,
+      "iterations": 312754,
+      "ns_per_op": 1141.0,
+      "phase": "baseline",
+      "sample": 2,
+      "state_bytes": 13139
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 16,
+      "iterations": 319394,
+      "ns_per_op": 2731.0,
+      "phase": "baseline",
+      "sample": 3,
+      "state_bytes": 13139
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 256,
+      "iterations": 106699,
+      "ns_per_op": 3364.0,
+      "phase": "baseline",
+      "sample": 1,
+      "state_bytes": 202500
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 256,
+      "iterations": 111564,
+      "ns_per_op": 3333.0,
+      "phase": "baseline",
+      "sample": 2,
+      "state_bytes": 202500
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 256,
+      "iterations": 105903,
+      "ns_per_op": 3403.0,
+      "phase": "baseline",
+      "sample": 3,
+      "state_bytes": 202500
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 4096,
+      "iterations": 7944,
+      "ns_per_op": 44973.0,
+      "phase": "baseline",
+      "sample": 1,
+      "state_bytes": 3232261
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 4096,
+      "iterations": 7695,
+      "ns_per_op": 43973.0,
+      "phase": "baseline",
+      "sample": 2,
+      "state_bytes": 3232261
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 4096,
+      "iterations": 8472,
+      "ns_per_op": 43621.0,
+      "phase": "baseline",
+      "sample": 3,
+      "state_bytes": 3232261
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 16,
+      "iterations": 399411,
+      "ns_per_op": 903.2,
+      "phase": "after",
+      "sample": 1,
+      "state_bytes": 13139
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 16,
+      "iterations": 386811,
+      "ns_per_op": 915.1,
+      "phase": "after",
+      "sample": 2,
+      "state_bytes": 13139
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 16,
+      "iterations": 392157,
+      "ns_per_op": 908.5,
+      "phase": "after",
+      "sample": 3,
+      "state_bytes": 13139
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 256,
+      "iterations": 375056,
+      "ns_per_op": 929.7,
+      "phase": "after",
+      "sample": 1,
+      "state_bytes": 202500
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 256,
+      "iterations": 392365,
+      "ns_per_op": 907.9,
+      "phase": "after",
+      "sample": 2,
+      "state_bytes": 202500
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 256,
+      "iterations": 399456,
+      "ns_per_op": 912.0,
+      "phase": "after",
+      "sample": 3,
+      "state_bytes": 202500
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 4096,
+      "iterations": 414171,
+      "ns_per_op": 1065.0,
+      "phase": "after",
+      "sample": 1,
+      "state_bytes": 3232261
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 4096,
+      "iterations": 348519,
+      "ns_per_op": 989.3,
+      "phase": "after",
+      "sample": 2,
+      "state_bytes": 3232261
+    },
+    {
+      "allocations_per_op": 11,
+      "bytes_per_op": 448,
+      "capacity": 4096,
+      "iterations": 365239,
+      "ns_per_op": 982.7,
+      "phase": "after",
+      "sample": 3,
+      "state_bytes": 3232261
+    }
+  ],
+  "samples_filtered_or_retried": false,
+  "samples_per_capacity_per_phase": 3,
+  "scenario": "BenchmarkRetainedCapacity/(K16|K256|K4096)/CommitmentFlat",
+  "schema_version": 1
+}

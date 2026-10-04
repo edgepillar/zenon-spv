@@ -7,7 +7,7 @@ Each capacity has four measured operations:
 | Operation | Timed work |
 | --- | --- |
 | `ExtendOne` | Verify one signed successor, evict the oldest header, build the immutable successor and check its summary. Each iteration starts from the same full state. |
-| `CommitmentFlat` | Verify one member against the oldest retained header, including current retained-layout policy checks and result guarantees. |
+| `CommitmentFlat` | Verify one member against the oldest retained header through an immutable `VerifiedState`, including depth, evidence bounds, content hashing, membership and result guarantees. |
 | `TrustedResume` | Open/decode a full saved file, capture options/schedule, validate all retained hashes/signatures and reauthorize every producer. Reads normally use a warm filesystem cache. |
 | `Save` | Validate and serialize the full window, replace the fixture file atomically where supported, and perform the platform's file/directory sync behavior. |
 
@@ -35,12 +35,16 @@ enforce timing thresholds. `TestRetainedCapacityWorkloads` also exercises full
 windows, exact eviction, immutable predecessors, persistence and resumed
 inclusion during ordinary tests and the offline pilot.
 
-Expect costs that grow with K. Full-window header-array copies, retained-layout
-validation during queries, save validation and full resume reauthorization
-still inspect or copy the retained history. A larger K increases proof
-availability; it is not a constant-cost cache. The explicit maximum remains
-4096. Transient JSON decoding/validation can allocate much more than the file
-size. Hard input caps are not a process-memory ceiling.
+Extension, save and resume still inspect or copy the retained history, with
+costs that grow with K. Individual `VerifiedState.VerifyCommitment` calls reuse
+the complete-window protocol validation performed before an immutable handle
+was returned. Their selected-header lookup is constant-time, but each supplied
+flat content list is bounded, hashed and scanned anew. The low-level
+`VerifyCommitment` API still checks the entire caller-owned window, and segment
+queries retain that path. A larger K increases proof availability; it is not a
+constant-cost cache. The explicit maximum remains 4096. Transient JSON
+decoding/validation can allocate much more than the file size. Hard input caps
+are not a process-memory ceiling.
 
 These measurements are a local baseline. Representative consumer workloads,
 consumer-specific content/proof scaling, target hardware, cold I/O,
@@ -110,8 +114,9 @@ bytes, and local operation time is in milliseconds:
 outside the changed path. Saved state sizes remained 13,139, 202,500 and
 3,232,261 bytes for K=16, 256 and 4096. These results do not establish a
 portable speedup, peak RSS, a hardware memory ceiling or network performance.
-The verifier still allocates a header array proportional to K, and query,
-save and resume costs still grow with retained history.
+The verifier still allocates a header array proportional to K. These older
+measurements precede the individual-query change below; segment queries,
+extension, save and resume retain costs that grow with retained history.
 
 Ownership tests cover initially empty, partial and full windows; batches below,
 equal to and above K; caller input mutations; predecessor, sibling and
@@ -120,3 +125,41 @@ extensions; save/resume; and concurrent readers/extensions. A local disposable
 overlay that omitted incoming-envelope detachment failed all 12 ownership
 matrix scenarios. These signed synthetic tests are behavioral checks, not
 evidence of canonicality, finality, network activation or state values.
+
+## Reusing immutable state during individual commitment queries
+
+`VerifiedState.VerifyCommitment` now reuses the retained-window protocol checks
+completed during construction, trusted resume and successful extension. The
+handle owns its captured policy, profile and header bytes; public views return
+detached copies. Every query still checks its selected height, W depth, supplied
+evidence size, content hash and exact target membership. No evidence or proof
+result is cached. The public low-level `VerifyCommitment` function continues
+validating the entire caller-owned window, including unqueried headers.
+
+The [complete samples](commitment-query-samples.json) contain all 18 measurements:
+three 300-millisecond samples at each capacity, before and after the change,
+using Go 1.25.14 on darwin/arm64 with one processor and no race instrumentation.
+Other repository builds and checks completed before each measurement phase.
+No samples were filtered or retried, including the slower baseline K=16 sample.
+The baseline is clean revision `769c38c7d0475992f042f26e0224a1df1f195b8e`;
+the comparison uses modified sources relative to that revision. Separate
+Go/module/JSON fingerprints identify both inputs; documentation is outside
+that fingerprint scope.
+
+The following values are local medians for the same one-member content proof:
+
+| K | Before microseconds | After microseconds | B/op in both phases | Allocs/op in both phases |
+| ---: | ---: | ---: | ---: | ---: |
+| 16 | 1.141 | 0.909 | 448 | 11 |
+| 256 | 3.364 | 0.912 | 448 | 11 |
+| 4096 | 43.973 | 0.989 | 448 | 11 |
+
+This removes a K-dependent layout scan from an individual query, not the cost
+of flat-content hashing or whole-state load/extension/save. Segment queries
+retain their existing validation path. The node-derived mixed v1/v2 comparison
+covers fresh, empty and resumed handles, eviction, depth refusal, missing,
+oversized and tampered evidence, guarantees, trust labels and unchanged context.
+A disposable local overlay removing low-level window validation failed both
+unqueried-header controls (unsupported version and invalid v2 price).
+These checks do not authenticate network inputs or establish a qualified pilot,
+independent security review, release provenance or portable speedup.
