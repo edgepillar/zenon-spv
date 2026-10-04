@@ -177,6 +177,12 @@ fixed signed-capture runs at K=256/4096 and concurrency one/four, including ever
 actual process outcome, sampled RSS and group elapsed time. Their local limits
 and macOS sampling boundary do not establish network or production capacity.
 
+[Five-block live findings](live-signed-batch-observation.md) record three complete
+signed testnet batch matches, exact position/completeness refusals and an offline
+missing-commitment refusal before consumption. Identities and byte oracles were
+sealed before proof collection, with unchanged trust inputs and state. These
+one-gateway observations do not complete network or release qualification.
+
 ## Summary and remaining pilot work
 
 Local file mode's schema 1 reports `status`, nullable fixed `category`,
