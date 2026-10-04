@@ -131,6 +131,18 @@ offered. The explicit endpoint can contain credentials, which stay out of the
 summary. It is limited to 4096 bytes; target arguments are limited to 32 KiB.
 Native command-line limits can be stricter.
 
+Optionally add `--momentum-heights "$CONFIRMING_HEIGHTS"` to this RPC mode when
+the application has selected the confirming locations. The
+[collector's explicit-height rules](fetch-bundle.md#explicit-confirming-momentum-heights)
+also apply here: 1..1024 strictly increasing canonical decimal heights inside
+`(height-count, height]`. Invalid lists fail before any child runs, and the option
+cannot accompany a local bundle. Collection requests the unchanged checkpoint
+and each selected momentum instead of the full range. The summary schema,
+expectations snapshot and verifier/consumer boundaries are unchanged. Omitting
+the option retains contiguous collection; missing evidence still fails the
+requested retained-state query. The observer does not infer locations from RPC
+confirmation metadata or treat collection as proof of finality.
+
 Before contacting the RPC, the observer checks all three child binary hashes
 and required local file paths, then snapshots expectations into its private
 directory. The pinned collector receives only the selected endpoint, fixed
@@ -204,6 +216,12 @@ case preserves the fixed trust inputs, contexts, expectations and states,
 checks actual child exits and removes private files. These remain local
 synthetic-attestation checks; they do not establish network activation or
 finality.
+
+`TestCompiledRPCObserverSelectedMomenta` repeats those eight boundaries with
+explicit confirming-height selection, refuses an omitted required confirmation,
+and compares exact proof bytes against contiguous collection for both target
+modes with one and two peers. Transport tests separately check sorted selection,
+exact returned heights, shared response/evidence limits and whole-peer quorum.
 
 The next acceptance gate is this selected application's controlled network run:
 independently authenticated chain/anchor/profile/schedule and approved peers,
