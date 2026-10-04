@@ -17,6 +17,20 @@ capacity and bounded geometric growth stay within that same limit plus one.
 The production limit remains 64 MiB.
 Invalid or unusable hints cannot enlarge it.
 
+The disk loader requires a regular file target before opening and rechecks
+the actual descriptor's type and 64 MiB size limit before reading. Linux/macOS
+also use a nonblocking open so a FIFO substituted after the initial path check
+cannot wait for a writer. Real selected/replaced FIFO subprocess controls run
+there; Windows explicitly skips the FIFO controls and runs the common path,
+descriptor type/size and cleanup checks. Compiled read-only inspection checks
+directory refusal on every native platform and FIFO refusal on Linux/macOS,
+without a state write, writer lock, RPC request or partial trusted window.
+Nonregular input remains an operational input error, not invalid chain evidence.
+Regular-file symlink targets remain supported by this reader; stateful writers
+retain their stricter lock path policy. Keep the selected file and protected
+directory stable during reading. These checks do not authenticate the file or
+prevent in-place changes by another writer.
+
 Non-EOF read errors remain failures even when returned with complete JSON or
 the overflow byte. Partial bytes never become a state. The same JSON parser
 still rejects duplicate known fields, trailing values and malformed envelopes;

@@ -107,7 +107,7 @@ func TestCompiledCLIStateInspection(t *testing.T) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	t.Cleanup(server.Close)
-	run := func(args []string, code int, status string) cliInspectionReport {
+	run := func(t *testing.T, args []string, code int, status string) cliInspectionReport {
 		t.Helper()
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
@@ -142,7 +142,7 @@ func TestCompiledCLIStateInspection(t *testing.T) {
 		stateUnchanged()
 		return report
 	}
-	r := run(common, 0, "inspected")
+	r := run(t, common, 0, "inspected")
 	if r.Error != nil || r.Reason != nil || r.Context == nil || r.Context.Anchor != c.Chain.Anchor ||
 		r.Window == nil || r.Window.Count != 7 || r.Window.Capacity != 7 || r.Window.Oldest.Height != 4003 || r.Window.Tip.Height != 4009 ||
 		r.Window.Oldest.Hash != seed.Headers[2].HeaderHash || r.Window.Tip.Hash != seed.Headers[8].HeaderHash ||
@@ -163,17 +163,37 @@ func TestCompiledCLIStateInspection(t *testing.T) {
 		}
 	}
 	stateUnchanged()
-	r = run(append(slices.Clone(common), "--window", "medium"), 0, "inspected")
+	r = run(t, append(slices.Clone(common), "--window", "medium"), 0, "inspected")
 	if r.Window == nil || r.Window.DepthEligible != nil || r.Window.Capacity != 61 || r.Context.Policy.W != 60 {
 		t.Fatal("successful inspection claimed unavailable proof depth")
 	}
 	missing := filepath.Join(dir, "PRIVATE_MISSING.json")
-	r = run(append(slices.Clone(common), "--state", missing), 2, "refused")
+	r = run(t, append(slices.Clone(common), "--state", missing), 2, "refused")
 	if r.Reason == nil || *r.Reason != "ReasonMissingEvidence" || r.Error != nil {
 		t.Fatal("missing state lost its explicit refusal")
 	}
 	if _, err := os.Stat(missing); !os.IsNotExist(err) {
 		t.Fatal("inspection initialized a missing state")
+	}
+	for _, kind := range []string{"directory", "FIFO"} {
+		t.Run("nonregular_"+kind, func(t *testing.T) {
+			path := t.TempDir()
+			if kind == "FIFO" {
+				path = filepath.Join(path, "PRIVATE_STATE.fifo")
+				makeStateInputFIFO(t, path)
+			}
+			r := run(t, append(slices.Clone(common), "--state", path), 70, "error")
+			if r.Error == nil || r.Error.Stage != "state" || r.Error.Category != "operational" || r.Reason != nil {
+				t.Fatal("nonregular state lost its operational error classification")
+			}
+			info, err := os.Stat(path)
+			if err != nil || info.Mode().IsRegular() || (kind == "FIFO" && info.Mode()&os.ModeNamedPipe == 0) {
+				t.Fatal("inspection changed or removed the nonregular input")
+			}
+			if _, err := os.Stat(path + ".lock"); !os.IsNotExist(err) {
+				t.Fatal("failed read-only inspection created a writer companion")
+			}
+		})
 	}
 	for _, tc := range []struct {
 		args  []string
@@ -184,7 +204,7 @@ func TestCompiledCLIStateInspection(t *testing.T) {
 		{[]string{"--genesis-config", missing}, 70, "genesis"},
 		{[]string{"--state", anchor}, 70, "state"},
 	} {
-		r = run(append(slices.Clone(common), tc.args...), tc.code, "error")
+		r = run(t, append(slices.Clone(common), tc.args...), tc.code, "error")
 		if r.Error == nil || r.Error.Stage != tc.stage {
 			t.Fatal("inspection error lost its stage")
 		}
@@ -199,7 +219,7 @@ func TestCompiledCLIStateInspection(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = lock.Close() }()
-	run(common, 0, "inspected")
+	run(t, common, 0, "inspected")
 	if other, err := statelock.Acquire(statePath); err == nil {
 		_ = other.Close()
 		t.Fatal("inspection process interfered with active writer ownership")
