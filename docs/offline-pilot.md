@@ -45,11 +45,11 @@ rejection during a buffered flood, failed exit, deadline expiry after complete
 events and failed start. Helpers use no shell or network and have finite lifetimes;
 the owning tests wait for their OS-released fixture locks before cleanup.
 These runner helper tests execute in the native Go package suite, outside the
-fixed 45-scenario pilot selection.
+fixed pilot selection.
 
 ## Selected coverage
 
-The 45 named scenarios are defined in
+The named scenarios are defined in
 [`manifest.go`](../tools/offline-pilot/manifest.go). They cover:
 
 - Build identity, collection, retained commitment/segment queries, trusted
@@ -62,6 +62,10 @@ The 45 named scenarios are defined in
   and consumer completion under explicit binary/context/trust pins, preserving
   read-only inputs, and refusing drift or target/tip/guarantee mismatches. Its
   native child-process tests cover nonzero exits, stream bounds and deadlines.
+- Its explicit single-RPC collection mode, with the ordinary pinned collector,
+  verifier and consumer, both target commands, failed collection/deadline/start,
+  all binary pins, context/target mismatch, endpoint precedence and unchanged
+  private state/inputs. This uses one loopback operator and synthetic trust.
 - Exact compiled-binary exports, nonreplacement of existing files, bounded
   copies and report-bound manifest refusal of incomplete or conflicting inputs.
 - The [pinned operator workflow](operator-pilot.md): inspect explicit trust
