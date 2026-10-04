@@ -5,8 +5,11 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
+import signal
 import stat
 import struct
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -172,6 +175,100 @@ class CandidateCheckTests(unittest.TestCase):
             self.assertEqual(path.stat().st_mtime_ns, before.st_mtime_ns)
             self.assertEqual(list(Path(directory).iterdir()), [path])
             return code, result
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "native FIFO creation is unavailable")
+    def test_real_fifo_archive_targets_do_not_wait_for_a_writer(self):
+        with tempfile.TemporaryDirectory(prefix="private-archive-fifo-control-") as directory:
+            root = Path(directory)
+            fifo = root / "PRIVATE_ARCHIVE.zip"
+            os.mkfifo(fifo, 0o600)
+            ordinary = root / "ordinary.zip"
+            ordinary.write_bytes(b"ordinary data")
+            # The second child models replacement after a regular precheck.
+            # It still opens a real FIFO; omitting O_NONBLOCK would hang.
+            code = '''import importlib.util, os, sys
+from pathlib import Path
+from unittest import mock
+spec = importlib.util.spec_from_file_location("checker", sys.argv[1])
+checker = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(checker)
+selected = os.stat(sys.argv[2])
+with mock.patch.object(Path, "stat", return_value=selected):
+    raise SystemExit(checker.main(sys.argv[3:]))
+'''
+            args = ["--archive", str(fifo), "--expect-archive-sha256", "0" * 64,
+                    "--expect-revision", REVISION, "--expect-inputs", INPUTS,
+                    "--expect-os", "linux", "--expect-architecture", "amd64"]
+            programs = ([sys.executable, "-I", "-B", str(Path(checker.__file__))] + args,
+                        [sys.executable, "-I", "-B", "-c", code, str(Path(checker.__file__)), str(ordinary)] + args)
+            for program in programs:
+                with self.subTest(replacement=program[3] == "-c"):
+                    process = subprocess.Popen(program, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                               stderr=subprocess.PIPE, start_new_session=True)
+                    try:
+                        stdout, stderr = process.communicate(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        try:
+                            os.killpg(process.pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+                        process.communicate(timeout=5)
+                        self.fail("owned archive checker waited for a FIFO writer")
+                    self.assertEqual(process.returncode, 2)
+                    self.assertEqual(stderr, b"")
+                    result = json.loads(stdout)
+                    self.assertEqual((result["status"], result["category"], result["binaries"]),
+                                     ("rejected", "archive", 0))
+                    self.assertNotIn(b"PRIVATE", stdout)
+                    self.assertTrue(stat.S_ISFIFO(fifo.stat().st_mode))
+                    self.assertEqual(ordinary.read_bytes(), b"ordinary data")
+                    self.assertEqual(set(root.iterdir()), {fifo, ordinary})
+
+    def test_replaced_descriptor_type_and_size_are_refused_and_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "archive.zip"
+            path.write_bytes(b"ordinary input")
+            actual_fstat = checker.os.fstat
+            for replacement in ("fifo", "oversize"):
+                with self.subTest(replacement=replacement):
+                    descriptors = []
+                    def changed_descriptor(fd):
+                        descriptors.append(fd)
+                        fields = list(actual_fstat(fd))
+                        if replacement == "fifo":
+                            fields[0] = stat.S_IFIFO | 0o600
+                        else:
+                            fields[6] = checker.ARCHIVE_LIMIT + 1
+                        return os.stat_result(fields)
+                    with mock.patch.object(checker.os, "fstat", side_effect=changed_descriptor):
+                        with mock.patch.object(checker, "file_hash") as hashed:
+                            with self.assertRaises(checker.Rejected) as failure:
+                                checker.check(path, "0" * 64, REVISION, INPUTS, "linux", "amd64")
+                            self.assertEqual(failure.exception.category, "archive")
+                            hashed.assert_not_called()
+                    self.assertEqual(len(descriptors), 1)
+                    with self.assertRaises(OSError):
+                        actual_fstat(descriptors[0])
+
+    def test_nonregular_empty_and_oversize_targets_precede_open_and_parsing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            empty = root / "empty.zip"
+            empty.write_bytes(b"")
+            oversized = root / "oversize.zip"
+            with oversized.open("wb") as stream:
+                stream.truncate(checker.ARCHIVE_LIMIT + 1)
+            for path in (root, empty, oversized):
+                with self.subTest(target=path.name):
+                    with mock.patch.object(checker.os, "open") as opened:
+                        with mock.patch.object(checker, "file_hash") as hashed:
+                            with mock.patch.object(checker, "check_contents") as parsed:
+                                with self.assertRaises(checker.Rejected) as failure:
+                                    checker.check(path, "0" * 64, REVISION, INPUTS, "linux", "amd64")
+                                self.assertEqual(failure.exception.category, "archive")
+                                opened.assert_not_called()
+                                hashed.assert_not_called()
+                                parsed.assert_not_called()
 
     def test_native_layouts_and_explicit_skips(self):
         for os_name in ("linux", "darwin", "windows"):
