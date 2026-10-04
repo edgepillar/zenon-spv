@@ -231,8 +231,16 @@ selected network inputs and review before a controlled network pilot.
 The selected [block observer](block-observer.md) connects the query and consumer
 processes into one bounded local application check. It requires explicit binary
 hashes, every selected trust/state setting, K/W, the approved context pin and
-independently prepared expectations. It makes no RPC requests and does not
-replace the network-input provenance, controlled pilot or review gates above.
+independently prepared expectations. Local file mode makes no RPC requests.
+Its explicit single-RPC mode can replace the separate collection step: supply
+the pinned collector, approved endpoint, positive fixed tip/count and the
+command-specific targets instead of `--bundle`. It performs one proof-only
+collection and observes its actual completion before querying/consuming. Failed
+collection cannot start the verifier; it never advances or renews local state.
+See the complete [collect-and-observe invocation](block-observer.md#collect-and-observe-from-one-explicit-rpc).
+An explicitly operator-trusted single-RPC experiment can proceed without a
+second operator. It does not replace independently authenticated network inputs,
+corroboration for a qualified network pilot or the release review gates above.
 
 ## Native Windows invocation and evidence boundary
 

@@ -1,11 +1,13 @@
 # Read-only block observer
 
 `tools/observe-block` is a selected reference application for the native-client
-pilot. It performs one local account-block inclusion check by running the
+pilot. It performs one account-block inclusion check by running the
 reviewed verifier and [query-report consumer](query-report-consumer.md), then
 prints a fixed summary with actual child completion and elapsed-time records.
 It supports complete commitment or segment batches of 1..256 targets. It does
-not poll peers, choose trust inputs, advance state, or run a background monitor.
+not choose trust inputs, advance state, or run a background monitor. Its local
+file mode makes no RPC requests. An explicit single-RPC mode first runs a pinned
+collector for one bounded proof-only collection.
 
 This completes a local application connection, not a public-network pilot or
 independent review. `matched` means the entire diagnostic matched the selected
@@ -58,8 +60,8 @@ context pin and full state compatibility checks.
 
 ## Process and file boundary
 
-The observer checks both supplied executable hashes before starting either
-child, with a 128 MiB input cap per binary. It snapshots at most 256 KiB of the
+In local file mode, the observer checks both supplied executable hashes before
+starting either child, with a 128 MiB input cap per binary. It snapshots at most 256 KiB of the
 selected regular expectations file into a fresh private run directory, then
 runs the verifier with `--json --retained-only --expect-context` and every
 explicit trust/state setting. It captures up to 4 MiB of verifier stdout.
@@ -90,10 +92,78 @@ depends on its ACLs. The observer writes no state or companion writer lock.
 Keep concurrent writers and all legitimate input replacements under the
 application's control; a tip/context mismatch must be investigated explicitly.
 
+## Collect and observe from one explicit RPC
+
+To connect collection and consumption in one invocation, replace `--bundle`
+with all of `--collector`, `--collector-sha256`, `--rpc`, `--height`, `--count`
+and the command-specific target selection. Every existing trust/state/context,
+verifier/consumer pin and private-directory option remains mandatory. Select
+expectations before collection; a successful response must not define its own
+expected target or trust inputs.
+
+The following example uses the previously selected saved-state tip and query
+range from the [operator workflow](operator-pilot.md). `FETCH_SHA256` is the
+separately reviewed collector pin and `SEGMENTS` is the explicit account-height
+selection. No bundle path is supplied:
+
+```bash
+"$OBSERVE" \
+  --collector "$FETCH" --collector-sha256 "$FETCH_SHA256" \
+  --rpc "$RPC" --height "$TIP" --count "$QUERY_COUNT" \
+  --segments "$SEGMENTS" \
+  --verifier "$SPV" --verifier-sha256 "$SPV_SHA256" \
+  --consumer "$CONSUME" --consumer-sha256 "$CONSUME_SHA256" \
+  --command verify-segment \
+  --genesis-config "$PRIVATE/anchor.json" \
+  --protocol-profile "$PRIVATE/activation.json" \
+  --schedule "$PRIVATE/producers.json" --state "$PRIVATE/state.json" \
+  --expectations "$PRIVATE/expectations.json" --private-dir "$PRIVATE_RUN" \
+  --expect-context "$PIN" --window low --retain-headers 256 \
+  --timeout 30s > "$RECORDS/observation.json"
+```
+
+`verify-segment` requires only `--segments`; `verify-commitment` requires only
+`--commitments` with the collector's comma-separated account addresses. A local
+bundle and RPC collection inputs cannot be combined. Height must be positive
+and exceed count; count must be 1..K. Frontier selection, peer/quorum discovery,
+environment endpoint fallback, checkpoint export and automatic retry are not
+offered. The explicit endpoint can contain credentials, which stay out of the
+summary. It is limited to 4096 bytes; target arguments are limited to 32 KiB.
+Native command-line limits can be stricter.
+
+Before contacting the RPC, the observer checks all three child binary hashes
+and required local file paths, then snapshots expectations into its private
+directory. The pinned collector receives only the selected endpoint, fixed
+height/count, command-specific targets, `--proof-only`, stdout output and the
+same deadline. Collector stdout is capped at 64 MiB and must be complete JSON;
+stderr is discarded and capped at 16 KiB. Actual exit zero and complete stream
+delivery are required before privately writing the candidate and starting the
+verifier. Collection failure starts neither verifier nor consumer.
+
+The existing retained-only query still validates the full proof and saved
+context; the existing consumer still matches the exact independently prepared
+tip/targets and required guarantees/trust allowances. Those checks follow
+collection and are not replaced by JSON syntax validation. State, anchor,
+profile, schedule and caller expectations are never written. There is no
+profile renewal or implicit state initialization/advancement.
+
+Collection uses summary schema 2: the existing seven fields plus a `collector`
+process record with the same actual-exit/time/byte fields as the other children.
+Local file mode retains schema 1 and its exact seven-field shape. A successful
+collector with non-JSON output refuses with `invalid_bundle`; other child,
+setup, cleanup and output categories/exit rules remain the same. Each child has
+its own deadline, not one deadline for the whole operation or a process-tree
+sandbox. Syntax checks and private filesystem work have no separate deadline.
+
+A single-RPC run is suitable for an explicitly operator-trusted engineering
+experiment. It does not supply independent operator corroboration, authenticate
+activation/election inputs or establish canonicality/finality. Independent
+network qualification and reviewed distribution remain separate gates.
+
 ## Summary and remaining pilot work
 
-Schema 1 reports `status`, nullable fixed `category`, `checked_targets`, total
-`elapsed_ns`, and separate `verifier`/`consumer` records. Each child record has
+Local file mode's schema 1 reports `status`, nullable fixed `category`,
+`checked_targets`, total `elapsed_ns`, and separate `verifier`/`consumer` records. Each child record has
 nullable actual `exit_code`, elapsed nanoseconds and observed stdout/stderr byte
 counts. A child that did not start has null status and zero stream counts.
 No paths, target identities, fingerprints, binary pins or raw errors are echoed.
@@ -115,6 +185,13 @@ binary/context/retention drift, wrong targets/tips, unsupported guarantees and
 refused header extension. Native child-process tests cover actual nonzero exit,
 stream bounds, cancellation, failed start and inherited-pipe delivery failure
 despite exit zero. The offline pilot records both.
+
+`TestCompiledRPCBlockObserver` adds ordinary collector/verifier/consumer/observer
+execution against node-derived v1 evidence through one loopback RPC. It covers
+both target commands, all child pins, collection failure/deadline/failed start,
+context and target mismatch, explicit endpoint precedence, recovery, private
+cleanup and unchanged inputs/state. It is synthetic conformance, not a live
+testnet or independent-operator result.
 
 The next acceptance gate is this selected application's controlled network run:
 independently authenticated chain/anchor/profile/schedule and approved peers,
