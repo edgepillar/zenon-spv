@@ -6,9 +6,12 @@ import importlib.util
 import json
 import pathlib
 import struct
+import sys
 import unittest
 
 
+# Keep the CI checkout pristine for the subsequent candidate source capture.
+sys.dont_write_bytecode = True
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("context_bytes", ROOT / "tools/check-verification-context.py")
 CHECKER = importlib.util.module_from_spec(SPEC)
