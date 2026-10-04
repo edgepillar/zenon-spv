@@ -160,7 +160,50 @@ target or insufficient depth still refuses in the verifier; refresh state
 separately when the application needs later headers. This mode does not add
 state-value proofs, freshness, canonicality, or consensus finality.
 
+### Explicit confirming momentum heights
+
+When the application has selected the confirming locations, add
+`--momentum-heights "$CONFIRMING_HEIGHTS"` to a proof-only collection. The list
+must contain 1..1024 canonical positive decimal heights separated by commas,
+strictly increasing without duplicates or whitespace. Every height must be in
+`(height-count, height]`; a positive `--height` is required. Invalid, empty or
+repeated selections fail before RPC or publication. This option is unavailable
+for header bundles and checkpoint export.
+
+```sh
+fetch-bundle --proof-only --rpc https://node.example \
+  --height "$RETAINED_TIP_HEIGHT" --count "$SCAN_COUNT" \
+  --momentum-heights "$CONFIRMING_HEIGHTS" \
+  --segments "$ACCOUNT:$START_HEIGHT-$END_HEIGHT" --out proof.json
+```
+
+The fetcher requests the same informational checkpoint at `height-count`, then
+each selected momentum with count 1. It recomputes all returned hashes, binds
+every response to its requested height and builds evidence only from selected
+momenta. There is no frontier query or automatic discovery of missing locations.
+For each peer, all checkpoint and selected-momentum responses share the existing
+64 MiB byte budget and one-million nested-content-member budget; each content
+list is also limited to 100,000 members. Existing account-segment range budgets,
+the overall fetch deadline and encoded-bundle limit still apply separately.
+Multi-peer collection reconciles each peer's entire selection with the existing
+quorum rules; partial answers from different peers cannot combine into a quorum.
+
+This avoids transferring unrelated momentum rows. It retains the existing
+`chain_id`, informational `claimed_genesis` and evidence encoding. When the
+selected heights cover every matching content member in the contiguous range,
+the emitted proof bytes are identical for the same options. Selecting a subset
+changes evidence coverage and makes no completeness or absence claim. The
+verifier must still check every requested block against independently retained
+headers, depth, explicit policy/schedule and exact consumer expectations; an
+omitted confirming height cannot pass a complete segment query.
+
+The node's `confirmationDetail` can locate a candidate, but those RPC extras
+are outside the signed account-block preimage. Neither that metadata nor
+`numConfirmations` establishes an authenticated location or finality. Select
+locations explicitly and preserve every verification and consumer check.
+
 ## Output destinations and failures
+
 
 Bundle and checkpoint destinations must be distinct. Before RPC, the command
 resolves parent-directory symlinks and refuses duplicate paths, case-only

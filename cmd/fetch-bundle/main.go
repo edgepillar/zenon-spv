@@ -88,6 +88,15 @@ func run(args []string) error {
 	commitmentsFlag := fs.String("commitments", "", "comma-separated z1... addresses to attest in the bundle window (also retains parsed Content slices)")
 	segmentsFlag := fs.String("segments", "", "comma-separated z1ADDR:HEIGHT or z1ADDR:START-END specs; fetched account blocks become AccountSegments and their addresses are auto-added to commitments")
 	proofOnly := fs.Bool("proof-only", false, "emit evidence without headers for a retained-state query; requires targets and forbids --checkpoint")
+	var momentumHeights string
+	var heightsSet bool
+	fs.Func("momentum-heights", "increasing unique confirming heights; requires --proof-only and a positive --height (max 1024)", func(value string) error {
+		if heightsSet || value == "" {
+			return errors.New("duplicate or empty momentum-height selection")
+		}
+		heightsSet, momentumHeights = true, value
+		return nil
+	})
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -110,6 +119,19 @@ func run(args []string) error {
 		return errors.New("--proof-only cannot export a checkpoint; use the independently trusted anchor and state for verification")
 	}
 	requestedCount := uint64(*count) + 1 // Include the checkpoint before the bundle.
+	var selectedHeights []uint64
+	if heightsSet {
+		if !*proofOnly || *heightArg <= 0 {
+			return errors.New("--momentum-heights requires --proof-only and a positive --height")
+		}
+		end := uint64(*heightArg)
+		heights, err := fetch.ParseMomentumHeights(momentumHeights, end-uint64(*count), end)
+		if err != nil {
+			return err
+		}
+		selectedHeights = append([]uint64{end - uint64(*count)}, heights...)
+		requestedCount = uint64(len(selectedHeights))
+	}
 
 	urls := splitPeers(*peersFlag)
 	var rpcSet, peersSet bool
@@ -166,35 +188,49 @@ func run(args []string) error {
 		if *quorum > 0 {
 			mc.Quorum = *quorum
 		}
-		target, err := resolveEndHeaderMulti(ctx, mc, *heightArg, *safetyMargin)
-		if err != nil {
-			return err
-		}
-		selectedTarget = &target
-		end := target.Height
-		if end <= uint64(*count) {
-			return fmt.Errorf("end height %d too low for --count=%d and a positive checkpoint", end, *count)
-		}
-		start := end - uint64(*count)
-		detailed, err = mc.FetchByHeightDetailed(ctx, start, requestedCount)
-		if err != nil {
-			return fmt.Errorf("multi-fetch [%d..%d]: %w", start, end, err)
+		if selectedHeights != nil {
+			detailed, err = mc.FetchSelectedDetailed(ctx, selectedHeights)
+			if err != nil {
+				return fmt.Errorf("multi-fetch selected momentums: %w", err)
+			}
+		} else {
+			target, err := resolveEndHeaderMulti(ctx, mc, *heightArg, *safetyMargin)
+			if err != nil {
+				return err
+			}
+			selectedTarget = &target
+			end := target.Height
+			if end <= uint64(*count) {
+				return fmt.Errorf("end height %d too low for --count=%d and a positive checkpoint", end, *count)
+			}
+			start := end - uint64(*count)
+			detailed, err = mc.FetchByHeightDetailed(ctx, start, requestedCount)
+			if err != nil {
+				return fmt.Errorf("multi-fetch [%d..%d]: %w", start, end, err)
+			}
 		}
 		sourceLabel = fmt.Sprintf("multi-peer (n=%d, quorum=%d)", len(urls), mc.Quorum)
 	} else {
 		client := fetch.NewClient(*rpcURL)
-		end, observedTarget, err := resolveEndHeight(ctx, client, *heightArg)
-		if err != nil {
-			return err
-		}
-		selectedTarget = observedTarget
-		if end <= uint64(*count) {
-			return fmt.Errorf("end height %d too low for --count=%d and a positive checkpoint", end, *count)
-		}
-		start := end - uint64(*count)
-		detailed, err = client.FetchByHeightDetailed(ctx, start, requestedCount)
-		if err != nil {
-			return fmt.Errorf("fetch [%d..%d]: %w", start, end, err)
+		if selectedHeights != nil {
+			detailed, err = client.FetchSelectedDetailed(ctx, selectedHeights)
+			if err != nil {
+				return fmt.Errorf("fetch selected momentums: %w", err)
+			}
+		} else {
+			end, observedTarget, err := resolveEndHeight(ctx, client, *heightArg)
+			if err != nil {
+				return err
+			}
+			selectedTarget = observedTarget
+			if end <= uint64(*count) {
+				return fmt.Errorf("end height %d too low for --count=%d and a positive checkpoint", end, *count)
+			}
+			start := end - uint64(*count)
+			detailed, err = client.FetchByHeightDetailed(ctx, start, requestedCount)
+			if err != nil {
+				return fmt.Errorf("fetch [%d..%d]: %w", start, end, err)
+			}
 		}
 		sourceLabel = "single-peer"
 	}
@@ -271,8 +307,12 @@ func run(args []string) error {
 		fmt.Fprintf(os.Stderr, "  - %s\n", verify.TrustRPCQuorum)
 	}
 	if *proofOnly {
-		fmt.Fprintf(os.Stderr, "OK: proof-only evidence from heights=[%d..%d]; no headers or checkpoint exported\n",
-			bundleDetailed[0].Header.Height, bundleDetailed[len(bundleDetailed)-1].Header.Height)
+		if selectedHeights != nil {
+			fmt.Fprintf(os.Stderr, "OK: proof-only evidence from %d selected momentum heights; no headers or checkpoint exported\n", len(bundleDetailed))
+		} else {
+			fmt.Fprintf(os.Stderr, "OK: proof-only evidence from heights=[%d..%d]; no headers or checkpoint exported\n",
+				bundleDetailed[0].Header.Height, bundleDetailed[len(bundleDetailed)-1].Header.Height)
+		}
 		fmt.Fprintln(os.Stderr, "Verification required: run a proof command with --retained-only, the existing trusted state, and anchor")
 	} else {
 		fmt.Fprintf(os.Stderr, "OK: anchor height=%d hash=%s\n", anchor.Height, hex.EncodeToString(anchor.HeaderHash[:]))

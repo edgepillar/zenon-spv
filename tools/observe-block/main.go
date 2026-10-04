@@ -117,6 +117,7 @@ func parseConfiguration(args []string) (configuration, bool) {
 		{"expect-context", &c.pin}, {"window", &c.window}, {"retain-headers", &c.retention},
 		{"collector", &c.collection.binary}, {"collector-sha256", &c.collection.hash}, {"rpc", &c.collection.rpc},
 		{"height", &c.collection.height}, {"count", &c.collection.count}, {"commitments", &c.collection.commitments}, {"segments", &c.collection.segments},
+		{"momentum-heights", &c.collection.momentumHeights},
 	} {
 		add(option.name, option.value)
 	}
