@@ -45,13 +45,14 @@ func TestStateInputTypeAndSizePrecedeOpen(t *testing.T) {
 
 func TestStateInputOpenedDescriptorCheckedAndClosed(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "state.json")
-	if err := os.WriteFile(path, []byte("ordinary input"), 0o600); err != nil {
-		t.Fatal(err)
-	}
 	for _, mode := range []string{"directory", "oversized", "stat failure", "open failure"} {
 		t.Run(mode, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "state.json")
+			if err := os.WriteFile(path, []byte("ordinary input"), 0o600); err != nil {
+				t.Fatal(err)
+			}
 			var opened *os.File
+			var statError error
 			file, info, err := openStateInput(path, func(name string) (*os.File, error) {
 				if mode == "open failure" {
 					return nil, os.ErrPermission
@@ -74,23 +75,29 @@ func TestStateInputOpenedDescriptorCheckedAndClosed(t *testing.T) {
 					if err := opened.Close(); err != nil {
 						t.Fatal(err)
 					}
+					_, statError = opened.Stat()
 				}
 				return opened, nil
 			})
 			want := map[string]error{"directory": ErrStateFileNotRegular, "oversized": ErrStateFileTooLarge,
 				"stat failure": os.ErrClosed, "open failure": os.ErrPermission}[mode]
+			if mode == "stat failure" {
+				// Windows reports its native invalid-handle error here rather
+				// than os.ErrClosed. Require the actual stat cause to survive.
+				var pathError *os.PathError
+				if !errors.As(statError, &pathError) {
+					t.Fatal("closed-descriptor stat control did not fail")
+				}
+				want = pathError.Err
+			}
 			if file != nil || info != nil || !errors.Is(err, want) {
 				t.Fatal("opened descriptor bypassed type, size, or error handling")
 			}
 			if opened != nil {
-				if _, err := opened.Stat(); !errors.Is(err, os.ErrClosed) {
+				// A second Close must report os.ErrClosed on every platform.
+				if err := opened.Close(); !errors.Is(err, os.ErrClosed) {
 					t.Fatal("rejected descriptor was not closed")
 				}
-			}
-			// Each control begins with a regular small path; the oversized
-			// descriptor must be reached after, not before, the initial stat.
-			if err := os.WriteFile(path, []byte("ordinary input"), 0o600); err != nil {
-				t.Fatal(err)
 			}
 		})
 	}
