@@ -19,8 +19,8 @@ const (
 // decoding guardrail. It is unusable for quorum and returns no partial evidence.
 var ErrResponseTooComplex = errors.New("rpc response exceeds decoded entry limit")
 
-// One decoder belongs to one RPC response, never to the reusable Client.
-// A failed decode can consume this budget; the entire response is then discarded.
+// One decoder belongs to one response or complete paginated range, never to the
+// reusable Client. A failed decode can consume this budget; all rows are discarded.
 type rpcEvidenceDecoder struct {
 	maxMembers int
 	remaining  int

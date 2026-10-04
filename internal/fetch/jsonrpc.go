@@ -11,8 +11,9 @@ import (
 	"time"
 )
 
-// MaxResponseBytes caps the size of any single JSON-RPC response body
-// the client will read. A malicious peer can otherwise force the
+// MaxResponseBytes caps one JSON-RPC response body, or the combined response
+// bodies the client reads for a paginated height range. A malicious peer can
+// otherwise force the
 // process to allocate gigabytes via a large 200 OK body or — if
 // transparent gzip is left on — a small compressed payload that
 // expands wildly (D2: OOM via unbounded response). 64 MiB is well
@@ -20,9 +21,17 @@ import (
 // legitimate response (a 100k-block momentum batch is far smaller).
 const MaxResponseBytes = 64 * 1024 * 1024
 
-// ErrResponseTooLarge is returned when a peer sends a body larger
-// than MaxResponseBytes.
+// ErrResponseTooLarge marks a body or paginated range exceeding its byte budget.
 var ErrResponseTooLarge = errors.New("rpc response exceeds size limit")
+
+// A budget belongs to one call or complete range, never to the reusable Client.
+type rpcResponseBudget struct {
+	remaining int64
+}
+
+func newRPCResponseBudget() *rpcResponseBudget {
+	return &rpcResponseBudget{remaining: MaxResponseBytes}
+}
 
 // Client is a minimal JSON-RPC 2.0 client for Zenon nodes. It supports
 // only the subset of methods the SPV needs to build verifiable bundles.
@@ -82,6 +91,13 @@ type rpcResponse struct {
 // result into out. HTTP redirects and envelope failures leave out untouched.
 // Validation also applies when out is nil.
 func (c *Client) Call(ctx context.Context, method string, params any, out any) error {
+	return c.callWithBudget(ctx, method, params, out, newRPCResponseBudget())
+}
+
+func (c *Client) callWithBudget(ctx context.Context, method string, params any, out any, budget *rpcResponseBudget) error {
+	if budget.remaining <= 0 {
+		return ErrResponseTooLarge
+	}
 	request := rpcRequest{JSONRPC: "2.0", ID: 1, Method: method, Params: params}
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -109,15 +125,16 @@ func (c *Client) Call(ctx context.Context, method string, params any, out any) e
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("rpc http %d", resp.StatusCode)
 	}
-	// D2: cap response body at MaxResponseBytes. Read one extra byte
+	// D2: cap the body at the remaining range budget. Read one extra byte
 	// so we can distinguish "exactly at limit" from "exceeded limit".
-	raw, err := io.ReadAll(io.LimitReader(resp.Body, MaxResponseBytes+1))
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, budget.remaining+1))
 	if err != nil {
 		return callFailure("read body", err)
 	}
-	if int64(len(raw)) > MaxResponseBytes {
-		return fmt.Errorf("%w: read %d bytes, max %d", ErrResponseTooLarge, len(raw), MaxResponseBytes)
+	if int64(len(raw)) > budget.remaining {
+		return fmt.Errorf("%w: read %d bytes, remaining %d", ErrResponseTooLarge, len(raw), budget.remaining)
 	}
+	budget.remaining -= int64(len(raw))
 	r, err := decodeRPCResponse(raw, request.ID)
 	if err != nil {
 		return err

@@ -31,12 +31,13 @@ it can count toward peer quorum. A self-consistent hash does not make a block
 from a different height or account an answer to the original request.
 
 `FetchByHeight`, `FetchByHeightDetailed`, and `FetchAccountBlocksByHeight`
-require a positive start and count, with an inclusive last height that fits
-`uint64`. Account queries also require a valid Zenon address. Invalid local
+require a positive start and count no greater than 100001, with an inclusive last
+height that fits `uint64`. Account queries also require a valid Zenon address. Invalid local
 queries return `ErrInvalidQuery` before any RPC requests, including multi-peer
 fan-out. Empty ranges are now rejected instead of returning empty evidence.
 
-Each response must contain exactly the requested count, in ascending order
+Ranges are fetched in pages of at most 1024 rows, matching the node height-method
+cap. Each page must contain exactly its requested count, in ascending order
 starting at the requested height. Account blocks must also belong to the
 decoded requested address; equivalent uppercase Bech32 input remains valid.
 Wrong counts, shifted ranges, duplicate or missing heights, reordered blocks,
@@ -57,12 +58,13 @@ echoing peer values, and callers can inspect the wrapped cause with `errors.Is`.
 
 Frontier and range queries also bound each momentum's `content` and each
 account block's `descendantBlocks` during decoding. Each list permits at most
-100,000 members, and the lists across one response share a 1,000,000-member
-budget. Null members consume capacity just like objects. Both checks stop before
+100,000 members, and the lists across a complete paginated range share a
+1,000,000-member budget. Null members consume capacity just like objects. Both checks stop before
 decoding an excess member, return `ErrResponseTooComplex`, and discard the entire
-response. These fixed transport guardrails are separate from caller verification
-policy and are not Zenon consensus limits. Each response starts a fresh budget,
-including when a reusable client previously encountered a failed response.
+range. A frontier response has its own budget. These fixed transport guardrails
+are separate from caller verification policy and are not Zenon consensus limits.
+Each complete range starts a fresh budget, including when a reusable client
+previously encountered a failed range; the budget is not reset between pages.
 
 Repeated `content` or `descendantBlocks` fields return `ErrInvalidRPCResponse`,
 including a prior null/empty value and escaped/case-folded aliases. A single
@@ -70,12 +72,18 @@ alias, null/empty lists, unknown metadata, and other scalar-field semantics
 remain compatible. The checks apply to the typed fetch methods; generic `Call`
 does not impose method-specific limits on arbitrary caller output.
 
-The 64 MiB input-byte cap and whole-result JSON syntax/depth checks remain in
-force. These bounds are not a total process-memory or decoding-time limit:
+The 64 MiB input-byte cap is shared by the complete response bodies of all pages
+in one range. It is also the cap for an individual frontier or generic call.
+Whole-result JSON syntax/depth checks apply to each response. These bounds are
+not a total process-memory or decoding-time limit:
 response buffers, strings, slice capacity, conversion copies, and concurrent
 peers add overhead. Unknown metadata retains the input-byte bound.
 
-In multi-peer mode, a mismatched response is unusable and does not count
+An unusable page discards all earlier rows from that peer and stops the remaining
+page requests. The caller's context covers all requests in the range. No pages
+are published before the complete range succeeds. In multi-peer mode, each peer
+must supply a complete usable range; partial ranges from different peers cannot
+be combined to supply quorum. A mismatched response is unusable and does not count
 toward quorum. Too few matching responses return `ErrNotEnoughPeers`.
 Conflicting usable responses still trigger the existing disagreement policy.
 The agreed-frontier lookup also requires the returned header to match the

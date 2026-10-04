@@ -61,38 +61,30 @@ type rpcAccountBlockList struct {
 // surfaces as ErrHashMismatch.
 //
 // The address is encoded as a "z1..." string when sent to the RPC.
-// Start and count must be positive, and the range must not overflow. Each
-// returned block must belong to the requested account and height position.
+// Start and count must be positive, fit MaxRangeQueryCount, and not overflow.
+// Each returned block must belong to the requested account and height position.
+// Pages share byte and nested-evidence budgets; any failure discards the range.
 func (c *Client) FetchAccountBlocksByHeight(ctx context.Context, addressBech32 string, start, count uint64) ([]chain.AccountBlock, error) {
 	address, err := validateAccountQuery(addressBech32, start, count)
 	if err != nil {
 		return nil, err
 	}
-	var list rpcAccountBlockList
 	evidence := newRPCEvidenceDecoder()
-	decoder := rpcListDecoder[rpcAccountBlock]{target: &list.List, count: count, rowTarget: evidence.account}
-	if err := c.Call(ctx, "ledger.getAccountBlocksByHeight",
-		[]any{addressBech32, start, count}, &decoder); err != nil {
-		return nil, fmt.Errorf("getAccountBlocksByHeight: %w", err)
-	}
-	if uint64(len(list.List)) != count {
-		return nil, fmt.Errorf("%w: rpc returned %d blocks, expected %d", ErrQueryMismatch, len(list.List), count)
-	}
-	out := make([]chain.AccountBlock, count)
-	for i, b := range list.List {
-		if b.Height != start+uint64(i) {
-			return nil, fmt.Errorf("%w: account block index %d has height %d, expected height %d", ErrQueryMismatch, i, b.Height, start+uint64(i))
-		}
-		bl, err := convertAndVerifyAccountBlock(b)
-		if err != nil {
-			return nil, fmt.Errorf("block height=%d: %w", b.Height, callFailure("convert account block", err))
-		}
-		if bl.Address != address {
-			return nil, fmt.Errorf("%w: account block index %d belongs to another address", ErrQueryMismatch, i)
-		}
-		out[i] = bl
-	}
-	return out, nil
+	return fetchHeightRange(ctx, c, "ledger.getAccountBlocksByHeight", start, count,
+		func(height, size uint64) []any { return []any{addressBech32, height, size} }, evidence.account,
+		func(b rpcAccountBlock, i uint64) (chain.AccountBlock, error) {
+			if b.Height != start+i {
+				return chain.AccountBlock{}, fmt.Errorf("%w: account block index %d has height %d, expected height %d", ErrQueryMismatch, i, b.Height, start+i)
+			}
+			bl, err := convertAndVerifyAccountBlock(b)
+			if err != nil {
+				return chain.AccountBlock{}, fmt.Errorf("block height=%d: %w", b.Height, callFailure("convert account block", err))
+			}
+			if bl.Address != address {
+				return chain.AccountBlock{}, fmt.Errorf("%w: account block index %d belongs to another address", ErrQueryMismatch, i)
+			}
+			return bl, nil
+		}, newRPCResponseBudget())
 }
 
 // convertAndVerifyAccountBlock parses an rpcAccountBlock into a

@@ -51,7 +51,13 @@ room for a positive checkpoint height. A resolved frontier is checked for the
 same condition before requesting its header range.
 
 `--count` is limited to 1 through 100000 momentums, matching the verifier's
-default header cap. The RPC request also includes one preceding checkpoint.
+default header cap. The fetched range also includes one preceding checkpoint.
+Momentum and account ranges use requests of at most 1024 rows, matching the
+[node RPC cap](https://github.com/zenon-network/go-zenon/blob/e58d8e80eabd9fd5630ed62e0707424d96b5303c/rpc/api/utils.go).
+For example, 4096 bundle headers plus their checkpoint require five requests
+to each selected peer. Each peer must supply a complete usable range before
+it can contribute to quorum; pages from different incomplete peers are not
+combined.
 `--timeout` must be positive and bounds the overall fetch phase; the underlying
 HTTP client's timeout still applies to each request.
 
@@ -61,7 +67,10 @@ default verifier limits. Inclusive ranges ending at `uint64` maximum remain
 valid when they meet those limits. Zero starts are rejected before range
 arithmetic, including a zero-to-maximum range that would otherwise wrap.
 
-Nodes may impose smaller limits; response byte caps also apply.
+Nodes may impose smaller limits. Each complete per-peer range shares a 64 MiB
+response-byte budget and a 1,000,000-member nested-evidence budget across pages.
+The typed fetch API also caps a complete range at 100001 rows. Any page failure
+discards the range and stops its remaining requests.
 
 ## Evidence and output bounds
 
@@ -72,8 +81,8 @@ A conflict fails before fetching account segments, encoding candidate evidence,
 or publishing files/stdout, including `--proof-only` output. Existing bundle
 and checkpoint destinations remain untouched.
 
-An explicit single-peer height performs only the range query and has no earlier
-header to compare; no extra RPC request is added to that path. Matching the
+An explicit single-peer height queries that range without a frontier lookup
+and has no earlier selected header to compare. Matching the
 selected envelope is only a consistency check between observed responses. The
 candidate still requires the verifier's signature, linkage, and policy checks,
 and a fetched checkpoint is not an independent trust root.
@@ -97,9 +106,10 @@ No bundle bytes are written to files or stdout until this bounded encoding
 succeeds. This bounds accumulated encoded output, not process memory: header
 and commitment objects, the current segment's RPC responses and decoded data
 (including per-peer responses for quorum), buffer capacity, and per-item encoder
-scratch space require additional memory. A single RPC response still has its
-own independent 64 MiB cap. Typed RPC decoding also caps content and descendant
-lists at 100,000 members each and 1,000,000 members across one response; see
+scratch space require additional memory. The response bytes across every page
+of one range share a separate 64 MiB cap. Typed RPC decoding also caps content
+and descendant lists at 100,000 members each and 1,000,000 members across that
+complete range (or one frontier response); see
 [RPC query binding](rpc-query-binding.md). These transport guardrails do not
 replace the collector's repeated-evidence or verifier policy checks.
 

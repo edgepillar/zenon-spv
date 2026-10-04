@@ -13,7 +13,7 @@ import (
 type rpcListDecoder[T any] struct {
 	target *[]T
 	count  uint64
-	// rowTarget optionally wraps each row with response-scoped decoding limits.
+	// rowTarget optionally wraps each row with call/range-scoped decoding limits.
 	rowTarget func(*T) any
 }
 

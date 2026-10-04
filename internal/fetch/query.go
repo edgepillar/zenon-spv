@@ -16,9 +16,14 @@ var ErrInvalidQuery = errors.New("invalid RPC query")
 // not match the request. Hash consistency alone does not establish this binding.
 var ErrQueryMismatch = errors.New("RPC response does not match query")
 
+// MaxRangeQueryCount bounds one complete range, including any checkpoint row.
+// It allows the default 100,000-header bundle plus its preceding checkpoint.
+// This is a client transport guardrail, not a consensus limit.
+const MaxRangeQueryCount = 100_001
+
 func validateHeightRange(start, count uint64) error {
-	if start == 0 || count == 0 || count-1 > math.MaxUint64-start {
-		return fmt.Errorf("%w: start and count must be positive and the last height must fit uint64", ErrInvalidQuery)
+	if start == 0 || count == 0 || count > MaxRangeQueryCount || count-1 > math.MaxUint64-start {
+		return fmt.Errorf("%w: start and count must be positive, count must not exceed %d, and the last height must fit uint64", ErrInvalidQuery, MaxRangeQueryCount)
 	}
 	return nil
 }
