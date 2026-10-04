@@ -4,16 +4,18 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/0x3639/zenon-spv/internal/fetch"
 )
 
 type collectionConfiguration struct {
-	binary, hash, rpc, height, count, commitments, segments string
+	binary, hash, rpc, height, count, commitments, segments, momentumHeights string
 }
 
 // A local file and a single explicitly selected RPC are mutually exclusive.
 // No frontier, checkpoint, implicit endpoint, quorum or renewal is selected.
 func validCollectionSelection(c configuration, seen map[string]bool, retention int) bool {
-	names := []string{"collector", "collector-sha256", "rpc", "height", "count", "commitments", "segments"}
+	names := []string{"collector", "collector-sha256", "rpc", "height", "count", "commitments", "segments", "momentum-heights"}
 	if seen["bundle"] {
 		for _, name := range names {
 			if seen[name] {
@@ -40,6 +42,11 @@ func validCollectionSelection(c configuration, seen map[string]bool, retention i
 	if err != nil || count < 1 || count > retention || height <= int64(count) {
 		return false
 	}
+	if seen["momentum-heights"] {
+		if _, err := fetch.ParseMomentumHeights(c.collection.momentumHeights, uint64(height)-uint64(count), uint64(height)); err != nil {
+			return false
+		}
+	}
 	if c.command == "verify-segment" {
 		return seen["segments"] && !seen["commitments"] && validTargetArgument(c.collection.segments)
 	}
@@ -53,6 +60,9 @@ func validTargetArgument(value string) bool {
 func collectionArguments(c configuration) []string {
 	args := []string{"--rpc", c.collection.rpc, "--height", c.collection.height, "--count", c.collection.count,
 		"--proof-only", "--out", "-", "--timeout", c.timeout.String()}
+	if c.collection.momentumHeights != "" {
+		args = append(args, "--momentum-heights", c.collection.momentumHeights)
+	}
 	if c.command == "verify-segment" {
 		return append(args, "--segments", c.collection.segments)
 	}

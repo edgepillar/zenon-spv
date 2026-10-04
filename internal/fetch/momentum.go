@@ -91,7 +91,10 @@ func (c *Client) FetchByHeightDetailed(ctx context.Context, start, count uint64)
 	if err := validateHeightRange(start, count); err != nil {
 		return nil, err
 	}
-	evidence := newRPCEvidenceDecoder()
+	return c.fetchDetailedRange(ctx, start, count, newRPCEvidenceDecoder(), newRPCResponseBudget())
+}
+
+func (c *Client) fetchDetailedRange(ctx context.Context, start, count uint64, evidence *rpcEvidenceDecoder, budget *rpcResponseBudget) ([]DetailedHeader, error) {
 	return fetchHeightRange(ctx, c, "ledger.getMomentumsByHeight", start, count,
 		func(height, size uint64) []any { return []any{height, size} }, evidence.momentum,
 		func(m rpcMomentum, i uint64) (DetailedHeader, error) {
@@ -103,7 +106,7 @@ func (c *Client) FetchByHeightDetailed(ctx context.Context, start, count uint64)
 				return DetailedHeader{}, fmt.Errorf("momentum height=%d: %w", m.Height, callFailure("convert momentum", err))
 			}
 			return d, nil
-		}, newRPCResponseBudget())
+		}, budget)
 }
 
 // ErrHashMismatch is returned when a peer-claimed hash does not

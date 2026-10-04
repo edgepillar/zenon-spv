@@ -20,6 +20,15 @@ import (
 // except for one declared tamper control. All trust attestations are synthetic;
 // one loopback operator supplies no independent activation or election evidence.
 func TestCompiledRPCObserverDelayedInclusion(t *testing.T) {
+	testCompiledRPCObserverDelayedInclusion(t, false)
+}
+
+func TestCompiledRPCObserverSelectedMomenta(t *testing.T) {
+	testCompiledRPCObserverDelayedInclusion(t, true)
+}
+
+func testCompiledRPCObserverDelayedInclusion(t *testing.T, selectedHeights bool) {
+	t.Helper()
 	bins := buildQueryCLIs(t, "fetch-bundle", "zenon-spv", "consume-query-report", "observe-block")
 	hashes := make(map[string]string)
 	for name, path := range bins {
@@ -80,7 +89,7 @@ func TestCompiledRPCObserverDelayedInclusion(t *testing.T) {
 	if signed == embedded || len(c.Segments) != 2 {
 		t.Fatal("missing distinct signed and embedded selections")
 	}
-	cases := []struct {
+	type delayedObserverCase struct {
 		name                       string
 		segments                   []int
 		stateTip, collectTip, tip  uint64
@@ -89,15 +98,23 @@ func TestCompiledRPCObserverDelayedInclusion(t *testing.T) {
 		outer, collector, verifier int
 		consumer                   *int64
 		category                   string
-	}{
-		{"mixed content at exact depth", []int{0, 1}, 5017, 5017, 5017, false, false, 0, 0, 0, int64Pointer(0), ""},
-		{"signed segment requires signature", []int{signed}, 5017, 5017, 5017, true, false, 0, 0, 0, int64Pointer(0), ""},
-		{"embedded inclusion supplies no signature", []int{embedded}, 5017, 5017, 5017, true, false, 2, 0, 0, int64Pointer(2), "guarantee_mismatch"},
-		{"insufficient depth stops consumption", []int{signed}, 5016, 5016, 5016, true, false, 2, 0, 2, nil, "process_failure"},
-		{"fetched evicted evidence cannot restore state", []int{signed}, 5019, 5019, 5019, true, false, 2, 0, 2, nil, "process_failure"},
-		{"newer collection cannot advance state", []int{signed}, 5017, 5018, 5018, true, false, 2, 0, 0, int64Pointer(2), "report_mismatch"},
-		{"changed v2 price stops collection", []int{signed}, 5017, 5017, 5017, true, true, 2, 1, -1, nil, "process_failure"},
-		{"recovery preserves mixed selection", []int{0, 1}, 5018, 5018, 5018, false, false, 0, 0, 0, int64Pointer(0), ""},
+		missingHeight              bool
+	}
+	cases := []delayedObserverCase{
+		{"mixed content at exact depth", []int{0, 1}, 5017, 5017, 5017, false, false, 0, 0, 0, int64Pointer(0), "", false},
+		{"signed segment requires signature", []int{signed}, 5017, 5017, 5017, true, false, 0, 0, 0, int64Pointer(0), "", false},
+		{"embedded inclusion supplies no signature", []int{embedded}, 5017, 5017, 5017, true, false, 2, 0, 0, int64Pointer(2), "guarantee_mismatch", false},
+		{"insufficient depth stops consumption", []int{signed}, 5016, 5016, 5016, true, false, 2, 0, 2, nil, "process_failure", false},
+		{"fetched evicted evidence cannot restore state", []int{signed}, 5019, 5019, 5019, true, false, 2, 0, 2, nil, "process_failure", false},
+		{"newer collection cannot advance state", []int{signed}, 5017, 5018, 5018, true, false, 2, 0, 0, int64Pointer(2), "report_mismatch", false},
+		{"changed v2 price stops collection", []int{signed}, 5017, 5017, 5017, true, true, 2, 1, -1, nil, "process_failure", false},
+		{"recovery preserves mixed selection", []int{0, 1}, 5018, 5018, 5018, false, false, 0, 0, 0, int64Pointer(0), "", false},
+	}
+	if selectedHeights {
+		// The evicted height must still belong to the explicitly selected
+		// collection window. Fetch an older window without restoring state.
+		cases[4].collectTip = 5017
+		cases = append(cases, delayedObserverCase{"omitted confirming height stops consumption", []int{signed}, 5017, 5017, 5017, true, false, 2, 0, 2, nil, "process_failure", true})
 	}
 	// Expected identities come directly from the fixed node account corpus,
 	// never from the proof-only collection performed by this application.
@@ -151,6 +168,13 @@ func TestCompiledRPCObserverDelayedInclusion(t *testing.T) {
 				"--command", "verify-segment", "--genesis-config", anchorPath, "--protocol-profile", profilePath,
 				"--schedule", schedulePath, "--state", states[test.stateTip], "--expectations", expectedPaths[index],
 				"--private-dir", private, "--expect-context", pin, "--window", "low", "--retain-headers", "16"}
+			if selectedHeights {
+				heights := "5003,5007,5011"
+				if test.missingHeight {
+					heights = "5003,5007"
+				}
+				args = append(args, "--momentum-heights", heights)
+			}
 			result := runQueryCLI(t, bins["observe-block"], args...)
 			var report struct {
 				Version   int                   `json:"schema_version"`
@@ -181,8 +205,17 @@ func TestCompiledRPCObserverDelayedInclusion(t *testing.T) {
 				t.Fatal("failed delayed observation lost its fixed category")
 			}
 			wantRequests := int64(1 + len(test.segments))
+			if selectedHeights {
+				wantRequests += 3 // Checkpoint plus three explicit confirmations.
+				if test.missingHeight {
+					wantRequests--
+				}
+			}
 			if test.tamperV2 {
 				wantRequests = 1
+				if selectedHeights {
+					wantRequests = 4
+				}
 			}
 			if peer.calls.Load() != wantRequests {
 				t.Fatal("fixed-height collection discovered a frontier or retried")
@@ -218,6 +251,56 @@ func TestCompiledRPCObserverDelayedInclusion(t *testing.T) {
 				}
 			}
 		})
+	}
+	if selectedHeights {
+		for _, multi := range []bool{false, true} {
+			for _, segments := range []bool{false, true} {
+				t.Run("identical proof bytes/multi="+strconv.FormatBool(multi)+"/segments="+strconv.FormatBool(segments), func(t *testing.T) {
+					a, b := newDelayedCLIPeer(t, c), newDelayedCLIPeer(t, c)
+					base := []string{"--rpc", a.url, "--height", "5017", "--count", "16", "--proof-only"}
+					if multi {
+						base = append(base, "--peers", a.url+","+b.url, "--quorum", "2")
+					}
+					var targets []string
+					for _, segment := range c.Segments {
+						value := segment.RPCAddress
+						if segments {
+							value += ":1-3"
+						}
+						targets = append(targets, value)
+					}
+					option, blockCalls := "--commitments", int64(0)
+					if segments {
+						option, blockCalls = "--segments", 2
+					}
+					base = append(base, option, strings.Join(targets, ","))
+					paths := []string{filepath.Join(t.TempDir(), "range.json"), filepath.Join(t.TempDir(), "selected.json")}
+					for index, path := range paths {
+						args := append(slices.Clone(base), "--out", path)
+						if index == 1 {
+							args = append(args, "--momentum-heights", "5003,5007,5011")
+						}
+						result := runQueryCLI(t, bins["fetch-bundle"], args...)
+						if result.code != 0 || len(result.stdout) != 0 {
+							t.Fatal("explicit proof comparison collection failed")
+						}
+					}
+					if !bytes.Equal(readCLIFile(t, paths[0]), readCLIFile(t, paths[1])) {
+						t.Fatal("selected evidence changed checkpoint metadata or proof bytes")
+					}
+					want := int64(5) + 2*blockCalls // Contiguous + selected, including the same checkpoint.
+					if multi {
+						want++ // Existing contiguous multi-peer target pin request.
+					}
+					if a.calls.Load() != want || (multi && b.calls.Load() != want) || (!multi && b.calls.Load() != 0) {
+						t.Fatal("selected proof comparison made unexpected RPC requests")
+					}
+					for _, guard := range guards {
+						guard()
+					}
+				})
+			}
+		}
 	}
 }
 
