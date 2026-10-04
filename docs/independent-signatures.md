@@ -72,7 +72,8 @@ Linux, macOS and Windows CI run the controller controls and the real independent
 checker. Each job uploads `independent-signatures-*` as a separate artifact;
 the existing candidate/native-pilot artifacts keep their own schema. Signature
 reports must be matched to the exact checkout, corpus and checker bytes when
-reviewed. The executable hash does not authenticate dynamic libraries,
+reviewed. Python sources use explicit LF checkout attributes so their byte pins
+remain identical on Windows, Linux and macOS. The executable hash does not authenticate dynamic libraries,
 providers, the installation origin or source-to-binary distribution.
 
 This is a separate Ed25519 implementation from the Go verifier, with selected
