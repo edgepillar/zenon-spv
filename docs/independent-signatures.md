@@ -33,6 +33,16 @@ The checked account and momentum helpers expose their complete preimage bytes.
 Account amounts retain integer types and full magnitude encodings, including
 the intentionally invalid scalar vectors.
 
+Corpus files and the selected backend executable must have regular file targets.
+The checker tests file type and size before opening and rechecks the opened
+descriptor. On platforms exposing `O_NONBLOCK`, it also uses that open flag so
+a FIFO replacement cannot wait for a writer before the descriptor check.
+Corpus reads retain the 8 MiB limit and must match the opened file's size;
+truncated or growing reads are refused before parsing or backend invocation.
+Keep directories protected and stable. These checks do not authenticate owners
+or filesystem/network-share behavior and are not a replacement-race guarantee
+on platforms without a nonblocking open flag.
+
 There are 91 signed fixture vectors: 79 momentums and 12 user account blocks.
 Every original signature must verify. Each also has five expected rejections:
 a changed digest bit, the raw serialized envelope as the message, a second
