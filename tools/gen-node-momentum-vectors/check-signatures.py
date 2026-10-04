@@ -60,10 +60,26 @@ def sha(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
+@contextlib.contextmanager
+def regular_file(path, limit, stage):
+    # Reject special files before open: opening a FIFO can wait for a writer.
+    selected = path.stat()
+    require(stat.S_ISREG(selected.st_mode) and 0 < selected.st_size <= limit, stage)
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NONBLOCK", 0)
+    descriptor = os.open(path, flags)
+    try:
+        info = os.fstat(descriptor)
+        require(stat.S_ISREG(info.st_mode) and 0 < info.st_size <= limit, stage)
+        with os.fdopen(descriptor, "rb") as stream:
+            descriptor = None
+            yield stream, info
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
 def file_hash(path):
-    with path.open("rb") as stream:
-        info = os.fstat(stream.fileno())
-        require(stat.S_ISREG(info.st_mode) and 0 < info.st_size <= 256 * 1024**2, "backend_identity")
+    with regular_file(path, 256 * 1024**2, "backend_identity") as (stream, info):
         digest = hashlib.sha256()
         total = 0
         for raw in iter(lambda: stream.read(1024**2), b""):
@@ -151,8 +167,9 @@ def collect(directory):
     # read these snapshots, so a changing input cannot mix wire/projection data.
     for name in CORPORA:
         path = directory / (name + ".json")
-        with path.open("rb") as stream:
+        with regular_file(path, 8 * 1024**2, "corpus_file") as (stream, info):
             raw = stream.read(8 * 1024**2 + 1)
+            require(len(raw) == info.st_size, "corpus_changed")
         snapshots[name] = (raw, parse(raw))
         identities.append({"name": name + ".json", "sha256": sha(raw), "bytes": len(raw)})
     with tempfile.TemporaryDirectory(prefix="node-signature-bytes-") as temporary:
