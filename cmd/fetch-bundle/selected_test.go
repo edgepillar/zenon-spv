@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -22,10 +23,11 @@ func TestSelectedMomentumOptionsFailBeforeRPCOrPublication(t *testing.T) {
 		{"--momentum-heights", ""}, {"--momentum-heights", "84"}, {"--momentum-heights", "101"},
 		{"--momentum-heights", "90,90"}, {"--momentum-heights", "95,90"}, {"--momentum-heights", "090"},
 		{"--momentum-heights", "90", "--momentum-heights", "95"},
+		{"--momentum-heights", "90", "--momentum-heights", "PRIVATE_UNUSED_SELECTION"},
 		{"--momentum-heights", "90", "--proof-only=false"}, {"--momentum-heights", "90", "--height", "-1"},
 		{"--momentum-heights", "90", "--checkpoint", filepath.Join(t.TempDir(), "anchor.json")},
 	} {
-		if err := run(append(slices.Clone(base), extra...)); err == nil || calls.Load() != 0 {
+		if err := run(append(slices.Clone(base), extra...)); err == nil || calls.Load() != 0 || strings.Contains(err.Error(), "PRIVATE") {
 			t.Fatal("invalid height options collected or published")
 		}
 		got, err := os.ReadFile(path)
