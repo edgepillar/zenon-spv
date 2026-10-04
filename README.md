@@ -94,6 +94,10 @@ synthetic evidence limits.
 For a complete read-only operator run, follow the [operator workflow](docs/operator-pilot.md).
 It records explicit trust settings and build identity, initializes protected
 state, runs bounded watch/restart, and verifies collected evidence locally.
+The [block observer](docs/block-observer.md#collect-and-observe-from-one-explicit-rpc)
+can collect proof-only evidence from one explicit RPC and run the retained-only
+verifier and query consumer in the same invocation, with pinned child binaries
+and unchanged local state.
 Use `inspect-config --json` to review settings and `--expect-context <64-hex>`
 to require the same configuration on later verification, inspection, and watch
 commands. A matching fingerprint is configuration consistency, not independent

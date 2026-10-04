@@ -1,6 +1,7 @@
-// Command observe-block performs one bounded, read-only local block check.
-// It supervises reviewed verifier and consumer binaries; it makes no RPC calls
-// and neither chooses trust inputs nor turns diagnostic matching into finality.
+// Command observe-block performs one bounded, read-only block check.
+// It supervises reviewed verifier and consumer binaries and can first collect
+// proof-only evidence from an explicitly selected RPC through a pinned collector.
+// It neither chooses trust inputs nor turns diagnostic matching into finality.
 package main
 
 import (
@@ -35,6 +36,7 @@ type configuration struct {
 	command, anchor, profile, schedule, state, bundle, expectations, privateDir string
 	pin, window, retention                                                      string
 	timeout                                                                     time.Duration
+	collection                                                                  collectionConfiguration
 }
 
 type observation struct {
@@ -45,13 +47,14 @@ type observation struct {
 }
 
 type summary struct {
-	Version        uint32      `json:"schema_version"`
-	Status         string      `json:"status"`
-	Category       *string     `json:"category"`
-	CheckedTargets int         `json:"checked_targets"`
-	ElapsedNS      int64       `json:"elapsed_ns"`
-	Verifier       observation `json:"verifier"`
-	Consumer       observation `json:"consumer"`
+	Version        uint32       `json:"schema_version"`
+	Status         string       `json:"status"`
+	Category       *string      `json:"category"`
+	CheckedTargets int          `json:"checked_targets"`
+	ElapsedNS      int64        `json:"elapsed_ns"`
+	Verifier       observation  `json:"verifier"`
+	Consumer       observation  `json:"consumer"`
+	Collector      *observation `json:"collector,omitempty"`
 }
 
 type consumption struct {
@@ -70,7 +73,7 @@ func main() {
 func run(ctx context.Context, args []string, stdout, diagnostics io.Writer) int {
 	c, ok := parseConfiguration(args)
 	if !ok {
-		_, _ = fmt.Fprintln(diagnostics, "observe-block: require explicit binaries and hashes, trust inputs, state, bundle, expectations, context, window, retention and private directory")
+		_, _ = fmt.Fprintln(diagnostics, "observe-block: require explicit binaries and hashes, trust inputs, state, expectations, context, window, retention, private directory and either a bundle or complete RPC collection inputs")
 		return 64
 	}
 	r, code := observe(ctx, c)
@@ -112,6 +115,8 @@ func parseConfiguration(args []string) (configuration, bool) {
 		{"command", &c.command}, {"genesis-config", &c.anchor}, {"protocol-profile", &c.profile}, {"schedule", &c.schedule},
 		{"state", &c.state}, {"bundle", &c.bundle}, {"expectations", &c.expectations}, {"private-dir", &c.privateDir},
 		{"expect-context", &c.pin}, {"window", &c.window}, {"retain-headers", &c.retention},
+		{"collector", &c.collection.binary}, {"collector-sha256", &c.collection.hash}, {"rpc", &c.collection.rpc},
+		{"height", &c.collection.height}, {"count", &c.collection.count}, {"commitments", &c.collection.commitments}, {"segments", &c.collection.segments},
 	} {
 		add(option.name, option.value)
 	}
@@ -131,7 +136,7 @@ func parseConfiguration(args []string) (configuration, bool) {
 	}
 	// Require every input separately; an optional timeout cannot stand in for a
 	// missing path. Policy validation shares the verifier's depth/capacity rule.
-	for _, name := range []string{"verifier", "consumer", "verifier-sha256", "consumer-sha256", "command", "genesis-config", "protocol-profile", "schedule", "state", "bundle", "expectations", "private-dir", "expect-context", "window", "retain-headers"} {
+	for _, name := range []string{"verifier", "consumer", "verifier-sha256", "consumer-sha256", "command", "genesis-config", "protocol-profile", "schedule", "state", "expectations", "private-dir", "expect-context", "window", "retain-headers"} {
 		if !seen[name] {
 			return c, false
 		}
@@ -139,7 +144,7 @@ func parseConfiguration(args []string) (configuration, bool) {
 	k, err := strconv.Atoi(c.retention)
 	p := verify.PolicyForTier(c.window)
 	p.RetainHeaders = k
-	return c, err == nil && k > 0 && p.ValidateRetention() == nil
+	return c, err == nil && k > 0 && p.ValidateRetention() == nil && validCollectionSelection(c, seen, k)
 }
 
 func digest(value string) bool {
@@ -159,6 +164,9 @@ func digest(value string) bool {
 func observe(ctx context.Context, c configuration) (result summary, code int) {
 	started := time.Now()
 	result = summary{Version: 1, Status: "not_matched"}
+	if c.collection.binary != "" {
+		result.Version, result.Collector = 2, &observation{}
+	}
 	fail := func(category string, status int) (summary, int) {
 		result.Status, result.Category, result.CheckedTargets = "not_matched", &category, 0
 		return result, status
@@ -170,14 +178,21 @@ func observe(ctx context.Context, c configuration) (result summary, code int) {
 	// Resolve supplied paths without PATH lookup. Regular-file checks and byte
 	// pins do not authenticate their source or close replacement races: callers
 	// must protect the directory, executables and all selected trust/state files.
-	for _, path := range []*string{&c.verifier, &c.consumer, &c.anchor, &c.profile, &c.schedule, &c.state, &c.bundle, &c.expectations} {
+	paths := []*string{&c.verifier, &c.consumer, &c.anchor, &c.profile, &c.schedule, &c.state, &c.expectations}
+	if c.collection.binary == "" {
+		paths = append(paths, &c.bundle)
+	} else {
+		paths = append(paths, &c.collection.binary)
+	}
+	for _, path := range paths {
 		absolute, ok := regularPath(*path)
 		if !ok {
 			return fail("input_unavailable", 70)
 		}
 		*path = absolute
 	}
-	if !binaryMatches(c.verifier, c.verifierHash) || !binaryMatches(c.consumer, c.consumerHash) {
+	if !binaryMatches(c.verifier, c.verifierHash) || !binaryMatches(c.consumer, c.consumerHash) ||
+		(c.collection.binary != "" && !binaryMatches(c.collection.binary, c.collection.hash)) {
 		return fail("binary_mismatch", 2)
 	}
 	expected, ok := readExpectations(c.expectations)
@@ -206,6 +221,20 @@ func observe(ctx context.Context, c configuration) (result summary, code int) {
 	expectedPath, reportPath := filepath.Join(private, "expectations.json"), filepath.Join(private, "query.json")
 	if os.WriteFile(expectedPath, expected, 0o600) != nil {
 		return fail("input_unavailable", 70)
+	}
+	if c.collection.binary != "" {
+		collected := runProcess(ctx, c.collection.binary, collectionArguments(c), int(verify.DefaultMaxBundleBytes), c.timeout)
+		result.Collector = &collected.observation
+		if collected.category != "" {
+			return fail(collected.category, collected.code)
+		}
+		if !json.Valid(collected.stdout) {
+			return fail("invalid_bundle", 2)
+		}
+		c.bundle = filepath.Join(private, "candidate.json")
+		if os.WriteFile(c.bundle, collected.stdout, 0o600) != nil {
+			return fail("input_unavailable", 70)
+		}
 	}
 	args := []string{c.command, "--json", "--retained-only", "--genesis-config", c.anchor, "--protocol-profile", c.profile,
 		"--schedule", c.schedule, "--state", c.state, "--expect-context", c.pin, "--window", c.window, "--retain-headers", c.retention, c.bundle}
