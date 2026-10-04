@@ -145,12 +145,14 @@ func TestCompiledRPCBlockObserver(t *testing.T) {
 					Verifier  observerProcessRecord  `json:"verifier"`
 					Consumer  observerProcessRecord  `json:"consumer"`
 				}
+				// A fast setup refusal can finish within one Windows clock tick.
+				// Actual child status, not positive elapsed time, proves completion.
 				if result.code != want || len(result.stderr) != 0 || json.Unmarshal(result.stdout, &report) != nil ||
-					report.Version != 2 || report.Collector == nil || report.Count != count || report.ElapsedNS <= 0 ||
+					report.Version != 2 || report.Collector == nil || report.Count != count || report.ElapsedNS < 0 ||
 					(report.Category == nil) != (want == 0) || (report.Collector.ExitCode != nil) != collectorCompleted ||
 					(report.Verifier.ExitCode != nil) != verifierCompleted || (report.Consumer.ExitCode != nil) != consumerCompleted ||
 					len(losslessObject(t, result.stdout)) != 8 {
-					t.Fatal("RPC observer summary disagreed with actual completion")
+					t.Fatalf("RPC observer summary disagreed with actual completion: exit=%d schema=%d targets=%d elapsed_ns=%d stderr_bytes=%d", result.code, report.Version, report.Count, report.ElapsedNS, len(result.stderr))
 				}
 				if want == 0 {
 					if report.Status != "matched" || *report.Collector.ExitCode != 0 || *report.Verifier.ExitCode != 0 || *report.Consumer.ExitCode != 0 || report.Collector.StdoutBytes <= 0 {
