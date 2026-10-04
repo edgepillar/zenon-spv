@@ -100,12 +100,14 @@ func (s VerifiedState) Extend(headers []chain.Header) (Result, VerifiedState) {
 }
 
 // VerifyCommitment uses the same policy that created this state; a query cannot
-// lower the depth requirement or replace its activation profile.
+// lower the depth requirement or replace its activation profile. The private
+// window was checked before this immutable handle was returned, so an individual
+// query need not scan every retained header again. Evidence is never cached.
 func (s VerifiedState) VerifyCommitment(evidence proof.CommitmentEvidence) Result {
 	if s.data == nil {
 		return uninitializedStateResult()
 	}
-	return s.withStateTrust(VerifyCommitment(s.data.state, evidence, s.data.opts.Policy))
+	return s.withStateTrust(verifyCommitmentInValidatedWindow(s.data.state, evidence, s.data.opts.Policy))
 }
 
 func (s VerifiedState) VerifySegment(segment proof.AccountSegment, commitments []proof.CommitmentEvidence) SegmentResult {
