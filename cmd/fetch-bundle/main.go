@@ -89,12 +89,11 @@ func run(args []string) error {
 	segmentsFlag := fs.String("segments", "", "comma-separated z1ADDR:HEIGHT or z1ADDR:START-END specs; fetched account blocks become AccountSegments and their addresses are auto-added to commitments")
 	proofOnly := fs.Bool("proof-only", false, "emit evidence without headers for a retained-state query; requires targets and forbids --checkpoint")
 	var momentumHeights string
-	var heightsSet bool
+	var heightSelections int
 	fs.Func("momentum-heights", "increasing unique confirming heights; requires --proof-only and a positive --height (max 1024)", func(value string) error {
-		if heightsSet || value == "" {
-			return errors.New("duplicate or empty momentum-height selection")
-		}
-		heightsSet, momentumHeights = true, value
+		// Defer validation so flag.Parse cannot echo an invalid private value.
+		heightSelections++
+		momentumHeights = value
 		return nil
 	})
 	if err := fs.Parse(args); err != nil {
@@ -102,6 +101,9 @@ func run(args []string) error {
 	}
 	if fs.NArg() != 0 {
 		return errors.New("fetch-bundle does not accept positional arguments")
+	}
+	if heightSelections > 1 || heightSelections == 1 && momentumHeights == "" {
+		return errors.New("duplicate or empty momentum-height selection")
 	}
 	if *count < 1 || *count > verify.DefaultMaxHeaders {
 		return fmt.Errorf("--count must be between 1 and %d", verify.DefaultMaxHeaders)
@@ -120,7 +122,7 @@ func run(args []string) error {
 	}
 	requestedCount := uint64(*count) + 1 // Include the checkpoint before the bundle.
 	var selectedHeights []uint64
-	if heightsSet {
+	if heightSelections == 1 {
 		if !*proofOnly || *heightArg <= 0 {
 			return errors.New("--momentum-heights requires --proof-only and a positive --height")
 		}
