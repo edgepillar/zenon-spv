@@ -42,6 +42,9 @@ audit history.
 - [`selected-observer-resources.md`](selected-observer-resources.md) — fixed
   signed-capture observer costs at K=256/4096 and concurrency one/four, with
   preserved process records and explicit memory/latency limits.
+- [`live-signed-batch-observation.md`](live-signed-batch-observation.md) — five
+  real signed blocks consumed as a complete read-only batch, with exact target
+  refusals, preserved raw evidence and explicit one-gateway limits.
 - [`state-read-allocations.md`](state-read-allocations.md) — bounded file reads,
   allocation reductions and preserved saved-state verification checks.
 - [`bundle-read-allocations.md`](bundle-read-allocations.md) — bounded proof-file
