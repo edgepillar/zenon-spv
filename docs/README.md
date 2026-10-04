@@ -60,6 +60,8 @@ audit history.
   mixed-height fixtures and compiled v1/v2 delayed-query coverage.
 - [`conformance.md`](conformance.md) — implemented conformance cases,
   known gaps, and production follow-ups.
+- [`independent-signatures.md`](independent-signatures.md) — Python-recomputed
+  node-corpus messages, independent OpenSSL verification and native CI reports.
 - [`compiled-query-conformance.md`](compiled-query-conformance.md) — compiled
   collector/verifier processes, loopback peer faults, and retained-query reports.
 - [`local-watch-scenarios.md`](local-watch-scenarios.md) — reproducible

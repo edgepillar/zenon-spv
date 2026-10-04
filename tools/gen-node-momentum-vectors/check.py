@@ -110,13 +110,10 @@ def check_vector(vector):
     for field in ("version", "chainIdentifier", "previousHash", "height", "timestamp", "changesHash",
                   "publicKey", "signature", "nextFusionPrice", "nextWorkPrice"):
         require(wire[field] == expected[field], f"header projection mismatch: {field}")
+    return preimage
 
 
-def main():
-    path = Path(sys.argv[1]) if len(sys.argv) > 1 else (
-        Path(__file__).resolve().parents[2] / "internal/testdata/conformance/momentum-v1-v2.json"
-    )
-    corpus = json.loads(path.read_text(encoding="utf-8"))
+def check_corpus(corpus):
     require(corpus["format_version"] == 1, "unsupported corpus format")
     vectors = corpus["vectors"] + corpus["chain"]["vectors"] + corpus["transition"]["vectors"]
     require(len(corpus["vectors"]) == 9 and len(corpus["chain"]["vectors"]) == 6, "incomplete corpus")
@@ -141,6 +138,14 @@ def main():
                 expected_version = 2 if header["height"] >= series["v2_from_height"] else 1
                 require(header["version"] == expected_version, "fixture activation mismatch")
             previous, height = header["hash"], header["height"]
+    return vectors
+
+
+def main():
+    path = Path(sys.argv[1]) if len(sys.argv) > 1 else (
+        Path(__file__).resolve().parents[2] / "internal/testdata/conformance/momentum-v1-v2.json"
+    )
+    vectors = check_corpus(json.loads(path.read_text(encoding="utf-8")))
     print(f"Verified {len(vectors)} node-derived momentum preimages with Python SHA3-256")
 
 

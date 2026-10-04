@@ -26,6 +26,20 @@ jobs:
         run: python tools/check-candidate-archive_test.py
       - name: Verification context checks
         run: python tools/check-verification-context_test.py
+      - name: Signature checker controls
+        run: python -B tools/gen-node-momentum-vectors/check-signatures_test.py
+      - name: Independent node signatures
+        id: signatures
+        shell: bash
+        run: python -B tools/gen-node-momentum-vectors/check-signatures.py --openssl openssl --source-revision "${{ github.sha }}" > "${{ runner.temp }}/node-signatures.json"
+      - name: Upload independent signature report
+        if: ${{ !cancelled() && steps.signatures.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: independent-signatures-linux
+          path: ${{ runner.temp }}/node-signatures.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Build
         run: go build ./...
       - name: Vet
@@ -91,6 +105,25 @@ jobs:
         run: python tools/check-candidate-archive_test.py
       - name: Verification context checks
         run: python tools/check-verification-context_test.py
+      - name: Signature checker controls
+        run: python -B tools/gen-node-momentum-vectors/check-signatures_test.py
+      - name: Independent node signatures
+        id: signatures
+        shell: bash
+        run: |
+          signature_backend=openssl
+          if [ "$RUNNER_OS" = macOS ]; then
+            signature_backend="$(brew --prefix openssl@3)/bin/openssl"
+          fi
+          python -B tools/gen-node-momentum-vectors/check-signatures.py --openssl "$signature_backend" --source-revision "${{ github.sha }}" > "${{ runner.temp }}/node-signatures.json"
+      - name: Upload independent signature report
+        if: ${{ !cancelled() && steps.signatures.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: independent-signatures-${{ matrix.os }}
+          path: ${{ runner.temp }}/node-signatures.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Build
         run: go build ./...
       - name: Vet

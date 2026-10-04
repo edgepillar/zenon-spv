@@ -26,8 +26,11 @@ exactly 32 bytes. The [byte corruption controls](../tools/gen-node-momentum-vect
 exercise boolean/float aliases and a redistribution of content hash bytes that
 preserves the concatenated preimage and its digest while violating member widths.
 All existing node corpus bytes and low-level amount magnitude cases are retained.
-These checks establish the fixture's typed byte contract; signature verification
-remains in Go and network trust inputs remain separate.
+These checks establish the fixture's typed byte contract. The separate
+[independent signature checker](independent-signatures.md) runs OpenSSL over
+Python-recomputed messages in all three native CI jobs, retaining unsigned
+embedded/genesis semantics and intentionally invalid scalar vectors. Go
+verification and network trust inputs remain separate.
 
 The [account amount corpus](account-amount-validation.md) adds seven node-derived
 account-block hash vectors, including invalid magnitudes that expose truncation
