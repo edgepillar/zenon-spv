@@ -150,8 +150,18 @@ The checker streams opaque binary hashes; it does not validate executable
 semantics or authenticate test execution or the overall scenario selection.
 Archive input is at most 256 MiB, manifest input 256 KiB and report input 4 MiB,
 with bounded JSON
-depth, strings, collections and nodes. Keep the open archive stable during
-checking; in-place replacement by an untrusted writer is outside this tool.
+depth, strings, collections and nodes. Before opening the selected archive
+target, it requires a nonempty regular file within the archive size limit.
+It rechecks the opened descriptor before hashing or ZIP parsing and closes it
+on rejection. On platforms with `O_NONBLOCK`, opening also uses that flag so
+a FIFO substituted after the initial check cannot wait for a writer. The
+native FIFO subprocess controls run on Linux/macOS and explicitly skip on
+Windows where `os.mkfifo` is unavailable. Windows still runs the descriptor
+type/size and cleanup controls; there is no Windows FIFO execution claim.
+Keep the protected directory and open archive stable during checking;
+nonblocking open support does not authenticate ownership or exclude every
+replacement race, and in-place changes by an untrusted writer remain outside
+this tool.
 
 Exit 0 and `status: verified` mean these byte/pin/consistency checks passed.
 Exit 2 rejects an archive, 64 rejects invocation and 70 means output delivery

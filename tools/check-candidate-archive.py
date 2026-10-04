@@ -2,6 +2,7 @@
 """Check a pinned candidate ZIP without extracting or executing its contents."""
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
@@ -91,6 +92,24 @@ def metadata(raw):
 
     bounded(value)
     return value
+
+
+@contextlib.contextmanager
+def regular_archive(path):
+    # A FIFO can block in open before file_hash reaches its descriptor check.
+    selected = path.stat()
+    require(stat.S_ISREG(selected.st_mode) and 0 < selected.st_size <= ARCHIVE_LIMIT, "archive")
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NONBLOCK", 0)
+    descriptor = os.open(path, flags)
+    try:
+        opened = os.fstat(descriptor)
+        require(stat.S_ISREG(opened.st_mode) and 0 < opened.st_size <= ARCHIVE_LIMIT, "archive")
+        with os.fdopen(descriptor, "rb") as source:
+            descriptor = None
+            yield source
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
 
 
 def file_hash(stream):
@@ -300,7 +319,7 @@ def query_resources(case, os_name):
 def check(path, archive_sha256, revision, inputs_sha256, os_name, architecture):
     # These expectations must come from an independently selected source/CI
     # record. Copying them out of this archive establishes no authenticity.
-    with path.open("rb") as source:
+    with regular_archive(path) as source:
         require(file_hash(source) == archive_sha256, "archive_pin")
         source.seek(0)
         return check_contents(source, revision, inputs_sha256, os_name, architecture)
