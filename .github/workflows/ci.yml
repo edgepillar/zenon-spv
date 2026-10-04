@@ -24,6 +24,8 @@ jobs:
           python-version: '3.13'
       - name: Candidate archive checks
         run: python tools/check-candidate-archive_test.py
+      - name: Verification context checks
+        run: python tools/check-verification-context_test.py
       - name: Build
         run: go build ./...
       - name: Vet
@@ -87,6 +89,8 @@ jobs:
           python-version: '3.13'
       - name: Candidate archive checks
         run: python tools/check-candidate-archive_test.py
+      - name: Verification context checks
+        run: python tools/check-verification-context_test.py
       - name: Build
         run: go build ./...
       - name: Vet
