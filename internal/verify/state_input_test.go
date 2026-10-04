@@ -66,12 +66,13 @@ func TestStateInputOpenedDescriptorCheckedAndClosed(t *testing.T) {
 				if err != nil {
 					t.Fatal("cannot prepare descriptor control")
 				}
-				if mode == "oversized" {
+				switch mode {
+				case "oversized":
 					if err := opened.Truncate(MaxStateFileBytes + 1); err != nil {
 						_ = opened.Close()
 						t.Fatal(err)
 					}
-				} else if mode == "stat failure" {
+				case "stat failure":
 					if err := opened.Close(); err != nil {
 						t.Fatal(err)
 					}
