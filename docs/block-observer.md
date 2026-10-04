@@ -172,6 +172,11 @@ experiment. It does not supply independent operator corroboration, authenticate
 activation/election inputs or establish canonicality/finality. Independent
 network qualification and reviewed distribution remain separate gates.
 
+[Selected-height resource observations](selected-observer-resources.md) record
+fixed signed-capture runs at K=256/4096 and concurrency one/four, including every
+actual process outcome, sampled RSS and group elapsed time. Their local limits
+and macOS sampling boundary do not establish network or production capacity.
+
 ## Summary and remaining pilot work
 
 Local file mode's schema 1 reports `status`, nullable fixed `category`,

@@ -39,6 +39,9 @@ audit history.
   costs, allocation reporting, and explicit workload limits.
 - [`retained-capacity-benchmarks.md`](retained-capacity-benchmarks.md) — full
   K=16/256/4096 workload costs, saved size and measurement boundaries.
+- [`selected-observer-resources.md`](selected-observer-resources.md) — fixed
+  signed-capture observer costs at K=256/4096 and concurrency one/four, with
+  preserved process records and explicit memory/latency limits.
 - [`state-read-allocations.md`](state-read-allocations.md) — bounded file reads,
   allocation reductions and preserved saved-state verification checks.
 - [`bundle-read-allocations.md`](bundle-read-allocations.md) — bounded proof-file
