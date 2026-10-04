@@ -170,8 +170,9 @@ censorship, cross-verifier agreement, state transitions) remain.
 The verifier anchors on:
 
 - The **embedded mainnet genesis trust root** (`internal/verify/genesis.go`),
-  recomputed at release time across multiple peers via
-  `tools/verify-mainnet-genesis`.
+  whose chain ID, height and expected hash are compiled configuration.
+  The [genesis observation cross-check](genesis-cross-check.md) compares
+  locally recomputed peer envelopes with that expected pin.
 - An **embedded checkpoint list** (`internal/verify/checkpoints.go`).
   Header hashes at checkpoint heights are required to match; a
   mismatch returns REJECT/`CheckpointMismatch`.
@@ -179,13 +180,14 @@ The verifier anchors on:
   genesis is authoritative; an inbound bundle's `claimed_genesis`
   becomes informational on resume.
 
-These are **weak-subjectivity** anchors. A verifier that boots from a
-maliciously substituted release binary, an attacker-controlled
-checkpoint file, or a tampered persisted state file inherits whatever
-chain that input attests. The verifier cannot detect that on its
-own — operators reproducing the trust anchors via
-`tools/verify-mainnet-genesis` against independent peers is the
-defense.
+These are **weak-subjectivity** anchors. Structural validation and context
+consistency do not establish release or trust-input authenticity. Obtain
+the binary, configured anchors and checkpoints, and any trusted local
+state through independently authenticated channels. A genesis cross-check
+can detect malformed, inconsistent or unexpected peer envelopes relative
+to an expected pin; it does not authenticate those channels or prove
+operator independence. It neither replaces a checkpoint list nor repairs
+an untrusted binary or saved-state file.
 
 ## Multi-peer agreement vs quorum proof
 
