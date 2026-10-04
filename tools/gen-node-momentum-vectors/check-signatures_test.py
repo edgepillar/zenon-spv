@@ -14,6 +14,8 @@ import io
 import json
 import os
 from pathlib import Path
+import signal
+import stat
 import subprocess
 import sys
 import tempfile
@@ -206,6 +208,100 @@ class SignatureControls(unittest.TestCase):
             self.assertEqual(code, 2)
             self.assertEqual(json.loads(stdout.getvalue())["error_stage"], "arguments")
             self.assertNotIn("private", stdout.getvalue() + stderr.getvalue())
+
+    def refused_cli(self, arguments, wanted, command=None):
+        command = command or [sys.executable, "-I", "-B", str(HERE / "check-signatures.py"), *arguments]
+        process = subprocess.Popen(command,
+                                   stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                   start_new_session=True)
+        try:
+            stdout, stderr = process.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            if os.name == "posix":
+                os.killpg(process.pid, signal.SIGKILL)
+            else:
+                process.kill()
+            process.communicate(timeout=5)
+            self.fail("nonregular file blocked before refusal")
+        self.assertEqual(process.returncode, 2)
+        self.assertEqual(stderr, b"")
+        report = json.loads(stdout)
+        self.assertEqual(report["error_stage"], wanted)
+        self.assertEqual(report["signature_process_outcomes"], 0)
+        self.assertEqual(report["outcomes"], [])
+        self.assertNotIn("private", stdout.decode())
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "native FIFO creation is unavailable")
+    def test_real_fifo_inputs_are_refused_without_waiting_for_a_writer(self):
+        with tempfile.TemporaryDirectory(prefix="private-fifo-control-") as temporary:
+            root = Path(temporary)
+            os.mkfifo(root / "momentum-v1-v2.json", 0o600)
+            self.refused_cli(["--corpus-dir", str(root), "--openssl", "unavailable-private-backend"], "corpus_file")
+            executable = root / "selected-backend"
+            os.mkfifo(executable, 0o700)
+            self.refused_cli(["--openssl", str(executable)], "backend_identity")
+            # Model replacement after a regular precheck, using a real FIFO
+            # for open/fstat. Without O_NONBLOCK this owned child would hang.
+            ordinary = root / "ordinary.json"
+            ordinary.write_bytes(b"ordinary data")
+            code = '''import importlib.util, json, os, sys
+from pathlib import Path
+from unittest import mock
+spec = importlib.util.spec_from_file_location("checker", sys.argv[1])
+checker = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(checker)
+selected = os.stat(sys.argv[3])
+try:
+    with mock.patch.object(Path, "stat", return_value=selected):
+        with checker.regular_file(Path(sys.argv[2]), 1024, "corpus_file"):
+            raise AssertionError("special descriptor reached a reader")
+except checker.Refused as error:
+    print(json.dumps({"error_stage": error.stage, "signature_process_outcomes": 0, "outcomes": []}))
+    raise SystemExit(2)
+'''
+            self.refused_cli([], "corpus_file", [sys.executable, "-I", "-B", "-c", code,
+                             str(HERE / "check-signatures.py"), str(root / "momentum-v1-v2.json"), str(ordinary)])
+
+    def test_opened_descriptor_type_is_checked_and_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "input.json"
+            path.write_bytes(b"ordinary input")
+            actual_fstat = CHECKER.os.fstat
+            descriptors = []
+            def replaced_descriptor(fd):
+                descriptors.append(fd)
+                fields = list(actual_fstat(fd))
+                fields[0] = stat.S_IFIFO | 0o600
+                return os.stat_result(fields)
+            with mock.patch.object(CHECKER.os, "fstat", side_effect=replaced_descriptor):
+                with self.assertRaises(CHECKER.Refused):
+                    with CHECKER.regular_file(path, 1024, "corpus_file"):
+                        self.fail("special descriptor reached a reader")
+            self.assertEqual(len(descriptors), 1)
+            with self.assertRaises(OSError):
+                actual_fstat(descriptors[0])
+
+    def test_oversized_corpus_stops_before_parsing_or_backend(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "momentum-v1-v2.json"
+            with path.open("wb") as stream:
+                stream.truncate(8 * 1024**2 + 1)
+            with mock.patch.object(CHECKER, "parse", side_effect=AssertionError("must not parse")):
+                with mock.patch.object(CHECKER, "Backend", side_effect=AssertionError("must not launch")):
+                    with self.assertRaises(CHECKER.Refused) as raised:
+                        CHECKER.run(Path(temporary), "unavailable-backend")
+            self.assertEqual(raised.exception.stage, "corpus_file")
+
+    def test_truncated_corpus_read_stops_before_parsing_or_backend(self):
+        @contextlib.contextmanager
+        def changed_file(*_):
+            yield io.BytesIO(b"short"), mock.Mock(st_size=100)
+        with mock.patch.object(CHECKER, "regular_file", changed_file):
+            with mock.patch.object(CHECKER, "parse", side_effect=AssertionError("must not parse")):
+                with mock.patch.object(CHECKER, "Backend", side_effect=AssertionError("must not launch")):
+                    with self.assertRaises(CHECKER.Refused) as raised:
+                        CHECKER.run(CORPUS_DIR, "unavailable-backend")
+        self.assertEqual(raised.exception.stage, "corpus_changed")
 
 
 if __name__ == "__main__":
