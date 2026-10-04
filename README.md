@@ -19,7 +19,7 @@ Plus:
 - **Verified state API** with immutable retained headers, captured policy, and explicit trusted-local resume; used by the CLI and watch. See [`docs/verified-state-api.md`](docs/verified-state-api.md).
 - **Multi-peer JSON-RPC fetcher** with k-of-n agreement (`internal/fetch`, `cmd/fetch-bundle`).
 - **Structured Result envelope** — every ACCEPT/REJECT/REFUSED carries machine-readable `proven:` / `not_proven:` / `trust_assumptions:` lists, so integrators can programmatically distinguish "this happened" from "I know the canonical chain state."
-- **Trust-anchor tooling** — embedded mainnet genesis trust root, multi-peer genesis recompute (`tools/verify-mainnet-genesis`), checkpoint derivation (`tools/derive-checkpoints`), producer-schedule derivation (`tools/derive-producer-schedule`).
+- **Trust-anchor tooling** — embedded mainnet genesis trust root, multi-peer genesis envelope cross-check against an expected pin (`tools/verify-mainnet-genesis`), checkpoint derivation (`tools/derive-checkpoints`), producer-schedule derivation (`tools/derive-producer-schedule`). See the [genesis observation boundary](docs/genesis-cross-check.md); matching peer envelopes do not authenticate the anchor's provenance.
 
 This is **not a full Zenon light client.** See [`docs/trust-model.md`](docs/trust-model.md) for what each ACCEPT actually proves and [`docs/conformance.md`](docs/conformance.md) for the implementation matrix against the spec.
 
@@ -274,7 +274,7 @@ internal/
 tools/
   derive-checkpoints/       # Generate checkpoint commitment evidence
   derive-producer-schedule/ # Derive a per-momentum producer schedule from peer quorum
-  verify-mainnet-genesis/   # Recompute mainnet trust root across peer consensus
+  verify-mainnet-genesis/   # Cross-check recomputed genesis envelopes against an expected pin
   stress-fixture/           # Stress-test fixture generator
 docs/                       # Repo-local docs (spec and ADRs live in the vault)
 ```
@@ -299,7 +299,7 @@ asking "why did the SPV do X this way, and what did the maintainer
 already rule out?":
 
 - [`decisions/0001-proof-serialization.md`](https://github.com/0x3639/zenon-spv-vault/blob/main/decisions/0001-proof-serialization.md) — wire format (JSON shipped, protobuf reserved).
-- [`decisions/0002-genesis-trust-anchor.md`](https://github.com/0x3639/zenon-spv-vault/blob/main/decisions/0002-genesis-trust-anchor.md) — embedded mainnet genesis + multi-peer recompute.
+- [`decisions/0002-genesis-trust-anchor.md`](https://github.com/0x3639/zenon-spv-vault/blob/main/decisions/0002-genesis-trust-anchor.md) — historical genesis-anchor rationale.
 - [`decisions/0003-checkpoint-policy.md`](https://github.com/0x3639/zenon-spv-vault/blob/main/decisions/0003-checkpoint-policy.md) — embedded checkpoint list (long-range-attack defense).
 - [`decisions/0004-producer-set-quorum-check.md`](https://github.com/0x3639/zenon-spv-vault/blob/main/decisions/0004-producer-set-quorum-check.md) — original producer-set design (superseded by 0005).
 - [`decisions/0005-producer-schedule-shipped.md`](https://github.com/0x3639/zenon-spv-vault/blob/main/decisions/0005-producer-schedule-shipped.md) — opt-in tier-2 `--schedule` as actually built.

@@ -303,12 +303,17 @@ These are *known* and *documented*, not bugs.
    [`trust-model.md`](trust-model.md) and
    [`producer-set-verification.md`](producer-set-verification.md).
 
-2. **Mainnet genesis trust root is embedded but single-sourced
-   originally.** The embedded hash recomputes from the signed envelope
-   of the genesis Momentum, and `tools/verify-mainnet-genesis`
-   re-derives it across peers, but the original derivation came from
-   a single peer (`my.hc1node.com`, 2026-04-28). Operators reproducing
-   the trust root cross-check via the tool.
+2. **Embedded mainnet genesis remains an external trust input.**
+   The historical single-peer provenance is recorded in
+   [`internal/verify/genesis.go`](../internal/verify/genesis.go).
+   The [genesis observation cross-check](genesis-cross-check.md)
+   recomputes fetched envelopes and requires every configured peer to
+   match the independently justified expected pin. Genesis is not verified
+   as a normally signed producer momentum. Matching observations do not
+   authenticate endpoint independence or the historical deployment.
+   The unsigned synthetic mainnet-shaped observations and node-derived
+   historical testnet corpus do not independently re-derive or authenticate
+   the embedded mainnet root.
 
 3. **No state-value proof path against current-protocol go-zenon.**
    The verifier can prove account-header inclusion under
