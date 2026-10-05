@@ -73,6 +73,8 @@ jobs:
           retention-days: 14
       - name: RPC envelope allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCEnvelopeExtensions$' -benchtime=3x -benchmem ./internal/fetch
+      - name: RPC error-data allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCErrorData$' -benchtime=3x -benchmem ./internal/fetch
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchtime=1x ./internal/conformance
       - name: Independent corpus checks
@@ -166,5 +168,7 @@ jobs:
           retention-days: 14
       - name: RPC envelope allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCEnvelopeExtensions$' -benchtime=3x -benchmem ./internal/fetch
+      - name: RPC error-data allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCErrorData$' -benchtime=3x -benchmem ./internal/fetch
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchtime=1x ./internal/conformance

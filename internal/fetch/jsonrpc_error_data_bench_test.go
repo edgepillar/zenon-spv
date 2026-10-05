@@ -3,21 +3,48 @@ package fetch
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
+	"testing"
 )
 
-// ErrInvalidRPCResponse means that the bounded response envelope is malformed
-// or does not identify this request. No result has been decoded into caller output.
-var ErrInvalidRPCResponse = errors.New("invalid JSON-RPC response")
+// BenchmarkRPCErrorData compares complete error-envelope decoding. The former
+// response and object helpers below retain error.data; the current path can
+// discard it. Input construction is outside the timed region. Both paths check
+// the same remote-error outcome. These observations are not HTTP or RSS budgets.
+func BenchmarkRPCErrorData(b *testing.B) {
+	for _, size := range []int{32 << 10, 1 << 20, 8 << 20} {
+		raw := []byte(`{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"failure","data":{"detail":"` + strings.Repeat("x", size) + `"}}}`)
+		for _, mode := range []struct {
+			name   string
+			decode func([]byte, int) (rpcResponse, error)
+		}{
+			{"copy_reference", decodeRPCResponseErrorDataCopyReference},
+			{"discard_error_data", decodeRPCResponse},
+		} {
+			b.Run(fmt.Sprintf("%d/%s", size, mode.name), func(b *testing.B) {
+				b.ReportAllocs()
+				b.SetBytes(int64(len(raw)))
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					r, err := mode.decode(raw, 1)
+					if err != nil || len(r.Result) != 0 || r.Error == nil ||
+						r.Error.Code != -1 || r.Error.Message != "failure" {
+						b.Fatalf("remote error changed: %v", err)
+					}
+				}
+			})
+		}
+	}
+}
 
-// decodeRPCResponse consumes a body already bounded by Client.Call. The client
-// emits integer IDs; a response must echo that integer and use JSON-RPC 2.0.
-func decodeRPCResponse(raw []byte, requestID int) (rpcResponse, error) {
+// These test-only helpers preserve the exact response and object decoder bodies
+// from 6b14366b6f47ae8fd8d929899054402b60bc9e6c, with only function names changed.
+// They are never used by production decoding.
+func decodeRPCResponseErrorDataCopyReference(raw []byte, requestID int) (rpcResponse, error) {
 	var versionRaw, idRaw, resultRaw, errorRaw json.RawMessage
-	if err := decodeRPCObject(raw, map[string]*json.RawMessage{
+	if err := decodeRPCObjectErrorDataCopyReference(raw, map[string]*json.RawMessage{
 		"jsonrpc": &versionRaw, "id": &idRaw, "result": &resultRaw, "error": &errorRaw,
 	}); err != nil {
 		return rpcResponse{}, err
@@ -37,9 +64,9 @@ func decodeRPCResponse(raw []byte, requestID int) (rpcResponse, error) {
 		return rpcResponse{Result: resultRaw}, nil
 	}
 
-	var codeRaw, messageRaw json.RawMessage
-	if err := decodeRPCObject(errorRaw, map[string]*json.RawMessage{
-		"code": &codeRaw, "message": &messageRaw, "data": nil,
+	var codeRaw, messageRaw, dataRaw json.RawMessage
+	if err := decodeRPCObjectErrorDataCopyReference(errorRaw, map[string]*json.RawMessage{
+		"code": &codeRaw, "message": &messageRaw, "data": &dataRaw,
 	}); err != nil {
 		return rpcResponse{}, err
 	}
@@ -55,14 +82,11 @@ func decodeRPCResponse(raw []byte, requestID int) (rpcResponse, error) {
 // decodeRPCObject rejects duplicate control fields and case aliases while
 // allowing unrelated extension members. Field names and values are not echoed
 // in parser diagnostics. Callers provide fresh temporary fields for each object.
-// A nil target marks a known field whose value is discarded after JSON scanning;
-// its presence is still tracked to reject duplicates and case aliases.
-func decodeRPCObject(raw []byte, fields map[string]*json.RawMessage) error {
+func decodeRPCObjectErrorDataCopyReference(raw []byte, fields map[string]*json.RawMessage) error {
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	if token, err := dec.Token(); err != nil || token != json.Delim('{') {
 		return fmt.Errorf("%w: expected an object", ErrInvalidRPCResponse)
 	}
-	var discarded map[string]bool
 	for dec.More() {
 		token, err := dec.Token()
 		name, ok := token.(string)
@@ -77,15 +101,6 @@ func decodeRPCObject(raw []byte, fields map[string]*json.RawMessage) error {
 					return fmt.Errorf("%w: noncanonical control field name", ErrInvalidRPCResponse)
 				}
 			}
-			value = &ignoredRPCValue{}
-		} else if target == nil {
-			if discarded[name] {
-				return fmt.Errorf("%w: duplicate control field", ErrInvalidRPCResponse)
-			}
-			if discarded == nil {
-				discarded = make(map[string]bool)
-			}
-			discarded[name] = true
 			value = &ignoredRPCValue{}
 		} else if len(*target) != 0 {
 			return fmt.Errorf("%w: duplicate control field", ErrInvalidRPCResponse)
@@ -103,11 +118,3 @@ func decodeRPCObject(raw []byte, fields map[string]*json.RawMessage) error {
 	}
 	return nil
 }
-
-// ignoredRPCValue is only passed to json.Decoder.Decode, which scans and
-// validates the complete JSON value before calling UnmarshalJSON. The callback
-// discards that validated value without making a RawMessage payload copy.
-// Decoder buffering and copies of required control fields are still allocated.
-type ignoredRPCValue struct{}
-
-func (*ignoredRPCValue) UnmarshalJSON([]byte) error { return nil }
