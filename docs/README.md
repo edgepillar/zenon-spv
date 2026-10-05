@@ -61,6 +61,9 @@ audit history.
 - [`rpc-response-read-allocations.md`](rpc-response-read-allocations.md) — capped
   response-buffer growth, unchanged byte/error contracts and complete client-call
   allocation observations.
+- [`rpc-optional-base64-allocations.md`](rpc-optional-base64-allocations.md) —
+  ignored line endings excluded from large key/signature output-buffer sizing,
+  exact decoding behavior and native allocation observations.
 - [`content-hash-allocations.md`](content-hash-allocations.md) — shared canonical
   encoding, immutable index sorting, differential checks and before/after costs.
 - [`flat-content-resources.md`](flat-content-resources.md) — node-derived content

@@ -34,6 +34,7 @@ var scenarios = []scenario{
 	{"bounded_state_reader", "internal/verify", "TestSizedStateReadContract", nil},
 	{"bounded_bundle_reader", "internal/proof", "TestSizedBundleReadContract", nil},
 	{"bounded_rpc_response_reader", "internal/fetch", "TestRPCResponseReadContract", nil},
+	{"optional_rpc_base64_whitespace", "internal/fetch", "TestRPCOptionalBase64WhitespaceContract", nil},
 	{"node_content_scaling", "internal/conformance", "TestNodeContentScaling", nil},
 	{"compiled_content_scaling", "internal/conformance", "TestCompiledContentScalingWorkflow", []string{"zenon-spv"}},
 	{"process_memory_accounting", "internal/conformance", "TestProcessMemoryAccounting", nil},
