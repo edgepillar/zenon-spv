@@ -149,11 +149,10 @@ func convertAndVerifyDetailed(m rpcMomentum) (DetailedHeader, error) {
 		return DetailedHeader{}, fmt.Errorf("changes_hash: %w", err)
 	}
 
-	rawData, err := base64.StdEncoding.DecodeString(m.Data)
+	dataHash, err := hashRPCData(m.Data)
 	if err != nil {
 		return DetailedHeader{}, fmt.Errorf("data: %w", err)
 	}
-	dataHash := sha3sum(rawData)
 
 	contentSlice, err := decodeAccountHeaders(m.Content)
 	if err != nil {

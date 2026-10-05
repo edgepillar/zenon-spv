@@ -2,7 +2,6 @@ package fetch
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -140,11 +139,10 @@ func convertAndVerifyAccountBlock(b rpcAccountBlock) (chain.AccountBlock, error)
 		return chain.AccountBlock{}, fmt.Errorf("token_standard: %w", err)
 	}
 
-	rawData, err := base64.StdEncoding.DecodeString(b.Data)
+	dataHash, err := hashRPCData(b.Data)
 	if err != nil {
 		return chain.AccountBlock{}, fmt.Errorf("data: %w", err)
 	}
-	dataHash := sha3sum(rawData)
 
 	descHash, err := descendantBlocksHash(b.DescendantBlocks)
 	if err != nil {
