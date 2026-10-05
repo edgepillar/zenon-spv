@@ -70,6 +70,8 @@ audit history.
   response height/account binding, and quorum treatment of mismatched replies.
 - [`rpc-diagnostics.md`](rpc-diagnostics.md) — endpoint-free error formatting,
   retained error causes, peer positions, and private-data boundaries.
+- [`rpc-envelope-allocations.md`](rpc-envelope-allocations.md) — validated
+  extension discard, unchanged response guards and native allocation observations.
 - [`account-amount-validation.md`](account-amount-validation.md) — signed-value
   ambiguity prevention across RPC and offline proof inputs, with node vectors.
 - [`account-envelope-validation.md`](account-envelope-validation.md) — supported
