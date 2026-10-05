@@ -24,6 +24,8 @@ jobs:
           python-version: '3.13'
       - name: Candidate archive checks
         run: python tools/check-candidate-archive_test.py
+      - name: Exported candidate checker controls
+        run: python -B tools/check-exported-candidate_test.py
       - name: Verification context checks
         run: python tools/check-verification-context_test.py
       - name: Signature checker controls
@@ -49,6 +51,10 @@ jobs:
       - name: Offline pilot report
         id: pilot
         run: go run ./tools/offline-pilot --race --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
+      - name: Verify exported candidate
+        id: candidate
+        shell: bash
+        run: python -I -B tools/check-exported-candidate.py --directory "${{ runner.temp }}/tested-candidate" --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)"
       - name: Upload offline pilot report
         if: ${{ !cancelled() && steps.pilot.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -58,7 +64,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Upload tested candidate
-        if: ${{ !cancelled() && steps.pilot.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.pilot.outcome == 'success' && steps.candidate.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: tested-candidate-linux
@@ -103,6 +109,8 @@ jobs:
           python-version: '3.13'
       - name: Candidate archive checks
         run: python tools/check-candidate-archive_test.py
+      - name: Exported candidate checker controls
+        run: python -B tools/check-exported-candidate_test.py
       - name: Verification context checks
         run: python tools/check-verification-context_test.py
       - name: Signature checker controls
@@ -134,6 +142,10 @@ jobs:
         id: pilot
         shell: bash
         run: go run ./tools/offline-pilot --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
+      - name: Verify exported candidate
+        id: candidate
+        shell: bash
+        run: python -I -B tools/check-exported-candidate.py --directory "${{ runner.temp }}/tested-candidate" --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)"
       - name: Upload offline pilot report
         if: ${{ !cancelled() && steps.pilot.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -143,7 +155,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Upload tested candidate
-        if: ${{ !cancelled() && steps.pilot.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.pilot.outcome == 'success' && steps.candidate.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: tested-candidate-${{ matrix.os }}
