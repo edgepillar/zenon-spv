@@ -15,8 +15,9 @@ partial hash. Malformed inputs retain the old decoded-buffer allocation
 behavior; this optimization concerns valid large preimages.
 
 `BenchmarkRPCDataHashDecode` isolates decode-plus-hash work on synthetic decoded
-preimages of 32 KiB, 1 MiB and 8 MiB. Construction and expected hashes occur
-outside timing. `buffer_reference` uses the exact prior `DecodeString` followed
+preimages of 32 KiB, 1 MiB and 8 MiB. The byte pattern's expected SHA3-256 hashes
+are independently pinned from Python's standard-library `hashlib`, and input
+construction occurs outside timing. `buffer_reference` uses the exact prior `DecodeString` followed
 by `sha3sum` expressions; `stream_hash` uses the current path. Every iteration
 requires the identical expected hash. Both preserve standard Base64 semantics,
 including CR/LF, padding and nonzero padding bits accepted by `StdEncoding`.
