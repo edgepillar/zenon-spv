@@ -27,8 +27,12 @@ type retainedWorkload struct {
 // It is deliberately separate from the independently node-derived corpus and
 // is not conformance, executed-ledger or public-network performance evidence.
 func newRetainedWorkload(t testing.TB, capacity int) retainedWorkload {
+	return newRetainedContentWorkload(t, capacity, 99, nil)
+}
+
+func newRetainedContentWorkload(t testing.TB, capacity int, chainID uint64, content []chain.AccountHeader) retainedWorkload {
 	t.Helper()
-	w := retainedWorkload{anchor: verify.GenesisTrustRoot{ChainID: 99, Height: 10000, HeaderHash: chain.Hash{1}}}
+	w := retainedWorkload{anchor: verify.GenesisTrustRoot{ChainID: chainID, Height: 10000, HeaderHash: chain.Hash{1}}}
 	w.opts.Policy = verify.DefaultPolicy()
 	w.opts.Policy.RetainHeaders = capacity
 	w.opts.Policy.ProtocolProfile = &verify.ProtocolProfile{Version: 1, Anchor: w.anchor,
@@ -36,8 +40,10 @@ func newRetainedWorkload(t testing.TB, capacity int) retainedWorkload {
 	key := ed25519.NewKeyFromSeed(make([]byte, ed25519.SeedSize)) // Public test seed.
 	pub := key.Public().(ed25519.PublicKey)
 	member := chain.AccountHeader{Address: chain.PubKeyToAddress(pub), Height: 1, Hash: chain.Hash{2}}
-	content := []chain.AccountHeader{member}
-	w.evidence = proof.CommitmentEvidence{Height: 10001, Target: member, Flat: &proof.FlatContentEvidence{SortedHeaders: content}}
+	if content == nil {
+		content = []chain.AccountHeader{member}
+	}
+	w.evidence = proof.CommitmentEvidence{Height: 10001, Target: content[0], Flat: &proof.FlatContentEvidence{SortedHeaders: content}}
 	previous := w.anchor.HeaderHash
 	headers := make([]chain.Header, capacity+1)
 	entries := make([]verify.ProducerEntry, len(headers))
@@ -123,6 +129,7 @@ func TestRetainedCapacityWorkloads(t *testing.T) {
 // filesystem reads, while Save includes validation, atomic replacement and the
 // platform's sync behavior. Allocation volume is not peak resident memory.
 func BenchmarkRetainedCapacity(b *testing.B) {
+	corpus := loadNodeAccountCorpus(b, "delayed-inclusion.json")
 	for _, capacity := range []int{16, 256, verify.MaxRetainHeaders} {
 		b.Run(fmt.Sprintf("K%d", capacity), func(b *testing.B) {
 			w := newRetainedWorkload(b, capacity)
@@ -159,6 +166,43 @@ func BenchmarkRetainedCapacity(b *testing.B) {
 					}
 					b.ReportMetric(float64(capacity), "retained-headers")
 					b.ReportMetric(float64(w.bytes), "state-B")
+				})
+			}
+			// Account envelopes come from the pinned node corpus, but the full
+			// window and confirming momentum are synthetic stress inputs. These
+			// operations are local resource measurements, not network evidence.
+			for _, vectors := range corpus.Segments {
+				name := "SegmentUser"
+				if vectors.Address.IsEmbeddedAddress() {
+					name = "SegmentEmbedded"
+				}
+				b.Run(name, func(b *testing.B) {
+					segment := proof.AccountSegment{Address: vectors.Address}
+					var content []chain.AccountHeader
+					for _, v := range vectors.Vectors {
+						segment.Blocks = append(segment.Blocks, v.Block)
+						content = append(content, v.Block.AccountHeader())
+					}
+					workload := newRetainedContentWorkload(b, capacity, corpus.Chain.Anchor.ChainID, content)
+					commitments := make([]proof.CommitmentEvidence, len(content))
+					for i, target := range content {
+						commitments[i] = workload.evidence
+						commitments[i].Target = target
+					}
+					b.ReportAllocs()
+					for b.Loop() {
+						r := workload.state.VerifySegment(segment, commitments)
+						if len(r.Blocks) != 3 {
+							b.Fatal("benchmark lost its three-block segment")
+						}
+						for _, row := range r.Blocks {
+							if row.Outcome != verify.OutcomeAccept || !slices.Contains(row.Proven, verify.GuaranteeContentInclusion) {
+								b.Fatal("benchmark entered a failed retained segment path", row)
+							}
+						}
+					}
+					b.ReportMetric(float64(capacity), "retained-headers")
+					b.ReportMetric(3, "blocks/op")
 				})
 			}
 		})
