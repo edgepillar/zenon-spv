@@ -292,6 +292,17 @@ with mock.patch.object(Path, "stat", return_value=selected):
         self.assertTrue(packages, "selected pilot packages were not found")
         self.assertFalse(set(packages) - checker.PACKAGES,
                          "selected pilot package is unsupported by the archive checker")
+        for os_name in ("linux", "darwin", "windows"):
+            with self.subTest(os=os_name):
+                files, manifest, report = fixture(os_name)
+                report["cases"].append({"id": "bounded_rpc_response_reader", "package": "internal/fetch",
+                    "test": "TestRPCResponseReadContract", "status": "passed", "passed_subtests": 6,
+                    "skipped_subtests": 0, "failed_subtests": 0, "binaries": []})
+                code, result = self.invoke(pack(files, manifest, report), os_name)
+                self.assertEqual((code, result["status"]), (0, "verified"))
+                report["cases"][-1]["package"] = "internal/PRIVATE_UNSUPPORTED"
+                code, result = self.invoke(pack(files, manifest, report), os_name)
+                self.assertEqual((code, result["status"], result["category"]), (2, "rejected", "metadata"))
 
     def test_consumer_input_cases_and_explicit_native_skips(self):
         # These opaque archives exercise report compatibility, not native I/O.

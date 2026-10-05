@@ -19,7 +19,7 @@ COMMANDS = tuple(sorted(("zenon-spv", "fetch-bundle", "derive-checkpoints",
 CORPUS = tuple("internal/testdata/conformance/" + name + ".json" for name in (
     "momentum-v1-v2", "account-amounts", "account-segments", "contract-batches",
     "delayed-inclusion", "content-scaling", "historical-testnet-genesis"))
-PACKAGES = {"internal/conformance", "internal/chain", "internal/verify", "internal/proof",
+PACKAGES = {"internal/conformance", "internal/chain", "internal/fetch", "internal/verify", "internal/proof",
             "internal/syncer", "internal/statelock", "tools/consume-query-report",
             "tools/observe-block", "tools/offline-pilot"}
 BINARY_LIMIT = 128 << 20
