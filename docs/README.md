@@ -52,6 +52,9 @@ audit history.
   allocation reductions and preserved saved-state verification checks.
 - [`bundle-read-allocations.md`](bundle-read-allocations.md) — bounded proof-file
   allocation hints, unchanged read/decoding contracts and measured load costs.
+- [`address-checksum-allocations.md`](address-checksum-allocations.md) —
+  sequential checksum inputs, independent node-fixture address bytes and native
+  decoder allocation observations.
 - [`rpc-data-hash-allocations.md`](rpc-data-hash-allocations.md) — bounded
   scratch storage for valid RPC data preimages, preserved Base64 failures and
   native decode/hash allocation observations.
