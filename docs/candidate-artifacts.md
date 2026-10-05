@@ -59,10 +59,14 @@ independently checked checkout and successful pipeline before use.
 ## Select and check a CI archive
 
 Each successful native CI pilot uploads `tested-candidate-linux`,
-`tested-candidate-macos-latest` or `tested-candidate-windows-latest`, alongside
+`tested-candidate-macos-15-intel` or `tested-candidate-windows-latest`, alongside
 the existing `offline-pilot-*` report. Artifacts expire after 14 days. A package
 contains exactly nine files, with no source archive, installer or signing key.
 Do not infer a successful full pipeline merely from an upload step.
+
+The current hosted macOS job uses the Intel image and produces `darwin/amd64`
+binaries. Match the artifact manifest to the intended OS and architecture;
+these results do not establish hosted macOS ARM coverage for this successor.
 
 Before that upload, native CI also checks the actual exported directory with
 `tools/check-exported-candidate.py`. It independently reads the current
