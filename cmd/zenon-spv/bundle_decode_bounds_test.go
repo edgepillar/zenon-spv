@@ -10,8 +10,39 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0x3639/zenon-spv/internal/proof"
 	"github.com/0x3639/zenon-spv/internal/verify"
 )
+
+func TestAccountAmountTokenRefusesBeforeStateLoading(t *testing.T) {
+	for _, command := range []string{"verify-segment", "verify-headers"} {
+		t.Run(command, func(t *testing.T) {
+			dir := t.TempDir()
+			path, statePath := filepath.Join(dir, "PRIVATE_BUNDLE.json"), filepath.Join(dir, "PRIVATE_STATE.json")
+			raw := []byte(`{"version":1,"segments":[{"blocks":[{"AMOUNT":` + strings.Repeat("9", proof.DefaultMaxAccountAmountBytes+1) + `,"amount":null},"PRIVATE_UNREACHED_ROW"]}]}`)
+			if err := os.WriteFile(path, raw, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(statePath, []byte("PRIVATE_STATE_NOT_LOADED"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			unchanged := unchangedQueryFile(t, statePath)
+			defer unchanged(t)
+			r := readVerificationReport(t, command, []string{"--state", statePath, path}, 2)
+			assertReportOutcome(t, r, "REFUSED")
+			if len(r.Results) != 1 || r.Results[0].Reason != "ReasonOversizedSegment" || r.Results[0].Reference.Scope != "bundle" || len(r.Results[0].Proven) != 0 || r.Error != nil || r.Persistence != "not_attempted" || r.Context != nil || r.VerificationTip != nil || len(r.StateTrust) != 0 {
+				t.Fatal("amount token refusal reached state verification or lost its resource reason")
+			}
+			encoded, err := json.Marshal(r)
+			if err != nil || bytes.Contains(encoded, []byte("PRIVATE")) {
+				t.Fatal("amount refusal disclosed a private input")
+			}
+			if _, err := os.Stat(statePath + ".lock"); !os.IsNotExist(err) {
+				t.Fatal("amount refusal acquired a writer companion")
+			}
+		})
+	}
+}
 
 func TestProofByteLimitRefusesBeforeDecodingExcessNode(t *testing.T) {
 	dir := t.TempDir()

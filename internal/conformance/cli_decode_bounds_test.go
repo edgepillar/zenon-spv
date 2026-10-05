@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0x3639/zenon-spv/internal/proof"
 	"github.com/0x3639/zenon-spv/internal/verify"
 )
 
@@ -18,10 +19,13 @@ func TestCompiledCLIProofByteBounds(t *testing.T) {
 	anchor := writeCLIJSON(t, t.TempDir(), "anchor.json", c.Chain.Anchor)
 	exactNode := base64.StdEncoding.EncodeToString(make([]byte, verify.DefaultMaxStateProofBytes))
 	largeNode := base64.StdEncoding.EncodeToString(make([]byte, verify.DefaultMaxStateProofBytes+1))
-	for _, tc := range []struct{ name, command, fields string }{
-		{"one large node", "verify-state-value", fmt.Sprintf(`"proof_nodes":[%q]`, largeNode)},
-		{"aggregate bytes", "verify-state-value", fmt.Sprintf(`"proof_nodes":[%q,["PRIVATE_UNREACHED_BYTE"]]`, exactNode)},
-		{"replaced unused nodes", "verify-headers", fmt.Sprintf(`"proof_nodes":[%q],"proof_nodes":null,"PROOF_NODE\u017f":["AA=="]`, exactNode)},
+	for _, tc := range []struct{ name, command, envelope, reason string }{
+		{"one large node", "verify-state-value", fmt.Sprintf(`{"version":1,"state_value_proofs":[{"proof_nodes":[%q]}]}`, largeNode), "ReasonOversizedStateProof"},
+		{"aggregate bytes", "verify-state-value", fmt.Sprintf(`{"version":1,"state_value_proofs":[{"proof_nodes":[%q,["PRIVATE_UNREACHED_BYTE"]]}]}`, exactNode), "ReasonOversizedStateProof"},
+		{"replaced unused nodes", "verify-headers", fmt.Sprintf(`{"version":1,"state_value_proofs":[{"proof_nodes":[%q],"proof_nodes":null,"PROOF_NODE\u017f":["AA=="]}]}`, exactNode), "ReasonOversizedStateProof"},
+		{"large amount", "verify-segment", `{"version":1,"segments":[{"blocks":[{"amount":` + strings.Repeat("9", 1<<20) + `}]}]}`, "ReasonOversizedSegment"},
+		{"replaced unused amount", "verify-headers", `{"version":1,"segments":[{"blocks":[{"am\u006funt":` + strings.Repeat("9", proof.DefaultMaxAccountAmountBytes+1) + `,"AMOUNT":null},"PRIVATE_UNREACHED_ROW"]}]}`, "ReasonOversizedSegment"},
+		{"unused amount at other command", "verify-commitment", `{"version":1,"segments":[{"blocks":[{"amount":` + strings.Repeat("9", proof.DefaultMaxAccountAmountBytes+1) + `}]}]}`, "ReasonOversizedSegment"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -30,13 +34,13 @@ func TestCompiledCLIProofByteBounds(t *testing.T) {
 				t.Fatal(err)
 			}
 			t.Cleanup(protectCLIState(t, state))
-			raw := []byte(`{"version":1,"state_value_proofs":[{` + tc.fields + `}]}`)
+			raw := []byte(tc.envelope)
 			if err := os.WriteFile(bundle, raw, 0o600); err != nil {
 				t.Fatal(err)
 			}
 			result := runQueryCLI(t, binary, tc.command, "--json", "--genesis-config", anchor, "--state", state, bundle)
 			r := checkProcessReport(t, result, 2, "REFUSED")
-			if r.Error != nil || r.Persistence != "not_attempted" || r.Context != nil || r.Tip.Height != 0 || len(r.Results) != 1 || r.Results[0].Reference.Scope != "bundle" || r.Results[0].Reason != "ReasonOversizedStateProof" || len(r.Results[0].Proven) != 0 {
+			if r.Error != nil || r.Persistence != "not_attempted" || r.Context != nil || r.Tip.Height != 0 || len(r.Results) != 1 || r.Results[0].Reference.Scope != "bundle" || r.Results[0].Reason != tc.reason || len(r.Results[0].Proven) != 0 {
 				t.Fatal("byte refusal reached verification or lost its resource reason")
 			}
 			if bytes.Contains(result.stdout, []byte("PRIVATE")) || bytes.Contains(result.stderr, []byte("PRIVATE")) {
