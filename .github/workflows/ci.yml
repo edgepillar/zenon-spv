@@ -87,6 +87,8 @@ jobs:
         run: python -I -B tools/check-address-checksum-vectors.py
       - name: Address checksum allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCAddressChecksum$' -benchtime=3x -benchmem ./internal/fetch
+      - name: RPC response-read allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCResponseRead$' -benchtime=3x -benchmem ./internal/fetch
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchtime=1x ./internal/conformance
       - name: Independent corpus checks
@@ -195,5 +197,7 @@ jobs:
         run: python -I -B tools/check-address-checksum-vectors.py
       - name: Address checksum allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCAddressChecksum$' -benchtime=3x -benchmem ./internal/fetch
+      - name: RPC response-read allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCResponseRead$' -benchtime=3x -benchmem ./internal/fetch
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchtime=1x ./internal/conformance

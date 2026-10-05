@@ -58,6 +58,9 @@ audit history.
 - [`rpc-data-hash-allocations.md`](rpc-data-hash-allocations.md) — bounded
   scratch storage for valid RPC data preimages, preserved Base64 failures and
   native decode/hash allocation observations.
+- [`rpc-response-read-allocations.md`](rpc-response-read-allocations.md) — capped
+  response-buffer growth, unchanged byte/error contracts and complete client-call
+  allocation observations.
 - [`content-hash-allocations.md`](content-hash-allocations.md) — shared canonical
   encoding, immutable index sorting, differential checks and before/after costs.
 - [`flat-content-resources.md`](flat-content-resources.md) — node-derived content

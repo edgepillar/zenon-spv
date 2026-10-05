@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 )
@@ -50,8 +49,8 @@ type Client struct {
 // NewClient returns a Client with a sane default HTTP timeout and a
 // transport that disables transparent gzip decompression. Disabling
 // gzip is a defense against decompression-bomb peers (D2): a small
-// gzipped payload could otherwise decompress to gigabytes inside
-// io.ReadAll. The transport is otherwise the stdlib default.
+// gzipped payload could otherwise decompress while reading the response.
+// The transport is otherwise the stdlib default.
 func NewClient(url string) *Client {
 	return &Client{
 		URL: url,
@@ -127,7 +126,7 @@ func (c *Client) callWithBudget(ctx context.Context, method string, params any, 
 	}
 	// D2: cap the body at the remaining range budget. Read one extra byte
 	// so we can distinguish "exactly at limit" from "exceeded limit".
-	raw, err := io.ReadAll(io.LimitReader(resp.Body, budget.remaining+1))
+	raw, err := readRPCBody(resp.Body, budget.remaining)
 	if err != nil {
 		return callFailure("read body", err)
 	}
