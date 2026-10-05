@@ -13,6 +13,8 @@ var scenarios = []scenario{
 	{"build_identity", "internal/conformance", "TestCompiledCLIBuildIdentity", []string{"zenon-spv", "fetch-bundle"}},
 	{"collect_query_resume", "internal/conformance", "TestCompiledCLIQueryWorkflow", []string{"zenon-spv", "fetch-bundle"}},
 	{"query_report_consumer", "internal/conformance", "TestCompiledQueryReportConsumer", []string{"zenon-spv", "consume-query-report"}},
+	{"consumer_input_descriptors", "tools/consume-query-report", "TestConsumerInputDescriptors", nil},
+	{"consumer_input_fifo", "tools/consume-query-report", "TestConsumerInputFIFOOpenIsBounded", nil},
 	{"compiled_query_consumer_scaling", "internal/conformance", "TestCompiledQueryConsumerScaling", []string{"zenon-spv", "consume-query-report"}},
 	{"block_observer", "internal/conformance", "TestCompiledBlockObserver", []string{"zenon-spv", "consume-query-report", "observe-block"}},
 	{"rpc_block_observer", "internal/conformance", "TestCompiledRPCBlockObserver", []string{"fetch-bundle", "zenon-spv", "consume-query-report", "observe-block"}},

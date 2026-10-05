@@ -58,6 +58,10 @@ The named scenarios are defined in
   target/guarantee/trust matching, lossless integers, context digest checks,
   explicit retention and actual process-failure handling, plus separate native
   consumer process measurements at 1/16/256 matched targets.
+- Consumer input type/size checks before open, opened-descriptor validation and
+  descriptor cleanup. Linux/macOS also exercise selected and replacement FIFOs
+  plus final-component symlink replacement in deadline-owned subprocesses;
+  other platforms report the native controls as skipped.
 - The selected [block observer](block-observer.md), connecting actual verifier
   and consumer completion under explicit binary/context/trust pins, preserving
   read-only inputs, and refusing drift or target/tip/guarantee mismatches. Its
