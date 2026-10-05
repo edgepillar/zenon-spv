@@ -17,7 +17,9 @@ counts. These vectors authenticate no network, operator or anchor.
 with sequential checksum parts. It measures one address, the 49 unique vectors
 and the 191 recorded field occurrences, with fixture/input construction outside
 timing. Every iteration requires the independently expected bytes. Linux,
-macOS and Windows CI record three iterations per mode with `-benchmem`.
+macOS Intel and Windows CI record three iterations per mode with `-benchmem`.
+The explicit `macos-15-intel` image provides native `darwin/amd64` qualification;
+these observations do not establish hosted macOS ARM coverage for this successor.
 
 These are isolated decoder allocation/timing observations, not peak RSS, full
 RPC/verification workflow, network performance or consumer-budget qualification.
