@@ -2,7 +2,6 @@ package fetch
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -267,11 +266,4 @@ func decodeHex32(s string) (chain.Hash, error) {
 	var out chain.Hash
 	copy(out[:], raw)
 	return out, nil
-}
-
-func base64ToBytesOptional(s string) ([]byte, error) {
-	if s == "" {
-		return nil, nil
-	}
-	return base64.StdEncoding.DecodeString(s)
 }
