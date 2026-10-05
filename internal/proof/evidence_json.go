@@ -42,7 +42,7 @@ func (e *evidenceDecoder) segment(d *json.Decoder, segment *AccountSegment) erro
 		*plain
 		Blocks bundleRows[chain.AccountBlock] `json:"blocks"`
 	}{plain: (*plain)(segment), Blocks: bundleRows[chain.AccountBlock]{
-		target: &segment.Blocks, field: "segments.blocks", limit: e.limits.MaxSegmentBlocks, budget: e.blocks,
+		target: &segment.Blocks, field: "segments.blocks", limit: e.limits.MaxSegmentBlocks, budget: e.blocks, decode: e.accountBlock,
 	}}
 	return d.Decode(&wire)
 }
