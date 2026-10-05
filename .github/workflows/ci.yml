@@ -81,6 +81,12 @@ jobs:
         run: go test -run '^$' -bench '^BenchmarkProofBundleExtensions$' -benchtime=3x -benchmem ./internal/proof
       - name: RPC data-hash allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCDataHashDecode$' -benchtime=3x -benchmem ./internal/fetch
+      - name: Address-byte checker controls
+        run: python -I -B tools/check-address-checksum-vectors_test.py
+      - name: Independent address bytes
+        run: python -I -B tools/check-address-checksum-vectors.py
+      - name: Address checksum allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCAddressChecksum$' -benchtime=3x -benchmem ./internal/fetch
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchtime=1x ./internal/conformance
       - name: Independent corpus checks
@@ -182,5 +188,11 @@ jobs:
         run: go test -run '^$' -bench '^BenchmarkProofBundleExtensions$' -benchtime=3x -benchmem ./internal/proof
       - name: RPC data-hash allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCDataHashDecode$' -benchtime=3x -benchmem ./internal/fetch
+      - name: Address-byte checker controls
+        run: python -I -B tools/check-address-checksum-vectors_test.py
+      - name: Independent address bytes
+        run: python -I -B tools/check-address-checksum-vectors.py
+      - name: Address checksum allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCAddressChecksum$' -benchtime=3x -benchmem ./internal/fetch
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchtime=1x ./internal/conformance
