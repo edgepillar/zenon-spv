@@ -90,13 +90,20 @@ func run(args []string, stdout, diagnostics io.Writer) int {
 }
 
 // Inputs must be regular files. A private, stable report path remains a caller
-// responsibility; these checks are not a file authenticity or race guarantee.
+// responsibility; these checks do not authenticate files or directory owners.
 func readInput(path string, limit int64) ([]byte, error) {
+	return readInputWithOpen(path, limit, openReadOnlyInput)
+}
+
+// Check the pathname before opening and the descriptor before reading. The
+// callback lets tests replace the selected path at the actual open boundary
+// without changing process-wide behavior.
+func readInputWithOpen(path string, limit int64, openFile func(string) (*os.File, error)) ([]byte, error) {
 	info, err := os.Lstat(path)
-	if err != nil || !info.Mode().IsRegular() {
+	if err != nil || !info.Mode().IsRegular() || info.Size() > limit {
 		return nil, os.ErrInvalid
 	}
-	f, err := os.Open(path)
+	f, err := openFile(path)
 	if err != nil {
 		return nil, err
 	}

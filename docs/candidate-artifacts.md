@@ -64,6 +64,26 @@ the existing `offline-pilot-*` report. Artifacts expire after 14 days. A package
 contains exactly nine files, with no source archive, installer or signing key.
 Do not infer a successful full pipeline merely from an upload step.
 
+Before that upload, native CI also checks the actual exported directory with
+`tools/check-exported-candidate.py`. It independently reads the current
+checkout's Go/module/JSON inputs using the offline pilot's length-prefixed
+SHA-256 format, checks its clean Git root and expected checkout revision,
+then streams the nine exported files into a private temporary ZIP. The
+existing archive checker must accept its layout, metadata, execution records,
+source/platform pins and actual payload hashes. A second checkout check
+refuses source drift during validation. Candidate upload requires this step
+and the pilot to succeed. The checker never executes an exported binary or
+replaces an exported file; its temporary ZIP is removed after checking.
+
+The checkout input scan allows at most 32,768 entries, 32 directory levels and
+64 MiB of selected input bytes. Export input bounds match the archive checker,
+with a combined payload limit of 256 MiB minus 64 KiB of ZIP overhead. Files
+must be regular and keep their selected descriptor sizes while read; available
+nonblocking/no-follow flags are used. Protected stable source/export parents
+and the CI job deadline remain required. This checks local export consistency;
+the later uploaded/downloaded ZIP still needs its separately selected GitHub
+digest and independent candidate/review provenance checks below.
+
 Select the repository, run/event, actual tested checkout, target platform and
 expected input fingerprint independently. Review successful Linux/macOS/Windows
 checks, skips, source tree, toolchain/dependency provenance and the workflow

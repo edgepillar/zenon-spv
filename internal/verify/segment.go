@@ -86,6 +86,15 @@ func (r SegmentResult) Worst() Outcome {
 // that this is the only block at (Address, Height) on the canonical
 // chain (NG6).
 func VerifySegment(state HeaderState, segment proof.AccountSegment, commitments []proof.CommitmentEvidence, policy Policy) SegmentResult {
+	return verifySegmentWithCommitmentCheck(state, segment, commitments, policy, VerifyCommitment)
+}
+
+// The low-level entry point keeps full caller-owned window validation for each
+// candidate. VerifiedState may supply the private validated-window check because
+// its policy, profile and retained headers were checked before publication and
+// cannot be changed by query callers. Segment and evidence checks remain shared.
+func verifySegmentWithCommitmentCheck(state HeaderState, segment proof.AccountSegment, commitments []proof.CommitmentEvidence, policy Policy,
+	check func(HeaderState, proof.CommitmentEvidence, Policy) Result) SegmentResult {
 	if len(segment.Blocks) == 0 {
 		// F6: empty segment must not vacuously ACCEPT. Surface as a
 		// single synthetic REFUSED so Worst() returns REFUSED and the
@@ -269,7 +278,7 @@ func VerifySegment(state HeaderState, segment proof.AccountSegment, commitments 
 		// otherwise return the most-severe (REJECT > REFUSED) result.
 		// A stale duplicate at an out-of-window height no longer masks
 		// valid in-window evidence.
-		r := bestCommitmentResult(state, candidates, policy, i)
+		r := bestCommitmentResult(state, candidates, policy, i, check)
 		if r.Outcome == OutcomeAccept {
 			r = r.WithProven(GuaranteeContentInclusion).
 				WithNotProven(
@@ -298,11 +307,12 @@ func VerifySegment(state HeaderState, segment proof.AccountSegment, commitments 
 // bestCommitmentResult tries every candidate evidence in input order,
 // returning the first ACCEPT. If none accept, returns the worst
 // outcome encountered (REJECT > REFUSED).
-func bestCommitmentResult(state HeaderState, candidates []proof.CommitmentEvidence, policy Policy, blockIdx int) Result {
+func bestCommitmentResult(state HeaderState, candidates []proof.CommitmentEvidence, policy Policy, blockIdx int,
+	check func(HeaderState, proof.CommitmentEvidence, Policy) Result) Result {
 	var worstReject *Result
 	var worstRefused *Result
 	for _, ev := range candidates {
-		r := VerifyCommitment(state, ev, policy)
+		r := check(state, ev, policy)
 		r.FailedAt = blockIdx
 		switch r.Outcome {
 		case OutcomeAccept:

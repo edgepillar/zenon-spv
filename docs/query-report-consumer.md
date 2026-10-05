@@ -154,9 +154,18 @@ noncanonical hex, floating/exponent numbers, integer overflow and extra JSON
 values. Nullable fields follow the documented report schema. It bounds input
 to 4 MiB per report and 256 KiB per expectations file, nesting to 16 levels,
 values to 16,384, each array/object to 256 entries, strings to 4,096 bytes and
-object keys to 128 bytes. Inputs must be regular files, not directories or
-symlinks. These are input bounds, not a total process heap or RSS guarantee;
-stable private file ownership remains the caller's responsibility.
+object keys to 128 bytes. Input type and size are checked before opening, then
+the opened descriptor is checked again before reading. Inputs must be regular
+files, not directories or symlinks. On Linux/macOS, a nonblocking open prevents
+a replacement FIFO from waiting for a writer, and final-component no-follow
+keeps a replacement symlink from being opened. Native subprocess controls
+exercise both replacements with an owned deadline; other platforms explicitly
+skip those controls while running the common descriptor checks.
+
+These checks do not authenticate reports, close every pathname race, establish
+directory ownership, or bound ordinary-file reads on a stalled filesystem.
+Protected, stable private directories and a caller-imposed process deadline
+remain necessary. The byte limits are not a total process heap or RSS guarantee.
 
 The [consumer resource workload](query-consumer-resources.md) records whole
 compiled-process elapsed time and native peak memory for 1, 16 and 256 matched
