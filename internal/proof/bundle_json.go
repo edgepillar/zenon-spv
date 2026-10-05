@@ -50,7 +50,7 @@ func (b *HeaderBundle) unmarshalJSON(raw []byte, limits DecodeLimits) error {
 		if !ok {
 			return errors.New("invalid bundle field name")
 		}
-		var ignored json.RawMessage
+		var ignored discardedBundleValueJSON
 		var target any = &ignored
 		for i, field := range fields {
 			// EqualFold also covers the Unicode aliases accepted by encoding/json.
@@ -77,3 +77,11 @@ func (b *HeaderBundle) unmarshalJSON(raw []byte, limits DecodeLimits) error {
 	*b = decoded
 	return nil
 }
+
+// The surrounding JSON decoder validates the value before invoking this
+// callback. Unknown extension values have no bundle meaning; discard them
+// without retaining a RawMessage payload copy. Known-field binding, duplicate
+// guards, and whole-document syntax/nesting checks remain in the caller.
+type discardedBundleValueJSON struct{}
+
+func (*discardedBundleValueJSON) UnmarshalJSON([]byte) error { return nil }

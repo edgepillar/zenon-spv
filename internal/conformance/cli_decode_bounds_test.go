@@ -26,6 +26,7 @@ func TestCompiledCLIProofByteBounds(t *testing.T) {
 		{"large amount", "verify-segment", `{"version":1,"segments":[{"blocks":[{"amount":` + strings.Repeat("9", 1<<20) + `}]}]}`, "ReasonOversizedSegment"},
 		{"replaced unused amount", "verify-headers", `{"version":1,"segments":[{"blocks":[{"am\u006funt":` + strings.Repeat("9", proof.DefaultMaxAccountAmountBytes+1) + `,"AMOUNT":null},"PRIVATE_UNREACHED_ROW"]}]}`, "ReasonOversizedSegment"},
 		{"unused amount at other command", "verify-commitment", `{"version":1,"segments":[{"blocks":[{"amount":` + strings.Repeat("9", proof.DefaultMaxAccountAmountBytes+1) + `}]}]}`, "ReasonOversizedSegment"},
+		{"large extension before amount", "verify-segment", `{"extension":{"metadata":"PRIVATE_UNUSED_` + strings.Repeat("x", 1<<20) + `"},"version":1,"segments":[{"blocks":[{"amount":` + strings.Repeat("9", proof.DefaultMaxAccountAmountBytes+1) + `}]}]}`, "ReasonOversizedSegment"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()

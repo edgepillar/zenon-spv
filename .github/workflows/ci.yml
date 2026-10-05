@@ -77,6 +77,8 @@ jobs:
         run: go test -run '^$' -bench '^BenchmarkRPCErrorData$' -benchtime=3x -benchmem ./internal/fetch
       - name: Proof account amount allocation observations
         run: go test -run '^$' -bench '^BenchmarkProofAccountAmountDecode$' -benchtime=3x -benchmem ./internal/proof
+      - name: Proof bundle extension allocation observations
+        run: go test -run '^$' -bench '^BenchmarkProofBundleExtensions$' -benchtime=3x -benchmem ./internal/proof
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchtime=1x ./internal/conformance
       - name: Independent corpus checks
@@ -174,5 +176,7 @@ jobs:
         run: go test -run '^$' -bench '^BenchmarkRPCErrorData$' -benchtime=3x -benchmem ./internal/fetch
       - name: Proof account amount allocation observations
         run: go test -run '^$' -bench '^BenchmarkProofAccountAmountDecode$' -benchtime=3x -benchmem ./internal/proof
+      - name: Proof bundle extension allocation observations
+        run: go test -run '^$' -bench '^BenchmarkProofBundleExtensions$' -benchtime=3x -benchmem ./internal/proof
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchtime=1x ./internal/conformance
