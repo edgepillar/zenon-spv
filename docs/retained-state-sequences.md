@@ -53,6 +53,11 @@ expire inside a multi-header batch. An explicit reason-coverage assertion
 requires that expiry path to occur. This complements the separate populated
 capacity measurements; it does not measure memory, latency or a network budget.
 The `retained_capacity_sequences` offline case selects this deterministic test.
+The offline runner passes its selected overall `--timeout` to Go's per-package
+deadline too. Its overall process context remains the bound, with the existing
+ten-minute default and one-hour maximum; there is no shorter hidden five-minute
+package limit. Full-capacity race instrumentation can take substantially longer
+than ordinary execution. A timeout is a failed/incomplete run, never a pass.
 
 ```sh
 go test -run '^TestRetainedCapacitySequenceModel$' -count=1 ./internal/verify

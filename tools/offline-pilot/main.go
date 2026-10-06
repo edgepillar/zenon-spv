@@ -103,7 +103,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	if exportDir != "" {
 		env = append(env, candidateExportEnvironment+"="+exportDir)
 	}
-	processOK, processError := runTestProcess(ctx, goTool, testArguments(scenarios, *race), env, collector.read)
+	processOK, processError := runTestProcess(ctx, goTool, testArguments(scenarios, *race, *timeout), env, collector.read)
 	report.Error = processError
 	report.Status = collector.finish(processOK)
 	report.Cases = collector.cases
@@ -138,7 +138,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	return writeReport(stdout, stderr, raw, code)
 }
 
-func testArguments(manifest []scenario, race bool) []string {
+func testArguments(manifest []scenario, race bool, timeout time.Duration) []string {
 	names, packages := make([]string, 0, len(manifest)), make([]string, 0)
 	for _, s := range manifest {
 		names = append(names, s.Test)
@@ -146,7 +146,9 @@ func testArguments(manifest []scenario, race bool) []string {
 			packages = append(packages, "./"+s.Package)
 		}
 	}
-	args := []string{"test", "-json", "-count=1", "-timeout=5m"}
+	// The caller-selected overall context still bounds the complete process.
+	// Do not impose a shorter hidden package deadline on a larger selection.
+	args := []string{"test", "-json", "-count=1", "-timeout=" + timeout.String()}
 	if race {
 		args = append(args, "-race")
 	}

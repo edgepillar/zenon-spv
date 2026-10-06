@@ -9,11 +9,12 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestManifestSelectionIsExactAndUncached(t *testing.T) {
-	args := testArguments(scenarios, true)
-	for _, option := range []string{"-json", "-count=1", "-race", "-timeout=5m"} {
+	args := testArguments(scenarios, true, 10*time.Minute)
+	for _, option := range []string{"-json", "-count=1", "-race", "-timeout=10m0s"} {
 		if !slices.Contains(args, option) {
 			t.Fatalf("missing execution option %s", option)
 		}
@@ -27,6 +28,27 @@ func TestManifestSelectionIsExactAndUncached(t *testing.T) {
 		seen[s.ID], seen[s.Package+"/"+s.Test] = true, true
 		if !slices.Contains(args, "./"+s.Package) {
 			t.Fatal("selected test package was not scheduled")
+		}
+	}
+}
+
+func TestSelectedPackageDeadlineHasNoHiddenShorterLimit(t *testing.T) {
+	for _, timeout := range []time.Duration{45 * time.Second, 10 * time.Minute, time.Hour} {
+		for _, race := range []bool{false, true} {
+			args := testArguments(scenarios, race, timeout)
+			var deadlines []string
+			for _, arg := range args {
+				if value, ok := strings.CutPrefix(arg, "-timeout="); ok {
+					deadlines = append(deadlines, value)
+				}
+			}
+			if len(deadlines) != 1 {
+				t.Fatal("package deadline missing or duplicated")
+			}
+			selected, err := time.ParseDuration(deadlines[0])
+			if err != nil || selected != timeout {
+				t.Fatal("package deadline differs from the selected overall bound")
+			}
 		}
 	}
 }
