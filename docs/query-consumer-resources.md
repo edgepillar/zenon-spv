@@ -121,6 +121,39 @@ unchanged refusal, not useful query throughput. Valid-workload timing records
 the extra byte-scan cost without establishing a latency budget. These are Go
 allocation observations, not RSS or whole-process memory measurements.
 
+## Borrowed shape traversal allocations
+
+After the unchanged complete token/syntax, duplicate-key and resource scan, the
+consumer checks exact field shapes over borrowed input spans. It no longer
+copies nested encoded values into `json.RawMessage` maps and slices. Escaped
+keys are still decoded before exact name matching. Required fields, optional
+non-null references, nullable documented pointers and field-order independence
+keep their previous meaning. The final `json.Unmarshal` owns scalar type/range
+checks and destination construction, including its previous partial destination
+behavior on a scalar error. The span traversal is not a standalone JSON parser;
+the complete bounded token scan must precede it.
+
+`TestConsumerShapeSpans`, selected as `bounded_consumer_shapes`, compares the
+decoder with the parent entry point and the separately copied scan/RawMessage
+shape reference. It includes decoded/unknown keys, quoted delimiters, nullable
+and optional values, scalar failures, existing depth/array limits, input
+preservation and fixed private process refusals. Its differential fuzz target
+allows documents through the 4 MiB report cap.
+
+`BenchmarkConsumerShapeSpans` retains three native observations for both
+decoders at each of six complete workloads: the ordinary report, 256 distinct
+targets with 256 small caveats, 256 caveats at the 4,096-byte decoded string
+limit, 170 maximally escaped caveats close to the 4 MiB input cap, and both
+large caveat documents with an unknown final field. Selected accepted reports
+must still match the complete independently prepared expectations. All 36
+rows per native platform are retained without retries or sample filtering.
+Fixture construction is outside measurement. `B/op` and `allocs/op` cover the
+decoder and decision/destination check; they are Go allocations, not RSS. Timing
+also includes result comparison and, for accepted reports, contract matching.
+Reading, files, process startup, output and network operations are excluded.
+These samples cover selected legal and refused shapes, not every legal input,
+worst-case resource use or an independently selected application budget.
+
 ## Artifact fields and validation
 
 The `compiled_query_consumer_scaling` case in the

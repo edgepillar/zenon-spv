@@ -97,6 +97,9 @@ jobs:
       - name: Consumer oversized-token allocation observations
         shell: bash
         run: go test -run '^$' -bench '^BenchmarkConsumerTokenPrefilter$' -benchtime=20x -benchmem -cpu=1 -count=3 ./tools/consume-query-report
+      - name: Consumer shape allocation observations
+        shell: bash
+        run: go test -run '^$' -bench '^BenchmarkConsumerShapeSpans$' -benchtime=10x -benchmem -cpu=1 -count=3 ./tools/consume-query-report
       - name: Shared immutable query observations
         shell: bash
         run: go test -run '^$' -bench '^BenchmarkSharedImmutableQueries$' -benchtime=1000x -benchmem -cpu=1,4 -count=3 ./internal/conformance
@@ -218,6 +221,9 @@ jobs:
       - name: Consumer oversized-token allocation observations
         shell: bash
         run: go test -run '^$' -bench '^BenchmarkConsumerTokenPrefilter$' -benchtime=20x -benchmem -cpu=1 -count=3 ./tools/consume-query-report
+      - name: Consumer shape allocation observations
+        shell: bash
+        run: go test -run '^$' -bench '^BenchmarkConsumerShapeSpans$' -benchtime=10x -benchmem -cpu=1 -count=3 ./tools/consume-query-report
       - name: Shared immutable query observations
         shell: bash
         run: go test -run '^$' -bench '^BenchmarkSharedImmutableQueries$' -benchtime=1000x -benchmem -cpu=1,4 -count=3 ./internal/conformance
