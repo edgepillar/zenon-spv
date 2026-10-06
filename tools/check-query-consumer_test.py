@@ -2,10 +2,14 @@
 """Controls for the independent, bounded consumer comparison oracle."""
 
 import copy
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
+import tempfile
 import unittest
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location("consumer_oracle", Path(__file__).with_name("check-query-consumer.py"))
 oracle = importlib.util.module_from_spec(spec)
@@ -19,6 +23,129 @@ class OracleControls(unittest.TestCase):
         for case in cases:
             with self.subTest(case=case["id"]):
                 self.assertEqual(oracle.consume(case["report"], case["expectations"], case["process_exit"]), case["wanted"])
+
+    def test_original_corpus_remains_byte_identical(self):
+        pins = [{"id": case["id"], "exit_code": case["wanted"][0], "process_exit": case["process_exit"],
+                 "report_sha256": hashlib.sha256(case["report"]).hexdigest(),
+                 "expectations_sha256": hashlib.sha256(case["expectations"]).hexdigest(),
+                 "summary_sha256": hashlib.sha256(case["wanted"][1]).hexdigest()}
+                for case in oracle.pinned_cases()]
+        self.assertEqual(len(pins), 98)
+        self.assertEqual(hashlib.sha256(json.dumps(pins, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
+                         "34b6e3338b17a070201af308b2714c97839052dfbaaf4cfcd198442a3a3bd6f1")
+
+    def test_generated_programs_are_deterministic_and_complete(self):
+        first, second = oracle.generated_cases(), oracle.generated_cases()
+        self.assertEqual(first, second)
+        self.assertEqual(len(first), 640)
+        self.assertEqual(len({case["id"] for case in first}), 640)
+        self.assertEqual(sum(case["wanted"][0] == 0 for case in first), 64)
+        self.assertEqual(sum(case["wanted"][0] == 2 for case in first), 576)
+        self.assertEqual(len(oracle.cases()), 738)
+        groups = {}
+        for case in first:
+            program, variant = case["id"].split("_seed", 1)
+            seed, variant = variant.split("_", 1)
+            groups.setdefault((program, seed), set()).add(variant)
+        self.assertEqual(len(groups), 32)
+        self.assertTrue(all(variants == set(oracle.GENERATED_VARIANTS) for variants in groups.values()))
+
+    def test_generated_wire_forms_and_boundary_identities(self):
+        heights, segment_blocks, counts, producer_sources = set(), set(), set(), set()
+        addresses = set()
+        for command in ("verify-commitment", "verify-segment"):
+            for version in (1, 2):
+                for index in range(len(oracle.GENERATED_SEEDS)):
+                    report, expected = oracle.generated_inputs(command, version, index)
+                    counts.add(len(expected["targets"]))
+                    context = report["verification_context"]
+                    producer_sources.add(context["producer"]["source"])
+                    if version == 2:
+                        self.assertLess(context["policy"]["w"], context["policy"]["retain_headers"])
+                    self.assertEqual(json.loads(oracle.wire_equivalent(report)), report)
+                    self.assertEqual(json.loads(oracle.wire_equivalent(expected)), expected)
+                    for ref in expected["targets"]:
+                        heights.add(ref["account_header"]["height"])
+                        addresses.add(ref["account_header"]["address"])
+                        if command == "verify-segment":
+                            segment_blocks.add(ref["block_index"])
+                    if command == "verify-segment" and len(expected["targets"]) > 1:
+                        self.assertEqual(len({ref["index"] for ref in expected["targets"]}), 1)
+                        self.assertEqual(len({ref["block_index"] for ref in expected["targets"]}), len(expected["targets"]))
+        self.assertEqual(counts, {1, 3, 17, 64})
+        self.assertTrue({0, (1 << 53) + 1, oracle.I64_MAX, 1 << 63, oracle.U64_MAX} <= heights)
+        self.assertTrue({0, oracle.I64_MAX} <= segment_blocks)
+        self.assertEqual(producer_sources, {"None", "OperatorAttested", "LocallyDerivedFromChain"})
+        self.assertGreater(len(addresses), 256)
+
+    def test_generated_last_row_refusals_are_independently_pinned(self):
+        valid = {case["id"].removesuffix("_valid"): case for case in oracle.generated_cases()
+                 if case["id"].endswith("_valid")}
+        checked = 0
+        for case in oracle.generated_cases():
+            for variant in ("account_hash", "account_height", "required_guarantee", "row_trust"):
+                suffix = "_" + variant
+                if not case["id"].endswith(suffix):
+                    continue
+                prefix = case["id"].removesuffix(suffix)
+                baseline = json.loads(valid[prefix]["report"])
+                changed = json.loads(case["report"])
+                self.assertNotEqual(changed["results"][-1], baseline["results"][-1])
+                self.assertEqual(changed["results"][:-1], baseline["results"][:-1])
+                self.assertNotEqual(case["wanted"][0], 0)
+                checked += 1
+        self.assertEqual(checked, 128)
+
+    def test_replay_counts_only_selected_actual_comparisons(self):
+        case = oracle.generated_cases()[19]
+        called = []
+        with tempfile.TemporaryDirectory() as directory:
+            executable = Path(directory) / "trusted-synthetic-consumer"
+            executable.write_bytes(b"synthetic executable identity")
+
+            def child(args, **kwargs):
+                called.append(args)
+                self.assertEqual(kwargs["timeout"], 10)
+                self.assertEqual(Path(args[2]).read_bytes(), case["report"])
+                self.assertEqual(Path(args[4]).read_bytes(), case["expectations"])
+                return subprocess.CompletedProcess(args, case["wanted"][0], case["wanted"][1], b"")
+
+            with mock.patch.object(oracle.subprocess, "run", side_effect=child):
+                result = oracle.compare(executable, "a" * 40, case["id"])
+            self.assertEqual(len(called), 1)
+            self.assertEqual(result["case_selection"], case["id"])
+            self.assertEqual([row["id"] for row in result["cases"]], [case["id"]])
+            self.assertEqual(result["comparison_counts"], {"selected": 1, "reference_checked": 1,
+                             "consumer_attempted": 1, "consumer_compared": 1, "skipped": 0, "not_selected": 737})
+            with mock.patch.object(oracle.subprocess, "run") as child:
+                with self.assertRaises(oracle.Invalid):
+                    oracle.compare(executable, "a" * 40, "unselected-private-input")
+                child.assert_not_called()
+
+    def test_failure_counters_and_diagnostics_do_not_hide_or_leak_results(self):
+        case = oracle.generated_cases()[2]
+        with tempfile.TemporaryDirectory() as directory:
+            executable = Path(directory) / "trusted-synthetic-consumer"
+            executable.write_bytes(b"synthetic executable identity")
+            failures = (
+                (subprocess.CompletedProcess([], 0, oracle.summary(count=1, code=0)[1], b"private-child-diagnostic"),
+                 "compiled_decision", 1),
+                (subprocess.TimeoutExpired("private-command", 10, output=b"private-output"), "child_run", 0),
+            )
+            for failure, stage, compared in failures:
+                with self.subTest(stage=stage):
+                    patch = {"side_effect": failure} if isinstance(failure, Exception) else {"return_value": failure}
+                    with mock.patch.object(oracle.subprocess, "run", **patch):
+                        with self.assertRaises(oracle.ComparisonFailure) as caught:
+                            oracle.compare(executable, "a" * 40, case["id"])
+                    details = caught.exception.details
+                    self.assertEqual(details["case_id"], case["id"])
+                    self.assertEqual(details["stage"], stage)
+                    self.assertEqual(details["comparison_counts"]["consumer_attempted"], 1)
+                    self.assertEqual(details["comparison_counts"]["consumer_compared"], compared)
+                    self.assertEqual(details["comparison_counts"]["skipped"], 0)
+                    self.assertNotIn("private", json.dumps(details))
+                    self.assertNotIn(directory, json.dumps(details))
 
     def test_published_context_vectors(self):
         root = Path(__file__).resolve().parents[1] / "internal/testdata/verification-context"
