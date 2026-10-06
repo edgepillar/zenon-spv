@@ -390,7 +390,7 @@ def selected_inputs(command="verify-commitment", version=2, count=1):
     return report, expected
 
 
-def cases():
+def pinned_cases():
     """Expected decisions are pinned independently of both oracle and executable."""
     rows = []
 
@@ -538,8 +538,198 @@ def cases():
 DELETE = object()
 
 
-def compare(consumer, source_revision):
-    corpus = cases()
+GENERATED_SEEDS = (0, 1, 17, 255, 65535, 2147483647, 2147483648, 4294967295)
+GENERATED_VARIANTS = (
+    "valid", "wire_equivalent", "account_address", "account_hash", "account_height",
+    "reference_index", "reference_position", "target_count", "duplicate_report_position",
+    "duplicate_expected_position", "tip", "context_unpinned", "context_tampered",
+    "required_guarantee", "row_trust", "state_trust", "integer_range",
+    "escaped_duplicate_report", "escaped_duplicate_expected", "process_failure",
+)
+
+
+def generated_inputs(command, version, seed_index):
+    """Select synthetic identities/settings before either implementation runs."""
+    seed = GENERATED_SEEDS[seed_index]
+    domain = "zenon-spv/consumer-cases/v1/%s/%d/%d/" % (command, version, seed)
+
+    def digest(label):
+        return hashlib.sha256((domain + label).encode("ascii")).hexdigest()
+
+    count = (1, 3, 17, 64)[seed_index % 4]
+    report, expected = selected_inputs(command, version, count)
+    context = report["verification_context"]
+    capacity = (16, 256, 4096)[seed_index % 3]
+    context["anchor"] = {"chain_id": (0, 1, U64_MAX)[seed_index % 3],
+                         "height": 7, "header_hash": digest("anchor")}
+    context["policy"]["w"] = (1, 6, capacity - 1)[seed_index % 3]
+    if version == 2:
+        context["policy"]["retain_headers"] = capacity
+    for index, key in enumerate(LIMITS):
+        context["policy"][key] = (0, 1, 64, I64_MAX)[(seed_index + index) % 4]
+    if seed_index % 2:
+        context["protocol_profile"] = None
+    else:
+        context["protocol_profile"]["v2_from_height"] = (0, 100, U64_MAX)[seed_index % 3]
+    if seed_index % 3 == 0:
+        context["producer"] = {"mode": "Disabled", "source": "None", "kind": "disabled", "schedule_hash": None}
+    else:
+        context["producer"]["source"] = "OperatorAttested" if seed_index % 3 == 1 else "LocallyDerivedFromChain"
+        context["producer"]["schedule_hash"] = digest("schedule")
+    context["checkpoints"] = [{"height": 9 + i * 2, "header_hash": digest("checkpoint-%d" % i)}
+                              for i in range(seed_index % 3)]
+    context["fingerprint"] = context_fingerprint(context)
+    expected["context_fingerprint"] = context["fingerprint"]
+    tip = {"height": (1, (1 << 53) + 1, I64_MAX, U64_MAX)[seed_index % 4], "hash": digest("tip")}
+    report["verification_tip"], expected["verification_tip"] = tip, copy.deepcopy(tip)
+    required = {"CONTENT_INCLUSION"} | {g for i, g in enumerate(sorted(GUARANTEES - {"CONTENT_INCLUSION"}))
+                                         if (seed_index + i) % 2 == 0}
+    extras = sorted(TRUST - REQUIRED_TRUST)
+    state_trust = REQUIRED_TRUST | {t for i, t in enumerate(extras) if (seed_index + i) % 3 == 0}
+    row_trust = REQUIRED_TRUST | {t for i, t in enumerate(extras) if (seed_index + i) % 3 == 1}
+    expected["required_guarantees"] = sorted(required)
+    expected["allowed_trust_assumptions"] = sorted(state_trust | row_trust)
+    report["state_trust"] = sorted(state_trust)
+    numbers = (0, 1, (1 << 53) - 1, (1 << 53) + 1, I64_MAX, 1 << 63, U64_MAX)
+    for index, (ref, row) in enumerate(zip(expected["targets"], report["results"])):
+        # Segment positions deliberately share an index while their block
+        # indices differ. Spacing by two makes the XOR-one mutations distinct.
+        ref["index"] = (U64_MAX - 2 * index if seed_index % 2 else 2 * index) if command == "verify-commitment" else numbers[seed_index % len(numbers)]
+        ref["account_header"] = {"address": digest("address-%d" % index)[:40],
+                                 "height": numbers[(seed_index + index) % len(numbers)],
+                                 "hash": digest("account-%d" % index)}
+        ref["momentum_height" if command == "verify-commitment" else "block_index"] = (
+            numbers[(seed_index + index + 1) % len(numbers)] if command == "verify-commitment" else
+            I64_MAX - 2 * index if seed_index % 2 else 2 * index)
+        row["reference"] = copy.deepcopy(ref)
+        row["failed_at"] = ref.get("block_index", -1)
+        proven = required | ({"PRODUCER_AUTHORIZATION"} if index % 2 else set())
+        row["proven"], row["not_proven"] = sorted(proven), sorted(ALL_GUARANTEES - proven)
+        row["trust_assumptions"] = sorted(row_trust)
+    expected["targets"].sort(key=lambda ref: digest("expected-order-%d" % ref["account_header"]["height"]) + ref["account_header"]["hash"])
+    report["results"].sort(key=lambda row: digest("report-order-" + row["reference"]["account_header"]["hash"]))
+    report["caveats"] = ["synthetic", '\\[]{}:,"', "\ufffd\U0001f680", "x" * (seed_index + 1)]
+    return report, expected
+
+
+def wire_equivalent(value):
+    """Change key order, whitespace, escaped keys and Unicode spelling only."""
+    def reverse_keys(item):
+        if type(item) is dict:
+            return {key: reverse_keys(child) for key, child in reversed(list(item.items()))}
+        if type(item) is list:
+            return [reverse_keys(child) for child in item]
+        return item
+
+    raw = json.dumps(reverse_keys(value), ensure_ascii=False, indent=2).encode("utf-8")
+    return re.sub(rb'"([a-z_])([^"\n]*)":',
+                  lambda match: b'"\\u%04x' % match[1][0] + match[2] + b'":', raw)
+
+
+def generated_cases():
+    """Finite seeded programs with declarative decisions, never oracle votes."""
+    corpus = []
+    for command in ("verify-commitment", "verify-segment"):
+        for version in (1, 2):
+            for seed_index, seed in enumerate(GENERATED_SEEDS):
+                report, expected = generated_inputs(command, version, seed_index)
+                prefix = "generated_%s_v%d_seed%08x_" % (command.removeprefix("verify-"), version, seed)
+                for variant in GENERATED_VARIANTS:
+                    r, e = copy.deepcopy(report), copy.deepcopy(expected)
+                    category, status = None, 0
+                    # The last selected row ensures mutations are not confined
+                    # to the first target of a batch.
+                    row = r["results"][-1]
+                    ref, context = row["reference"], r["verification_context"]
+                    if variant == "wire_equivalent":
+                        r, e = wire_equivalent(r), wire_equivalent(e)
+                    elif variant in ("account_address", "account_hash"):
+                        key = variant.removeprefix("account_")
+                        ref["account_header"][key] = ("0" if ref["account_header"][key][0] != "0" else "1") + ref["account_header"][key][1:]
+                        category = "target_mismatch"
+                    elif variant == "account_height":
+                        ref["account_header"]["height"] ^= 1
+                        category = "target_mismatch"
+                    elif variant in ("reference_index", "reference_position"):
+                        key = "index" if variant == "reference_index" else "momentum_height" if command == "verify-commitment" else "block_index"
+                        ref[key] ^= 1
+                        category = "target_mismatch"
+                    elif variant == "target_count":
+                        if len(r["results"]) > 1:
+                            r["results"].pop()
+                        else:
+                            extra = copy.deepcopy(row)
+                            extra["reference"]["index"] ^= 1
+                            r["results"].append(extra)
+                        category = "target_mismatch"
+                    elif variant == "duplicate_report_position":
+                        r["results"].append(copy.deepcopy(row))
+                        category = "invalid_report"
+                    elif variant == "duplicate_expected_position":
+                        e["targets"].append(copy.deepcopy(e["targets"][-1]))
+                        category = "invalid_expectations"
+                    elif variant == "tip":
+                        r["verification_tip"]["height"] = 2 if r["verification_tip"]["height"] == 1 else 1
+                        category = "report_mismatch"
+                    elif variant == "context_unpinned":
+                        context["anchor"]["chain_id"] ^= 1
+                        context["fingerprint"] = context_fingerprint(context)
+                        category = "report_mismatch"
+                    elif variant == "context_tampered":
+                        context["policy"][LIMITS[seed_index % len(LIMITS)]] ^= 1
+                        category = "invalid_report"
+                    elif variant == "required_guarantee":
+                        row["proven"].remove("CONTENT_INCLUSION")
+                        row["not_proven"].append("CONTENT_INCLUSION")
+                        category = "guarantee_mismatch"
+                    elif variant == "row_trust":
+                        row["trust_assumptions"].remove("TRUST_CONFIGURED_ANCHOR")
+                        category = "trust_mismatch"
+                    elif variant == "state_trust":
+                        r["state_trust"].remove("TRUST_PERSISTED_STATE")
+                        category = "trust_mismatch"
+                    elif variant == "integer_range":
+                        ref["account_header"]["height"] = -1 if seed_index % 2 else U64_MAX + 1
+                        category = "invalid_report"
+                    elif variant in ("escaped_duplicate_report", "escaped_duplicate_expected"):
+                        raw = encoded(r if variant == "escaped_duplicate_report" else e)
+                        raw = raw.replace(b'"schema_version":1', b'"schema_version":1,"schema_vers\\u0069on":1', 1)
+                        if variant == "escaped_duplicate_report":
+                            r, category = raw, "invalid_report"
+                        else:
+                            e, category = raw, "invalid_expectations"
+                    elif variant == "process_failure":
+                        r, e = b"not JSON", b"not JSON"
+                        status = (2, -9, 3221225477, -(1 << 63), I64_MAX)[seed_index % 5]
+                        category = "process_failure"
+                    elif variant != "valid":
+                        raise Invalid("unknown generated variant")
+                    corpus.append({"id": prefix + variant, "report": r if type(r) is bytes else encoded(r),
+                                   "expectations": e if type(e) is bytes else encoded(e), "process_exit": status,
+                                   "wanted": summary(category, 0 if category else len(expected["targets"]), 2 if category else 0)})
+    return corpus
+
+
+def cases():
+    return pinned_cases() + generated_cases()
+
+
+class ComparisonFailure(Invalid):
+    """Only synthetic case identifiers and fixed counters may leave the runner."""
+
+    def __init__(self, case_id, stage, counts):
+        self.details = {"schema_version": 1, "status": "comparison_failed", "case_id": case_id,
+                        "stage": stage, "comparison_counts": dict(counts)}
+        super().__init__("synthetic consumer comparison failed")
+
+
+def compare(consumer, source_revision, case_id=None):
+    available = cases()
+    corpus = available if case_id is None else [case for case in available if case["id"] == case_id]
+    if not corpus or len({case["id"] for case in available}) != len(available):
+        raise Invalid("case selection")
+    counts = {"selected": len(corpus), "reference_checked": 0, "consumer_attempted": 0,
+              "consumer_compared": 0, "skipped": 0, "not_selected": len(available) - len(corpus)}
     executable = consumer.read_bytes()
     executable_digest = hashlib.sha256(executable).hexdigest()
     outcomes = []
@@ -549,32 +739,43 @@ def compare(consumer, source_revision):
         paths = [directory / "report.json", directory / "expectations.json"]
         for case in corpus:
             wanted = case["wanted"]
+            counts["reference_checked"] += 1
             if consume(case["report"], case["expectations"], case["process_exit"]) != wanted:
-                raise Invalid("oracle disagrees with pinned case " + case["id"])
+                raise ComparisonFailure(case["id"], "reference_decision", counts)
             for path, key in zip(paths, ("report", "expectations")):
                 path.write_bytes(case[key])
                 path.chmod(0o600)
-            completed = subprocess.run(
-                [str(consumer), "--report", str(paths[0]), "--expectations", str(paths[1]),
-                 "--verifier-exit-code", str(case["process_exit"])],
-                capture_output=True, timeout=10, check=False,
-            )
+            counts["consumer_attempted"] += 1
+            try:
+                completed = subprocess.run(
+                    [str(consumer), "--report", str(paths[0]), "--expectations", str(paths[1]),
+                     "--verifier-exit-code", str(case["process_exit"])],
+                    capture_output=True, timeout=10, check=False,
+                )
+            except (OSError, subprocess.SubprocessError):
+                raise ComparisonFailure(case["id"], "child_run", counts) from None
+            counts["consumer_compared"] += 1
             if (completed.returncode, completed.stdout) != wanted or completed.stderr:
-                raise Invalid("compiled consumer disagrees with pinned case " + case["id"])
+                raise ComparisonFailure(case["id"], "compiled_decision", counts)
             if any(path.read_bytes() != case[key] for path, key in zip(paths, ("report", "expectations"))):
-                raise Invalid("compiled consumer mutated a selected input")
+                raise ComparisonFailure(case["id"], "input_changed", counts)
             outcomes.append({"id": case["id"], "exit_code": wanted[0],
                              "report_sha256": hashlib.sha256(case["report"]).hexdigest(),
                              "expectations_sha256": hashlib.sha256(case["expectations"]).hexdigest(),
                              "process_exit": case["process_exit"],
                              "summary_sha256": hashlib.sha256(wanted[1]).hexdigest()})
     if hashlib.sha256(consumer.read_bytes()).hexdigest() != executable_digest:
-        raise Invalid("selected executable bytes changed")
+        raise ComparisonFailure(case["id"], "executable_changed", counts)
     return {"schema_version": 1, "source_revision": source_revision,
             "source_revision_is_caller_asserted": True,
             "consumer_sha256": executable_digest, "consumer_bytes": len(executable),
             "consumer_bytes_unchanged": True,
             "oracle_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), "cases": outcomes,
+            "case_selection": case_id, "comparison_counts": counts,
+            "available_pinned_cases": len(pinned_cases()),
+            "generated_corpus": {"version": 1, "identity_derivation": "sha256-v1", "seeds": list(GENERATED_SEEDS),
+                                 "programs": 4 * len(GENERATED_SEEDS), "cases_per_program": len(GENERATED_VARIANTS),
+                                 "available_cases": 4 * len(GENERATED_SEEDS) * len(GENERATED_VARIANTS)},
             "matched": sum(case["wanted"][0] == 0 for case in corpus),
             "refused": sum(case["wanted"][0] != 0 for case in corpus),
             "input_bytes_unchanged": True, "stderr_empty": True,
@@ -586,11 +787,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--consumer", required=True, type=Path)
     parser.add_argument("--source-revision", required=True)
+    parser.add_argument("--case", help="Replay one named synthetic case; otherwise compare the complete corpus")
     args = parser.parse_args()
     if re.fullmatch(r"[0-9a-f]{40}", args.source_revision) is None:
         parser.error("source revision must be a full lowercase commit identifier")
     try:
-        result = compare(args.consumer.resolve(strict=True), args.source_revision)
+        result = compare(args.consumer.resolve(strict=True), args.source_revision, args.case)
+    except ComparisonFailure as failure:
+        parser.exit(1, json.dumps(failure.details, sort_keys=True, separators=(",", ":")) + "\n")
     except (OSError, subprocess.SubprocessError, Invalid):
         raise SystemExit("Independent consumer comparison failed; private inputs and diagnostics omitted")
     print(json.dumps(result, sort_keys=True, separators=(",", ":")))
