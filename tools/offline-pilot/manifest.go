@@ -31,6 +31,7 @@ var scenarios = []scenario{
 	{"node_delayed_inclusion", "internal/conformance", "TestNodeDelayedInclusionAcrossVersionsAndResume", nil},
 	{"compiled_delayed_inclusion", "internal/conformance", "TestCompiledDelayedInclusionWorkflow", []string{"zenon-spv", "fetch-bundle"}},
 	{"retained_capacity_workloads", "internal/conformance", "TestRetainedCapacityWorkloads", nil},
+	{"concurrent_immutable_queries", "internal/conformance", "TestNodeConcurrentImmutableQueries", nil},
 	{"bounded_state_reader", "internal/verify", "TestSizedStateReadContract", nil},
 	{"bounded_bundle_reader", "internal/proof", "TestSizedBundleReadContract", nil},
 	{"bounded_rpc_response_reader", "internal/fetch", "TestRPCResponseReadContract", nil},

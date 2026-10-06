@@ -39,6 +39,9 @@ audit history.
   costs, allocation reporting, and explicit workload limits.
 - [`retained-capacity-benchmarks.md`](retained-capacity-benchmarks.md) — full
   K=16/256/4096 workload costs, saved size and measurement boundaries.
+- [`shared-query-resources.md`](shared-query-resources.md) — shared immutable
+  query observations at K=256/4096, one/four workers, and concurrent mixed-outcome
+  node-corpus checks.
 - [`selected-observer-resources.md`](selected-observer-resources.md) — fixed
   signed-capture observer costs at K=256/4096 and concurrency one/four, with
   preserved process records and explicit memory/latency limits.
