@@ -112,11 +112,7 @@ func readInputWithOpen(path string, limit int64, openFile func(string) (*os.File
 	if err != nil || !info.Mode().IsRegular() || info.Size() > limit {
 		return nil, os.ErrInvalid
 	}
-	raw, err := io.ReadAll(io.LimitReader(f, limit+1))
-	if err != nil || int64(len(raw)) > limit {
-		return nil, os.ErrInvalid
-	}
-	return raw, nil
+	return readInputBytes(f, limit, info.Size())
 }
 
 func writeConsumption(stdout, diagnostics io.Writer, category string, count, code int) int {

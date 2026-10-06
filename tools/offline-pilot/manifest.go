@@ -14,6 +14,7 @@ var scenarios = []scenario{
 	{"collect_query_resume", "internal/conformance", "TestCompiledCLIQueryWorkflow", []string{"zenon-spv", "fetch-bundle"}},
 	{"query_report_consumer", "internal/conformance", "TestCompiledQueryReportConsumer", []string{"zenon-spv", "consume-query-report"}},
 	{"consumer_input_descriptors", "tools/consume-query-report", "TestConsumerInputDescriptors", nil},
+	{"bounded_consumer_input_reader", "tools/consume-query-report", "TestConsumerInputReadContract", nil},
 	{"consumer_input_fifo", "tools/consume-query-report", "TestConsumerInputFIFOOpenIsBounded", nil},
 	{"compiled_query_consumer_scaling", "internal/conformance", "TestCompiledQueryConsumerScaling", []string{"zenon-spv", "consume-query-report"}},
 	{"block_observer", "internal/conformance", "TestCompiledBlockObserver", []string{"zenon-spv", "consume-query-report", "observe-block"}},

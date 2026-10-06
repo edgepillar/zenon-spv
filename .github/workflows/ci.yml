@@ -91,6 +91,9 @@ jobs:
         run: go test -run '^$' -bench '^BenchmarkRPCResponseRead$' -benchtime=3x -benchmem ./internal/fetch
       - name: Optional RPC Base64 allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCOptionalBase64$' -benchtime=3x -benchmem ./internal/fetch
+      - name: Consumer input-read allocation observations
+        shell: bash
+        run: go test -run '^$' -bench '^BenchmarkConsumerInputRead$' -benchtime=100x -benchmem -cpu=1 -count=3 ./tools/consume-query-report
       - name: Shared immutable query observations
         shell: bash
         run: go test -run '^$' -bench '^BenchmarkSharedImmutableQueries$' -benchtime=1000x -benchmem -cpu=1,4 -count=3 ./internal/conformance
@@ -206,6 +209,9 @@ jobs:
         run: go test -run '^$' -bench '^BenchmarkRPCResponseRead$' -benchtime=3x -benchmem ./internal/fetch
       - name: Optional RPC Base64 allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCOptionalBase64$' -benchtime=3x -benchmem ./internal/fetch
+      - name: Consumer input-read allocation observations
+        shell: bash
+        run: go test -run '^$' -bench '^BenchmarkConsumerInputRead$' -benchtime=100x -benchmem -cpu=1 -count=3 ./tools/consume-query-report
       - name: Shared immutable query observations
         shell: bash
         run: go test -run '^$' -bench '^BenchmarkSharedImmutableQueries$' -benchtime=1000x -benchmem -cpu=1,4 -count=3 ./internal/conformance
