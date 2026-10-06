@@ -16,6 +16,7 @@ var scenarios = []scenario{
 	{"consumer_input_descriptors", "tools/consume-query-report", "TestConsumerInputDescriptors", nil},
 	{"bounded_consumer_input_reader", "tools/consume-query-report", "TestConsumerInputReadContract", nil},
 	{"bounded_consumer_tokens", "tools/consume-query-report", "TestConsumerTokenPrefilter", nil},
+	{"bounded_consumer_shapes", "tools/consume-query-report", "TestConsumerShapeSpans", nil},
 	{"consumer_input_fifo", "tools/consume-query-report", "TestConsumerInputFIFOOpenIsBounded", nil},
 	{"compiled_query_consumer_scaling", "internal/conformance", "TestCompiledQueryConsumerScaling", []string{"zenon-spv", "consume-query-report"}},
 	{"block_observer", "internal/conformance", "TestCompiledBlockObserver", []string{"zenon-spv", "consume-query-report", "observe-block"}},
