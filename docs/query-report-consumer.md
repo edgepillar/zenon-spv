@@ -179,3 +179,7 @@ actual process failure, and target/guarantee/trust mismatches. Mutated diagnosti
 test consumption only. Native offline CI establishes bounded synthetic
 compatibility; it does not complete a network pilot, authenticate trust inputs,
 prove finality or state values, or perform a network pilot.
+
+The [independent Python decision checks](independent-consumer-checks.md) compare
+a compiled consumer with separately implemented parsing, context hashing and
+matching on a fixed synthetic corpus with preselected expected decisions.
