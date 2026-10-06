@@ -50,6 +50,42 @@ latency or maximum memory. The tests do not exercise every legal
 network delays. Native CI runners are not independently selected consumer
 hardware.
 
+## Bounded input-read allocations
+
+The consumer uses the size of the validated open regular-file descriptor as a
+buffer-allocation hint. A stable nonempty file normally needs one input buffer
+with space for an EOF probe. Metadata does not select accepted bytes: a file
+that grows or shrinks is still read to EOF through at most one overflow byte.
+All buffer capacities stay within the selected input limit plus that byte.
+An unusable hint falls back to bounded incremental growth. Read failures and
+oversized inputs expose no partial bytes and retain the fixed
+`input_unavailable` process result. Existing pathname, descriptor, FIFO,
+strict-decoding and independently selected expectations checks still apply.
+This does not authenticate files or close directory-replacement races.
+
+`TestConsumerInputReadContract`, selected as `bounded_consumer_input_reader`
+in the offline pilot, compares accepted bytes, refusals and reader consumption
+with the previous `LimitReader` + `ReadAll` contract. It covers short reads,
+simultaneous data/EOF or data/error, smaller/larger/unusable size hints, the
+256 KiB and 4 MiB limits, one overflow probe and invalid limits before reading.
+Complete, truncated and trailing document bytes reach the unchanged decoder.
+The fuzz target uses the same independent bounded reference.
+
+Native CI additionally preserves three ordinary allocation observations per
+reader and size with `BenchmarkConsumerInputRead`. Sizes include the fixed
+T1/T256 report and expectations byte counts (2,264/157,932 and 699/55,897),
+plus both input caps. Repeated synthetic bytes isolate reading and do not
+constitute a valid report or trust input. The previous reader and the new
+descriptor-hint path must return the complete unchanged bytes on every
+iteration. All 36 rows per native platform are retained without filtering or
+retrying. `B/op` includes the in-memory reader and returned buffer; `allocs/op`
+counts Go allocations. Neither field measures resident memory. Timing also
+includes the identical complete-byte comparison. These reader observations
+exclude filesystem calls, descriptor validation, JSON decoding, matching,
+process startup and output. Use the existing 21-process series above for the
+whole consumer boundary; reader allocation savings alone do not establish an
+application latency or memory budget.
+
 ## Artifact fields and validation
 
 The `compiled_query_consumer_scaling` case in the
