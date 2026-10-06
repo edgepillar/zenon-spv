@@ -13,7 +13,7 @@ import (
 // into integer fields: no float64 conversion, exponent spelling or silent null
 // defaults. Duplicate keys include equivalent escaped spellings.
 func decodeExact(raw []byte, destination any) bool {
-	if !utf8.Valid(raw) {
+	if !utf8.Valid(raw) || !consumerTokensBounded(raw) {
 		return false
 	}
 	d := json.NewDecoder(bytes.NewReader(raw))
@@ -43,9 +43,9 @@ func scanValue(d *json.Decoder, depth int, nodes *int) bool {
 	}
 	switch v := token.(type) {
 	case json.Number:
-		return len(v) <= 21 && v != "-0" && !strings.ContainsAny(string(v), ".eE")
+		return len(v) <= maxConsumerNumberBytes && v != "-0" && !strings.ContainsAny(string(v), ".eE")
 	case string:
-		return len(v) <= 4096
+		return len(v) <= maxConsumerStringBytes
 	case json.Delim:
 		switch v {
 		case '{':

@@ -86,6 +86,41 @@ process startup and output. Use the existing 21-process series above for the
 whole consumer boundary; reader allocation savings alone do not establish an
 application latency or memory budget.
 
+## Oversized-token refusal allocations
+
+The strict consumer already refuses decoded strings above 4,096 bytes and
+number tokens above 21 bytes. `json.Decoder.Token` can allocate a large token
+before those checks. The consumer now applies an allocation-free necessary
+condition before token decoding, after the existing UTF-8 check. An encoded
+string cannot use more than six source bytes per accepted decoded byte; the
+filter therefore allows up to 24,576 bytes between its quotes, including
+escapes. The decoded 4,096-byte limit still applies afterward. Number tokens
+retain the same 21-byte limit. Digits inside strings are not number tokens.
+This filter neither validates JSON nor relaxes syntax, duplicates, keys,
+numeric types/ranges, shape, context or matching checks.
+
+`TestConsumerTokenPrefilter`, selected as `bounded_consumer_tokens`, compares
+the full decoder with a test-only copy of the previous strict decoder. It
+covers maximum escaped strings, control characters, multibyte UTF-8,
+surrogate pairs and replacement runes, quote/backslash parity, numeric
+boundaries, oversized tokens and fixed private process refusals. A differential
+fuzz target compares decisions and destination values; neither decoder's
+failure may become a match.
+
+`BenchmarkConsumerTokenPrefilter` preserves three ordinary native observations
+for each decoder and workload. It includes otherwise complete reports with
+32 KiB, 1 MiB and 3 MiB oversized caveat strings or integer tokens, plus the
+ordinary matching report and a matching report with a maximally escaped
+4,096-byte caveat. Every document fits the 4 MiB input limit. Both decoders must
+produce the same decision and destination values; valid cases must match the
+independently prepared expectations. All 48 rows per platform are retained.
+The reported `B/op` and `allocs/op` cover decoding and its result check, with
+fixture construction outside measurement. They exclude input reading,
+filesystem calls, process startup and output. Invalid workloads measure an
+unchanged refusal, not useful query throughput. Valid-workload timing records
+the extra byte-scan cost without establishing a latency budget. These are Go
+allocation observations, not RSS or whole-process memory measurements.
+
 ## Artifact fields and validation
 
 The `compiled_query_consumer_scaling` case in the
