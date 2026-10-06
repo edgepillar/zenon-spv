@@ -92,6 +92,7 @@ jobs:
       - name: Optional RPC Base64 allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCOptionalBase64$' -benchtime=3x -benchmem ./internal/fetch
       - name: Shared immutable query observations
+        shell: bash
         run: go test -run '^$' -bench '^BenchmarkSharedImmutableQueries$' -benchtime=1000x -benchmem -cpu=1,4 -count=3 ./internal/conformance
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchtime=1x ./internal/conformance
@@ -206,6 +207,7 @@ jobs:
       - name: Optional RPC Base64 allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCOptionalBase64$' -benchtime=3x -benchmem ./internal/fetch
       - name: Shared immutable query observations
+        shell: bash
         run: go test -run '^$' -bench '^BenchmarkSharedImmutableQueries$' -benchtime=1000x -benchmem -cpu=1,4 -count=3 ./internal/conformance
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchtime=1x ./internal/conformance
