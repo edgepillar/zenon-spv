@@ -30,6 +30,8 @@ jobs:
         run: python tools/check-verification-context_test.py
       - name: Independent consumer controls
         run: python -I -B tools/check-query-consumer_test.py
+      - name: Independent node consumer controls
+        run: python -I -B tools/check-node-query-consumer_test.py
       - name: Signature checker controls
         run: python -B tools/gen-node-momentum-vectors/check-signatures_test.py
       - name: Independent node signatures
@@ -63,6 +65,12 @@ jobs:
         id: candidate
         shell: bash
         run: python -I -B tools/check-exported-candidate.py --directory "${{ runner.temp }}/tested-candidate" --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)"
+      - name: Independent node consumer workflow
+        shell: bash
+        run: |
+          candidate_directory="${{ runner.temp }}/tested-candidate"
+          executable_suffix="$(go env GOEXE)"
+          python -I -B tools/check-node-query-consumer.py --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --source-revision "${{ github.sha }}"
       - name: Upload offline pilot report
         if: ${{ !cancelled() && steps.pilot.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -156,6 +164,8 @@ jobs:
         run: python tools/check-verification-context_test.py
       - name: Independent consumer controls
         run: python -I -B tools/check-query-consumer_test.py
+      - name: Independent node consumer controls
+        run: python -I -B tools/check-node-query-consumer_test.py
       - name: Signature checker controls
         run: python -B tools/gen-node-momentum-vectors/check-signatures_test.py
       - name: Independent node signatures
@@ -195,6 +205,12 @@ jobs:
         id: candidate
         shell: bash
         run: python -I -B tools/check-exported-candidate.py --directory "${{ runner.temp }}/tested-candidate" --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)"
+      - name: Independent node consumer workflow
+        shell: bash
+        run: |
+          candidate_directory="${{ runner.temp }}/tested-candidate"
+          executable_suffix="$(go env GOEXE)"
+          python -I -B tools/check-node-query-consumer.py --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --source-revision "${{ github.sha }}"
       - name: Upload offline pilot report
         if: ${{ !cancelled() && steps.pilot.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
