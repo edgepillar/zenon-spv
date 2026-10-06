@@ -215,6 +215,17 @@ refused header extension. Native child-process tests cover actual nonzero exit,
 stream bounds, cancellation, failed start and inherited-pipe delivery failure
 despite exit zero. The offline pilot records both.
 
+`TestConcurrentObservationProcessCancellation` starts four real direct children
+behind explicit readiness/release gates. It cancels one active child after that
+child has emitted a complete matched summary, then exceeds another child's
+stdout or stderr cap while two independent siblings remain live. Both siblings
+must subsequently complete with their exact unmodified streams and exit zero.
+OS-held locks establish actual helper lifetime and release after each runner
+returns; all owned runners settle before fixture cleanup. This native offline
+case checks per-invocation cancellation, stream isolation and refusal of a
+successful diagnostic from a cancelled process. Its settlement guards are test
+controls, not latency budgets, process-tree supervision or network evidence.
+
 `TestCompiledRPCBlockObserver` adds ordinary collector/verifier/consumer/observer
 execution against node-derived v1 evidence through one loopback RPC. It covers
 both target commands, all child pins, collection failure/deadline/failed start,

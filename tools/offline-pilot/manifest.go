@@ -21,6 +21,7 @@ var scenarios = []scenario{
 	{"rpc_delayed_block_observer", "internal/conformance", "TestCompiledRPCObserverDelayedInclusion", []string{"fetch-bundle", "zenon-spv", "consume-query-report", "observe-block"}},
 	{"rpc_selected_block_observer", "internal/conformance", "TestCompiledRPCObserverSelectedMomenta", []string{"fetch-bundle", "zenon-spv", "consume-query-report", "observe-block"}},
 	{"block_observer_process_boundaries", "tools/observe-block", "TestObservationProcessBoundaries", nil},
+	{"block_observer_concurrent_cancellation", "tools/observe-block", "TestConcurrentObservationProcessCancellation", nil},
 	{"candidate_binary_export", "internal/conformance", "TestCandidateBinaryExport", nil},
 	{"candidate_manifest", "tools/offline-pilot", "TestCandidateManifest", nil},
 	{"pinned_operator_workflow", "internal/conformance", "TestCompiledPinnedOperatorWorkflow", []string{"zenon-spv", "fetch-bundle"}},
