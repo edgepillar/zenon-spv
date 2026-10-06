@@ -1,0 +1,48 @@
+# Retained-state operation sequences
+
+`TestRetainedStateSequenceModel` combines retained-state operations against a
+separate list model. The model stores fixture indices, the next accepted index,
+W, explicit K or legacy capacity, and whether a nonempty local file was resumed.
+It never calls production append, policy-capacity, header verification,
+commitment verification or retained-state validation to calculate expectations.
+The production API is the system under test.
+
+The matrix has 18 cells: v1 without a profile, v1/v2 under a finite profile, or
+v1/v2 with finite producer-schedule coverage; W=1/2/6; and legacy or explicit K.
+Each cell runs two deterministic sequences. A fixed prefix combines startup,
+whole-batch rejection after a valid prefix, unsupported versions, empty input,
+save/resume, authorization before shrinking, capacity changes, omitted explicit
+retention, W changes, incompatible profiles, detached-view mutation, queries,
+failed saves and malformed saved input. Repeated extensions reach the finite
+profile or schedule boundary. A fixed integer generator then selects 32 more
+operations. No timing threshold, network or shell is used.
+
+After every operation the test compares the exact signed retained envelopes,
+ordering, capacity, tip, lookup availability and depth-eligible range. Boundary
+queries mix complete, missing, corrupted and nonmember evidence and check the
+outcome, reason, fault index, inclusion guarantee and exact trust set. Four
+predecessor handles are checked too. Caller-owned header envelopes are mutated
+after extension, and detached state views are mutated between operations.
+Read-only loads must preserve the saved bytes. Policy changes must invalidate
+the previous context pin; unchanged selections must keep it usable. These are
+configuration-consistency checks, not input authentication.
+
+`FuzzRetainedStateSequence` uses the same oracle with up to 96 operations and
+three seed programs. Its first two bytes choose profile mode and initial W/K;
+the remaining bytes encode operation and argument. Each run owns a private
+temporary directory. A fixture contains 256 signed momentums; exhausting this
+test fixture produces an empty extension rather than inventing more history.
+The deterministic matrix is the `retained_state_sequences` offline-pilot case.
+
+```sh
+go test -run '^TestRetainedStateSequenceModel$' -count=1 ./internal/verify
+go test -run '^$' -fuzz '^FuzzRetainedStateSequence$' -fuzztime=5s -parallel=1 ./internal/verify
+```
+
+All momentums, content and schedules in this harness are synthetic and use an
+explicit test key. Signing and hash functions construct fixtures; the separate
+list oracle checks operation semantics, not independent cryptographic bytes.
+Existing node-corpus, Python and OpenSSL checks retain their separate scope.
+These sequences establish no executed history, authenticated anchor/profile/
+schedule, canonicality, consensus finality, activation, state-value proof,
+network pilot, independent human review or release provenance.
