@@ -53,6 +53,10 @@ func (m sequenceModel) resized(w uint64, k int) sequenceModel {
 }
 
 func newSequenceFixture(mode int) sequenceFixture {
+	return newSequenceFixtureSize(mode, 256)
+}
+
+func newSequenceFixtureSize(mode, count int) sequenceFixture {
 	f := sequenceFixture{anchor: GenesisTrustRoot{ChainID: 3, Height: 100, HeaderHash: chain.Hash{1}}}
 	if mode != 0 {
 		f.profile = &ProtocolProfile{Version: 1, Anchor: f.anchor, ValidThrough: 140,
@@ -63,7 +67,7 @@ func newSequenceFixture(mode int) sequenceFixture {
 	}
 	key := ed25519.NewKeyFromSeed(bytes.Repeat([]byte{0x42}, ed25519.SeedSize))
 	previous := f.anchor.HeaderHash
-	for i := 0; i < 256; i++ {
+	for i := 0; i < count; i++ {
 		height := f.anchor.Height + uint64(i) + 1
 		member := chain.AccountHeader{Address: chain.Address{2}, Height: height}
 		binary.BigEndian.PutUint64(member.Hash[:8], height)

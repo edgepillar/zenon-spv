@@ -34,6 +34,30 @@ temporary directory. A fixture contains 256 signed momentums; exhausting this
 test fixture produces an empty extension rather than inventing more history.
 The deterministic matrix is the `retained_state_sequences` offline-pilot case.
 
+## Full-capacity operation sequences
+
+`TestRetainedCapacitySequenceModel` reuses the independent fixture-index model
+at K=16/256/4096, in all three profile/schedule modes, with W=6 or W=K-1.
+These 18 cells start by filling exactly K signed headers. Each then combines
+resume, invalid final envelopes after a valid prefix, full-window eviction,
+tail-only authorization refusal before shrinking, omitted/invalid retention,
+shrink to K=8, growth without history recovery, refill, another eviction,
+W=K-1 depth, finite profile/schedule expiry and final save/resume. The same
+exact envelope, query, trust and context-pin checks run after every operation;
+three immutable predecessors and selected delayed targets are checked too.
+Read-only load attempts must preserve saved bytes, including failed attempts.
+
+The large fixtures contain 2*K+32 synthetic headers, with unique content at
+each height. Profile and schedule coverage extend through the refill and then
+expire inside a multi-header batch. An explicit reason-coverage assertion
+requires that expiry path to occur. This complements the separate populated
+capacity measurements; it does not measure memory, latency or a network budget.
+The `retained_capacity_sequences` offline case selects this deterministic test.
+
+```sh
+go test -run '^TestRetainedCapacitySequenceModel$' -count=1 ./internal/verify
+```
+
 ```sh
 go test -run '^TestRetainedStateSequenceModel$' -count=1 ./internal/verify
 go test -run '^$' -fuzz '^FuzzRetainedStateSequence$' -fuzztime=5s -parallel=1 ./internal/verify

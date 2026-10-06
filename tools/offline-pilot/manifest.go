@@ -32,6 +32,7 @@ var scenarios = []scenario{
 	{"delayed_multi_height_segment", "internal/verify", "TestRetentionSeparatesHistoryFromDepth", nil},
 	{"retention_migration", "internal/verify", "TestRetentionPersistenceMigrationAndAuthorizationBeforeShrink", nil},
 	{"retained_state_sequences", "internal/verify", "TestRetainedStateSequenceModel", nil},
+	{"retained_capacity_sequences", "internal/verify", "TestRetainedCapacitySequenceModel", nil},
 	{"node_delayed_inclusion", "internal/conformance", "TestNodeDelayedInclusionAcrossVersionsAndResume", nil},
 	{"compiled_delayed_inclusion", "internal/conformance", "TestCompiledDelayedInclusionWorkflow", []string{"zenon-spv", "fetch-bundle"}},
 	{"retained_capacity_workloads", "internal/conformance", "TestRetainedCapacityWorkloads", nil},
