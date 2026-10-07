@@ -69,6 +69,15 @@ empty Put and Delete remove a leaf, and later duplicate events win. This mode
 opens and closes a temporary in-memory database. Disk recovery, retention,
 reorgs, startup, snapshot import, real resource budgets and proof RPC remain
 open; production v3 and state-value acceptance stay disabled.
+The [separate StateProof serializer fixture](../tools/gen-state-root-vectors/README.md#separate-stateproof-serializer-and-synthetic-binding-fixture)
+adds 14 actual response encodings and independent bounded wire/key/root checks.
+Seven primitive-proof cases model locally selected unsigned header identifiers
+and context pins; these are research selections, not authenticated headers or
+an enabled profile. Actual `LedgerApi` execution, readiness/retention gates,
+JSON-RPC transport and accepted `VerifiedState` binding remain separate work.
+The optional serializer build needs reference CGO; the three previous generator
+modes remain without CGO and preserve their fixtures. The MIT runtime stays
+unchanged, with v3/state-value refusal intact.
 Canonicality, consensus finality, freshness and authenticated election remain
 separate gates. Older "no state tree" audits apply to their pinned v1/v2
 baseline, not every fork. Selective extension remains preferable to a rewrite.
