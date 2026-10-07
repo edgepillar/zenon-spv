@@ -56,6 +56,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_wire_test.py
       - name: Independent candidate StateProof wire and binding
         run: python -I -B tools/gen-state-root-vectors/check_wire.py --source-revision "${{ github.sha }}"
+      - name: Candidate RPC method controls
+        run: python -I -B tools/gen-state-root-vectors/check_rpc_methods_test.py
+      - name: Independent candidate RPC methods and consumer decisions
+        run: python -I -B tools/gen-state-root-vectors/check_rpc_methods.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash
@@ -222,6 +226,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_wire_test.py
       - name: Independent candidate StateProof wire and binding
         run: python -I -B tools/gen-state-root-vectors/check_wire.py --source-revision "${{ github.sha }}"
+      - name: Candidate RPC method controls
+        run: python -I -B tools/gen-state-root-vectors/check_rpc_methods_test.py
+      - name: Independent candidate RPC methods and consumer decisions
+        run: python -I -B tools/gen-state-root-vectors/check_rpc_methods.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash

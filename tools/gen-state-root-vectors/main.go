@@ -631,6 +631,7 @@ func generateApplier() any {
 
 // The optional candidate_wire build enables the actual RPC response serializer.
 var wireGenerator func() any
+var rpcMethodGenerator func() any
 
 func run() error {
 	// regenerate.py validates and copies every node blob before it builds this
@@ -641,7 +642,7 @@ func run() error {
 	kind := "bytes"
 	if len(os.Args) == 5 {
 		kind = os.Args[4]
-		if os.Args[3] != "--fixture-kind" || (kind != "fold-filter" && kind != "applier" && kind != "wire") {
+		if os.Args[3] != "--fixture-kind" || (kind != "fold-filter" && kind != "applier" && kind != "wire" && kind != "rpc-methods") {
 			return fmt.Errorf("unsupported reference fixture kind")
 		}
 	}
@@ -673,6 +674,12 @@ func run() error {
 			return fmt.Errorf("wire mode requires the offline driver candidate_wire build")
 		}
 		return encoder.Encode(wireGenerator())
+	}
+	if kind == "rpc-methods" {
+		if rpcMethodGenerator == nil {
+			return fmt.Errorf("RPC method mode requires the offline driver candidate_rpc build")
+		}
+		return encoder.Encode(rpcMethodGenerator())
 	}
 	return encoder.Encode(generate())
 }

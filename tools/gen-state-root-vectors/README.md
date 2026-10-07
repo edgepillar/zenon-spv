@@ -224,7 +224,7 @@ model binding only: they are not accepted `VerifiedState` headers or an
 authenticated network profile and cannot produce production acceptance.
 
 The optional `candidate_wire` build tag imports the complete reference RPC
-package. Its selected Ethereum dependency requires CGO, so only wire generation
+package. Its selected Ethereum dependency requires CGO, so this serializer mode
 uses CGO and an available C compiler. The three previous modes still build with
 CGO disabled. The research module locks the added import closure against the
 pinned node's dependency checksums; initial public module acquisition is
@@ -255,6 +255,66 @@ activation/version gates, retained history, root/proof consistency during
 changes and live transport remain unqualified. Connecting a decoded result to
 an accepted header/context is separate client work. Production v3 and state-value
 acceptance remains disabled.
+
+## Separate actual LedgerApi method fixture
+
+`candidate-rpc-methods.json` records the actual pinned `NewLedgerApi`,
+`GetProof` and `GetStateRoot` methods using explicit recording synthetic
+`Zenon`, `Chain` and `MomentumStore` stubs. There are 40 method observations:
+25 proof calls, 15 root calls and 160 recorded constructor/store/proof/root
+call events. The independent checker builds expected identifiers from unsigned
+header preimages, computes one-leaf roots/proofs bottom-up, checks exact raw key
+bytes and full HashHeight forwarding, and compares error identity/code,
+precedence and return bytes against a fixed selected inventory.
+
+The [actual source methods](https://github.com/digitalSloth/go-zenon/blob/56ce2c384966f2f1940967257a0788d3998a5eef/rpc/api/ledger.go#L337-L403)
+refuse zero height, lookup errors, missing Momentum and versions below three.
+The reference lookup accepts later versions and forwards the identifier the
+store returned; neither behavior selects a consumer profile or authenticates
+that identifier. The research consumer refuses unsupported versions,
+height/hash substitution, key substitution, oversized fields and provider roots
+that disagree with its separate unsigned header/context selection. Coherent
+provider proof/root replacement can match its own root and still fail this
+selection. A nonzero root returned with an error remains an error.
+
+The observations yield 19 reference errors, three synthetic typed balance
+matches and one synthetic root match. Seventeen other consumer outcomes refuse
+unsupported or mismatched inputs, including present-empty shared-core bytes.
+Stored zero remains present, nil value denotes primitive absence, and a nil
+request key differs from an empty slice even when their raw path bytes coincide.
+Twenty controls cover gates, exact call order/identity, error precedence,
+closed shapes/types, bounds, proof/value mismatch, context replacement and the
+four previous immutable corpora. A padding-rounded Base64 value may decode at
+most two bytes above its value limit before decoded-length refusal; a larger
+encoded width refuses before decoding. The fixed 4,097-byte API observation has
+a separately bounded expected-byte construction; earlier proof/value bounds
+and consumer limits are unchanged.
+
+The optional `candidate_rpc` build uses the already locked reference CGO import
+closure. The separate mode does not start a full node or RPC listener, execute
+the JSON-RPC dispatcher or transport, call actual chain `stateTree` methods,
+open a database, run node tests, sign data or invoke transaction callbacks.
+Injected not-ready/not-retained errors qualify API forwarding only. They do not
+exercise actual readiness, build, retention, reorgs or recovery. Both optional
+RPC research modes need CGO; the first three modes keep CGO disabled. All five
+modes validate the same 394 node blobs and produce two identical outputs; all
+four earlier corpora remain byte-identical. Native CI runs independent Python
+fixture checks; actual reference method/CGO execution remains separately scoped
+to local macOS ARM64.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_rpc_methods_test.py
+python3 -I -B tools/gen-state-root-vectors/check_rpc_methods.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind rpc-methods \
+  --output NEW_RPC_METHOD_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+```
+
+Actual JSON-RPC request/envelope behavior, accepted `VerifiedState` binding,
+network activation/profile agreement, real chain readiness/retention,
+persisted lifecycle, resource budgets, human review and authenticated release
+remain separate gates. Production v3 and state-value acceptance stay disabled.
 
 ## Remaining gates
 
