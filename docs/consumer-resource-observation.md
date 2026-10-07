@@ -166,7 +166,11 @@ zero physical usage, free space or absence of unlinked open files.
 
 All zero statuses are necessary for this complete example, but application
 acceptance still requires parsing the complete observer report. The empty reader
-does not consume observer JSON. Do not overwrite failed records with a retry,
+does not consume observer JSON. The separate
+[observer-report consumer](observer-report-consumer.md) supplies a bounded reader
+for that diagnostic, with explicit mode, expected count and the actual observer
+exit. Its result remains separate from the sampler and final empty-root result.
+Do not overwrite failed records with a retry,
 delete unexpected remnants automatically or change context/target expectations
 to obtain success. Keep raw stderr and all selections private; sharing even
 scalar reports requires reviewing their workload/timing information.
