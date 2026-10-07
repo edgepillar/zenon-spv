@@ -34,6 +34,7 @@ def load_checker(filename):
 
 
 SCALING = load_checker("check-content-scaling.py")
+SIGNATURES = load_checker("check-signatures.py")
 LINKED = {
     name: load_checker("check-" + name + ".py")
     for name in ("account-segments", "contract-batches", "delayed-inclusion")
@@ -420,6 +421,109 @@ class ByteRepresentationChecks(unittest.TestCase):
                         batch[field] = alias
                     with self.assertRaises(ValueError):
                         with_corpus_file(value, LINKED["contract-batches"].check)
+
+    def test_account_projection_hex_cannot_ignore_ascii_whitespace(self):
+        original = self.amounts["vectors"][1]
+        baseline = account_bytes(original["block"], original["rpc"])
+        fields = ("previousHash", "fromBlockHash", "address", "toAddress",
+                  "tokenStandard", "dataHash", "descendantBlocksHash")
+        for field in fields:
+            for separator in (" ", "\t", "\r", "\n", "\v", "\f"):
+                with self.subTest(field=field, separator=repr(separator)):
+                    vector = copy.deepcopy(original)
+                    value = vector["block"][field]
+                    changed = separator.join(value[i:i+2] for i in range(0, len(value), 2))
+                    self.assertEqual(bytes.fromhex(changed), bytes.fromhex(value))
+                    vector["block"][field] = changed
+                    if field in ("previousHash", "fromBlockHash"):
+                        vector["rpc"][field] = changed
+                    self.assertEqual(vector["block"]["hash"], original["block"]["hash"])
+                    self.assertEqual(vector["block"]["signature"], original["block"]["signature"])
+                    with self.assertRaises(ValueError):
+                        account_bytes(vector["block"], vector["rpc"])
+        self.assertEqual(account_bytes(original["block"], original["rpc"]), baseline)
+
+    def test_direct_and_nested_account_hex_fields_require_wire_widths(self):
+        original = self.amounts["vectors"][1]
+        for field in ("nonce", "acknowledged_hash"):
+            with self.subTest(field=field):
+                vector = copy.deepcopy(original)
+                for side in ("block", "rpc"):
+                    target = vector[side]["momentumAcknowledged"] if field == "acknowledged_hash" else vector[side]
+                    key = "hash" if field == "acknowledged_hash" else field
+                    target[key] = " ".join(target[key][i:i+2] for i in range(0, len(target[key]), 2))
+                with self.assertRaises(ValueError):
+                    account_bytes(vector["block"], vector["rpc"])
+
+        original = corpus("contract-batches")["segments"][0]["vectors"][2]
+        for field in ("hash", "previousHash", "fromBlockHash", "nonce", "acknowledged_hash"):
+            for depth in (1, 2):
+                with self.subTest(field=field, depth=depth):
+                    vector = copy.deepcopy(original)
+                    child = vector["rpc"]["descendantBlocks"][0]
+                    if depth == 2:
+                        deeper = copy.deepcopy(vector["rpc"]["descendantBlocks"][1])
+                        child["descendantBlocks"].append(deeper)
+                        child = deeper
+                    target = child["momentumAcknowledged"] if field == "acknowledged_hash" else child
+                    key = "hash" if field == "acknowledged_hash" else field
+                    target[key] = " ".join(target[key][i:i+2] for i in range(0, len(target[key]), 2))
+                    self.assertEqual(vector["block"], original["block"])
+                    with self.assertRaises(ValueError):
+                        account_bytes(vector["block"], vector["rpc"])
+
+    def test_account_fixed_width_hex_refuses_type_width_and_digit_aliases(self):
+        original = self.amounts["vectors"][1]
+        widths = {"previousHash": 32, "fromBlockHash": 32, "address": 20,
+                  "toAddress": 20, "tokenStandard": 10, "dataHash": 32,
+                  "descendantBlocksHash": 32, "nonce": 8}
+        for field, width in widths.items():
+            aliases = (None, True, 0, 0.0, [], {}, b"00" * width,
+                       "00" * (width - 1), "00" * (width + 1), "gg" * width,
+                       "00" * (width - 1) + "  ")
+            for alias in aliases:
+                with self.subTest(field=field, alias=alias):
+                    vector = copy.deepcopy(original)
+                    vector["block"][field] = alias
+                    if field in ("previousHash", "fromBlockHash", "nonce"):
+                        vector["rpc"][field] = alias
+                    with self.assertRaises(ValueError):
+                        account_bytes(vector["block"], vector["rpc"])
+
+    def test_full_width_uppercase_hex_preserves_original_account_preimages(self):
+        for original in self.amounts["vectors"] + self.account_vectors:
+            with self.subTest(vector=original["name"]):
+                baseline = account_bytes(original["block"], original["rpc"])
+                vector = copy.deepcopy(original)
+                for field in ("previousHash", "fromBlockHash", "nonce"):
+                    for side in ("block", "rpc"):
+                        vector[side][field] = vector[side][field].upper()
+                for side in ("block", "rpc"):
+                    vector[side]["momentumAcknowledged"]["hash"] = vector[side]["momentumAcknowledged"]["hash"].upper()
+                for field in ("address", "toAddress", "tokenStandard", "dataHash", "descendantBlocksHash"):
+                    vector["block"][field] = vector["block"][field].upper()
+                self.assertEqual(vector["block"]["hash"], original["block"]["hash"])
+                self.assertEqual(vector["block"]["signature"], original["block"]["signature"])
+                self.assertEqual(account_bytes(vector["block"], vector["rpc"]), baseline)
+
+    def test_signature_entrypoint_refuses_hex_whitespace_before_backend(self):
+        for field in ("previousHash", "fromBlockHash", "nonce", "acknowledged_hash"):
+            with self.subTest(field=field):
+                with tempfile.TemporaryDirectory(prefix="node-byte-corpus-") as directory:
+                    root = Path(directory)
+                    for name in SIGNATURES.CORPORA:
+                        value = corpus(name)
+                        if name == "account-amounts":
+                            vector = next(v for v in value["vectors"] if v["name"] == "ordinary")
+                            for side in ("block", "rpc"):
+                                target = vector[side]["momentumAcknowledged"] if field == "acknowledged_hash" else vector[side]
+                                key = "hash" if field == "acknowledged_hash" else field
+                                target[key] = " ".join(target[key][i:i+2] for i in range(0, len(target[key]), 2))
+                        (root / (name + ".json")).write_text(json.dumps(value), encoding="utf-8")
+                    with mock.patch.object(SIGNATURES, "Backend", side_effect=AssertionError("byte refusal must precede backend")) as backend:
+                        with self.assertRaises((ValueError, SIGNATURES.Refused)):
+                            SIGNATURES.run(root, "unavailable-backend")
+                    backend.assert_not_called()
 
 
 if __name__ == "__main__":
