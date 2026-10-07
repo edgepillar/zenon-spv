@@ -289,6 +289,19 @@ dispatcher, transport or accepted `VerifiedState` integration runs in this mode.
 All four previous corpora, strict v3/state-value refusal and the independent
 profile/release/lifecycle/resource gates remain intact.
 
+The [separate offline dispatcher fixture](../tools/gen-state-root-vectors/README.md#separate-offline-http-and-json-rpc-dispatcher-fixture)
+executes actual HTTP validation, JSON-RPC parameter decoding, two read-only
+Ledger delegates and success/error envelopes through in-memory requests and
+recorders. Its 86 cases yield 60 actual method calls and 282 recorded chain/store
+events; an independent fixed inventory checks request/response bytes and exact
+IDs, heights and raw keys. Twenty controls preserve a separate strict synthetic
+consumer policy even when the reference codec accepts duplicates, trailing
+input, loose ID/version forms or array keys. Returned data with an error never
+becomes a success payload. Five earlier corpora stay identical. This mode starts
+no listener and uses the same explicit recording stubs; live transport, actual
+chain `stateTree`, accepted-header/profile binding and lifecycle/resource
+qualification remain separate. Production v3/state-value refusal stays intact.
+
 Research and selective implementation can proceed now. Production state-proof
 acceptance remains gated by the profile, verified header/activation binding,
 independent conformance, lifecycle qualification and review. Bridge/custody
