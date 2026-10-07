@@ -6,7 +6,6 @@ No generator, signer, wallet, node, SPV executable or RPC client is invoked.
 """
 
 import argparse
-import base64
 import contextlib
 import hashlib
 import importlib.util
@@ -132,7 +131,7 @@ def decoded(value, nullable=False):
     if value is None and nullable:
         return b""
     require(type(value) is str, "signature_shape")
-    return base64.b64decode(value, validate=True)
+    return BYTES.base64_bytes(value)
 
 
 def record(identifier, kind, header, preimage, unsigned=False, invalid_amount=False):

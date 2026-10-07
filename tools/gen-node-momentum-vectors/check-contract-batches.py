@@ -5,13 +5,12 @@ This verifies serialization, not VM execution or full-node transaction validity.
 Ed25519 verification is performed separately by the Go conformance tests.
 """
 
-import base64
 import json
 from pathlib import Path
 import sys
 
 from check import address_bytes, check_anchor, check_vector, hash_bytes, require, uint64
-from check_account import check_account
+from check_account import check_account, optional_base64
 
 
 def check(path):
@@ -42,8 +41,8 @@ def check(path):
         require(block["blockType"] == kind and block["address"] == segment["address"], "wrong account type/address")
         require(block["height"] == index + 1 and block["previousHash"] == previous, "broken account chain")
         require(block["momentumAcknowledged"] == {"hash": anchor["header_hash"], "height": anchor["height"]}, "wrong acknowledgement")
-        key = base64.b64decode(block["publicKey"] or "", validate=True)
-        signature = base64.b64decode(block["signature"] or "", validate=True)
+        key = optional_base64(block["publicKey"])
+        signature = optional_base64(block["signature"])
         require(not key and not signature and block["address"].startswith("01"), "embedded account unexpectedly signed")
         if kind == 4:
             require(not rpc["descendantBlocks"], "child unexpectedly has descendants")

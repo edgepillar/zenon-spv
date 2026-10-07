@@ -1,8 +1,6 @@
 """Independent account-block wire projection and SHA3-256 preimage checks."""
 
-import base64
-
-from check import address_bytes, bech32_bytes, digest, hash_bytes, require, uint64
+from check import address_bytes, base64_bytes, bech32_bytes, digest, hash_bytes, require, uint64
 
 
 def hex_bytes(value, size):
@@ -24,7 +22,7 @@ def check_unsigned_projection(projection):
 
 def optional_base64(value):
     require(value is None or type(value) is str, "expected a nullable base64 string")
-    return base64.b64decode("" if value is None else value, validate=True)
+    return base64_bytes("" if value is None else value)
 
 
 def account_bytes(block, rpc):
