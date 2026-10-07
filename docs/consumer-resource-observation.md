@@ -42,7 +42,9 @@ Set the following variables privately, without shell tracing: `OBSERVE`, `SPV`,
 `CONSUME`, `SPV_SHA256`, `CONSUME_SHA256`, `PYTHON`, `SAMPLER`, `PRIVATE`,
 `STAGING_ROOT`, `RECORDS` and `PIN`. Executable/script paths are explicit; the
 example does not choose binaries from `PATH`. Use `.exe` names on Windows.
-The Bash recipe also works with a suitably configured Git Bash; applications
+The recipe targets Bash, including a configured Git Bash environment. The
+documentation recipe controls were executed locally on Darwin arm64; native
+Windows/Git Bash recipe execution is not qualified by those controls. Applications
 using native process APIs should preserve UTF-8 stdout bytes and actual statuses
 directly, without recoding JSON through a shell text pipeline.
 
