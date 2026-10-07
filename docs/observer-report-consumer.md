@@ -50,7 +50,7 @@ file through shell redirection remains the caller's protected-file responsibilit
 | `--mode collected` | Schema 2 with the same fields plus a required collector observation. |
 | `checked_targets` | An integer in 1..256 equal to the independently selected expected count. |
 | `status`, `category` | `matched` and null. |
-| Each child | Exact `exit_code`, `elapsed_ns`, `stdout_bytes`, `stderr_bytes` fields; actual integer exit zero, not null or a Boolean. |
+| Each child | Exact `exit_code`, `elapsed_ns`, `stdout_bytes`, `stderr_bytes` fields; reported integer exit zero, not null or a Boolean. |
 | Time/count metadata | Lossless nonnegative signed 64-bit integers. Zero clock ticks are allowed. |
 | Successful child stdout | Positive and within the existing observer caps: verifier 4 MiB, consumer 1024 bytes, collector 64 MiB. |
 | Child stderr count | Nonnegative and at most 16 KiB. Raw diagnostics are never echoed. |
@@ -109,7 +109,9 @@ remain fixed after seeding and staging roots return to empty.
 CI runs controls and actual diagnostic consumption on Linux, Intel macOS and
 Windows using the existing exported candidate binaries. Qualification output
 records reader/source/executable byte pins and every comparison; the source
-revision remains caller asserted. Actual fixture/process failures stop the run
+revision remains caller asserted. A later failure retains the recorded completed
+or uncertain subprocess outcomes with actual exits and stdout/stderr byte hashes.
+Raw private diagnostics are not printed. Actual fixture/process failures stop the run
 without claiming qualification or automatically retrying. This is offline
 interoperability with synthetic trust selections, not a live network pilot,
 independent review or authenticated distribution. Candidate artifact checks bind

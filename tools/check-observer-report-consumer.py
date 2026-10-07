@@ -35,7 +35,14 @@ VARIANTS = ("actual", "wrong_target", "wrong_pin")
 class Failure(ValueError):
     def __init__(self, stage, counts=None):
         self.stage, self.counts = stage, dict(counts or {})
+        self.outcomes = copy.deepcopy(getattr(counts, "events", []))
         super().__init__("offline observer consumer qualification failed")
+
+
+class Counts(dict):
+    def __init__(self, value):
+        super().__init__(value)
+        self.events = []
 
 
 def sha(raw):
@@ -147,8 +154,8 @@ class Fixture:
 class Runner:
     def __init__(self, binaries):
         self.binaries = binaries
-        self.counts = {"seed_attempted": 0, "seed_completed": 0, "observer_attempted": 0,
-                       "observer_completed": 0, "reader_attempted": 0, "reader_completed": 0}
+        self.counts = Counts({"seed_attempted": 0, "seed_completed": 0, "observer_attempted": 0,
+                             "observer_completed": 0, "reader_attempted": 0, "reader_completed": 0})
         self.environment = {key: value for key, value in os.environ.items()
                             if not key.startswith("ZENON_SPV_") and key.upper() not in {"HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY"}}
 
@@ -159,8 +166,12 @@ class Runner:
         try:
             result = subprocess.run(command, input=raw, capture_output=True, timeout=30, env=self.environment)
         except (OSError, subprocess.SubprocessError):
+            self.counts.events.append({"role": role, "completed": False, "actual_exit": None})
             raise Failure("child_completion", self.counts) from None
         self.counts[role + "_completed"] += 1
+        self.counts.events.append({"role": role, "completed": True, "actual_exit": result.returncode,
+                                  "stdout_sha256": sha(result.stdout), "stderr_sha256": sha(result.stderr),
+                                  "stdout_bytes": len(result.stdout), "stderr_bytes": len(result.stderr)})
         require(len(result.stdout) <= 4 << 20 and not result.stderr, "private_child_output", self.counts)
         return result
 
@@ -218,8 +229,12 @@ def qualification(binaries, revision):
                 result = runner.child("reader", ["--mode", mode, "--expected-targets", str(count), "--observer-exit-code", str(actual)], raw)
                 require(result.returncode == wanted, "reader_decision", runner.counts)
                 value = json.loads(result.stdout)
-                require(value["status"] == ("matched" if wanted == 0 else "not_matched") and
-                        value["checked_targets"] == (count if wanted == 0 else 0), "reader_summary", runner.counts)
+                require(type(value) is dict and set(value) == {"schema_version", "status", "category", "checked_targets"} and
+                        type(value["schema_version"]) is int and value["schema_version"] == 1 and
+                        value["status"] == ("matched" if wanted == 0 else "not_matched") and
+                        type(value["checked_targets"]) is int and value["checked_targets"] == (count if wanted == 0 else 0) and
+                        (value["category"] is None if wanted == 0 else value["category"] in {"process_failure", "invalid_report", "report_mismatch"}),
+                        "reader_summary", runner.counts)
                 rows.append({"id": case_id, "actual_observer_exit": actual, "expected_targets": count,
                              "reader_exit": result.returncode, "observer_report_sha256": sha(raw), "reader_summary_sha256": sha(result.stdout)})
 
@@ -260,7 +275,10 @@ def qualification(binaries, revision):
                             compare(case_id + "_wrong_mode", actual.stdout, MODES[1] if mode == MODES[0] else MODES[0], count, 0, 2)
                             compare(case_id + "_partial", actual.stdout[:-2], mode, count, 0, 2)
             request_counts = dict(fixture.requests)
-            require(request_counts == {"ledger.getMomentumsByHeight": 12, "ledger.getAccountBlocksByHeight": 6}, "fixture_request_counts", runner.counts)
+            # Six explicitly selected collections each fetch one fixed range.
+            # resolveEndHeight returns a provided height without another query;
+            # the three segment variants additionally fetch both accounts.
+            require(request_counts == {"ledger.getMomentumsByHeight": 6, "ledger.getAccountBlocksByHeight": 6}, "fixture_request_counts", runner.counts)
         finally:
             require(fixture.close(), "fixture_completion", runner.counts)
         require([row["id"] for row in outer] == selected_ids and len(rows) == 36, "complete_case_set", runner.counts)
@@ -271,7 +289,7 @@ def qualification(binaries, revision):
             "source_revision_is_caller_asserted": True, "checker_sha256": sha(Path(__file__).read_bytes()),
             "reader_sha256": reader_pin, "node_selector_sha256": sha(NODE_PATH.read_bytes()),
             "corpus_sha256": node.CORPUS_PINS, "executables": pins, "ordinary_observer_outcomes": outer,
-            "reader_cases": rows, "process_counts": runner.counts, "reader_decisions": 36,
+            "reader_cases": rows, "process_counts": runner.counts, "process_outcomes": runner.counts.events, "reader_decisions": 36,
             "matched": 4, "refused": 32, "controlled_loopback_request_counts": request_counts,
             "all_inputs_and_state_bytes_unchanged_after_seed": True, "all_private_staging_roots_empty": True,
             "fixture_handlers_and_server_joined": True, "external_rpc_calls": 0, "network_pilot": False,
@@ -296,7 +314,8 @@ def main():
     except (Failure, node.oracle.Invalid, OSError, ValueError, KeyError, TypeError) as error:
         failure = {"schema_version": 1, "status": "offline_observer_consumer_not_qualified",
                    "stage": error.stage if isinstance(error, Failure) else "input_or_shape",
-                   "process_counts": error.counts if isinstance(error, Failure) else {}, "network_pilot": False}
+                   "process_counts": error.counts if isinstance(error, Failure) else {},
+                   "process_outcomes": error.outcomes if isinstance(error, Failure) else [], "network_pilot": False}
         print(json.dumps(failure, sort_keys=True))
         return 2
     print(json.dumps(result, sort_keys=True))
