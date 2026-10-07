@@ -64,9 +64,21 @@ consumer invocations, completed consumer comparisons, skipped cases and cases
 excluded by an explicit selection. The default run selects all 738 and skips
 none. A timeout is an attempted invocation without a completed comparison; a
 wrong result is a completed comparison that fails the run. No success report is
-emitted for a partial run. Failures expose only a synthetic case identifier,
-a fixed failure stage and counters; child output and operational paths remain
-private. Replay the exact selected case from the same source and executable:
+emitted for a partial run. Failures expose a synthetic case identifier,
+a fixed failure stage, counters and process byte records. Each completed child
+records its actual exit, stdout/stderr byte counts and SHA-256 hashes before
+decision checks or input rereads. Incomplete children have no asserted completed
+exit or output hashes; partial timeout output remains omitted. Child output,
+exception text, arguments and operational paths remain private.
+
+Later input, executable or oracle-read failures retain those records. Temporary
+cleanup alone refuses the run; cleanup after a primary refusal records its
+failure separately without replacing that refusal. Cancellation and unexpected
+programming errors retain their original exception. A completed comparison
+counter records completion, not a matching decision. Successful full-corpus
+reports include 738 completed process records; a one-case replay includes one.
+Twenty-eight Python controls cover the original corpus and these failure
+boundaries. Replay the exact selected case from the same source and executable:
 
 ```sh
 python -I -B tools/check-query-consumer.py --consumer ./consume-query-report \

@@ -7,6 +7,7 @@ targets nor invokes the verifier, RPC, state persistence or a wallet.
 """
 
 import argparse
+import contextlib
 import copy
 import hashlib
 import json
@@ -715,12 +716,90 @@ def cases():
 
 
 class ComparisonFailure(Invalid):
-    """Only synthetic case identifiers and fixed counters may leave the runner."""
+    """Keep fixed case identifiers, counters and hashes; omit private bytes."""
 
-    def __init__(self, case_id, stage, counts):
+    def __init__(self, case_id, stage, counts, outcomes=()):
         self.details = {"schema_version": 1, "status": "comparison_failed", "case_id": case_id,
-                        "stage": stage, "comparison_counts": dict(counts)}
+                        "stage": stage, "comparison_counts": dict(counts),
+                        "process_outcomes": copy.deepcopy(list(outcomes)), "cleanup_failures": []}
         super().__init__("synthetic consumer comparison failed")
+
+
+class ComparisonRunner:
+    def __init__(self, consumer, selected, available):
+        self.consumer = consumer
+        self.counts = {"selected": selected, "reference_checked": 0, "consumer_attempted": 0,
+                       "consumer_compared": 0, "skipped": 0, "not_selected": available - selected}
+        self.rows, self.process_outcomes = [], []
+
+    def require(self, case_id, stage, condition):
+        if not condition:
+            raise ComparisonFailure(case_id, stage, self.counts, self.process_outcomes)
+
+    @contextlib.contextmanager
+    def boundary(self, case_id):
+        try:
+            yield
+        except ComparisonFailure:
+            raise
+        except (OSError, ValueError, KeyError, TypeError, RecursionError):
+            raise ComparisonFailure(case_id, "input_or_shape", self.counts, self.process_outcomes) from None
+
+    @contextlib.contextmanager
+    def directory(self):
+        with self.boundary("setup"):
+            temporary = tempfile.TemporaryDirectory(prefix="consumer-conformance-")
+        failure, interrupted = None, False
+        try:
+            with self.boundary("complete"):
+                yield Path(temporary.name)
+        except ComparisonFailure as error:
+            failure = error
+            raise
+        except BaseException:
+            interrupted = True
+            raise
+        finally:
+            try:
+                temporary.cleanup()
+            except (OSError, ValueError, KeyError, TypeError, RecursionError):
+                if failure is not None:
+                    failure.details["cleanup_failures"].append("temporary_cleanup")
+                elif not interrupted:
+                    raise ComparisonFailure("complete", "temporary_cleanup", self.counts, self.process_outcomes) from None
+
+    def child(self, case_id, arguments):
+        self.counts["consumer_attempted"] += 1
+        try:
+            result = subprocess.run([str(self.consumer), *arguments], capture_output=True, timeout=10, check=False)
+        except (OSError, subprocess.SubprocessError):
+            self.process_outcomes.append({"case_id": case_id, "role": "consumer", "completed": False, "actual_exit": None})
+            raise ComparisonFailure(case_id, "child_run", self.counts, self.process_outcomes) from None
+        self.counts["consumer_compared"] += 1
+        # Preserve real completion before a mismatch, input reread or cleanup can fail.
+        self.process_outcomes.append({"case_id": case_id, "role": "consumer", "completed": True,
+                                      "actual_exit": result.returncode,
+                                      "stdout_sha256": hashlib.sha256(result.stdout).hexdigest(),
+                                      "stderr_sha256": hashlib.sha256(result.stderr).hexdigest(),
+                                      "stdout_bytes": len(result.stdout), "stderr_bytes": len(result.stderr)})
+        return result
+
+    def compare_case(self, case, paths):
+        with self.boundary(case["id"]):
+            wanted = case["wanted"]
+            self.counts["reference_checked"] += 1
+            self.require(case["id"], "reference_decision", consume(case["report"], case["expectations"], case["process_exit"]) == wanted)
+            for path, key in zip(paths, ("report", "expectations")):
+                path.write_bytes(case[key])
+                path.chmod(0o600)
+            completed = self.child(case["id"], ["--report", str(paths[0]), "--expectations", str(paths[1]),
+                                                "--verifier-exit-code", str(case["process_exit"])])
+            self.require(case["id"], "compiled_decision", (completed.returncode, completed.stdout) == wanted and not completed.stderr)
+            self.require(case["id"], "input_changed", all(path.read_bytes() == case[key] for path, key in zip(paths, ("report", "expectations"))))
+            self.rows.append({"id": case["id"], "exit_code": wanted[0],
+                              "report_sha256": hashlib.sha256(case["report"]).hexdigest(),
+                              "expectations_sha256": hashlib.sha256(case["expectations"]).hexdigest(),
+                              "process_exit": case["process_exit"], "summary_sha256": hashlib.sha256(wanted[1]).hexdigest()})
 
 
 def compare(consumer, source_revision, case_id=None):
@@ -728,50 +807,30 @@ def compare(consumer, source_revision, case_id=None):
     corpus = available if case_id is None else [case for case in available if case["id"] == case_id]
     if not corpus or len({case["id"] for case in available}) != len(available):
         raise Invalid("case selection")
-    counts = {"selected": len(corpus), "reference_checked": 0, "consumer_attempted": 0,
-              "consumer_compared": 0, "skipped": 0, "not_selected": len(available) - len(corpus)}
     executable = consumer.read_bytes()
     executable_digest = hashlib.sha256(executable).hexdigest()
-    outcomes = []
-    with tempfile.TemporaryDirectory(prefix="consumer-conformance-") as directory:
-        directory = Path(directory)
+    runner = ComparisonRunner(consumer, len(corpus), len(available))
+    with runner.boundary("complete"):
+        return compare_selected(runner, corpus, executable, executable_digest, source_revision, case_id)
+
+
+def compare_selected(runner, corpus, executable, executable_digest, source_revision, case_id):
+    with runner.directory() as directory:
         directory.chmod(0o700)
         paths = [directory / "report.json", directory / "expectations.json"]
         for case in corpus:
-            wanted = case["wanted"]
-            counts["reference_checked"] += 1
-            if consume(case["report"], case["expectations"], case["process_exit"]) != wanted:
-                raise ComparisonFailure(case["id"], "reference_decision", counts)
-            for path, key in zip(paths, ("report", "expectations")):
-                path.write_bytes(case[key])
-                path.chmod(0o600)
-            counts["consumer_attempted"] += 1
-            try:
-                completed = subprocess.run(
-                    [str(consumer), "--report", str(paths[0]), "--expectations", str(paths[1]),
-                     "--verifier-exit-code", str(case["process_exit"])],
-                    capture_output=True, timeout=10, check=False,
-                )
-            except (OSError, subprocess.SubprocessError):
-                raise ComparisonFailure(case["id"], "child_run", counts) from None
-            counts["consumer_compared"] += 1
-            if (completed.returncode, completed.stdout) != wanted or completed.stderr:
-                raise ComparisonFailure(case["id"], "compiled_decision", counts)
-            if any(path.read_bytes() != case[key] for path, key in zip(paths, ("report", "expectations"))):
-                raise ComparisonFailure(case["id"], "input_changed", counts)
-            outcomes.append({"id": case["id"], "exit_code": wanted[0],
-                             "report_sha256": hashlib.sha256(case["report"]).hexdigest(),
-                             "expectations_sha256": hashlib.sha256(case["expectations"]).hexdigest(),
-                             "process_exit": case["process_exit"],
-                             "summary_sha256": hashlib.sha256(wanted[1]).hexdigest()})
-    if hashlib.sha256(consumer.read_bytes()).hexdigest() != executable_digest:
-        raise ComparisonFailure(case["id"], "executable_changed", counts)
+            runner.compare_case(case, paths)
+    runner.require("complete", "executable_changed", hashlib.sha256(runner.consumer.read_bytes()).hexdigest() == executable_digest)
+    counts = runner.counts
+    runner.require("complete", "comparison_coverage", counts["reference_checked"] == counts["consumer_attempted"] ==
+                   counts["consumer_compared"] == counts["selected"] == len(runner.rows) == len(runner.process_outcomes) and
+                   counts["skipped"] == 0 and all(row["completed"] for row in runner.process_outcomes))
     return {"schema_version": 1, "source_revision": source_revision,
             "source_revision_is_caller_asserted": True,
             "consumer_sha256": executable_digest, "consumer_bytes": len(executable),
             "consumer_bytes_unchanged": True,
-            "oracle_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), "cases": outcomes,
-            "case_selection": case_id, "comparison_counts": counts,
+            "oracle_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), "cases": runner.rows,
+            "case_selection": case_id, "comparison_counts": counts, "process_outcomes": runner.process_outcomes,
             "available_pinned_cases": len(pinned_cases()),
             "generated_corpus": {"version": 1, "identity_derivation": "sha256-v1", "seeds": list(GENERATED_SEEDS),
                                  "programs": 4 * len(GENERATED_SEEDS), "cases_per_program": len(GENERATED_VARIANTS),
