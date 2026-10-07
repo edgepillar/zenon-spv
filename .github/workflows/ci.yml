@@ -97,6 +97,8 @@ jobs:
         run: go test -run '^$' -bench '^BenchmarkProofBundleExtensions$' -benchtime=3x -benchmem ./internal/proof
       - name: Proof bundle field allocation observations
         run: go test -run '^$' -bench '^BenchmarkProofBundleFieldSpans$' -benchtime=1x -count=3 -benchmem ./internal/proof
+      - name: Collector staging allocation observations
+        run: go test -run '^$' -bench '^BenchmarkCollectorStaging$' -benchtime=1x -count=3 -benchmem ./tools/observe-block
       - name: RPC data-hash allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCDataHashDecode$' -benchtime=3x -benchmem ./internal/fetch
       - name: Address-byte checker controls
@@ -239,6 +241,8 @@ jobs:
         run: go test -run '^$' -bench '^BenchmarkProofBundleExtensions$' -benchtime=3x -benchmem ./internal/proof
       - name: Proof bundle field allocation observations
         run: go test -run '^$' -bench '^BenchmarkProofBundleFieldSpans$' -benchtime=1x -count=3 -benchmem ./internal/proof
+      - name: Collector staging allocation observations
+        run: go test -run '^$' -bench '^BenchmarkCollectorStaging$' -benchtime=1x -count=3 -benchmem ./tools/observe-block
       - name: RPC data-hash allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCDataHashDecode$' -benchtime=3x -benchmem ./internal/fetch
       - name: Address-byte checker controls
