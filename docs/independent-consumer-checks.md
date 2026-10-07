@@ -143,9 +143,27 @@ caller asserted. Native CI runs this matrix against the ordinary binaries
 already exported and checked by the offline pilot; qualification must also
 bind the logged hashes to the actual exported artifact payloads.
 
-Ten Python controls pin selected context/schedule bytes, preselection, delayed
+The successful node workflow also records all 90 actual child completions:
+30 verifier and 60 consumer processes. Each record contains only its fixed
+case identifier, role, actual exit status, stdout/stderr byte counts and SHA-256
+hashes. Completion is recorded before output checks, JSON parsing or file
+rereads. A timeout or launch failure records an attempted, incomplete process
+with no asserted exit status or completed output hashes.
+
+After execution begins, malformed diagnostics and input, state, configuration
+or final pin-read failures emit a structured refusal with the accumulated
+counts and process records. A temporary-directory cleanup failure preserves
+the primary refusal and records cleanup separately. Cleanup alone also refuses;
+cancellation and unexpected programming errors retain their original exception.
+Completed comparison counters do not assert a matching decision: a wrong
+consumer result still fails without adding a successful case. Partial runs
+never emit a successful qualification report. Raw child output, exception text,
+arguments and temporary paths remain omitted from these records.
+
+Twenty-two Python controls pin selected context/schedule bytes, preselection, delayed
 target mapping, corpus corruption, actual process status, input mutation,
-completed mismatches and incomplete child runs. Every child has a 15-second
+completed mismatches, incomplete child runs and evidence preservation across
+malformed output, later I/O failures and cleanup. Every child has a 15-second
 deadline and completed stdout must fit the consumer's 4 MiB report bound.
 This is a trusted-binary conformance runner, not a malicious executable sandbox
 or a claim that child output capture has a hard memory limit. It uses no RPC

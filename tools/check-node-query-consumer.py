@@ -8,6 +8,7 @@ before either trusted executable runs. No RPC, wallet or deployment is used.
 
 import argparse
 import base64
+import contextlib
 import copy
 import hashlib
 import importlib.util
@@ -150,9 +151,10 @@ def selected_case_ids():
 
 
 class WorkflowFailure(oracle.Invalid):
-    def __init__(self, case_id, stage, counts):
+    def __init__(self, case_id, stage, counts, outcomes=()):
         self.details = {"node_consumer_schema_version": 1, "status": "node_consumer_comparison_failed",
-                        "case_id": case_id, "stage": stage, "comparison_counts": dict(counts)}
+                        "case_id": case_id, "stage": stage, "comparison_counts": dict(counts),
+                        "process_outcomes": copy.deepcopy(list(outcomes)), "cleanup_failures": []}
         super().__init__("offline node consumer comparison failed")
 
 
@@ -163,10 +165,49 @@ class Runner:
                        "verifier_attempted": 0, "verifier_completed": 0,
                        "consumer_attempted": 0, "consumer_compared": 0, "skipped": 0}
         self.rows = []
+        self.process_outcomes = []
 
     def require(self, case_id, stage, condition):
         if not condition:
-            raise WorkflowFailure(case_id, stage, self.counts)
+            raise WorkflowFailure(case_id, stage, self.counts, self.process_outcomes)
+
+    @contextlib.contextmanager
+    def boundary(self, case_id):
+        try:
+            yield
+        except WorkflowFailure:
+            raise
+        except (oracle.Invalid, OSError, ValueError, KeyError, TypeError, RecursionError):
+            raise WorkflowFailure(case_id, "input_or_shape", self.counts, self.process_outcomes) from None
+
+    @contextlib.contextmanager
+    def directory(self):
+        with self.boundary("setup"):
+            temporary = tempfile.TemporaryDirectory(prefix="node-consumer-conformance-")
+        failure, interrupted = None, False
+        try:
+            with self.boundary("complete"):
+                yield Path(temporary.name)
+        except WorkflowFailure as error:
+            failure = error
+            raise
+        except BaseException:
+            interrupted = True
+            raise
+        finally:
+            try:
+                temporary.cleanup()
+            except (OSError, ValueError, KeyError, TypeError, RecursionError):
+                if failure is not None:
+                    failure.details["cleanup_failures"].append("temporary_cleanup")
+                elif not interrupted:
+                    raise WorkflowFailure("complete", "temporary_cleanup", self.counts, self.process_outcomes) from None
+
+    def document(self, case_id, result, stage):
+        try:
+            return json.loads(result.stdout)
+        except (ValueError, TypeError, RecursionError):
+            raise WorkflowFailure(case_id, stage, self.counts, self.process_outcomes) from None
 
     def child(self, case_id, kind, arguments):
         self.counts[kind + "_attempted"] += 1
@@ -174,12 +215,23 @@ class Runner:
             result = subprocess.run([str(self.verifier if kind == "verifier" else self.consumer), *arguments],
                                     capture_output=True, timeout=15, check=False)
         except (OSError, subprocess.SubprocessError):
-            raise WorkflowFailure(case_id, "child_run", self.counts) from None
+            self.process_outcomes.append({"case_id": case_id, "role": kind, "completed": False, "actual_exit": None})
+            raise WorkflowFailure(case_id, "child_run", self.counts, self.process_outcomes) from None
         self.counts[kind + ("_completed" if kind == "verifier" else "_compared")] += 1
+        # Record real completion before output validation, parsing or input rereads.
+        # Byte hashes and sizes retain evidence without copying private diagnostics.
+        self.process_outcomes.append({"case_id": case_id, "role": kind, "completed": True,
+                                      "actual_exit": result.returncode, "stdout_sha256": sha(result.stdout),
+                                      "stderr_sha256": sha(result.stderr), "stdout_bytes": len(result.stdout),
+                                      "stderr_bytes": len(result.stderr)})
         self.require(case_id, "child_output", len(result.stdout) <= oracle.REPORT_BYTES and not result.stderr)
         return result
 
     def compare(self, case_id, raw, expected, process_exit, category, directory):
+        with self.boundary(case_id):
+            self._compare(case_id, raw, expected, process_exit, category, directory)
+
+    def _compare(self, case_id, raw, expected, process_exit, category, directory):
         wanted = oracle.summary(category, 0 if category else len(expected["targets"]), 2 if category else 0)
         expected_raw = oracle.encoded(expected)
         self.counts["reference_checked"] += 1
@@ -198,6 +250,10 @@ class Runner:
                           "summary_sha256": sha(result.stdout)})
 
     def program(self, selected, directory):
+        with self.boundary(selected["id"]):
+            self._program(selected, directory)
+
+    def _program(self, selected, directory):
         name = selected["id"]
         directory.mkdir(mode=0o700)
         inputs = {}
@@ -232,7 +288,7 @@ class Runner:
             path = write("seed-%d.json" % end, seed)
             result = self.child(case_id, "verifier", ["verify-headers", *config, "--expect-context", pin, path])
             self.require(case_id, "seed_completion", result.returncode == 0)
-            report = json.loads(result.stdout)
+            report = self.document(case_id, result, "seed_diagnostic")
             self.require(case_id, "seed_diagnostic", report["outcome"] == "ACCEPT" and report["exit_code"] == 0)
 
         def query_result(case_id, command, height, code=0, wrong_pin=False):
@@ -241,7 +297,7 @@ class Runner:
             result = self.child(case_id, "verifier", [command, *config, "--retained-only", "--expect-context", value, query])
             unchanged(case_id, state_raw)
             self.require(case_id, "verifier_completion", result.returncode == code)
-            report = json.loads(result.stdout)
+            report = self.document(case_id, result, "query_diagnostic")
             if wrong_pin:
                 self.require(case_id, "pin_diagnostic", report["error"]["stage"] == "context_pin" and report["exit_code"] == 70)
                 return result
@@ -319,18 +375,27 @@ def compare(verifier, consumer, source_revision):
     input_paths = [ROOT / "internal/testdata/conformance" / name for name in CORPUS_PINS]
     binaries = {key: path.read_bytes() for key, path in (("verifier", verifier), ("consumer", consumer))}
     runner = Runner(verifier, consumer)
-    with tempfile.TemporaryDirectory(prefix="node-consumer-conformance-") as directory:
-        directory = Path(directory)
+    with runner.boundary("complete"):
+        return compare_selected(runner, selected, input_paths, binaries, source_revision)
+
+
+def compare_selected(runner, selected, input_paths, binaries, source_revision):
+    with runner.directory() as directory:
         directory.chmod(0o700)
         for program in selected:
             runner.program(program, directory / program["id"])
     runner.require("complete", "case_coverage", sorted(r["id"] for r in runner.rows) == sorted(selected_case_ids()))
     runner.require("complete", "fixture_changed", all(sha(p.read_bytes()) == CORPUS_PINS[p.name] for p in input_paths))
-    runner.require("complete", "executable_changed", verifier.read_bytes() == binaries["verifier"] and consumer.read_bytes() == binaries["consumer"])
+    runner.require("complete", "executable_changed", runner.verifier.read_bytes() == binaries["verifier"] and
+                   runner.consumer.read_bytes() == binaries["consumer"])
     counts = runner.counts
     runner.require("complete", "comparison_coverage", counts["reference_checked"] == counts["consumer_attempted"] ==
                    counts["consumer_compared"] == counts["selected"] == 60 and
                    counts["verifier_attempted"] == counts["verifier_completed"] == 30 and counts["skipped"] == 0)
+    runner.require("complete", "process_coverage", len(runner.process_outcomes) == 90 and
+                   all(row["completed"] for row in runner.process_outcomes) and
+                   sum(row["role"] == "verifier" for row in runner.process_outcomes) == 30 and
+                   sum(row["role"] == "consumer" for row in runner.process_outcomes) == 60)
     return {"node_consumer_schema_version": 1, "status": "node_consumer_comparison_passed",
             "source_revision": source_revision, "source_revision_is_caller_asserted": True,
             "executables": {key: {"sha256": sha(raw), "bytes": len(raw)} for key, raw in binaries.items()},
@@ -339,7 +404,7 @@ def compare(verifier, consumer, source_revision):
             "selected_programs": [{"id": p["id"], "context_fingerprint": p["context"]["fingerprint"],
                                    "context_schema_version": p["context"]["schema_version"],
                                    "targets_per_command": len(p["bundle"]["commitments"])} for p in selected],
-            "cases": runner.rows, "comparison_counts": counts,
+            "cases": runner.rows, "comparison_counts": counts, "process_outcomes": runner.process_outcomes,
             "matched": sum(row["exit_code"] == 0 for row in runner.rows),
             "refused": sum(row["exit_code"] != 0 for row in runner.rows),
             "readonly_query_state_bytes_unchanged": True, "selected_input_and_executable_bytes_unchanged": True,
