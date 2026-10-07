@@ -1,0 +1,4736 @@
+{
+  "cases": [
+    {
+      "delegated_calls": [
+        {
+          "height": 0,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/zero-height",
+        "method_case": {
+          "name": "GetProof/zero-height",
+          "method": "GetProof",
+          "height": 0,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[0,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32000,\"message\":\"height parameter must be strictly greater than zero\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/lookup-error",
+        "method_case": {
+          "name": "GetProof/lookup-error",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "lookup",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32101,\"message\":\"synthetic lookup failure\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/missing-momentum",
+        "method_case": {
+          "name": "GetProof/missing-momentum",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": true,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": null,
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32000,\"message\":\"no momentum at height 42\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/version-zero",
+        "method_case": {
+          "name": "GetProof/version-zero",
+          "method": "GetProof",
+          "height": 42,
+          "version": 0,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "767425528baa0eb6bc7a105bb299035fb93ef8ecbb9ca51a8d240ab72d92851a",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 0
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32000,\"message\":\"state root not available before its activation height\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/version-one",
+        "method_case": {
+          "name": "GetProof/version-one",
+          "method": "GetProof",
+          "height": 42,
+          "version": 1,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "dd54cdd637e064376c3ba9171097e09890dedc785df8ac90adb340a328bd6cd1",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 1
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32000,\"message\":\"state root not available before its activation height\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/version-two",
+        "method_case": {
+          "name": "GetProof/version-two",
+          "method": "GetProof",
+          "height": 42,
+          "version": 2,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "0c1119ffbd99e244840d3be143cd751174ff34abada1b1d82c1c8af8393bd888",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 2
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32000,\"message\":\"state root not available before its activation height\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/active-three",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/version-four",
+        "method_case": {
+          "name": "GetProof/version-four",
+          "method": "GetProof",
+          "height": 42,
+          "version": 4,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "333b0a64e4c69953353ed50245121786b602c1c78425f3d74f8f98ae860afd5a",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 4
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "333b0a64e4c69953353ed50245121786b602c1c78425f3d74f8f98ae860afd5a",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "333b0a64e4c69953353ed50245121786b602c1c78425f3d74f8f98ae860afd5a",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/version-max",
+        "method_case": {
+          "name": "GetProof/version-max",
+          "method": "GetProof",
+          "height": 42,
+          "version": 18446744073709551615,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "d61237957ac5b0ea2eb2bdd44706e2a37ee215ef168ae10683189d6c0601c9cf",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 18446744073709551615
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "d61237957ac5b0ea2eb2bdd44706e2a37ee215ef168ae10683189d6c0601c9cf",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "d61237957ac5b0ea2eb2bdd44706e2a37ee215ef168ae10683189d6c0601c9cf",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/store-height-diff",
+        "method_case": {
+          "name": "GetProof/store-height-diff",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 43,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "3967a419983e2192853f757a86a05a51f3b0ae7a1eb3652615cb15c2289e1140",
+        "height": 43,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "3967a419983e2192853f757a86a05a51f3b0ae7a1eb3652615cb15c2289e1140",
+            "height": 43
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "3967a419983e2192853f757a86a05a51f3b0ae7a1eb3652615cb15c2289e1140",
+            "height": 43
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/store-hash-diff",
+        "method_case": {
+          "name": "GetProof/store-hash-diff",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": true,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/not-ready",
+        "method_case": {
+          "name": "GetProof/not-ready",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "not-ready",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32000,\"message\":\"state tree: not yet built to the chain frontier\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/not-retained",
+        "method_case": {
+          "name": "GetProof/not-retained",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "not-retained",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32000,\"message\":\"synthetic: no such version\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/root-error",
+        "method_case": {
+          "name": "GetProof/root-error",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "root",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32103,\"message\":\"synthetic root failure\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/coherent-root-substitution",
+        "method_case": {
+          "name": "GetProof/coherent-root-substitution",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "coherent-substitution"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praC7Ewd6mX0HmeSE2PY8BH7RGhyHziQ+MEGNNBDtUHWhQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC\",\"root\":\"d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 0,
+          "method": "GetStateRoot"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetStateRoot/zero-height",
+        "method_case": {
+          "name": "GetStateRoot/zero-height",
+          "method": "GetStateRoot",
+          "height": 0,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getStateRoot\",\"params\":[0]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32000,\"message\":\"height parameter must be strictly greater than zero\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "method": "GetStateRoot"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetStateRoot/lookup-error",
+        "method_case": {
+          "name": "GetStateRoot/lookup-error",
+          "method": "GetStateRoot",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "lookup",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getStateRoot\",\"params\":[42]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32101,\"message\":\"synthetic lookup failure\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "method": "GetStateRoot"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetStateRoot/missing-momentum",
+        "method_case": {
+          "name": "GetStateRoot/missing-momentum",
+          "method": "GetStateRoot",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": true,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getStateRoot\",\"params\":[42]}"
+      },
+      "momentum": null,
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32000,\"message\":\"no momentum at height 42\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "method": "GetStateRoot"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetStateRoot/version-zero",
+        "method_case": {
+          "name": "GetStateRoot/version-zero",
+          "method": "GetStateRoot",
+          "height": 42,
+          "version": 0,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getStateRoot\",\"params\":[42]}"
+      },
+      "momentum": {
+        "hash": "767425528baa0eb6bc7a105bb299035fb93ef8ecbb9ca51a8d240ab72d92851a",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 0
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32000,\"message\":\"state root not available before its activation height\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "method": "GetStateRoot"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetStateRoot/version-one",
+        "method_case": {
+          "name": "GetStateRoot/version-one",
+          "method": "GetStateRoot",
+          "height": 42,
+          "version": 1,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getStateRoot\",\"params\":[42]}"
+      },
+      "momentum": {
+        "hash": "dd54cdd637e064376c3ba9171097e09890dedc785df8ac90adb340a328bd6cd1",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 1
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32000,\"message\":\"state root not available before its activation height\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "method": "GetStateRoot"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetStateRoot/version-two",
+        "method_case": {
+          "name": "GetStateRoot/version-two",
+          "method": "GetStateRoot",
+          "height": 42,
+          "version": 2,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getStateRoot\",\"params\":[42]}"
+      },
+      "momentum": {
+        "hash": "0c1119ffbd99e244840d3be143cd751174ff34abada1b1d82c1c8af8393bd888",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 2
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32000,\"message\":\"state root not available before its activation height\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "method": "GetStateRoot"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetStateRoot/active-three",
+        "method_case": {
+          "name": "GetStateRoot/active-three",
+          "method": "GetStateRoot",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getStateRoot\",\"params\":[42]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "method": "GetStateRoot"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetStateRoot/version-four",
+        "method_case": {
+          "name": "GetStateRoot/version-four",
+          "method": "GetStateRoot",
+          "height": 42,
+          "version": 4,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getStateRoot\",\"params\":[42]}"
+      },
+      "momentum": {
+        "hash": "333b0a64e4c69953353ed50245121786b602c1c78425f3d74f8f98ae860afd5a",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 4
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "333b0a64e4c69953353ed50245121786b602c1c78425f3d74f8f98ae860afd5a",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "method": "GetStateRoot"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetStateRoot/version-max",
+        "method_case": {
+          "name": "GetStateRoot/version-max",
+          "method": "GetStateRoot",
+          "height": 42,
+          "version": 18446744073709551615,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getStateRoot\",\"params\":[42]}"
+      },
+      "momentum": {
+        "hash": "d61237957ac5b0ea2eb2bdd44706e2a37ee215ef168ae10683189d6c0601c9cf",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 18446744073709551615
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "d61237957ac5b0ea2eb2bdd44706e2a37ee215ef168ae10683189d6c0601c9cf",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "method": "GetStateRoot"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetStateRoot/store-height-diff",
+        "method_case": {
+          "name": "GetStateRoot/store-height-diff",
+          "method": "GetStateRoot",
+          "height": 42,
+          "version": 3,
+          "store_height": 43,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getStateRoot\",\"params\":[42]}"
+      },
+      "momentum": {
+        "hash": "3967a419983e2192853f757a86a05a51f3b0ae7a1eb3652615cb15c2289e1140",
+        "height": 43,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "3967a419983e2192853f757a86a05a51f3b0ae7a1eb3652615cb15c2289e1140",
+            "height": 43
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "method": "GetStateRoot"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetStateRoot/store-hash-diff",
+        "method_case": {
+          "name": "GetStateRoot/store-hash-diff",
+          "method": "GetStateRoot",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": true,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getStateRoot\",\"params\":[42]}"
+      },
+      "momentum": {
+        "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "method": "GetStateRoot"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetStateRoot/not-ready",
+        "method_case": {
+          "name": "GetStateRoot/not-ready",
+          "method": "GetStateRoot",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "not-ready",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getStateRoot\",\"params\":[42]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32000,\"message\":\"state tree: not yet built to the chain frontier\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "method": "GetStateRoot"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetStateRoot/not-retained",
+        "method_case": {
+          "name": "GetStateRoot/not-retained",
+          "method": "GetStateRoot",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "not-retained",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getStateRoot\",\"params\":[42]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32000,\"message\":\"synthetic: no such version\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "method": "GetStateRoot"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetStateRoot/root-error",
+        "method_case": {
+          "name": "GetStateRoot/root-error",
+          "method": "GetStateRoot",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "root",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getStateRoot\",\"params\":[42]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32103,\"message\":\"synthetic root failure\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "method": "GetStateRoot"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetStateRoot/coherent-root-substitution",
+        "method_case": {
+          "name": "GetStateRoot/coherent-root-substitution",
+          "method": "GetStateRoot",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "coherent-substitution"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getStateRoot\",\"params\":[42]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":\"d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e\"}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/present-one",
+        "method_case": {
+          "name": "GetProof/present-one",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "positive-one",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "08eec510c475450b07bcca16193c7b317feae06830d9a28f5fa56a07949cb310",
+        "height": 42,
+        "state_root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0prae7LdKaoNSm1aVnC7g+Ge2mtcSTBnQ6qkTvV3MYegPIgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB\",\"root\":\"bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "08eec510c475450b07bcca16193c7b317feae06830d9a28f5fa56a07949cb310",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "08eec510c475450b07bcca16193c7b317feae06830d9a28f5fa56a07949cb310",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110344444444444444444444",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/missing-token",
+        "method_case": {
+          "name": "GetProof/missing-token",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "missing-token",
+          "binding_name": "missing-token",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERA0REREREREREREQ=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":null,\"proof\":\"AInGIzDUyTvUZRRwSlAnc706+Mi0Xxbu6jy+C1eY4G6rAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAB0dGBmN+8vuCH5YdpKykaR7d2JbURHkk6tOZPOVPnUTQ=\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110344444444444444444444",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/present-empty",
+        "method_case": {
+          "name": "GetProof/present-empty",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "present-empty-core-only",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "e7882679704be9a7a5e0fc6929b859cf36861ab587634147a94494494a8be8de",
+        "height": 42,
+        "state_root": "157260d19525f385c7cbf511307368d1252232558ba9610b2bfc996cfc8fc8ea",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0pra5HCIgVDXMfbQcDivBxSD53eAxyb4hI8YmA4gskf3jfAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==\",\"root\":\"157260d19525f385c7cbf511307368d1252232558ba9610b2bfc996cfc8fc8ea\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "e7882679704be9a7a5e0fc6929b859cf36861ab587634147a94494494a8be8de",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "e7882679704be9a7a5e0fc6929b859cf36861ab587634147a94494494a8be8de",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": null,
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/nil-key",
+        "method_case": {
+          "name": "GetProof/nil-key",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "nil",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,null]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":null,\"proof\":\"AKf/xvi/HtdmUcFHVqBh1mL1gP9N5DtJ+oLYCkuA+ENKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAB0dGBmN+8vuCH5YdpKykaR7d2JbURHkk6tOZPOVPnUTQ=\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": null,
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/empty-key",
+        "method_case": {
+          "name": "GetProof/empty-key",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "empty",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":null,\"proof\":\"AKf/xvi/HtdmUcFHVqBh1mL1gP9N5DtJ+oLYCkuA+ENKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAB0dGBmN+8vuCH5YdpKykaR7d2JbURHkk6tOZPOVPnUTQ=\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "7777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/oversized-key",
+        "method_case": {
+          "name": "GetProof/oversized-key",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "oversized",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3c=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":null,\"proof\":\"AKLT1WRsNBMPRsFAqb/XkDU1X2z0AXDxh4o+khI4wCDPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAB0dGBmN+8vuCH5YdpKykaR7d2JbURHkk6tOZPOVPnUTQ=\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "7777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/nil-value-present-proof",
+        "method_case": {
+          "name": "GetProof/nil-value-present-proof",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "nil-value"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":null,\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/oversized-value",
+        "method_case": {
+          "name": "GetProof/oversized-value",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "oversized-value"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3c=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0pravTDUu1iaILrBdQlNuIFVC3AuXVvjo0UuglsVzrof170AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAXd3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3\",\"root\":\"03206369c63f10ad7975c5401092ca82074bbf0a86a1c65c92a6b15ce5e35609\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/proof-error-before-root-error",
+        "method_case": {
+          "name": "GetProof/proof-error-before-root-error",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "proof",
+          "root_error": "root",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32102,\"message\":\"synthetic proof failure\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "method/GetProof/root-substitution",
+        "method_case": {
+          "name": "GetProof/root-substitution",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "root-substitution"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"4444444444444444444444444444444444444444444444444444444444444444\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/string-id",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":\"selected-7\",\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":\"selected-7\",\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/null-id",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":null,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":null,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/boolean-id",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":true,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":true,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/fraction-id",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7.0,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7.0,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/exponent-id",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7e0,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7e0,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/wide-id",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":9007199254740993,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":9007199254740993,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/object-id",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":{},\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32600,\"message\":\"invalid request\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/array-id",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":[],\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32600,\"message\":\"invalid request\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/notification",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/unknown-method",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.unknown\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32601,\"message\":\"the method ledger.unknown does not exist/is not available\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/unknown-namespace",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"other.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32601,\"message\":\"the method other.getProof does not exist/is not available\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/missing-version",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/wrong-version",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"1.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/unknown-field",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"unselected\":true,\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/duplicate-id",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":8,\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/duplicate-params",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[0,null],\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/trailing-object",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]} {}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/trailing-garbage",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]} trailing"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/malformed-json",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32700,\"message\":\"parse error\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/null-request",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "null"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32600,\"message\":\"invalid request\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/empty-batch",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "[]"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32600,\"message\":\"empty batch\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/single-call-batch",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "[{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}]"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "[{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}]\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/empty-body",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": ""
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/missing-params",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\"}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32602,\"message\":\"missing value for required argument 0\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/null-params",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":null}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32602,\"message\":\"missing value for required argument 0\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/named-params",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":{\"height\":42,\"key\":\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"}}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32602,\"message\":\"non-array args\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/missing-key",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32602,\"message\":\"missing value for required argument 1\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/excess-params",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\",0]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32602,\"message\":\"too many arguments, want at most 2\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 0,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/null-height",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[null,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32000,\"message\":\"height parameter must be strictly greater than zero\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/negative-height",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[-1,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32602,\"message\":\"invalid argument 0: json: cannot unmarshal number -1 into Go value of type uint64\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/fraction-height",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42.0,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32602,\"message\":\"invalid argument 0: json: cannot unmarshal number 42.0 into Go value of type uint64\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/exponent-height",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[4.2e1,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32602,\"message\":\"invalid argument 0: json: cannot unmarshal number 4.2e1 into Go value of type uint64\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/text-height",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[\"42\",\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32602,\"message\":\"invalid argument 0: json: cannot unmarshal string into Go value of type uint64\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/boolean-height",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[true,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32602,\"message\":\"invalid argument 0: json: cannot unmarshal bool into Go value of type uint64\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 18446744073709551615,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/max-height",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[18446744073709551615,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 18446744073709551615,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/overflow-height",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[18446744073709551616,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32602,\"message\":\"invalid argument 0: json: cannot unmarshal number 18446744073709551616 into Go value of type uint64\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": null,
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/null-key",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,null]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": null,
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/array-key",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,[3,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,3,34,34,34,34,34,34,34,34,34,34]]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/bad-base64",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"!\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32602,\"message\":\"invalid argument 1: illegal base64 data at input byte 0\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/unpadded-base64",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AA\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32602,\"message\":\"invalid argument 1: illegal base64 data at input byte 0\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/invalid-byte-array",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,[300]]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"error\":{\"code\":-32602,\"message\":\"invalid argument 1: json: cannot unmarshal number 300 into Go value of type uint8\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 415,
+      "input": {
+        "name": "codec/wrong-content-type",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "text/plain",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "invalid content type, only application/json is supported\n",
+      "response_content_type": "text/plain; charset=utf-8",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 405,
+      "input": {
+        "name": "codec/put-method",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "PUT",
+        "content_type": "application/json",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "method not allowed\n",
+      "response_content_type": "text/plain; charset=utf-8",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 200,
+      "input": {
+        "name": "codec/health-get",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "GET",
+        "content_type": "",
+        "declared_content_length": -1,
+        "request_json": ""
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "",
+      "response_content_type": "",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [],
+      "http_status": 413,
+      "input": {
+        "name": "codec/declared-oversize",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "POST",
+        "content_type": "application/json",
+        "declared_content_length": 5242881,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "content length too large (5242881\u003e5242880)\n",
+      "response_content_type": "text/plain; charset=utf-8",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ]
+    },
+    {
+      "delegated_calls": [
+        {
+          "height": 42,
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "GetProof"
+        }
+      ],
+      "http_status": 200,
+      "input": {
+        "name": "codec/options-method",
+        "method_case": {
+          "name": "GetProof/active-three",
+          "method": "GetProof",
+          "height": 42,
+          "version": 3,
+          "store_height": 42,
+          "missing_momentum": false,
+          "hash_override": false,
+          "key_kind": "balance",
+          "binding_name": "stored-zero",
+          "lookup_error": "",
+          "proof_error": "",
+          "root_error": "",
+          "response_kind": "selected"
+        },
+        "http_method": "OPTIONS",
+        "content_type": "",
+        "declared_content_length": -1,
+        "request_json": "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ledger.getProof\",\"params\":[42,\"AxERERERERERERERERERERERERERAyIiIiIiIiIiIiI=\"]}"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "response_body": "{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}}\n",
+      "response_content_type": "application/json",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ]
+    }
+  ],
+  "format_version": 1,
+  "kind": "candidate-rpc-dispatcher-research",
+  "scope": {
+    "LedgerApi_constructor_executed": true,
+    "LedgerApi_methods_executed": true,
+    "StateProof_serializer_executed": true,
+    "actual_chain_stateTree_executed": false,
+    "header_authentication_executed": false,
+    "http_listener_started": false,
+    "live_transport_executed": false,
+    "network_activation_authenticated": false,
+    "node_database_opened": false,
+    "node_lifecycle_executed": false,
+    "node_tests_executed": false,
+    "primitive_proof_api_executed": true,
+    "profile_agreed": false,
+    "read_only_delegates_only": true,
+    "recording_chain_store_stubs": true,
+    "request_body_closed_after_each_case": true,
+    "rpc_dispatcher_executed": true,
+    "rpc_http_handler_executed_in_memory": true,
+    "rpc_parameter_decoder_executed": true,
+    "runtime_state_proof_acceptance": false,
+    "server_stopped_after_each_case": true,
+    "synthetic": true,
+    "unsigned": true
+  },
+  "source": {
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "56ce2c384966f2f1940967257a0788d3998a5eef",
+    "tree": "d5abff528566a561e1a53a46103cb4b15ff63c6c"
+  }
+}

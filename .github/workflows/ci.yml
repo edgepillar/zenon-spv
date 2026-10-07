@@ -60,6 +60,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_rpc_methods_test.py
       - name: Independent candidate RPC methods and consumer decisions
         run: python -I -B tools/gen-state-root-vectors/check_rpc_methods.py --source-revision "${{ github.sha }}"
+      - name: Candidate offline RPC dispatcher controls
+        run: python -I -B tools/gen-state-root-vectors/check_dispatcher_test.py
+      - name: Independent candidate RPC dispatcher and envelopes
+        run: python -I -B tools/gen-state-root-vectors/check_dispatcher.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash
@@ -230,6 +234,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_rpc_methods_test.py
       - name: Independent candidate RPC methods and consumer decisions
         run: python -I -B tools/gen-state-root-vectors/check_rpc_methods.py --source-revision "${{ github.sha }}"
+      - name: Candidate offline RPC dispatcher controls
+        run: python -I -B tools/gen-state-root-vectors/check_dispatcher_test.py
+      - name: Independent candidate RPC dispatcher and envelopes
+        run: python -I -B tools/gen-state-root-vectors/check_dispatcher.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash

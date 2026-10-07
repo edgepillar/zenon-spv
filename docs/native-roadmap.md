@@ -107,3 +107,15 @@ observations match only within this synthetic research scope. The same locked
 CGO reference module preserves all four previous corpora and every runtime
 input. JSON-RPC envelopes, accepted-header binding, real chain lifecycle and
 resource budgets remain separate deliveries; state-value acceptance stays off.
+
+The [separate offline HTTP/JSON-RPC fixture](../tools/gen-state-root-vectors/README.md#separate-offline-http-and-json-rpc-dispatcher-fixture)
+now qualifies 86 in-memory reference handler observations, exact response
+envelopes and 60 read-only Ledger delegate calls against the same recording
+stubs. Twenty controls keep selected request ID/method/height/raw-key bytes and
+unsigned context pins separate from permissive reference parsing and provider
+proof/root consistency. All five prior corpora and the runtime refusal remain
+unchanged. Actual reference execution is local macOS ARM64; native CI checks
+independent offline fixtures. The next node research gate is actual chain
+readiness and hash-bound retained-version provenance, followed by persisted
+recovery/retention and realistic resource measurements. Accepted `VerifiedState`
+integration and profile/activation agreement stay separate from these stubs.

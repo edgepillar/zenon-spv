@@ -295,10 +295,11 @@ closure. The separate mode does not start a full node or RPC listener, execute
 the JSON-RPC dispatcher or transport, call actual chain `stateTree` methods,
 open a database, run node tests, sign data or invoke transaction callbacks.
 Injected not-ready/not-retained errors qualify API forwarding only. They do not
-exercise actual readiness, build, retention, reorgs or recovery. Both optional
-RPC research modes need CGO; the first three modes keep CGO disabled. All five
-modes validate the same 394 node blobs and produce two identical outputs; all
-four earlier corpora remain byte-identical. Native CI runs independent Python
+exercise actual readiness, build, retention, reorgs or recovery. Both earlier
+optional RPC research modes need CGO; the first three modes keep CGO disabled.
+The byte/filter/applier/wire/method modes validate the same 394 node blobs and
+produce two identical outputs; all four earlier corpora remain byte-identical.
+Native CI runs independent Python
 fixture checks; actual reference method/CGO execution remains separately scoped
 to local macOS ARM64.
 
@@ -316,13 +317,80 @@ network activation/profile agreement, real chain readiness/retention,
 persisted lifecycle, resource budgets, human review and authenticated release
 remain separate gates. Production v3 and state-value acceptance stay disabled.
 
+## Separate offline HTTP and JSON-RPC dispatcher fixture
+
+`candidate-rpc-dispatcher.json` records 86 actual calls to the pinned
+[`ServeHTTP` handler](https://github.com/digitalSloth/go-zenon/blob/56ce2c384966f2f1940967257a0788d3998a5eef/rpc/server/http.go#L227-L283).
+Every request and recorder is in memory. An explicit wrapper registers only
+`GetProof` and `GetStateRoot` as Ledger callbacks and delegates them to the real
+`LedgerApi`; the server's built-in read-only metadata service remains registered.
+The Ledger wrapper does not embed the full API or expose transaction callbacks.
+Each server stops and each request body closes before the next case. No listener,
+client connection, full node, wallet, signing or transaction runs.
+
+The 40 previous method cases now pass through actual request decoding and
+dispatch. Another 46 cases cover raw integer/string/numeric-lexeme IDs, namespace
+and method lookup, required/excess/named parameters, exact uint64 heights,
+Base64 and byte-array keys, JSON syntax/duplicates/trailing input, notifications,
+batches and HTTP validation. The finite inventory yields 60 delegated method
+calls and 282 constructor/store/proof/root events. There are 39 success and 41
+error envelopes, three empty responses and three HTTP validation errors. The
+4,097-byte value counterexample remains outside the consumer's 4,096-byte bound.
+The 5 MiB HTTP case changes declared length on a small body; it measures neither
+allocation nor real transport/resource limits.
+
+The stdlib Python oracle selects request bytes independently, reconstructs
+unsigned header identifiers and primitive proof bytes, and checks exact response
+body bytes, raw ID lexemes, status/content type, delegate arguments and call
+ordering. The [source response constructors](https://github.com/digitalSloth/go-zenon/blob/56ce2c384966f2f1940967257a0788d3998a5eef/rpc/server/json.go#L94-L129)
+discard returned data when an error exists, including a nonzero root. Decode
+and method-lookup errors occur before Ledger delegation. Null height becomes
+zero and reaches the API's zero-height error. Nil and array keys preserve their
+actual decoded bytes. None of these source observations selects a consumer key,
+height, supported version or protocol profile.
+
+Some diagnostic requests reach the reference API despite unsupported client
+policy: scalar null/boolean/wide or fractional IDs, missing/wrong version,
+ignored extra fields, last duplicate fields, trailing input, array keys,
+notifications and OPTIONS. The separate research consumer requires one closed
+POST request, independently selected typed ID/method/height, a bounded canonical
+Base64 raw key and one closed success/error reply. It refuses these diagnostics,
+mixed result/error payloads, wrong reply IDs/types, duplicate/trailing response
+JSON, root/proof substitutions and changed unsigned context pins. Four balance
+and one root results match only this synthetic selection. Seventeen selected
+requests yield reference errors; 50 fail request policy and 14 have other
+consumer refusals. A valid server response does not establish client trust.
+
+The optional `candidate_dispatcher` build adds only stdlib `httptest` imports
+under the existing source-pinned research module lock. All six modes validate
+394 node blobs and generate twice; all five previous corpora remain identical.
+Twenty new controls run in native Linux/macOS/Windows CI with the independent
+fixture checker. Actual reference handler, parameter decoder, Ledger API and
+CGO execution remain scoped to local macOS ARM64. Native CI does not execute the
+reference node, handler or CGO stack.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_dispatcher_test.py
+python3 -I -B tools/gen-state-root-vectors/check_dispatcher.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind rpc-dispatcher \
+  --output NEW_RPC_DISPATCHER_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+```
+
+Actual chain `stateTree`, readiness/retention and hash-bound version provenance,
+disk lifecycle/recovery, realistic resource budgets, accepted `VerifiedState`
+binding, live transport/pilot, agreed profile/activation, human review and
+authenticated release remain separate gates. Production v3/state-value refusal
+and all MIT runtime inputs remain unchanged.
+
 ## Remaining gates
 
-Production v3/state-value acceptance stays disabled. These are synthetic byte
-fixtures, not node consensus-valid blocks, a network activation, a live proof
-RPC exercise, state-transition execution, node lifecycle qualification,
-canonicality, consensus finality, freshness, authenticated producer election,
-an independently reviewed protocol profile or release provenance. Address/token
+Production v3/state-value acceptance stays disabled. These synthetic research
+fixtures leave consensus-valid blocks, network activation, live proof RPC,
+real-chain state transitions, node lifecycle, canonicality, consensus finality,
+freshness, authenticated producer election, an independently reviewed protocol
+profile and release provenance unqualified. Address/token
 text checksum boundaries, activation and context migration, verified header/RPC
 binding, typed runtime results and realistic `NodeTree` measurements remain
 separate implementation and qualification work.

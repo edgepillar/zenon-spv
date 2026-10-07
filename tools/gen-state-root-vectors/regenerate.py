@@ -116,7 +116,7 @@ def main(argv=None):
     parser.add_argument("--go", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--evidence-directory", type=Path, required=True)
-    parser.add_argument("--fixture-kind", choices=("bytes", "fold-filter", "applier", "wire", "rpc-methods"), default="bytes")
+    parser.add_argument("--fixture-kind", choices=("bytes", "fold-filter", "applier", "wire", "rpc-methods", "rpc-dispatcher"), default="bytes")
     args = parser.parse_args(argv)
     require(not args.output.exists() and not args.output.is_symlink(), "preserve existing output")
     require(not args.evidence_directory.exists() and not args.evidence_directory.is_symlink(), "preserve existing evidence")
@@ -128,7 +128,7 @@ def main(argv=None):
         "manifest_sha256": hashlib.sha256(manifest_raw).hexdigest(), "network_acquisition": False}))
     environment = {key: value for key, value in os.environ.items() if not key.startswith("GO")}
     environment.update(GOTOOLCHAIN="local", GOWORK="off", GOFLAGS="", GOENV="off",
-                       GOPROXY="off", GOSUMDB="off", CGO_ENABLED="1" if args.fixture_kind in ("wire", "rpc-methods") else "0")
+                       GOPROXY="off", GOSUMDB="off", CGO_ENABLED="1" if args.fixture_kind in ("wire", "rpc-methods", "rpc-dispatcher") else "0")
     commands = []
 
     def execute(label, command, working_directory):
@@ -161,8 +161,10 @@ def main(argv=None):
             (generator / name).write_bytes((HERE / name).read_bytes())
         if args.fixture_kind == "wire":
             (generator / "wire.go").write_bytes((HERE / "wire.go").read_bytes())
-        if args.fixture_kind == "rpc-methods":
+        if args.fixture_kind in ("rpc-methods", "rpc-dispatcher"):
             (generator / "rpc_methods.go").write_bytes((HERE / "rpc_methods.go").read_bytes())
+        if args.fixture_kind == "rpc-dispatcher":
+            (generator / "rpc_dispatcher.go").write_bytes((HERE / "rpc_dispatcher.go").read_bytes())
         with (generator / "go.mod").open("ab") as stream:
             stream.write(b"\nreplace github.com/zenon-network/go-zenon => ../reference-node\n")
         version = execute("go-version", [args.go, "version"], generator).decode("ascii").strip()
@@ -173,6 +175,8 @@ def main(argv=None):
             build += ["-tags", "candidate_wire"]
         if args.fixture_kind == "rpc-methods":
             build += ["-tags", "candidate_rpc"]
+        if args.fixture_kind == "rpc-dispatcher":
+            build += ["-tags", "candidate_dispatcher"]
         execute("go-build", build + ["-o", str(executable), "."], generator)
         execute("go-buildinfo", [args.go, "version", "-m", str(executable)], generator)
         command = [str(executable), "--verified-node-tree", NODE_TREE]
@@ -189,7 +193,8 @@ def main(argv=None):
         require(document["scope"]["unsigned"] and not document["scope"]["runtime_state_proof_acceptance"], "wrong generated scope")
         expected_kind = {"bytes": "candidate-state-root-byte-research", "fold-filter": "candidate-l1-fold-filter-research",
                          "applier": "candidate-l1-applier-research", "wire": "candidate-state-proof-wire-research",
-                         "rpc-methods": "candidate-rpc-method-research"}[args.fixture_kind]
+                         "rpc-methods": "candidate-rpc-method-research",
+                         "rpc-dispatcher": "candidate-rpc-dispatcher-research"}[args.fixture_kind]
         require(document["kind"] == expected_kind, "generated fixture kind differs")
         if args.fixture_kind == "fold-filter":
             require(document["scope"]["l1_fold_filter_api_executed"] and
@@ -208,6 +213,14 @@ def main(argv=None):
             require(document["scope"]["LedgerApi_methods_executed"] and document["scope"]["recording_chain_store_stubs"] and
                     not document["scope"]["actual_chain_stateTree_executed"] and not document["scope"]["rpc_dispatcher_executed"] and
                     not document["scope"]["node_database_opened"], "wrong RPC method execution boundary")
+        if args.fixture_kind == "rpc-dispatcher":
+            require(document["scope"]["LedgerApi_methods_executed"] and document["scope"]["recording_chain_store_stubs"] and
+                    document["scope"]["rpc_dispatcher_executed"] and document["scope"]["rpc_parameter_decoder_executed"] and
+                    document["scope"]["rpc_http_handler_executed_in_memory"] and document["scope"]["read_only_delegates_only"] and
+                    document["scope"]["server_stopped_after_each_case"] and document["scope"]["request_body_closed_after_each_case"] and
+                    not document["scope"]["http_listener_started"] and not document["scope"]["live_transport_executed"] and
+                    not document["scope"]["actual_chain_stateTree_executed"] and not document["scope"]["node_database_opened"],
+                    "wrong offline RPC dispatcher execution boundary")
         seal(args.output, first)
     report = {"node_revision": NODE_REVISION, "node_tree": NODE_TREE, "matched_source_blobs": 394,
               "source_manifest_sha256": hashlib.sha256(manifest_raw).hexdigest(),
@@ -217,12 +230,13 @@ def main(argv=None):
               "fixture_kind": args.fixture_kind, "l1_fold_filter_api_executed": args.fixture_kind == "fold-filter",
               "l1_staged_applier_executed": args.fixture_kind == "applier", "node_database_opened": args.fixture_kind == "applier",
               "database_storage_in_memory_only": args.fixture_kind == "applier", "persisted_disk_lifecycle_executed": False,
-              "StateProof_serializer_executed": args.fixture_kind in ("wire", "rpc-methods"),
-              "LedgerApi_method_executed": args.fixture_kind == "rpc-methods",
-              "recording_chain_store_stubs": args.fixture_kind == "rpc-methods", "actual_chain_stateTree_executed": False,
-              "rpc_dispatcher_executed": False,
+              "StateProof_serializer_executed": args.fixture_kind in ("wire", "rpc-methods", "rpc-dispatcher"),
+              "LedgerApi_method_executed": args.fixture_kind in ("rpc-methods", "rpc-dispatcher"),
+              "recording_chain_store_stubs": args.fixture_kind in ("rpc-methods", "rpc-dispatcher"), "actual_chain_stateTree_executed": False,
+              "rpc_dispatcher_executed": args.fixture_kind == "rpc-dispatcher",
+              "rpc_http_handler_executed_in_memory": args.fixture_kind == "rpc-dispatcher", "http_listener_started": False,
               "rpc_transport_executed": False, "header_authentication_executed": False,
-              "reference_cgo_enabled": args.fixture_kind in ("wire", "rpc-methods")}
+              "reference_cgo_enabled": args.fixture_kind in ("wire", "rpc-methods", "rpc-dispatcher")}
     seal(args.evidence_directory / "completed.json", encoded(report))
     print(json.dumps(report, sort_keys=True, separators=(",", ":")))
 

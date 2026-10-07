@@ -1,4 +1,4 @@
-//go:build candidate_rpc
+//go:build candidate_rpc || candidate_dispatcher
 
 // SPDX-License-Identifier: GPL-3.0-only
 // Execute actual read-only methods against recording synthetic chain/store stubs.
