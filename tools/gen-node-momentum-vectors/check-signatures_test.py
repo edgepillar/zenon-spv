@@ -38,6 +38,28 @@ def process(code, stdout=b"", stderr=b""):
     return subprocess.CompletedProcess(["simulated-backend"], code, stdout, stderr)
 
 
+class OutputSink(io.StringIO):
+    def __init__(self, failure=None):
+        super().__init__()
+        self.failure = failure
+        self.writes = 0
+        self.flushes = 0
+
+    def write(self, text):
+        self.writes += 1
+        if self.failure == "write":
+            raise OSError("private output/path unavailable")
+        if self.failure == "short":
+            return super().write(text[:-1])
+        return super().write(text)
+
+    def flush(self):
+        self.flushes += 1
+        if self.failure == "flush":
+            raise OSError("private buffered output/path unavailable")
+        super().flush()
+
+
 class SignatureControls(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -302,6 +324,84 @@ except checker.Refused as error:
                     with self.assertRaises(CHECKER.Refused) as raised:
                         CHECKER.run(CORPUS_DIR, "unavailable-backend")
         self.assertEqual(raised.exception.stage, "corpus_changed")
+
+    def test_result_delivery_failures_are_private_without_reverification(self):
+        report = {"schema_version": 1, "status": "verified", "signature_process_outcomes": 6,
+                  "outcomes": [{"returncode": code} for code in (0, 1, 1, 1, 1, 1)]}
+        refused = CHECKER.Refused("backend_changed")
+        refused.outcomes = report["outcomes"]
+        for route in ("verified", "refused", "input", "arguments"):
+            for failure in ("write", "short", "flush"):
+                for diagnostics_failure in (False, True):
+                    with self.subTest(route=route, failure=failure, diagnostics_failure=diagnostics_failure):
+                        output = OutputSink(failure)
+                        diagnostics = OutputSink("write" if diagnostics_failure else None)
+                        arguments = ["--unknown-private-argument"] if route == "arguments" else ["--openssl", "simulated-backend"]
+                        error = refused if route == "refused" else OSError("private backend input") if route == "input" else None
+                        with mock.patch.object(CHECKER, "run", return_value=report, side_effect=error) as run:
+                            with contextlib.redirect_stdout(output), contextlib.redirect_stderr(diagnostics):
+                                code = CHECKER.main(arguments)
+                        self.assertEqual(code, 70)
+                        self.assertEqual(run.call_count, 0 if route == "arguments" else 1)
+                        self.assertEqual(output.writes, 1)
+                        self.assertEqual(output.flushes, 1 if failure == "flush" else 0)
+                        self.assertEqual(diagnostics.writes, 1)
+                        if not diagnostics_failure:
+                            self.assertEqual(diagnostics.getvalue(), "node-signatures: cannot write result\n")
+                        self.assertNotIn("private", diagnostics.getvalue())
+                        self.assertFalse(output.closed)
+                        self.assertFalse(diagnostics.closed)
+
+    def test_completed_result_bytes_and_refusal_ledgers_are_flushed(self):
+        report = {"schema_version": 1, "status": "verified", "signature_process_outcomes": 6,
+                  "outcomes": [{"returncode": code} for code in (0, 1, 1, 1, 1, 1)]}
+        refused = CHECKER.Refused("backend_changed")
+        refused.outcomes = report["outcomes"]
+        for route in ("verified", "refused", "input", "arguments"):
+            with self.subTest(route=route):
+                output, diagnostics = OutputSink(), OutputSink()
+                arguments = ["--unknown-private-argument"] if route == "arguments" else ["--openssl", "simulated-backend"]
+                error = refused if route == "refused" else OSError("private backend input") if route == "input" else None
+                with mock.patch.object(CHECKER, "run", return_value=report, side_effect=error) as run:
+                    with contextlib.redirect_stdout(output), contextlib.redirect_stderr(diagnostics):
+                        code = CHECKER.main(arguments)
+                expected = report if route == "verified" else {"schema_version": 1, "status": "refused",
+                    "error_stage": "corpus_or_backend_input" if route == "input" else "backend_changed" if route == "refused" else "arguments"}
+                if route in ("refused", "arguments"):
+                    expected.update({"signature_process_outcomes": 6 if route == "refused" else 0,
+                                     "outcomes": report["outcomes"] if route == "refused" else []})
+                self.assertEqual(code, 0 if route == "verified" else 2)
+                self.assertEqual(output.getvalue(), json.dumps(expected, indent=2 if route == "verified" else None,
+                                                             sort_keys=route == "verified") + "\n")
+                self.assertEqual(output.writes, 1)
+                self.assertEqual(output.flushes, 1)
+                self.assertEqual(run.call_count, 0 if route == "arguments" else 1)
+                self.assertEqual(diagnostics.getvalue(), "")
+
+    def test_real_cli_output_failures_keep_controlled_exit_and_no_traceback(self):
+        command = [sys.executable, "-I", "-B", str(HERE / "check-signatures.py"), "--unknown-private-argument"]
+        with tempfile.TemporaryDirectory(prefix="signature-output-control-") as temporary:
+            path = Path(temporary) / "read-only-output"
+            original = b"owned read-only output control"
+            path.write_bytes(original)
+            with path.open("rb") as output:
+                actual = subprocess.run(command, stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.PIPE, timeout=5)
+            self.assertEqual(actual.returncode, 70)
+            self.assertEqual(actual.stderr, b"node-signatures: cannot write result\n")
+            self.assertEqual(path.read_bytes(), original)
+            with path.open("rb") as output, path.open("rb") as diagnostics:
+                actual = subprocess.run(command, stdin=subprocess.DEVNULL, stdout=output, stderr=diagnostics, timeout=5)
+            self.assertEqual(actual.returncode, 70)
+            self.assertEqual(path.read_bytes(), original)
+            read_descriptor, write_descriptor = os.pipe()
+            os.close(read_descriptor)
+            try:
+                actual = subprocess.run(command, stdin=subprocess.DEVNULL, stdout=write_descriptor,
+                                        stderr=subprocess.PIPE, timeout=5)
+            finally:
+                os.close(write_descriptor)
+            self.assertEqual(actual.returncode, 70)
+            self.assertEqual(actual.stderr, b"node-signatures: cannot write result\n")
 
 
 if __name__ == "__main__":
