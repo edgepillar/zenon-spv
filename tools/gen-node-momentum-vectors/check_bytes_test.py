@@ -23,7 +23,7 @@ CORPUS_DIR = HERE.parents[1] / "internal/testdata/conformance"
 sys.path.insert(0, str(HERE))
 
 import check as CHECKER
-from check_account import check_account
+from check_account import account_bytes, check_account
 
 
 def load_checker(filename):
@@ -82,6 +82,7 @@ class ByteRepresentationChecks(unittest.TestCase):
         cls.amounts = corpus("account-amounts")
         cls.scaling = corpus("content-scaling")
         cls.accounts = corpus("account-segments")
+        cls.account_vectors = [vector for segment in cls.accounts["segments"] for vector in segment["vectors"]]
         cls.v1 = cls.momentum["vectors"][0]
 
     def reject_vector(self, vector):
@@ -107,6 +108,91 @@ class ByteRepresentationChecks(unittest.TestCase):
         self.assertLess(by_name["negative-alias"]["block"]["amount"], 0)
         self.assertEqual(by_name["negative-alias"]["amount_bytes"], by_name["ordinary"]["amount_bytes"])
         self.assertGreater(len(bytes.fromhex(by_name["wide-1025-bit-value"]["amount_bytes"])), 32)
+
+    def test_account_rpc_amount_rejects_type_aliases(self):
+        by_name = {vector["name"]: vector for vector in self.amounts["vectors"]}
+        cases = {
+            "zero": (False, True, 0, 0.0, 0.5, None, [], {}, b"0"),
+            "ordinary": (1000, 1000.0, 1000.5),
+        }
+        for name, aliases in cases.items():
+            original = by_name[name]
+            for alias in aliases:
+                with self.subTest(vector=name, alias=alias):
+                    vector = copy.deepcopy(original)
+                    vector["rpc"]["amount"] = alias
+                    self.assertEqual(vector["block"], original["block"])
+                    self.assertEqual(vector["rpc"]["hash"], original["rpc"]["hash"])
+                    self.assertEqual(vector["rpc"]["signature"], original["rpc"]["signature"])
+                    with self.assertRaises(ValueError):
+                        check_account(vector["block"], vector["rpc"])
+
+    def test_account_rpc_amount_rejects_non_ascii_decimal_syntax(self):
+        by_name = {vector["name"]: vector for vector in self.amounts["vectors"]}
+        cases = {
+            "zero": ("", " ", " 0", "0 ", "+", "-", "+0\n", "0_0", "0x0",
+                     "0.0", "\u0660", "\uff10", "\u22120", "++0", "--0"),
+            "ordinary": ("1_000", "+1_000", "\u0661\u0660\u0660\u0660", "\uff11\uff10\uff10\uff10", "1e3"),
+            "negative-alias": ("- 1000", "-1_000"),
+        }
+        for name, aliases in cases.items():
+            original = by_name[name]
+            for alias in aliases:
+                with self.subTest(vector=name, alias=alias):
+                    vector = copy.deepcopy(original)
+                    vector["rpc"]["amount"] = alias
+                    self.assertEqual(vector["block"], original["block"])
+                    self.assertEqual(vector["rpc"]["hash"], original["rpc"]["hash"])
+                    self.assertEqual(vector["rpc"]["signature"], original["rpc"]["signature"])
+                    with self.assertRaises(ValueError):
+                        check_account(vector["block"], vector["rpc"])
+
+    def test_account_rpc_amount_preserves_signed_ascii_magnitude_vectors(self):
+        # Negative and wide values remain serialization controls, not valid
+        # transaction amounts. Sign and zero padding do not change their bytes.
+        for original in self.amounts["vectors"]:
+            baseline = account_bytes(original["block"], original["rpc"])
+            amount = original["block"]["amount"]
+            sign = "-" if amount < 0 else "+"
+            for alias in (original["rpc"]["amount"], sign + "00" + str(abs(amount))):
+                with self.subTest(vector=original["name"], alias=alias):
+                    vector = copy.deepcopy(original)
+                    vector["rpc"]["amount"] = alias
+                    self.assertEqual(vector["block"], original["block"])
+                    self.assertEqual(account_bytes(vector["block"], vector["rpc"]), baseline)
+
+    def test_account_optional_base64_rejects_non_string_aliases(self):
+        for original in self.account_vectors:
+            nullable = [(side, field) for side, fields in
+                        (("block", ("publicKey", "signature")),
+                         ("rpc", ("publicKey", "signature", "data")))
+                        for field in fields if original[side][field] in (None, "")]
+            for side, field in nullable:
+                for alias in (False, True, 0, 0.0, [], {}, b"", b"AA=="):
+                    with self.subTest(vector=original["name"], side=side, field=field, alias=alias):
+                        vector = copy.deepcopy(original)
+                        vector[side][field] = alias
+                        self.assertEqual(vector["block"]["hash"], original["block"]["hash"])
+                        self.assertEqual(vector["rpc"]["hash"], original["rpc"]["hash"])
+                        with self.assertRaises(ValueError):
+                            check_account(vector["block"], vector["rpc"])
+
+    def test_account_optional_base64_preserves_null_and_empty_preimages(self):
+        checked = 0
+        for original in self.account_vectors:
+            baseline = account_bytes(original["block"], original["rpc"])
+            for side, fields in (("block", ("publicKey", "signature")),
+                                ("rpc", ("publicKey", "signature", "data"))):
+                for field in fields:
+                    if original[side][field] not in (None, ""):
+                        continue
+                    for alias in (None, ""):
+                        with self.subTest(vector=original["name"], side=side, field=field, alias=alias):
+                            vector = copy.deepcopy(original)
+                            vector[side][field] = alias
+                            self.assertEqual(account_bytes(vector["block"], vector["rpc"]), baseline)
+                            checked += 1
+        self.assertEqual(checked, 22)
 
     def test_uint64_boundaries_are_exact_eight_bytes(self):
         self.assertEqual(CHECKER.uint64(0), b"\x00" * 8)

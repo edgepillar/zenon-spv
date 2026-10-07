@@ -11,6 +11,11 @@ def check_unsigned_projection(projection):
     uint64(projection["momentumAcknowledged"]["height"])
 
 
+def optional_base64(value):
+    require(value is None or type(value) is str, "expected a nullable base64 string")
+    return base64.b64decode("" if value is None else value, validate=True)
+
+
 def account_bytes(block, rpc):
     """Return the checked amount encoding and complete signed-envelope bytes."""
     check_unsigned_projection(block)
@@ -21,7 +26,11 @@ def account_bytes(block, rpc):
         pending.extend(projection["descendantBlocks"])
     amount = block["amount"]
     require(type(amount) is int, "expected an integer account amount")
-    require(amount == int(rpc["amount"]), "amount differs across wire forms")
+    wire_amount = rpc["amount"]
+    require(type(wire_amount) is str, "expected a decimal account amount string")
+    digits = wire_amount[1:] if wire_amount.startswith(("+", "-")) else wire_amount
+    require(digits and all("0" <= digit <= "9" for digit in digits), "expected ASCII decimal digits")
+    require(amount == int(wire_amount), "amount differs across wire forms")
     magnitude = abs(amount)
     encoded = magnitude.to_bytes(max(32, (magnitude.bit_length() + 7) // 8), "big")
 
@@ -37,11 +46,11 @@ def account_bytes(block, rpc):
         require(address_bytes(rpc[field]) == field_bytes(field, 20), f"wrong {field}")
     require(bech32_bytes(rpc["tokenStandard"], "zts", 10) == field_bytes("tokenStandard", 10), "wrong token bytes")
     for field in ("publicKey", "signature"):
-        require(base64.b64decode(block[field] or "", validate=True) == base64.b64decode(rpc[field] or "", validate=True), f"wrong {field}")
+        require(optional_base64(block[field]) == optional_base64(rpc[field]), f"wrong {field}")
     ack = block["momentumAcknowledged"]
     ack_hash = bytes.fromhex(ack["hash"])
     require(len(ack_hash) == 32, "wrong acknowledged hash width")
-    data_hash = digest(base64.b64decode(rpc["data"] or "", validate=True))
+    data_hash = digest(optional_base64(rpc["data"]))
     children = [bytes.fromhex(child["hash"]) for child in rpc["descendantBlocks"]]
     require(all(len(child) == 32 for child in children), "wrong descendant hash width")
     descendant_hash = digest(b"".join(children))

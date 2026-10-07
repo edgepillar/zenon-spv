@@ -26,6 +26,14 @@ exactly 32 bytes. The [byte corruption controls](../tools/gen-node-momentum-vect
 exercise boolean/float aliases and a redistribution of content hash bytes that
 preserves the concatenated preimage and its digest while violating member widths.
 All existing node corpus bytes and low-level amount magnitude cases are retained.
+Account RPC amounts must be ASCII decimal strings with an optional sign; booleans,
+numbers, whitespace, underscores and Unicode digits cannot alias the expected
+amount. Nullable public-key, signature and data fields accept only JSON null or
+base64 strings. Null and empty strings retain their existing empty-byte meaning;
+other false-like values cannot inherit it. Corruption controls retain the node's
+hashes and check unchanged preimages for valid sign, zero-padding and nullable
+representations. Negative and wide amount vectors remain low-level serialization
+controls; accepting their byte encoding does not make them valid transactions.
 These checks establish the fixture's typed byte contract. The separate
 [independent signature checker](independent-signatures.md) runs OpenSSL over
 Python-recomputed messages in all three native CI jobs, retaining unsigned
