@@ -183,6 +183,14 @@ or independently selected consumer expectations.
 
 ## Coordinated implementation and qualification
 
+The [isolated candidate byte corpus](../tools/gen-state-root-vectors/README.md)
+now compares ten unsigned Momentum preimages, six sparse roots and 41 actual
+candidate proof outcomes with a separate stdlib Python oracle. It records
+present zero, absent balance, a 33-byte magnitude boundary and two node-accepted
+stored-zero-sibling encodings. This primitive conformance work does not execute
+the L1 fold, persisted tree lifecycle, proof RPC or network activation. The
+existing production client still refuses v3 and state-value proofs.
+
 | Delivery | Concrete work | Completion gate |
 | --- | --- | --- |
 | Commitment profile | Exact covered key families, value/zero semantics, root/proof encoding, explicit resource policies and activation/header binding. | Node/client maintainers agree a versioned profile; open policies are resolved and source-pinned. |
