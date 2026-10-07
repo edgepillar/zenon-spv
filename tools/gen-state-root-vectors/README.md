@@ -185,8 +185,8 @@ python3 -I -B tools/gen-state-root-vectors/regenerate.py \
   --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
 ```
 
-All three generator modes run against the same complete source pin; the two
-previous corpus files remain byte-identical. Native CI checks the offline
+The byte, filter and applier modes run against the same complete source pin;
+the previous corpus files remain byte-identical. Native CI checks the offline
 fixtures with independent Python oracles. Actual node API generation remains a
 separate local step. The inherited 2 MiB file, 1,024-byte key, 4,096-byte value
 and 64-event batch limits bound research work; 64 checkpoints is an additional
@@ -196,6 +196,65 @@ The small in-memory history does not exercise disk reopen, crash recovery,
 pruning, historical retention, reorgs, stale prebuild recovery, snapshot import,
 node startup, consensus execution or proof RPC. Those lifecycle and resource
 tracks remain open. Production v3 and state-value acceptance stays disabled.
+
+## Separate StateProof serializer and synthetic binding fixture
+
+`testdata/candidate-state-proof-wire.json` records the actual pinned
+[`api.StateProof`](https://github.com/digitalSloth/go-zenon/blob/56ce2c384966f2f1940967257a0788d3998a5eef/rpc/api/ledger.go#L328-L336)
+type's JSON serialization. Seven byte-format cases and seven primitive-proof
+cases produce 14 serialized responses. Nil slices become `null`, non-nil empty
+slices become empty Base64 strings, stored zero remains 32 present bytes and
+the root uses the node hash type's lowercase hexadecimal encoding. Arbitrary
+byte-format cases exercise encoding only; they do not assert valid proofs.
+
+An independent bounded parser checks closed response shapes, duplicate fields,
+canonical padded Base64, root width and null/presence semantics. Twenty controls
+cover malformed wire/proofs, byte bounds, selected-key substitution, provider
+root substitution, header identifiers and context pins. JSON whitespace and
+escaped strings may preserve decoded transport bytes. Exact fixture spelling
+checks the serializer's output, not a network consensus rule. Equivalent
+stored-zero-sibling proof decoding remains supported by the research oracle.
+
+The seven proof cases reconstruct roots and paths independently. Four give
+synthetic typed-balance matches; mailbox and storage queries are refused, as is
+a shared-core present-empty value. The selected raw key is hashed exactly once.
+The expected root, unsigned v3 header hash/height and context pin are constructed
+locally, never selected from the provider's response. These synthetic selections
+model binding only: they are not accepted `VerifiedState` headers or an
+authenticated network profile and cannot produce production acceptance.
+
+The optional `candidate_wire` build tag imports the complete reference RPC
+package. Its selected Ethereum dependency requires CGO, so only wire generation
+uses CGO and an available C compiler. The three previous modes still build with
+CGO disabled. The research module locks the added import closure against the
+pinned node's dependency checksums; initial public module acquisition is
+separate from offline reference execution. The MIT runtime and its module graph
+do not change. This mode does not construct or call `LedgerApi`, open a database,
+start a node/RPC service, sign data or exercise a JSON-RPC envelope.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_wire_test.py
+python3 -I -B tools/gen-state-root-vectors/check_wire.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind wire \
+  --output NEW_WIRE_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+```
+
+All four modes retain complete 394-blob source validation and two identical
+generations per invocation. All three prior fixture files remain byte-identical.
+Native CI runs independent Python checks on offline fixtures; reference API
+generation and CGO compilation remain separate local steps. Wire work is bounded
+by a 2 MiB corpus, 64 cases per inventory, a 32 KiB response, 1,024 key bytes,
+4,096 value bytes and the inherited compressed-proof byte limit. These are local
+research guards, not a reviewed profile or a production resource budget.
+
+`StateProof` contains value, proof and root only. It cannot authenticate a
+selected key, height, Momentum hash or context. Actual `GetProof` readiness,
+activation/version gates, retained history, root/proof consistency during
+changes and live transport remain unqualified. Connecting a decoded result to
+an accepted header/context is separate client work. Production v3 and state-value
+acceptance remains disabled.
 
 ## Remaining gates
 

@@ -262,6 +262,19 @@ retention, source/binary pin and failed runs with each sample. The candidate's
 per-height rate comment does not measure bulk build speed. Neither an
 engineer-month estimate nor a calendar date closes a deployment gate.
 
+The isolated [StateProof wire fixture](../tools/gen-state-root-vectors/README.md#separate-stateproof-serializer-and-synthetic-binding-fixture)
+calls the actual pinned response serializer and independently checks seven
+encoding cases plus seven primitive proofs. Its local root/key, unsigned header
+identifier and context-pin selections model binding without authenticating a
+header or profile. `StateProof` returns no key, height or Momentum hash; a future
+client must preserve those inputs independently and compare the returned root
+against an accepted header. A serializer match does not qualify `LedgerApi`
+execution, its readiness/activation/retention behavior, a JSON-RPC envelope,
+network activation or a production consumer result. Stored zero, absent value
+and present-empty shared-core bytes remain distinct; the last is refused as a
+typed balance. Production v3/state-value refusal and lifecycle/resource gates
+remain unchanged.
+
 Research and selective implementation can proceed now. Production state-proof
 acceptance remains gated by the profile, verified header/activation binding,
 independent conformance, lifecycle qualification and review. Bridge/custody
