@@ -39,6 +39,8 @@ audit history.
   expectations, actual verifier exits and complete target/guarantee matching.
 - [`block-observer.md`](block-observer.md) — pinned child binaries, a single
   read-only consumer call and explicit optional proof-only collection.
+- [`observer-report-consumer.md`](observer-report-consumer.md) — complete bounded
+  observer diagnostics, actual outer process exits and explicit mode/count checks.
 - [`consumer-resource-observation.md`](consumer-resource-observation.md) —
   application versus sampler exits, isolated private staging, bounded local
   observation and empty post-exit checks.

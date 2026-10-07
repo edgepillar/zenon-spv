@@ -77,6 +77,13 @@ unknown, duplicate, missing, case-aliased or partial output cannot match.
 The underlying consumer retains all target, guarantee, context/tip, lossless
 integer and trust checks. The observer does not implement them again.
 
+Applications can pass the completed outer diagnostic to the separate
+[observer-report consumer](observer-report-consumer.md), with the actual observer
+exit, independently expected target count and explicit local-file/collected mode.
+It checks complete bounded stdin and child completion metadata. The outer report
+contains no target identities or context; the caller still binds the protected
+report channel to this invocation and retains the underlying expectations.
+
 Each child's stderr is discarded, counted, and capped at 16 KiB. Exceeding
 either stream cap cancels that child. Each child has its own positive deadline
 (default 30 seconds, at most one minute) and one-second pipe wait limit. An

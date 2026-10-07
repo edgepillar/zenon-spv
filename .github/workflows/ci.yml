@@ -30,6 +30,10 @@ jobs:
         run: python tools/check-verification-context_test.py
       - name: Private staging sampler controls
         run: python -I -B tools/test_private_staging.py
+      - name: Observer diagnostic consumer controls
+        run: |
+          python -I -B tools/consume-observer-report_test.py
+          python -I -B tools/check-observer-report-consumer_test.py
       - name: Independent consumer controls
         run: python -I -B tools/check-query-consumer_test.py
       - name: Independent node consumer controls
@@ -73,6 +77,12 @@ jobs:
           candidate_directory="${{ runner.temp }}/tested-candidate"
           executable_suffix="$(go env GOEXE)"
           python -I -B tools/check-node-query-consumer.py --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --source-revision "${{ github.sha }}"
+      - name: Actual observer diagnostic consumption
+        shell: bash
+        run: |
+          candidate_directory="${{ runner.temp }}/tested-candidate"
+          executable_suffix="$(go env GOEXE)"
+          python -I -B tools/check-observer-report-consumer.py --observer "$candidate_directory/observe-block$executable_suffix" --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --collector "$candidate_directory/fetch-bundle$executable_suffix" --source-revision "${{ github.sha }}"
       - name: Upload offline pilot report
         if: ${{ !cancelled() && steps.pilot.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -170,6 +180,10 @@ jobs:
         run: python tools/check-verification-context_test.py
       - name: Private staging sampler controls
         run: python -I -B tools/test_private_staging.py
+      - name: Observer diagnostic consumer controls
+        run: |
+          python -I -B tools/consume-observer-report_test.py
+          python -I -B tools/check-observer-report-consumer_test.py
       - name: Independent consumer controls
         run: python -I -B tools/check-query-consumer_test.py
       - name: Independent node consumer controls
@@ -219,6 +233,12 @@ jobs:
           candidate_directory="${{ runner.temp }}/tested-candidate"
           executable_suffix="$(go env GOEXE)"
           python -I -B tools/check-node-query-consumer.py --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --source-revision "${{ github.sha }}"
+      - name: Actual observer diagnostic consumption
+        shell: bash
+        run: |
+          candidate_directory="${{ runner.temp }}/tested-candidate"
+          executable_suffix="$(go env GOEXE)"
+          python -I -B tools/check-observer-report-consumer.py --observer "$candidate_directory/observe-block$executable_suffix" --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --collector "$candidate_directory/fetch-bundle$executable_suffix" --source-revision "${{ github.sha }}"
       - name: Upload offline pilot report
         if: ${{ !cancelled() && steps.pilot.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
