@@ -111,6 +111,11 @@ Windows using the existing exported candidate binaries. Qualification output
 records reader/source/executable byte pins and every comparison; the source
 revision remains caller asserted. A later failure retains the recorded completed
 or uncertain subprocess outcomes with actual exits and stdout/stderr byte hashes.
+Malformed, truncated, invalid-UTF-8 or overnested completed child JSON retains
+that ledger too. Invalid seed metadata (including a Boolean or floating exit
+code) refuses at `seed_report`; invalid reader JSON refuses at `reader_summary`.
+Those refusals preserve earlier completed outcomes without echoing raw private
+output or treating a successful child process exit as qualification success.
 Raw private diagnostics are not printed. Actual fixture/process failures stop the run
 without claiming qualification or automatically retrying. This is offline
 interoperability with synthetic trust selections, not a live network pilot,

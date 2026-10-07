@@ -2,11 +2,15 @@
 """Controls for preselection, joined fixture lifetime and qualification failures."""
 
 import copy
+import contextlib
 from http.client import HTTPConnection
 import importlib.util
+import io
 import json
 from pathlib import Path
 import subprocess
+import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -64,6 +68,59 @@ class ObserverWorkflowControls(unittest.TestCase):
         self.assertEqual(failed.exception.outcomes[0]["actual_exit"], 2)
         self.assertEqual(failed.exception.outcomes[0]["stdout_sha256"], workflow.sha(b"{}"))
         self.assertNotIn("PRIVATE", json.dumps(failed.exception.outcomes))
+
+    def test_bad_completed_seed_output_retains_main_failure_ledger(self):
+        cases = (b'{"outcome":', b"PRIVATE malformed output", b"\xff", b"[]", b"null", b"true", b"0",
+                 b"{}", b'{"outcome":"ACCEPT"}', b'{"exit_code":0}',
+                 b'{"outcome":"ACCEPT","exit_code":false}', b'{"outcome":"ACCEPT","exit_code":0.0}',
+                 b'{"outcome":"ACCEPT","exit_code":"0"}', b'{"outcome":"ACCEPT","exit_code":1}',
+                 b'{"outcome":"REFUSE","exit_code":0}')
+        with tempfile.TemporaryDirectory(prefix="observer-ledger-control-") as directory:
+            binary = Path(directory) / "PRIVATE_INERT_BINARY"
+            binary.write_bytes(b"fixed inert bytes; no executable is launched")
+            arguments = ["qualification", "--source-revision", "1" * 40]
+            for name in ("observer", "verifier", "consumer", "collector"):
+                arguments.extend(["--" + name, str(binary)])
+            for raw in cases:
+                with self.subTest(raw_sha256=workflow.sha(raw)):
+                    result = subprocess.CompletedProcess([], 0, raw, b"")
+                    output = io.StringIO()
+                    with mock.patch.object(sys, "argv", arguments), mock.patch.object(workflow.subprocess, "run", return_value=result) as run, mock.patch.object(workflow, "Fixture") as fixture, contextlib.redirect_stdout(output):
+                        code = workflow.main()
+                    self.assertEqual(code, 2)
+                    self.assertEqual(run.call_count, 1)
+                    fixture.assert_not_called()
+                    failure = json.loads(output.getvalue())
+                    self.assertEqual(failure["stage"], "seed_report")
+                    self.assertEqual(failure["process_counts"], {role + "_" + state: (1 if role == "seed" else 0)
+                        for role in ("seed", "observer", "reader") for state in ("attempted", "completed")})
+                    self.assertEqual(failure["process_outcomes"], [{"role": "seed", "completed": True, "actual_exit": 0,
+                        "stdout_sha256": workflow.sha(raw), "stderr_sha256": workflow.sha(b""),
+                        "stdout_bytes": len(raw), "stderr_bytes": 0}])
+                    self.assertNotIn("PRIVATE", output.getvalue())
+                    self.assertIs(failure["network_pilot"], False)
+
+    def test_completed_reader_decode_failure_retains_prior_outcomes(self):
+        for raw in (b'{"schema_version":', b"PRIVATE malformed summary", b"\xff", b"[" * 1000):
+            with self.subTest(raw_sha256=workflow.sha(raw)):
+                runner = workflow.Runner({"zenon-spv": Path("PRIVATE_EXECUTABLE")})
+                seed = subprocess.CompletedProcess([], 0, b'{"outcome":"ACCEPT","exit_code":0}', b"")
+                reader = subprocess.CompletedProcess([], 2, raw, b"")
+                with mock.patch.object(workflow.subprocess, "run", side_effect=[seed, reader]):
+                    first = runner.child("seed", [])
+                    self.assertEqual(runner.document(first, "seed_report")["exit_code"], 0)
+                    second = runner.child("reader", [])
+                    with self.assertRaises(workflow.Failure) as failed:
+                        runner.document(second, "reader_summary")
+                self.assertEqual(failed.exception.stage, "reader_summary")
+                self.assertEqual(len(failed.exception.outcomes), 2)
+                self.assertEqual([row["actual_exit"] for row in failed.exception.outcomes], [0, 2])
+                self.assertEqual(failed.exception.counts["seed_completed"], 1)
+                self.assertEqual(failed.exception.counts["reader_completed"], 1)
+                self.assertEqual(failed.exception.outcomes[1]["stdout_sha256"], workflow.sha(raw))
+                runner.counts.events.clear()
+                self.assertEqual(len(failed.exception.outcomes), 2)
+                self.assertNotIn("PRIVATE", str(failed.exception))
 
     def test_runtime_inherited_endpoints_and_proxies_are_excluded(self):
         with mock.patch.dict(workflow.os.environ, {"ZENON_SPV_RPC": "PRIVATE_ENDPOINT", "HTTP_PROXY": "PRIVATE_PROXY", "https_proxy": "PRIVATE_PROXY"}):

@@ -175,6 +175,14 @@ class Runner:
         require(len(result.stdout) <= 4 << 20 and not result.stderr, "private_child_output", self.counts)
         return result
 
+    def document(self, result, stage):
+        # Completion is already recorded. Parsing must not discard the actual
+        # exit and byte hashes when a completed child's output is incomplete.
+        try:
+            return json.loads(result.stdout)
+        except (ValueError, TypeError, RecursionError):
+            raise Failure(stage, self.counts) from None
+
 
 def qualification(binaries, revision):
     program, corpus, expectations = selected_inputs()
@@ -215,8 +223,10 @@ def qualification(binaries, revision):
                   "--state", str(state), "--expect-context", program["context"]["fingerprint"], "--window", "low", "--retain-headers", "16"]
         result = runner.child("seed", ["verify-headers", "--json", *common, seed_path])
         require(result.returncode == 0, "seed_result", runner.counts)
-        document = json.loads(result.stdout)
-        require(document["outcome"] == "ACCEPT" and document["exit_code"] == 0, "seed_report", runner.counts)
+        document = runner.document(result, "seed_report")
+        require(type(document) is dict and document.get("outcome") == "ACCEPT" and
+                type(document.get("exit_code")) is int and document["exit_code"] == 0,
+                "seed_report", runner.counts)
         inputs[state] = state.read_bytes()
         lock = Path(str(state) + ".lock")
         if lock.exists():
@@ -228,7 +238,7 @@ def qualification(binaries, revision):
             def compare(case_id, raw, mode, count, actual, wanted):
                 result = runner.child("reader", ["--mode", mode, "--expected-targets", str(count), "--observer-exit-code", str(actual)], raw)
                 require(result.returncode == wanted, "reader_decision", runner.counts)
-                value = json.loads(result.stdout)
+                value = runner.document(result, "reader_summary")
                 require(type(value) is dict and set(value) == {"schema_version", "status", "category", "checked_targets"} and
                         type(value["schema_version"]) is int and value["schema_version"] == 1 and
                         value["status"] == ("matched" if wanted == 0 else "not_matched") and
