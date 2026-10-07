@@ -63,9 +63,100 @@ filesystem or adversarial replacement proofs.
 python -I -B tools/test_private_staging.py
 ```
 
-A separately source-bound local experiment will record repeated ordinary
-observer cycles, private-file observations and fault-followed-by-recovery
-outcomes using fixed synthetic full-retention inputs. Its results require all
-raw records and measurement boundaries to be retained. This helper and synthetic
-tests do not establish canonicality, finality, authenticated election/activation,
-state-value proofs, live-network consumer acceptance or an authenticated release.
+## Repeated local observer cycles
+
+This separately predeclared experiment measures source revision
+`1b4331a1941269ec3cee242d1fe9771710e6d1e2`. Its 365 Go/module/JSON runtime and
+existing test inputs, and all four local ordinary executable byte hashes, are
+identical to parent `5bf2df1565fe820d672828ae6b97fa09b60dea09`.
+The sampler and its controls are new. This is an instrumented engineering
+observation, without a causal speedup claim or production capacity qualification.
+
+The local host was Darwin arm64, with eight reported physical CPU cores and
+20 GiB memory. Native hosted macOS CI qualifies amd64 separately. Input preparation
+and builds are outside timing. The 78 fixed synthetic input files reuse a node
+fixture pinned to go-zenon `3a4131e63881058b6ce2ee81d3a41d0033fafc99`;
+13,068 header preimages, flat content roots, schedule/context fingerprints,
+expectations and fixed RPC bytes were independently recalculated before running.
+Synthetic signatures were reused, with no new signing or external RPC.
+
+Each K/T/C cell runs 25 fresh ordinary observers per worker using the same
+full-retention state, explicit anchor/profile/schedule/context pin and selected
+targets. A loopback fixture persists per worker across those cycles. K is 256 or
+4096, T is 1/16/256, and C is 1 or 4. States do not advance; this does not measure
+forward history or a sustainable request arrival rate. T=256 uses a 36,374,884-byte
+bundle containing a 1,000-member flat content list per target.
+
+Timing starts at the first observer launch and ends after all actual outer exits,
+child/copy completion and final private-directory metadata observation. Requested
+10 ms gaps separate POSIX `ps` candidate-tree RSS and bounded metadata scans;
+sampling overhead is included. Fixture setup/shutdown, handler settlement,
+compilation and subsequent immutable-input byte guards are outside timing.
+Fixtures use 5-second socket/settlement bounds, a 10-second gate hold ceiling and
+50-second group supervision. Ordinary children use 15 seconds per stage; selected
+collector timeouts use 500 ms. Handler settlement precedes each next cycle and
+all 54 fixture servers in 18 sets are joined at the end of their series.
+
+Every baseline, fault and recovery group begins and ends with an empty selected
+private root. Scans use 128 entries and depth 2. The table reports nearest-rank
+p95 over all 25 baseline rounds and maximum sampled file/RSS observations. All
+rounds are retained: no warmup discard, sample filtering, failed-round retries or
+forced ordinary Go GC. Sizes are MiB (2^20 bytes), times milliseconds.
+
+| K | T | C | p95 elapsed ms | Sampled RSS MiB | Sampled logical file MiB | OS-reported file blocks MiB |
+|---:|---:|---:|---:|---:|---:|---:|
+| 256 | 1 | 1 | 88.194 | 24.781 | 0.138 | 0.145 |
+| 256 | 1 | 4 | 90.824 | 82.594 | 0.545 | 0.562 |
+| 256 | 16 | 1 | 153.948 | 31.109 | 2.183 | 2.188 |
+| 256 | 16 | 4 | 164.692 | 123.391 | 8.710 | 8.727 |
+| 256 | 256 | 1 | 1221.624 | 149.453 | 34.894 | 34.898 |
+| 256 | 256 | 4 | 1424.126 | 594.875 | 139.275 | 139.289 |
+| 4096 | 1 | 1 | 269.208 | 37.000 | 0.138 | 0.145 |
+| 4096 | 1 | 4 | 281.980 | 146.812 | 0.545 | 0.562 |
+| 4096 | 16 | 1 | 336.847 | 45.078 | 2.183 | 2.188 |
+| 4096 | 16 | 4 | 355.947 | 181.500 | 8.732 | 8.750 |
+| 4096 | 256 | 1 | 1420.212 | 156.469 | 34.894 | 34.898 |
+| 4096 | 256 | 4 | 1640.474 | 624.250 | 139.124 | 139.137 |
+
+The predeclared local alarms are p95 10 seconds serial / 30 seconds concurrent,
+1 GiB sampled group RSS, 256 MiB outer-process `wait4` high water, and logical
+private-file bytes of C * 71,565,312 bytes (68.25 MiB per observer, derived from
+existing output caps). All 12 baseline cells remained below these alarms. All
+348 groups also remained below the sampled RSS and outer high-water limits.
+These are developer-selected engineering alarms, not independent consumer
+acceptance, physical storage quotas or guaranteed peak bounds.
+
+For each K/T pair, four C=4 groups select exactly one collector timeout, active
+SIGINT cancellation, successful partial-report helper or expired target. The
+other three observers remain healthy. Every fault is immediately followed by
+four fresh healthy observers on the same settled fixture set and original fixed
+inputs. The expired input is used only for its selected fault; recovery uses the
+original state. This tests owned process/fixture cleanup and fresh-call recovery,
+without persisting or advancing candidate state.
+
+The complete series retains 348 group records, 2,580 raw run files, 942 actual
+outer exits and 2,796 child outcomes: 3,732 ordinary candidate process outcomes
+plus six explicit partial-report helper outcomes. There are 918 matches, 24
+expected refusals, 72 healthy fault siblings and 96 healthy recovery matches.
+All 1,872 loopback requests are retained as fixed-byte response attempts;
+cancelled-client attempts are not asserted to have delivered payloads.
+Independent raw-record recalculation invokes no candidate or network.
+
+The 7,512 RSS samples and 8,208 metadata scans preserve 19 known disappearing
+entry races. No metadata scan refused. The largest sampled logical file sum was
+146,040,638 bytes; the largest filesystem-reported file allocation sum was
+146,055,168 bytes; up to 12 regular files were observed. All 348 final scans were
+empty, and all fixed input/executable bytes remained unchanged. This rules out
+remaining visible named files at those selected post-exit checks, not short
+peaks, unlinked open files or storage outside the selected root.
+
+The 17 sampler controls run locally and in all three native CI jobs. Actual
+filesystem controls and modeled unsafe/race metadata remain distinct. Local
+executable provenance is separately recorded clean source/build evidence;
+embedded VCS metadata was unavailable, and no authenticated or reproducible
+release claim follows. Raw inputs, process reports, samples, fixture lifetimes,
+byte audits and executable pins remain in the private qualification packet.
+
+This helper and synthetic experiments do not establish canonicality, finality,
+authenticated election/activation, state-value proofs, a qualified live-network
+consumer pilot, independent human review or an authenticated release.
