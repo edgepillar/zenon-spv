@@ -98,6 +98,11 @@ The [block observer](docs/block-observer.md#collect-and-observe-from-one-explici
 can collect proof-only evidence from one explicit RPC and run the retained-only
 verifier and query consumer in the same invocation, with pinned child binaries
 and unchanged local state.
+For separate application exits, finite private-file metadata samples and an
+explicit post-exit directory check, follow the
+[consumer resource observation guide](docs/consumer-resource-observation.md).
+It links the existing resource reports and keeps fixed replay observations
+separate from consumer budgets and network qualification.
 Use `inspect-config --json` to review settings and `--expect-context <64-hex>`
 to require the same configuration on later verification, inspection, and watch
 commands. A matching fingerprint is configuration consistency, not independent
