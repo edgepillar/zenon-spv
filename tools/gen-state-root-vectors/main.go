@@ -15,6 +15,9 @@ import (
 	"os"
 	"runtime/debug"
 
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/storage"
+
 	"github.com/zenon-network/go-zenon/chain/nom"
 	"github.com/zenon-network/go-zenon/common"
 	"github.com/zenon-network/go-zenon/common/db"
@@ -493,15 +496,151 @@ func generateFilter() any {
 	}
 }
 
+type applierKey struct {
+	Name string `json:"name"`
+	Key  string `json:"key"`
+}
+
+type applierObservation struct {
+	Name       string `json:"name"`
+	Key        string `json:"key"`
+	Path       string `json:"path"`
+	Value      string `json:"value"`
+	Present    bool   `json:"present"`
+	Proof      string `json:"proof"`
+	NodeResult string `json:"node_result"`
+}
+
+type applierCheckpoint struct {
+	Name         string               `json:"name"`
+	Height       uint64               `json:"height"`
+	Hash         string               `json:"hash"`
+	Input        []filterOperation    `json:"input"`
+	Root         string               `json:"root"`
+	Observations []applierObservation `json:"observations"`
+}
+
+func generateApplier() any {
+	// This opens a fresh, temporary in-memory database only. It exercises public
+	// NodeTree APIs, not node startup, disk recovery, retention or a network.
+	database, err := leveldb.Open(storage.NewMemStorage(), nil)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := database.Close(); err != nil {
+			panic(err)
+		}
+	}()
+	tree, err := trie.NewNodeTree(database)
+	if err != nil {
+		panic(err)
+	}
+	keys := []applierKey{
+		{"balance-a", hx(balanceKey(hx(bytes.Repeat([]byte{17}, 20)), hx(bytes.Repeat([]byte{34}, 10))))},
+		{"balance-b", hx(balanceKey(hx(bytes.Repeat([]byte{51}, 20)), hx(bytes.Repeat([]byte{68}, 10))))},
+		{"storage", hx(filterAccountKey(4, []byte{0, 255, 128}))},
+		{"balance-prefix-only", hx(filterAccountKey(3, nil))},
+		{"storage-prefix-only", hx(filterAccountKey(4, nil))},
+		{"excluded-account-subprefix-0", hx(filterAccountKey(0, nil))},
+		{"excluded-mailbox", hx([]byte{4, 1, 2})},
+		{"excluded-znn-index", hx([]byte{8, 1, 2})},
+	}
+	checkpoints := []applierCheckpoint{}
+	observe := func(name string, identifier types.HashHeight, input []filterOperation) {
+		root, err := tree.Root(identifier)
+		if err != nil {
+			panic(err)
+		}
+		checkpoint := applierCheckpoint{Name: name, Height: identifier.Height, Hash: identifier.Hash.String(),
+			Input: input, Root: root.String(), Observations: []applierObservation{}}
+		for _, selected := range keys {
+			key := raw(selected.Key)
+			value, proof, err := tree.Prove(identifier, key)
+			if err != nil {
+				panic(err)
+			}
+			position := types.NewHash(key).String()
+			p := proofCase{Root: root.String(), Path: position, Value: hx(value), Present: value != nil, Proof: hx(proof)}
+			verdict := nodeResult(p)
+			require(verdict == "match", "in-memory NodeTree proof does not match its root")
+			checkpoint.Observations = append(checkpoint.Observations,
+				applierObservation{selected.Name, selected.Key, position, hx(value), value != nil, hx(proof), verdict})
+		}
+		checkpoints = append(checkpoints, checkpoint)
+	}
+	observe("initial-empty", types.ZeroHashHeight, []filterOperation{})
+	// Per-key event order is deliberate. Zero stays present, empty Put deletes,
+	// and the last event wins among duplicate writes/deletes to the same path.
+	steps := []struct {
+		name   string
+		values []int
+	}{
+		{"stored-zero", []int{0}},
+		{"empty-then-overwrite", []int{-1, 1, 2}},
+		{"delete-then-overwrite", []int{3, -2, 4}},
+		{"empty-put-deletes", []int{-1}},
+		{"restore-stored-zero", []int{0}},
+		{"delete-wins", []int{1, -2}},
+	}
+	for index, step := range steps {
+		patch := db.NewPatch()
+		recorded := &filterRecording{operations: []filterOperation{}}
+		for _, selected := range keys {
+			key := raw(selected.Key)
+			for _, number := range step.values {
+				switch number {
+				case -2:
+					patch.Delete(key)
+				case -1:
+					patch.Put(key, []byte{})
+				default:
+					value := make([]byte, 32)
+					value[31] = byte(number)
+					patch.Put(key, value)
+				}
+			}
+		}
+		if err := patch.Replay(recorded); err != nil {
+			panic(err)
+		}
+		if err := tree.Update(patch); err != nil {
+			panic(err)
+		}
+		identifier := types.HashHeight{Height: uint64(index + 1),
+			Hash: types.NewHash([]byte("synthetic-l1-applier-v1/" + step.name))}
+		if err := tree.Commit(identifier); err != nil {
+			panic(err)
+		}
+		require(tree.FrontierIdentifier() == identifier, "synthetic frontier differs after commit")
+		observe(step.name, identifier, recorded.operations)
+	}
+	return map[string]any{
+		"format_version": 1, "kind": "candidate-l1-applier-research", "backend": "NodeTree",
+		"source": map[string]string{"repository": "https://github.com/digitalSloth/go-zenon",
+			"revision": nodeCommit, "tree": nodeTree},
+		"scope": map[string]bool{"synthetic": true, "unsigned": true,
+			"l1_staged_applier_executed": true, "node_database_opened": true,
+			"database_storage_in_memory_only": true, "temporary_database_closed": true,
+			"persisted_disk_lifecycle_executed": false, "node_lifecycle_executed": false,
+			"node_tests_executed": false, "rpc_executed": false, "profile_agreed": false,
+			"network_activation_authenticated": false, "runtime_state_proof_acceptance": false},
+		"selected_keys": keys, "checkpoints": checkpoints,
+	}
+}
+
 func run() error {
 	// regenerate.py validates and copies every node blob before it builds this
 	// separate module. Refuse an ordinary remote module or an unselected tree.
 	if (len(os.Args) != 3 && len(os.Args) != 5) || os.Args[1] != "--verified-node-tree" || os.Args[2] != nodeTree {
 		return fmt.Errorf("use the offline regenerate.py source-validation driver")
 	}
-	filter := len(os.Args) == 5
-	if filter && (os.Args[3] != "--fixture-kind" || os.Args[4] != "fold-filter") {
-		return fmt.Errorf("unsupported reference fixture kind")
+	kind := "bytes"
+	if len(os.Args) == 5 {
+		kind = os.Args[4]
+		if os.Args[3] != "--fixture-kind" || (kind != "fold-filter" && kind != "applier") {
+			return fmt.Errorf("unsupported reference fixture kind")
+		}
 	}
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
@@ -520,8 +659,11 @@ func run() error {
 	}
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
-	if filter {
+	if kind == "fold-filter" {
 		return encoder.Encode(generateFilter())
+	}
+	if kind == "applier" {
+		return encoder.Encode(generateApplier())
 	}
 	return encoder.Encode(generate())
 }
