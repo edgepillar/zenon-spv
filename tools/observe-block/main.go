@@ -225,7 +225,10 @@ func observe(ctx context.Context, c configuration) (result summary, code int) {
 	}
 	if c.collection.binary != "" {
 		collected := runProcess(ctx, c.collection.binary, collectionArguments(c), int(verify.DefaultMaxBundleBytes), c.timeout)
-		result.Collector = &collected.observation
+		// Keep only metadata in the summary. An interior pointer into collected
+		// would also retain its captured stdout through the following stages.
+		collectorObservation := collected.observation
+		result.Collector = &collectorObservation
 		if collected.category != "" {
 			return fail(collected.category, collected.code)
 		}
