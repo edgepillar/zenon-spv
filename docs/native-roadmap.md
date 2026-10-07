@@ -30,21 +30,31 @@ or an operator schedule cannot complete this track.
 
 ## Separate state-root research
 
-The candidate [digitalSloth revision](https://github.com/digitalSloth/go-zenon/tree/56ce2c384966f2f1940967257a0788d3998a5eef)
-introduces a v3 `StateRoot` hash field and a `StateRootSpork`-gated verification
-path. The header appends the root to its hash preimage; the transaction verifier
-compares it with a computed root. These are source observations from
-[`chain/nom/momentum.go`](https://github.com/digitalSloth/go-zenon/blob/56ce2c384966f2f1940967257a0788d3998a5eef/chain/nom/momentum.go)
-and [`verifier/momentum.go`](https://github.com/digitalSloth/go-zenon/blob/56ce2c384966f2f1940967257a0788d3998a5eef/verifier/momentum.go),
-not a security audit, deployment/activation claim or production endorsement.
+The [candidate commitment contract](state-root-candidate-contract.md) pins
+`digitalSloth/go-zenon@56ce2c384966f2f1940967257a0788d3998a5eef` and separates
+observed source rules from unresolved profile decisions. Its root covers token
+balances and contract storage; plasma, frontier, mailbox and the separate ZNN
+index are excluded. The first typed consumer target is a selected token balance
+under an exact verified Momentum. Refuse excluded-key queries before treating
+absence as a ledger value. Stored balances use an at-least-32-byte integer
+codec, so a present zero and an absent balance key need distinct proof results.
 
-Review node changes and base compatibility independently; specify root binding,
-key/path encoding, absent versus present-empty values, deletion, membership and
-absence proofs, activation and migration. Then require controlled testnet
-node/client conformance under an explicit profile before any accepting
-`STATE_VALUE_INCLUSION` implementation. A state root alone does not identify a
-canonical chain. The current client continues refusing v3 and state-value proofs.
-Older "no state tree" audits apply to their pinned v1/v2 baseline, not every fork.
+Proceed through the contract's coordinated deliveries: agree the commitment
+profile and resource policies; produce node-derived v3/root/proof vectors with
+an independent byte oracle; extend strict headers, RPC, bundles, persisted
+state, context and typed consumer reports; qualify node lifecycle and snapshot
+import separately; then run a read-only pilot under explicit activation and
+header trust inputs. Snapshot chunk digests and reconstructed SMT roots are
+different objects, and a partial root does not authenticate excluded state.
+Require hash-bound recovery tests and measurements of the actual `NodeTree`,
+rather than inferring bulk build costs from per-height comments.
+
+The contract is research, not an enabled profile, deployment claim or security
+endorsement. The current client continues refusing v3 and state-value proofs.
+Do not reuse the broader reserved `IAVL_STATE` kind for this partial SMT.
+Canonicality, consensus finality, freshness and authenticated election remain
+separate gates. Older "no state tree" audits apply to their pinned v1/v2
+baseline, not every fork. Selective extension remains preferable to a rewrite.
 
 ## Reuse and later tracks
 
