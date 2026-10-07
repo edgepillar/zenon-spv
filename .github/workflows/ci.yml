@@ -44,6 +44,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_test.py
       - name: Independent candidate state-root bytes
         run: python -I -B tools/gen-state-root-vectors/check.py --source-revision "${{ github.sha }}"
+      - name: Candidate L1 filter controls
+        run: python -I -B tools/gen-state-root-vectors/check_fold_test.py
+      - name: Independent candidate L1 filter events
+        run: python -I -B tools/gen-state-root-vectors/check_fold.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash
@@ -198,6 +202,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_test.py
       - name: Independent candidate state-root bytes
         run: python -I -B tools/gen-state-root-vectors/check.py --source-revision "${{ github.sha }}"
+      - name: Candidate L1 filter controls
+        run: python -I -B tools/gen-state-root-vectors/check_fold_test.py
+      - name: Independent candidate L1 filter events
+        run: python -I -B tools/gen-state-root-vectors/check_fold.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash
