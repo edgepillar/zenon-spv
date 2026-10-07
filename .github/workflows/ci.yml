@@ -28,6 +28,8 @@ jobs:
         run: python -B tools/check-exported-candidate_test.py
       - name: Verification context checks
         run: python tools/check-verification-context_test.py
+      - name: Private staging sampler controls
+        run: python -I -B tools/test_private_staging.py
       - name: Independent consumer controls
         run: python -I -B tools/check-query-consumer_test.py
       - name: Independent node consumer controls
@@ -166,6 +168,8 @@ jobs:
         run: python -B tools/check-exported-candidate_test.py
       - name: Verification context checks
         run: python tools/check-verification-context_test.py
+      - name: Private staging sampler controls
+        run: python -I -B tools/test_private_staging.py
       - name: Independent consumer controls
         run: python -I -B tools/check-query-consumer_test.py
       - name: Independent node consumer controls
