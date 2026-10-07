@@ -39,6 +39,7 @@ class ObserverWorkflowControls(unittest.TestCase):
         self.assertEqual(failed.exception.stage, "child_completion")
         self.assertEqual(failed.exception.counts["seed_attempted"], 1)
         self.assertEqual(failed.exception.counts["seed_completed"], 0)
+        self.assertEqual(failed.exception.outcomes, [{"role": "seed", "completed": False, "actual_exit": None}])
         self.assertNotIn("PRIVATE", str(failed.exception))
 
     def test_completed_private_stderr_is_not_promoted(self):
@@ -49,6 +50,20 @@ class ObserverWorkflowControls(unittest.TestCase):
                 runner.child("observer", [])
         self.assertEqual(failed.exception.stage, "private_child_output")
         self.assertEqual(runner.counts["observer_completed"], 1)
+        self.assertEqual(failed.exception.outcomes[0]["actual_exit"], 0)
+        self.assertEqual(failed.exception.outcomes[0]["stderr_sha256"], workflow.sha(b"PRIVATE_PATH"))
+
+    def test_later_failure_preserves_prior_completed_outcomes(self):
+        runner = workflow.Runner({"observe-block": Path("PRIVATE_EXECUTABLE")})
+        result = subprocess.CompletedProcess([], 2, b"{}", b"")
+        with mock.patch.object(workflow.subprocess, "run", return_value=result):
+            runner.child("observer", [])
+        with self.assertRaises(workflow.Failure) as failed:
+            workflow.require(False, "later_boundary", runner.counts)
+        self.assertEqual(len(failed.exception.outcomes), 1)
+        self.assertEqual(failed.exception.outcomes[0]["actual_exit"], 2)
+        self.assertEqual(failed.exception.outcomes[0]["stdout_sha256"], workflow.sha(b"{}"))
+        self.assertNotIn("PRIVATE", json.dumps(failed.exception.outcomes))
 
     def test_runtime_inherited_endpoints_and_proxies_are_excluded(self):
         with mock.patch.dict(workflow.os.environ, {"ZENON_SPV_RPC": "PRIVATE_ENDPOINT", "HTTP_PROXY": "PRIVATE_PROXY", "https_proxy": "PRIVATE_PROXY"}):
