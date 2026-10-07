@@ -2,13 +2,24 @@
 
 import base64
 
-from check import address_bytes, bech32_bytes, digest, require, uint64
+from check import address_bytes, bech32_bytes, digest, hash_bytes, require, uint64
+
+
+def hex_bytes(value, size):
+    require(type(value) is str and len(value) == 2 * size, "expected a fixed-width hex string")
+    parsed = bytes.fromhex(value)
+    require(len(parsed) == size, "wrong parsed hex width")
+    return parsed
 
 
 def check_unsigned_projection(projection):
     for field in ("version", "chainIdentifier", "blockType", "height", "fusedPlasma", "difficulty"):
         uint64(projection[field])
     uint64(projection["momentumAcknowledged"]["height"])
+    for field in ("hash", "previousHash", "fromBlockHash"):
+        hash_bytes(projection[field])
+    hash_bytes(projection["momentumAcknowledged"]["hash"])
+    hex_bytes(projection["nonce"], 8)
 
 
 def optional_base64(value):
@@ -35,9 +46,7 @@ def account_bytes(block, rpc):
     encoded = magnitude.to_bytes(max(32, (magnitude.bit_length() + 7) // 8), "big")
 
     def field_bytes(field, size):
-        value = bytes.fromhex(block[field])
-        require(len(value) == size, f"wrong field width: {field}")
-        return value
+        return hex_bytes(block[field], size)
 
     for field in ("version", "chainIdentifier", "blockType", "previousHash", "height",
                   "momentumAcknowledged", "fromBlockHash", "fusedPlasma", "difficulty", "nonce"):
@@ -48,11 +57,9 @@ def account_bytes(block, rpc):
     for field in ("publicKey", "signature"):
         require(optional_base64(block[field]) == optional_base64(rpc[field]), f"wrong {field}")
     ack = block["momentumAcknowledged"]
-    ack_hash = bytes.fromhex(ack["hash"])
-    require(len(ack_hash) == 32, "wrong acknowledged hash width")
+    ack_hash = hash_bytes(ack["hash"])
     data_hash = digest(optional_base64(rpc["data"]))
-    children = [bytes.fromhex(child["hash"]) for child in rpc["descendantBlocks"]]
-    require(all(len(child) == 32 for child in children), "wrong descendant hash width")
+    children = [hash_bytes(child["hash"]) for child in rpc["descendantBlocks"]]
     descendant_hash = digest(b"".join(children))
     require(data_hash == field_bytes("dataHash", 32), "wrong data digest")
     require(descendant_hash == field_bytes("descendantBlocksHash", 32), "wrong descendant digest")

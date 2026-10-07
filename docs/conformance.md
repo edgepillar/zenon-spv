@@ -34,6 +34,14 @@ other false-like values cannot inherit it. Corruption controls retain the node's
 hashes and check unchanged preimages for valid sign, zero-padding and nullable
 representations. Negative and wide amount vectors remain low-level serialization
 controls; accepting their byte encoding does not make them valid transactions.
+Account projection hex strings must have both their exact text width and decoded
+byte width. RPC hashes and eight-byte nonces, including nested descendants and
+acknowledged hashes, retain that contract. ASCII whitespace ignored by Python's
+hex decoder cannot preserve an otherwise invalid wire representation. Full-width
+uppercase preimage fields retain their byte meaning. Thirty byte controls cover
+these boundaries, including refusal before signature-backend execution. The
+four wire-field whitespace mutations preserve the original hash, signature and
+preimage, but the pinned node hash/nonce decoders refuse them.
 These checks establish the fixture's typed byte contract. The separate
 [independent signature checker](independent-signatures.md) runs OpenSSL over
 Python-recomputed messages in all three native CI jobs, retaining unsigned
