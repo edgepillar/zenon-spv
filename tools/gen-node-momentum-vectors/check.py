@@ -23,6 +23,14 @@ def digest(data):
     return hashlib.sha3_256(data).digest()
 
 
+def base64_bytes(value):
+    """Decode a string using the node's standard Base64 padding/CRLF rules."""
+    require(type(value) is str, "expected a base64 string")
+    text = value.replace("\r", "").replace("\n", "")
+    require(len(text) % 4 == 0 and not text.endswith("==="), "invalid base64 padding")
+    return base64.b64decode(text, validate=True)
+
+
 def uint64(value):
     require(type(value) is int and 0 <= value < 1 << 64, "expected a uint64 JSON integer")
     return struct.pack(">Q", value)
@@ -93,7 +101,7 @@ def check_vector(vector):
         require(member["height"] == header["height"] and member["hash"] == header["hash"], "content mismatch")
         rows.append(address + uint64(member["height"]) + member_hash)
     require(rows == sorted(rows), "fixture content is not in canonical order")
-    data_hash = digest(base64.b64decode(wire["data"], validate=True))
+    data_hash = digest(base64_bytes(wire["data"]))
     content_hash = digest(b"".join(rows))
     require(data_hash.hex() == expected["dataHash"], "data hash mismatch")
     require(content_hash.hex() == expected["contentHash"], "content hash mismatch")
@@ -108,8 +116,11 @@ def check_vector(vector):
         preimage += uint64(wire["nextFusionPrice"]) + uint64(wire["nextWorkPrice"])
     require(digest(preimage).hex() == wire["hash"] == expected["hash"], "momentum hash mismatch")
     for field in ("version", "chainIdentifier", "previousHash", "height", "timestamp", "changesHash",
-                  "publicKey", "signature", "nextFusionPrice", "nextWorkPrice"):
+                  "nextFusionPrice", "nextWorkPrice"):
         require(wire[field] == expected[field], f"header projection mismatch: {field}")
+    for field in ("publicKey", "signature"):
+        require(base64_bytes(wire[field]) == base64_bytes(expected[field]),
+                f"header projection mismatch: {field}")
     return preimage
 
 

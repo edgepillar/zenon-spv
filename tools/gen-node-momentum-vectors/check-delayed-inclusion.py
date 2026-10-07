@@ -5,13 +5,12 @@ No node or SPV implementation is imported. Go checks Ed25519 separately.
 This checks envelope consistency, not execution, election or network finality.
 """
 
-import base64
 import json
 from pathlib import Path
 import sys
 
 from check import address_bytes, check_anchor, check_vector, digest, require, uint64
-from check_account import check_account
+from check_account import check_account, optional_base64
 
 
 def check(path):
@@ -49,8 +48,8 @@ def check(path):
             require(block["address"] == segment["address"] and block["height"] == index + 1 and block["previousHash"] == previous, "broken account chain")
             ack = by_height[confirming - 1]["header"]
             require(block["momentumAcknowledged"] == {"hash": ack["hash"], "height": ack["height"]}, "wrong acknowledgement")
-            key = base64.b64decode(block["publicKey"] or "", validate=True)
-            signature = base64.b64decode(block["signature"] or "", validate=True)
+            key = optional_base64(block["publicKey"])
+            signature = optional_base64(block["signature"])
             if kind == 2:
                 require(len(key) == 32 and len(signature) == 64 and (b"\x00" + digest(key)[:19]).hex() == block["address"], "wrong signing identity")
                 sends.append(block["hash"])

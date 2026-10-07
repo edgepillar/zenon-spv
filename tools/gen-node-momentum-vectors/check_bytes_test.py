@@ -525,6 +525,124 @@ class ByteRepresentationChecks(unittest.TestCase):
                             SIGNATURES.run(root, "unavailable-backend")
                     backend.assert_not_called()
 
+    def test_base64_string_padding_and_crlf_contract(self):
+        valid = {"": b"", "\r\n": b"", "AA==": b"\x00", "AB==": b"\x00",
+                 "AAA=": b"\x00\x00", "AAAA": b"\x00\x00\x00",
+                 "\rA\nA\r=\n=\r\n": b"\x00"}
+        for text, expected in valid.items():
+            with self.subTest(text=text):
+                self.assertEqual(CHECKER.base64_bytes(text), expected)
+        for value in (None, False, True, 0, 0.0, [], {}, b"AA==", "A", "AA", "AAA",
+                      "A===", "AAAA=", "AAAA==", "AAAA===", "AAAA====", "AA===",
+                      "AA==AA==", "AA=A", "=AAA", "AA-_", "\u00e9AAA"):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    CHECKER.base64_bytes(value)
+
+    def test_momentum_crlf_preserves_original_preimages_and_projections(self):
+        vectors = (self.momentum["vectors"] + self.momentum["chain"]["vectors"] +
+                   self.momentum["transition"]["vectors"])
+        for original in vectors:
+            baseline = CHECKER.check_vector(original)
+            for field in ("data", "publicKey", "signature"):
+                sides = ("momentum",) if field == "data" else ("momentum", "header")
+                for side in sides:
+                    for newline in ("\r", "\n", "\r\n"):
+                        with self.subTest(vector=original["name"], side=side, field=field, newline=newline):
+                            vector = copy.deepcopy(original)
+                            text = vector[side][field]
+                            vector[side][field] = newline + newline.join(text[i:i+3] for i in range(0, len(text), 3)) + newline
+                            self.assertEqual(vector["momentum"]["hash"], original["momentum"]["hash"])
+                            self.assertEqual(vector["header"]["hash"], original["header"]["hash"])
+                            self.assertEqual(CHECKER.check_vector(vector), baseline)
+
+    def test_account_crlf_preserves_original_preimages_and_nullable_bytes(self):
+        for original in self.amounts["vectors"] + self.account_vectors:
+            baseline = account_bytes(original["block"], original["rpc"])
+            for side, fields in (("block", ("publicKey", "signature")),
+                                ("rpc", ("data", "publicKey", "signature"))):
+                for field in fields:
+                    for newline in ("\r", "\n", "\r\n"):
+                        with self.subTest(vector=original["name"], side=side, field=field, newline=newline):
+                            vector = copy.deepcopy(original)
+                            text = vector[side][field] or ""
+                            vector[side][field] = newline + newline.join(text[i:i+3] for i in range(0, len(text), 3)) + newline
+                            self.assertEqual(vector["block"]["hash"], original["block"]["hash"])
+                            self.assertEqual(vector["rpc"]["hash"], original["rpc"]["hash"])
+                            self.assertEqual(account_bytes(vector["block"], vector["rpc"]), baseline)
+
+    def test_unnecessary_base64_padding_cannot_preserve_signed_preimages(self):
+        for kind, original in (("momentum", self.momentum["vectors"][1]),
+                               ("account", self.amounts["vectors"][1])):
+            side = "momentum" if kind == "momentum" else "rpc"
+            for padding in ("=", "==", "===", "====", "\r\n=\r\n"):
+                with self.subTest(kind=kind, padding=padding):
+                    vector = copy.deepcopy(original)
+                    vector[side]["data"] += padding
+                    self.assertEqual(vector[side]["hash"], original[side]["hash"])
+                    self.assertEqual(vector[side]["signature"], original[side]["signature"])
+                    with self.assertRaises(ValueError):
+                        if kind == "momentum":
+                            CHECKER.check_vector(vector)
+                        else:
+                            account_bytes(vector["block"], vector["rpc"])
+
+    def test_base64_refuses_other_whitespace_and_changed_signature_projections(self):
+        for kind, original in (("momentum", self.momentum["vectors"][1]),
+                               ("account", self.account_vectors[0])):
+            for field in ("data", "publicKey", "signature"):
+                sides = (("momentum",) if field == "data" else ("momentum", "header")) if kind == "momentum" else (
+                    ("rpc",) if field == "data" else ("rpc", "block"))
+                for side in sides:
+                    for separator in (" ", "\t", "\v", "\f", "\u00a0", "\u2028"):
+                        with self.subTest(kind=kind, side=side, field=field, separator=separator):
+                            vector = copy.deepcopy(original)
+                            text = vector[side][field]
+                            vector[side][field] = text[:3] + separator + text[3:]
+                            with self.assertRaises(ValueError):
+                                if kind == "momentum":
+                                    CHECKER.check_vector(vector)
+                                else:
+                                    account_bytes(vector["block"], vector["rpc"])
+        for field in ("publicKey", "signature"):
+            vector = copy.deepcopy(self.v1)
+            text = vector["momentum"][field]
+            vector["momentum"][field] = ("A" if text[0] != "A" else "B") + text[1:]
+            self.reject_vector(vector)
+
+    def test_signature_collection_crlf_equivalence_and_padding_refusal_before_backend(self):
+        originals, _ = SIGNATURES.collect(CORPUS_DIR)
+
+        def with_line_endings(value):
+            if isinstance(value, dict):
+                for field, child in value.items():
+                    if field in ("data", "publicKey", "signature") and type(child) is str:
+                        value[field] = "\r\n" + "\n\r".join(child[i:i+3] for i in range(0, len(child), 3)) + "\r\n"
+                    else:
+                        with_line_endings(child)
+            elif isinstance(value, list):
+                for child in value:
+                    with_line_endings(child)
+
+        with tempfile.TemporaryDirectory(prefix="node-base64-corpus-") as directory:
+            root = Path(directory)
+            for name in SIGNATURES.CORPORA:
+                value = corpus(name)
+                with_line_endings(value)
+                (root / (name + ".json")).write_text(json.dumps(value), encoding="utf-8")
+            with mock.patch.object(SIGNATURES, "Backend", side_effect=AssertionError("collection does not execute a backend")) as backend:
+                changed, _ = SIGNATURES.collect(root)
+            backend.assert_not_called()
+            self.assertEqual(len(changed), 102)
+            self.assertEqual(changed, originals)
+            value = corpus("account-amounts")
+            value["vectors"][1]["rpc"]["data"] += "="
+            (root / "account-amounts.json").write_text(json.dumps(value), encoding="utf-8")
+            with mock.patch.object(SIGNATURES, "Backend", side_effect=AssertionError("padding refusal must precede backend")) as backend:
+                with self.assertRaises(ValueError):
+                    SIGNATURES.run(root, "unavailable-backend")
+            backend.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
