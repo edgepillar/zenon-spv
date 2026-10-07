@@ -116,7 +116,7 @@ def main(argv=None):
     parser.add_argument("--go", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--evidence-directory", type=Path, required=True)
-    parser.add_argument("--fixture-kind", choices=("bytes", "fold-filter"), default="bytes")
+    parser.add_argument("--fixture-kind", choices=("bytes", "fold-filter", "applier"), default="bytes")
     args = parser.parse_args(argv)
     require(not args.output.exists() and not args.output.is_symlink(), "preserve existing output")
     require(not args.evidence_directory.exists() and not args.evidence_directory.is_symlink(), "preserve existing evidence")
@@ -167,8 +167,8 @@ def main(argv=None):
         execute("go-build", [args.go, "build", "-mod=readonly", "-trimpath", "-o", str(executable), "."], generator)
         execute("go-buildinfo", [args.go, "version", "-m", str(executable)], generator)
         command = [str(executable), "--verified-node-tree", NODE_TREE]
-        if args.fixture_kind == "fold-filter":
-            command += ["--fixture-kind", "fold-filter"]
+        if args.fixture_kind != "bytes":
+            command += ["--fixture-kind", args.fixture_kind]
         first = execute("generate-first", command, generator)
         second = execute("generate-second", command, generator)
         require(first == second, "reference generation was nondeterministic")
@@ -178,19 +178,26 @@ def main(argv=None):
         require(document["source"]["revision"] == NODE_REVISION and document["source"]["tree"] == NODE_TREE,
                 "generated corpus source pin differs")
         require(document["scope"]["unsigned"] and not document["scope"]["runtime_state_proof_acceptance"], "wrong generated scope")
-        expected_kind = "candidate-l1-fold-filter-research" if args.fixture_kind == "fold-filter" else "candidate-state-root-byte-research"
+        expected_kind = {"bytes": "candidate-state-root-byte-research", "fold-filter": "candidate-l1-fold-filter-research",
+                         "applier": "candidate-l1-applier-research"}[args.fixture_kind]
         require(document["kind"] == expected_kind, "generated fixture kind differs")
         if args.fixture_kind == "fold-filter":
             require(document["scope"]["l1_fold_filter_api_executed"] and
                     not document["scope"]["l1_staged_applier_executed"] and
                     not document["scope"]["node_database_opened"], "wrong filter execution boundary")
+        if args.fixture_kind == "applier":
+            require(document["scope"]["l1_staged_applier_executed"] and document["scope"]["node_database_opened"] and
+                    document["scope"]["database_storage_in_memory_only"] and document["scope"]["temporary_database_closed"] and
+                    not document["scope"]["persisted_disk_lifecycle_executed"], "wrong applier execution boundary")
         seal(args.output, first)
     report = {"node_revision": NODE_REVISION, "node_tree": NODE_TREE, "matched_source_blobs": 394,
               "source_manifest_sha256": hashlib.sha256(manifest_raw).hexdigest(),
               "go_version": version, "deterministic_generations": 2, "corpus_sha256": hashlib.sha256(first).hexdigest(),
               "commands": commands, "signing": False, "node_lifecycle_execution": False,
               "network_execution": False, "runtime_state_proof_acceptance": False,
-              "fixture_kind": args.fixture_kind, "l1_fold_filter_api_executed": args.fixture_kind == "fold-filter"}
+              "fixture_kind": args.fixture_kind, "l1_fold_filter_api_executed": args.fixture_kind == "fold-filter",
+              "l1_staged_applier_executed": args.fixture_kind == "applier", "node_database_opened": args.fixture_kind == "applier",
+              "database_storage_in_memory_only": args.fixture_kind == "applier", "persisted_disk_lifecycle_executed": False}
     seal(args.evidence_directory / "completed.json", encoded(report))
     print(json.dumps(report, sort_keys=True, separators=(",", ":")))
 

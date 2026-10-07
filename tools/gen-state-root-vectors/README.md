@@ -147,6 +147,56 @@ research limits of 1,024 key bytes, 4,096 value bytes, 64 events per case, 128
 cases and a 2 MiB file are neither ledger validity rules nor an approved network
 profile or production resource budget.
 
+## Separate in-memory NodeTree applier fixture
+
+`testdata/candidate-l1-applier.json` records actual public `NodeTree`
+`Update`, `Commit`, `Root` and `Prove` calls on a fresh temporary LevelDB backed
+only by `storage.NewMemStorage`. The database is initialized, six synthetic
+versions are committed, and it is closed before the generator emits the
+fixture. This mode opens a database; the byte and family-filter modes do not.
+
+Eight locally selected raw keys produce seven checkpoints, 88 ordered input
+events and 56 actual node proof-verifier outcomes. Five keys belong to the raw
+balance/storage families; three are excluded. The independent Python oracle
+replays events into a path/value map, hashes each raw key exactly once, computes
+each sparse root bottom up and compares every canonical encoder output and
+presence/value observation. Eighteen controls cover selected identities, event
+ordering, roots, malformed proofs, scope claims and bounded work.
+
+Stored zero survives as a present 32-byte value. Empty Put and explicit Delete
+both remove the leaf; later events for the same key win. Restoring zero
+recreates the original root. Two full selected balance keys have 14 synthetic
+typed observations; storage, short family keys and excluded keys produce 42
+typed-query refusals even when their raw proof verifies. This establishes
+neither valid ledger balances nor complete ledger or mailbox absence.
+
+The proof-byte comparison is conformance to the candidate's encoder, not an
+agreed network rule requiring canonical proofs. The original byte fixture's
+observed equivalent stored-zero-sibling compatibility remains unchanged.
+Checkpoint hash/height identifiers are synthetic metadata, not authenticated
+Momentum headers or evidence of fork identity, canonicality or finality.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_applier_test.py
+python3 -I -B tools/gen-state-root-vectors/check_applier.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind applier \
+  --output NEW_APPLIER_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+```
+
+All three generator modes run against the same complete source pin; the two
+previous corpus files remain byte-identical. Native CI checks the offline
+fixtures with independent Python oracles. Actual node API generation remains a
+separate local step. The inherited 2 MiB file, 1,024-byte key, 4,096-byte value
+and 64-event batch limits bound research work; 64 checkpoints is an additional
+local guard. They are not a network profile or a production resource budget.
+
+The small in-memory history does not exercise disk reopen, crash recovery,
+pruning, historical retention, reorgs, stale prebuild recovery, snapshot import,
+node startup, consensus execution or proof RPC. Those lifecycle and resource
+tracks remain open. Production v3 and state-value acceptance stays disabled.
+
 ## Remaining gates
 
 Production v3/state-value acceptance stays disabled. These are synthetic byte

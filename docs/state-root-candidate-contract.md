@@ -10,6 +10,13 @@ length of 22 bytes; it does not validate a typed balance key's 10-byte token
 suffix. An empty Put remains a Put at this filter stage. The later staged
 empty-to-delete applier, persisted tree and chain lifecycle are not executed by
 these filter fixtures and remain separate qualification gates.
+
+A separate applier mode now calls public `NodeTree` Update/Commit/Root/Prove
+APIs on a fresh temporary in-memory LevelDB. Eight selected raw keys, seven
+checkpoints and 88 ordered events produce 56 independently checked proofs.
+This bounded component exercise demonstrates zero/empty/delete and duplicate
+event semantics; it does not qualify disk recovery, retention, reorgs, startup,
+ledger state validity, proof RPC, authenticated headers or network activation.
 The node candidate is
 [`digitalSloth/go-zenon@56ce2c384966f2f1940967257a0788d3998a5eef`](https://github.com/digitalSloth/go-zenon/tree/56ce2c384966f2f1940967257a0788d3998a5eef).
 The client baseline is the [native verification contract](verification-contract.md).
@@ -199,6 +206,16 @@ present zero, absent balance, a 33-byte magnitude boundary and two node-accepted
 stored-zero-sibling encodings. This primitive conformance work does not execute
 the L1 fold, persisted tree lifecycle, proof RPC or network activation. The
 existing production client still refuses v3 and state-value proofs.
+
+The separate in-memory applier corpus executes the actual candidate staged
+applier through six `NodeTree` commits. Its independently maintained leaf map
+and bottom-up roots match all seven checkpoints and all 56 encoded proofs.
+Eighteen controls guard selected keys, synthetic version identities, event
+ordering, roots, proof bytes and execution-scope claims. The two earlier
+corpora remain unchanged. Native CI runs independent fixture checks; actual
+reference API generation and database opening remain a separate local step.
+Synthetic version hashes are not authenticated Momentum identities; this
+small memory history is not persisted node lifecycle or resource qualification.
 
 | Delivery | Concrete work | Completion gate |
 | --- | --- | --- |

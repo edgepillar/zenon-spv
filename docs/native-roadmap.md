@@ -62,6 +62,13 @@ The same isolated tool records the L1 family filter's exact patch events. Its
 grammar and empty Put events from the later empty-to-delete applier. This
 storage-free filter conformance does not qualify state transitions or a
 persisted `NodeTree`; those remain separate deliveries.
+The [separate in-memory applier fixture](../tools/gen-state-root-vectors/README.md#separate-in-memory-nodetree-applier-fixture)
+now executes six synthetic `NodeTree` commits and compares seven roots and 56
+proofs with an independent leaf-map oracle. Stored zero remains present;
+empty Put and Delete remove a leaf, and later duplicate events win. This mode
+opens and closes a temporary in-memory database. Disk recovery, retention,
+reorgs, startup, snapshot import, real resource budgets and proof RPC remain
+open; production v3 and state-value acceptance stay disabled.
 Canonicality, consensus finality, freshness and authenticated election remain
 separate gates. Older "no state tree" audits apply to their pinned v1/v2
 baseline, not every fork. Selective extension remains preferable to a rewrite.
