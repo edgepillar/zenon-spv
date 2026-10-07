@@ -57,6 +57,11 @@ independent oracle. They provide a first conformance baseline; activation, wire
 conversion, context/persistence, runtime typed queries and node lifecycle remain
 separate gates.
 Do not reuse the broader reserved `IAVL_STATE` kind for this partial SMT.
+The same isolated tool records the L1 family filter's exact patch events. Its
+22 cases distinguish family membership from the selected typed balance key
+grammar and empty Put events from the later empty-to-delete applier. This
+storage-free filter conformance does not qualify state transitions or a
+persisted `NodeTree`; those remain separate deliveries.
 Canonicality, consensus finality, freshness and authenticated election remain
 separate gates. Older "no state tree" audits apply to their pinned v1/v2
 baseline, not every fork. Selective extension remains preferable to a rewrite.

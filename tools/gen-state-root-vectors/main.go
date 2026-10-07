@@ -17,6 +17,7 @@ import (
 
 	"github.com/zenon-network/go-zenon/chain/nom"
 	"github.com/zenon-network/go-zenon/common"
+	"github.com/zenon-network/go-zenon/common/db"
 	"github.com/zenon-network/go-zenon/common/trie"
 	"github.com/zenon-network/go-zenon/common/types"
 )
@@ -405,11 +406,102 @@ func generate() corpus {
 	return c
 }
 
+type filterOperation struct {
+	Kind  string `json:"kind"`
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type filterRecording struct {
+	operations []filterOperation
+}
+
+func (r *filterRecording) Put(key, value []byte) {
+	r.operations = append(r.operations, filterOperation{"put", hx(key), hx(value)})
+}
+
+func (r *filterRecording) Delete(key []byte) {
+	r.operations = append(r.operations, filterOperation{"delete", hx(key), ""})
+}
+
+type filterCase struct {
+	Name   string            `json:"name"`
+	Key    string            `json:"key"`
+	Input  []filterOperation `json:"input"`
+	Output []filterOperation `json:"output"`
+}
+
+func filterAccountKey(sub byte, tail []byte) []byte {
+	return common.JoinBytes([]byte{3}, bytes.Repeat([]byte{17}, 20), []byte{sub}, tail)
+}
+
+func generateFilter() any {
+	keys := []struct {
+		name string
+		key  []byte
+	}{
+		{"balance-32", filterAccountKey(3, bytes.Repeat([]byte{34}, 10))},
+		{"storage", filterAccountKey(4, []byte{0, 255, 128})},
+		{"balance-prefix-only-22", filterAccountKey(3, nil)},
+		{"storage-prefix-only-22", filterAccountKey(4, nil)},
+		{"balance-short-token-31", filterAccountKey(3, bytes.Repeat([]byte{34}, 9))},
+		{"balance-long-token-33", filterAccountKey(3, bytes.Repeat([]byte{34}, 11))},
+		{"empty", []byte{}},
+		{"account-prefix", []byte{3}},
+		{"partial-address", common.JoinBytes([]byte{3}, bytes.Repeat([]byte{17}, 10))},
+		{"address-without-subprefix", common.JoinBytes([]byte{3}, bytes.Repeat([]byte{17}, 20))},
+		{"account-subprefix-0", filterAccountKey(0, []byte{1})},
+		{"account-subprefix-1", filterAccountKey(1, []byte{1})},
+		{"account-subprefix-2", filterAccountKey(2, []byte{1})},
+		{"account-subprefix-6", filterAccountKey(6, []byte{1})},
+		{"account-subprefix-7", filterAccountKey(7, []byte{1})},
+		{"momentum-history-0", []byte{0, 1}},
+		{"momentum-history-1", []byte{1, 1}},
+		{"momentum-history-2", []byte{2, 1}},
+		{"momentum-history-5", []byte{5, 1}},
+		{"momentum-history-9", []byte{9, 1}},
+		{"mailbox", []byte{4, 1, 2}},
+		{"znn-index", []byte{8, 1, 2}},
+	}
+	cases := make([]filterCase, 0, len(keys))
+	for _, selected := range keys {
+		patch := db.NewPatch()
+		patch.Put(selected.key, bytes.Repeat([]byte{0}, 32))
+		patch.Put(selected.key, []byte{})
+		patch.Delete(selected.key)
+		before := &filterRecording{operations: []filterOperation{}}
+		after := &filterRecording{operations: []filterOperation{}}
+		if err := patch.Replay(before); err != nil {
+			panic(err)
+		}
+		if err := trie.FoldFilter(patch).Replay(after); err != nil {
+			panic(err)
+		}
+		cases = append(cases, filterCase{selected.name, hx(selected.key), before.operations, after.operations})
+	}
+	return map[string]any{
+		"format_version": 1,
+		"kind":           "candidate-l1-fold-filter-research",
+		"source": map[string]string{"repository": "https://github.com/digitalSloth/go-zenon",
+			"revision": nodeCommit, "tree": nodeTree},
+		"scope": map[string]bool{"synthetic": true, "unsigned": true,
+			"l1_fold_filter_api_executed": true, "l1_staged_applier_executed": false,
+			"node_database_opened": false, "node_lifecycle_executed": false,
+			"node_tests_executed": false, "rpc_executed": false, "profile_agreed": false,
+			"network_activation_authenticated": false, "runtime_state_proof_acceptance": false},
+		"filter_cases": cases,
+	}
+}
+
 func run() error {
 	// regenerate.py validates and copies every node blob before it builds this
 	// separate module. Refuse an ordinary remote module or an unselected tree.
-	if len(os.Args) != 3 || os.Args[1] != "--verified-node-tree" || os.Args[2] != nodeTree {
+	if (len(os.Args) != 3 && len(os.Args) != 5) || os.Args[1] != "--verified-node-tree" || os.Args[2] != nodeTree {
 		return fmt.Errorf("use the offline regenerate.py source-validation driver")
+	}
+	filter := len(os.Args) == 5
+	if filter && (os.Args[3] != "--fixture-kind" || os.Args[4] != "fold-filter") {
+		return fmt.Errorf("unsupported reference fixture kind")
 	}
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
@@ -428,6 +520,9 @@ func run() error {
 	}
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
+	if filter {
+		return encoder.Encode(generateFilter())
+	}
 	return encoder.Encode(generate())
 }
 

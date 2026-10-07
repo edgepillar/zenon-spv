@@ -31,8 +31,10 @@ Stored zero is 32 zero bytes and remains present. A covered missing balance key
 has `present=false` even when its interpreted amount is zero. A 257-bit
 magnitude becomes 33 bytes; this low-level helper fixture does **not** establish
 a valid ledger balance range. Present-empty path-native leaves are shared-core
-cases, not evidence that the L1 fold stores empty values. The driver does not
-execute the L1 fold, persisted `NodeTree`, RPC or activation/lifecycle paths.
+cases, not evidence that the L1 fold stores empty values. The default byte
+fixture does not execute the L1 fold, persisted `NodeTree`, RPC or
+activation/lifecycle paths. The separate filter fixture below calls only the
+family-filter API; it does not execute the staged empty-to-delete applier.
 
 Five raw-key absence controls verify mathematically but are refused as typed
 balances: plasma, frontier, mailbox, the separate ZNN index and contract
@@ -104,6 +106,46 @@ GPL-3.0-only; the complete [GPLv3 license](LICENSE) is retained. The reference
 node source also carries GPLv3. The isolated tool is outside the root Go module
 and is not an SPV runtime dependency or a distributed candidate binary. No node
 implementation is copied into the runtime.
+
+## Separate L1 family-filter fixture
+
+`testdata/candidate-l1-fold-filter.json` records actual `trie.FoldFilter` calls
+on in-memory `db.Patch` batches. Twenty-two independently selected keys carry
+66 input operations: a Put of 32 zero bytes, an empty Put and a Delete per key.
+The candidate preserves all three events for six balance/storage family keys
+and removes the events for sixteen excluded or short keys, leaving 18 output
+operations. No database or tree is opened.
+
+The independent checker derives the selected keys locally, replays the family
+predicate and compares every event in order. Fifteen controls cover key
+substitution, family/width boundaries, scalar/shape errors, event corruption,
+empty Put versus Delete, duplicate-key ordering, bounded inputs and false scope
+claims. The original v3/SMT corpus remains byte-identical.
+
+The filter accepts 22-, 31- and 33-byte balance-family keys. This is a raw family
+predicate, not validation of the 32-byte selected address/token key contract or
+evidence that such synthetic keys represent valid ledger balances. Contract
+storage belongs to the committed family but needs its own typed query contract.
+The filter preserves empty Put bytes; the later staged applier turns them into
+deletions. This fixture does not execute that applier or establish L1 state
+transition, persistence, retention or snapshot behavior.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_fold_test.py
+python3 -I -B tools/gen-state-root-vectors/check_fold.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE \
+  --fixture-kind fold-filter \
+  --output NEW_FILTER_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+```
+
+Omitting `--fixture-kind` reproduces the original byte corpus. Linux, macOS
+Intel and Windows CI run both independent checkers and their controls on pinned
+fixtures. Reference API generation remains a separate offline step. The local
+research limits of 1,024 key bytes, 4,096 value bytes, 64 events per case, 128
+cases and a 2 MiB file are neither ledger validity rules nor an approved network
+profile or production resource budget.
 
 ## Remaining gates
 

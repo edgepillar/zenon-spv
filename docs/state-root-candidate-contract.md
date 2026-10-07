@@ -1,6 +1,15 @@
 # Candidate state-root commitment contract
 
 Status: source-pinned research specification, not an enabled verifier profile.
+
+The [isolated research tool](../tools/gen-state-root-vectors/README.md) includes
+actual `FoldFilter` event fixtures alongside the unsigned v3/SMT byte corpus.
+Its 22 key cases and 66 input operations independently match 18 retained
+events. The family predicate accepts balance/storage prefixes with a minimum
+length of 22 bytes; it does not validate a typed balance key's 10-byte token
+suffix. An empty Put remains a Put at this filter stage. The later staged
+empty-to-delete applier, persisted tree and chain lifecycle are not executed by
+these filter fixtures and remain separate qualification gates.
 The node candidate is
 [`digitalSloth/go-zenon@56ce2c384966f2f1940967257a0788d3998a5eef`](https://github.com/digitalSloth/go-zenon/tree/56ce2c384966f2f1940967257a0788d3998a5eef).
 The client baseline is the [native verification contract](verification-contract.md).
