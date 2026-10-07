@@ -102,9 +102,13 @@ func compareBundleFieldDecoders(t testing.TB, raw []byte, limits DecodeLimits) {
 		t.Fatalf("bundle projection or refusal differs: current=%v reference=%v", err, oldErr)
 	}
 	// Refusal classes, paths, budgets and privacy-safe error text stay stable.
-	// Offsets inside UnmarshalTypeError are relative to a field span now.
+	// Both decoders delegate scalar conversion to encoding/json.
 	if err != nil && err.Error() != oldErr.Error() {
 		t.Fatalf("bundle refusal text differs: current=%v reference=%v", err, oldErr)
+	}
+	var gotType, wantType *json.UnmarshalTypeError
+	if errors.As(err, &gotType) != errors.As(oldErr, &wantType) || !reflect.DeepEqual(gotType, wantType) {
+		t.Fatal("stdlib type-error details differ from the reference")
 	}
 	for _, decode := range []func(*HeaderBundle, []byte, DecodeLimits) error{
 		(*HeaderBundle).unmarshalJSON, unmarshalBundleBufferedReference,
