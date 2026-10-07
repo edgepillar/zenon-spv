@@ -51,6 +51,11 @@ rather than inferring bulk build costs from per-height comments.
 
 The contract is research, not an enabled profile, deployment claim or security
 endorsement. The current client continues refusing v3 and state-value proofs.
+The [candidate byte fixtures](../tools/gen-state-root-vectors/README.md) exercise
+unsigned header hashes and the candidate's storage-free SMT APIs with an
+independent oracle. They provide a first conformance baseline; activation, wire
+conversion, context/persistence, runtime typed queries and node lifecycle remain
+separate gates.
 Do not reuse the broader reserved `IAVL_STATE` kind for this partial SMT.
 Canonicality, consensus finality, freshness and authenticated election remain
 separate gates. Older "no state tree" audits apply to their pinned v1/v2
