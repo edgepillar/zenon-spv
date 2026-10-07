@@ -63,6 +63,12 @@ filesystem or adversarial replacement proofs.
 python -I -B tools/test_private_staging.py
 ```
 
+For a local-file observer invocation with separate actual process exits, finite
+sampling and a bounded final empty-root diagnostic, follow the
+[consumer resource observation guide](consumer-resource-observation.md).
+Keep fixed inputs and reports outside the isolated staging root; scanning
+success alone does not establish cleanup, verification acceptance or peak usage.
+
 ## Repeated local observer cycles
 
 This separately predeclared experiment measures source revision

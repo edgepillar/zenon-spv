@@ -84,6 +84,14 @@ interrupt cancels the active direct child, waits for completion and attempts
 cleanup. This is not a whole-operation deadline or process-tree sandbox;
 preflight filesystem reads/hashes have no separate I/O deadline.
 
+The [consumer resource observation guide](consumer-resource-observation.md)
+records actual observer and sampler exits separately, uses an isolated existing
+staging root and checks its visible contents after both processes settle.
+Finite metadata samples do not cover every peak or establish physical storage
+usage. The [sampler reference](private-staging-observations.md) retains known
+disappearing-entry races and unknown allocation metadata without selecting trust
+inputs or deleting remnants.
+
 Temporary expectation/report files use mode 0600 in a newly created directory.
 The command attempts removal before emitting its result, and a cleanup failure
 cannot report a match. Abrupt termination or cleanup failure can leave raw

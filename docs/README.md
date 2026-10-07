@@ -33,6 +33,15 @@ audit history.
   metadata and explicit unknown/modified build handling.
 - [`candidate-artifacts.md`](candidate-artifacts.md) — exact tested native
   executables, report-bound manifests and independent archive/pin checks.
+- [`operator-pilot.md`](operator-pilot.md) — explicit trust/state preparation,
+  bounded watch/restart and retained-only consumer workflow.
+- [`query-report-consumer.md`](query-report-consumer.md) — independently selected
+  expectations, actual verifier exits and complete target/guarantee matching.
+- [`block-observer.md`](block-observer.md) — pinned child binaries, a single
+  read-only consumer call and explicit optional proof-only collection.
+- [`consumer-resource-observation.md`](consumer-resource-observation.md) —
+  application versus sampler exits, isolated private staging, bounded local
+  observation and empty post-exit checks.
 - [`state-inspection.md`](state-inspection.md) — read-only retained-window
   diagnostics, effective depth ranges, and trusted-state boundaries.
 - [`native-benchmarks.md`](native-benchmarks.md) — reproducible local verification
@@ -51,6 +60,12 @@ audit history.
 - [`signed-batch-observer-resources.md`](signed-batch-observer-resources.md) —
   fixed replay costs for five distinct signed blocks at K=256/4096 and
   concurrency one/four, with all raw samples and process outcomes preserved.
+- [`joined-pipeline-resources.md`](joined-pipeline-resources.md) — complete
+  synthetic collector/verifier/consumer/observer observations and private-file
+  staging costs with retained fault and cleanup outcomes.
+- [`private-staging-observations.md`](private-staging-observations.md) — metadata
+  sampler usage, fixed-state repeated cycles and fresh-call recovery; nullable
+  file allocation and sampled-peak limitations remain explicit.
 - [`state-read-allocations.md`](state-read-allocations.md) — bounded file reads,
   allocation reductions and preserved saved-state verification checks.
 - [`bundle-read-allocations.md`](bundle-read-allocations.md) — bounded proof-file
