@@ -380,6 +380,7 @@ except checker.Refused as error:
 
     def test_real_cli_output_failures_keep_controlled_exit_and_no_traceback(self):
         command = [sys.executable, "-I", "-B", str(HERE / "check-signatures.py"), "--unknown-private-argument"]
+        expected_diagnostic = b"node-signatures: cannot write result" + os.linesep.encode("ascii")
         with tempfile.TemporaryDirectory(prefix="signature-output-control-") as temporary:
             path = Path(temporary) / "read-only-output"
             original = b"owned read-only output control"
@@ -387,7 +388,7 @@ except checker.Refused as error:
             with path.open("rb") as output:
                 actual = subprocess.run(command, stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.PIPE, timeout=5)
             self.assertEqual(actual.returncode, 70)
-            self.assertEqual(actual.stderr, b"node-signatures: cannot write result\n")
+            self.assertEqual(actual.stderr, expected_diagnostic)
             self.assertEqual(path.read_bytes(), original)
             with path.open("rb") as output, path.open("rb") as diagnostics:
                 actual = subprocess.run(command, stdin=subprocess.DEVNULL, stdout=output, stderr=diagnostics, timeout=5)
@@ -401,7 +402,7 @@ except checker.Refused as error:
             finally:
                 os.close(write_descriptor)
             self.assertEqual(actual.returncode, 70)
-            self.assertEqual(actual.stderr, b"node-signatures: cannot write result\n")
+            self.assertEqual(actual.stderr, expected_diagnostic)
 
 
 if __name__ == "__main__":
