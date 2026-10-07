@@ -16,6 +16,11 @@ import (
 func TestMain(m *testing.M) {
 	if os.Getenv("ZENON_OBSERVER_COLLECTION_TEST") == "1" {
 		if len(os.Args) > 1 && os.Args[1] == "--rpc" {
+			if path := os.Getenv("ZENON_OBSERVER_COLLECTION_STARTED"); path != "" {
+				if os.WriteFile(path, []byte("started"), 0o600) != nil {
+					os.Exit(71)
+				}
+			}
 			_, _ = os.Stderr.WriteString("PRIVATE_COLLECTOR_DIAGNOSTIC\n")
 			if os.Getenv("ZENON_OBSERVER_COLLECTION_LARGE") == "1" {
 				// Stream a bounded, syntax-valid fixture without retaining it in

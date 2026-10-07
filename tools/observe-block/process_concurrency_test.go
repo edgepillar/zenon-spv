@@ -64,6 +64,14 @@ func TestConcurrentObservationProcessHelper(t *testing.T) {
 }
 
 func TestConcurrentObservationProcessCancellation(t *testing.T) {
+	testConcurrentObservationCancellation(t, false)
+}
+
+func TestConcurrentFileObservationProcessCancellation(t *testing.T) {
+	testConcurrentObservationCancellation(t, true)
+}
+
+func testConcurrentObservationCancellation(t *testing.T, toFile bool) {
 	t.Setenv("ZENON_OBSERVER_CONCURRENT_HELPER", "1")
 	t.Setenv("GORACE", "atexit_sleep_ms=0")
 	binary, err := os.Executable()
@@ -78,6 +86,7 @@ func TestConcurrentObservationProcessCancellation(t *testing.T) {
 				cancel   context.CancelFunc
 				result   chan processResult
 				consumed bool
+				capture  *os.File
 			}
 			children := make([]invocation, 4)
 			dir := t.TempDir()
@@ -107,16 +116,30 @@ func TestConcurrentObservationProcessCancellation(t *testing.T) {
 						}
 					}
 				}
+				for i := range children {
+					if children[i].capture != nil && children[i].capture.Close() != nil {
+						t.Error("cannot close settled capture")
+					}
+				}
 			})
 			for i, mode := range []string{"cancelled", limitMode, "success", "success"} {
 				child := &children[i]
 				child.path = filepath.Join(dir, []string{"cancelled", "limited", "first", "second"}[i])
 				child.ctx, child.cancel = context.WithCancel(context.Background())
 				child.result = make(chan processResult, 1)
+				if toFile {
+					child.capture, err = os.OpenFile(child.path+".captured", os.O_CREATE|os.O_EXCL|os.O_RDWR, 0o600)
+					if err != nil {
+						t.Fatal("cannot create independent capture")
+					}
+				}
 				go func() {
-					child.result <- runProcess(child.ctx, binary,
-						[]string{"-test.run=^TestConcurrentObservationProcessHelper$", "--", mode, child.path},
-						maxSummaryBytes, 30*time.Second)
+					args := []string{"-test.run=^TestConcurrentObservationProcessHelper$", "--", mode, child.path}
+					if child.capture != nil {
+						child.result <- runProcessOutput(child.ctx, binary, args, maxSummaryBytes, 30*time.Second, child.capture)
+					} else {
+						child.result <- runProcess(child.ctx, binary, args, maxSummaryBytes, 30*time.Second)
+					}
 				}()
 			}
 			readyDeadline := time.Now().Add(15 * time.Second)
@@ -142,6 +165,16 @@ func TestConcurrentObservationProcessCancellation(t *testing.T) {
 				case result := <-child.result:
 					child.consumed = true
 					assertConcurrentHelperLock(t, child.path, false)
+					if child.capture != nil {
+						if len(result.stdout) != 0 {
+							t.Fatal("file capture also retained stdout")
+						}
+						var err error
+						result.stdout, err = os.ReadFile(child.path + ".captured")
+						if err != nil || len(result.stdout) > maxSummaryBytes {
+							t.Fatal("file capture lost joined bytes or exceeded its cap")
+						}
+					}
 					if result.ElapsedNS <= 0 || result.ExitCode == nil || bytes.Contains(result.stdout, []byte("PRIVATE")) {
 						t.Fatal("actual child completion or diagnostic separation lost")
 					}
@@ -176,6 +209,16 @@ func TestConcurrentObservationProcessCancellation(t *testing.T) {
 			cancelled.stdout[0] = '!'
 			if len(limited.stdout) > 0 {
 				limited.stdout[0] = '!'
+			}
+			if toFile {
+				// Mutate actual settled files while siblings still hold their own
+				// execution gates. Their later exact-byte checks detect sharing.
+				if _, err := children[0].capture.WriteAt([]byte{'!'}, 0); err != nil {
+					t.Fatal("cannot mutate settled private capture")
+				}
+				if _, err := children[1].capture.WriteAt([]byte{'!'}, 0); err != nil {
+					t.Fatal("cannot mutate limited private capture")
+				}
 			}
 			for i := 2; i < len(children); i++ {
 				child := &children[i]
