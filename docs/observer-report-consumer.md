@@ -116,6 +116,14 @@ that ledger too. Invalid seed metadata (including a Boolean or floating exit
 code) refuses at `seed_report`; invalid reader JSON refuses at `reader_summary`.
 Those refusals preserve earlier completed outcomes without echoing raw private
 output or treating a successful child process exit as qualification success.
+Known input, shape and filesystem failures after execution also retain the
+ledger, including state reads, staging creation and final source/executable pin
+reads. Cleanup failure alone refuses at `fixture_completion` or
+`temporary_cleanup`. If a prior refusal exists, its stage and ledger remain;
+`cleanup_failures` additionally lists fixed cleanup-stage identifiers, never raw
+exception details. A cleanup refusal does not claim that resources were joined
+or removed. Cancellation and unexpected programming exceptions still propagate;
+known cleanup errors do not replace them with a qualification result.
 Raw private diagnostics are not printed. Actual fixture/process failures stop the run
 without claiming qualification or automatically retrying. This is offline
 interoperability with synthetic trust selections, not a live network pilot,

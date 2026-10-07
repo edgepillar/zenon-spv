@@ -7,6 +7,7 @@ collection contacts only an owned loopback fixture. No network pilot is run.
 """
 
 import argparse
+import contextlib
 import copy
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -36,6 +37,7 @@ class Failure(ValueError):
     def __init__(self, stage, counts=None):
         self.stage, self.counts = stage, dict(counts or {})
         self.outcomes = copy.deepcopy(getattr(counts, "events", []))
+        self.cleanup_failures = []
         super().__init__("offline observer consumer qualification failed")
 
 
@@ -183,6 +185,45 @@ class Runner:
         except (ValueError, TypeError, RecursionError):
             raise Failure(stage, self.counts) from None
 
+    @contextlib.contextmanager
+    def boundary(self):
+        try:
+            yield
+        except Failure:
+            raise
+        except (node.oracle.Invalid, OSError, ValueError, KeyError, TypeError, RecursionError):
+            raise Failure("input_or_shape", self.counts) from None
+
+    @contextlib.contextmanager
+    def cleanup(self, close, stage):
+        failure, interrupted = None, False
+        try:
+            with self.boundary():
+                yield
+        except Failure as error:
+            failure = error
+            raise
+        except BaseException:
+            # Cleanup still runs, but must not replace cancellation or an
+            # unexpected programming exception with a qualification refusal.
+            interrupted = True
+            raise
+        finally:
+            try:
+                require(close() is True, stage, self.counts)
+            except (node.oracle.Invalid, OSError, ValueError, KeyError, TypeError, RecursionError):
+                if failure is not None:
+                    failure.cleanup_failures.append(stage)
+                elif not interrupted:
+                    raise Failure(stage, self.counts) from None
+
+    @contextlib.contextmanager
+    def directory(self):
+        with self.boundary():
+            temporary = tempfile.TemporaryDirectory(prefix="observer-consumer-")
+            with self.cleanup(lambda: temporary.cleanup() is None, "temporary_cleanup"):
+                yield temporary.name
+
 
 def qualification(binaries, revision):
     program, corpus, expectations = selected_inputs()
@@ -194,7 +235,7 @@ def qualification(binaries, revision):
     reader_pin = sha(READER.read_bytes())
     runner = Runner(paths)
     rows, outer = [], []
-    with tempfile.TemporaryDirectory(prefix="observer-consumer-") as directory:
+    with runner.directory() as directory:
         root = Path(directory)
         root.chmod(0o700)
         inputs = {}
@@ -234,7 +275,7 @@ def qualification(binaries, revision):
         staging = root / "staging"
         staging.mkdir(mode=0o700)
         fixture = Fixture(corpus)
-        try:
+        with runner.cleanup(fixture.close, "fixture_completion"):
             def compare(case_id, raw, mode, count, actual, wanted):
                 result = runner.child("reader", ["--mode", mode, "--expected-targets", str(count), "--observer-exit-code", str(actual)], raw)
                 require(result.returncode == wanted, "reader_decision", runner.counts)
@@ -289,22 +330,21 @@ def qualification(binaries, revision):
             # resolveEndHeight returns a provided height without another query;
             # the three segment variants additionally fetch both accounts.
             require(request_counts == {"ledger.getMomentumsByHeight": 6, "ledger.getAccountBlocksByHeight": 6}, "fixture_request_counts", runner.counts)
-        finally:
-            require(fixture.close(), "fixture_completion", runner.counts)
         require([row["id"] for row in outer] == selected_ids and len(rows) == 36, "complete_case_set", runner.counts)
         require(all(p.read_bytes() == raw for p, raw in inputs.items()), "fixed_inputs", runner.counts)
-    require(all(sha(path.read_bytes()) == pins[name]["sha256"] for name, path in paths.items()) and
-            sha(READER.read_bytes()) == reader_pin, "executable_or_reader_changed", runner.counts)
-    return {"schema_version": 1, "status": "offline_observer_consumer_qualified", "source_revision": revision,
-            "source_revision_is_caller_asserted": True, "checker_sha256": sha(Path(__file__).read_bytes()),
-            "reader_sha256": reader_pin, "node_selector_sha256": sha(NODE_PATH.read_bytes()),
-            "corpus_sha256": node.CORPUS_PINS, "executables": pins, "ordinary_observer_outcomes": outer,
-            "reader_cases": rows, "process_counts": runner.counts, "process_outcomes": runner.counts.events, "reader_decisions": 36,
-            "matched": 4, "refused": 32, "controlled_loopback_request_counts": request_counts,
-            "all_inputs_and_state_bytes_unchanged_after_seed": True, "all_private_staging_roots_empty": True,
-            "fixture_handlers_and_server_joined": True, "external_rpc_calls": 0, "network_pilot": False,
-            "synthetic_trust_inputs": True, "independent_human_review": False,
-            "canonicality_finality_activation_election_or_state_value_proof": False}
+    with runner.boundary():
+        require(all(sha(path.read_bytes()) == pins[name]["sha256"] for name, path in paths.items()) and
+                sha(READER.read_bytes()) == reader_pin, "executable_or_reader_changed", runner.counts)
+        return {"schema_version": 1, "status": "offline_observer_consumer_qualified", "source_revision": revision,
+                "source_revision_is_caller_asserted": True, "checker_sha256": sha(Path(__file__).read_bytes()),
+                "reader_sha256": reader_pin, "node_selector_sha256": sha(NODE_PATH.read_bytes()),
+                "corpus_sha256": node.CORPUS_PINS, "executables": pins, "ordinary_observer_outcomes": outer,
+                "reader_cases": rows, "process_counts": runner.counts, "process_outcomes": runner.counts.events, "reader_decisions": 36,
+                "matched": 4, "refused": 32, "controlled_loopback_request_counts": request_counts,
+                "all_inputs_and_state_bytes_unchanged_after_seed": True, "all_private_staging_roots_empty": True,
+                "fixture_handlers_and_server_joined": True, "external_rpc_calls": 0, "network_pilot": False,
+                "synthetic_trust_inputs": True, "independent_human_review": False,
+                "canonicality_finality_activation_election_or_state_value_proof": False}
 
 
 class Parser(argparse.ArgumentParser):
@@ -321,11 +361,12 @@ def main():
         require(re.fullmatch(r"[a-f0-9]{40}", args.source_revision) is not None, "source_selection")
         result = qualification({"observe-block": args.observer, "zenon-spv": args.verifier,
                                 "consume-query-report": args.consumer, "fetch-bundle": args.collector}, args.source_revision)
-    except (Failure, node.oracle.Invalid, OSError, ValueError, KeyError, TypeError) as error:
+    except (Failure, node.oracle.Invalid, OSError, ValueError, KeyError, TypeError, RecursionError) as error:
         failure = {"schema_version": 1, "status": "offline_observer_consumer_not_qualified",
                    "stage": error.stage if isinstance(error, Failure) else "input_or_shape",
                    "process_counts": error.counts if isinstance(error, Failure) else {},
                    "process_outcomes": error.outcomes if isinstance(error, Failure) else [], "network_pilot": False}
+        failure["cleanup_failures"] = error.cleanup_failures if isinstance(error, Failure) else []
         print(json.dumps(failure, sort_keys=True))
         return 2
     print(json.dumps(result, sort_keys=True))
