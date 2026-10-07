@@ -275,6 +275,20 @@ and present-empty shared-core bytes remain distinct; the last is refused as a
 typed balance. Production v3/state-value refusal and lifecycle/resource gates
 remain unchanged.
 
+The [separate actual LedgerApi method fixture](../tools/gen-state-root-vectors/README.md#separate-actual-ledgerapi-method-fixture)
+executes the pinned exported constructor/proof/root methods under explicit
+recording synthetic chain/store stubs. Its 40 observations and 160 call events
+provide method-forwarding conformance, with independent identifier/key/error
+and unsigned root/context checks. The source's `>= 3` method gate does not
+authorize future client versions or prove activation. Store-returned
+HashHeight and root/proof consistency still require separately selected trust
+inputs. Nineteen method errors and seventeen consumer refusals remain distinct
+from the three research balance and one research root matches. Injected
+readiness/retention errors do not qualify actual chain lifecycle; no RPC
+dispatcher, transport or accepted `VerifiedState` integration runs in this mode.
+All four previous corpora, strict v3/state-value refusal and the independent
+profile/release/lifecycle/resource gates remain intact.
+
 Research and selective implementation can proceed now. Production state-proof
 acceptance remains gated by the profile, verified header/activation binding,
 independent conformance, lifecycle qualification and review. Bridge/custody

@@ -73,8 +73,8 @@ The [separate StateProof serializer fixture](../tools/gen-state-root-vectors/REA
 adds 14 actual response encodings and independent bounded wire/key/root checks.
 Seven primitive-proof cases model locally selected unsigned header identifiers
 and context pins; these are research selections, not authenticated headers or
-an enabled profile. Actual `LedgerApi` execution, readiness/retention gates,
-JSON-RPC transport and accepted `VerifiedState` binding remain separate work.
+an enabled profile. That serializer mode excludes `LedgerApi` execution. Real readiness/retention
+gates, JSON-RPC transport and accepted `VerifiedState` binding remain separate work.
 The optional serializer build needs reference CGO; the three previous generator
 modes remain without CGO and preserve their fixtures. The MIT runtime stays
 unchanged, with v3/state-value refusal intact.
@@ -95,3 +95,15 @@ Bitcoin work starts only with a concrete use case and its own Bitcoin Core
 header/retarget conformance, transaction-to-Merkle binding, reorg and freshness
 model. Portal/custody integration needs a further review; neither prototype nor
 Commons text is a ready implementation or a replacement for those gates.
+
+The [separate actual LedgerApi method fixture](../tools/gen-state-root-vectors/README.md#separate-actual-ledgerapi-method-fixture)
+now records 40 actual read-only method observations and 160 call events against
+synthetic recording chain/store stubs. Twenty controls independently check
+height/version gates, exact key/full-identifier forwarding, error precedence
+and unsigned consumer selections. Later reference versions, mismatched store
+identifiers, nonzero roots with errors and coherent provider root/proof
+replacement cannot select consumer trust inputs. Three balance and one root
+observations match only within this synthetic research scope. The same locked
+CGO reference module preserves all four previous corpora and every runtime
+input. JSON-RPC envelopes, accepted-header binding, real chain lifecycle and
+resource budgets remain separate deliveries; state-value acceptance stays off.
