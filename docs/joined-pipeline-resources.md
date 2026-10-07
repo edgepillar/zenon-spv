@@ -1,5 +1,107 @@
 # Full-retention joined pipeline observations
 
+## Private-file collector staging follow-up
+
+The observer previously accumulated collector stdout in a growing `bytes.Buffer`
+before validating JSON and writing the private candidate file. The bounded writer
+now streams into an exclusively created private file. Even an `*os.File` remains
+behind that writer, so `os/exec` cannot bypass its 64 MiB output cap. Diagnostic
+bytes stay on their separate 16 KiB discard path. Destination errors or short
+writes cancel the child and retain its actual exit after process and stream-copy
+joins; they refuse with `input_unavailable` (70). Unavailable exclusive staging
+now refuses before launching the collector, preserving any existing file.
+
+After successful child/copy completion, the same open handle supplies an exact
+regular-file size check and one exact-sized allocation for standard-library
+whole-document `json.Valid`. The trailing-byte check, existing syntax/depth
+boundary and refusal before verifier launch remain in place. This still reads
+the whole completed document; it is not incremental proof validation. The handle
+closes before verification or private cleanup. Tests cover actual process exits,
+stdout/diagnostic caps, inherited pipes, timeout, cancellation, closed/short
+writers, invalid/deep/truncated JSON, exclusive creation, handle closure and four
+concurrent children with isolated destinations. Report shape, explicit trust
+inputs/context pins and evidence verification rules are unchanged.
+
+The follow-up ordinary series uses clean code commit
+`98befb82cca96e44ea28eb40f74ac8d90a4cb084` against the preserved detached-observation
+code `d6151ebe2bdeca55be001d676e851648cc03700e` (runtime-equivalent to report head
+`433e5eb7d838f23e7078ac30294fd47874ec64b2`). Only the observer executable changes;
+the verifier, collector and consumer executable bytes are identical. All selected
+synthetic input bytes, twelve cells, 21 rounds, 24 fault groups, hardware, timers
+and alarms are unchanged. No ordinary process forces GC or uses race
+instrumentation. Separate clean-source archives, build records and executable
+pins remain developer records, with unavailable local embedded VCS fields and
+no authenticated distribution or hosted ARM64 qualification claim.
+
+Timing is group p50 / p95 / maximum in ms; RSS is maximum sampled process-tree
+sum in MiB. All measurement boundaries and POSIX sampling limitations below
+remain applicable; the two series ran sequentially without randomized source
+alternation or controlled cache state.
+
+| K | T | C | Buffered capture time (ms) | Private-file capture time (ms) | Buffered capture RSS (MiB) | Private-file capture RSS (MiB) |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 256 | 1 | 1 | 83.048 / 86.028 / 1157.222 | 80.921 / 85.558 / 1131.204 | 24.812 | 24.969 |
+| 256 | 1 | 4 | 85.214 / 89.690 / 89.800 | 85.124 / 90.029 / 90.064 | 82.906 | 71.391 |
+| 256 | 16 | 1 | 133.800 / 154.816 / 155.184 | 132.637 / 148.578 / 154.564 | 37.266 | 30.875 |
+| 256 | 16 | 4 | 156.762 / 166.714 / 167.851 | 151.655 / 165.445 / 165.559 | 150.312 | 123.094 |
+| 256 | 256 | 1 | 1232.093 / 1320.956 / 1321.846 | 1191.997 / 1218.224 / 1257.810 | 262.016 | 149.438 |
+| 256 | 256 | 4 | 1313.650 / 1418.085 / 1448.614 | 1286.641 / 1415.181 / 1428.802 | 972.656 | 595.078 |
+| 4096 | 1 | 1 | 264.934 / 270.528 / 270.615 | 259.721 / 265.541 / 265.621 | 37.891 | 37.750 |
+| 4096 | 1 | 4 | 275.403 / 280.649 / 283.020 | 272.233 / 278.559 / 280.516 | 147.672 | 147.500 |
+| 4096 | 16 | 1 | 327.938 / 339.646 / 344.243 | 322.592 / 333.006 / 344.112 | 52.203 | 45.453 |
+| 4096 | 16 | 4 | 352.768 / 359.924 / 364.675 | 343.620 / 350.369 / 352.963 | 203.141 | 181.469 |
+| 4096 | 256 | 1 | 1411.059 / 1423.663 / 1425.204 | 1361.287 / 1382.561 / 1391.178 | 262.344 | 156.234 |
+| 4096 | 256 | 4 | 1500.986 / 1591.691 / 1620.199 | 1481.197 / 1556.666 / 1633.249 | 1017.484 | 624.281 |
+
+Both series have zero predeclared latency, sampled-RSS and outer-high-water
+alarms. At T=256/C=4, sampled RSS falls from 972.656 to 595.078 MiB (K=256) and
+from 1017.484 to 624.281 MiB (K=4096). The latter is about 399.719 MiB below the
+unchanged 1 GiB engineering alarm. Observed large-concurrent p95 time changes
+from 1418.085 to 1415.181 ms and from 1591.691 to 1556.666 ms, respectively.
+Small-cell timing includes increases as well as decreases. These sequential
+local observations establish neither causal speedup, physical-memory headroom,
+sustained capacity nor consumer-selected acceptance. File writes occur during
+collection and introduce disk/OS-cache costs; no storage deadline, disk service
+level, durable sync or secure-erasure guarantee is added. Abrupt termination can
+still leave private files, under the existing caller-protected directory/ACL
+requirement.
+
+All 276 groups and 2,004 raw files are preserved and independently recalculated,
+with 6,132 RSS samples, 726 actual outer outcomes, 2,868 ordinary candidate
+outcomes and six explicit partial-report helper outcomes. All 702 expected
+matches, 24 fault refusals and 72 matched ordinary fault siblings occur. The
+1,440 requests remain on the local fixture. Input/binary byte guards, private
+cleanup and absent state locks pass. A receipt-field mismatch in the measurement
+wrapper was corrected before preparation or candidate execution; the incident
+and every previous completed series remain preserved. No failed candidate round
+was retried or filtered.
+
+`BenchmarkCollectorStaging` separately compares the preserved parent
+capture/validation/write sequence with direct file capture using fixed 32 KiB
+chunks. Its syntax-only payloads are 1,024 and 36,374,884 bytes; they are not
+accepted proof evidence. The command yields twelve actual one-operation rows
+(three repetitions per size/mode), with all rows retained. Local medians:
+
+| Syntax-only payload | Mode | ns/op | B/op | allocs/op |
+| --- | --- | ---: | ---: | ---: |
+| 1,024 bytes | buffered | 112542 | 2520 | 7 |
+| 1,024 bytes | file | 146417 | 2808 | 10 |
+| 36,374,884 bytes | buffered | 93476041 | 134186528 | 20 |
+| 36,374,884 bytes | file | 92292292 | 36382448 | 10 |
+
+```sh
+go test -run '^$' -bench '^BenchmarkCollectorStaging$' -benchtime=1x -count=3 -benchmem ./tools/observe-block
+```
+
+Large-payload cumulative allocation falls by about 72.9%; small-payload allocation
+and median time increase. Go B/op is cumulative allocation, not live heap or
+RSS. This microbenchmark excludes subprocesses, retention validation, proof
+acceptance and network behavior; full-pipeline values above come from the
+separate ordinary series. The same benchmark is added to native CI, whose actual
+rows and exact artifacts require separate qualification. No live-network,
+canonicality/finality, election/activation, state-value or release qualification
+is inferred from these engineering results.
+
 ## Collector observation lifetime follow-up
 
 The collector metadata pointer previously referred to an interior field of the
