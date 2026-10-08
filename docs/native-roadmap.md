@@ -148,3 +148,12 @@ realistic retention/resource qualification remain open. The startup hash-bound
 version provenance failure is unchanged, as are all seven prior corpora and the
 MIT runtime. Accepted-header/profile/activation binding, human review and
 authenticated distribution remain separate gates.
+
+The [isolated patch dump decoder corpus](../tools/gen-state-root-vectors/README.md#patch-dump-decoding-and-diagnostic-replay)
+adds finite truncation, malformed type/length, nonminimal varint and duplicate
+write conformance. Its independent byte oracle checks 232 cases and every byte
+prefix of the selected complete patch, including error-returned partial records
+and recovered runtime bounds panics. All four constructor callers check ordinary
+errors in the pinned source; production reachability and caller execution remain
+unqualified. Snapshot/import acceptance still needs bounded, complete and atomic
+failure handling. The native verifier and its state-proof refusal are unchanged.
