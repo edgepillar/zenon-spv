@@ -962,3 +962,62 @@ disk/crash durability nor production resource budgets. Authenticated complete an
 excluded snapshot state, typed domains, accepted header/profile/activation,
 retained hash provenance, anchor, schedule, context pin, independent human review
 and authenticated distribution remain separate gates.
+
+## Read-only raw patch plans
+
+`plan_patch.py` consumes a regular raw dump file under **explicitly selected**
+ChangesHash (SHA3-256), byte count, record count and five positive limits. It
+uses the independently checked unsigned byte parser to emit detached ordered
+hex events. It never invokes the Go constructor or Replay, replaces a target,
+opens a database or calls NodeTree. `READY` is a research syntax plan;
+`consumer_result` remains `REFUSED`. The caller must select the expected input
+through its own trust process before inspecting the candidate file. Supplying
+metadata obtained from that same candidate does not authenticate anything.
+
+For a disposable syntax example, create a raw file with bytes
+`0101610162000163`: Put `61` = `62`, then Delete `63`. Use the independently
+specified literal digest and counts below. This example is synthetic and carries
+no network, snapshot or state-value claim:
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/plan_patch.py \
+  --raw RAW_DUMP_FILE \
+  --changes-hash 2c3cf5d53690ca954fe3bf1f255681f6c4e5dc9fc6499cc2920f4d59309a4a11 \
+  --expected-bytes 8 --expected-records 2 \
+  --max-raw-bytes 1024 --max-records 8 \
+  --max-key-bytes 64 --max-value-bytes 128 --max-plan-bytes 4096
+python3 -I -B tools/gen-state-root-vectors/plan_patch_test.py
+```
+
+Every option above is required; there are no auto-selected digests or counts.
+An optional `--source-revision` binds a caller-supplied lowercase 40-digit source
+revision to the output. It is a label and does not verify a running binary.
+Limits may not exceed the research ceilings: 1 MiB raw, 1,024 records, 4,096 bytes
+per key, 65,536 bytes per value and 4 MiB encoded plan including its newline.
+Wrong selection, malformed/truncated records, invalid options, a special file,
+a symlink or an exceeded cap refuses with no plan on stdout. Diagnostics omit
+input paths and option values. The command writes only its complete plan to
+stdout; output transport failure is not an atomic file-publication guarantee.
+
+The regular-file size check precedes the bounded read of at most the selected
+raw cap plus one byte; a descriptor check also refuses substituted special
+files. Length decoding inspects at most eleven bytes through a memory view,
+without copying each remaining input tail. Every field must fit its selected
+cap and the remaining raw bytes before hex encoding. Nonminimal varints and
+ordered duplicate writes keep their exact independently selected spelling.
+Empty Put values remain distinct from Delete. JSON encoding checks the output
+cap incrementally before publication. Raw input, detached events and encoded
+output are simultaneously resident; interpreter overhead, latency, shared
+writers, crash durability and production memory budgets are not measured here.
+
+The 264 earlier inputs cross-check the plan's byte parsing against the import
+oracle: 246 refuse before construction would have been allowed, and eighteen
+syntax plans bind their selected bytes. Constructor/replay fault injection is
+not executed by this command; none of these plans stages or imports a target.
+Native Linux, macOS Intel and Windows run the file/CLI, privacy, bounds and
+selection controls; these are Python consumer tests, not native reference-node
+execution. The sixteen earlier corpora and pinned node/dependency sources are
+unchanged. Snapshot completeness, excluded and typed state, canonical roots,
+authenticated retained hashes, accepted VerifiedState/profile/activation,
+anchor/schedule/context-pin trust, human review and release distribution remain
+separate gates. The MIT verifier still refuses production state-value proofs.
