@@ -268,6 +268,19 @@ inject a write fault or prove power-loss, torn-write or production crash
 recovery. Logical key/value bytes are distinct from physical disk usage and
 realistic retention/resource budgets.
 
+The [retention/resource fixture](../tools/gen-state-root-vectors/README.md#separate-retention-and-resource-observations)
+adds controlled archive and retain-four policies with 64/256 initial keys and
+16/32 commits. A separate full sparse tree and compressed content graph model
+reconstructs roots, serialized nodes, shared refcounts, retained version IDs and
+the logical record digest. All 504 selected Root/Prove observations remain equal
+through clean reopen and manual compaction; stored zero, deletion and a missing
+version remain distinct. Variable closed-file lengths, own child RSS and API
+timings are preserved outside the deterministic conformance corpus. Compaction
+may increase file bytes, and prune write logs can exceed archive file bytes.
+These small synthetic samples prepare a measurement method; they do not measure
+real chain churn, archive replay, bulk build/import, activation pauses or target
+hardware acceptance budgets. The retained-version provenance failure stays open.
+
 Measure actual committed-key count/churn, build/import wall time, peak memory,
 archive/pruned disk, compaction, proof latency/size, root computation and insert
 pauses for the production content-addressed `NodeTree`. Keep hardware, dataset,
