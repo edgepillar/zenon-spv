@@ -572,3 +572,77 @@ profile and release provenance unqualified. Address/token
 text checksum boundaries, activation and context migration, verified header/RPC
 binding, typed runtime results and realistic `NodeTree` measurements remain
 separate implementation and qualification work.
+
+## Scale, churn and complete fixture seed with retained tail
+
+The optional `candidate_bulk_tail` mode compares two fresh `NodeTree` construction
+policies for each of three finite synthetic workloads. Initial balance keys,
+versions and later operations per version are respectively `(64,16,8)`,
+`(256,32,32)` and `(1024,64,128)`. Cyclic updates include stored zero and deletion.
+Each comparison uses the same independently described four final states.
+
+Sequential construction stages each version with `Update`, calls `Commit`, and
+prunes to retain four versions. Seed construction derives the complete selected
+raw-key/value map at `versions-3` before opening the owned database. A regular
+`Commit` at that height is deliberately refused by the unchanged node's ordering
+guard. The existing `NodeTree.CommitBulk` then constructs that seed, followed by
+three regular `Commit` calls for the tail. This executes a low-level bulk API;
+chain background build and snapshot import remain unexecuted. The complete
+fixture seed is not an authenticated snapshot or a proof of excluded state.
+
+The seed manifest binds its height, present-key count and SHA-256 of sorted raw
+records framed as `uint64BE(key length) || key || uint64BE(value length) || value`.
+An independent Python leaf-map program derives this manifest, full sparse roots
+and canonical proofs. A separate compressed graph model reconstructs serialized
+nodes, shared refcounts and the exact logical database digest for all four
+retained versions. The two policies must have identical frontier, logical
+records and read results, including after clean reopen and manual compaction.
+Older unretained and future versions return errors; origin-empty queries do not
+create a retained version record. Twenty controls bind seed completeness,
+ordering refusal, tail policy, raw domains, proof bytes and explicit open gates.
+
+Six cases, three rounds and 42 Root/Prove cells per round produce 756 finite API
+observations. `commit_calls` counts successful regular commits; the separate
+`regular_seed_commit_error` records the additional refused regular call and
+`bulk_commit_calls` counts successful seed calls. Fewer stored historical
+versions or matching roots cannot establish history authentication or finality.
+The earlier startup retained-version provenance failure remains open.
+
+Variable measurements stay in a separate private `resource-samples.json` with
+source/corpus/reference-binary and unmodified command-output digests. Input
+preparation elapsed time includes constructing replay patches or deriving the
+complete seed plus tail patches. The separately named prepared-patch aggregate
+covers the subsequent Update/Commit/CommitBulk/Prune loop, including the regular
+seed refusal, but excludes input preparation and database open. Commit time
+includes that refusal and the successful bulk call. Both costs must be retained
+when comparing construction; this experiment does not time source acquisition,
+real ledger traversal, snapshot parsing/import or insertion pauses.
+
+Own-child RSS is sampled after final close, before JSON encoding and process
+exit. It includes input preparation, fixture plans, NodeTree and LevelDB; it is
+not tree-only heap, final process RSS or a total system-memory measurement.
+Closed regular file lengths are not allocated disk blocks, peak disk usage or
+write amplification. Cache, compaction scheduling, thermal state and host load
+are uncontrolled. File lengths and elapsed times may grow and are never compared
+for deterministic equality or accepted as production resource budgets.
+
+The actual reference runs locally on macOS ARM64 with CGO disabled. Portable
+Linux, macOS Intel and Windows CI runs independent fixture controls only; it
+neither executes this backend nor collects native resource observations. All
+nine earlier corpora, 394 selected node blobs, the research dependency lock and
+365 MIT runtime inputs remain unchanged. Real-chain data and churn, historical
+archive replay, node build/import, target hardware acceptance, authenticated
+retained identifiers, accepted `VerifiedState` binding, profile/activation,
+human review and release provenance remain separate gates.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_bulk_tail_test.py
+python3 -I -B tools/gen-state-root-vectors/check_bulk_tail.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind bulk-tail \
+  --output NEW_BULK_TAIL_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+python3 -I -B tools/gen-state-root-vectors/check_bulk_tail.py \
+  --corpus NEW_BULK_TAIL_CORPUS_FILE \
+  --resource-samples NEW_PRIVATE_EVIDENCE_DIRECTORY/resource-samples.json
+```
