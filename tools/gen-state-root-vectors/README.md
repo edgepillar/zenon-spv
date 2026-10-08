@@ -438,6 +438,54 @@ this research does not patch the selected source. Accepted `VerifiedState`
 binding, agreed profile/activation, human review and authenticated distribution
 remain open. Production state-value acceptance remains disabled.
 
+## Separate controlled disk process exit and reopen fixture
+
+The optional `candidate_disk_lifecycle` mode exercises the unchanged pinned
+`NodeTree` with six small owned temporary disk LevelDB databases. Five child
+processes exit with a selected code after Open/New, Update, Commit, Truncate or
+Prune has returned. A sixth child closes normally and writes a close marker.
+The parent checks each child outcome and marker, then opens and closes each
+database twice. It removes only its own temporary databases. No chain component
+initialization, `Chain.Start`, background builder, full node or network runs.
+
+Twelve reopens produce 240 finite root/value/proof observations. Staged writes
+remain uncommitted; the returned commit, truncate and prune retain the selected
+frontier and heights. The independent byte oracle checks 26 inclusion and 50
+absence proofs and 88 exact unavailable-version errors. Twenty controls bind
+the selected versions, child exit/close outcomes, method order, raw keys,
+canonical proofs, retained records and closed scope. A coherent provider root
+and proof cannot replace the independently selected state. Height-only reads
+still do not authenticate a different hash at the same height.
+
+The fixture counts logical LevelDB records and their key/value bytes. Retaining
+one, two or three versions uses five, eight or eleven records, with 223, 403 or
+583 logical bytes in this one-key fixture. The twelve separate observations sum
+to 102 records and 5,196 key/value bytes; this is not a physical disk-size,
+memory, compaction or latency measurement and does not qualify realistic
+resource budgets.
+
+These are planned process exits after completed API calls. They do not inject a
+failure during a write, simulate power loss or qualify torn-write/sync durability
+or production crash recovery. The pinned backend's batch writes use default
+write options; this research changes none of them. Actual pure-Go reference
+execution is local macOS ARM64. Native Linux/macOS/Windows CI runs the independent
+fixture comparisons and controls without executing the node, LevelDB or child
+exit experiment. All seven previous corpora and the MIT runtime remain unchanged.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_disk_lifecycle_test.py
+python3 -I -B tools/gen-state-root-vectors/check_disk_lifecycle.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind disk-lifecycle \
+  --output NEW_DISK_LIFECYCLE_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+```
+
+The startup retained-version provenance failure remains open. Accepted
+`VerifiedState` binding, an agreed profile and activation, realistic retention
+and resource measurements, independent human review and authenticated release
+remain separate gates. Production v3/state-value acceptance stays disabled.
+
 ## Remaining gates
 
 Production v3/state-value acceptance stays disabled. These synthetic research

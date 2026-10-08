@@ -133,3 +133,18 @@ version provenance unqualified. No full node, `Chain.Start`, signing, transactio
 or live RPC runs. Crash/recovery, pruning and realistic retention/resource
 measurements remain separate work, as do accepted-header/profile/activation
 binding and production state-value acceptance.
+
+The [separate controlled disk process exit and reopen fixture](../tools/gen-state-root-vectors/README.md#separate-controlled-disk-process-exit-and-reopen-fixture)
+now exercises five planned child exits after returned `NodeTree` calls and one
+normal-close control. Twelve reopens preserve the finite committed/truncated/
+pruned frontier and selected retained heights. The independent oracle checks
+240 observations, including canonical inclusion/absence proofs and exact
+unavailable-version errors; twenty controls bind the inputs and scope. Logical
+key/value record counts describe only this small one-key workload. They do not
+measure physical disk, RAM, compaction or latency. Actual backend execution is
+local macOS ARM64; native CI checks fixtures without the node or exit experiment.
+In-flight write faults, power loss, torn writes, production crash recovery and
+realistic retention/resource qualification remain open. The startup hash-bound
+version provenance failure is unchanged, as are all seven prior corpora and the
+MIT runtime. Accepted-header/profile/activation binding, human review and
+authenticated distribution remain separate gates.
