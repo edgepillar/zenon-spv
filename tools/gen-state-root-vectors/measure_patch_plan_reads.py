@@ -3,7 +3,7 @@
 """Compare a pinned historical raw reader and selected-count bounded reads.
 
 The historical function below is byte-identical to the selected source function.
-Both modes share byte-pinned parsing/encoding and independent output checks;
+Both modes share the byte-pinned historical encoder and independent checks;
 only synthetic Python planning runs, never a node, storage importer or proof.
 """
 import hashlib
@@ -32,6 +32,7 @@ COMPARE = module('selected_read_independent_comparison', 'check_patch_plan_reads
 CANDIDATE = METER.PLAN
 # The historical function's original names resolve to the unchanged helpers.
 validate, require = CANDIDATE.validate, CANDIDATE.require
+CEILINGS = CANDIDATE.CEILINGS
 
 
 def read_raw(path, selection, limits):
@@ -50,15 +51,26 @@ def read_raw(path, selection, limits):
     return raw
 
 
+def encode_plan(document, maximum):
+    require(type(maximum) is int and 0 < maximum <= CEILINGS['plan_bytes'])
+    result = bytearray()
+    encoder = json.JSONEncoder(sort_keys=True, separators=(',', ':'), ensure_ascii=True)
+    for chunk in encoder.iterencode(document):
+        part = chunk.encode('ascii')
+        require(len(part) <= maximum - len(result))
+        result.extend(part)
+    require(len(result) < maximum)
+    result.extend(b'\n')
+    return bytes(result)
+
+
 def worker(profile, path, number, traced, revision, mode):
     COMPARE.reference_pins()
     # Each child handles one mode only. Instrumentation, timers and output
     # semantics are identical; source/oracle work stays outside the operation.
-    if mode == 'reference':
-        METER.PLAN = types.SimpleNamespace(validate=CANDIDATE.validate, read_raw=read_raw,
-            make_plan=CANDIDATE.make_plan, encode_plan=CANDIDATE.encode_plan)
-    else:
-        METER.PLAN = CANDIDATE
+    METER.PLAN = types.SimpleNamespace(validate=CANDIDATE.validate,
+        read_raw=read_raw if mode == 'reference' else CANDIDATE.read_raw,
+        make_plan=CANDIDATE.make_plan, encode_plan=encode_plan)
     return METER.worker(profile, path, number, traced, revision) | {'planner_mode': mode}
 
 

@@ -22,7 +22,9 @@ FILES = ('plan_patch.py', 'measure_patch_plan.py', 'check_patch_plan_resources.p
 MODES = ('reference', 'candidate')
 SCOPE = CHECK.SCOPE | {'reference_Python_read_function_executed': True,
     'candidate_selected_count_plus_one_reader_executed': True,
-    'shared_parser_and_encoder_preserved': True, 'latency_speedup_qualified': False}
+    'shared_parser_and_encoder_preserved': True,
+    'shared_encoder_is_pinned_historical_reference': True,
+    'production_default_encoder_measured': False, 'latency_speedup_qualified': False}
 
 
 def selected_function_hashes(path):
@@ -36,9 +38,12 @@ def selected_function_hashes(path):
 
 def reference_pins():
     # Read source bytes only; never import or execute the comparison producer.
-    CHECK.exact(selected_function_hashes(HERE / 'measure_patch_plan_reads.py')['read_raw'], REFERENCE['read_function_sha256'])
+    historical = selected_function_hashes(HERE / 'measure_patch_plan_reads.py')
+    CHECK.exact(historical['read_raw'], REFERENCE['read_function_sha256'])
+    CHECK.exact(historical['encode_plan'], REFERENCE['shared_functions_sha256']['encode_plan'])
     current = selected_function_hashes(HERE / 'plan_patch.py')
-    CHECK.exact({name: current[name] for name in REFERENCE['shared_functions_sha256']}, REFERENCE['shared_functions_sha256'])
+    shared = {name: digest for name, digest in REFERENCE['shared_functions_sha256'].items() if name != 'encode_plan'}
+    CHECK.exact({name: current[name] for name in shared}, shared)
     return REFERENCE
 
 
@@ -85,7 +90,9 @@ def validate_report(document, selected_revision=None):
             'candidate_peak_max_bytes': max(observed['candidate']),
             'candidate_peaks_below_all_reference_peaks': max(observed['candidate']) < min(observed['reference'])}
     return {'profiles': 6, 'fresh_worker_samples': 24 * repetitions, 'all_complete_plan_bytes_bound': True,
-        'historical_read_source_pinned': True, 'shared_parser_and_encoder_pinned': True, 'python_peak_observations': peaks,
+        'historical_read_source_pinned': True, 'shared_parser_and_encoder_pinned': True,
+        'shared_encoder_is_pinned_historical_reference': True,
+        'production_default_encoder_measured': False, 'python_peak_observations': peaks,
         'empty_and_64_record_python_peaks_reduced': all(peaks[name]['candidate_peaks_below_all_reference_peaks']
                                                       for name in ('empty', 'records-64')),
         'latency_speedup_qualified': False, 'whole_pipeline_memory_measured': False,

@@ -70,7 +70,8 @@ class ReadComparisonTests(unittest.TestCase):
 
     def test_changed_historical_function_or_shared_helper_pin_refuses(self):
         actual = CHECK.selected_function_hashes
-        for filename, function in (('measure_patch_plan_reads.py', 'read_raw'), ('plan_patch.py', 'make_plan')):
+        for filename, function in (('measure_patch_plan_reads.py', 'read_raw'),
+                                   ('measure_patch_plan_reads.py', 'encode_plan'), ('plan_patch.py', 'make_plan')):
             def changed(path):
                 values = actual(path)
                 if path.name == filename:
@@ -182,6 +183,19 @@ class ReadComparisonTests(unittest.TestCase):
                 self.assertEqual((run.returncode, run.stdout), (1, b''))
                 self.assertNotIn(str(path).encode(), run.stderr)
                 self.assertNotIn(b'Traceback', run.stderr)
+
+    def test_both_read_modes_execute_the_pinned_historical_encoder(self):
+        profile = CHECK.CHECK.profiles()[0]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'private-input'
+            path.write_bytes(b'')
+            for mode in CHECK.MODES:
+                with (patch.object(MEASURE.CANDIDATE, 'encode_plan', side_effect=AssertionError('default encoder used')),
+                      patch.object(MEASURE.METER, 'PLAN', MEASURE.METER.PLAN)):
+                    result = MEASURE.worker(profile, path, 1, False, None, mode)
+                expected = CHECK.CHECK.output_selection(profile, None)
+                self.assertEqual({key: result[key] for key in expected}, expected)
+                self.assertEqual(result['planner_mode'], mode)
 
     def test_worker_entry_does_not_construct_large_fixture_oracle_inputs(self):
         sink = types.SimpleNamespace(buffer=io.BytesIO())

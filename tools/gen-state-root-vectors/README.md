@@ -1093,11 +1093,14 @@ hardware, concurrency and network costs remain separate acceptance inputs.
 `measure_patch_plan_reads.py` compares the current selected-count reader with
 the exact historical `read_raw` function from
 [`47b859b2b32979b166d1d138da65cf0236951040`](https://github.com/edgepillar/zenon-spv/blob/47b859b2b32979b166d1d138da65cf0236951040/tools/gen-state-root-vectors/plan_patch.py).
-The historical function body is copied verbatim and SHA256-pinned in the
-comparison source. Validation, unsigned event parsing, plan construction and
-JSON encoding retain separately checked byte pins from that same revision.
-Both modes therefore use the same parser, encoder and instrumentation; the
-read function is the selected difference. The reference still requests the
+The historical reader and encoder bodies are copied verbatim and SHA256-pinned
+in the comparison source. Current validation, unsigned event parsing and plan
+construction retain separately checked byte pins from that same revision.
+Both modes use this historical encoder, the same parser and instrumentation; the
+read function is the selected difference. This read comparison does not measure
+the current default encoder. The separate standalone resource workflow and
+output encoding comparison below measure the current default encoder.
+The reference reader still requests the
 global raw cap plus one, while the candidate requests the independently
 selected byte count plus one and requires the exact returned length.
 
@@ -1139,3 +1142,55 @@ Concurrent mutations, atomic snapshot reads, storage writers and durable imports
 are not qualified. Linux, macOS Intel and Windows run the controls and actual
 comparison; no reference node, database, NodeTree, snapshot authentication or
 production state-value acceptance executes.
+
+## Bounded patch output encoding comparison
+
+`plan_patch.py` appends ASCII JSON chunks to an in-memory binary buffer, checks
+the remaining cap before every write, reserves the final newline and returns
+the complete immutable `bytes` result. The
+[standard library contract](https://docs.python.org/3.13/library/io.html#io.BytesIO.getvalue)
+defines `BytesIO.getvalue()` as returning the entire buffer as bytes; it does
+not promise a universal zero-copy implementation. No buffer view or partial
+plan escapes the planner. File, digest, count, varint, ordered duplicate and
+empty Put/Delete semantics retain their existing boundaries.
+
+`measure_patch_plan_encodings.py` separately compares the exact `encode_plan`
+body from
+[`f4bf2d2953825fa96f9e52be2d41f003fed4ab65`](https://github.com/edgepillar/zenon-spv/blob/f4bf2d2953825fa96f9e52be2d41f003fed4ab65/tools/gen-state-root-vectors/plan_patch.py)
+with the current bounded binary encoder. Historical encoding, unchanged reading,
+validation, event parsing and plan construction have independently checked
+function pins. Both modes use the unchanged meter and the same six literal
+profiles. The current source revision and historical reference revision remain
+separate labels; no external planner file is imported.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_patch_plan_encodings_test.py
+python3 -I -B tools/gen-state-root-vectors/measure_patch_plan_encodings.py \
+  --source-revision SELECTED_40_DIGIT_REVISION > ENCODING_COMPARISON_REPORT
+python3 -I -B tools/gen-state-root-vectors/check_patch_plan_encodings.py \
+  --report ENCODING_COMPARISON_REPORT --source-revision SELECTED_40_DIGIT_REVISION
+```
+
+Three interleaved reference/candidate pairs in plain and traced modes retain
+72 fresh workers. The independent checker executes neither encoder and binds
+every complete output length and SHA256 to independently reconstructed ordered
+JSON, including the revision and final newline. It verifies literal profiles,
+source pins, exact sample order/types and explicit unavailable metrics. Every
+sample remains in the report without retries or filtering. It reports whether
+all candidate traced peaks for each of the four larger profiles fall below
+all corresponding reference traced peaks; nonreduction is a valid observation.
+Empty and 64-record cases remain visible separately. The earlier read comparison
+retains its historical encoder and 72 workers; the standalone workflow measures
+the current default with 36 workers.
+
+These measurements cover only synthetic Python read/parse/encode work on the
+reported runtime. Python tracing excludes parent preparation, source/AST checks
+and worker startup. OS process high water can include that scaffolding and
+prior process accounting; plain/traced timing, Python peaks and OS metrics have
+different scopes. No latency speedup, causal OS-memory delta, cold-disk or
+whole-pipeline memory, NodeTree/retention workload, or production budget is
+qualified. Linux, macOS Intel and Windows execute the controls and observations;
+no candidate node, database, import, Replay, network or proof acceptance runs.
+The state-value consumer remains `REFUSED`, with independent snapshot, retained
+hash, VerifiedState/header/profile/activation, human review and distribution
+gates unchanged.

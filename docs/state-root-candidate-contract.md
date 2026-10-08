@@ -470,10 +470,24 @@ does not import a snapshot, authenticate a root/header/profile, or change proof
 The [selected-count read comparison](../tools/gen-state-root-vectors/README.md#selected-count-patch-read-allocation-comparison)
 bounds raw read requests by the independent selected byte count plus one, with
 exact returned length and unchanged descriptor/global/digest/record/output
-checks. Its historical read function and shared parser/encoder bytes are pinned;
+checks. Its historical read function and historical encoder bytes are pinned,
+with unchanged current parser pins;
 72 fresh workers compare both readers over the six fixed inputs while binding
 every complete plan independently. Reduced Python temporary allocation on small
 inputs is an observation, with no latency, OS equivalence, whole-pipeline,
 NodeTree or production-budget claim. An exact selected byte count cannot
 authenticate snapshot completeness, concurrent consistency, canonical roots or
 the accepted header/profile/activation. The proof consumer remains `REFUSED`.
+
+The [bounded output encoder](../tools/gen-state-root-vectors/README.md#bounded-patch-output-encoding-comparison)
+returns immutable complete JSON bytes from a bounded in-memory binary buffer.
+Every ASCII chunk and the final newline must fit before publication; no writable
+view or partial plan is exposed. Its separately pinned prior encoder and the
+current default run with unchanged read/parser/plan helpers in 72 fresh matched
+workers. Every complete result is independently bound across six fixed profiles.
+Historical read comparisons retain the original encoder in both modes, and
+standalone resource observations measure the current default. Variable Python
+peaks are observations without universal zero-copy, latency, OS causality or
+production-budget guarantees. This read-only consumer never imports, stages,
+Replays or authenticates snapshot/root/header/profile/activation state; proof
+`REFUSED` and the independent trust inputs remain unchanged.
