@@ -90,6 +90,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_staging_boundary.py --source-revision "${{ github.sha }}"
       - name: Read-only raw patch plan controls
         run: python -I -B tools/gen-state-root-vectors/plan_patch_test.py
+      - name: Patch planner resource report controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_plan_resources_test.py
+      - name: Bounded patch planner resource observations
+        run: python -I -B tools/gen-state-root-vectors/measure_patch_plan.py --source-revision "${{ github.sha }}"
       - name: Candidate bounded patch import controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_import_test.py
       - name: Independent candidate patch import and detached staging
@@ -306,6 +310,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_staging_boundary.py --source-revision "${{ github.sha }}"
       - name: Read-only raw patch plan controls
         run: python -I -B tools/gen-state-root-vectors/plan_patch_test.py
+      - name: Patch planner resource report controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_plan_resources_test.py
+      - name: Bounded patch planner resource observations
+        run: python -I -B tools/gen-state-root-vectors/measure_patch_plan.py --source-revision "${{ github.sha }}"
       - name: Candidate bounded patch import controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_import_test.py
       - name: Independent candidate patch import and detached staging
