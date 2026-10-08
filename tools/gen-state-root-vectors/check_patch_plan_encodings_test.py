@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""Comparison bindings, reader provenance and actual bounded worker controls."""
+"""Encoder source/output bindings and actual bounded worker controls."""
 import copy
 import hashlib
 import importlib.util
@@ -24,8 +24,8 @@ def module(name, filename):
     return value
 
 
-CHECK = module('read_comparison_test_oracle', 'check_patch_plan_reads.py')
-MEASURE = module('read_comparison_test_meter', 'measure_patch_plan_reads.py')
+CHECK = module('encoding_comparison_test_oracle', 'check_patch_plan_encodings.py')
+MEASURE = module('encoding_comparison_test_meter', 'measure_patch_plan_encodings.py')
 
 
 def model(repetitions=1, revision=None):
@@ -33,13 +33,13 @@ def model(repetitions=1, revision=None):
     cases = []
     for profile in CHECK.CHECK.profiles():
         expected = CHECK.CHECK.output_selection(profile, revision)
-        samples = [{'repetition': n, 'traced': traced, 'planner_mode': mode, 'elapsed_ns': 100,
+        samples = [{'repetition': n, 'traced': traced, 'encoder_mode': mode, 'elapsed_ns': 100,
             'python_traced_peak_bytes': (4096 if mode == 'reference' else 2048) if traced else None,
             'process_peak_memory': {'bytes': 8192, 'metric': 'process_peak_rss_bytes', 'available': True},
             **expected, 'consumer_result': 'REFUSED'}
             for n in range(1, repetitions + 1) for traced in (False, True) for mode in CHECK.MODES]
         cases.append(profile | expected | {'samples': samples})
-    return {'format_version': 1, 'kind': 'read-only-patch-plan-selected-read-comparison',
+    return {'format_version': 1, 'kind': 'read-only-patch-plan-output-encoding-comparison',
         'source_revision': revision, 'reference_source': copy.deepcopy(CHECK.REFERENCE),
         'source_files_sha256': {name: hashlib.sha256((HERE / name).read_bytes()).hexdigest() for name in CHECK.FILES},
         'runtime': {'os': 'linux', 'architecture': 'amd64', 'python': '3.13.0', 'implementation': 'CPython'},
@@ -47,7 +47,7 @@ def model(repetitions=1, revision=None):
         'measurement_result': 'OBSERVED', 'consumer_result': 'REFUSED', 'cases': cases}
 
 
-class ReadComparisonTests(unittest.TestCase):
+class EncodingComparisonTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.document = model()
@@ -59,19 +59,19 @@ class ReadComparisonTests(unittest.TestCase):
             CHECK.validate_report(doc)
 
     def command(self, path, mode, *extra):
-        return subprocess.run([sys.executable, '-I', '-B', str(HERE / 'measure_patch_plan_reads.py'),
+        return subprocess.run([sys.executable, '-I', '-B', str(HERE / 'measure_patch_plan_encodings.py'),
             '--worker', 'empty', '--raw', str(path), '--sample', '1', '--traced', '1',
-            '--planner-mode', mode, *extra], capture_output=True, timeout=20)
+            '--encoder-mode', mode, *extra], capture_output=True, timeout=20)
 
-    def test_selected_historical_reader_and_shared_functions_are_pinned(self):
+    def test_selected_historical_encoder_and_shared_functions_are_pinned(self):
         self.assertEqual(CHECK.reference_pins(), CHECK.REFERENCE)
-        self.assertEqual(CHECK.REFERENCE['revision'], '47b859b2b32979b166d1d138da65cf0236951040')
-        self.assertEqual(CHECK.REFERENCE['plan_sha256'], '226383a309ed96f8b2fbc96480dfa7348d8861c95bf84bdc3303ea269fbc27fd')
+        self.assertEqual(CHECK.REFERENCE['revision'], 'f4bf2d2953825fa96f9e52be2d41f003fed4ab65')
+        self.assertEqual(CHECK.REFERENCE['plan_sha256'], '80f4437a71ab056bf62a17c3df997ec550305e35a8578ffb2a16580b2c615499')
 
     def test_changed_historical_function_or_shared_helper_pin_refuses(self):
         actual = CHECK.selected_function_hashes
-        for filename, function in (('measure_patch_plan_reads.py', 'read_raw'),
-                                   ('measure_patch_plan_reads.py', 'encode_plan'), ('plan_patch.py', 'make_plan')):
+        for filename, function in (('measure_patch_plan_encodings.py', 'encode_plan'), ('plan_patch.py', 'read_raw'),
+                                   ('plan_patch.py', 'make_plan')):
             def changed(path):
                 values = actual(path)
                 if path.name == filename:
@@ -82,14 +82,14 @@ class ReadComparisonTests(unittest.TestCase):
                     CHECK.reference_pins()
 
     def test_reference_metadata_cannot_select_another_source(self):
-        for key in ('revision', 'plan_sha256', 'read_function_sha256'):
+        for key in ('revision', 'plan_sha256', 'encode_function_sha256'):
             self.change(lambda d: d['reference_source'].update({key: '00' * 32}))
         self.change(lambda d: d['reference_source']['shared_functions_sha256'].update(validate='00' * 32))
 
     def test_fake_comparison_is_consistency_only_not_speedup_or_budget(self):
         result = CHECK.validate_report(self.document)
         self.assertEqual(result['fresh_worker_samples'], 24)
-        self.assertTrue(result['empty_and_64_record_python_peaks_reduced'])
+        self.assertTrue(result['large_profile_python_peaks_reduced'])
         self.assertFalse(result['production_budget_qualified'])
         self.assertFalse(result['latency_speedup_qualified'])
         self.assertFalse(result['NodeTree_or_retention_measured'])
@@ -98,10 +98,10 @@ class ReadComparisonTests(unittest.TestCase):
         doc = copy.deepcopy(self.document)
         for case in doc['cases']:
             for sample in case['samples']:
-                if sample['planner_mode'] == 'candidate' and sample['traced']:
+                if sample['encoder_mode'] == 'candidate' and sample['traced']:
                     sample['python_traced_peak_bytes'] = 8192
         result = CHECK.validate_report(doc)
-        self.assertFalse(result['empty_and_64_record_python_peaks_reduced'])
+        self.assertFalse(result['large_profile_python_peaks_reduced'])
         self.assertFalse(result['production_budget_qualified'])
 
     def test_case_and_mode_sample_inventory_order_and_count_are_exact(self):
@@ -112,7 +112,7 @@ class ReadComparisonTests(unittest.TestCase):
             self.change(edit)
 
     def test_modes_repetitions_and_trace_flags_require_exact_types(self):
-        for field, value in (('planner_mode', True), ('planner_mode', 'other'), ('repetition', True), ('traced', 0)):
+        for field, value in (('encoder_mode', True), ('encoder_mode', 'other'), ('repetition', True), ('traced', 0)):
             self.change(lambda d: d['cases'][0]['samples'][0].update({field: value}))
         for repetitions in (0, 4, True, 1.0):
             self.change(lambda d: d.update(repetitions=repetitions))
@@ -169,7 +169,7 @@ class ReadComparisonTests(unittest.TestCase):
                 self.assertEqual((run.returncode, run.stderr), (0, b''))
                 result = json.loads(run.stdout)
                 self.assertEqual({key: result[key] for key in expected}, expected)
-                self.assertEqual(result['planner_mode'], mode)
+                self.assertEqual(result['encoder_mode'], mode)
                 self.assertEqual(result['consumer_result'], 'REFUSED')
                 self.assertGreater(result['python_traced_peak_bytes'], 0)
                 self.assertNotIn(str(path).encode(), run.stdout)
@@ -184,18 +184,17 @@ class ReadComparisonTests(unittest.TestCase):
                 self.assertNotIn(str(path).encode(), run.stderr)
                 self.assertNotIn(b'Traceback', run.stderr)
 
-    def test_both_read_modes_execute_the_pinned_historical_encoder(self):
+    def test_encoder_failure_propagates_only_in_the_selected_candidate_mode(self):
         profile = CHECK.CHECK.profiles()[0]
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'private-input'
             path.write_bytes(b'')
-            for mode in CHECK.MODES:
-                with (patch.object(MEASURE.CANDIDATE, 'encode_plan', side_effect=AssertionError('default encoder used')),
-                      patch.object(MEASURE.METER, 'PLAN', MEASURE.METER.PLAN)):
-                    result = MEASURE.worker(profile, path, 1, False, None, mode)
-                expected = CHECK.CHECK.output_selection(profile, None)
-                self.assertEqual({key: result[key] for key in expected}, expected)
-                self.assertEqual(result['planner_mode'], mode)
+            with (patch.object(MEASURE.CANDIDATE, 'encode_plan', side_effect=ValueError('encode refusal')),
+                  patch.object(MEASURE.METER, 'PLAN', MEASURE.METER.PLAN)):
+                reference = MEASURE.worker(profile, path, 1, False, None, 'reference')
+                self.assertEqual(reference['encoder_mode'], 'reference')
+                with self.assertRaises(ValueError):
+                    MEASURE.worker(profile, path, 1, False, None, 'candidate')
 
     def test_worker_entry_does_not_construct_large_fixture_oracle_inputs(self):
         sink = types.SimpleNamespace(buffer=io.BytesIO())
@@ -203,7 +202,7 @@ class ReadComparisonTests(unittest.TestCase):
               patch.object(MEASURE.COMPARE.CHECK, 'reference_raw', side_effect=AssertionError('oracle in worker')),
               patch.object(MEASURE, 'worker', return_value={'worker-control': True}),
               patch.object(MEASURE.sys, 'stdout', sink)):
-            MEASURE.main(['--worker', 'empty', '--raw', 'input', '--sample', '1', '--traced', '0', '--planner-mode', 'candidate'])
+            MEASURE.main(['--worker', 'empty', '--raw', 'input', '--sample', '1', '--traced', '0', '--encoder-mode', 'candidate'])
         self.assertEqual(json.loads(sink.buffer.getvalue()), {'worker-control': True})
 
     def test_failed_worker_cannot_publish_a_partial_comparison_report(self):
@@ -215,7 +214,7 @@ class ReadComparisonTests(unittest.TestCase):
         self.assertEqual(sink.buffer.getvalue(), b'')
 
     def test_cli_invalid_options_size_and_duplicate_fields_refuse_privately(self):
-        run = subprocess.run([sys.executable, '-I', '-B', str(HERE / 'measure_patch_plan_reads.py'),
+        run = subprocess.run([sys.executable, '-I', '-B', str(HERE / 'measure_patch_plan_encodings.py'),
                               '--repetitions', '0', '--source-revision', 'private endpoint'], capture_output=True, timeout=20)
         self.assertEqual((run.returncode, run.stdout), (1, b''))
         self.assertNotIn(b'private endpoint', run.stderr)
@@ -223,7 +222,7 @@ class ReadComparisonTests(unittest.TestCase):
             path = Path(directory) / 'private-report'
             for raw in (b'{"kind":1,"kind":2}', b' ' * ((64 << 10) + 1)):
                 path.write_bytes(raw)
-                run = subprocess.run([sys.executable, '-I', '-B', str(HERE / 'check_patch_plan_reads.py'),
+                run = subprocess.run([sys.executable, '-I', '-B', str(HERE / 'check_patch_plan_encodings.py'),
                                       '--report', str(path)], capture_output=True, timeout=20)
                 self.assertEqual((run.returncode, run.stdout), (1, b''))
                 self.assertNotIn(str(path).encode(), run.stderr)

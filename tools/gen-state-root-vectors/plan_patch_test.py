@@ -11,6 +11,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
 from unittest.mock import patch
 
@@ -27,6 +28,65 @@ def selected(raw=RAW, count=2):
 
 
 class PatchPlanTests(unittest.TestCase):
+    def test_encoder_preserves_literal_sorted_ascii_and_escaped_json(self):
+        document = {'z': [{'text': '\u00e9\n"\\', 'empty': ''}, None], 'a': True}
+        expected = b'{"a":true,"z":[{"empty":"","text":"\\u00e9\\n\\"\\\\"},null]}\n'
+        self.assertEqual(PLAN.encode_plan(document, len(expected)), expected)
+        with self.assertRaises(PLAN.Refused):
+            PLAN.encode_plan(document, len(expected) - 1)
+
+    def test_completed_encoded_bytes_are_immutable_across_later_changes(self):
+        document = {'events': [{'key': '61', 'value': '62'}]}
+        first = PLAN.encode_plan(document, 4096)
+        self.assertIs(type(first), bytes)
+        document['events'][0]['value'] = '63'
+        second = PLAN.encode_plan(document, 4096)
+        self.assertEqual(first, b'{"events":[{"key":"61","value":"62"}]}\n')
+        self.assertEqual(second, b'{"events":[{"key":"61","value":"63"}]}\n')
+
+    def test_oversized_json_chunk_is_refused_before_buffer_write_or_result(self):
+        binary_buffer = io.BytesIO
+        buffers = []
+        class RecordingBuffer(binary_buffer):
+            def __init__(self):
+                super().__init__()
+                self.retrieved = False
+                buffers.append(self)
+            def write(self, raw):
+                self.asserted_within_cap = self.tell() + len(raw) <= 64
+                if not self.asserted_within_cap:
+                    raise AssertionError('oversized write')
+                return super().write(raw)
+            def getvalue(self):
+                self.retrieved = True
+                return super().getvalue()
+        with patch.object(PLAN.io, 'BytesIO', RecordingBuffer):
+            with self.assertRaises(PLAN.Refused):
+                PLAN.encode_plan({'value': 'a' * 4096}, 64)
+        self.assertEqual(len(buffers), 1)
+        self.assertLessEqual(buffers[0].tell(), 64)
+        self.assertFalse(buffers[0].retrieved)
+
+    def test_buffer_write_failure_cannot_publish_a_partial_cli_plan(self):
+        binary_buffer = io.BytesIO
+        sink = types.SimpleNamespace(buffer=binary_buffer())
+        class FailingBuffer(binary_buffer):
+            def write(self, raw):
+                if self.tell():
+                    raise OSError('private encoder detail')
+                return super().write(raw)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'private-input'
+            path.write_bytes(RAW)
+            argv = ['--raw', str(path), '--changes-hash', selected()['changes_hash'],
+                    '--expected-bytes', str(len(RAW)), '--expected-records', '2']
+            for field, cap in LIMITS.items():
+                argv.extend(['--max-' + field.replace('_', '-'), str(cap)])
+            with (patch.object(PLAN.io, 'BytesIO', FailingBuffer), patch.object(PLAN.sys, 'stdout', sink)):
+                with self.assertRaises(OSError):
+                    PLAN.main(argv)
+        self.assertEqual(sink.buffer.getvalue(), b'')
+
     def plan(self, raw=RAW, count=2, limits=None):
         return PLAN.make_plan(raw, selected(raw, count), limits or LIMITS)
 

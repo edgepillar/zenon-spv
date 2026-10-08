@@ -196,9 +196,22 @@ The [selected-count read improvement](../tools/gen-state-root-vectors/README.md#
 uses the independently selected byte count plus one instead of reserving the
 full raw ceiling for every file. Exact returned length, global/type/descriptor
 checks, raw digest/record selection and capped complete JSON publication remain
-required. A verbatim pinned historical reader and unchanged parser/encoder pins
+required. A verbatim pinned historical reader and historical encoder with unchanged parser pins
 support 72 fresh comparison workers on the same six input families. Independent
 complete-byte checks and native controls preserve refusals and sample inventories.
 Python peak reduction observations remain separate from latency, OS accounting,
 whole-pipeline/NodeTree resources and production budgets. This read-only change
 does not add a writer, authenticate snapshots or enable state-value proofs.
+
+The [bounded output encoding comparison](../tools/gen-state-root-vectors/README.md#bounded-patch-output-encoding-comparison)
+examines the final JSON buffer separately. The current encoder appends bounded
+ASCII chunks and returns complete immutable bytes including the newline. A
+verbatim pinned bytearray encoder from the selected prior main remains the
+reference, while read/parser/plan helpers and instrumentation are unchanged.
+Seventy-two fresh matched workers retain all six fixed input families and bind
+every complete output independently. The earlier read comparison explicitly
+keeps its historical encoder in both modes; standalone observations measure the
+current default. Actual Python peak observations qualify neither an API-wide
+zero-copy guarantee, latency improvement, causal OS delta, NodeTree/retention
+resources nor production budgets. All proof, snapshot and accepted trust gates
+remain separate.
