@@ -644,6 +644,7 @@ var stagingBoundaryGenerator func() any
 var patchDecodeGenerator func() any
 var patchImportGenerator func() any
 var patchTargetGenerator func() any
+var patchResourceGenerator func() any
 
 func run() error {
 	// regenerate.py validates and copies every node blob before it builds this
@@ -654,7 +655,7 @@ func run() error {
 	kind := "bytes"
 	if len(os.Args) == 5 {
 		kind = os.Args[4]
-		if os.Args[3] != "--fixture-kind" || (kind != "fold-filter" && kind != "applier" && kind != "wire" && kind != "rpc-methods" && kind != "rpc-dispatcher" && kind != "chain-startup" && kind != "disk-lifecycle" && kind != "retention-resources" && kind != "bulk-tail" && kind != "bulk-guards" && kind != "empty-versions" && kind != "height-boundary" && kind != "staging-boundary" && kind != "patch-decode" && kind != "patch-import" && kind != "patch-targets") {
+		if os.Args[3] != "--fixture-kind" || (kind != "fold-filter" && kind != "applier" && kind != "wire" && kind != "rpc-methods" && kind != "rpc-dispatcher" && kind != "chain-startup" && kind != "disk-lifecycle" && kind != "retention-resources" && kind != "bulk-tail" && kind != "bulk-guards" && kind != "empty-versions" && kind != "height-boundary" && kind != "staging-boundary" && kind != "patch-decode" && kind != "patch-import" && kind != "patch-targets" && kind != "patch-resources") {
 			return fmt.Errorf("unsupported reference fixture kind")
 		}
 	}
@@ -704,6 +705,12 @@ func run() error {
 			return fmt.Errorf("disk lifecycle mode requires the offline driver candidate_disk_lifecycle build")
 		}
 		return encoder.Encode(diskLifecycleGenerator())
+	}
+	if kind == "patch-resources" {
+		if patchResourceGenerator == nil {
+			return fmt.Errorf("patch resources requires the offline driver candidate_patch_import,candidate_patch_targets,candidate_patch_resources build on Linux or macOS")
+		}
+		return encoder.Encode(patchResourceGenerator())
 	}
 	if kind == "patch-targets" {
 		if patchTargetGenerator == nil {
