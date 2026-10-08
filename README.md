@@ -347,3 +347,9 @@ also binds the candidate's observed regular Commit wrap to origin and subsequent
 base loss. Three finite cases remain refused, including an empty-root match.
 This low-level synthetic boundary establishes no production reachability or fix;
 strictly increasing profile-bounded heights remain a separate caller requirement.
+
+
+The separate [serial staging and injected replay checks](tools/gen-state-root-vectors/README.md#serial-staging-and-injected-replay-boundaries)
+bind failed replacement replay, partial accumulation, stage loss on clean reopen
+and complete retries to independent roots/proofs. Default batch replay returns
+nil; custom interface errors are explicit research inputs. All consumers refuse.

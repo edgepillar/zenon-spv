@@ -84,6 +84,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_bulk_guards_test.py
       - name: Independent candidate bulk guards and selected roots
         run: python -I -B tools/gen-state-root-vectors/check_bulk_guards.py --source-revision "${{ github.sha }}"
+      - name: Candidate staging replay boundary controls
+        run: python -I -B tools/gen-state-root-vectors/check_staging_boundary_test.py
+      - name: Independent candidate staging replay and refusal
+        run: python -I -B tools/gen-state-root-vectors/check_staging_boundary.py --source-revision "${{ github.sha }}"
       - name: Candidate uint64 height boundary controls
         run: python -I -B tools/gen-state-root-vectors/check_height_boundary_test.py
       - name: Independent candidate height wrap and origin refusal
@@ -286,6 +290,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_bulk_guards_test.py
       - name: Independent candidate bulk guards and selected roots
         run: python -I -B tools/gen-state-root-vectors/check_bulk_guards.py --source-revision "${{ github.sha }}"
+      - name: Candidate staging replay boundary controls
+        run: python -I -B tools/gen-state-root-vectors/check_staging_boundary_test.py
+      - name: Independent candidate staging replay and refusal
+        run: python -I -B tools/gen-state-root-vectors/check_staging_boundary.py --source-revision "${{ github.sha }}"
       - name: Candidate uint64 height boundary controls
         run: python -I -B tools/gen-state-root-vectors/check_height_boundary_test.py
       - name: Independent candidate height wrap and origin refusal
