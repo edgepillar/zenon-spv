@@ -118,6 +118,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_file_resources_test.py
       - name: Recorded whole file handoff samples (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/check_patch_file_resources.py --source-revision "${{ github.sha }}"
+      - name: Complete file to NodeTree handoff evidence controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_tree_test.py
+      - name: Recorded complete file to NodeTree handoff (offline; no Go execution)
+        run: python -I -B tools/gen-state-root-vectors/check_patch_tree.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
@@ -366,6 +370,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_file_resources_test.py
       - name: Recorded whole file handoff samples (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/check_patch_file_resources.py --source-revision "${{ github.sha }}"
+      - name: Complete file to NodeTree handoff evidence controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_tree_test.py
+      - name: Recorded complete file to NodeTree handoff (offline; no Go execution)
+        run: python -I -B tools/gen-state-root-vectors/check_patch_tree.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
