@@ -583,3 +583,31 @@ source ownership, complete/excluded snapshot authentication, retained-hash
 provenance, accepted VerifiedState/header/profile/activation, anchor, schedule,
 context pin, human review and authenticated release remain separate gates.
 Production state-value acceptance remains `REFUSED`.
+
+### Complete-map low-level storage handoff boundary
+
+The [separate tree handoff experiment](../tools/gen-state-root-vectors/README.md#complete-opened-file-map-to-low-level-nodetree-seed)
+now carries an opened-file import's complete detached balance map into actual
+low-level NodeTree Update/CommitBulk and a clean temporary LevelDB reopen. It
+checks the balance-only key/value format and compares the full map's SMT root
+with a separately selected synthetic root before creating storage. File or
+ChangesHash digests cannot substitute for that root. Coherent omitted-zero and
+omitted-delete maps, an excluded key, an empty value, a wrong root and import
+refusals create no database.
+
+Four finite seed sequences bind 16 complete logical snapshots and 512 root/proof
+cells using independent full sparse and compressed graph/refcount models. All
+132 actual local child outcomes remain source/corpus/binary bound. Named
+file-to-map, root preflight, storage open, complete-patch staging, bulk commit,
+close and reopen phases have separate variable elapsed/cumulative allocation
+samples. Queries are outside phase measurements; process lifetime RSS includes
+setup and interim observations. Closed physical files include LevelDB overhead.
+Native CI checks these recorded local observations without Go storage execution.
+
+This is a small, exclusive offline fixture handoff. It establishes no atomic
+source snapshot, excluded-state authentication, shared/durable writer, crash
+recovery, realistic archive/retention budget, authenticated retained-Momentum
+identity or accepted VerifiedState/header/profile/activation. Independent
+network trust inputs, anchor, schedule, context pin, human review and release
+authentication remain separate gates. Production state-value acceptance stays
+`REFUSED`.

@@ -1488,3 +1488,66 @@ ownership, complete/excluded snapshot authentication, retained-hash provenance,
 accepted VerifiedState/header/profile/activation, anchor, schedule, context pin,
 human review and authenticated distribution remain separate requirements. Every
 production state-value consumer remains `REFUSED`.
+
+## Complete opened-file map to low-level NodeTree seed
+
+The separate [tree handoff reference](reproduce_patch_tree.py) carries the
+unchanged opened-file import's detached map into the actual pinned node's
+`NodeTree.Update` and `CommitBulk`, then closes and reopens an owned temporary
+LevelDB. Its private preflight accepts only the finite balance key/value format
+and compares the complete map's SMT root with a separately selected synthetic
+root before creating storage. File/ChangesHash digests remain separate from
+this SMT root. The SPV runtime and dependency graph remain unchanged.
+
+Eleven literal families cover empty state, stored zero, 256 balances, ordered
+delete/duplicate/reinsert operations, file selection and transient-cap refusals,
+an excluded key, an empty value, a wrong selected root and coherent omitted-zero
+or omitted-delete maps. Four accepted research sequences bind 16 complete
+logical snapshots and 512 finite root/proof cells through fresh, staged,
+committed and clean-reopened storage. Seven refusals create no database. Every
+source cursor, original map alias, complete imported map and sorted seed callback
+sequence is bound. Stored zero remains inclusion; empty values cannot seed this
+balance-only experiment. The independent Python model reconstructs full sparse
+proofs and the compressed physical graph, version records and refcounts.
+
+Two generations each run every family three times in plain and allocation
+modes, preserving all **132 actual fresh child outcomes** before interpretation.
+The [corpus](testdata/candidate-patch-tree.json) is deterministic; the
+[samples](testdata/candidate-patch-tree-samples.json) are separate variable
+observations from Darwin/arm64 and Go 1.25.14. Named phases separately cover
+file-to-map, balance-map/root preflight, fresh storage open, complete sorted
+patch construction and Update, CommitBulk, clean close, reopen and final close.
+Interim proof queries and logical-record observations are outside phase elapsed
+and allocation measurements. Allocation counters are cumulative process-wide
+Go TotalAlloc/malloc/GC deltas, not live or peak allocation. Plain mode records
+no allocation counters. Closed database regular-file counts and bytes are
+variable observations after clean closure; they include LevelDB overhead.
+
+Process lifetime RSS is sampled after final closure and file inventory, before
+final result binding and serialization. It includes setup, selected-root
+construction, pre-operation GC and interim conformance queries/inventory. It
+cannot be assigned to one phase or interpreted as an allocation delta. Recently
+written temporary files, four small seed cases and clean reopen do not qualify
+cold-disk behavior, crash recovery, archive/retention workloads or production
+resource budgets. No measurement retry, filtering or speedup claim is used.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/reproduce_patch_tree.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE \
+  --output NEW_CORPUS --samples NEW_SAMPLES \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+python3 -I -B tools/gen-state-root-vectors/check_patch_tree.py \
+  --corpus NEW_CORPUS --samples NEW_SAMPLES
+python3 -I -B tools/gen-state-root-vectors/check_patch_tree_test.py
+```
+
+Native Linux, macOS Intel and Windows CI run the independent checker and
+adversarial controls against recorded local data; they do not run the Go storage
+handoff or reproduce its resource measurements. Source pins and outcome hashes
+are unsigned engineering evidence. A complete owned fixture is not an
+authenticated snapshot, and low-level roots/proofs do not repair the candidate's
+retained-Momentum-hash provenance boundary. Stable source/caller exclusivity,
+shared/durable writer design, excluded-state authentication, accepted
+VerifiedState/header/profile/activation, anchor, schedule, context pin, human
+review and authenticated distribution remain separate gates. Production
+state-value consumers stay `REFUSED`.
