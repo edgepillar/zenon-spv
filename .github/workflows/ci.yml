@@ -68,6 +68,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_chain_startup_test.py
       - name: Independent candidate chain startup roots and proofs
         run: python -I -B tools/gen-state-root-vectors/check_chain_startup.py --source-revision "${{ github.sha }}"
+      - name: Candidate disk lifecycle exit controls
+        run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle_test.py
+      - name: Independent candidate disk lifecycle roots and retention
+        run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash
@@ -246,6 +250,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_chain_startup_test.py
       - name: Independent candidate chain startup roots and proofs
         run: python -I -B tools/gen-state-root-vectors/check_chain_startup.py --source-revision "${{ github.sha }}"
+      - name: Candidate disk lifecycle exit controls
+        run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle_test.py
+      - name: Independent candidate disk lifecycle roots and retention
+        run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash

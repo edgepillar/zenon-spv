@@ -257,6 +257,17 @@ failed qualification gate. This synthetic temporary-database reproduction is
 not a demonstrated remote attack or a production crash/reorg qualification. Existing [mid-build reorg tests](https://github.com/digitalSloth/go-zenon/blob/56ce2c384966f2f1940967257a0788d3998a5eef/chain/tests/state_tree_build_test.go#L94-L180)
 also mean that a blanket claim that all such reorgs are skipped is unsupported.
 
+The [controlled disk exit/reopen fixture](../tools/gen-state-root-vectors/README.md#separate-controlled-disk-process-exit-and-reopen-fixture)
+adds five planned process exits after returned Open/New, Update, Commit,
+Truncate or Prune calls, plus a normal-close control. Two reopens per case
+independently check roots, values, proof bytes, unavailable versions and logical
+record counts in small synthetic one-key databases. It does not qualify the
+startup hash-bound provenance failure. The pinned [commit path](https://github.com/digitalSloth/go-zenon/blob/56ce2c384966f2f1940967257a0788d3998a5eef/common/trie/nodestore.go#L268-L333)
+uses batch writes with default options. Exiting after the API returns does not
+inject a write fault or prove power-loss, torn-write or production crash
+recovery. Logical key/value bytes are distinct from physical disk usage and
+realistic retention/resource budgets.
+
 Measure actual committed-key count/churn, build/import wall time, peak memory,
 archive/pruned disk, compaction, proof latency/size, root computation and insert
 pauses for the production content-addressed `NodeTree`. Keep hardware, dataset,
