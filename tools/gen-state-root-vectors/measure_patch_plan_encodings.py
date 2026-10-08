@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""Compare a pinned historical raw reader and selected-count bounded reads.
+"""Compare pinned bytearray encoding and current bounded binary encoding.
 
 The historical function below is byte-identical to the selected source function.
-Both modes share the byte-pinned historical encoder and independent checks;
+Both modes share byte-pinned reading/parsing and independent output checks;
 only synthetic Python planning runs, never a node, storage importer or proof.
 """
 import hashlib
@@ -11,7 +11,6 @@ import importlib.util
 import json
 import os
 from pathlib import Path
-import stat
 import subprocess
 import sys
 import tempfile
@@ -27,28 +26,12 @@ def module(name, filename):
     return result
 
 
-METER = module('selected_read_shared_meter', 'measure_patch_plan.py')
-COMPARE = module('selected_read_independent_comparison', 'check_patch_plan_reads.py')
+METER = module('selected_encoding_shared_meter', 'measure_patch_plan.py')
+COMPARE = module('selected_encoding_independent_comparison', 'check_patch_plan_encodings.py')
 CANDIDATE = METER.PLAN
 # The historical function's original names resolve to the unchanged helpers.
 validate, require = CANDIDATE.validate, CANDIDATE.require
 CEILINGS = CANDIDATE.CEILINGS
-
-
-def read_raw(path, selection, limits):
-    validate(selection, limits)
-    # Refuse special files before opening, then check the opened descriptor.
-    # O_NONBLOCK avoids waiting on a FIFO substituted during the path race.
-    require(stat.S_ISREG(Path(path).lstat().st_mode))
-    flags = os.O_RDONLY | getattr(os, 'O_BINARY', 0) | getattr(os, 'O_NONBLOCK', 0)
-    flags |= getattr(os, 'O_NOFOLLOW', 0)
-    descriptor = os.open(path, flags)
-    with os.fdopen(descriptor, 'rb') as stream:
-        info = os.fstat(stream.fileno())
-        require(stat.S_ISREG(info.st_mode) and info.st_size <= limits['raw_bytes'])
-        raw = stream.read(limits['raw_bytes'] + 1)
-    require(len(raw) <= limits['raw_bytes'])
-    return raw
 
 
 def encode_plan(document, maximum):
@@ -66,12 +49,12 @@ def encode_plan(document, maximum):
 
 def worker(profile, path, number, traced, revision, mode):
     COMPARE.reference_pins()
-    # Each child handles one mode only. Instrumentation, timers and output
-    # semantics are identical; source/oracle work stays outside the operation.
+    # Each child handles one mode only. Shared instrumentation and independent
+    # output checks remain unchanged; only output encoding differs.
     METER.PLAN = types.SimpleNamespace(validate=CANDIDATE.validate,
-        read_raw=read_raw if mode == 'reference' else CANDIDATE.read_raw,
-        make_plan=CANDIDATE.make_plan, encode_plan=encode_plan)
-    return METER.worker(profile, path, number, traced, revision) | {'planner_mode': mode}
+        read_raw=CANDIDATE.read_raw, make_plan=CANDIDATE.make_plan,
+        encode_plan=encode_plan if mode == 'reference' else CANDIDATE.encode_plan)
+    return METER.worker(profile, path, number, traced, revision) | {'encoder_mode': mode}
 
 
 def main(argv=None):
@@ -82,7 +65,7 @@ def main(argv=None):
     parser.add_argument('--raw', type=Path)
     parser.add_argument('--sample', type=CANDIDATE.number)
     parser.add_argument('--traced', choices=('0', '1'))
-    parser.add_argument('--planner-mode', choices=COMPARE.MODES)
+    parser.add_argument('--encoder-mode', choices=COMPARE.MODES)
     args = parser.parse_args(argv)
     COMPARE.CHECK.revision(args.source_revision)
     COMPARE.CHECK.require(1 <= args.repetitions <= 3)
@@ -97,15 +80,15 @@ def main(argv=None):
         COMPARE.CHECK.exact(manifest['kind'], 'patch-plan-resource-input-selection')
         COMPARE.CHECK.require(type(manifest['cases']) is list and len(manifest['cases']) == 6)
         COMPARE.CHECK.require(args.raw is not None and args.sample in (1, 2, 3) and args.traced in ('0', '1')
-                              and args.planner_mode in COMPARE.MODES)
+                              and args.encoder_mode in COMPARE.MODES)
         profile = next(row for row in manifest['cases'] if row['name'] == args.worker)
-        result = worker(profile, args.raw, args.sample, args.traced == '1', args.source_revision, args.planner_mode)
+        result = worker(profile, args.raw, args.sample, args.traced == '1', args.source_revision, args.encoder_mode)
     else:
-        COMPARE.CHECK.require(args.raw is None and args.sample is None and args.traced is None and args.planner_mode is None)
+        COMPARE.CHECK.require(args.raw is None and args.sample is None and args.traced is None and args.encoder_mode is None)
         rows = COMPARE.CHECK.profiles()
         cases = []
         os.umask(0o077)
-        with tempfile.TemporaryDirectory(prefix='patch-read-comparison-') as directory:
+        with tempfile.TemporaryDirectory(prefix='patch-encoding-comparison-') as directory:
             for profile in rows:
                 raw = METER.fixture(profile)
                 COMPARE.CHECK.require(len(raw) == profile['raw_bytes'] and hashlib.sha256(raw).hexdigest() == profile['input_sha256'])
@@ -118,16 +101,16 @@ def main(argv=None):
                 for repetition in range(1, args.repetitions + 1):
                     for traced in (False, True):
                         for mode in COMPARE.MODES:
-                            command = [sys.executable, '-I', '-B', str(HERE / 'measure_patch_plan_reads.py'),
+                            command = [sys.executable, '-I', '-B', str(HERE / 'measure_patch_plan_encodings.py'),
                                 '--worker', profile['name'], '--raw', str(path), '--sample', str(repetition),
-                                '--traced', str(int(traced)), '--planner-mode', mode]
+                                '--traced', str(int(traced)), '--encoder-mode', mode]
                             if args.source_revision is not None:
                                 command.extend(['--source-revision', args.source_revision])
                             run = subprocess.run(command, capture_output=True, timeout=45)
                             COMPARE.CHECK.require(run.returncode == 0 and not run.stderr and len(run.stdout) <= 8192)
                             case['samples'].append(json.loads(run.stdout, object_pairs_hook=COMPARE.CHECK.ORACLE.BYTE.object_pairs))
                 cases.append(case)
-        result = {'format_version': 1, 'kind': 'read-only-patch-plan-selected-read-comparison',
+        result = {'format_version': 1, 'kind': 'read-only-patch-plan-output-encoding-comparison',
             'source_revision': args.source_revision, 'reference_source': COMPARE.REFERENCE,
             'source_files_sha256': {name: hashlib.sha256((HERE / name).read_bytes()).hexdigest() for name in COMPARE.FILES},
             'runtime': METER.runtime(), 'repetitions': args.repetitions, 'limits': COMPARE.CHECK.LIMITS,
@@ -142,5 +125,5 @@ if __name__ == '__main__':
     try:
         main()
     except (ValueError, TypeError, KeyError, OSError, StopIteration, SyntaxError, subprocess.TimeoutExpired):
-        print('Patch read comparison refused; no complete report emitted. Production acceptance remains disabled.', file=sys.stderr)
+        print('Patch encoding comparison refused; no complete report emitted. Production acceptance remains disabled.', file=sys.stderr)
         sys.exit(1)
