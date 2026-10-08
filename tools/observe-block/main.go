@@ -224,17 +224,13 @@ func observe(ctx context.Context, c configuration) (result summary, code int) {
 		return fail("input_unavailable", 70)
 	}
 	if c.collection.binary != "" {
-		collected := runProcess(ctx, c.collection.binary, collectionArguments(c), int(verify.DefaultMaxBundleBytes), c.timeout)
-		result.Collector = &collected.observation
+		c.bundle = filepath.Join(private, "candidate.json")
+		collected := collectBundle(ctx, c, c.bundle)
+		// Keep independently owned observation metadata in the summary.
+		collectorObservation := collected.observation
+		result.Collector = &collectorObservation
 		if collected.category != "" {
 			return fail(collected.category, collected.code)
-		}
-		if !json.Valid(collected.stdout) {
-			return fail("invalid_bundle", 2)
-		}
-		c.bundle = filepath.Join(private, "candidate.json")
-		if os.WriteFile(c.bundle, collected.stdout, 0o600) != nil {
-			return fail("input_unavailable", 70)
 		}
 	}
 	args := []string{c.command, "--json", "--retained-only", "--genesis-config", c.anchor, "--protocol-profile", c.profile,

@@ -26,6 +26,31 @@ exactly 32 bytes. The [byte corruption controls](../tools/gen-node-momentum-vect
 exercise boolean/float aliases and a redistribution of content hash bytes that
 preserves the concatenated preimage and its digest while violating member widths.
 All existing node corpus bytes and low-level amount magnitude cases are retained.
+Account RPC amounts must be ASCII decimal strings with an optional sign; booleans,
+numbers, whitespace, underscores and Unicode digits cannot alias the expected
+amount. Nullable public-key, signature and data fields accept only JSON null or
+base64 strings. Null and empty strings retain their existing empty-byte meaning;
+other false-like values cannot inherit it. Corruption controls retain the node's
+hashes and check unchanged preimages for valid sign, zero-padding and nullable
+representations. Negative and wide amount vectors remain low-level serialization
+controls; accepting their byte encoding does not make them valid transactions.
+Account projection hex strings must have both their exact text width and decoded
+byte width. RPC hashes and eight-byte nonces, including nested descendants and
+acknowledged hashes, retain that contract. ASCII whitespace ignored by Python's
+hex decoder cannot preserve an otherwise invalid wire representation. Full-width
+uppercase preimage fields retain their byte meaning. The
+four wire-field whitespace mutations preserve the original hash, signature and
+preimage, but the pinned node hash/nonce decoders refuse them.
+Base64 byte fields follow the pinned node's standard decoder: only CR and LF
+are ignored, and standard padding is required. Momentum public-key/signature
+projections compare decoded bytes, so wire line endings preserve the original
+envelope. Accounts, linked wrappers, historical genesis and the signature
+collector share this decoder while retaining their existing nullable and
+unsigned rules. Spaces, tabs, other whitespace and unnecessary padding remain
+invalid. Six unchanged-byte CR/LF refusals and two unchanged-preimage padding
+acceptances were reproduced against fourteen pinned node JSON selections.
+Thirty-six byte controls cover these boundaries, including all 102 original
+records with line endings and padding refusal before backend execution.
 These checks establish the fixture's typed byte contract. The separate
 [independent signature checker](independent-signatures.md) runs OpenSSL over
 Python-recomputed messages in all three native CI jobs, retaining unsigned

@@ -1,0 +1,1929 @@
+{
+  "cases": [
+    {
+      "input": {
+        "name": "GetProof/zero-height",
+        "method": "GetProof",
+        "height": 0,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ],
+      "result_json": "null",
+      "error": {
+        "code": -32000,
+        "message": "height parameter must be strictly greater than zero",
+        "stub_error_identity": null
+      }
+    },
+    {
+      "input": {
+        "name": "GetProof/lookup-error",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "lookup",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ],
+      "result_json": "null",
+      "error": {
+        "code": -32101,
+        "message": "synthetic lookup failure",
+        "stub_error_identity": "lookup"
+      }
+    },
+    {
+      "input": {
+        "name": "GetProof/missing-momentum",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": true,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": null,
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ],
+      "result_json": "null",
+      "error": {
+        "code": null,
+        "message": "no momentum at height 42",
+        "stub_error_identity": null
+      }
+    },
+    {
+      "input": {
+        "name": "GetProof/version-zero",
+        "method": "GetProof",
+        "height": 42,
+        "version": 0,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "767425528baa0eb6bc7a105bb299035fb93ef8ecbb9ca51a8d240ab72d92851a",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 0
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ],
+      "result_json": "null",
+      "error": {
+        "code": -32000,
+        "message": "state root not available before its activation height",
+        "stub_error_identity": null
+      }
+    },
+    {
+      "input": {
+        "name": "GetProof/version-one",
+        "method": "GetProof",
+        "height": 42,
+        "version": 1,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "dd54cdd637e064376c3ba9171097e09890dedc785df8ac90adb340a328bd6cd1",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 1
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ],
+      "result_json": "null",
+      "error": {
+        "code": -32000,
+        "message": "state root not available before its activation height",
+        "stub_error_identity": null
+      }
+    },
+    {
+      "input": {
+        "name": "GetProof/version-two",
+        "method": "GetProof",
+        "height": 42,
+        "version": 2,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "0c1119ffbd99e244840d3be143cd751174ff34abada1b1d82c1c8af8393bd888",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 2
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ],
+      "result_json": "null",
+      "error": {
+        "code": -32000,
+        "message": "state root not available before its activation height",
+        "stub_error_identity": null
+      }
+    },
+    {
+      "input": {
+        "name": "GetProof/active-three",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetProof/version-four",
+        "method": "GetProof",
+        "height": 42,
+        "version": 4,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "333b0a64e4c69953353ed50245121786b602c1c78425f3d74f8f98ae860afd5a",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 4
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "333b0a64e4c69953353ed50245121786b602c1c78425f3d74f8f98ae860afd5a",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "333b0a64e4c69953353ed50245121786b602c1c78425f3d74f8f98ae860afd5a",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetProof/version-max",
+        "method": "GetProof",
+        "height": 42,
+        "version": 18446744073709551615,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "d61237957ac5b0ea2eb2bdd44706e2a37ee215ef168ae10683189d6c0601c9cf",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 18446744073709551615
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "d61237957ac5b0ea2eb2bdd44706e2a37ee215ef168ae10683189d6c0601c9cf",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "d61237957ac5b0ea2eb2bdd44706e2a37ee215ef168ae10683189d6c0601c9cf",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetProof/store-height-diff",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 43,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "3967a419983e2192853f757a86a05a51f3b0ae7a1eb3652615cb15c2289e1140",
+        "height": 43,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "3967a419983e2192853f757a86a05a51f3b0ae7a1eb3652615cb15c2289e1140",
+            "height": 43
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "3967a419983e2192853f757a86a05a51f3b0ae7a1eb3652615cb15c2289e1140",
+            "height": 43
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetProof/store-hash-diff",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": true,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetProof/not-ready",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "not-ready",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        }
+      ],
+      "result_json": "null",
+      "error": {
+        "code": null,
+        "message": "state tree: not yet built to the chain frontier",
+        "stub_error_identity": "proof"
+      }
+    },
+    {
+      "input": {
+        "name": "GetProof/not-retained",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "not-retained",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        }
+      ],
+      "result_json": "null",
+      "error": {
+        "code": null,
+        "message": "synthetic: no such version",
+        "stub_error_identity": "proof"
+      }
+    },
+    {
+      "input": {
+        "name": "GetProof/root-error",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "root",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "null",
+      "error": {
+        "code": -32103,
+        "message": "synthetic root failure",
+        "stub_error_identity": "root"
+      }
+    },
+    {
+      "input": {
+        "name": "GetProof/coherent-root-substitution",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "coherent-substitution"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praC7Ewd6mX0HmeSE2PY8BH7RGhyHziQ+MEGNNBDtUHWhQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC\",\"root\":\"d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e\"}",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetStateRoot/zero-height",
+        "method": "GetStateRoot",
+        "height": 0,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        }
+      ],
+      "result_json": "\"0000000000000000000000000000000000000000000000000000000000000000\"",
+      "error": {
+        "code": -32000,
+        "message": "height parameter must be strictly greater than zero",
+        "stub_error_identity": null
+      }
+    },
+    {
+      "input": {
+        "name": "GetStateRoot/lookup-error",
+        "method": "GetStateRoot",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "lookup",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ],
+      "result_json": "\"0000000000000000000000000000000000000000000000000000000000000000\"",
+      "error": {
+        "code": -32101,
+        "message": "synthetic lookup failure",
+        "stub_error_identity": "lookup"
+      }
+    },
+    {
+      "input": {
+        "name": "GetStateRoot/missing-momentum",
+        "method": "GetStateRoot",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": true,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": null,
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ],
+      "result_json": "\"0000000000000000000000000000000000000000000000000000000000000000\"",
+      "error": {
+        "code": null,
+        "message": "no momentum at height 42",
+        "stub_error_identity": null
+      }
+    },
+    {
+      "input": {
+        "name": "GetStateRoot/version-zero",
+        "method": "GetStateRoot",
+        "height": 42,
+        "version": 0,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "767425528baa0eb6bc7a105bb299035fb93ef8ecbb9ca51a8d240ab72d92851a",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 0
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ],
+      "result_json": "\"0000000000000000000000000000000000000000000000000000000000000000\"",
+      "error": {
+        "code": -32000,
+        "message": "state root not available before its activation height",
+        "stub_error_identity": null
+      }
+    },
+    {
+      "input": {
+        "name": "GetStateRoot/version-one",
+        "method": "GetStateRoot",
+        "height": 42,
+        "version": 1,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "dd54cdd637e064376c3ba9171097e09890dedc785df8ac90adb340a328bd6cd1",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 1
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ],
+      "result_json": "\"0000000000000000000000000000000000000000000000000000000000000000\"",
+      "error": {
+        "code": -32000,
+        "message": "state root not available before its activation height",
+        "stub_error_identity": null
+      }
+    },
+    {
+      "input": {
+        "name": "GetStateRoot/version-two",
+        "method": "GetStateRoot",
+        "height": 42,
+        "version": 2,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "0c1119ffbd99e244840d3be143cd751174ff34abada1b1d82c1c8af8393bd888",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 2
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        }
+      ],
+      "result_json": "\"0000000000000000000000000000000000000000000000000000000000000000\"",
+      "error": {
+        "code": -32000,
+        "message": "state root not available before its activation height",
+        "stub_error_identity": null
+      }
+    },
+    {
+      "input": {
+        "name": "GetStateRoot/active-three",
+        "method": "GetStateRoot",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetStateRoot/version-four",
+        "method": "GetStateRoot",
+        "height": 42,
+        "version": 4,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "333b0a64e4c69953353ed50245121786b602c1c78425f3d74f8f98ae860afd5a",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 4
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "333b0a64e4c69953353ed50245121786b602c1c78425f3d74f8f98ae860afd5a",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetStateRoot/version-max",
+        "method": "GetStateRoot",
+        "height": 42,
+        "version": 18446744073709551615,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "d61237957ac5b0ea2eb2bdd44706e2a37ee215ef168ae10683189d6c0601c9cf",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 18446744073709551615
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "d61237957ac5b0ea2eb2bdd44706e2a37ee215ef168ae10683189d6c0601c9cf",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetStateRoot/store-height-diff",
+        "method": "GetStateRoot",
+        "height": 42,
+        "version": 3,
+        "store_height": 43,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "3967a419983e2192853f757a86a05a51f3b0ae7a1eb3652615cb15c2289e1140",
+        "height": 43,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "3967a419983e2192853f757a86a05a51f3b0ae7a1eb3652615cb15c2289e1140",
+            "height": 43
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetStateRoot/store-hash-diff",
+        "method": "GetStateRoot",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": true,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetStateRoot/not-ready",
+        "method": "GetStateRoot",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "not-ready",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "\"0000000000000000000000000000000000000000000000000000000000000000\"",
+      "error": {
+        "code": null,
+        "message": "state tree: not yet built to the chain frontier",
+        "stub_error_identity": "root"
+      }
+    },
+    {
+      "input": {
+        "name": "GetStateRoot/not-retained",
+        "method": "GetStateRoot",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "not-retained",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "\"0000000000000000000000000000000000000000000000000000000000000000\"",
+      "error": {
+        "code": null,
+        "message": "synthetic: no such version",
+        "stub_error_identity": "root"
+      }
+    },
+    {
+      "input": {
+        "name": "GetStateRoot/root-error",
+        "method": "GetStateRoot",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "root",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"",
+      "error": {
+        "code": -32103,
+        "message": "synthetic root failure",
+        "stub_error_identity": "root"
+      }
+    },
+    {
+      "input": {
+        "name": "GetStateRoot/coherent-root-substitution",
+        "method": "GetStateRoot",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "coherent-substitution"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "\"d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e\"",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetProof/present-one",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "positive-one",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "08eec510c475450b07bcca16193c7b317feae06830d9a28f5fa56a07949cb310",
+        "height": 42,
+        "state_root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "08eec510c475450b07bcca16193c7b317feae06830d9a28f5fa56a07949cb310",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "08eec510c475450b07bcca16193c7b317feae06830d9a28f5fa56a07949cb310",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0prae7LdKaoNSm1aVnC7g+Ge2mtcSTBnQ6qkTvV3MYegPIgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB\",\"root\":\"bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b\"}",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetProof/missing-token",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "missing-token",
+        "binding_name": "missing-token",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110344444444444444444444",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110344444444444444444444",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "{\"value\":null,\"proof\":\"AInGIzDUyTvUZRRwSlAnc706+Mi0Xxbu6jy+C1eY4G6rAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAB0dGBmN+8vuCH5YdpKykaR7d2JbURHkk6tOZPOVPnUTQ=\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetProof/present-empty",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "present-empty-core-only",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "e7882679704be9a7a5e0fc6929b859cf36861ab587634147a94494494a8be8de",
+        "height": 42,
+        "state_root": "157260d19525f385c7cbf511307368d1252232558ba9610b2bfc996cfc8fc8ea",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "e7882679704be9a7a5e0fc6929b859cf36861ab587634147a94494494a8be8de",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "e7882679704be9a7a5e0fc6929b859cf36861ab587634147a94494494a8be8de",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "{\"value\":\"\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0pra5HCIgVDXMfbQcDivBxSD53eAxyb4hI8YmA4gskf3jfAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==\",\"root\":\"157260d19525f385c7cbf511307368d1252232558ba9610b2bfc996cfc8fc8ea\"}",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetProof/nil-key",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "nil",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": null,
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": null,
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "{\"value\":null,\"proof\":\"AKf/xvi/HtdmUcFHVqBh1mL1gP9N5DtJ+oLYCkuA+ENKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAB0dGBmN+8vuCH5YdpKykaR7d2JbURHkk6tOZPOVPnUTQ=\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetProof/empty-key",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "empty",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "{\"value\":null,\"proof\":\"AKf/xvi/HtdmUcFHVqBh1mL1gP9N5DtJ+oLYCkuA+ENKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAB0dGBmN+8vuCH5YdpKykaR7d2JbURHkk6tOZPOVPnUTQ=\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetProof/oversized-key",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "oversized",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "7777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "7777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "{\"value\":null,\"proof\":\"AKLT1WRsNBMPRsFAqb/XkDU1X2z0AXDxh4o+khI4wCDPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAB0dGBmN+8vuCH5YdpKykaR7d2JbURHkk6tOZPOVPnUTQ=\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetProof/nil-value-present-proof",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "nil-value"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "{\"value\":null,\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetProof/oversized-value",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "oversized-value"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "{\"value\":\"d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3c=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0pravTDUu1iaILrBdQlNuIFVC3AuXVvjo0UuglsVzrof170AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAXd3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3\",\"root\":\"03206369c63f10ad7975c5401092ca82074bbf0a86a1c65c92a6b15ce5e35609\"}",
+      "error": null
+    },
+    {
+      "input": {
+        "name": "GetProof/proof-error-before-root-error",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "proof",
+        "root_error": "root",
+        "response_kind": "selected"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        }
+      ],
+      "result_json": "null",
+      "error": {
+        "code": -32102,
+        "message": "synthetic proof failure",
+        "stub_error_identity": "proof"
+      }
+    },
+    {
+      "input": {
+        "name": "GetProof/root-substitution",
+        "method": "GetProof",
+        "height": 42,
+        "version": 3,
+        "store_height": 42,
+        "missing_momentum": false,
+        "hash_override": false,
+        "key_kind": "balance",
+        "binding_name": "stored-zero",
+        "lookup_error": "",
+        "proof_error": "",
+        "root_error": "",
+        "response_kind": "root-substitution"
+      },
+      "momentum": {
+        "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+        "height": 42,
+        "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+        "version": 3
+      },
+      "request_key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+      "trace": [
+        {
+          "method": "Zenon.Chain"
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "height": 42,
+          "method": "MomentumStore.GetMomentumByHeight"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "key_hex": "0311111111111111111111111111111111111111110322222222222222222222",
+          "method": "Chain.GetProof"
+        },
+        {
+          "identifier": {
+            "hash": "fafb57c9071313b6794c26e643f6496a33e143436be37fd6f84d73c3eddcb1bd",
+            "height": 42
+          },
+          "method": "Chain.StateRoot"
+        }
+      ],
+      "result_json": "{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"4444444444444444444444444444444444444444444444444444444444444444\"}",
+      "error": null
+    }
+  ],
+  "format_version": 1,
+  "kind": "candidate-rpc-method-research",
+  "scope": {
+    "LedgerApi_constructor_executed": true,
+    "LedgerApi_methods_executed": true,
+    "StateProof_serializer_executed": true,
+    "actual_chain_stateTree_executed": false,
+    "header_authentication_executed": false,
+    "network_activation_authenticated": false,
+    "node_database_opened": false,
+    "node_lifecycle_executed": false,
+    "node_tests_executed": false,
+    "primitive_proof_api_executed": true,
+    "profile_agreed": false,
+    "recording_chain_store_stubs": true,
+    "rpc_dispatcher_executed": false,
+    "rpc_transport_executed": false,
+    "runtime_state_proof_acceptance": false,
+    "synthetic": true,
+    "unsigned": true
+  },
+  "source": {
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "56ce2c384966f2f1940967257a0788d3998a5eef",
+    "tree": "d5abff528566a561e1a53a46103cb4b15ff63c6c"
+  }
+}

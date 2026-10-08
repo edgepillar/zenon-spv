@@ -6,6 +6,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 import signal
 import stat
 import struct
@@ -283,6 +284,55 @@ with mock.patch.object(Path, "stat", return_value=selected):
                 self.assertEqual(code, 0)
                 self.assertEqual(result["skipped_subtests"], 1)
                 self.assertEqual(result["test_status"], "passed_with_skips")
+
+    def test_selected_pilot_packages_have_archive_support(self):
+        manifest = Path(__file__).parent / "offline-pilot" / "manifest.go"
+        packages = re.findall(r'^\s*\{"[^"]+", "([^"]+)", "Test[^"]+",',
+                              manifest.read_text(), re.MULTILINE)
+        self.assertTrue(packages, "selected pilot packages were not found")
+        self.assertFalse(set(packages) - checker.PACKAGES,
+                         "selected pilot package is unsupported by the archive checker")
+        for os_name in ("linux", "darwin", "windows"):
+            with self.subTest(os=os_name):
+                files, manifest, report = fixture(os_name)
+                report["cases"].append({"id": "bounded_rpc_response_reader", "package": "internal/fetch",
+                    "test": "TestRPCResponseReadContract", "status": "passed", "passed_subtests": 6,
+                    "skipped_subtests": 0, "failed_subtests": 0, "binaries": []})
+                code, result = self.invoke(pack(files, manifest, report), os_name)
+                self.assertEqual((code, result["status"]), (0, "verified"))
+                report["cases"][-1]["package"] = "internal/PRIVATE_UNSUPPORTED"
+                code, result = self.invoke(pack(files, manifest, report), os_name)
+                self.assertEqual((code, result["status"], result["category"]), (2, "rejected", "metadata"))
+
+    def test_consumer_input_cases_and_explicit_native_skips(self):
+        # These opaque archives exercise report compatibility, not native I/O.
+        for os_name in ("linux", "darwin", "windows"):
+            with self.subTest(os=os_name):
+                files, manifest, report = fixture(os_name)
+                descriptors = {"id": "consumer_input_descriptors", "package": "tools/consume-query-report",
+                    "test": "TestConsumerInputDescriptors", "status": "passed", "passed_subtests": 6,
+                    "skipped_subtests": 0, "failed_subtests": 0, "binaries": []}
+                native = {"id": "consumer_input_fifo", "package": "tools/consume-query-report",
+                    "test": "TestConsumerInputFIFOOpenIsBounded", "status": "passed", "passed_subtests": 3,
+                    "skipped_subtests": 0, "failed_subtests": 0, "binaries": []}
+                if os_name == "windows":
+                    native.update(status="passed_with_skips", passed_subtests=0, skipped_subtests=3)
+                    report["status"] = manifest["test_status"] = "passed_with_skips"
+                report["cases"].extend((descriptors, native))
+                code, result = self.invoke(pack(files, manifest, report), os_name)
+                self.assertEqual(code, 0)
+                self.assertEqual(result["binaries"], 7)
+                self.assertEqual(result["skipped_subtests"], 3 if os_name == "windows" else 0)
+                for mode in ("unknown_package", "whole_scenario_skip"):
+                    with self.subTest(control=mode):
+                        invalid = copy.deepcopy(report)
+                        if mode == "unknown_package":
+                            invalid["cases"][-1]["package"] = "tools/PRIVATE_PACKAGE"
+                        else:
+                            invalid["cases"][-1]["status"] = "skipped"
+                        code, result = self.invoke(pack(files, manifest, invalid), os_name)
+                        self.assertEqual(code, 2)
+                        self.assertEqual(result["category"], "metadata")
 
     def test_external_pins_are_required(self):
         raw = pack(*fixture())

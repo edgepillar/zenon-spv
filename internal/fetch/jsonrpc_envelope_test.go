@@ -140,6 +140,14 @@ func FuzzRPCEnvelope(f *testing.F) {
 	}
 	f.Add(`{"jsonrpc":"2.0","id":1,"result":null}`)
 	f.Add(`{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"failure"}}`)
+	f.Add(`{"trace":{"nested":[null,true,"escaped \\ text"]},"jsonrpc":"2.0","id":1,"result":null,"trace":0}`)
+	f.Add(`{"jsonrpc":"2.0","id":1,"result":null,"trace":[1,]}`)
+	f.Add(`{"jsonrpc":"2.0","id":1,"error":{"code":-1,"trace":{"key":},"message":"failure"}}`)
+	f.Add(`{"jsonrpc":"2.0","id":1,"error":{"data":{"code":null,"data":[],"data":{}},"code":-1,"message":"failure"}}`)
+	f.Add(`{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"failure","d\u0061ta":null}}`)
+	f.Add(`{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"failure","data":null,"d\u0061ta":[]}}`)
+	f.Add(`{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"failure","data":{},"Data":null}}`)
+	f.Add(`{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"failure","data":[1,]}}`)
 	f.Fuzz(func(t *testing.T, raw string) {
 		if len(raw) > 1<<20 {
 			t.Skip()

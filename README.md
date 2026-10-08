@@ -30,6 +30,13 @@ This is **not a full Zenon light client.** See [`docs/trust-model.md`](docs/trus
 | Capability | Status |
 |---|---|
 | **State-value verification** (balance at height H) | **Refused by design.** No consensus-bound state root exists upstream. Wire envelope + verifier skeleton ready for the day go-zenon ships one. |
+
+The separate [candidate state-root research](tools/gen-state-root-vectors/README.md#separate-retention-and-resource-observations)
+now checks retained compressed NodeTree records and canonical proofs under four
+finite archive/pruned policies, with physical closed-file lengths, child peak
+RSS and elapsed API samples recorded separately. Synthetic local samples leave
+production resource budgets, hash-bound retained-version provenance and state
+proof acceptance unqualified.
 | **Producer-set authorization by default** | Opt-in via `--schedule <path>` (operator-attested per-momentum schedule). Without it: tier-1 caveat ("not enforced"). |
 | **Chain-derived producer-set transitions** | Deferred; the release-time operator-attested schedule is the bridge available today. |
 | **libp2p / WebRTC peer transport** | Current transport is HTTPS JSON-RPC. |
@@ -98,6 +105,11 @@ The [block observer](docs/block-observer.md#collect-and-observe-from-one-explici
 can collect proof-only evidence from one explicit RPC and run the retained-only
 verifier and query consumer in the same invocation, with pinned child binaries
 and unchanged local state.
+For separate application exits, finite private-file metadata samples and an
+explicit post-exit directory check, follow the
+[consumer resource observation guide](docs/consumer-resource-observation.md).
+It links the existing resource reports and keeps fixed replay observations
+separate from consumer budgets and network qualification.
 Use `inspect-config --json` to review settings and `--expect-context <64-hex>`
 to require the same configuration on later verification, inspection, and watch
 commands. A matching fingerprint is configuration consistency, not independent
@@ -321,3 +333,23 @@ MIT — see [`LICENSE`](LICENSE).
 - Vault: [`zenon-spv-vault`](https://github.com/0x3639/zenon-spv-vault) — spec, notes, ADRs.
 - go-zenon reference: pinned at commit `667a69d9e9a418edf7580b08492ba5dcb9efd63a` (per `zenon-spv-vault/reference/CLAUDE.md`).
 - [`znn-sdk-go`](https://github.com/0x3639/znn-sdk-go)
+
+The separate [complete fixture seed and retained tail comparison](tools/gen-state-root-vectors/README.md#scale-churn-and-complete-fixture-seed-with-retained-tail) adds finite scale/churn experiments with the unchanged NodeTree bulk API. Independent roots, proofs and retained graph records must match sequential pruning; separately preserved local resource samples do not qualify snapshot import, authenticated history or production budgets.
+
+
+The separate [bulk guard and shared-root checks](tools/gen-state-root-vectors/README.md#bulk-ordering-staged-retry-and-shared-roots) exercise staged retry, empty commits, serial zero/delete accumulation and retained references. Deliberately incomplete bulk inputs produce coherent proofs that fail against independently selected complete fixture roots; this does not authenticate snapshots or enable production state proofs.
+
+
+The separate [retained empty-root and last-node checks](tools/gen-state-root-vectors/README.md#retained-empty-roots-and-last-node-reclamation) distinguish committed empty versions and canonical absence from missing/pruned history. Independent roots, proofs and compressed records bind last-leaf reclamation and reinsertion through clean reopen/compaction; network trust and production state-proof gates remain open.
+
+The isolated [maximum-height counterexample](tools/gen-state-root-vectors/README.md#low-level-uint64-height-boundary-counterexample)
+also binds the candidate's observed regular Commit wrap to origin and subsequent
+base loss. Three finite cases remain refused, including an empty-root match.
+This low-level synthetic boundary establishes no production reachability or fix;
+strictly increasing profile-bounded heights remain a separate caller requirement.
+
+
+The separate [serial staging and injected replay checks](tools/gen-state-root-vectors/README.md#serial-staging-and-injected-replay-boundaries)
+bind failed replacement replay, partial accumulation, stage loss on clean reopen
+and complete retries to independent roots/proofs. Default batch replay returns
+nil; custom interface errors are explicit research inputs. All consumers refuse.

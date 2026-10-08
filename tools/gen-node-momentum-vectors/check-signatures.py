@@ -6,7 +6,6 @@ No generator, signer, wallet, node, SPV executable or RPC client is invoked.
 """
 
 import argparse
-import base64
 import contextlib
 import hashlib
 import importlib.util
@@ -132,7 +131,7 @@ def decoded(value, nullable=False):
     if value is None and nullable:
         return b""
     require(type(value) is str, "signature_shape")
-    return base64.b64decode(value, validate=True)
+    return BYTES.base64_bytes(value)
 
 
 def record(identifier, kind, header, preimage, unsigned=False, invalid_amount=False):
@@ -353,6 +352,38 @@ class QuietParser(argparse.ArgumentParser):
         raise Refused("arguments")
 
 
+def emit_report(report, code, pretty=False):
+    raw = json.dumps(report, indent=2 if pretty else None, sort_keys=pretty) + "\n"
+    try:
+        if sys.stdout.write(raw) != len(raw):
+            raise OSError("short result write")
+        sys.stdout.flush()
+    except (OSError, ValueError):
+        try:
+            sys.stderr.write("node-signatures: cannot write result\n")
+            sys.stderr.flush()
+        except (OSError, ValueError):
+            pass
+        return 70
+    return code
+
+
+def discard_failed_output_at_shutdown():
+    # Python otherwise retries buffered writes during interpreter shutdown and
+    # can replace the controlled exit with 120 or print an I/O traceback.
+    # This runs only in the CLI process, after report delivery has failed.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            descriptor = stream.fileno()
+            sink = os.open(os.devnull, os.O_WRONLY)
+            try:
+                os.dup2(sink, descriptor)
+            finally:
+                os.close(sink)
+        except (OSError, ValueError):
+            pass
+
+
 def main(argv=None):
     parser = QuietParser(description=__doc__, allow_abbrev=False)
     parser.add_argument("--openssl", required=True, metavar="EXECUTABLE")
@@ -362,15 +393,15 @@ def main(argv=None):
         args = parser.parse_args(argv)
         report = run(args.corpus_dir, args.openssl, args.source_revision)
     except Refused as error:
-        print(json.dumps({"schema_version": 1, "status": "refused", "error_stage": error.stage,
-                          "signature_process_outcomes": len(error.outcomes), "outcomes": error.outcomes}))
-        return 2
+        return emit_report({"schema_version": 1, "status": "refused", "error_stage": error.stage,
+                            "signature_process_outcomes": len(error.outcomes), "outcomes": error.outcomes}, 2)
     except (ValueError, KeyError, TypeError, OSError, RecursionError, OverflowError):
-        print(json.dumps({"schema_version": 1, "status": "refused", "error_stage": "corpus_or_backend_input"}))
-        return 2
-    print(json.dumps(report, indent=2, sort_keys=True))
-    return 0
+        return emit_report({"schema_version": 1, "status": "refused", "error_stage": "corpus_or_backend_input"}, 2)
+    return emit_report(report, 0, pretty=True)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    code = main()
+    if code == 70:
+        discard_failed_output_at_shutdown()
+    sys.exit(code)

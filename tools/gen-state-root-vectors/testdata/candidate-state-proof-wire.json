@@ -1,0 +1,155 @@
+{
+  "binding_cases": [
+    {
+      "name": "stored-zero",
+      "value_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+      "proof_hex": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada4c693db3225e947f703881d109d79d76c6a09c221b2324b064ac48d32b95da4800000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000",
+      "root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+      "wire": "{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0praTGk9syJelH9wOIHRCdeddsagnCIbIySwZKxI0yuV2kgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}",
+      "raw_key": "0311111111111111111111111111111111111111110322222222222222222222",
+      "path": "c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada",
+      "present": true,
+      "node_result": "match"
+    },
+    {
+      "name": "positive-one",
+      "value_hex": "0000000000000000000000000000000000000000000000000000000000000001",
+      "proof_hex": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c8800000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001",
+      "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+      "wire": "{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE=\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0prae7LdKaoNSm1aVnC7g+Ge2mtcSTBnQ6qkTvV3MYegPIgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB\",\"root\":\"bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b\"}",
+      "raw_key": "0311111111111111111111111111111111111111110322222222222222222222",
+      "path": "c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada",
+      "present": true,
+      "node_result": "match"
+    },
+    {
+      "name": "missing-token",
+      "value_hex": null,
+      "proof_hex": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001d1d18198dfbcbee087e587692b291a47b77625b5111e493ab4e64f3953e75134",
+      "root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+      "wire": "{\"value\":null,\"proof\":\"AInGIzDUyTvUZRRwSlAnc706+Mi0Xxbu6jy+C1eY4G6rAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAB0dGBmN+8vuCH5YdpKykaR7d2JbURHkk6tOZPOVPnUTQ=\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}",
+      "raw_key": "0311111111111111111111111111111111111111110344444444444444444444",
+      "path": "89c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab",
+      "present": false,
+      "node_result": "match"
+    },
+    {
+      "name": "missing-address",
+      "value_hex": null,
+      "proof_hex": "00ed3ff24bc42185d55410d26efe58eb96e67b11207240a012abb1db06dc672a8d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040001f00cd387434a0488a0aebc0881c7195f48aeb268a5123400b0e1e04ed2e730d8",
+      "root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+      "wire": "{\"value\":null,\"proof\":\"AO0/8kvEIYXVVBDSbv5Y65bmexEgckCgEqux2wbcZyqNAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAB8AzTh0NKBIigrrwIgccZX0iusmilEjQAsOHgTtLnMNg=\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}",
+      "raw_key": "0333333333333333333333333333333333333333330322222222222222222222",
+      "path": "ed3ff24bc42185d55410d26efe58eb96e67b11207240a012abb1db06dc672a8d",
+      "present": false,
+      "node_result": "match"
+    },
+    {
+      "name": "excluded-mailbox",
+      "value_hex": null,
+      "proof_hex": "004ff1621e24f5d600ef208dc927237883cbe3e637ba956631bda6a845a2d93d9f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100018105982b54044105707340411dc5e88b5a939f8717f71b3b0ef5fc9d0c51fa0e",
+      "root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+      "wire": "{\"value\":null,\"proof\":\"AE/xYh4k9dYA7yCNyScjeIPL4+Y3upVmMb2mqEWi2T2fAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQABgQWYK1QEQQVwc0BBHcXoi1qTn4cX9xs7DvX8nQxR+g4=\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}",
+      "raw_key": "040102",
+      "path": "4ff1621e24f5d600ef208dc927237883cbe3e637ba956631bda6a845a2d93d9f",
+      "present": false,
+      "node_result": "match"
+    },
+    {
+      "name": "storage-is-not-a-balance",
+      "value_hex": null,
+      "proof_hex": "00d16d8ca37ef0641813f9e16a9273b8dfd163877ab4e6b78e079d93029643f1b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000800013efff1d6e1dde99e0dcb2568ea0a7ecc89cfc068cd2a50a3a6e041709e0dfb89",
+      "root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+      "wire": "{\"value\":null,\"proof\":\"ANFtjKN+8GQYE/nhapJzuN/RY4d6tOa3jgedkwKWQ/GwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAABPv/x1uHd6Z4NyyVo6gp+zInPwGjNKlCjpuBBcJ4N+4k=\",\"root\":\"de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08\"}",
+      "raw_key": "0311111111111111111111111111111111111111110400ff80",
+      "path": "d16d8ca37ef0641813f9e16a9273b8dfd163877ab4e6b78e079d93029643f1b0",
+      "present": false,
+      "node_result": "match"
+    },
+    {
+      "name": "present-empty-core-only",
+      "value_hex": "",
+      "proof_hex": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29adae470888150d731f6d07038af071483e77780c726f8848f18980e20b247f78df00000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "root": "157260d19525f385c7cbf511307368d1252232558ba9610b2bfc996cfc8fc8ea",
+      "wire": "{\"value\":\"\",\"proof\":\"AcOmA20MrhZRTByl/UrZmNq99Kc7aGNP4GrfVnZt0pra5HCIgVDXMfbQcDivBxSD53eAxyb4hI8YmA4gskf3jfAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==\",\"root\":\"157260d19525f385c7cbf511307368d1252232558ba9610b2bfc996cfc8fc8ea\"}",
+      "raw_key": "0311111111111111111111111111111111111111110322222222222222222222",
+      "path": "c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada",
+      "present": true,
+      "node_result": "match"
+    }
+  ],
+  "format_version": 1,
+  "kind": "candidate-state-proof-wire-research",
+  "scope": {
+    "LedgerApi_method_executed": false,
+    "StateProof_serializer_executed": true,
+    "header_authentication_executed": false,
+    "l1_staged_applier_executed": false,
+    "network_activation_authenticated": false,
+    "node_database_opened": false,
+    "node_lifecycle_executed": false,
+    "node_tests_executed": false,
+    "primitive_proof_api_executed": true,
+    "profile_agreed": false,
+    "rpc_transport_executed": false,
+    "runtime_state_proof_acceptance": false,
+    "synthetic": true,
+    "unsigned": true
+  },
+  "serialization_cases": [
+    {
+      "name": "nil-nil",
+      "value_hex": null,
+      "proof_hex": null,
+      "root": "0000000000000000000000000000000000000000000000000000000000000000",
+      "wire": "{\"value\":null,\"proof\":null,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\"}"
+    },
+    {
+      "name": "empty-empty",
+      "value_hex": "",
+      "proof_hex": "",
+      "root": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "wire": "{\"value\":\"\",\"proof\":\"\",\"root\":\"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f\"}"
+    },
+    {
+      "name": "nil-empty",
+      "value_hex": null,
+      "proof_hex": "",
+      "root": "0000000000000000000000000000000000000000000000000000000000000011",
+      "wire": "{\"value\":null,\"proof\":\"\",\"root\":\"0000000000000000000000000000000000000000000000000000000000000011\"}"
+    },
+    {
+      "name": "empty-nil",
+      "value_hex": "",
+      "proof_hex": null,
+      "root": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "wire": "{\"value\":\"\",\"proof\":null,\"root\":\"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"}"
+    },
+    {
+      "name": "base64-padding",
+      "value_hex": "fb",
+      "proof_hex": "ff00",
+      "root": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "wire": "{\"value\":\"+w==\",\"proof\":\"/wA=\",\"root\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}"
+    },
+    {
+      "name": "binary-range",
+      "value_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+      "proof_hex": "fffefdfcfbfaf9f8f7f6f5f4f3f2f1f0efeeedecebeae9e8e7e6e5e4e3e2e1e0dfdedddcdbdad9d8d7d6d5d4d3d2d1d0cfcecdcccbcac9c8c7c6c5c4c3c2c1c0bfbebdbcbbbab9b8b7b6b5b4b3b2b1b0afaeadacabaaa9a8a7a6a5a4a3a2a1a09f9e9d9c9b9a999897969594939291908f8e8d8c8b8a898887868584838281807f7e7d7c7b7a797877767574737271706f6e6d6c6b6a696867666564636261605f5e5d5c5b5a595857565554535251504f4e4d4c4b4a494847464544434241403f3e3d3c3b3a393837363534333231302f2e2d2c2b2a292827262524232221201f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100",
+      "root": "b7f02219efde5f907ed89495a04de4127a6c4e9309ae71025334f972a6b74f2a",
+      "wire": "{\"value\":\"AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w==\",\"proof\":\"//79/Pv6+fj39vX08/Lx8O/u7ezr6uno5+bl5OPi4eDf3t3c29rZ2NfW1dTT0tHQz87NzMvKycjHxsXEw8LBwL++vby7urm4t7a1tLOysbCvrq2sq6qpqKempaSjoqGgn56dnJuamZiXlpWUk5KRkI+OjYyLiomIh4aFhIOCgYB/fn18e3p5eHd2dXRzcnFwb25tbGtqaWhnZmVkY2JhYF9eXVxbWllYV1ZVVFNSUVBPTk1MS0pJSEdGRURDQkFAPz49PDs6OTg3NjU0MzIxMC8uLSwrKikoJyYlJCMiISAfHh0cGxoZGBcWFRQTEhEQDw4NDAsKCQgHBgUEAwIBAA==\",\"root\":\"b7f02219efde5f907ed89495a04de4127a6c4e9309ae71025334f972a6b74f2a\"}"
+    },
+    {
+      "name": "stored-zero-bytes",
+      "value_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+      "proof_hex": "00ff8001",
+      "root": "2222222222222222222222222222222222222222222222222222222222222222",
+      "wire": "{\"value\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"proof\":\"AP+AAQ==\",\"root\":\"2222222222222222222222222222222222222222222222222222222222222222\"}"
+    }
+  ],
+  "source": {
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "56ce2c384966f2f1940967257a0788d3998a5eef",
+    "tree": "d5abff528566a561e1a53a46103cb4b15ff63c6c"
+  }
+}

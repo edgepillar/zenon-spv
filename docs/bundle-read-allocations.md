@@ -1,5 +1,34 @@
 # Bounded bundle input allocation comparison
 
+## Unused extension decoding
+
+The current bundle object decoder also avoids retaining a `json.RawMessage`
+copy of unused top-level extension values. A discard callback runs after the
+surrounding JSON decoder validates each value. Known-field matching, duplicate
+known-field refusal, ordinary repeated unknown extensions, whole-document
+syntax/nesting checks, and decode limits keep their existing behavior.
+Unknown values remain unauthenticated metadata and do not supply trust inputs.
+
+`BenchmarkProofBundleExtensions` compares complete bundle JSON decoding with
+the former copy-based helper from `2cc184907fc2a01154709ec293cd72281c04ff5b`.
+The exact helper body is retained only in test code, with its receiver adapted
+to a free function. Both modes apply identical decode limits and check the
+same known-field projection. Synthetic unused strings contain 32 KiB, 1 MiB,
+and 8 MiB of metadata; input construction is outside timing. CI records three
+iterations per mode on Linux, macOS, and Windows. The observations describe
+decoder allocation volume and timing, not peak RSS, valid-proof latency, or
+network performance. There are no fixed allocation or timing acceptance gates.
+
+Standard-library projection checks cover nested and repeated extensions and
+ignored numeric values outside the float64 range. Additional controls retain
+known-field aliases, count refusals, malformed suffixes, nesting limits, and
+transactional failure behavior after a large unused value. A compiled CLI
+control confirms an oversized known amount still refuses before state loading
+after a large extension. Node corpora, verification policies, context pins,
+and persisted-state schemas are unchanged by the discard optimization.
+
+## Regular-file input buffer comparison
+
 The [content-hash change](content-hash-allocations.md) left the complete
 file-loading path allocation-heavy. A subsequent local allocation profile of
 `M100000_P4/LoadAndVerify` identified `io.ReadAll` buffer growth as the largest

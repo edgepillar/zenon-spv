@@ -37,6 +37,31 @@ then checks the exact bit limit. Empty input still means zero; leading zeroes
 and an optional leading plus sign remain supported. Minus-prefixed input,
 including `-0`, is refused. Errors do not echo the supplied amount.
 
+## Offline parsing resource guard
+
+The CLI caps each known account `amount` JSON token at 4 KiB before invoking
+the arbitrary-precision decoder. Oversized tokens return
+`REFUSED / ReasonOversizedSegment` (exit 2) during bundle loading, before state
+loading or verification. Each occurrence is checked, including a token later
+overwritten by another `amount`, a case or escaped-key alias, or null. The
+outer JSON decoder still checks complete syntax and its usual nesting limit.
+
+This fixed parser guard is separate from the 255-bit scalar-validity check;
+under-cap invalid magnitudes still decode for node parity and then receive
+`REJECT / ReasonInvalidAmount` during segment verification. All seven pinned
+node vectors retain their decoded values and classifications. Verification
+policies, context fingerprints, and persisted-state schemas are unchanged.
+Library callers may set `DecodeLimits.MaxAccountAmountBytes`; zero preserves
+legacy unbounded scalar conversion. Direct account-block decoding is unchanged.
+
+`BenchmarkProofAccountAmountDecode` compares full synthetic bundle parsing with
+legacy conversion and early bounded refusal at 32 KiB, 256 KiB, and 1 MiB.
+The large decimals are invalid proof amounts; legacy decoding alone does not
+mean proof acceptance. CI records three iterations per mode on Linux, macOS,
+and Windows. Allocation bytes and timing are observations, not peak RSS,
+network measurements, or fixed performance gates. The file, row, and token
+limits do not constitute a total process-memory bound.
+
 ## Independent regression evidence
 
 `internal/testdata/conformance/account-amounts.json` contains seven deterministic

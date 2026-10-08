@@ -1,0 +1,282 @@
+{
+  "derivation": "Python checksum arithmetic and direct 160-bit base32 packing; no Go decoder used.",
+  "format_version": 1,
+  "sources": [
+    {
+      "name": "account-amounts.json",
+      "sha256": "55e6d89f2ad3a25f7f7a6232fe99a5a572e2937d844fc9a3828d9e4cdad4a6aa"
+    },
+    {
+      "name": "account-segments.json",
+      "sha256": "1faca6715c3865bae726a7a07f56ef2c43bd8a5a5c9816f618373312de43b048"
+    },
+    {
+      "name": "content-scaling.json",
+      "sha256": "4d0960de634218616903cf16e32188da3de8d60c811b04908c6af99bcddddfa8"
+    },
+    {
+      "name": "contract-batches.json",
+      "sha256": "d85809454d0e8c3cf21aed055ef3e6b0668d89c2923e2a41021b3713f1e9dcdf"
+    },
+    {
+      "name": "delayed-inclusion.json",
+      "sha256": "97b2278c2dbf4368281fae4cf3013e8160830d64d7103903b1ebc1292b06183f"
+    },
+    {
+      "name": "historical-testnet-genesis.json",
+      "sha256": "c43c63adecc5e0ccbca5a0be40070ac911d71b7466f998801c84aebc23d7f89b"
+    },
+    {
+      "name": "momentum-v1-v2.json",
+      "sha256": "91747c6b7adba4e256fcb397d64348117edc9df874df7f25e2c56b776426dec9"
+    }
+  ],
+  "total_occurrences": 191,
+  "vectors": [
+    {
+      "decoded_hex": "006b626e64f8c74c3e5110cc7dace07d5abba33f",
+      "encoded": "z1qp4kymnylrr5c0j3zrx8mt8q04dthgelxzcsfr",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "007c0c52910c5d983cba0f403f78c383327b99db",
+      "encoded": "z1qp7qc553p3wes096paqr77xrsve8hxwml6nzkc",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "004f57405c0cc25ae5d2feef6a26e4e0ae26d535",
+      "encoded": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+      "occurrences": 71
+    },
+    {
+      "decoded_hex": "007e267ba8be6fe83a17c7ddefa741aad36fb33a",
+      "encoded": "z1qplzv7agheh7swshclw7lf6p4tfklve6ac2qjl",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "0042741d95b8db4c8e691a2133ea5b63ca3ee843",
+      "encoded": "z1qpp8g8v4hrd5ernfrgsn86jmv09ra6zrvhvmr7",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "0042c8be049db4070641f7e6dd05a1b95e566ecb",
+      "encoded": "z1qppv30synk6qwpjp7lnd6pdph909vmkt5m0r98",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "0048b231881efd8b1e173f97262f533f4e237299",
+      "encoded": "z1qpytyvvgrm7ck8sh87tjvt6n8a8zxu5ecyuhg4",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "0029672f87e9b88a393c2e3fb95d394f379b54ed",
+      "encoded": "z1qq5kwtu8axug5wfu9clmjhfefumek48dq5v2ws",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "0028326b4a87b831e3098893c93cfe9c9c3e8d9d",
+      "encoded": "z1qq5ry662s7urrccf3zfuj087njwrarvaaq6zw6",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "000b165ccedfe005a8df999e9e08a0b966215c9e",
+      "encoded": "z1qq93vhxwmlsqt2xlnx0fuz9qh9nzzhy73gdcss",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "003bb4ba3ea268ef77daed65f4d9e83e4168d6ee",
+      "encoded": "z1qqamfw375f5w7a76a4jlfk0g8eqk34hw6p3ktg",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "0000000000000000000000000000000000000000",
+      "encoded": "z1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsggv2f",
+      "occurrences": 21
+    },
+    {
+      "decoded_hex": "00391d92a5413425c1c675f86f038eff101815ee",
+      "encoded": "z1qqu3my49gy6ztswxwhux7quwlugps90wdf749s",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00054ea07e294bd77c93d7555dba7e2ddc8bc64b",
+      "encoded": "z1qqz5agr7999awlyn6a24mwn79hwgh3jtrzdl6n",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00d5cfcc78f8a8272cdcc940560aa27a7ac2efa7",
+      "encoded": "z1qr2ulnrclz5zwtxue9q9vz4z0fav9ma8r3kxfh",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00ebdac77f2e7902a7d8e57fa24383aa7a67a108",
+      "encoded": "z1qr4a43ml9eus9f7cu4l6ysur4fax0gggv5p0pv",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00f4a9fabf28f43667dc0f3407278a3ad113ca80",
+      "encoded": "z1qr62n74l9r6rve7upu6qwfu28tg38j5qqdfa43",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00ce9da543ca37f441efab62a94f9274434bdd10",
+      "encoded": "z1qr8fmf2regmlgs004d32jnujw3p5hhgsdw5vwe",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00faa3a79f8aba1a244a53848de82a30d3aadb69",
+      "encoded": "z1qra28ful32ap5fz22wzgm6p2xrf64kmfz7fg6v",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00fb35c2cd07799a00e017fe5f4cdea20ac9be97",
+      "encoded": "z1qrantskdqaue5q8qzll97nx75g9vn05h2668l0",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00f3fd9c41f8caecfebf8b09e72715848b0c6f25",
+      "encoded": "z1qrelm8zplr9wel4l3vy7wfc4sj9scme9ckq3vl",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00d08a72df233e9963d4d676dbe8a92400aa73fb",
+      "encoded": "z1qrgg5uklyvlfjc756emdh69fysq25ulm8hh5mx",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00d084407c16205bfdc1fa9570f9a94d2fef1d66",
+      "encoded": "z1qrgggsruzcs9hlwpl22hp7dff5h778txudmsl4",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00ef4d6cadbefe4cf3c4242645f572b235ea9ea5",
+      "encoded": "z1qrh56m9dhmlyeu7yysnytatjkg674849gvn393",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00f6f314a2b88f67513f362ef5c7723a4e317124",
+      "encoded": "z1qrm0x99zhz8kw5flxch0t3mj8f8rzufyyre8z0",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00c10c7d0150538ef888f57e2b65ecc962263404",
+      "encoded": "z1qrqsclgp2pfca7yg74lzke0ve93zvdqyvxfxd8",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00d798042a5f08e5cd1af8a2a565224baf5ffbac",
+      "encoded": "z1qrtespp2tuywtng6lz322efzfwh4l7av435c6c",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00f811a86c17fe24595a0644ee27eee4b7378a28",
+      "encoded": "z1qrupr2rvzllzgk26qezwuflwujmn0z3gsxjnjv",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00f90bf16bc233446dd1cdd400a44d6ecdb2df00",
+      "encoded": "z1qrushuttcge5gmw3eh2qpfzddmxm9hcq807fyz",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00c83ecb507f741012d490e33d86fe077f803a2a",
+      "encoded": "z1qryraj6s0a6pqyk5jr3nmph7qalcqw32gfwznv",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "01b3b6e5adcb4c1ff61be98c6318c6318c6318c6",
+      "encoded": "z1qxemdeddedxplasmaxxxxxxxxxxxxxxxxsctrp",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "01b3b6e5adcb4c127ffd198c6318c6318c6318c6",
+      "encoded": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+      "occurrences": 53
+    },
+    {
+      "decoded_hex": "01b3b6e5adcb4d00bc76318c6318c6318c6318c6",
+      "encoded": "z1qxemdeddedxsp0rkxxxxxxxxxxxxxxxx956u48",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "01b3b6e5adcb4d077426318c6318c6318c6318c6",
+      "encoded": "z1qxemdeddedxswapxxxxxxxxxxxxxxxxxxl4yww",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "01b3b6e5adcb4cb7db33318c6318c6318c6318c6",
+      "encoded": "z1qxemdeddedxt0kenxxxxxxxxxxxxxxxxh9amk0",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "009feeaf97ee7c75273d7946db8d633f06b1c2c0",
+      "encoded": "z1qz07atuhae782fea09rdhrtr8urtrskqvgr6ft",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "009582dc4ca647adaefa1dc240e6b70e154e9511",
+      "encoded": "z1qz2c9hzv5er6mth6rhpype4hpc25a9g3rvpqfg",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00a85d7d85060bfed7c1388a1b5470cf4f6627b7",
+      "encoded": "z1qz596lv9qc9la47p8z9pk4rsea8kvfah75pt3k",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00bd057b3ead43a025004c605b47b9544c09b727",
+      "encoded": "z1qz7s27e744p6qfgqf3s9k3ae23xqnde8cgzzhc",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "008adb78057851bfb541e845b5401584b16b2b88",
+      "encoded": "z1qz9dk7q90pgmld2papzm2sq4sjckk2ug64t2mw",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00bbb3a3052b354da870562633e5038ef8740665",
+      "encoded": "z1qzam8gc99v65m2rs2cnr8egr3mu8gpn93srdn4",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00af872772a04a0d0885b20951c9c832b3f19bd5",
+      "encoded": "z1qzhcwfmj5p9q6zy9kgy4rjwgx2elrx7485v0a9",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00ad42c433dee4f1a3d3767d49380512d71fd076",
+      "encoded": "z1qzk593pnmmj0rg7nwe75jwq9ztt3l5rkwtecn9",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00ade27704663048ea37413905dc6e7c37b04507",
+      "encoded": "z1qzk7yacyvccy363hgyusthrw0smmq3g8l8nscg",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00ad2455ee8ca28b39c19f06deed5abe760b968a",
+      "encoded": "z1qzkjg40w3j3gkwwpnurdam26hemqh952cxvsvs",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00820d8d82344106d3bf5717480fe023739168c9",
+      "encoded": "z1qzpqmrvzx3qsd5al2ut5srlqydeez6xf0hjc03",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "00830591025cb909cc653a8ee7eee651253148ff",
+      "encoded": "z1qzpstygztjusnnr9828w0mhx2yjnzj8lpeakp7",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "0080197a0434b82f98c0d491cefd063c5d4d21bf",
+      "encoded": "z1qzqpj7syxjuzlxxq6jgualgx83w56gdlulalyj",
+      "occurrences": 1
+    },
+    {
+      "decoded_hex": "008c00c1be5c72480ce5b87f9611871767181e39",
+      "encoded": "z1qzxqpsd7t3eysr89hplevyv8zan3s83edas4rq",
+      "occurrences": 1
+    }
+  ]
+}

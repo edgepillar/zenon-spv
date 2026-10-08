@@ -26,15 +26,17 @@ var bech32CharsetIdx = func() [128]int8 {
 	return idx
 }()
 
-func bech32Polymod(values []byte) uint32 {
+func bech32Polymod(parts ...[]byte) uint32 {
 	gen := [5]uint32{0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3}
 	chk := uint32(1)
-	for _, v := range values {
-		b := chk >> 25
-		chk = (chk&0x1ffffff)<<5 ^ uint32(v)
-		for i := 0; i < 5; i++ {
-			if (b>>i)&1 != 0 {
-				chk ^= gen[i]
+	for _, values := range parts {
+		for _, v := range values {
+			b := chk >> 25
+			chk = (chk&0x1ffffff)<<5 ^ uint32(v)
+			for i := 0; i < 5; i++ {
+				if (b>>i)&1 != 0 {
+					chk ^= gen[i]
+				}
 			}
 		}
 	}
@@ -74,7 +76,7 @@ func bech32Decode(bech, wantHRP string) ([]byte, error) {
 		}
 		data[i] = byte(bech32CharsetIdx[c])
 	}
-	if bech32Polymod(append(bech32HrpExpand(hrp), data...)) != 1 {
+	if bech32Polymod(bech32HrpExpand(hrp), data) != 1 {
 		return nil, errors.New("bech32: checksum mismatch")
 	}
 	return data[:len(data)-6], nil

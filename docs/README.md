@@ -33,12 +33,26 @@ audit history.
   metadata and explicit unknown/modified build handling.
 - [`candidate-artifacts.md`](candidate-artifacts.md) — exact tested native
   executables, report-bound manifests and independent archive/pin checks.
+- [`operator-pilot.md`](operator-pilot.md) — explicit trust/state preparation,
+  bounded watch/restart and retained-only consumer workflow.
+- [`query-report-consumer.md`](query-report-consumer.md) — independently selected
+  expectations, actual verifier exits and complete target/guarantee matching.
+- [`block-observer.md`](block-observer.md) — pinned child binaries, a single
+  read-only consumer call and explicit optional proof-only collection.
+- [`observer-report-consumer.md`](observer-report-consumer.md) — complete bounded
+  observer diagnostics, actual outer process exits and explicit mode/count checks.
+- [`consumer-resource-observation.md`](consumer-resource-observation.md) —
+  application versus sampler exits, isolated private staging, bounded local
+  observation and empty post-exit checks.
 - [`state-inspection.md`](state-inspection.md) — read-only retained-window
   diagnostics, effective depth ranges, and trusted-state boundaries.
 - [`native-benchmarks.md`](native-benchmarks.md) — reproducible local verification
   costs, allocation reporting, and explicit workload limits.
 - [`retained-capacity-benchmarks.md`](retained-capacity-benchmarks.md) — full
   K=16/256/4096 workload costs, saved size and measurement boundaries.
+- [`shared-query-resources.md`](shared-query-resources.md) — shared immutable
+  query observations at K=256/4096, one/four workers, and concurrent mixed-outcome
+  node-corpus checks.
 - [`selected-observer-resources.md`](selected-observer-resources.md) — fixed
   signed-capture observer costs at K=256/4096 and concurrency one/four, with
   preserved process records and explicit memory/latency limits.
@@ -48,10 +62,28 @@ audit history.
 - [`signed-batch-observer-resources.md`](signed-batch-observer-resources.md) —
   fixed replay costs for five distinct signed blocks at K=256/4096 and
   concurrency one/four, with all raw samples and process outcomes preserved.
+- [`joined-pipeline-resources.md`](joined-pipeline-resources.md) — complete
+  synthetic collector/verifier/consumer/observer observations and private-file
+  staging costs with retained fault and cleanup outcomes.
+- [`private-staging-observations.md`](private-staging-observations.md) — metadata
+  sampler usage, fixed-state repeated cycles and fresh-call recovery; nullable
+  file allocation and sampled-peak limitations remain explicit.
 - [`state-read-allocations.md`](state-read-allocations.md) — bounded file reads,
   allocation reductions and preserved saved-state verification checks.
 - [`bundle-read-allocations.md`](bundle-read-allocations.md) — bounded proof-file
   allocation hints, unchanged read/decoding contracts and measured load costs.
+- [`address-checksum-allocations.md`](address-checksum-allocations.md) —
+  sequential checksum inputs, independent node-fixture address bytes and native
+  decoder allocation observations.
+- [`rpc-data-hash-allocations.md`](rpc-data-hash-allocations.md) — bounded
+  scratch storage for valid RPC data preimages, preserved Base64 failures and
+  native decode/hash allocation observations.
+- [`rpc-response-read-allocations.md`](rpc-response-read-allocations.md) — capped
+  response-buffer growth, unchanged byte/error contracts and complete client-call
+  allocation observations.
+- [`rpc-optional-base64-allocations.md`](rpc-optional-base64-allocations.md) —
+  ignored line endings excluded from large key/signature output-buffer sizing,
+  exact decoding behavior and native allocation observations.
 - [`content-hash-allocations.md`](content-hash-allocations.md) — shared canonical
   encoding, immutable index sorting, differential checks and before/after costs.
 - [`flat-content-resources.md`](flat-content-resources.md) — node-derived content
@@ -70,6 +102,8 @@ audit history.
   response height/account binding, and quorum treatment of mismatched replies.
 - [`rpc-diagnostics.md`](rpc-diagnostics.md) — endpoint-free error formatting,
   retained error causes, peer positions, and private-data boundaries.
+- [`rpc-envelope-allocations.md`](rpc-envelope-allocations.md) — validated
+  extension discard, unchanged response guards and native allocation observations.
 - [`account-amount-validation.md`](account-amount-validation.md) — signed-value
   ambiguity prevention across RPC and offline proof inputs, with node vectors.
 - [`account-envelope-validation.md`](account-envelope-validation.md) — supported

@@ -6,14 +6,13 @@ checks its momentum preimage, content bytes and RPC projections; it does not
 re-execute genesis contracts or authenticate any running network or trust root.
 """
 
-import base64
 import binascii
 import json
 from pathlib import Path
 import struct
 import sys
 
-from check import address_bytes, digest, require
+from check import address_bytes, base64_bytes as standard_base64_bytes, digest, require
 
 
 NODE_SOURCE = {
@@ -59,7 +58,7 @@ def base64_bytes(value, label, nullable=False):
         return b""
     require(type(value) is str, f"wrong {label} base64 type")
     try:
-        return base64.b64decode(value, validate=True)
+        return standard_base64_bytes(value)
     except (binascii.Error, ValueError) as error:
         raise ValueError(f"wrong {label} base64 encoding") from error
 

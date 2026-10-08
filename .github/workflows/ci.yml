@@ -24,10 +24,78 @@ jobs:
           python-version: '3.13'
       - name: Candidate archive checks
         run: python tools/check-candidate-archive_test.py
+      - name: Exported candidate checker controls
+        run: python -B tools/check-exported-candidate_test.py
       - name: Verification context checks
         run: python tools/check-verification-context_test.py
+      - name: Private staging sampler controls
+        run: python -I -B tools/test_private_staging.py
+      - name: Observer diagnostic consumer controls
+        run: |
+          python -I -B tools/consume-observer-report_test.py
+          python -I -B tools/check-observer-report-consumer_test.py
+      - name: Independent consumer controls
+        run: python -I -B tools/check-query-consumer_test.py
+      - name: Independent node consumer controls
+        run: python -I -B tools/check-node-query-consumer_test.py
       - name: Signature checker controls
         run: python -B tools/gen-node-momentum-vectors/check-signatures_test.py
+      - name: Candidate state-root byte controls
+        run: python -I -B tools/gen-state-root-vectors/check_test.py
+      - name: Independent candidate state-root bytes
+        run: python -I -B tools/gen-state-root-vectors/check.py --source-revision "${{ github.sha }}"
+      - name: Candidate L1 filter controls
+        run: python -I -B tools/gen-state-root-vectors/check_fold_test.py
+      - name: Independent candidate L1 filter events
+        run: python -I -B tools/gen-state-root-vectors/check_fold.py --source-revision "${{ github.sha }}"
+      - name: Candidate L1 applier controls
+        run: python -I -B tools/gen-state-root-vectors/check_applier_test.py
+      - name: Independent candidate L1 applier roots and proofs
+        run: python -I -B tools/gen-state-root-vectors/check_applier.py --source-revision "${{ github.sha }}"
+      - name: Candidate StateProof wire controls
+        run: python -I -B tools/gen-state-root-vectors/check_wire_test.py
+      - name: Independent candidate StateProof wire and binding
+        run: python -I -B tools/gen-state-root-vectors/check_wire.py --source-revision "${{ github.sha }}"
+      - name: Candidate RPC method controls
+        run: python -I -B tools/gen-state-root-vectors/check_rpc_methods_test.py
+      - name: Independent candidate RPC methods and consumer decisions
+        run: python -I -B tools/gen-state-root-vectors/check_rpc_methods.py --source-revision "${{ github.sha }}"
+      - name: Candidate offline RPC dispatcher controls
+        run: python -I -B tools/gen-state-root-vectors/check_dispatcher_test.py
+      - name: Independent candidate RPC dispatcher and envelopes
+        run: python -I -B tools/gen-state-root-vectors/check_dispatcher.py --source-revision "${{ github.sha }}"
+      - name: Candidate chain startup provenance controls
+        run: python -I -B tools/gen-state-root-vectors/check_chain_startup_test.py
+      - name: Independent candidate chain startup roots and proofs
+        run: python -I -B tools/gen-state-root-vectors/check_chain_startup.py --source-revision "${{ github.sha }}"
+      - name: Candidate disk lifecycle exit controls
+        run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle_test.py
+      - name: Independent candidate disk lifecycle roots and retention
+        run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle.py --source-revision "${{ github.sha }}"
+      - name: Candidate retention resource controls
+        run: python -I -B tools/gen-state-root-vectors/check_retention_test.py
+      - name: Independent candidate retained graph roots and proofs
+        run: python -I -B tools/gen-state-root-vectors/check_retention.py --source-revision "${{ github.sha }}"
+      - name: Candidate bulk seed and tail controls
+        run: python -I -B tools/gen-state-root-vectors/check_bulk_tail_test.py
+      - name: Independent candidate bulk tail roots and retained graph
+        run: python -I -B tools/gen-state-root-vectors/check_bulk_tail.py --source-revision "${{ github.sha }}"
+      - name: Candidate bulk guard and shared root controls
+        run: python -I -B tools/gen-state-root-vectors/check_bulk_guards_test.py
+      - name: Independent candidate bulk guards and selected roots
+        run: python -I -B tools/gen-state-root-vectors/check_bulk_guards.py --source-revision "${{ github.sha }}"
+      - name: Candidate staging replay boundary controls
+        run: python -I -B tools/gen-state-root-vectors/check_staging_boundary_test.py
+      - name: Independent candidate staging replay and refusal
+        run: python -I -B tools/gen-state-root-vectors/check_staging_boundary.py --source-revision "${{ github.sha }}"
+      - name: Candidate uint64 height boundary controls
+        run: python -I -B tools/gen-state-root-vectors/check_height_boundary_test.py
+      - name: Independent candidate height wrap and origin refusal
+        run: python -I -B tools/gen-state-root-vectors/check_height_boundary.py --source-revision "${{ github.sha }}"
+      - name: Candidate retained empty version controls
+        run: python -I -B tools/gen-state-root-vectors/check_empty_versions_test.py
+      - name: Independent candidate empty roots and reclaimed graph
+        run: python -I -B tools/gen-state-root-vectors/check_empty_versions.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash
@@ -42,6 +110,12 @@ jobs:
           retention-days: 14
       - name: Build
         run: go build ./...
+      - name: Independent consumer decisions
+        shell: bash
+        run: |
+          consumer_binary="${{ runner.temp }}/consumer-reference$(go env GOEXE)"
+          GOTOOLCHAIN=local GOWORK=off GOFLAGS= GOENV=off GOPROXY=off GOSUMDB=off go build -trimpath -o "$consumer_binary" ./tools/consume-query-report
+          python -I -B tools/check-query-consumer.py --consumer "$consumer_binary" --source-revision "${{ github.sha }}"
       - name: Vet
         run: go vet ./...
       - name: Test
@@ -49,6 +123,22 @@ jobs:
       - name: Offline pilot report
         id: pilot
         run: go run ./tools/offline-pilot --race --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
+      - name: Verify exported candidate
+        id: candidate
+        shell: bash
+        run: python -I -B tools/check-exported-candidate.py --directory "${{ runner.temp }}/tested-candidate" --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)"
+      - name: Independent node consumer workflow
+        shell: bash
+        run: |
+          candidate_directory="${{ runner.temp }}/tested-candidate"
+          executable_suffix="$(go env GOEXE)"
+          python -I -B tools/check-node-query-consumer.py --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --source-revision "${{ github.sha }}"
+      - name: Actual observer diagnostic consumption
+        shell: bash
+        run: |
+          candidate_directory="${{ runner.temp }}/tested-candidate"
+          executable_suffix="$(go env GOEXE)"
+          python -I -B tools/check-observer-report-consumer.py --observer "$candidate_directory/observe-block$executable_suffix" --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --collector "$candidate_directory/fetch-bundle$executable_suffix" --source-revision "${{ github.sha }}"
       - name: Upload offline pilot report
         if: ${{ !cancelled() && steps.pilot.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -58,13 +148,49 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Upload tested candidate
-        if: ${{ !cancelled() && steps.pilot.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.pilot.outcome == 'success' && steps.candidate.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: tested-candidate-linux
           path: ${{ runner.temp }}/tested-candidate/*
           if-no-files-found: error
           retention-days: 14
+      - name: RPC envelope allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCEnvelopeExtensions$' -benchtime=3x -benchmem ./internal/fetch
+      - name: RPC error-data allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCErrorData$' -benchtime=3x -benchmem ./internal/fetch
+      - name: Proof account amount allocation observations
+        run: go test -run '^$' -bench '^BenchmarkProofAccountAmountDecode$' -benchtime=3x -benchmem ./internal/proof
+      - name: Proof bundle extension allocation observations
+        run: go test -run '^$' -bench '^BenchmarkProofBundleExtensions$' -benchtime=3x -benchmem ./internal/proof
+      - name: Proof bundle field allocation observations
+        run: go test -run '^$' -bench '^BenchmarkProofBundleFieldSpans$' -benchtime=1x -count=3 -benchmem ./internal/proof
+      - name: Collector staging allocation observations
+        run: go test -run '^$' -bench '^BenchmarkCollectorStaging$' -benchtime=1x -count=3 -benchmem ./tools/observe-block
+      - name: RPC data-hash allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCDataHashDecode$' -benchtime=3x -benchmem ./internal/fetch
+      - name: Address-byte checker controls
+        run: python -I -B tools/check-address-checksum-vectors_test.py
+      - name: Independent address bytes
+        run: python -I -B tools/check-address-checksum-vectors.py
+      - name: Address checksum allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCAddressChecksum$' -benchtime=3x -benchmem ./internal/fetch
+      - name: RPC response-read allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCResponseRead$' -benchtime=3x -benchmem ./internal/fetch
+      - name: Optional RPC Base64 allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCOptionalBase64$' -benchtime=3x -benchmem ./internal/fetch
+      - name: Consumer input-read allocation observations
+        shell: bash
+        run: go test -run '^$' -bench '^BenchmarkConsumerInputRead$' -benchtime=100x -benchmem -cpu=1 -count=3 ./tools/consume-query-report
+      - name: Consumer oversized-token allocation observations
+        shell: bash
+        run: go test -run '^$' -bench '^BenchmarkConsumerTokenPrefilter$' -benchtime=20x -benchmem -cpu=1 -count=3 ./tools/consume-query-report
+      - name: Consumer shape allocation observations
+        shell: bash
+        run: go test -run '^$' -bench '^BenchmarkConsumerShapeSpans$' -benchtime=10x -benchmem -cpu=1 -count=3 ./tools/consume-query-report
+      - name: Shared immutable query observations
+        shell: bash
+        run: go test -run '^$' -bench '^BenchmarkSharedImmutableQueries$' -benchtime=1000x -benchmem -cpu=1,4 -count=3 ./internal/conformance
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchtime=1x ./internal/conformance
       - name: Independent corpus checks
@@ -91,7 +217,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        # Qualify native macOS on the explicit Intel image.
+        os: [macos-15-intel, windows-latest]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
@@ -103,10 +230,78 @@ jobs:
           python-version: '3.13'
       - name: Candidate archive checks
         run: python tools/check-candidate-archive_test.py
+      - name: Exported candidate checker controls
+        run: python -B tools/check-exported-candidate_test.py
       - name: Verification context checks
         run: python tools/check-verification-context_test.py
+      - name: Private staging sampler controls
+        run: python -I -B tools/test_private_staging.py
+      - name: Observer diagnostic consumer controls
+        run: |
+          python -I -B tools/consume-observer-report_test.py
+          python -I -B tools/check-observer-report-consumer_test.py
+      - name: Independent consumer controls
+        run: python -I -B tools/check-query-consumer_test.py
+      - name: Independent node consumer controls
+        run: python -I -B tools/check-node-query-consumer_test.py
       - name: Signature checker controls
         run: python -B tools/gen-node-momentum-vectors/check-signatures_test.py
+      - name: Candidate state-root byte controls
+        run: python -I -B tools/gen-state-root-vectors/check_test.py
+      - name: Independent candidate state-root bytes
+        run: python -I -B tools/gen-state-root-vectors/check.py --source-revision "${{ github.sha }}"
+      - name: Candidate L1 filter controls
+        run: python -I -B tools/gen-state-root-vectors/check_fold_test.py
+      - name: Independent candidate L1 filter events
+        run: python -I -B tools/gen-state-root-vectors/check_fold.py --source-revision "${{ github.sha }}"
+      - name: Candidate L1 applier controls
+        run: python -I -B tools/gen-state-root-vectors/check_applier_test.py
+      - name: Independent candidate L1 applier roots and proofs
+        run: python -I -B tools/gen-state-root-vectors/check_applier.py --source-revision "${{ github.sha }}"
+      - name: Candidate StateProof wire controls
+        run: python -I -B tools/gen-state-root-vectors/check_wire_test.py
+      - name: Independent candidate StateProof wire and binding
+        run: python -I -B tools/gen-state-root-vectors/check_wire.py --source-revision "${{ github.sha }}"
+      - name: Candidate RPC method controls
+        run: python -I -B tools/gen-state-root-vectors/check_rpc_methods_test.py
+      - name: Independent candidate RPC methods and consumer decisions
+        run: python -I -B tools/gen-state-root-vectors/check_rpc_methods.py --source-revision "${{ github.sha }}"
+      - name: Candidate offline RPC dispatcher controls
+        run: python -I -B tools/gen-state-root-vectors/check_dispatcher_test.py
+      - name: Independent candidate RPC dispatcher and envelopes
+        run: python -I -B tools/gen-state-root-vectors/check_dispatcher.py --source-revision "${{ github.sha }}"
+      - name: Candidate chain startup provenance controls
+        run: python -I -B tools/gen-state-root-vectors/check_chain_startup_test.py
+      - name: Independent candidate chain startup roots and proofs
+        run: python -I -B tools/gen-state-root-vectors/check_chain_startup.py --source-revision "${{ github.sha }}"
+      - name: Candidate disk lifecycle exit controls
+        run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle_test.py
+      - name: Independent candidate disk lifecycle roots and retention
+        run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle.py --source-revision "${{ github.sha }}"
+      - name: Candidate retention resource controls
+        run: python -I -B tools/gen-state-root-vectors/check_retention_test.py
+      - name: Independent candidate retained graph roots and proofs
+        run: python -I -B tools/gen-state-root-vectors/check_retention.py --source-revision "${{ github.sha }}"
+      - name: Candidate bulk seed and tail controls
+        run: python -I -B tools/gen-state-root-vectors/check_bulk_tail_test.py
+      - name: Independent candidate bulk tail roots and retained graph
+        run: python -I -B tools/gen-state-root-vectors/check_bulk_tail.py --source-revision "${{ github.sha }}"
+      - name: Candidate bulk guard and shared root controls
+        run: python -I -B tools/gen-state-root-vectors/check_bulk_guards_test.py
+      - name: Independent candidate bulk guards and selected roots
+        run: python -I -B tools/gen-state-root-vectors/check_bulk_guards.py --source-revision "${{ github.sha }}"
+      - name: Candidate staging replay boundary controls
+        run: python -I -B tools/gen-state-root-vectors/check_staging_boundary_test.py
+      - name: Independent candidate staging replay and refusal
+        run: python -I -B tools/gen-state-root-vectors/check_staging_boundary.py --source-revision "${{ github.sha }}"
+      - name: Candidate uint64 height boundary controls
+        run: python -I -B tools/gen-state-root-vectors/check_height_boundary_test.py
+      - name: Independent candidate height wrap and origin refusal
+        run: python -I -B tools/gen-state-root-vectors/check_height_boundary.py --source-revision "${{ github.sha }}"
+      - name: Candidate retained empty version controls
+        run: python -I -B tools/gen-state-root-vectors/check_empty_versions_test.py
+      - name: Independent candidate empty roots and reclaimed graph
+        run: python -I -B tools/gen-state-root-vectors/check_empty_versions.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash
@@ -126,6 +321,12 @@ jobs:
           retention-days: 14
       - name: Build
         run: go build ./...
+      - name: Independent consumer decisions
+        shell: bash
+        run: |
+          consumer_binary="${{ runner.temp }}/consumer-reference$(go env GOEXE)"
+          GOTOOLCHAIN=local GOWORK=off GOFLAGS= GOENV=off GOPROXY=off GOSUMDB=off go build -trimpath -o "$consumer_binary" ./tools/consume-query-report
+          python -I -B tools/check-query-consumer.py --consumer "$consumer_binary" --source-revision "${{ github.sha }}"
       - name: Vet
         run: go vet ./...
       - name: Native test
@@ -134,6 +335,22 @@ jobs:
         id: pilot
         shell: bash
         run: go run ./tools/offline-pilot --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
+      - name: Verify exported candidate
+        id: candidate
+        shell: bash
+        run: python -I -B tools/check-exported-candidate.py --directory "${{ runner.temp }}/tested-candidate" --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)"
+      - name: Independent node consumer workflow
+        shell: bash
+        run: |
+          candidate_directory="${{ runner.temp }}/tested-candidate"
+          executable_suffix="$(go env GOEXE)"
+          python -I -B tools/check-node-query-consumer.py --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --source-revision "${{ github.sha }}"
+      - name: Actual observer diagnostic consumption
+        shell: bash
+        run: |
+          candidate_directory="${{ runner.temp }}/tested-candidate"
+          executable_suffix="$(go env GOEXE)"
+          python -I -B tools/check-observer-report-consumer.py --observer "$candidate_directory/observe-block$executable_suffix" --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --collector "$candidate_directory/fetch-bundle$executable_suffix" --source-revision "${{ github.sha }}"
       - name: Upload offline pilot report
         if: ${{ !cancelled() && steps.pilot.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -143,12 +360,48 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Upload tested candidate
-        if: ${{ !cancelled() && steps.pilot.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.pilot.outcome == 'success' && steps.candidate.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: tested-candidate-${{ matrix.os }}
           path: ${{ runner.temp }}/tested-candidate/*
           if-no-files-found: error
           retention-days: 14
+      - name: RPC envelope allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCEnvelopeExtensions$' -benchtime=3x -benchmem ./internal/fetch
+      - name: RPC error-data allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCErrorData$' -benchtime=3x -benchmem ./internal/fetch
+      - name: Proof account amount allocation observations
+        run: go test -run '^$' -bench '^BenchmarkProofAccountAmountDecode$' -benchtime=3x -benchmem ./internal/proof
+      - name: Proof bundle extension allocation observations
+        run: go test -run '^$' -bench '^BenchmarkProofBundleExtensions$' -benchtime=3x -benchmem ./internal/proof
+      - name: Proof bundle field allocation observations
+        run: go test -run '^$' -bench '^BenchmarkProofBundleFieldSpans$' -benchtime=1x -count=3 -benchmem ./internal/proof
+      - name: Collector staging allocation observations
+        run: go test -run '^$' -bench '^BenchmarkCollectorStaging$' -benchtime=1x -count=3 -benchmem ./tools/observe-block
+      - name: RPC data-hash allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCDataHashDecode$' -benchtime=3x -benchmem ./internal/fetch
+      - name: Address-byte checker controls
+        run: python -I -B tools/check-address-checksum-vectors_test.py
+      - name: Independent address bytes
+        run: python -I -B tools/check-address-checksum-vectors.py
+      - name: Address checksum allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCAddressChecksum$' -benchtime=3x -benchmem ./internal/fetch
+      - name: RPC response-read allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCResponseRead$' -benchtime=3x -benchmem ./internal/fetch
+      - name: Optional RPC Base64 allocation observations
+        run: go test -run '^$' -bench '^BenchmarkRPCOptionalBase64$' -benchtime=3x -benchmem ./internal/fetch
+      - name: Consumer input-read allocation observations
+        shell: bash
+        run: go test -run '^$' -bench '^BenchmarkConsumerInputRead$' -benchtime=100x -benchmem -cpu=1 -count=3 ./tools/consume-query-report
+      - name: Consumer oversized-token allocation observations
+        shell: bash
+        run: go test -run '^$' -bench '^BenchmarkConsumerTokenPrefilter$' -benchtime=20x -benchmem -cpu=1 -count=3 ./tools/consume-query-report
+      - name: Consumer shape allocation observations
+        shell: bash
+        run: go test -run '^$' -bench '^BenchmarkConsumerShapeSpans$' -benchtime=10x -benchmem -cpu=1 -count=3 ./tools/consume-query-report
+      - name: Shared immutable query observations
+        shell: bash
+        run: go test -run '^$' -bench '^BenchmarkSharedImmutableQueries$' -benchtime=1000x -benchmem -cpu=1,4 -count=3 ./internal/conformance
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchtime=1x ./internal/conformance

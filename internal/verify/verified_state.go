@@ -110,11 +110,14 @@ func (s VerifiedState) VerifyCommitment(evidence proof.CommitmentEvidence) Resul
 	return s.withStateTrust(verifyCommitmentInValidatedWindow(s.data.state, evidence, s.data.opts.Policy))
 }
 
+// VerifySegment reuses this handle's immutable window validation for every
+// commitment candidate. Account envelopes, signatures, linkage, candidate order
+// and complete-batch resource bounds are still checked on each call.
 func (s VerifiedState) VerifySegment(segment proof.AccountSegment, commitments []proof.CommitmentEvidence) SegmentResult {
 	if s.data == nil {
 		return SegmentResult{Blocks: []Result{uninitializedStateResult()}}
 	}
-	r := VerifySegment(s.data.state, segment, commitments, s.data.opts.Policy)
+	r := verifySegmentWithCommitmentCheck(s.data.state, segment, commitments, s.data.opts.Policy, verifyCommitmentInValidatedWindow)
 	for i := range r.Blocks {
 		r.Blocks[i] = s.withStateTrust(r.Blocks[i])
 	}

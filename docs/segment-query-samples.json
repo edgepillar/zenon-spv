@@ -1,0 +1,387 @@
+{
+  "schema_version": 1,
+  "mode": "local_synthetic_retained_segment_resource_comparison",
+  "go_version": "go1.25.14",
+  "os": "darwin",
+  "architecture": "arm64",
+  "benchmark_processors": 8,
+  "benchtime": "300ms",
+  "samples_per_workload": 3,
+  "blocks_per_segment": 3,
+  "flat_members_per_candidate": 3,
+  "confirmation_depth": 6,
+  "capacity_values": [
+    16,
+    256,
+    4096
+  ],
+  "benchmark_harness_sha256": "4cce100073a847631ab8ff14d5111a4fa005481ac58c1852818cbe71bfd1fac8",
+  "command": [
+    "go",
+    "test",
+    "-run",
+    "^$",
+    "-bench",
+    "^BenchmarkRetainedCapacity$/^K(16|256|4096)$/^Segment(User|Embedded)$",
+    "-benchtime=300ms",
+    "-count=3",
+    "./internal/conformance"
+  ],
+  "node_account_corpus_sha256": "97b2278c2dbf4368281fae4cf3013e8160830d64d7103903b1ebc1292b06183f",
+  "phases": {
+    "before": {
+      "base_revision": "d25b0cd690fff9baf5ed3b447d948662b50233fd",
+      "modified": true,
+      "source_inputs_sha256": "b8f1d37ec5ab69cb0de8b398349fd9757562226b55d3d6cf026877289bbe959b",
+      "source_input_files": 319,
+      "benchmark_output_sha256": "a4f73732f5cc0da8e44cdbe1156fab5a869abaabeec4a353d5d1172b0fb58115",
+      "actual_exit_code": 0,
+      "samples": [
+        {
+          "capacity": 16,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 3866,
+          "ns_per_op": 93980,
+          "bytes_per_op": 4025,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 16,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 3804,
+          "ns_per_op": 95419,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 16,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 3928,
+          "ns_per_op": 94824,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 16,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 53349,
+          "ns_per_op": 6735,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 16,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 53382,
+          "ns_per_op": 6791,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 16,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 53984,
+          "ns_per_op": 6765,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 256,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 3746,
+          "ns_per_op": 101177,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 256,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 3624,
+          "ns_per_op": 101085,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 256,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 3790,
+          "ns_per_op": 101658,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 256,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 27226,
+          "ns_per_op": 13113,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 256,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 28293,
+          "ns_per_op": 12888,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 256,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 27452,
+          "ns_per_op": 12984,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 4096,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 1656,
+          "ns_per_op": 215794,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 4096,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 1689,
+          "ns_per_op": 214960,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 4096,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 1680,
+          "ns_per_op": 214386,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 4096,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 2660,
+          "ns_per_op": 126787,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 4096,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 2716,
+          "ns_per_op": 127483,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 4096,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 2764,
+          "ns_per_op": 126699,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        }
+      ]
+    },
+    "after": {
+      "base_revision": "d25b0cd690fff9baf5ed3b447d948662b50233fd",
+      "modified": true,
+      "source_inputs_sha256": "d355f2d27d0849546a4d1d0a4dd6d83825d5e9683f32eed182d88e684764eb48",
+      "source_input_files": 320,
+      "benchmark_output_sha256": "0bbd2808e42e06e5a18aa61e23d46a446aff0cae471b0e0345e7d01db5908b10",
+      "actual_exit_code": 0,
+      "samples": [
+        {
+          "capacity": 16,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 3856,
+          "ns_per_op": 93960,
+          "bytes_per_op": 4025,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 16,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 4066,
+          "ns_per_op": 94212,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 16,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 3976,
+          "ns_per_op": 93823,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 16,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 57421,
+          "ns_per_op": 6245,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 16,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 57700,
+          "ns_per_op": 6237,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 16,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 56227,
+          "ns_per_op": 6293,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 256,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 3730,
+          "ns_per_op": 94091,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 256,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 3813,
+          "ns_per_op": 94696,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 256,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 4014,
+          "ns_per_op": 94889,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 256,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 56691,
+          "ns_per_op": 6310,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 256,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 57512,
+          "ns_per_op": 6332,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 256,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 57408,
+          "ns_per_op": 6356,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 4096,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 3618,
+          "ns_per_op": 93125,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 4096,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 3794,
+          "ns_per_op": 93958,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 4096,
+          "segment": "SegmentUser",
+          "processors": 8,
+          "iterations": 3711,
+          "ns_per_op": 94852,
+          "bytes_per_op": 4024,
+          "allocs_per_op": 70
+        },
+        {
+          "capacity": 4096,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 56431,
+          "ns_per_op": 6456,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 4096,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 57225,
+          "ns_per_op": 6420,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        },
+        {
+          "capacity": 4096,
+          "segment": "SegmentEmbedded",
+          "processors": 8,
+          "iterations": 56226,
+          "ns_per_op": 6467,
+          "bytes_per_op": 3664,
+          "allocs_per_op": 61
+        }
+      ]
+    }
+  },
+  "samples_filtered": false,
+  "measurement_processes_retried": false,
+  "competing_repository_builds_or_tests": false,
+  "network_calls": 0,
+  "caveats": [
+    "The account envelopes are node-derived; the populated header window and confirming content are synthetic stress inputs.",
+    "Timing and allocation volume are local observations, not portable performance, peak RSS, network qualification or ledger validity.",
+    "Before and after use modified sources relative to the base; the baseline modification contains only the added measurement harness.",
+    "The source-input fingerprint includes Go/module/JSON inputs and excludes documentation, workflows and Python checkers."
+  ]
+}

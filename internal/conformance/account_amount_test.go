@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -80,6 +81,19 @@ func TestNodeDerivedAccountAmountVectors(t *testing.T) {
 				t.Fatalf("invalid node amount survived RPC: %v", err)
 			}
 			segment := proof.AccountSegment{Address: v.Block.Address, Blocks: []chain.AccountBlock{v.Block}}
+			bundleRaw, err := json.Marshal(proof.HeaderBundle{Version: 1, ChainID: v.Block.ChainIdentifier, Segments: []proof.AccountSegment{segment}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			bundlePath := filepath.Join(t.TempDir(), "amount-vector.json")
+			if err := os.WriteFile(bundlePath, bundleRaw, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			limited, err := proof.LoadHeaderBundleWithLimits(bundlePath, int64(len(bundleRaw)), proof.DecodeLimits{MaxSegments: 1, MaxSegmentBlocks: 1, MaxAccountAmountBytes: proof.DefaultMaxAccountAmountBytes})
+			if err != nil || len(limited.Segments) != 1 || !reflect.DeepEqual(limited.Segments[0], segment) {
+				t.Fatalf("bounded bundle conversion changed the pinned node vector: %v", err)
+			}
+			segment = limited.Segments[0]
 			state := verify.HeaderState{Genesis: verify.GenesisTrustRoot{ChainID: v.Block.ChainIdentifier}}
 			result := verify.VerifySegment(state, segment, nil, verify.DefaultPolicy())
 			if !v.ScalarValid && (result.Worst() != verify.OutcomeReject || result.Blocks[0].Reason != verify.ReasonInvalidAmount) {
