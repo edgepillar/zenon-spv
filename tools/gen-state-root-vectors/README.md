@@ -1090,6 +1090,57 @@ real-chain budgets. It qualifies no speedup, capacity, canonicality, finality,
 network activation, accepted-header/profile binding or production state value.
 See [the local observations](../../docs/native-benchmarks.md#whole-owned-research-import-observations).
 
+## Owned callback string reuse comparison
+
+The separate research importer now compares callback bytes directly with the
+preflight's detached lowercase hex strings. Only a complete operation/key/value
+match can reuse those immutable payloads. A Put retains its own mutable Value
+pointer; empty Put and Delete stay distinct. The first mismatch still records
+actual callback bytes. Later callbacks after refusal return before encoding.
+The original target map is still cloned separately and published only after all
+selection, replay, transient-cap and final-byte checks succeed.
+
+`compare_patch_import.py` accepts exactly the prior importer Git blob
+`ff426a7c2ffc4604f89f888a382c0c503631023a` from development main
+`02b3a36410f53d879ca5dd1d21bb3c3d0c8c1b73`. It bounds and checks its byte count,
+SHA-256 and Git object identity before any Go execution. Both versions use the
+same selected resource harness, node snapshot, toolchain and ownership controls.
+There are two baseline generations followed by two candidate generations:
+288 fresh children across the same twelve complete conformance families.
+All original outputs, child ledgers and samples are retained. Eighteen local Go
+ownership tests/subtests pass for each version, including all byte values,
+callback byte mutation, separate metadata pointers, empty operations, nibble and
+length mismatches, invalid plan spelling, extra callbacks and transient refusals.
+The preceding 264 importer and 46 target cases remain byte-identical.
+
+The [recorded comparison](testdata/candidate-patch-import-comparison.json) binds
+all selected importer/harness/control bytes and both complete sample inventories.
+The independent portable checker and 21 adversarial controls run in native CI;
+they check recorded local evidence without executing Go or remeasuring import.
+The historical resource corpus and samples are preserved. Cumulative allocation,
+plain elapsed time and lifetime RSS retain the measurement boundaries described
+above; sequential generations do not establish a latency speedup or causality.
+See [all local observations](../../docs/native-benchmarks.md#owned-callback-reuse-comparison).
+
+```sh
+git show 02b3a36410f53d879ca5dd1d21bb3c3d0c8c1b73:tools/gen-state-root-vectors/patch_import.go > NEW_BASELINE_FILE
+python3 -I -B tools/gen-state-root-vectors/compare_patch_import.py \
+  --node-source NODE_SOURCE --baseline-import-source NEW_BASELINE_FILE \
+  --go GO_EXECUTABLE --output NEW_COMPARISON_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+python3 -I -B tools/gen-state-root-vectors/check_patch_import_comparison.py \
+  --comparison NEW_COMPARISON_FILE
+python3 -I -B tools/gen-state-root-vectors/check_patch_import_comparison_test.py
+```
+
+Source acquisition is separate; no network or node database is used. The report
+is unsigned and cannot authenticate its claimed execution or absence of retries.
+Sharing owned immutable strings does not establish zero-copy end-to-end import,
+whole-process memory budgets, actual NodeTree retention, snapshot/excluded-state
+authentication, shared/durable writer atomicity or production state-value proofs.
+Caller exclusivity and all explicit header/profile/activation, anchor, schedule,
+context-pin, independent-review and authenticated-distribution gates remain.
+
 ## Read-only raw patch plans
 
 `plan_patch.py` consumes a regular raw dump file under **explicitly selected**
