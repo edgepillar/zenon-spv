@@ -64,6 +64,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_dispatcher_test.py
       - name: Independent candidate RPC dispatcher and envelopes
         run: python -I -B tools/gen-state-root-vectors/check_dispatcher.py --source-revision "${{ github.sha }}"
+      - name: Candidate chain startup provenance controls
+        run: python -I -B tools/gen-state-root-vectors/check_chain_startup_test.py
+      - name: Independent candidate chain startup roots and proofs
+        run: python -I -B tools/gen-state-root-vectors/check_chain_startup.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash
@@ -238,6 +242,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_dispatcher_test.py
       - name: Independent candidate RPC dispatcher and envelopes
         run: python -I -B tools/gen-state-root-vectors/check_dispatcher.py --source-revision "${{ github.sha }}"
+      - name: Candidate chain startup provenance controls
+        run: python -I -B tools/gen-state-root-vectors/check_chain_startup_test.py
+      - name: Independent candidate chain startup roots and proofs
+        run: python -I -B tools/gen-state-root-vectors/check_chain_startup.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash

@@ -248,11 +248,13 @@ without validating those excluded components and their authoritative inputs.
 
 The [startup path](https://github.com/digitalSloth/go-zenon/blob/56ce2c384966f2f1940967257a0788d3998a5eef/chain/state_tree.go#L267-L295)
 and [NodeTree truncate](https://github.com/digitalSloth/go-zenon/blob/56ce2c384966f2f1940967257a0788d3998a5eef/common/trie/nodestore.go#L1269-L1319)
-motivate an unexecuted recovery counterexample: an ahead tree from fork A may
-retain A's root at height H while rollback writes fork B's identifier at H.
-Require a negative test and hash-bound version identity before qualification.
-Do not describe this source-derived local recovery case as a demonstrated
-remote attack. Existing [mid-build reorg tests](https://github.com/digitalSloth/go-zenon/blob/56ce2c384966f2f1940967257a0788d3998a5eef/chain/tests/state_tree_build_test.go#L94-L180)
+are now exercised by the [isolated component startup fixture](../tools/gen-state-root-vectors/README.md#separate-real-chain-component-startup-fixture).
+A controlled ahead tree from fork A retains A's root at height H while startup
+rollback writes fork B's identifier at H and marks ready. A clean reopen retains
+that mismatch. Three independent consumer observations refuse B's selected state
+because the returned root remains A's. Hash-bound version provenance is still a
+failed qualification gate. This synthetic temporary-database reproduction is
+not a demonstrated remote attack or a production crash/reorg qualification. Existing [mid-build reorg tests](https://github.com/digitalSloth/go-zenon/blob/56ce2c384966f2f1940967257a0788d3998a5eef/chain/tests/state_tree_build_test.go#L94-L180)
 also mean that a blanket claim that all such reorgs are skipped is unsupported.
 
 Measure actual committed-key count/churn, build/import wall time, peak memory,

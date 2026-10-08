@@ -633,6 +633,7 @@ func generateApplier() any {
 var wireGenerator func() any
 var rpcMethodGenerator func() any
 var rpcDispatcherGenerator func() any
+var chainStartupGenerator func() any
 
 func run() error {
 	// regenerate.py validates and copies every node blob before it builds this
@@ -643,7 +644,7 @@ func run() error {
 	kind := "bytes"
 	if len(os.Args) == 5 {
 		kind = os.Args[4]
-		if os.Args[3] != "--fixture-kind" || (kind != "fold-filter" && kind != "applier" && kind != "wire" && kind != "rpc-methods" && kind != "rpc-dispatcher") {
+		if os.Args[3] != "--fixture-kind" || (kind != "fold-filter" && kind != "applier" && kind != "wire" && kind != "rpc-methods" && kind != "rpc-dispatcher" && kind != "chain-startup") {
 			return fmt.Errorf("unsupported reference fixture kind")
 		}
 	}
@@ -687,6 +688,12 @@ func run() error {
 			return fmt.Errorf("RPC dispatcher mode requires the offline driver candidate_dispatcher build")
 		}
 		return encoder.Encode(rpcDispatcherGenerator())
+	}
+	if kind == "chain-startup" {
+		if chainStartupGenerator == nil {
+			return fmt.Errorf("chain startup mode requires the offline driver candidate_chain_startup build")
+		}
+		return encoder.Encode(chainStartupGenerator())
 	}
 	return encoder.Encode(generate())
 }
