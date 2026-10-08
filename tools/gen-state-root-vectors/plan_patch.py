@@ -8,6 +8,7 @@ A plan is unsigned patch syntax; production state-proof acceptance stays disable
 import argparse
 import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -109,15 +110,15 @@ def make_plan(raw, selection, limits, source_revision=None):
 
 def encode_plan(document, maximum):
     require(type(maximum) is int and 0 < maximum <= CEILINGS['plan_bytes'])
-    result = bytearray()
+    result = io.BytesIO()
     encoder = json.JSONEncoder(sort_keys=True, separators=(',', ':'), ensure_ascii=True)
     for chunk in encoder.iterencode(document):
         part = chunk.encode('ascii')
-        require(len(part) <= maximum - len(result))
-        result.extend(part)
-    require(len(result) < maximum)
-    result.extend(b'\n')
-    return bytes(result)
+        require(len(part) <= maximum - result.tell())
+        result.write(part)
+    require(result.tell() < maximum)
+    result.write(b'\n')
+    return result.getvalue()
 
 
 class PrivateParser(argparse.ArgumentParser):
