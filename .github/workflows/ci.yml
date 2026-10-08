@@ -102,6 +102,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_plan_encodings_test.py
       - name: Patch output encoding allocation comparison
         run: python -I -B tools/gen-state-root-vectors/measure_patch_plan_encodings.py --source-revision "${{ github.sha }}"
+      - name: Candidate initial and transient patch target controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
+      - name: Independent candidate patch target bounds and ownership
+        run: python -I -B tools/gen-state-root-vectors/check_patch_targets.py --source-revision "${{ github.sha }}"
       - name: Candidate bounded patch import controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_import_test.py
       - name: Independent candidate patch import and detached staging
@@ -330,6 +334,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_plan_encodings_test.py
       - name: Patch output encoding allocation comparison
         run: python -I -B tools/gen-state-root-vectors/measure_patch_plan_encodings.py --source-revision "${{ github.sha }}"
+      - name: Candidate initial and transient patch target controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
+      - name: Independent candidate patch target bounds and ownership
+        run: python -I -B tools/gen-state-root-vectors/check_patch_targets.py --source-revision "${{ github.sha }}"
       - name: Candidate bounded patch import controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_import_test.py
       - name: Independent candidate patch import and detached staging

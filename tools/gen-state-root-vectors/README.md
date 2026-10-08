@@ -956,12 +956,70 @@ python3 -I -B tools/gen-state-root-vectors/regenerate.py \
 Actual reference generation runs twice locally on macOS ARM64 with CGO disabled.
 Linux, macOS Intel and Windows CI check the independent fixtures without executing
 the node backend. All fifteen preceding deterministic corpora and MIT runtime
-inputs remain unchanged. Initial target copying depends on target size, and the
-prototype requires exclusive ownership; it qualifies neither shared writers,
+inputs remain unchanged. The subsequent [target bounds](#bounded-initial-and-transient-patch-targets)
+bound copying and delay it until input/constructor checks pass. The prototype
+requires exclusive ownership; it qualifies neither shared writers,
 disk/crash durability nor production resource budgets. Authenticated complete and
 excluded snapshot state, typed domains, accepted header/profile/activation,
 retained hash provenance, anchor, schedule, context pin, independent human review
 and authenticated distribution remain separate gates.
+
+## Bounded initial and transient patch targets
+
+The `patch-targets` research mode uses the same selected import contract with
+explicit positive limits for initial and staged map entries and key/value hex
+string bytes. Hard ceilings are 4,096 entries and 1 MiB of hex text; the new
+fixture defaults are eight entries and 1,024 hex bytes. The earlier 264-case
+mode uses the ceilings and reproduces its complete prior corpus byte for byte.
+These caps count string payloads, including empty syntactic keys and values.
+They do not bound map overhead, raw/event/callback buffers, fixture summaries,
+the whole process or a production state domain.
+
+The initial map must fit both caps and contain even-length lowercase hex before
+raw copying. Complete unsigned preflight, separately selected byte/count/hash
+binding, constructor success and exact dump checks precede target cloning.
+Replay uses a new owned map; the original map and its aliases remain untouched.
+Every complete callback must match the planned sequence before its prospective
+entry and hex-payload sizes are checked. Replacement subtracts the old key/value
+payload; Delete reclaims capacity. A transient overflow is rejected even if a
+later Delete would make the final map fit. No partial stage is published on a
+cap, sequence, constructor, dump or replay failure. One replacement follows all
+successful checks, including complete replay and post-replay dump binding.
+
+The 46 finite cases include exact initial and transient caps, zero/oversized cap
+configuration, odd/uppercase/nonhex strings, entry/byte ceilings and one above
+each ceiling, input failures before cloning, injected constructor/replay failures,
+empty Put/Delete, duplicate replacement and nonminimal raw spellings. Eighteen
+selected research patches stage; 28 reject with the complete original map intact.
+Of the rejections, 21 clone no target and 16 copy no raw input. All 46 original
+aliases stay unchanged, and all proof consumers remain `REFUSED`. Complete maps
+are bound by independently reconstructed sorted JSON manifest SHA-256 digests;
+these are fixture identities, not authenticated state roots or snapshot proofs.
+The Python oracle recomputes each full prospective map's size, separately from
+the Go prototype's incremental counters. Twenty-two adversarial checker controls
+bind the entire corpus, outcomes, counters, callback order and closed trust gates.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
+python3 -I -B tools/gen-state-root-vectors/check_patch_targets.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind patch-targets \
+  --output NEW_PATCH_TARGET_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+```
+
+Both the changed prior import mode and the new target mode execute twice locally
+against the same complete pinned node snapshot, with CGO disabled. Native Linux,
+macOS Intel and Windows CI check the finite fixtures and controls without running
+the node backend. No raw planner output is accepted by a storage writer; the
+existing read-only planner and its measured read/parse/encode scope remain separate.
+The inputs are already resident in the harness, and the exclusive caller must
+own the complete validation/clone/replay/replacement interval. Exclusivity is a
+precondition, not a lock or concurrent-writer guarantee. Shared/durable writers,
+rollback/crash recovery, whole-handoff measurements and real resource budgets
+remain unqualified. Full snapshot/excluded-state authentication, retained-hash
+provenance, accepted VerifiedState/header/profile/activation, anchor, schedule,
+context pin, independent review and authenticated release remain separate gates.
 
 ## Read-only raw patch plans
 
