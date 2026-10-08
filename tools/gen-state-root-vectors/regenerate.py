@@ -120,11 +120,11 @@ def main(argv=None):
     parser.add_argument("--go", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--evidence-directory", type=Path, required=True)
-    parser.add_argument("--fixture-kind", choices=("bytes", "fold-filter", "applier", "wire", "rpc-methods", "rpc-dispatcher", "chain-startup", "disk-lifecycle", "retention-resources"), default="bytes")
+    parser.add_argument("--fixture-kind", choices=("bytes", "fold-filter", "applier", "wire", "rpc-methods", "rpc-dispatcher", "chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail"), default="bytes")
     args = parser.parse_args(argv)
     require(not args.output.exists() and not args.output.is_symlink(), "preserve existing output")
     require(not args.evidence_directory.exists() and not args.evidence_directory.is_symlink(), "preserve existing evidence")
-    require(args.fixture_kind != "retention-resources" or sys.platform in ("darwin", "linux"),
+    require(args.fixture_kind not in ("retention-resources", "bulk-tail") or sys.platform in ("darwin", "linux"),
             "retention resource reference requires Linux or macOS; fixture checker is portable")
     manifest_raw, manifest = source_manifest()
     original = snapshot_source(args.node_source, manifest["files"])
@@ -177,6 +177,8 @@ def main(argv=None):
             (generator / "disk_lifecycle.go").write_bytes((HERE / "disk_lifecycle.go").read_bytes())
         if args.fixture_kind == "retention-resources":
             (generator / "retention_resources.go").write_bytes((HERE / "retention_resources.go").read_bytes())
+        if args.fixture_kind == "bulk-tail":
+            (generator / "bulk_tail.go").write_bytes((HERE / "bulk_tail.go").read_bytes())
         with (generator / "go.mod").open("ab") as stream:
             stream.write(b"\nreplace github.com/zenon-network/go-zenon => ../reference-node\n")
         version = execute("go-version", [args.go, "version"], generator).decode("ascii").strip()
@@ -195,6 +197,8 @@ def main(argv=None):
             build += ["-tags", "candidate_disk_lifecycle"]
         if args.fixture_kind == "retention-resources":
             build += ["-tags", "candidate_retention"]
+        if args.fixture_kind == "bulk-tail":
+            build += ["-tags", "candidate_bulk_tail"]
         execute("go-build", build + ["-o", str(executable), "."], generator)
         execute("go-buildinfo", [args.go, "version", "-m", str(executable)], generator)
         command = [str(executable), "--verified-node-tree", NODE_TREE]
@@ -203,14 +207,14 @@ def main(argv=None):
         first = execute("generate-first", command, generator)
         second = execute("generate-second", command, generator)
         resource_samples_sha256 = None
-        if args.fixture_kind == "retention-resources":
+        if args.fixture_kind in ("retention-resources", "bulk-tail"):
             # Physical file lengths, RSS high-water marks and elapsed times vary.
             # Compare only deterministic roots/proofs/logical records; preserve
             # both unmodified process outputs and their separate measurements.
             documents = [json.loads(raw) for raw in (first, second)]
             samples = [document.pop("measurements") for document in documents]
             first, second = [encoded(document) for document in documents]
-            resource_record = {"format_version": 1, "kind": "candidate-retention-resource-samples",
+            resource_record = {"format_version": 1, "kind": "candidate-bulk-tail-samples" if args.fixture_kind == "bulk-tail" else "candidate-retention-resource-samples",
                 "source": documents[0]["source"], "corpus_sha256": hashlib.sha256(first).hexdigest(),
                 "conformance_runs": 2, "measurement_runs_expected_to_vary": True,
                 "production_resource_budgets_qualified": False,
@@ -233,7 +237,7 @@ def main(argv=None):
                          "rpc-dispatcher": "candidate-rpc-dispatcher-research",
                          "chain-startup": "candidate-chain-startup-research",
                          "disk-lifecycle": "candidate-disk-lifecycle-research",
-                         "retention-resources": "candidate-retention-resource-research"}[args.fixture_kind]
+                         "retention-resources": "candidate-retention-resource-research", "bulk-tail":"candidate-bulk-tail-research"}[args.fixture_kind]
         require(document["kind"] == expected_kind, "generated fixture kind differs")
         if args.fixture_kind == "fold-filter":
             require(document["scope"]["l1_fold_filter_api_executed"] and
@@ -299,15 +303,15 @@ def main(argv=None):
               "commands": commands, "signing": False, "node_lifecycle_execution": False,
               "network_execution": False, "runtime_state_proof_acceptance": False,
               "fixture_kind": args.fixture_kind, "l1_fold_filter_api_executed": args.fixture_kind == "fold-filter",
-              "l1_staged_applier_executed": args.fixture_kind == "applier", "node_database_opened": args.fixture_kind in ("applier", "chain-startup", "disk-lifecycle", "retention-resources"),
-              "database_storage_in_memory_only": args.fixture_kind == "applier", "persisted_disk_lifecycle_executed": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources"),
+              "l1_staged_applier_executed": args.fixture_kind == "applier", "node_database_opened": args.fixture_kind in ("applier", "chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail"),
+              "database_storage_in_memory_only": args.fixture_kind == "applier", "persisted_disk_lifecycle_executed": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail"),
               "persisted_disk_lifecycle_qualified": False,
               "StateProof_serializer_executed": args.fixture_kind in ("wire", "rpc-methods", "rpc-dispatcher"),
               "LedgerApi_method_executed": args.fixture_kind in ("rpc-methods", "rpc-dispatcher"),
               "recording_chain_store_stubs": args.fixture_kind in ("rpc-methods", "rpc-dispatcher"), "actual_chain_stateTree_executed": args.fixture_kind == "chain-startup",
               "actual_chain_component_Init_executed": args.fixture_kind == "chain-startup",
-              "controlled_clean_disk_reopen_executed": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources"),
-              "small_temporary_disk_LevelDB": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources"),
+              "controlled_clean_disk_reopen_executed": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail"),
+              "small_temporary_disk_LevelDB": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail"),
               "controlled_process_exit_executed": args.fixture_kind == "disk-lifecycle",
               "logical_NodeTree_storage_records_measured": args.fixture_kind == "disk-lifecycle",
               "power_loss_qualified": False, "torn_write_qualified": False,
@@ -322,6 +326,8 @@ def main(argv=None):
                        "actual_NodeTree_reference_executed": True, "measurement_processes_per_generation": 4,
                        "manual_compaction_calls_per_generation": 4, "logical_NodeTree_storage_records_measured": True,
                        "production_retention_resource_budgets_qualified": False})
+    if args.fixture_kind == "bulk-tail":
+        report.update({"deterministic_generations":2,"deterministic_conformance_only":True,"variable_resource_samples_preserved":True,"resource_samples_sha256":resource_samples_sha256,"actual_NodeTree_reference_executed":True,"measurement_processes_per_generation":6,"manual_compaction_calls_per_generation":6,"logical_NodeTree_storage_records_measured":True,"fixture_seed_not_authenticated_snapshot":True,"node_snapshot_import_executed":False,"historical_archive_replay_qualified":False,"production_retention_resource_budgets_qualified":False})
     seal(args.evidence_directory / "completed.json", encoded(report))
     print(json.dumps(report, sort_keys=True, separators=(",", ":")))
 

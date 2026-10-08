@@ -333,3 +333,5 @@ MIT — see [`LICENSE`](LICENSE).
 - Vault: [`zenon-spv-vault`](https://github.com/0x3639/zenon-spv-vault) — spec, notes, ADRs.
 - go-zenon reference: pinned at commit `667a69d9e9a418edf7580b08492ba5dcb9efd63a` (per `zenon-spv-vault/reference/CLAUDE.md`).
 - [`znn-sdk-go`](https://github.com/0x3639/znn-sdk-go)
+
+The separate [complete fixture seed and retained tail comparison](tools/gen-state-root-vectors/README.md#scale-churn-and-complete-fixture-seed-with-retained-tail) adds finite scale/churn experiments with the unchanged NodeTree bulk API. Independent roots, proofs and retained graph records must match sequential pruning; separately preserved local resource samples do not qualify snapshot import, authenticated history or production budgets.

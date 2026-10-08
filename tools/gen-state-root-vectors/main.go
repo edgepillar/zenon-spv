@@ -636,6 +636,7 @@ var rpcDispatcherGenerator func() any
 var chainStartupGenerator func() any
 var diskLifecycleGenerator func() any
 var retentionResourceGenerator func() any
+var bulkResourceGenerator func() any
 
 func run() error {
 	// regenerate.py validates and copies every node blob before it builds this
@@ -646,7 +647,7 @@ func run() error {
 	kind := "bytes"
 	if len(os.Args) == 5 {
 		kind = os.Args[4]
-		if os.Args[3] != "--fixture-kind" || (kind != "fold-filter" && kind != "applier" && kind != "wire" && kind != "rpc-methods" && kind != "rpc-dispatcher" && kind != "chain-startup" && kind != "disk-lifecycle" && kind != "retention-resources") {
+		if os.Args[3] != "--fixture-kind" || (kind != "fold-filter" && kind != "applier" && kind != "wire" && kind != "rpc-methods" && kind != "rpc-dispatcher" && kind != "chain-startup" && kind != "disk-lifecycle" && kind != "retention-resources" && kind != "bulk-tail") {
 			return fmt.Errorf("unsupported reference fixture kind")
 		}
 	}
@@ -696,6 +697,12 @@ func run() error {
 			return fmt.Errorf("disk lifecycle mode requires the offline driver candidate_disk_lifecycle build")
 		}
 		return encoder.Encode(diskLifecycleGenerator())
+	}
+	if kind == "bulk-tail" {
+		if bulkResourceGenerator == nil {
+			return fmt.Errorf("bulk tail mode requires the offline driver candidate_bulk_tail build on Linux or macOS")
+		}
+		return encoder.Encode(bulkResourceGenerator())
 	}
 	if kind == "retention-resources" {
 		if retentionResourceGenerator == nil {

@@ -333,3 +333,9 @@ acceptance remains gated by the profile, verified header/activation binding,
 independent conformance, lifecycle qualification and review. Bridge/custody
 and irreversible settlement require their own canonicality/finality/freshness
 and security decisions.
+
+## Complete fixture seed and retained tail comparison
+
+The [bounded bulk/tail experiment](../tools/gen-state-root-vectors/README.md#scale-churn-and-complete-fixture-seed-with-retained-tail) compares 64/256/1024-key synthetic workloads with cyclic updates, zero and deletion. It independently binds the complete selected raw seed map, the sequential Commit height-gap refusal, one low-level CommitBulk and three tail commits. All four retained versions must have the same canonical root/proof bytes and compressed physical-node/refcount graph as sequential construction and pruning across clean reopen/compaction.
+
+These 756 finite read observations and separately recorded input-preparation, disk/RSS and API samples prepare a construction comparison. They do not execute chain background build or snapshot import, authenticate complete snapshot/excluded state, qualify historical archive replay, repair the retained-version provenance failure or establish real-chain resource budgets. Explicit accepted-header/profile/activation, anchor, schedule, context pin, human review and authenticated release gates remain unchanged. Production state-value acceptance stays disabled.

@@ -76,6 +76,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_retention_test.py
       - name: Independent candidate retained graph roots and proofs
         run: python -I -B tools/gen-state-root-vectors/check_retention.py --source-revision "${{ github.sha }}"
+      - name: Candidate bulk seed and tail controls
+        run: python -I -B tools/gen-state-root-vectors/check_bulk_tail_test.py
+      - name: Independent candidate bulk tail roots and retained graph
+        run: python -I -B tools/gen-state-root-vectors/check_bulk_tail.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash
@@ -262,6 +266,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_retention_test.py
       - name: Independent candidate retained graph roots and proofs
         run: python -I -B tools/gen-state-root-vectors/check_retention.py --source-revision "${{ github.sha }}"
+      - name: Candidate bulk seed and tail controls
+        run: python -I -B tools/gen-state-root-vectors/check_bulk_tail_test.py
+      - name: Independent candidate bulk tail roots and retained graph
+        run: python -I -B tools/gen-state-root-vectors/check_bulk_tail.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash
