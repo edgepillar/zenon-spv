@@ -197,7 +197,7 @@ class PatchPlanTests(unittest.TestCase):
                 with self.assertRaises(PLAN.Refused):
                     PLAN.read_raw(link, selected(), LIMITS)
 
-    def test_file_growth_read_uses_cap_plus_one(self):
+    def test_file_growth_read_uses_selected_count_plus_one(self):
         stream = io.BytesIO(b'x' * (LIMITS['raw_bytes'] + 1))
         stream.fileno = lambda: 99
         observed = []
@@ -208,7 +208,60 @@ class PatchPlanTests(unittest.TestCase):
                 patch.object(PLAN.os, 'fdopen', return_value=stream), patch.object(PLAN.os, 'fstat', return_value=regular):
             with self.assertRaises(PLAN.Refused):
                 PLAN.read_raw('input', selected(), LIMITS)
-        self.assertEqual(observed, [LIMITS['raw_bytes'] + 1])
+        self.assertEqual(observed, [selected()['bytes'] + 1])
+
+    def test_unselected_file_tails_and_short_files_refuse_during_read(self):
+        for raw in (RAW + b'\x00', RAW[:-1]):
+            with tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / 'private-input'
+                path.write_bytes(raw)
+                with self.assertRaises(PLAN.Refused):
+                    PLAN.read_raw(path, selected(), LIMITS)
+                self.assertEqual(path.read_bytes(), raw)
+            result, path = self.cli(raw=raw, changed=[('expected-bytes', '8'),
+                                                     ('changes-hash', selected()['changes_hash'])])
+            self.assertEqual((result.returncode, result.stdout), (1, b''))
+            self.assertNotIn(str(path).encode(), result.stderr)
+
+    def test_empty_selection_uses_one_byte_tail_probe_under_maximum_cap(self):
+        stream = io.BytesIO(b'')
+        stream.fileno = lambda: 99
+        observed = []
+        read = stream.read
+        stream.read = lambda size: (observed.append(size), read(size))[1]
+        regular = type('Info', (), {'st_mode': 0o100600, 'st_size': 0})()
+        with (patch.object(PLAN.Path, 'lstat', return_value=regular),
+              patch.object(PLAN.os, 'open', return_value=99),
+              patch.object(PLAN.os, 'fdopen', return_value=stream),
+              patch.object(PLAN.os, 'fstat', return_value=regular)):
+            self.assertEqual(PLAN.read_raw('input', selected(b'', 0), PLAN.CEILINGS), b'')
+        self.assertEqual(observed, [1])
+
+    def test_substituted_nonregular_descriptor_refuses_before_read(self):
+        stream = io.BytesIO(RAW)
+        stream.fileno = lambda: 99
+        stream.read = lambda size: self.fail('must not read a substituted special file')
+        regular = type('Info', (), {'st_mode': 0o100600, 'st_size': 8})()
+        special = type('Info', (), {'st_mode': 0o010600, 'st_size': 8})()
+        with (patch.object(PLAN.Path, 'lstat', return_value=regular),
+              patch.object(PLAN.os, 'open', return_value=99),
+              patch.object(PLAN.os, 'fdopen', return_value=stream),
+              patch.object(PLAN.os, 'fstat', return_value=special)):
+            with self.assertRaises(PLAN.Refused):
+                PLAN.read_raw('input', selected(), LIMITS)
+
+    def test_read_error_cannot_publish_a_plan(self):
+        sink = type('Sink', (), {'buffer': io.BytesIO()})()
+        argv = ['--raw', 'input', '--changes-hash', selected()['changes_hash'],
+                '--expected-bytes', '8', '--expected-records', '2']
+        for key, value in LIMITS.items():
+            argv.extend(['--max-' + key.replace('_', '-'), str(value)])
+        with (patch.object(PLAN, 'read_raw', side_effect=OSError('private read details')),
+              patch.object(PLAN, 'make_plan', side_effect=AssertionError('must not parse after read error')),
+              patch.object(PLAN.sys, 'stdout', sink)):
+            with self.assertRaises(OSError):
+                PLAN.main(argv)
+        self.assertEqual(sink.buffer.getvalue(), b'')
 
     def test_cli_roundtrip_emits_only_complete_plan(self):
         result, path = self.cli()

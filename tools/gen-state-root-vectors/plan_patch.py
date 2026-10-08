@@ -54,8 +54,10 @@ def read_raw(path, selection, limits):
     with os.fdopen(descriptor, 'rb') as stream:
         info = os.fstat(stream.fileno())
         require(stat.S_ISREG(info.st_mode) and info.st_size <= limits['raw_bytes'])
-        raw = stream.read(limits['raw_bytes'] + 1)
-    require(len(raw) <= limits['raw_bytes'])
+        # The explicit selection bounds allocation even when the global ceiling
+        # is large. One extra byte detects a tail or growth beyond that selection.
+        raw = stream.read(selection['bytes'] + 1)
+    require(len(raw) == selection['bytes'])
     return raw
 
 
