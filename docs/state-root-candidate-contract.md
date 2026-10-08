@@ -500,3 +500,23 @@ peaks are observations without universal zero-copy, latency, OS causality or
 production-budget guarantees. This read-only consumer never imports, stages,
 Replays or authenticates snapshot/root/header/profile/activation state; proof
 `REFUSED` and the independent trust inputs remain unchanged.
+
+### Whole owned research import resource boundary
+
+The [separate whole import experiment](../tools/gen-state-root-vectors/README.md#whole-owned-import-resource-observations)
+brackets raw/target validation, owned raw copying, unsigned selected-input
+preflight, the pinned node constructor, detached cloning, replay and replacement
+on twelve literal resident-input families. Complete maps, callbacks and original
+aliases are independently bound. All 144 fresh-child outcomes and variable
+samples are retained separately from deterministic conformance. Allocation
+counter deltas are cumulative process-wide allocation; RSS is lifetime process
+high water captured before output binding. Fixture/selection/setup and report
+work are outside the timed operation, and map cloning shares immutable strings.
+
+This prepares an import measurement method on owned research maps. It does not
+measure a file-to-storage handoff or actual NodeTree retention, establish a
+production budget, authenticate complete/excluded snapshot state or attach a
+shared/durable writer. Retained-hash provenance, ownership/rollback/durability,
+accepted VerifiedState/header/profile/activation, anchor, schedule, context pin,
+independent review and authenticated release remain open gates. Production
+state-value consumers remain `REFUSED`.
