@@ -538,3 +538,25 @@ storage writer, NodeTree, accepted VerifiedState, authenticated complete snapsho
 or excluded-state proof. Caller exclusivity, header/profile/activation, anchor,
 schedule, context pin, independent review and authenticated distribution remain
 separate requirements. Production state-value consumers remain `REFUSED`.
+
+### Opened regular file handoff boundary
+
+The [private file-to-map research seam](../tools/gen-state-root-vectors/README.md#opened-regular-file-to-owned-map-research-handoff)
+accepts a borrowed, stable regular-file descriptor and a caller-exclusive target.
+Independent selection and initial caps precede file I/O; positional reads are
+bounded by the selected count plus one under the 1 MiB raw ceiling. File type,
+observed size, exact count, read errors and a second size check precede the
+unchanged owned import contract. The descriptor stays open at its original
+cursor, and source, selection or replay failures preserve the original map and
+all aliases. No path opener, shared/durable writer or snapshot API is introduced.
+
+Two local generations bind all 67 synthetic cases through the pinned node
+constructor/replay, with separate direct read-only-descriptor and raw-ceiling
+controls. Native CI binds recorded local conformance without running the Go
+handoff. This is unsigned engineering evidence; source pins and file digests
+do not authenticate execution provenance or trust inputs. Resource measurement,
+atomic filesystem snapshots, actual NodeTree/storage handoff, complete/excluded
+snapshot authentication, retained hashes, accepted VerifiedState/header/profile/
+activation, anchor, schedule, context pin, independent review and authenticated
+release remain separate requirements. Production state-value acceptance remains
+`REFUSED`.
