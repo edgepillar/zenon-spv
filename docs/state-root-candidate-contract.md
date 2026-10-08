@@ -466,3 +466,14 @@ set and Unix RSS observations keep distinct metrics. No threshold promotes
 these observations to production budgets or NodeTree retention evidence. This
 does not import a snapshot, authenticate a root/header/profile, or change proof
 `REFUSED`.
+
+The [selected-count read comparison](../tools/gen-state-root-vectors/README.md#selected-count-patch-read-allocation-comparison)
+bounds raw read requests by the independent selected byte count plus one, with
+exact returned length and unchanged descriptor/global/digest/record/output
+checks. Its historical read function and shared parser/encoder bytes are pinned;
+72 fresh workers compare both readers over the six fixed inputs while binding
+every complete plan independently. Reduced Python temporary allocation on small
+inputs is an observation, with no latency, OS equivalence, whole-pipeline,
+NodeTree or production-budget claim. An exact selected byte count cannot
+authenticate snapshot completeness, concurrent consistency, canonical roots or
+the accepted header/profile/activation. The proof consumer remains `REFUSED`.

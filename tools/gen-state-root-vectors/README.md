@@ -999,9 +999,11 @@ a symlink or an exceeded cap refuses with no plan on stdout. Diagnostics omit
 input paths and option values. The command writes only its complete plan to
 stdout; output transport failure is not an atomic file-publication guarantee.
 
-The regular-file size check precedes the bounded read of at most the selected
-raw cap plus one byte; a descriptor check also refuses substituted special
-files. Length decoding inspects at most eleven bytes through a memory view,
+The regular-file global size check precedes a read of at most the independently
+selected byte count plus one. The returned length must equal that selected
+count; an extra byte, short read or substituted special descriptor refuses.
+This avoids reserving the full global cap for small inputs. Length decoding
+inspects at most eleven bytes through a memory view,
 without copying each remaining input tail. Every field must fit its selected
 cap and the remaining raw bytes before hex encoding. Nonminimal varints and
 ordered duplicate writes keep their exact independently selected spelling.
@@ -1085,3 +1087,55 @@ retention, snapshot import, state roots, authenticated header/profile/activation
 accepted VerifiedState or canonicality/finality. The planner's syntax result
 stays `READY`; every proof consumer stays `REFUSED`. Representative workloads,
 hardware, concurrency and network costs remain separate acceptance inputs.
+
+## Selected-count patch read allocation comparison
+
+`measure_patch_plan_reads.py` compares the current selected-count reader with
+the exact historical `read_raw` function from
+[`47b859b2b32979b166d1d138da65cf0236951040`](https://github.com/edgepillar/zenon-spv/blob/47b859b2b32979b166d1d138da65cf0236951040/tools/gen-state-root-vectors/plan_patch.py).
+The historical function body is copied verbatim and SHA256-pinned in the
+comparison source. Validation, unsigned event parsing, plan construction and
+JSON encoding retain separately checked byte pins from that same revision.
+Both modes therefore use the same parser, encoder and instrumentation; the
+read function is the selected difference. The reference still requests the
+global raw cap plus one, while the candidate requests the independently
+selected byte count plus one and requires the exact returned length.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/plan_patch_test.py
+python3 -I -B tools/gen-state-root-vectors/check_patch_plan_reads_test.py
+python3 -I -B tools/gen-state-root-vectors/measure_patch_plan_reads.py \
+  --source-revision SELECTED_40_DIGIT_REVISION > READ_COMPARISON_REPORT
+python3 -I -B tools/gen-state-root-vectors/check_patch_plan_reads.py \
+  --report READ_COMPARISON_REPORT --source-revision SELECTED_40_DIGIT_REVISION
+```
+
+The same six literal input profiles run three interleaved reference/candidate
+pairs in both plain and traced modes: 72 fresh workers by default. Each worker's
+complete encoded plan length and SHA256 must match the independent expected
+ordered JSON bytes. The independent checker does not execute either reader.
+It verifies the historical/shared source pins and projects both complete sample
+inventories into the existing strict byte/resource schema. Current source and
+the historical reader revision are distinct labels. No arbitrary external
+planner file or untrusted code is loaded.
+
+The comparison retains all samples without retries or filtering. It reports
+whether every candidate traced peak for the empty and 64-record inputs is below
+every corresponding reference traced peak; a non-reduction remains a valid
+observation, not budget acceptance. The 1 MiB input, 1,024-record and maximum-key
+inputs remain in the comparison so that larger workloads and complete output
+semantics stay visible. Variable plain/traced timing and OS high-water values
+are recorded with their prior distinct scopes; they do not qualify a latency
+speedup, cold-disk performance, operation-only RSS, whole-pipeline memory or
+production resource budget. Source hashing/AST checks and parent fixture/oracle
+work occur before operation tracing/timing and may contribute to OS high water.
+
+File-type/descriptor/global size checks remain required. The extra-byte probe
+detects a tail or growth beyond the selected count, and a short read refuses
+before plan construction. Subsequent exact digest/record checks still select
+the complete raw spelling. Read errors publish no plan; the existing malformed,
+nonminimal, duplicate, empty Put/Delete and privacy controls remain in place.
+Concurrent mutations, atomic snapshot reads, storage writers and durable imports
+are not qualified. Linux, macOS Intel and Windows run the controls and actual
+comparison; no reference node, database, NodeTree, snapshot authentication or
+production state-value acceptance executes.
