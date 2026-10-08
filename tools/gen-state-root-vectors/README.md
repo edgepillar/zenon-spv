@@ -1422,9 +1422,69 @@ python3 -I -B tools/gen-state-root-vectors/check_patch_file.py --corpus NEW_CORP
 python3 -I -B tools/gen-state-root-vectors/check_patch_file_test.py
 ```
 
-This milestone measures no resources and publishes no production API. Whole
-file-to-map resource observations are a separate next step. Actual NodeTree
+This conformance milestone measures no resources and publishes no production API.
+The separate whole file-to-map experiment below adds resource observations. Actual NodeTree
 storage handoff, shared/durable writers, retained-hash provenance, complete and
 excluded snapshot authentication, accepted VerifiedState/header/profile/activation,
 anchor, schedule, context pin, independent review and authenticated distribution
 remain separate gates. Every state-value consumer stays `REFUSED`.
+
+## Whole opened file handoff resource observations
+
+The separate `patch_file_resources_test.go` test driver measures the complete
+`importFileApply` call on fifteen independently rebuilt finite input families.
+It reuses the twelve resident-input families, plus exact selected-size mismatch,
+an oversized file and an oversized selected count. Each operation receives an
+actual borrowed read-only `*os.File` and an exclusively owned target. Fixture
+construction, writing, opening, selecting raw/count/ChangesHash and initial map
+binding precede timing. No resident raw fixture is passed to the handoff.
+
+The timing window includes initial limits and target preflight, descriptor stat,
+bounded positional read, the second stat, parsing, raw copying and selection,
+the pinned node constructor/Dump check, detached map clone, ordered replay,
+transient caps and returned-map replacement, where the checks permit them.
+Complete callbacks, original aliases, staged/returned maps, source bytes and
+borrowed cursor/lifetime are checked after timing and RSS sampling. Refusals
+stay in the inventory, including early refusals that perform no read or clone.
+
+`reproduce_patch_file_resources.py` validates the complete 394-blob node source
+and immutable research inputs, builds a separate test binary with unchanged
+dependency locks, then runs each family three times in plain and allocation
+modes across two generations. All **180 fresh child outcomes** are captured
+before interpretation, with no retries or filtering. Deterministic conformance
+is byte-identical across generations; variable observations remain in the
+[separate sample file](testdata/candidate-patch-file-resource-samples.json).
+The [conformance corpus](testdata/candidate-patch-file-resources.json) binds
+independent literal inputs, full maps, ordered callbacks, file counters and
+selected research source hashes. Selected execution is Darwin/arm64, Go 1.25.14.
+
+Elapsed nanoseconds cover the operation call only. Allocation-mode counters
+report cumulative process-wide Go `TotalAlloc`, malloc and GC deltas, rather
+than peak live allocation. Plain mode leaves these counters unavailable. Own
+process `getrusage(RUSAGE_SELF)` lifetime RSS is sampled immediately after the
+operation and optional counters, before output binding; it includes startup,
+fixture construction/opening, initial binding and pre-operation GC. These
+metrics have different scopes. Recently written temporary fixtures do not
+qualify cold-disk behavior; caps on logical bytes do not bound process memory.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/reproduce_patch_file_resources.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE \
+  --output NEW_CORPUS --samples NEW_SAMPLES \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+python3 -I -B tools/gen-state-root-vectors/check_patch_file_resources.py \
+  --corpus NEW_CORPUS --samples NEW_SAMPLES
+python3 -I -B tools/gen-state-root-vectors/check_patch_file_resources_test.py
+```
+
+The independent Python checker and adversarial controls run on native Linux,
+macOS Intel and Windows CI. They bind recorded local outcomes without executing
+the Go handoff or remeasuring it. Public child exit/hash records and source pins
+are unsigned; the checker cannot authenticate execution provenance or selection.
+No cross-platform performance equivalence, latency speedup, causal RSS delta or
+production budget is claimed. Every prior file/resident-input corpus remains
+unchanged. Actual NodeTree/storage handoff, shared/durable writers, stable source
+ownership, complete/excluded snapshot authentication, retained-hash provenance,
+accepted VerifiedState/header/profile/activation, anchor, schedule, context pin,
+human review and authenticated distribution remain separate requirements. Every
+production state-value consumer remains `REFUSED`.
