@@ -30,6 +30,13 @@ This is **not a full Zenon light client.** See [`docs/trust-model.md`](docs/trus
 | Capability | Status |
 |---|---|
 | **State-value verification** (balance at height H) | **Refused by design.** No consensus-bound state root exists upstream. Wire envelope + verifier skeleton ready for the day go-zenon ships one. |
+
+The separate [candidate state-root research](tools/gen-state-root-vectors/README.md#separate-retention-and-resource-observations)
+now checks retained compressed NodeTree records and canonical proofs under four
+finite archive/pruned policies, with physical closed-file lengths, child peak
+RSS and elapsed API samples recorded separately. Synthetic local samples leave
+production resource budgets, hash-bound retained-version provenance and state
+proof acceptance unqualified.
 | **Producer-set authorization by default** | Opt-in via `--schedule <path>` (operator-attested per-momentum schedule). Without it: tier-1 caveat ("not enforced"). |
 | **Chain-derived producer-set transitions** | Deferred; the release-time operator-attested schedule is the bridge available today. |
 | **libp2p / WebRTC peer transport** | Current transport is HTTPS JSON-RPC. |

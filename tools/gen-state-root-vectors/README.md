@@ -486,6 +486,82 @@ The startup retained-version provenance failure remains open. Accepted
 and resource measurements, independent human review and authenticated release
 remain separate gates. Production v3/state-value acceptance stays disabled.
 
+## Separate retention and resource observations
+
+The optional `candidate_retention` mode uses the actual unchanged `NodeTree`
+and four owned temporary LevelDB databases per generation. Initial states have
+64 or 256 balance keys; 16 or 32 commits include cyclic updates, stored zero
+values and deletes. Each size compares archive history with retaining the last
+four versions. No chain initialization, background build or node service runs.
+The reference generator supports Linux and macOS; the fixture checker supports
+all native CI platforms and never opens a database or measures resources.
+
+Each case observes roots, values, canonical proofs, frontier and logical records
+before close, after clean reopen, and after manual compaction plus a second
+reopen. The independent full 256-level sparse tree agrees with a separately
+constructed compressed content graph. The graph model deduplicates physical
+nodes across retained versions and counts each unique internal edge and version
+root edge, reconstructing refcounts and serialized leaf/internal records. A
+SHA-256 digest frames every sorted logical key/value record with its uint64
+big-endian lengths. It binds node bytes and shared references, beyond counts.
+
+| Initial keys / commits | Policy | Retained versions | Logical nodes | Logical records | Logical key/value bytes |
+|---|---|---|---|---|---|
+| 64 / 16 | Archive | 1–16 | 620 | 1,258 | 116,777 |
+| 64 / 16 | Retain four | 13–16 | 203 | 412 | 36,872 |
+| 256 / 32 | Archive | 1–32 | 2,029 | 4,092 | 386,016 |
+| 256 / 32 | Retain four | 29–32 | 615 | 1,236 | 109,782 |
+
+The twelve conformance rounds contain 504 Root/Prove observations, including
+156 inclusion proofs, 114 absence proofs and 180 unavailable-version errors.
+Twenty-one inclusion observations contain a stored zero. A missing historical
+version is an error, not a zero balance or an absence proof. Height-only lookup
+still does not authenticate a Momentum hash; the startup provenance failure
+documented above remains open.
+
+Two reference generations must produce identical conformance bytes. The driver
+preserves both raw outputs and records variable samples separately in the private
+`resource-samples.json`, bound to the corpus, source, reference binary hash,
+Go version and command output digests. It does not compare sample values for
+equality. Root/Prove, update, commit, prune, reopen and manual compaction times
+use elapsed nanoseconds. Own child `getrusage(RUSAGE_SELF)` provides peak RSS
+in bytes after platform unit conversion; this includes the fixture, NodeTree and
+LevelDB, but excludes the compiler and other measurement children. It is a
+process high-water mark, not a retained tree allocation measurement.
+
+Physical observations sum regular file lengths only after each database closes.
+They include all LevelDB files, logs and metadata. They are not filesystem
+allocated blocks, write amplification or peak disk measurements. In the local
+macOS ARM64 sample, pruned files were larger than archive files before manual
+compaction, and archive file bytes increased after compaction. No monotonic
+size-reduction assertion is valid. The optional sample checker validates shape,
+units, inventory and corpus binding; it neither reproduces these measurements
+nor accepts a performance budget. Load, caches, power and thermal state are not
+controlled. These tiny local samples are not production capacity estimates.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_retention_test.py
+python3 -I -B tools/gen-state-root-vectors/check_retention.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind retention-resources \
+  --output NEW_RETENTION_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+python3 -I -B tools/gen-state-root-vectors/check_retention.py \
+  --corpus NEW_RETENTION_CORPUS_FILE \
+  --resource-samples NEW_PRIVATE_EVIDENCE_DIRECTORY/resource-samples.json
+```
+
+Twenty controls check shared graph/storage semantics, prune policy, compressed
+paths, zero/delete/absence, unavailable versions, coherent foreign proof
+substitution, canonical bytes and exact scalar types. Separate sample controls
+preserve variable measurements, source/binary/command binding and physical growth
+without promoting them to production budgets. Linux/macOS/Windows CI checks these
+fixtures; actual backend/resource execution remains a separate local experiment.
+All eight prior corpora and the MIT runtime remain unchanged. Real-chain
+key/churn datasets, bulk build/import, production crash/sync durability, accepted
+header/profile binding, activation, independent review and release provenance
+remain separate gates. Production v3/state-value acceptance stays disabled.
+
 ## Remaining gates
 
 Production v3/state-value acceptance stays disabled. These synthetic research
