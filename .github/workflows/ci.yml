@@ -88,6 +88,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_staging_boundary_test.py
       - name: Independent candidate staging replay and refusal
         run: python -I -B tools/gen-state-root-vectors/check_staging_boundary.py --source-revision "${{ github.sha }}"
+      - name: Candidate bounded patch import controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_import_test.py
+      - name: Independent candidate patch import and detached staging
+        run: python -I -B tools/gen-state-root-vectors/check_patch_import.py --source-revision "${{ github.sha }}"
       - name: Candidate patch dump decode controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_decode_test.py
       - name: Independent candidate patch decode and refusal
@@ -298,6 +302,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_staging_boundary_test.py
       - name: Independent candidate staging replay and refusal
         run: python -I -B tools/gen-state-root-vectors/check_staging_boundary.py --source-revision "${{ github.sha }}"
+      - name: Candidate bounded patch import controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_import_test.py
+      - name: Independent candidate patch import and detached staging
+        run: python -I -B tools/gen-state-root-vectors/check_patch_import.py --source-revision "${{ github.sha }}"
       - name: Candidate patch dump decode controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_decode_test.py
       - name: Independent candidate patch decode and refusal

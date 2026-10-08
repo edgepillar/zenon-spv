@@ -405,3 +405,32 @@ propagation; none was executed in this mode. Import acceptance must separately
 bound raw sizes, lengths and record counts, reject decoder errors, bind the
 intended complete input and prevent partial effects. Self-consistent state
 cannot replace that contract. All 232 synthetic consumers remain `REFUSED`.
+
+### Bounded import prototype and complete callback staging
+
+The [bounded research import contract](../tools/gen-state-root-vectors/README.md#bounded-patch-import-and-detached-staging)
+checks explicit positive raw/record/key/value limits against fixed research
+ceilings. Unsigned lengths must fit both the selected cap and remaining bytes
+before conversion or slicing. Only a copied input with independently selected
+byte count, ChangesHash and record count reaches the unchanged constructor.
+Equivalent nonminimal varints and duplicate writes require their own complete
+raw selection; final state equality cannot select or normalize an input hash.
+
+Every constructor error or nil patch is rejected. Replay writes only to a
+detached owned map and must deliver the exact planned callback sequence in order,
+without an error, omission, extra record or changed key/value. The dump remains
+bound before and after replay. One map replacement follows all checks. In 264
+finite cases, 254 rejections preserve the entire initial map; five reject after
+staged callbacks, including an injected error after all three records. Ten
+research selections complete staging. All 264 proof consumers remain `REFUSED`.
+
+The injected failures are harness controls, not observed default backend faults.
+No panic recovery, production caller, NodeTree or disk import executes here.
+Input was already resident in memory; the raw cap precedes the prototype's copy,
+and copying the existing target still depends on its size. A single exclusive
+caller is required; shared-writer atomicity, crash durability and production
+resource budgets are unqualified. A selected patch digest cannot authenticate
+snapshot completeness, excluded state, canonical roots, finality or network
+activation. Accepted header/profile/activation, anchor, schedule, context pin,
+retained hash provenance, independent review and authenticated release remain
+separate gates. The MIT runtime still refuses production state-value proofs.
