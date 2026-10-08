@@ -386,3 +386,22 @@ Valid own-root proofs do not qualify complete replay: 16 of 28 boundary proofs
 fail the selected fixture. All seven consumers remain `REFUSED`, including the
 three matching fixture roots. Concurrency, storage faults, resources, snapshot
 import, accepted header binding and production state-proof gates remain separate.
+
+### Patch dump decoding before replay
+
+The [patch decode corpus](../tools/gen-state-root-vectors/README.md#patch-dump-decoding-and-diagnostic-replay)
+binds 232 finite inputs to the unchanged candidate's constructor and locked
+LevelDB dependency. Ordinary Load errors retain completed record indexes and
+return a patch alongside the error; the diagnostic replay can therefore deliver
+a prefix. A full-input dump hash does not establish successful decoding or
+complete callback delivery. Syntax-valid boundary truncations and equivalent
+overlong encodings also require independently selected complete-patch bytes.
+
+Huge length fields cause recovered bounds panics in this local 64-bit reference.
+These exceptions and deliberate post-error replay are research observations,
+not qualified production reachability or an upstream fix. All four pinned
+constructor call sites check ordinary errors statically, with panic or error
+propagation; none was executed in this mode. Import acceptance must separately
+bound raw sizes, lengths and record counts, reject decoder errors, bind the
+intended complete input and prevent partial effects. Self-consistent state
+cannot replace that contract. All 232 synthetic consumers remain `REFUSED`.

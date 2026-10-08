@@ -838,3 +838,67 @@ Intel and Windows CI run fixture controls without this backend. All thirteen
 prior corpora, node source blobs, dependency locks and MIT runtime inputs remain
 unchanged. Explicit anchor, profile, schedule and context pin remain required;
 production state-proof acceptance stays disabled.
+
+## Patch dump decoding and diagnostic replay
+
+The `patch-decode` mode executes the unchanged candidate's `NewPatchFromDump`
+and default LevelDB `Batch.Replay` on 232 finite, unsigned byte fixtures. It
+opens no database and calls no NodeTree or production caller. The selected
+LevelDB version is `v1.0.1-0.20210819022825-2ae1ddf74ef7` under the existing
+research module lock; the offline source review checks its complete module
+archive checksum and the decoder's exact bytes.
+
+The corpus includes every one of the 169 byte prefixes of a selected 168-byte
+three-record patch, 19 malformed tails at three independently selected record
+positions, and six empty, overlong or duplicate-write controls. Only four
+prefixes end at valid record boundaries. A syntax-valid prefix still cannot
+establish that the intended complete patch was received. Redundant varints are
+accepted; an equivalent complete replay can have a different raw dump hash.
+Duplicate writes preserve callback order and the last value.
+
+There are 204 ordinary decode errors. The constructor returns a patch alongside
+each such error, and 125 error-returned patches deliver at least one diagnostic
+callback. The fixture deliberately replays them to observe the boundary. This
+is not a safe application workflow: discard the patch on a decode error. Its
+dump/hash still covers the entire supplied input, including a malformed tail,
+while its completed record indexes can describe only a prefix.
+
+With the reference's explicitly selected 64-bit integer arithmetic, huge
+unsigned lengths produce 18 recovered runtime bounds panics during construction
+and six during diagnostic replay. A construction panic prevents patch return;
+a replay panic can occur after earlier callbacks. These are finite local
+counterexamples, not injected custom Replay errors or a demonstrated network
+attack. Default Replay otherwise returns nil. The candidate and its dependency
+are unchanged; this research supplies no decoder repair.
+
+Static review of all four constructor call sites in the pinned snapshot finds
+ordinary errors checked: two use `common.DealWithErr`, which panics on error,
+and two return an error. Those callers were not executed here. This result does
+not establish that corrupted stored or externally supplied dumps are reachable,
+that panic recovery is safe, or that the complete production import path has
+bounded, atomic failure handling. A future import contract needs explicit raw
+size/record/length bounds and complete-patch selection before any replay effects.
+
+The Python oracle independently decodes raw records, signed length arithmetic,
+callback prefixes, ordered writes, full-input hashes and the selected complete
+manifest. All 232 consumer results are `REFUSED`; even 13 decode errors with a
+matching diagnostic final state cannot become accepted proofs. Twenty-four
+controls bind these outcomes, exception boundaries, byte/type/shape limits,
+source/dependency pins and the closed production gates.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_patch_decode_test.py
+python3 -I -B tools/gen-state-root-vectors/check_patch_decode.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind patch-decode \
+  --output NEW_PATCH_DECODE_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+```
+
+Actual reference generation runs twice locally on macOS ARM64 with CGO disabled.
+Linux, macOS Intel and Windows CI check the fixture with the independent oracle;
+they do not execute this node decoder. All fourteen previous deterministic
+corpora, the 394 pinned node blobs, dependency locks and MIT runtime inputs remain
+unchanged. No resources are measured in this mode. Retained hash provenance,
+height limits, snapshot import, accepted header/profile/activation binding,
+independent review and authenticated distribution remain separate gates.
