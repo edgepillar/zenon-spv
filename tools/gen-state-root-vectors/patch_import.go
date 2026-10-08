@@ -312,11 +312,50 @@ func (s *importStage) event(event importEvent) {
 	}
 }
 
+// Compare every callback byte before sharing the preflight's detached immutable
+// strings. Length and lowercase nibbles must match; no callback slice is retained.
+func importHexMatches(encoded string, raw []byte) bool {
+	if len(encoded)%2 != 0 || len(encoded)/2 != len(raw) {
+		return false
+	}
+	const digits = "0123456789abcdef"
+	for i, value := range raw {
+		if encoded[2*i] != digits[value>>4] || encoded[2*i+1] != digits[value&15] {
+			return false
+		}
+	}
+	return true
+}
+
 func (s *importStage) Put(key, value []byte) {
+	if s.refusal != "" {
+		return
+	}
+	if index := len(s.events); index < len(s.expected) {
+		wanted := s.expected[index]
+		if wanted.Operation == "Put" && wanted.Value != nil &&
+			importHexMatches(wanted.Key, key) && importHexMatches(*wanted.Value, value) {
+			// Share the immutable string payload, not the mutable Value pointer.
+			encoded := *wanted.Value
+			s.event(importEvent{"Put", wanted.Key, &encoded})
+			return
+		}
+	}
+	// The first mismatch records the actual callback, including empty Put values.
 	encoded := hex.EncodeToString(value)
 	s.event(importEvent{"Put", hex.EncodeToString(key), &encoded})
 }
 func (s *importStage) Delete(key []byte) {
+	if s.refusal != "" {
+		return
+	}
+	if index := len(s.events); index < len(s.expected) {
+		wanted := s.expected[index]
+		if wanted.Operation == "Delete" && wanted.Value == nil && importHexMatches(wanted.Key, key) {
+			s.event(importEvent{"Delete", wanted.Key, nil})
+			return
+		}
+	}
 	s.event(importEvent{"Delete", hex.EncodeToString(key), nil})
 }
 
