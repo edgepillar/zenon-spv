@@ -741,3 +741,50 @@ python3 -I -B tools/gen-state-root-vectors/regenerate.py \
   --output NEW_EMPTY_VERSIONS_CORPUS_FILE \
   --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
 ```
+
+## Low-level uint64 height-boundary counterexample
+
+The `height-boundary` mode executes three finite serial cases against the pinned
+candidate's actual disk `NodeTree`. Its regular `Commit` checks
+`height == frontier.Height + 1` with unsigned arithmetic. At `2**64 - 1`, that
+successor is zero. The observed regular `Commit(0)` succeeds in all three cases,
+whereas `Commit(1)` and non-increasing `CommitBulk` requests refuse. The preceding
+refusals preserve the staged changes for the later successful wrap.
+
+A physical version-zero root record can contain nonempty state. The candidate's
+`Root` and `Prove` at height zero always select the implicit empty origin, ignoring
+that record. A subsequent `Commit(1)` also builds from origin, losing the intended
+base for its current version; still-retained historical maximum-height versions
+remain readable. Clean reopen and manual compaction preserve the observed logical
+records and this read behavior. No gap is traversed, pruned or truncated.
+
+The independent checker rebuilds every full sparse root/proof and compressed
+node/refcount graph for 29 logical snapshots and 580 finite Root/Prove cells. All
+12 boundary proofs match their own observed roots, but eight fail the separately
+described intended state. The empty-state case still matches that state root;
+monotonicity remains unqualified and all three consumer decisions are `REFUSED`.
+A root match alone cannot establish a valid version sequence. Twenty controls
+bind exact unsigned integers, ordering errors, retained stage, origin masking,
+physical records, post-wrap base loss and this independent refusal.
+
+This is a reproduced synthetic low-level API boundary. It does not establish a
+reachable production height, an exploitable chain transition or a ledger-wide
+height policy. The candidate is unchanged and the counterexample remains open.
+A future caller must independently validate strictly increasing, profile-bounded
+heights without overflowing its successor calculation. Header authentication,
+retained hash provenance, activation and accepted `VerifiedState` binding remain
+separate gates. No snapshot import, full node, RPC or resource measurement runs.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_height_boundary_test.py
+python3 -I -B tools/gen-state-root-vectors/check_height_boundary.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind height-boundary \
+  --output NEW_HEIGHT_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+```
+
+Offline reference execution remains local macOS ARM64 with CGO disabled. Native
+Linux, macOS Intel and Windows CI check fixtures and controls without executing
+this candidate backend. All twelve earlier corpora and MIT runtime inputs remain
+unchanged. Production state-proof acceptance stays disabled.
