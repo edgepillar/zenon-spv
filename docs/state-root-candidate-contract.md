@@ -426,8 +426,17 @@ research selections complete staging. All 264 proof consumers remain `REFUSED`.
 
 The injected failures are harness controls, not observed default backend faults.
 No panic recovery, production caller, NodeTree or disk import executes here.
-Input was already resident in memory; the raw cap precedes the prototype's copy,
-and copying the existing target still depends on its size. A single exclusive
+Input was already resident in memory; the raw cap precedes the prototype's copy.
+The [subsequent initial/transient target contract](../tools/gen-state-root-vectors/README.md#bounded-initial-and-transient-patch-targets)
+checks entry/hex-payload caps before raw copying and clones only after complete
+input selection, constructor and dump checks. Every prospective callback state
+must also fit; a later Delete cannot authorize an earlier transient overflow.
+The changed prior mode reproduces all 264 outputs byte for byte. A separate
+46-case node-derived corpus binds both full maps and untouched original aliases
+with an independently reconstructed fixture manifest digest. Twenty-eight cases
+reject, 21 without cloning; 18 stage. All 46 proof consumers remain `REFUSED`.
+Hex-text payload caps do not qualify whole-process memory or state domains.
+A single exclusive
 caller is required; shared-writer atomicity, crash durability and production
 resource budgets are unqualified. A selected patch digest cannot authenticate
 snapshot completeness, excluded state, canonical roots, finality or network

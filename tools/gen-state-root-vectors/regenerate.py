@@ -120,7 +120,7 @@ def main(argv=None):
     parser.add_argument("--go", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--evidence-directory", type=Path, required=True)
-    parser.add_argument("--fixture-kind", choices=("bytes", "fold-filter", "applier", "wire", "rpc-methods", "rpc-dispatcher", "chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards", "empty-versions", "height-boundary", "staging-boundary", "patch-decode", "patch-import"), default="bytes")
+    parser.add_argument("--fixture-kind", choices=("bytes", "fold-filter", "applier", "wire", "rpc-methods", "rpc-dispatcher", "chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards", "empty-versions", "height-boundary", "staging-boundary", "patch-decode", "patch-import", "patch-targets"), default="bytes")
     args = parser.parse_args(argv)
     require(not args.output.exists() and not args.output.is_symlink(), "preserve existing output")
     require(not args.evidence_directory.exists() and not args.evidence_directory.is_symlink(), "preserve existing evidence")
@@ -183,10 +183,12 @@ def main(argv=None):
             (generator / "bulk_guards.go").write_bytes((HERE / "bulk_guards.go").read_bytes())
         if args.fixture_kind == "staging-boundary":
             (generator / "staging_boundary.go").write_bytes((HERE / "staging_boundary.go").read_bytes())
-        if args.fixture_kind in ("patch-decode", "patch-import"):
+        if args.fixture_kind in ("patch-decode", "patch-import", "patch-targets"):
             (generator / "patch_decode.go").write_bytes((HERE / "patch_decode.go").read_bytes())
-        if args.fixture_kind == "patch-import":
+        if args.fixture_kind in ("patch-import", "patch-targets"):
             (generator / "patch_import.go").write_bytes((HERE / "patch_import.go").read_bytes())
+        if args.fixture_kind == "patch-targets":
+            (generator / "patch_targets.go").write_bytes((HERE / "patch_targets.go").read_bytes())
         if args.fixture_kind == "height-boundary":
             (generator / "height_boundary.go").write_bytes((HERE / "height_boundary.go").read_bytes())
         if args.fixture_kind == "empty-versions":
@@ -219,6 +221,8 @@ def main(argv=None):
             build += ["-tags", "candidate_patch_decode"]
         if args.fixture_kind == "patch-import":
             build += ["-tags", "candidate_patch_import"]
+        if args.fixture_kind == "patch-targets":
+            build += ["-tags", "candidate_patch_import,candidate_patch_targets"]
         if args.fixture_kind == "height-boundary":
             build += ["-tags", "candidate_height_boundary"]
         if args.fixture_kind == "empty-versions":
@@ -261,7 +265,7 @@ def main(argv=None):
                          "rpc-dispatcher": "candidate-rpc-dispatcher-research",
                          "chain-startup": "candidate-chain-startup-research",
                          "disk-lifecycle": "candidate-disk-lifecycle-research",
-                         "retention-resources": "candidate-retention-resource-research", "bulk-tail":"candidate-bulk-tail-research", "bulk-guards":"candidate-bulk-guards-research", "empty-versions":"candidate-empty-versions-research", "height-boundary":"candidate-height-boundary-research", "staging-boundary":"candidate-staging-boundary-research", "patch-decode":"candidate-patch-decode-research", "patch-import":"candidate-patch-import-research"}[args.fixture_kind]
+                         "retention-resources": "candidate-retention-resource-research", "bulk-tail":"candidate-bulk-tail-research", "bulk-guards":"candidate-bulk-guards-research", "empty-versions":"candidate-empty-versions-research", "height-boundary":"candidate-height-boundary-research", "staging-boundary":"candidate-staging-boundary-research", "patch-decode":"candidate-patch-decode-research", "patch-import":"candidate-patch-import-research", "patch-targets":"candidate-patch-target-research"}[args.fixture_kind]
         require(document["kind"] == expected_kind, "generated fixture kind differs")
         if args.fixture_kind == "fold-filter":
             require(document["scope"]["l1_fold_filter_api_executed"] and
@@ -398,6 +402,19 @@ def main(argv=None):
                        "authenticated_snapshot_import": False, "shared_writer_atomicity": False,
                        "crash_durability": False, "resource_measurements_executed": False,
                        "production_corruption_reachability_qualified": False})
+    if args.fixture_kind == "patch-targets":
+        require(document["scope"]["initial_and_transient_target_limits_executed"] and
+                document["scope"]["cloning_after_complete_selection_and_constructor_checks"] and
+                document["scope"]["single_exclusive_caller"] and
+                not document["scope"]["node_database_opened"] and
+                not document["scope"]["authenticated_snapshot_import"] and
+                not document["scope"]["resource_measurements_executed"], "wrong patch target execution boundary")
+        report.update({"actual_NewPatchFromDump_executed": True, "default_Batch_Replay_executed": True,
+                       "initial_and_transient_target_limits_executed": True,
+                       "owned_memory_map_replacement_executed": True, "single_exclusive_caller": True,
+                       "authenticated_snapshot_import": False, "shared_writer_atomicity": False,
+                       "crash_durability": False, "resource_measurements_executed": False,
+                       "whole_process_memory_budget_qualified": False})
     if args.fixture_kind == "patch-decode":
         require(document["scope"]["actual_NewPatchFromDump_executed"] and
                 document["scope"]["reference_64_bit_integers"] and

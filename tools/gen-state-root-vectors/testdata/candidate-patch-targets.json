@@ -1,0 +1,2751 @@
+{
+  "cases": [
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "default-complete",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 3,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": "000000000000000000000000000000000000000000000000000000000000005b"
+        },
+        {
+          "operation": "Delete",
+          "key": "0311111111111111111111111111111111000000020322222222222222222222",
+          "value": null
+        },
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000080322222222222222222222",
+          "value": "0000000000000000000000000000000000000000000000000000000000000009"
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "e789920d305497887085fd1859a27b873332b1df64abca4282a119328a5a0a90"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "e789920d305497887085fd1859a27b873332b1df64abca4282a119328a5a0a90"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "exact-target-bounds",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 3,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": "000000000000000000000000000000000000000000000000000000000000005b"
+        },
+        {
+          "operation": "Delete",
+          "key": "0311111111111111111111111111111111000000020322222222222222222222",
+          "value": null
+        },
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000080322222222222222222222",
+          "value": "0000000000000000000000000000000000000000000000000000000000000009"
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "e789920d305497887085fd1859a27b873332b1df64abca4282a119328a5a0a90"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "e789920d305497887085fd1859a27b873332b1df64abca4282a119328a5a0a90"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 3,
+        "hex_bytes": 384
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "empty-initial-target",
+      "original_alias_after": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "preflight_records": 3,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": "000000000000000000000000000000000000000000000000000000000000005b"
+        },
+        {
+          "operation": "Delete",
+          "key": "0311111111111111111111111111111111000000020322222222222222222222",
+          "value": null
+        },
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000080322222222222222222222",
+          "value": "0000000000000000000000000000000000000000000000000000000000000009"
+        }
+      ],
+      "staging_target": {
+        "entries": 2,
+        "hex_bytes": 256,
+        "manifest_sha256": "887f7d77898f267d486c05f45d422801eeb6b0a7f50f0804ad6b846348664b40"
+      },
+      "target_after": {
+        "entries": 2,
+        "hex_bytes": 256,
+        "manifest_sha256": "887f7d77898f267d486c05f45d422801eeb6b0a7f50f0804ad6b846348664b40"
+      },
+      "target_before": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 2,
+        "hex_bytes": 256
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "initial-entry-short",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "target_entry_limit",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 2,
+        "hex_bytes": 384
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "initial-hex-short",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "target_hex_limit",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 3,
+        "hex_bytes": 383
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "invalid-target-limit-0-0",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "invalid_target_limits",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 0,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "invalid-target-limit-0-4097",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "invalid_target_limits",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 4097,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "invalid-target-limit-1-0",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "invalid_target_limits",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 0
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "invalid-target-limit-1-1048577",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "invalid_target_limits",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1048577
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "invalid-key-0",
+      "original_alias_after": {
+        "entries": 1,
+        "hex_bytes": 3,
+        "manifest_sha256": "449c1d9885aefbd77de181fe7ab025e4ff44ba50595426bf0637a6a6b74e8a7a"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "invalid_target_encoding",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 1,
+        "hex_bytes": 3,
+        "manifest_sha256": "449c1d9885aefbd77de181fe7ab025e4ff44ba50595426bf0637a6a6b74e8a7a"
+      },
+      "target_before": {
+        "entries": 1,
+        "hex_bytes": 3,
+        "manifest_sha256": "449c1d9885aefbd77de181fe7ab025e4ff44ba50595426bf0637a6a6b74e8a7a"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "invalid-key-GG",
+      "original_alias_after": {
+        "entries": 1,
+        "hex_bytes": 4,
+        "manifest_sha256": "daa8f72da051cb9cbb389d8f1a73cabf92edc08ac37a9479c18f314ed910442b"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "invalid_target_encoding",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 1,
+        "hex_bytes": 4,
+        "manifest_sha256": "daa8f72da051cb9cbb389d8f1a73cabf92edc08ac37a9479c18f314ed910442b"
+      },
+      "target_before": {
+        "entries": 1,
+        "hex_bytes": 4,
+        "manifest_sha256": "daa8f72da051cb9cbb389d8f1a73cabf92edc08ac37a9479c18f314ed910442b"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "invalid-key-Aa",
+      "original_alias_after": {
+        "entries": 1,
+        "hex_bytes": 4,
+        "manifest_sha256": "d443f433452b4b2ac9047972b5369af4aa8a391a75bb1cbe02a4793fb16b2349"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "invalid_target_encoding",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 1,
+        "hex_bytes": 4,
+        "manifest_sha256": "d443f433452b4b2ac9047972b5369af4aa8a391a75bb1cbe02a4793fb16b2349"
+      },
+      "target_before": {
+        "entries": 1,
+        "hex_bytes": 4,
+        "manifest_sha256": "d443f433452b4b2ac9047972b5369af4aa8a391a75bb1cbe02a4793fb16b2349"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "invalid-value-0",
+      "original_alias_after": {
+        "entries": 1,
+        "hex_bytes": 3,
+        "manifest_sha256": "06416370e70230e5e0c80c0e9551b73361b526fd04fa986835d180cd3a52413e"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "invalid_target_encoding",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 1,
+        "hex_bytes": 3,
+        "manifest_sha256": "06416370e70230e5e0c80c0e9551b73361b526fd04fa986835d180cd3a52413e"
+      },
+      "target_before": {
+        "entries": 1,
+        "hex_bytes": 3,
+        "manifest_sha256": "06416370e70230e5e0c80c0e9551b73361b526fd04fa986835d180cd3a52413e"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "invalid-value-GG",
+      "original_alias_after": {
+        "entries": 1,
+        "hex_bytes": 4,
+        "manifest_sha256": "dfcf4be2cc4073424189a0681ea70718550b7f1213021ff994a3ee176a991c4d"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "invalid_target_encoding",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 1,
+        "hex_bytes": 4,
+        "manifest_sha256": "dfcf4be2cc4073424189a0681ea70718550b7f1213021ff994a3ee176a991c4d"
+      },
+      "target_before": {
+        "entries": 1,
+        "hex_bytes": 4,
+        "manifest_sha256": "dfcf4be2cc4073424189a0681ea70718550b7f1213021ff994a3ee176a991c4d"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "invalid-value-Aa",
+      "original_alias_after": {
+        "entries": 1,
+        "hex_bytes": 4,
+        "manifest_sha256": "3df5febf60f8e8a9181bffc8dbee15c74e1f8550e7f8e716808075c0b55f8d17"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "invalid_target_encoding",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 1,
+        "hex_bytes": 4,
+        "manifest_sha256": "3df5febf60f8e8a9181bffc8dbee15c74e1f8550e7f8e716808075c0b55f8d17"
+      },
+      "target_before": {
+        "entries": 1,
+        "hex_bytes": 4,
+        "manifest_sha256": "3df5febf60f8e8a9181bffc8dbee15c74e1f8550e7f8e716808075c0b55f8d17"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000008032222222222222222222220000000000000000000000000000000000000000000000000000000000000000900200311111111111111111111111111111111000000020322222222222222222222",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "put-then-delete",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 2,
+      "raw_copies": 1,
+      "refusal": "target_entry_limit",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "put-then-delete",
+        "bytes": 101,
+        "records": 2,
+        "changes_hash": "478c5a3fffe045fa812b242ff1a6d4cb16758e92ae049a6f542c1d166c486c4c"
+      },
+      "source_after": "0120031111111111111111111111111111111100000008032222222222222222222220000000000000000000000000000000000000000000000000000000000000000900200311111111111111111111111111111111000000020322222222222222222222",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000080322222222222222222222",
+          "value": "0000000000000000000000000000000000000000000000000000000000000009"
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 3,
+        "hex_bytes": 384
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "delete-then-put",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 2,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "delete-then-put",
+        "bytes": 101,
+        "records": 2,
+        "changes_hash": "926ff2ee9cb7bc2e1cde5501b154ebdb4b30ff020879d5c328debd11dc3bb916"
+      },
+      "source_after": "0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [
+        {
+          "operation": "Delete",
+          "key": "0311111111111111111111111111111111000000020322222222222222222222",
+          "value": null
+        },
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000080322222222222222222222",
+          "value": "0000000000000000000000000000000000000000000000000000000000000009"
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "9c606b9ac2b16aa46c99dd4dd0f20e172b8b775b0b06b86e0b91818695d8a286"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "9c606b9ac2b16aa46c99dd4dd0f20e172b8b775b0b06b86e0b91818695d8a286"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 3,
+        "hex_bytes": 384
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "012003111111111111111111111111111111110000000103222222222222222222222100000000000000000000000000000000000000000000000000000000000000000000200311111111111111111111111111111111000000020322222222222222222222",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "grow-then-delete",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 2,
+      "raw_copies": 1,
+      "refusal": "target_hex_limit",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "grow-then-delete",
+        "bytes": 102,
+        "records": 2,
+        "changes_hash": "db08194151a812581c386ad48abe700181cb47d29ff6b883674bb03748bf049a"
+      },
+      "source_after": "012003111111111111111111111111111111110000000103222222222222222222222100000000000000000000000000000000000000000000000000000000000000000000200311111111111111111111111111111111000000020322222222222222222222",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": "000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 3,
+        "hex_bytes": 384
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "012003111111111111111111111111111111110000000103222222222222222222220001200311111111111111111111111111111111000000010322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "replace-smaller-then-grow",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 2,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "replace-smaller-then-grow",
+        "bytes": 102,
+        "records": 2,
+        "changes_hash": "90bddd1320a493d38c151685764f2dd43fc931eefcbafbf0d6bafa298436ecf5"
+      },
+      "source_after": "012003111111111111111111111111111111110000000103222222222222222222220001200311111111111111111111111111111111000000010322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": ""
+        },
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": "0000000000000000000000000000000000000000000000000000000000000009"
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "93ee8c520df6bbb7432328fbac6a4bdc9b3ef4be8533171526cc2a791bd98014"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "93ee8c520df6bbb7432328fbac6a4bdc9b3ef4be8533171526cc2a791bd98014"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 3,
+        "hex_bytes": 384
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000008032222222222222222222220000000000000000000000000000000000000000000000000000000000000000900200311111111111111111111111111111111000000020322222222222222222222",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "new-entry-with-room",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 2,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "put-then-delete",
+        "bytes": 101,
+        "records": 2,
+        "changes_hash": "478c5a3fffe045fa812b242ff1a6d4cb16758e92ae049a6f542c1d166c486c4c"
+      },
+      "source_after": "0120031111111111111111111111111111111100000008032222222222222222222220000000000000000000000000000000000000000000000000000000000000000900200311111111111111111111111111111111000000020322222222222222222222",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000080322222222222222222222",
+          "value": "0000000000000000000000000000000000000000000000000000000000000009"
+        },
+        {
+          "operation": "Delete",
+          "key": "0311111111111111111111111111111111000000020322222222222222222222",
+          "value": null
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "9c606b9ac2b16aa46c99dd4dd0f20e172b8b775b0b06b86e0b91818695d8a286"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "9c606b9ac2b16aa46c99dd4dd0f20e172b8b775b0b06b86e0b91818695d8a286"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 4,
+        "hex_bytes": 512
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "012003111111111111111111111111111111110000000103222222222222222222222100000000000000000000000000000000000000000000000000000000000000000000200311111111111111111111111111111111000000020322222222222222222222",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "value-growth-with-room",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 2,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "grow-then-delete",
+        "bytes": 102,
+        "records": 2,
+        "changes_hash": "db08194151a812581c386ad48abe700181cb47d29ff6b883674bb03748bf049a"
+      },
+      "source_after": "012003111111111111111111111111111111110000000103222222222222222222222100000000000000000000000000000000000000000000000000000000000000000000200311111111111111111111111111111111000000020322222222222222222222",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": "000000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "operation": "Delete",
+          "key": "0311111111111111111111111111111111000000020322222222222222222222",
+          "value": null
+        }
+      ],
+      "staging_target": {
+        "entries": 2,
+        "hex_bytes": 258,
+        "manifest_sha256": "92e5fc1e1f8b79c4c952181aa7f9de7dfd077db961f7cf64a4deda6c5bf31dfe"
+      },
+      "target_after": {
+        "entries": 2,
+        "hex_bytes": 258,
+        "manifest_sha256": "92e5fc1e1f8b79c4c952181aa7f9de7dfd077db961f7cf64a4deda6c5bf31dfe"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 3,
+        "hex_bytes": 386
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "empty-selected",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 0,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "empty",
+        "bytes": 0,
+        "records": 0,
+        "changes_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
+      },
+      "source_after": "",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 4,
+        "hex_bytes": 384
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "0000",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "empty-delete-selected",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 1,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "empty-delete",
+        "bytes": 2,
+        "records": 1,
+        "changes_hash": "762ba6a3d9312bf3e6dc71e74f34208e889fc44e6ff400724deecfeda7d5b3ce"
+      },
+      "source_after": "0000",
+      "staging_callbacks": [
+        {
+          "operation": "Delete",
+          "key": "",
+          "value": null
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 4,
+        "hex_bytes": 384
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "010000",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "empty-put-selected",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 1,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "empty-put",
+        "bytes": 3,
+        "records": 1,
+        "changes_hash": "a0e919336296b4ddeeb6916aa344c5a5bf74c620eb53b4b4e457ed438d19973b"
+      },
+      "source_after": "010000",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "",
+          "value": ""
+        }
+      ],
+      "staging_target": {
+        "entries": 4,
+        "hex_bytes": 384,
+        "manifest_sha256": "42f0b97ec5bc4a9ed06a8fd0676630ec82d670e25f71b031c432e45e8321cda7"
+      },
+      "target_after": {
+        "entries": 4,
+        "hex_bytes": 384,
+        "manifest_sha256": "42f0b97ec5bc4a9ed06a8fd0676630ec82d670e25f71b031c432e45e8321cda7"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 4,
+        "hex_bytes": 384
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "0180008000",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "overlong-empty-put-selected",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 1,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "overlong-empty-put",
+        "bytes": 5,
+        "records": 1,
+        "changes_hash": "12ecb0fe075219cfc1ee4edd5d3abcb9d9c761411e4e878a59d2b13f5ce46fea"
+      },
+      "source_after": "0180008000",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "",
+          "value": ""
+        }
+      ],
+      "staging_target": {
+        "entries": 4,
+        "hex_bytes": 384,
+        "manifest_sha256": "42f0b97ec5bc4a9ed06a8fd0676630ec82d670e25f71b031c432e45e8321cda7"
+      },
+      "target_after": {
+        "entries": 4,
+        "hex_bytes": 384,
+        "manifest_sha256": "42f0b97ec5bc4a9ed06a8fd0676630ec82d670e25f71b031c432e45e8321cda7"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 4,
+        "hex_bytes": 384
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "01a0000311111111111111111111111111111111000000010322222222222222222222a000000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "overlong-complete-selected",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 3,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "overlong-complete",
+        "bytes": 170,
+        "records": 3,
+        "changes_hash": "64fcc8d120d77787e9b1d5f726a7deb6c9d2c31e8a34159047f56dabdfaed200"
+      },
+      "source_after": "01a0000311111111111111111111111111111111000000010322222222222222222222a000000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": "000000000000000000000000000000000000000000000000000000000000005b"
+        },
+        {
+          "operation": "Delete",
+          "key": "0311111111111111111111111111111111000000020322222222222222222222",
+          "value": null
+        },
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000080322222222222222222222",
+          "value": "0000000000000000000000000000000000000000000000000000000000000009"
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "e789920d305497887085fd1859a27b873332b1df64abca4282a119328a5a0a90"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "e789920d305497887085fd1859a27b873332b1df64abca4282a119328a5a0a90"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 4,
+        "hex_bytes": 384
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b002003111111111111111111111111111111110000000203222222222222222222220120031111111111111111111111111111111100000008032222222222222222222220000000000000000000000000000000000000000000000000000000000000000901200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "duplicate-9-selected",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 4,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "duplicate-9",
+        "bytes": 235,
+        "records": 4,
+        "changes_hash": "02b437d959cec02ec0ce47c16fef67d7f5e1e85dd83015500c26cf18770a10b6"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b002003111111111111111111111111111111110000000203222222222222222222220120031111111111111111111111111111111100000008032222222222222222222220000000000000000000000000000000000000000000000000000000000000000901200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": "000000000000000000000000000000000000000000000000000000000000005b"
+        },
+        {
+          "operation": "Delete",
+          "key": "0311111111111111111111111111111111000000020322222222222222222222",
+          "value": null
+        },
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000080322222222222222222222",
+          "value": "0000000000000000000000000000000000000000000000000000000000000009"
+        },
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000080322222222222222222222",
+          "value": "0000000000000000000000000000000000000000000000000000000000000009"
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "e789920d305497887085fd1859a27b873332b1df64abca4282a119328a5a0a90"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "e789920d305497887085fd1859a27b873332b1df64abca4282a119328a5a0a90"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 4,
+        "hex_bytes": 384
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b00200311111111111111111111111111111111000000020322222222222222222222012003111111111111111111111111111111110000000803222222222222222222222000000000000000000000000000000000000000000000000000000000000000090120031111111111111111111111111111111100000008032222222222222222222220000000000000000000000000000000000000000000000000000000000000000a",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "duplicate-10-selected",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 4,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "duplicate-10",
+        "bytes": 235,
+        "records": 4,
+        "changes_hash": "2b26340d42e80a4db561a7f8c1572562fcab6492aca2c1359cfc4d864ecb1b74"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b00200311111111111111111111111111111111000000020322222222222222222222012003111111111111111111111111111111110000000803222222222222222222222000000000000000000000000000000000000000000000000000000000000000090120031111111111111111111111111111111100000008032222222222222222222220000000000000000000000000000000000000000000000000000000000000000a",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": "000000000000000000000000000000000000000000000000000000000000005b"
+        },
+        {
+          "operation": "Delete",
+          "key": "0311111111111111111111111111111111000000020322222222222222222222",
+          "value": null
+        },
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000080322222222222222222222",
+          "value": "0000000000000000000000000000000000000000000000000000000000000009"
+        },
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000080322222222222222222222",
+          "value": "000000000000000000000000000000000000000000000000000000000000000a"
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "0e998874e48e79e67937aaca9416c8b4056404e9ecb53ad2cbcd149000206099"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "0e998874e48e79e67937aaca9416c8b4056404e9ecb53ad2cbcd149000206099"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 4,
+        "hex_bytes": 384
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "0100000000",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "empty-key-put-delete-selected",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 2,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "empty-key-put-delete",
+        "bytes": 5,
+        "records": 2,
+        "changes_hash": "3936349d6ac15aa4c4258ae0239af9b5c777b20b1c3ea3751915370879e0c763"
+      },
+      "source_after": "0100000000",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "",
+          "value": ""
+        },
+        {
+          "operation": "Delete",
+          "key": "",
+          "value": null
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 4,
+        "hex_bytes": 384
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "load-error",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "load-error",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 3,
+      "raw_copies": 1,
+      "refusal": "load_error",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "load-nil",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "load-nil",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 3,
+      "raw_copies": 1,
+      "refusal": "nil_patch",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "replay-error-first",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "replay-error-first",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 3,
+      "raw_copies": 1,
+      "refusal": "replay_error",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": "000000000000000000000000000000000000000000000000000000000000005b"
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "481570f596dee1880318616bc728fdf5d7058eb08391834e8deab8721f99c7f3"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "replay-error-complete",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "replay-error-complete",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 3,
+      "raw_copies": 1,
+      "refusal": "replay_error",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": "000000000000000000000000000000000000000000000000000000000000005b"
+        },
+        {
+          "operation": "Delete",
+          "key": "0311111111111111111111111111111111000000020322222222222222222222",
+          "value": null
+        },
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000080322222222222222222222",
+          "value": "0000000000000000000000000000000000000000000000000000000000000009"
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "e789920d305497887085fd1859a27b873332b1df64abca4282a119328a5a0a90"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "replay-omit-last",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "replay-omit-last",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 3,
+      "raw_copies": 1,
+      "refusal": "incomplete_replay",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": "000000000000000000000000000000000000000000000000000000000000005b"
+        },
+        {
+          "operation": "Delete",
+          "key": "0311111111111111111111111111111111000000020322222222222222222222",
+          "value": null
+        }
+      ],
+      "staging_target": {
+        "entries": 2,
+        "hex_bytes": 256,
+        "manifest_sha256": "444799e33913baa950d272da2edc105c140a1627a571c7ad707ef2dc70aa0d64"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "replay-extra",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "replay-extra",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 3,
+      "raw_copies": 1,
+      "refusal": "callback_mismatch",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": "000000000000000000000000000000000000000000000000000000000000005b"
+        },
+        {
+          "operation": "Delete",
+          "key": "0311111111111111111111111111111111000000020322222222222222222222",
+          "value": null
+        },
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000080322222222222222222222",
+          "value": "0000000000000000000000000000000000000000000000000000000000000009"
+        },
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000080322222222222222222222",
+          "value": "0000000000000000000000000000000000000000000000000000000000000009"
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "e789920d305497887085fd1859a27b873332b1df64abca4282a119328a5a0a90"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "replay-wrong-value",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "replay-wrong-value",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 3,
+      "raw_copies": 1,
+      "refusal": "callback_mismatch",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": "000000000000000000000000000000000000000000000000000000000000005a"
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "mutate-owned-after-load",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "mutate-owned-after-load",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 3,
+      "raw_copies": 1,
+      "refusal": "patch_bytes_mismatch",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "mutate-source-after-load",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "mutate-source-after-load",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 3,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000008",
+      "staging_callbacks": [
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000010322222222222222222222",
+          "value": "000000000000000000000000000000000000000000000000000000000000005b"
+        },
+        {
+          "operation": "Delete",
+          "key": "0311111111111111111111111111111111000000020322222222222222222222",
+          "value": null
+        },
+        {
+          "operation": "Put",
+          "key": "0311111111111111111111111111111111000000080322222222222222222222",
+          "value": "0000000000000000000000000000000000000000000000000000000000000009"
+        }
+      ],
+      "staging_target": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "e789920d305497887085fd1859a27b873332b1df64abca4282a119328a5a0a90"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "e789920d305497887085fd1859a27b873332b1df64abca4282a119328a5a0a90"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 3,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b002003111111111111111111111111111111110000000203222222222222222222220120031111111111111111111111111111111100000008032222222222222222222220000000000000000000000000000000000000000000000000000000000000000902",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "malformed-raw-before-clone",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 3,
+      "raw_copies": 1,
+      "refusal": "invalid_type",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b002003111111111111111111111111111111110000000203222222222222222222220120031111111111111111111111111111111100000008032222222222222222222220000000000000000000000000000000000000000000000000000000000000000902",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "wrong-selection-before-clone",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 3,
+      "raw_copies": 1,
+      "refusal": "selection_mismatch",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 167,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "raw-cap-before-copy",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "raw_limit",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "limits": {
+        "raw_bytes": 0,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "invalid-raw-limit-before-copy",
+      "original_alias_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "invalid_limits",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "complete",
+        "bytes": 168,
+        "records": 3,
+        "changes_hash": "84aa5c9a2a777d68b181597aab6cdb2b54768b7218f466d0d844bd578e674834"
+      },
+      "source_after": "0120031111111111111111111111111111111100000001032222222222222222222220000000000000000000000000000000000000000000000000000000000000005b0020031111111111111111111111111111111100000002032222222222222222222201200311111111111111111111111111111111000000080322222222222222222222200000000000000000000000000000000000000000000000000000000000000009",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_before": {
+        "entries": 3,
+        "hex_bytes": 384,
+        "manifest_sha256": "72b4a25eac72bb4833402db9c61ec4cde1f0827271a93ae6bbbfd4d6e4099b80"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 8,
+        "hex_bytes": 1024
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "target-entries-4096",
+      "original_alias_after": {
+        "entries": 4096,
+        "hex_bytes": 32768,
+        "manifest_sha256": "77d7b8cb236621ed218366c7425c6eb755024cdd9d7ad1f30f5c0eba9a9d498a"
+      },
+      "preflight_records": 0,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "empty",
+        "bytes": 0,
+        "records": 0,
+        "changes_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
+      },
+      "source_after": "",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 4096,
+        "hex_bytes": 32768,
+        "manifest_sha256": "77d7b8cb236621ed218366c7425c6eb755024cdd9d7ad1f30f5c0eba9a9d498a"
+      },
+      "target_after": {
+        "entries": 4096,
+        "hex_bytes": 32768,
+        "manifest_sha256": "77d7b8cb236621ed218366c7425c6eb755024cdd9d7ad1f30f5c0eba9a9d498a"
+      },
+      "target_before": {
+        "entries": 4096,
+        "hex_bytes": 32768,
+        "manifest_sha256": "77d7b8cb236621ed218366c7425c6eb755024cdd9d7ad1f30f5c0eba9a9d498a"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 4096,
+      "target_limits": {
+        "entries": 4096,
+        "hex_bytes": 1048576
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "target-entries-4097",
+      "original_alias_after": {
+        "entries": 4097,
+        "hex_bytes": 32776,
+        "manifest_sha256": "99f24b17ba86502c30bce95a293cbb9bb657b075b7b0ce0c5fe203c9191e6cbd"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "target_entry_limit",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "empty",
+        "bytes": 0,
+        "records": 0,
+        "changes_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
+      },
+      "source_after": "",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 4097,
+        "hex_bytes": 32776,
+        "manifest_sha256": "99f24b17ba86502c30bce95a293cbb9bb657b075b7b0ce0c5fe203c9191e6cbd"
+      },
+      "target_before": {
+        "entries": 4097,
+        "hex_bytes": 32776,
+        "manifest_sha256": "99f24b17ba86502c30bce95a293cbb9bb657b075b7b0ce0c5fe203c9191e6cbd"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 4096,
+        "hex_bytes": 1048576
+      },
+      "target_replacements": 0
+    },
+    {
+      "constructor_calls": 1,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 1,
+      "injected_fault": "none",
+      "input": "",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "target-hex-bytes-1048576",
+      "original_alias_after": {
+        "entries": 1,
+        "hex_bytes": 1048576,
+        "manifest_sha256": "b7cbd58da4b07ba07976fb86fac3639a9a62510cb5ed51527634607812c47b55"
+      },
+      "preflight_records": 0,
+      "raw_copies": 1,
+      "refusal": "",
+      "research_import_result": "STAGED",
+      "selection": {
+        "name": "empty",
+        "bytes": 0,
+        "records": 0,
+        "changes_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
+      },
+      "source_after": "",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 1,
+        "hex_bytes": 1048576,
+        "manifest_sha256": "b7cbd58da4b07ba07976fb86fac3639a9a62510cb5ed51527634607812c47b55"
+      },
+      "target_after": {
+        "entries": 1,
+        "hex_bytes": 1048576,
+        "manifest_sha256": "b7cbd58da4b07ba07976fb86fac3639a9a62510cb5ed51527634607812c47b55"
+      },
+      "target_before": {
+        "entries": 1,
+        "hex_bytes": 1048576,
+        "manifest_sha256": "b7cbd58da4b07ba07976fb86fac3639a9a62510cb5ed51527634607812c47b55"
+      },
+      "target_clone_calls": 1,
+      "target_cloned_entries": 1,
+      "target_limits": {
+        "entries": 4096,
+        "hex_bytes": 1048576
+      },
+      "target_replacements": 1
+    },
+    {
+      "constructor_calls": 0,
+      "consumer_result": "REFUSED",
+      "default_replay_calls": 0,
+      "injected_fault": "none",
+      "input": "",
+      "limits": {
+        "raw_bytes": 1024,
+        "records": 8,
+        "key_bytes": 64,
+        "value_bytes": 128
+      },
+      "name": "target-hex-bytes-1048578",
+      "original_alias_after": {
+        "entries": 1,
+        "hex_bytes": 1048578,
+        "manifest_sha256": "e93e68dd5e819e98d0add2e2ef01d01378dfcea4a86dc2eb14adf2321b6e49ce"
+      },
+      "preflight_records": 0,
+      "raw_copies": 0,
+      "refusal": "target_hex_limit",
+      "research_import_result": "REJECTED",
+      "selection": {
+        "name": "empty",
+        "bytes": 0,
+        "records": 0,
+        "changes_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
+      },
+      "source_after": "",
+      "staging_callbacks": [],
+      "staging_target": {
+        "entries": 0,
+        "hex_bytes": 0,
+        "manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "target_after": {
+        "entries": 1,
+        "hex_bytes": 1048578,
+        "manifest_sha256": "e93e68dd5e819e98d0add2e2ef01d01378dfcea4a86dc2eb14adf2321b6e49ce"
+      },
+      "target_before": {
+        "entries": 1,
+        "hex_bytes": 1048578,
+        "manifest_sha256": "e93e68dd5e819e98d0add2e2ef01d01378dfcea4a86dc2eb14adf2321b6e49ce"
+      },
+      "target_clone_calls": 0,
+      "target_cloned_entries": 0,
+      "target_limits": {
+        "entries": 4096,
+        "hex_bytes": 1048576
+      },
+      "target_replacements": 0
+    }
+  ],
+  "default_target_limits": {
+    "entries": 8,
+    "hex_bytes": 1024
+  },
+  "format_version": 1,
+  "kind": "candidate-patch-target-research",
+  "scope": {
+    "actual_NewPatchFromDump_executed": true,
+    "actual_NodeTree_executed": false,
+    "authenticated_snapshot_import": false,
+    "cloning_after_complete_selection_and_constructor_checks": true,
+    "crash_durability": false,
+    "decoder_panic_recovery_used": false,
+    "default_Batch_Replay_executed": true,
+    "full_node_started": false,
+    "hex_payload_cap_is_whole_process_memory_budget": false,
+    "initial_and_transient_target_limits_executed": true,
+    "injected_constructor_and_replay_faults": true,
+    "network_activation_authenticated": false,
+    "network_execution": false,
+    "node_database_opened": false,
+    "owned_memory_map_replacement_executed": true,
+    "production_caller_execution": false,
+    "profile_agreed": false,
+    "resource_measurements_executed": false,
+    "runtime_state_proof_acceptance": false,
+    "shared_writer_atomicity": false,
+    "signing": false,
+    "single_exclusive_caller": true,
+    "synthetic": true,
+    "transactions": false,
+    "unsigned": true
+  },
+  "source": {
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "56ce2c384966f2f1940967257a0788d3998a5eef",
+    "tree": "d5abff528566a561e1a53a46103cb4b15ff63c6c"
+  },
+  "target_limits_ceiling": {
+    "entries": 4096,
+    "hex_bytes": 1048576
+  }
+}
