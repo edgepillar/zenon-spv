@@ -120,7 +120,7 @@ def main(argv=None):
     parser.add_argument("--go", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--evidence-directory", type=Path, required=True)
-    parser.add_argument("--fixture-kind", choices=("bytes", "fold-filter", "applier", "wire", "rpc-methods", "rpc-dispatcher", "chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail"), default="bytes")
+    parser.add_argument("--fixture-kind", choices=("bytes", "fold-filter", "applier", "wire", "rpc-methods", "rpc-dispatcher", "chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards"), default="bytes")
     args = parser.parse_args(argv)
     require(not args.output.exists() and not args.output.is_symlink(), "preserve existing output")
     require(not args.evidence_directory.exists() and not args.evidence_directory.is_symlink(), "preserve existing evidence")
@@ -179,6 +179,8 @@ def main(argv=None):
             (generator / "retention_resources.go").write_bytes((HERE / "retention_resources.go").read_bytes())
         if args.fixture_kind == "bulk-tail":
             (generator / "bulk_tail.go").write_bytes((HERE / "bulk_tail.go").read_bytes())
+        if args.fixture_kind == "bulk-guards":
+            (generator / "bulk_guards.go").write_bytes((HERE / "bulk_guards.go").read_bytes())
         with (generator / "go.mod").open("ab") as stream:
             stream.write(b"\nreplace github.com/zenon-network/go-zenon => ../reference-node\n")
         version = execute("go-version", [args.go, "version"], generator).decode("ascii").strip()
@@ -199,6 +201,8 @@ def main(argv=None):
             build += ["-tags", "candidate_retention"]
         if args.fixture_kind == "bulk-tail":
             build += ["-tags", "candidate_bulk_tail"]
+        if args.fixture_kind == "bulk-guards":
+            build += ["-tags", "candidate_bulk_guards"]
         execute("go-build", build + ["-o", str(executable), "."], generator)
         execute("go-buildinfo", [args.go, "version", "-m", str(executable)], generator)
         command = [str(executable), "--verified-node-tree", NODE_TREE]
@@ -237,7 +241,7 @@ def main(argv=None):
                          "rpc-dispatcher": "candidate-rpc-dispatcher-research",
                          "chain-startup": "candidate-chain-startup-research",
                          "disk-lifecycle": "candidate-disk-lifecycle-research",
-                         "retention-resources": "candidate-retention-resource-research", "bulk-tail":"candidate-bulk-tail-research"}[args.fixture_kind]
+                         "retention-resources": "candidate-retention-resource-research", "bulk-tail":"candidate-bulk-tail-research", "bulk-guards":"candidate-bulk-guards-research"}[args.fixture_kind]
         require(document["kind"] == expected_kind, "generated fixture kind differs")
         if args.fixture_kind == "fold-filter":
             require(document["scope"]["l1_fold_filter_api_executed"] and
@@ -296,6 +300,12 @@ def main(argv=None):
                     document["scope"]["owned_databases_removed"] and
                     not document["scope"]["chain_component_Init_executed"] and
                     not document["scope"]["realistic_retention_resource_budgets_qualified"], "wrong resource execution boundary")
+        if args.fixture_kind == "bulk-guards":
+            require(document["backend"] == "NodeTree" and document["scope"]["actual_NodeTree_CommitBulk_executed"] and
+                    document["scope"]["actual_NodeTree_AccumulateFrom_executed"] and document["scope"]["owned_databases_removed"] and
+                    document["scope"]["single_serial_caller_for_staged_sequence"] and
+                    not document["scope"]["resource_measurements_executed"] and not document["scope"]["full_node_started"],
+                    "wrong bulk guard execution boundary")
         seal(args.output, first)
     report = {"node_revision": NODE_REVISION, "node_tree": NODE_TREE, "matched_source_blobs": 394,
               "source_manifest_sha256": hashlib.sha256(manifest_raw).hexdigest(),
@@ -303,15 +313,15 @@ def main(argv=None):
               "commands": commands, "signing": False, "node_lifecycle_execution": False,
               "network_execution": False, "runtime_state_proof_acceptance": False,
               "fixture_kind": args.fixture_kind, "l1_fold_filter_api_executed": args.fixture_kind == "fold-filter",
-              "l1_staged_applier_executed": args.fixture_kind == "applier", "node_database_opened": args.fixture_kind in ("applier", "chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail"),
-              "database_storage_in_memory_only": args.fixture_kind == "applier", "persisted_disk_lifecycle_executed": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail"),
+              "l1_staged_applier_executed": args.fixture_kind == "applier", "node_database_opened": args.fixture_kind in ("applier", "chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards"),
+              "database_storage_in_memory_only": args.fixture_kind == "applier", "persisted_disk_lifecycle_executed": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards"),
               "persisted_disk_lifecycle_qualified": False,
               "StateProof_serializer_executed": args.fixture_kind in ("wire", "rpc-methods", "rpc-dispatcher"),
               "LedgerApi_method_executed": args.fixture_kind in ("rpc-methods", "rpc-dispatcher"),
               "recording_chain_store_stubs": args.fixture_kind in ("rpc-methods", "rpc-dispatcher"), "actual_chain_stateTree_executed": args.fixture_kind == "chain-startup",
               "actual_chain_component_Init_executed": args.fixture_kind == "chain-startup",
-              "controlled_clean_disk_reopen_executed": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail"),
-              "small_temporary_disk_LevelDB": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail"),
+              "controlled_clean_disk_reopen_executed": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards"),
+              "small_temporary_disk_LevelDB": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards"),
               "controlled_process_exit_executed": args.fixture_kind == "disk-lifecycle",
               "logical_NodeTree_storage_records_measured": args.fixture_kind == "disk-lifecycle",
               "power_loss_qualified": False, "torn_write_qualified": False,
@@ -328,6 +338,11 @@ def main(argv=None):
                        "production_retention_resource_budgets_qualified": False})
     if args.fixture_kind == "bulk-tail":
         report.update({"deterministic_generations":2,"deterministic_conformance_only":True,"variable_resource_samples_preserved":True,"resource_samples_sha256":resource_samples_sha256,"actual_NodeTree_reference_executed":True,"measurement_processes_per_generation":6,"manual_compaction_calls_per_generation":6,"logical_NodeTree_storage_records_measured":True,"fixture_seed_not_authenticated_snapshot":True,"node_snapshot_import_executed":False,"historical_archive_replay_qualified":False,"production_retention_resource_budgets_qualified":False})
+    if args.fixture_kind == "bulk-guards":
+        report.update({"actual_NodeTree_reference_executed": True, "actual_NodeTree_CommitBulk_executed": True,
+                       "actual_NodeTree_AccumulateFrom_executed": True, "logical_NodeTree_storage_records_measured": True,
+                       "single_serial_caller_for_staged_sequence": True, "resource_measurements_executed": False,
+                       "selected_complete_fixture_not_authenticated_snapshot": True, "node_snapshot_import_executed": False})
     seal(args.evidence_directory / "completed.json", encoded(report))
     print(json.dumps(report, sort_keys=True, separators=(",", ":")))
 
