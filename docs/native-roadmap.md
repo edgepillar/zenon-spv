@@ -166,3 +166,17 @@ not authenticated snapshot import or shared/durable storage. Typed state domains
 excluded snapshot state, accepted-header/profile/activation, retained hash
 provenance, real workload budgets and review remain separate gates. The native
 verifier and its state-proof refusal are unchanged.
+
+The [read-only raw patch planner](../tools/gen-state-root-vectors/README.md#read-only-raw-patch-plans)
+now makes the bounded byte contract usable with a local regular dump file and
+explicit caller-selected digest/count/limit inputs. Complete ordered events are
+emitted only after byte parsing and output bounds pass; no constructor, Replay,
+target replacement, database or NodeTree executes. Native consumer tests cover
+file reads, actual CLI behavior, private refusals and all 264 prior inputs.
+Syntax plans never accept state proofs or authenticate snapshot completeness.
+Target-size bounds, exclusive ownership, storage durability, realistic workloads,
+typed/excluded state, authenticated retained version/hash and accepted header,
+profile and activation remain separate gates. No new reference-node generation
+is needed: the existing sixteen source-pinned corpora and backend inputs are
+preserved. Their prior local reference execution remains distinct from current
+native Python consumer tests and runtime CI.

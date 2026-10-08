@@ -434,3 +434,24 @@ snapshot completeness, excluded state, canonical roots, finality or network
 activation. Accepted header/profile/activation, anchor, schedule, context pin,
 retained hash provenance, independent review and authenticated release remain
 separate gates. The MIT runtime still refuses production state-value proofs.
+
+### Read-only patch planning consumer
+
+The [raw patch planner](../tools/gen-state-root-vectors/README.md#read-only-raw-patch-plans)
+accepts a bounded regular file only with explicit expected ChangesHash, byte and
+record counts and raw/record/key/value/output limits. It emits a complete ordered
+hex plan after unsigned length, complete-byte selection and output-cap checks.
+It does not decode through the node constructor, Replay, stage a map, import a
+snapshot or write to storage. Syntax `READY` always retains proof `REFUSED`.
+
+Digest selection is the caller's separate trust input; computing it from the
+candidate file cannot authenticate the file or its completeness. The plan keeps
+nonminimal spellings, duplicate order, empty Put and Delete semantics distinct.
+Bounded file reads and incremental JSON cap checks precede stdout publication;
+no path or rejected partial plan is emitted. Input, event and output buffers
+still coexist, and interpreter overhead and real memory/latency budgets remain
+unqualified. File transport, concurrent writers and disk/crash durability are
+outside this read-only contract. The existing reference corpora/source pins,
+explicit anchor/profile/schedule/context-pin boundary and production refusal
+remain unchanged. A future writer requires its own target-size, exclusive
+ownership, rollback/durability, full snapshot and authenticated header gates.
