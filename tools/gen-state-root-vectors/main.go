@@ -638,6 +638,7 @@ var diskLifecycleGenerator func() any
 var retentionResourceGenerator func() any
 var bulkResourceGenerator func() any
 var bulkGuardsGenerator func() any
+var emptyVersionsGenerator func() any
 
 func run() error {
 	// regenerate.py validates and copies every node blob before it builds this
@@ -648,7 +649,7 @@ func run() error {
 	kind := "bytes"
 	if len(os.Args) == 5 {
 		kind = os.Args[4]
-		if os.Args[3] != "--fixture-kind" || (kind != "fold-filter" && kind != "applier" && kind != "wire" && kind != "rpc-methods" && kind != "rpc-dispatcher" && kind != "chain-startup" && kind != "disk-lifecycle" && kind != "retention-resources" && kind != "bulk-tail" && kind != "bulk-guards") {
+		if os.Args[3] != "--fixture-kind" || (kind != "fold-filter" && kind != "applier" && kind != "wire" && kind != "rpc-methods" && kind != "rpc-dispatcher" && kind != "chain-startup" && kind != "disk-lifecycle" && kind != "retention-resources" && kind != "bulk-tail" && kind != "bulk-guards" && kind != "empty-versions") {
 			return fmt.Errorf("unsupported reference fixture kind")
 		}
 	}
@@ -698,6 +699,12 @@ func run() error {
 			return fmt.Errorf("disk lifecycle mode requires the offline driver candidate_disk_lifecycle build")
 		}
 		return encoder.Encode(diskLifecycleGenerator())
+	}
+	if kind == "empty-versions" {
+		if emptyVersionsGenerator == nil {
+			return fmt.Errorf("empty version reference build tag required")
+		}
+		return encoder.Encode(emptyVersionsGenerator())
 	}
 	if kind == "bulk-guards" {
 		if bulkGuardsGenerator == nil {
