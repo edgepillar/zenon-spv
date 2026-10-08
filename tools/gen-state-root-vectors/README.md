@@ -1372,3 +1372,59 @@ no candidate node, database, import, Replay, network or proof acceptance runs.
 The state-value consumer remains `REFUSED`, with independent snapshot, retained
 hash, VerifiedState/header/profile/activation, human review and distribution
 gates unchanged.
+
+## Opened regular file to owned map research handoff
+
+`patch_file.go` adds a private research seam around the unchanged `importApply`.
+The caller supplies an already opened, stable regular file and exclusively owns
+the target until the call returns. The seam validates raw limits, the independent
+selected byte count and complete initial target caps before file I/O. It checks
+the opened descriptor's regular-file type and size, then uses `ReadAt` at offset
+zero with a buffer of at most the selected count plus one. The hard raw ceiling
+is 1 MiB. It checks returned count, read errors and a second size observation
+before passing detached bytes to the existing parser, selected record/digest
+checks, candidate constructor/Dump checks, clone, ordered replay and transient
+caps. Only the returned owned map may be replaced after every check succeeds.
+
+The borrowed descriptor stays open with its cursor unchanged. No path opener or
+output writer is added. Size observations do not establish an atomic filesystem
+snapshot: stable source ownership remains a caller precondition. Matching bytes
+must be selected through an independent trust process. A locally computed file
+SHA256, ChangesHash, peer agreement or green CI cannot authenticate that choice,
+the complete snapshot, its excluded state or a consensus-bound state root.
+
+The [unsigned corpus](testdata/candidate-patch-file.json) contains 67 cases:
+all 46 prior target inputs pass through owned regular files, followed by sixteen
+explicit source fault controls and five count/size controls. The unchanged node
+constructor and default replay execute where the selected checks permit them.
+Complete original/staged/returned map digests, callbacks, raw file digests,
+positional read counters, refusals and selected source inputs are independently
+bound. Nil/closed/directory sources, stat/read failures, invalid returned counts,
+visible growth/truncation, same-size byte changes and replay failures preserve
+the original map and every alias. Source mutations are injected in owned fixture
+files; these observations do not qualify a production corruption path.
+
+`reproduce_patch_file.py` validates and copies the complete 394-blob node pin into
+a separate temporary research module. It compiles a test binary with unchanged
+dependency locks, runs the complete corpus twice, checks byte identity, and runs
+two direct Go controls for a borrowed read-only descriptor and exact 1 MiB raw
+input. The latter also checks that a file one byte above that ceiling is refused
+before allocation/read/copy. All command outcomes are preserved before their
+interpretation. The selected local execution used Darwin/arm64 and Go 1.25.14.
+Twenty-three portable adversarial controls bind the recorded corpus. Native CI
+runs the Python oracle/controls; it does not execute this Go file handoff.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/reproduce_patch_file.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE \
+  --output NEW_CORPUS --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+python3 -I -B tools/gen-state-root-vectors/check_patch_file.py --corpus NEW_CORPUS
+python3 -I -B tools/gen-state-root-vectors/check_patch_file_test.py
+```
+
+This milestone measures no resources and publishes no production API. Whole
+file-to-map resource observations are a separate next step. Actual NodeTree
+storage handoff, shared/durable writers, retained-hash provenance, complete and
+excluded snapshot authentication, accepted VerifiedState/header/profile/activation,
+anchor, schedule, context pin, independent review and authenticated distribution
+remain separate gates. Every state-value consumer stays `REFUSED`.

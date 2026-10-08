@@ -110,6 +110,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_import_comparison_test.py
       - name: Recorded fixed prior and candidate import comparison (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/check_patch_import_comparison.py --source-revision "${{ github.sha }}"
+      - name: Opened regular file handoff evidence controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_file_test.py
+      - name: Recorded file handoff and complete owned map bindings (offline; no Go execution)
+        run: python -I -B tools/gen-state-root-vectors/check_patch_file.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
@@ -350,6 +354,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_import_comparison_test.py
       - name: Recorded fixed prior and candidate import comparison (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/check_patch_import_comparison.py --source-revision "${{ github.sha }}"
+      - name: Opened regular file handoff evidence controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_file_test.py
+      - name: Recorded file handoff and complete owned map bindings (offline; no Go execution)
+        run: python -I -B tools/gen-state-root-vectors/check_patch_file.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
