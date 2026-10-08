@@ -365,3 +365,24 @@ production reachability nor a fix. Future lifecycle/import callers require an
 independent monotonic, profile-bounded height check with non-overflowing successor
 arithmetic. It cannot be inferred from an internally valid SMT proof. Hash-bound
 retained identity, chain/header validation and production activation remain open.
+
+
+### Staged replay ownership and failure boundary
+
+The [serial staging experiment](../tools/gen-state-root-vectors/README.md#serial-staging-and-injected-replay-boundaries)
+binds seven finite NodeTree cases, 50 logical snapshots, 1,000 direct read cells
+and 60 raw replay callbacks. Default LevelDB batch replay returns nil. The seven
+injected errors come only from a research implementation of the public Patch
+interface, with separately recorded callback cuts; no default failure or
+production reachability is inferred.
+
+Failed `Update` preserves the prior stage. Failed `AccumulateFrom` can retain a
+partial merged stage, including an empty initialized stage before any callback.
+Successful `Update` replaces prior accumulation. A clean reopen discards staging;
+a full retry and the default accumulation control recover the independently
+selected complete fixture. Callers must check each result, rebuild the entire
+intended staged range after an error, and hold exclusive ownership through commit.
+Valid own-root proofs do not qualify complete replay: 16 of 28 boundary proofs
+fail the selected fixture. All seven consumers remain `REFUSED`, including the
+three matching fixture roots. Concurrency, storage faults, resources, snapshot
+import, accepted header binding and production state-proof gates remain separate.

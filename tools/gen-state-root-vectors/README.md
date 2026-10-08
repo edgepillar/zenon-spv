@@ -788,3 +788,53 @@ Offline reference execution remains local macOS ARM64 with CGO disabled. Native
 Linux, macOS Intel and Windows CI check fixtures and controls without executing
 this candidate backend. All twelve earlier corpora and MIT runtime inputs remain
 unchanged. Production state-proof acceptance stays disabled.
+
+
+## Serial staging and injected replay boundaries
+
+The `staging-boundary` mode runs seven finite serial cases on the unchanged
+pinned disk `NodeTree`. It distinguishes the default `db.NewPatch` path, whose
+locked LevelDB `Batch.Replay` returns nil, from a research implementation of the
+public `db.Patch` interface that returns an injected error after zero, one or two
+callbacks. These custom faults establish interface behavior; they do not show
+that default replay, storage or a production chain can fail this way.
+
+`Update` replays into a new private map. On error, it preserves the previous
+stage, including a nil stage. `AccumulateFrom` initializes its shared stage
+before replay and retains delivered prefixes on error. Even an error before any
+callback can leave an empty but committable stage. Four deliberate continuations
+commit successfully immediately after injected replay errors. Successful
+`Update` also replaces an existing accumulation, as the candidate already
+documents. These are serial API observations, not concurrent race qualification.
+
+Clean reopen discards the uncommitted stage while preserving committed roots.
+A complete retry restores the independently selected state; the default replay
+control also matches it. The full sparse and compressed physical graph models
+bind 50 logical snapshots, 1,000 finite Root/Prove cells and 60 recorded callbacks.
+Seven custom errors, nine default replay successes and three not-staged commit
+refusals are reproduced. All 28 final proofs match their own observed roots;
+16 fail the separately selected complete fixture. Three case roots match that
+fixture, yet all seven consumer decisions remain `REFUSED`.
+
+A lifecycle/import caller must check every staging result, discard or rebuild
+the entire intended range after an error, and hold its own exclusive lock through
+staging and commit. A coherent proof cannot establish complete replay or caller
+ownership. Twenty controls bind prefix cuts and raw callbacks, failure semantics,
+replacement, historical-base preservation, reopen, selected roots and refusal.
+No candidate fix, default-patch failure, production reachability, crash resilience,
+resource budget, snapshot import or accepted `VerifiedState` binding is qualified.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_staging_boundary_test.py
+python3 -I -B tools/gen-state-root-vectors/check_staging_boundary.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind staging-boundary \
+  --output NEW_STAGING_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+```
+
+Reference execution remains local macOS ARM64 with CGO disabled. Linux, macOS
+Intel and Windows CI run fixture controls without this backend. All thirteen
+prior corpora, node source blobs, dependency locks and MIT runtime inputs remain
+unchanged. Explicit anchor, profile, schedule and context pin remain required;
+production state-proof acceptance stays disabled.

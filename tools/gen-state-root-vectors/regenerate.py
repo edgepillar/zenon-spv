@@ -120,7 +120,7 @@ def main(argv=None):
     parser.add_argument("--go", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--evidence-directory", type=Path, required=True)
-    parser.add_argument("--fixture-kind", choices=("bytes", "fold-filter", "applier", "wire", "rpc-methods", "rpc-dispatcher", "chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards", "empty-versions", "height-boundary"), default="bytes")
+    parser.add_argument("--fixture-kind", choices=("bytes", "fold-filter", "applier", "wire", "rpc-methods", "rpc-dispatcher", "chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards", "empty-versions", "height-boundary", "staging-boundary"), default="bytes")
     args = parser.parse_args(argv)
     require(not args.output.exists() and not args.output.is_symlink(), "preserve existing output")
     require(not args.evidence_directory.exists() and not args.evidence_directory.is_symlink(), "preserve existing evidence")
@@ -181,6 +181,8 @@ def main(argv=None):
             (generator / "bulk_tail.go").write_bytes((HERE / "bulk_tail.go").read_bytes())
         if args.fixture_kind == "bulk-guards":
             (generator / "bulk_guards.go").write_bytes((HERE / "bulk_guards.go").read_bytes())
+        if args.fixture_kind == "staging-boundary":
+            (generator / "staging_boundary.go").write_bytes((HERE / "staging_boundary.go").read_bytes())
         if args.fixture_kind == "height-boundary":
             (generator / "height_boundary.go").write_bytes((HERE / "height_boundary.go").read_bytes())
         if args.fixture_kind == "empty-versions":
@@ -207,6 +209,8 @@ def main(argv=None):
             build += ["-tags", "candidate_bulk_tail"]
         if args.fixture_kind == "bulk-guards":
             build += ["-tags", "candidate_bulk_guards"]
+        if args.fixture_kind == "staging-boundary":
+            build += ["-tags", "candidate_staging_boundary"]
         if args.fixture_kind == "height-boundary":
             build += ["-tags", "candidate_height_boundary"]
         if args.fixture_kind == "empty-versions":
@@ -249,7 +253,7 @@ def main(argv=None):
                          "rpc-dispatcher": "candidate-rpc-dispatcher-research",
                          "chain-startup": "candidate-chain-startup-research",
                          "disk-lifecycle": "candidate-disk-lifecycle-research",
-                         "retention-resources": "candidate-retention-resource-research", "bulk-tail":"candidate-bulk-tail-research", "bulk-guards":"candidate-bulk-guards-research", "empty-versions":"candidate-empty-versions-research", "height-boundary":"candidate-height-boundary-research"}[args.fixture_kind]
+                         "retention-resources": "candidate-retention-resource-research", "bulk-tail":"candidate-bulk-tail-research", "bulk-guards":"candidate-bulk-guards-research", "empty-versions":"candidate-empty-versions-research", "height-boundary":"candidate-height-boundary-research", "staging-boundary":"candidate-staging-boundary-research"}[args.fixture_kind]
         require(document["kind"] == expected_kind, "generated fixture kind differs")
         if args.fixture_kind == "fold-filter":
             require(document["scope"]["l1_fold_filter_api_executed"] and
@@ -314,6 +318,10 @@ def main(argv=None):
                     document["scope"]["single_serial_caller_for_staged_sequence"] and
                     not document["scope"]["resource_measurements_executed"] and not document["scope"]["full_node_started"],
                     "wrong bulk guard execution boundary")
+        if args.fixture_kind == "staging-boundary":
+            require(document["scope"]["custom_Patch_Replay_errors_injected"] and document["scope"]["default_Batch_Replay_executed"] and
+                    not document["scope"]["default_Batch_Replay_failure_observed"] and not document["scope"]["production_replay_failure_qualified"] and
+                    not document["scope"]["runtime_state_proof_acceptance"], "wrong staging replay execution boundary")
         if args.fixture_kind == "height-boundary":
             require(document["backend"] == "NodeTree" and document["scope"]["no_height_gap_iteration"] and
                     not document["scope"]["production_height_reachability_qualified"], "wrong height-boundary execution scope")
@@ -330,15 +338,15 @@ def main(argv=None):
               "commands": commands, "signing": False, "node_lifecycle_execution": False,
               "network_execution": False, "runtime_state_proof_acceptance": False,
               "fixture_kind": args.fixture_kind, "l1_fold_filter_api_executed": args.fixture_kind == "fold-filter",
-              "l1_staged_applier_executed": args.fixture_kind == "applier", "node_database_opened": args.fixture_kind in ("applier", "chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards", "empty-versions", "height-boundary"),
-              "database_storage_in_memory_only": args.fixture_kind == "applier", "persisted_disk_lifecycle_executed": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards", "empty-versions", "height-boundary"),
+              "l1_staged_applier_executed": args.fixture_kind == "applier", "node_database_opened": args.fixture_kind in ("applier", "chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards", "empty-versions", "height-boundary", "staging-boundary"),
+              "database_storage_in_memory_only": args.fixture_kind == "applier", "persisted_disk_lifecycle_executed": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards", "empty-versions", "height-boundary", "staging-boundary"),
               "persisted_disk_lifecycle_qualified": False,
               "StateProof_serializer_executed": args.fixture_kind in ("wire", "rpc-methods", "rpc-dispatcher"),
               "LedgerApi_method_executed": args.fixture_kind in ("rpc-methods", "rpc-dispatcher"),
               "recording_chain_store_stubs": args.fixture_kind in ("rpc-methods", "rpc-dispatcher"), "actual_chain_stateTree_executed": args.fixture_kind == "chain-startup",
               "actual_chain_component_Init_executed": args.fixture_kind == "chain-startup",
-              "controlled_clean_disk_reopen_executed": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards", "empty-versions", "height-boundary"),
-              "small_temporary_disk_LevelDB": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards", "empty-versions", "height-boundary"),
+              "controlled_clean_disk_reopen_executed": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards", "empty-versions", "height-boundary", "staging-boundary"),
+              "small_temporary_disk_LevelDB": args.fixture_kind in ("chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards", "empty-versions", "height-boundary", "staging-boundary"),
               "controlled_process_exit_executed": args.fixture_kind == "disk-lifecycle",
               "logical_NodeTree_storage_records_measured": args.fixture_kind == "disk-lifecycle",
               "power_loss_qualified": False, "torn_write_qualified": False,
@@ -370,6 +378,13 @@ def main(argv=None):
                        "logical_NodeTree_storage_records_measured": True, "single_serial_caller_for_staged_sequence": True,
                        "resource_measurements_executed": False, "production_height_reachability_qualified": False,
                        "no_height_gap_iteration": True, "node_snapshot_import_executed": False})
+    if args.fixture_kind == "staging-boundary":
+        report.update({"actual_NodeTree_reference_executed": True, "actual_NodeTree_CommitBulk_executed": True,
+                       "actual_NodeTree_AccumulateFrom_executed": True, "logical_NodeTree_storage_records_measured": True,
+                       "single_serial_caller_for_staged_sequence": True, "resource_measurements_executed": False,
+                       "custom_Patch_Replay_errors_injected": True, "default_Batch_Replay_executed": True,
+                       "default_Batch_Replay_failure_observed": False, "production_replay_failure_qualified": False,
+                       "selected_fixture_not_authenticated_snapshot": True, "node_snapshot_import_executed": False})
     seal(args.evidence_directory / "completed.json", encoded(report))
     print(json.dumps(report, sort_keys=True, separators=(",", ":")))
 
