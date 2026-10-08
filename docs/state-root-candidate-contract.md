@@ -520,3 +520,21 @@ shared/durable writer. Retained-hash provenance, ownership/rollback/durability,
 accepted VerifiedState/header/profile/activation, anchor, schedule, context pin,
 independent review and authenticated release remain open gates. Production
 state-value consumers remain `REFUSED`.
+
+### Owned callback reuse boundary
+
+The [fixed prior/candidate experiment](../tools/gen-state-root-vectors/README.md#owned-callback-string-reuse-comparison)
+reduces duplicate callback encoding only after complete byte equality with owned
+preflight strings. Immutable payloads can be shared; callback Value pointers,
+mutable raw slices and original target maps remain separate. Actual mismatch
+bytes, ordered callbacks, empty Put/Delete distinctions, selected raw digests,
+initial/transient caps and every published/refused outcome are preserved.
+
+All 288 local fresh-process samples and both versions' ownership controls bind
+the same whole research operation. Native CI checks the recorded comparison;
+it does not remeasure Go import. Observed cumulative allocation is neither peak
+live memory nor an authenticated production budget. This change attaches no
+storage writer, NodeTree, accepted VerifiedState, authenticated complete snapshot
+or excluded-state proof. Caller exclusivity, header/profile/activation, anchor,
+schedule, context pin, independent review and authenticated distribution remain
+separate requirements. Production state-value consumers remain `REFUSED`.

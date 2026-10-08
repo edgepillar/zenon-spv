@@ -12,7 +12,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
@@ -106,6 +106,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_resources_test.py
       - name: Recorded whole owned import sample bindings (offline; no reference execution)
         run: python -I -B tools/gen-state-root-vectors/check_patch_resources.py --source-revision "${{ github.sha }}"
+      - name: Owned patch callback reuse comparison controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_import_comparison_test.py
+      - name: Recorded fixed prior and candidate import comparison (offline; no Go execution)
+        run: python -I -B tools/gen-state-root-vectors/check_patch_import_comparison.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
@@ -243,7 +247,7 @@ jobs:
   native-platform:
     name: Native platform (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -342,6 +346,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_resources_test.py
       - name: Recorded whole owned import sample bindings (offline; no reference execution)
         run: python -I -B tools/gen-state-root-vectors/check_patch_resources.py --source-revision "${{ github.sha }}"
+      - name: Owned patch callback reuse comparison controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_import_comparison_test.py
+      - name: Recorded fixed prior and candidate import comparison (offline; no Go execution)
+        run: python -I -B tools/gen-state-root-vectors/check_patch_import_comparison.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
