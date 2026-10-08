@@ -139,3 +139,46 @@ snapshot authentication or production state-value acceptance is claimed.
 and [deterministic conformance bindings](../tools/gen-state-root-vectors/testdata/candidate-patch-import-resources.json)
 are kept separately. Reproduction creates new outputs/evidence and preserves
 all actual child failures rather than accepting a replacement sample.
+
+## Owned callback reuse comparison
+
+The [fixed-source comparison](../tools/gen-state-root-vectors/README.md#owned-callback-string-reuse-comparison)
+uses the prior importer from main `02b3a36410f53d879ca5dd1d21bb3c3d0c8c1b73`
+and the candidate under the same whole-operation resource harness. Two baseline
+then two candidate generations on Darwin/arm64 Go 1.25.14 retain all 288 fresh
+children. Full independent maps, original aliases, selected raw bytes and
+ordered callbacks match for every family. The earlier observations above remain
+historical measurements of the prior importer.
+
+Each role/family below includes all six plain elapsed observations, six cumulative
+allocation observations and twelve RSS observations. No value is discarded.
+The fixed generation order, process-wide sampling and lifetime high water do not
+qualify latency speedup, allocation causality, peak live memory, cross-platform
+capacity or a production budget. Source/build/setup/GC/initial binding and output
+binding remain outside timing; resident fixture and setup can contribute to RSS.
+
+| Family | Prior / candidate plain median ns | Prior / candidate cumulative allocation median bytes | Prior / candidate process high-water maximum bytes |
+| --- | ---: | ---: | ---: |
+| delete-then-put | 15396.0 / 16729.0 | 2280.0 / 1896.0 | 12320768 / 12288000 |
+| empty-owned-empty | 12437.5 / 12749.5 | 696.0 / 696.0 | 12124160 / 12173312 |
+| injected-replay-error-complete | 1613292.0 / 1651708.0 | 2585584.0 / 1504232.0 | 17727488 / 17514496 |
+| put-then-delete | 14271.0 / 14937.5 | 2040.0 / 1656.0 | 12238848 / 12255232 |
+| raw-ceiling-transient-hex-refusal | 6623708.0 / 4986416.5 | 9449256.0 / 5250040.0 | 23068672 / 19677184 |
+| records-1024-owned-4096 | 1325562.0 / 1344166.5 | 1223192.0 / 961056.0 | 20709376 / 20611072 |
+| records-256-owned-1024 | 2210291.0 / 1987917.0 | 2585656.0 / 1504296.0 | 17661952 / 17399808 |
+| records-64-owned-128 | 602854.5 / 575500.0 | 635264.0 / 364928.0 | 13516800 / 13369344 |
+| selection-mismatch-before-clone | 884104.0 / 785458.5 | 1372080.0 / 1372072.0 | 17219584 / 17186816 |
+| target-entries-4096-noop | 270917.0 / 275020.5 | 328696.0 / 328696.0 | 17088512 / 17154048 |
+| target-entries-4097-noop | 3708.0 / 4625.0 | 96.0 / 96.0 | 16941056 / 16973824 |
+| target-hex-ceiling-noop | 599312.0 / 668291.5 | 992.0 / 1000.0 | 17317888 / 17154048 |
+
+Matched callbacks reuse detached immutable preflight string payloads after a
+complete byte comparison, while their Value metadata pointers stay separate.
+Mismatch diagnostics and all target/refusal outcomes are unchanged. The raw
+1 MiB transient refusal still includes full preflight work and partial staging;
+its final empty target is not its resource cost. Families with no callbacks or
+selection refusal retain their own complete paths. The [complete recorded
+samples](../tools/gen-state-root-vectors/testdata/candidate-patch-import-comparison.json)
+include every observation; native CI validates these records without executing
+the Go reference. Actual NodeTree, storage handoff, snapshot authentication and
+production state-value acceptance remain separate unqualified gates.
