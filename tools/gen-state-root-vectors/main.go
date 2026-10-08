@@ -642,6 +642,7 @@ var emptyVersionsGenerator func() any
 var heightBoundaryGenerator func() any
 var stagingBoundaryGenerator func() any
 var patchDecodeGenerator func() any
+var patchImportGenerator func() any
 
 func run() error {
 	// regenerate.py validates and copies every node blob before it builds this
@@ -652,7 +653,7 @@ func run() error {
 	kind := "bytes"
 	if len(os.Args) == 5 {
 		kind = os.Args[4]
-		if os.Args[3] != "--fixture-kind" || (kind != "fold-filter" && kind != "applier" && kind != "wire" && kind != "rpc-methods" && kind != "rpc-dispatcher" && kind != "chain-startup" && kind != "disk-lifecycle" && kind != "retention-resources" && kind != "bulk-tail" && kind != "bulk-guards" && kind != "empty-versions" && kind != "height-boundary" && kind != "staging-boundary" && kind != "patch-decode") {
+		if os.Args[3] != "--fixture-kind" || (kind != "fold-filter" && kind != "applier" && kind != "wire" && kind != "rpc-methods" && kind != "rpc-dispatcher" && kind != "chain-startup" && kind != "disk-lifecycle" && kind != "retention-resources" && kind != "bulk-tail" && kind != "bulk-guards" && kind != "empty-versions" && kind != "height-boundary" && kind != "staging-boundary" && kind != "patch-decode" && kind != "patch-import") {
 			return fmt.Errorf("unsupported reference fixture kind")
 		}
 	}
@@ -702,6 +703,12 @@ func run() error {
 			return fmt.Errorf("disk lifecycle mode requires the offline driver candidate_disk_lifecycle build")
 		}
 		return encoder.Encode(diskLifecycleGenerator())
+	}
+	if kind == "patch-import" {
+		if patchImportGenerator == nil {
+			return fmt.Errorf("patch import mode requires the offline driver candidate_patch_import build")
+		}
+		return encoder.Encode(patchImportGenerator())
 	}
 	if kind == "patch-decode" {
 		if patchDecodeGenerator == nil {
