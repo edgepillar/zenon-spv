@@ -119,3 +119,17 @@ independent offline fixtures. The next node research gate is actual chain
 readiness and hash-bound retained-version provenance, followed by persisted
 recovery/retention and realistic resource measurements. Accepted `VerifiedState`
 integration and profile/activation agreement stay separate from these stubs.
+
+The [separate real chain component startup fixture](../tools/gen-state-root-vectors/README.md#separate-real-chain-component-startup-fixture)
+now exercises ten controlled cases through eleven actual `Init` calls and 66
+state-tree reads. The selected source remains unchanged; serialized unsigned
+momentums and manager/cache/genesis inputs are synthetic. Twenty controls check
+short catch-up, the ten/eleven startup gap, ancestor/hash refusals, retained
+roots/proofs and clean reopen. An ahead A tree can be retargeted to B's identifier
+while remaining ready with A's retained root; all three independent B-state
+observations refuse, including reopen. Height-only reads cannot authenticate a
+hash. This closes a bounded startup conformance step and leaves hash-bound
+version provenance unqualified. No full node, `Chain.Start`, signing, transaction
+or live RPC runs. Crash/recovery, pruning and realistic retention/resource
+measurements remain separate work, as do accepted-header/profile/activation
+binding and production state-value acceptance.

@@ -1,0 +1,1544 @@
+{
+  "cases": [
+    {
+      "input": {
+        "name": "empty-short",
+        "seed_fork": "A",
+        "seed_height": 0,
+        "chain_fork": "A",
+        "chain_height": 2,
+        "rounds": 1
+      },
+      "rounds": [
+        {
+          "cache_trace": [
+            "DB",
+            "Stop"
+          ],
+          "genesis_trace": [
+            "GetGenesisMomentum",
+            "GetSporkAddress"
+          ],
+          "init_error": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "identifier": {
+                "hash": "837599678328a29e86c27c56120130bd374a66c3b42c484465e9b3324a20d10a",
+                "height": 1
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "method": "GetPatch"
+            },
+            {
+              "method": "Stop"
+            }
+          ],
+          "queries": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-wrong-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance-wrong-hash",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": null,
+              "name": "compute",
+              "proof": null,
+              "root": "0cef9d5b2faf8882ac40b3d7fa76d7adf02e268dbd6368faabcb758e97f21a53",
+              "value": null
+            }
+          ],
+          "ready": true,
+          "retained_frontier": {
+            "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+            "height": 2
+          },
+          "round": 1,
+          "selected_identifier": {
+            "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "name": "empty-tail-bound",
+        "seed_fork": "A",
+        "seed_height": 0,
+        "chain_fork": "A",
+        "chain_height": 10,
+        "rounds": 1
+      },
+      "rounds": [
+        {
+          "cache_trace": [
+            "DB",
+            "Stop"
+          ],
+          "genesis_trace": [
+            "GetGenesisMomentum",
+            "GetSporkAddress"
+          ],
+          "init_error": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "identifier": {
+                "hash": "837599678328a29e86c27c56120130bd374a66c3b42c484465e9b3324a20d10a",
+                "height": 1
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "02a1103817385ae14451e03d8157b719556f91a747e774142ca547dc8a62431b",
+                "height": 3
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "9e70f0c77d228c328319d6d1d67b8999a8b47c9764cbc3e96a1f63395725c4ad",
+                "height": 4
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "311a7f532d986253a999668ef6d81d9621d6d44549e4bf8263062e9368f8662a",
+                "height": 5
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "019a0545cf12fff8c3e60cff181fc609d25e6b4176565229f1a88327c897a049",
+                "height": 6
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "ea91808dfc4c06585738e959568ca158e01c8524451cd55c130ba1aee193070a",
+                "height": 7
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "f175fad1c41708700cf1920a6c91ccf28678945a09728942d74b7ba970a6e2ed",
+                "height": 8
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "fc6f6aab2993277177e41ba1b7615f2c9fc3322488a1c862d8a1c9acdf117bb7",
+                "height": 9
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "23f5ca8d5691df92c470d61572a83af7f025a6965726273cb2ee2a8244ac0aa0",
+                "height": 10
+              },
+              "method": "GetPatch"
+            },
+            {
+              "method": "Stop"
+            }
+          ],
+          "queries": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "23f5ca8d5691df92c470d61572a83af7f025a6965726273cb2ee2a8244ac0aa0",
+                "height": 10
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "09ad43f23bbefc5e0b7124cf8b4c01925781ce0110c924509e9e24bfaeee49e4",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "781014cfa057a70f20329701f942ddef81c3efe5d39f3d9f5e8d7a6b8498f340",
+                "height": 10
+              },
+              "key": null,
+              "name": "root-wrong-hash",
+              "proof": null,
+              "root": "09ad43f23bbefc5e0b7124cf8b4c01925781ce0110c924509e9e24bfaeee49e4",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "23f5ca8d5691df92c470d61572a83af7f025a6965726273cb2ee2a8244ac0aa0",
+                "height": 10
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada810830018cd3d518bb8d600cd90aded3046b6c8be4e6f04bd13be14ec1caea620000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000a",
+              "root": null,
+              "value": "000000000000000000000000000000000000000000000000000000000000000a"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "781014cfa057a70f20329701f942ddef81c3efe5d39f3d9f5e8d7a6b8498f340",
+                "height": 10
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance-wrong-hash",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada810830018cd3d518bb8d600cd90aded3046b6c8be4e6f04bd13be14ec1caea620000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000a",
+              "root": null,
+              "value": "000000000000000000000000000000000000000000000000000000000000000a"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "23f5ca8d5691df92c470d61572a83af7f025a6965726273cb2ee2a8244ac0aa0",
+                "height": 10
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000141b70604cded899e488b75cdf2263e284615b06bc6740f49487c243d46ad151a",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "23f5ca8d5691df92c470d61572a83af7f025a6965726273cb2ee2a8244ac0aa0",
+                "height": 10
+              },
+              "key": null,
+              "name": "compute",
+              "proof": null,
+              "root": "0cef9d5b2faf8882ac40b3d7fa76d7adf02e268dbd6368faabcb758e97f21a53",
+              "value": null
+            }
+          ],
+          "ready": true,
+          "retained_frontier": {
+            "hash": "23f5ca8d5691df92c470d61572a83af7f025a6965726273cb2ee2a8244ac0aa0",
+            "height": 10
+          },
+          "round": 1,
+          "selected_identifier": {
+            "hash": "23f5ca8d5691df92c470d61572a83af7f025a6965726273cb2ee2a8244ac0aa0",
+            "height": 10
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "name": "empty-tail-plus-one",
+        "seed_fork": "A",
+        "seed_height": 0,
+        "chain_fork": "A",
+        "chain_height": 11,
+        "rounds": 1
+      },
+      "rounds": [
+        {
+          "cache_trace": [
+            "DB",
+            "Stop"
+          ],
+          "genesis_trace": [
+            "GetGenesisMomentum",
+            "GetSporkAddress"
+          ],
+          "init_error": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Stop"
+            }
+          ],
+          "queries": [
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "bc5fdbbeaba673394cf5f94959b5c520fe2d002adfffe4d483665e00aa36bc53",
+                "height": 11
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "6061b2ddd426f8e6207df5aaca2f59b36678e0614f3582a8e83dff0b6560d2fd",
+                "height": 11
+              },
+              "key": null,
+              "name": "root-wrong-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "bc5fdbbeaba673394cf5f94959b5c520fe2d002adfffe4d483665e00aa36bc53",
+                "height": 11
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "6061b2ddd426f8e6207df5aaca2f59b36678e0614f3582a8e83dff0b6560d2fd",
+                "height": 11
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance-wrong-hash",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "bc5fdbbeaba673394cf5f94959b5c520fe2d002adfffe4d483665e00aa36bc53",
+                "height": 11
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "bc5fdbbeaba673394cf5f94959b5c520fe2d002adfffe4d483665e00aa36bc53",
+                "height": 11
+              },
+              "key": null,
+              "name": "compute",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            }
+          ],
+          "ready": false,
+          "retained_frontier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          },
+          "round": 1,
+          "selected_identifier": {
+            "hash": "bc5fdbbeaba673394cf5f94959b5c520fe2d002adfffe4d483665e00aa36bc53",
+            "height": 11
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "name": "matching-prebuild",
+        "seed_fork": "A",
+        "seed_height": 2,
+        "chain_fork": "A",
+        "chain_height": 2,
+        "rounds": 1
+      },
+      "rounds": [
+        {
+          "cache_trace": [
+            "DB",
+            "Stop"
+          ],
+          "genesis_trace": [
+            "GetGenesisMomentum",
+            "GetSporkAddress"
+          ],
+          "init_error": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Stop"
+            }
+          ],
+          "queries": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-wrong-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance-wrong-hash",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": null,
+              "name": "compute",
+              "proof": null,
+              "root": "0cef9d5b2faf8882ac40b3d7fa76d7adf02e268dbd6368faabcb758e97f21a53",
+              "value": null
+            }
+          ],
+          "ready": true,
+          "retained_frontier": {
+            "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+            "height": 2
+          },
+          "round": 1,
+          "selected_identifier": {
+            "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "name": "same-height-other-hash",
+        "seed_fork": "A",
+        "seed_height": 2,
+        "chain_fork": "B",
+        "chain_height": 2,
+        "rounds": 1
+      },
+      "rounds": [
+        {
+          "cache_trace": [
+            "DB",
+            "Stop"
+          ],
+          "genesis_trace": [
+            "GetGenesisMomentum",
+            "GetSporkAddress"
+          ],
+          "init_error": "the state tree's state is incorrect. You can fix the problem by removing the state-tree database manually.",
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Stop"
+            }
+          ],
+          "queries": [
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-wrong-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance-wrong-hash",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": null,
+              "name": "compute",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            }
+          ],
+          "ready": false,
+          "retained_frontier": {
+            "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+            "height": 2
+          },
+          "round": 1,
+          "selected_identifier": {
+            "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "name": "below-matching-ancestor",
+        "seed_fork": "A",
+        "seed_height": 1,
+        "chain_fork": "A",
+        "chain_height": 2,
+        "rounds": 1
+      },
+      "rounds": [
+        {
+          "cache_trace": [
+            "DB",
+            "Stop"
+          ],
+          "genesis_trace": [
+            "GetGenesisMomentum",
+            "GetSporkAddress"
+          ],
+          "init_error": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "method": "GetPatch"
+            },
+            {
+              "method": "Stop"
+            }
+          ],
+          "queries": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-wrong-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance-wrong-hash",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": null,
+              "name": "compute",
+              "proof": null,
+              "root": "0cef9d5b2faf8882ac40b3d7fa76d7adf02e268dbd6368faabcb758e97f21a53",
+              "value": null
+            }
+          ],
+          "ready": true,
+          "retained_frontier": {
+            "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+            "height": 2
+          },
+          "round": 1,
+          "selected_identifier": {
+            "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "name": "below-other-ancestor",
+        "seed_fork": "X",
+        "seed_height": 1,
+        "chain_fork": "A",
+        "chain_height": 2,
+        "rounds": 1
+      },
+      "rounds": [
+        {
+          "cache_trace": [
+            "DB",
+            "Stop"
+          ],
+          "genesis_trace": [
+            "GetGenesisMomentum",
+            "GetSporkAddress"
+          ],
+          "init_error": "the state tree's state is incorrect. You can fix the problem by removing the state-tree database manually.",
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Stop"
+            }
+          ],
+          "queries": [
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-wrong-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance-wrong-hash",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "state tree: not yet built to the chain frontier",
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": null,
+              "name": "compute",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            }
+          ],
+          "ready": false,
+          "retained_frontier": {
+            "hash": "f0c64e50addf3b56a3b459a2535b6c034b58d150fe3bc97b9ec70489560c2f76",
+            "height": 1
+          },
+          "round": 1,
+          "selected_identifier": {
+            "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "name": "above-matching-retained",
+        "seed_fork": "A",
+        "seed_height": 3,
+        "chain_fork": "A",
+        "chain_height": 2,
+        "rounds": 1
+      },
+      "rounds": [
+        {
+          "cache_trace": [
+            "DB",
+            "Stop"
+          ],
+          "genesis_trace": [
+            "GetGenesisMomentum",
+            "GetSporkAddress"
+          ],
+          "init_error": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Stop"
+            }
+          ],
+          "queries": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-wrong-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance-wrong-hash",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+                "height": 2
+              },
+              "key": null,
+              "name": "compute",
+              "proof": null,
+              "root": "0cef9d5b2faf8882ac40b3d7fa76d7adf02e268dbd6368faabcb758e97f21a53",
+              "value": null
+            }
+          ],
+          "ready": true,
+          "retained_frontier": {
+            "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+            "height": 2
+          },
+          "round": 1,
+          "selected_identifier": {
+            "hash": "510864942c9aac442b49402d67eb80d81c54d52b117c27e6080d1a48e5bf831b",
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "name": "above-divergent-retained",
+        "seed_fork": "A",
+        "seed_height": 3,
+        "chain_fork": "B",
+        "chain_height": 2,
+        "rounds": 1
+      },
+      "rounds": [
+        {
+          "cache_trace": [
+            "DB",
+            "Stop"
+          ],
+          "genesis_trace": [
+            "GetGenesisMomentum",
+            "GetSporkAddress"
+          ],
+          "init_error": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Stop"
+            }
+          ],
+          "queries": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-wrong-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance-wrong-hash",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": null,
+              "name": "compute",
+              "proof": null,
+              "root": "0cef9d5b2faf8882ac40b3d7fa76d7adf02e268dbd6368faabcb758e97f21a53",
+              "value": null
+            }
+          ],
+          "ready": true,
+          "retained_frontier": {
+            "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+            "height": 2
+          },
+          "round": 1,
+          "selected_identifier": {
+            "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+            "height": 2
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "name": "reopened-divergent-retained",
+        "seed_fork": "A",
+        "seed_height": 3,
+        "chain_fork": "B",
+        "chain_height": 2,
+        "rounds": 2
+      },
+      "rounds": [
+        {
+          "cache_trace": [
+            "DB",
+            "Stop"
+          ],
+          "genesis_trace": [
+            "GetGenesisMomentum",
+            "GetSporkAddress"
+          ],
+          "init_error": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Stop"
+            }
+          ],
+          "queries": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-wrong-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance-wrong-hash",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": null,
+              "name": "compute",
+              "proof": null,
+              "root": "0cef9d5b2faf8882ac40b3d7fa76d7adf02e268dbd6368faabcb758e97f21a53",
+              "value": null
+            }
+          ],
+          "ready": true,
+          "retained_frontier": {
+            "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+            "height": 2
+          },
+          "round": 1,
+          "selected_identifier": {
+            "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+            "height": 2
+          }
+        },
+        {
+          "cache_trace": [
+            "DB",
+            "Stop"
+          ],
+          "genesis_trace": [
+            "GetGenesisMomentum",
+            "GetSporkAddress"
+          ],
+          "init_error": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Stop"
+            }
+          ],
+          "queries": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-wrong-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "55bef18918ed68bff45f0af724495306f3fe082eeee33079bf984998b46608a8",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance-wrong-hash",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+                "height": 2
+              },
+              "key": null,
+              "name": "compute",
+              "proof": null,
+              "root": "0cef9d5b2faf8882ac40b3d7fa76d7adf02e268dbd6368faabcb758e97f21a53",
+              "value": null
+            }
+          ],
+          "ready": true,
+          "retained_frontier": {
+            "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+            "height": 2
+          },
+          "round": 2,
+          "selected_identifier": {
+            "hash": "5d7c956488bd041c21dd98873503fc0a0aabf3e2567dae377f86bbd6c0664c64",
+            "height": 2
+          }
+        }
+      ]
+    }
+  ],
+  "format_version": 1,
+  "kind": "candidate-chain-startup-research",
+  "scope": {
+    "RPC_executed": false,
+    "actual_chain_component_Init_executed": true,
+    "actual_chain_stateTree_executed": true,
+    "actual_momentum_store_executed": true,
+    "background_build_executed": false,
+    "chain_Start_executed": false,
+    "component_init_messages_discarded": true,
+    "controlled_clean_reopen_executed": true,
+    "crash_recovery_qualified": false,
+    "databases_closed_and_removed": true,
+    "full_node_started": false,
+    "header_authentication_executed": false,
+    "network_activation_authenticated": false,
+    "network_execution": false,
+    "node_tests_executed": false,
+    "profile_agreed": false,
+    "pruning_qualified": false,
+    "recording_manager_cache_genesis_inputs": true,
+    "retention_resource_budgets_qualified": false,
+    "runtime_state_proof_acceptance": false,
+    "signing": false,
+    "small_temporary_disk_LevelDB": true,
+    "synthetic": true,
+    "transactions": false,
+    "unsigned": true
+  },
+  "source": {
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "56ce2c384966f2f1940967257a0788d3998a5eef",
+    "tree": "d5abff528566a561e1a53a46103cb4b15ff63c6c"
+  }
+}

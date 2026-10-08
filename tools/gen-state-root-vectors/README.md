@@ -384,6 +384,60 @@ binding, live transport/pilot, agreed profile/activation, human review and
 authenticated release remain separate gates. Production v3/state-value refusal
 and all MIT runtime inputs remain unchanged.
 
+## Separate real chain component startup fixture
+
+The optional `candidate_chain_startup` mode calls the actual pinned
+`chain.NewChain` constructor and chain component `Init`/`stateTree` methods.
+It supplies finite unsigned serialized momentum snapshots, a recording manager,
+a cache already aligned with the selected frontier and a synthetic genesis
+identity. Every unplanned input method fails. No genesis transaction, ledger
+insertion, VM execution, `Chain.Start`, background builder or full node runs.
+All 394 node source blobs remain unchanged under the existing module lock.
+
+Ten cases execute eleven component initializations and 66 read API observations.
+The empty tree reaches readiness for gaps of two and ten; gap eleven stays
+not-ready and all six reads refuse. Equal-height hash mismatch and a mismatched
+below-frontier ancestor also refuse. Matching prebuild, short catch-up and valid
+rollback provide positive controls. Exact patch lookups, selected identities,
+readiness/errors, root/value/proof bytes and the retained frontier after clean
+close/reopen are checked independently. Twenty negative controls bind the
+finite inputs and synthetic consumer selection.
+
+The above-frontier counterexample is now executed locally: a prebuilt tree
+holds A@3 with A@2 retained; the selected chain ends at B@2 with a different
+balance. Startup truncates by height, writes B@2 as the tree frontier and reports
+ready while preserving A@2's root/value. A second clean initialization continues
+to expose that root. The independent consumer retains B's selected state and
+refuses all three such observations, including the reopen. A cryptographically
+consistent proof under A's root cannot replace B's selection. The backend's
+height-only Root/Prove reads also return the same bytes for a different hash at
+the same height; that API behavior does not authenticate version provenance.
+
+This mode opens, closes and removes only small owned temporary disk LevelDB
+state-tree databases. It demonstrates controlled startup and clean reopen
+under synthetic chain/cache/genesis inputs, not a remote exploit, real-chain
+reorg, crash/torn-write recovery, pruning, production retention or resource
+budgets. Component printf messages and its diagnostic logger are discarded;
+all method errors, results and traces remain explicit. The actual CGO reference
+execution is local macOS ARM64. Native CI executes independent fixture controls
+and comparisons without the node/CGO backend. All six previous corpora and the
+MIT runtime remain unchanged.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_chain_startup_test.py
+python3 -I -B tools/gen-state-root-vectors/check_chain_startup.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind chain-startup \
+  --output NEW_CHAIN_STARTUP_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+```
+
+Hash-bound retained-version provenance is still a failed candidate qualification
+gate. Fixing the reference node requires a separately reviewed upstream change;
+this research does not patch the selected source. Accepted `VerifiedState`
+binding, agreed profile/activation, human review and authenticated distribution
+remain open. Production state-value acceptance remains disabled.
+
 ## Remaining gates
 
 Production v3/state-value acceptance stays disabled. These synthetic research
