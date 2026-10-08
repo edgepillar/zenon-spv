@@ -1021,3 +1021,67 @@ unchanged. Snapshot completeness, excluded and typed state, canonical roots,
 authenticated retained hashes, accepted VerifiedState/profile/activation,
 anchor/schedule/context-pin trust, human review and release distribution remain
 separate gates. The MIT verifier still refuses production state-value proofs.
+
+## Read-only patch planner resource observations
+
+`measure_patch_plan.py` observes six fixed synthetic inputs selected in
+`testdata/patch-plan-resource-inputs.json`. Their byte counts, record counts,
+SHA3-256 ChangesHash and SHA256 are literal selections checked by a separate
+byte oracle before any measured worker starts:
+
+| Input | Raw bytes | Put records | Selected workload |
+| --- | ---: | ---: | --- |
+| empty | 0 | 0 | Empty selected input |
+| records-64 | 64,384 | 64 | Two-byte keys and 1,000-byte values |
+| records-256 | 257,536 | 256 | The same record shape |
+| records-1024 | 1,030,144 | 1,024 | The maximum research record count |
+| maximum-raw-values | 1,048,576 | 16 | The exact 1 MiB raw cap; fifteen 65,536-byte values |
+| maximum-keys | 1,045,755 | 255 | 4,096-byte keys near the raw cap |
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_patch_plan_resources_test.py
+python3 -I -B tools/gen-state-root-vectors/measure_patch_plan.py \
+  --source-revision SELECTED_40_DIGIT_REVISION > RESOURCE_REPORT
+python3 -I -B tools/gen-state-root-vectors/check_patch_plan_resources.py \
+  --report RESOURCE_REPORT --source-revision SELECTED_40_DIGIT_REVISION
+```
+
+The default three repetitions retain 36 fresh worker samples: one plain and one
+`tracemalloc` worker per repetition and input. `--repetitions` may select one to
+three, with no retries, filtering or budget threshold. The worker operation
+timer spans the bounded raw-file read, parsing and complete JSON encoding. It
+excludes process launch, imports, independent-oracle work, result hashing and
+report transport. The traced worker separately reports its Python allocation
+peak for that operation; tracing changes its elapsed time, so plain and traced
+timings must remain distinct. Raw input, detached hex events and output buffers
+coexist. Parent fixture/oracle allocations and native allocator overhead are
+outside the Python trace; this is not whole-pipeline memory measurement.
+
+The OS high-water observation has a different scope. Unix uses
+[`getrusage(RUSAGE_SELF)`](https://docs.python.org/3/library/resource.html), with
+[Linux KiB converted to bytes](https://man7.org/linux/man-pages/man2/getrusage.2.html)
+and [macOS resident-size bytes](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/mach/task_info.h).
+Windows reports the distinct
+[`PeakWorkingSetSize` in bytes](https://learn.microsoft.com/en-us/windows/win32/api/psapi/ns-psapi-process_memory_counters).
+These process high-water values include startup/import scaffolding and do not
+isolate operation memory or exclude pre-exec accounting. A new worker is not a
+claim that all inherited accounting has been reset. Unavailable OS observations
+are explicit `null`, never zero. Reads may be served from the OS cache; these
+samples do not measure cold disk performance, aggregate concurrent memory or
+process-launch cost.
+
+The independent checker reconstructs every expected ordered event and the
+complete compact JSON spelling, including its newline and selected revision.
+It binds the encoded length and SHA256 for every sample, the fixed inputs,
+code fingerprints, platform metric and closed report schema. A source revision
+is a label; report consistency does not authenticate a binary or measurement
+channel. The driver publishes a bounded complete report only after all samples
+and byte bindings pass. Native Linux, macOS Intel and Windows CI execute this
+Python workflow and preserve the observations in their job logs. They do not
+execute the reference node or regenerate the earlier sixteen corpora.
+
+These observations qualify neither production resource budgets nor NodeTree
+retention, snapshot import, state roots, authenticated header/profile/activation,
+accepted VerifiedState or canonicality/finality. The planner's syntax result
+stays `READY`; every proof consumer stays `REFUSED`. Representative workloads,
+hardware, concurrency and network costs remain separate acceptance inputs.

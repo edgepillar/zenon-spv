@@ -180,3 +180,14 @@ profile and activation remain separate gates. No new reference-node generation
 is needed: the existing sixteen source-pinned corpora and backend inputs are
 preserved. Their prior local reference execution remains distinct from current
 native Python consumer tests and runtime CI.
+
+The [patch planner resource observations](../tools/gen-state-root-vectors/README.md#read-only-patch-planner-resource-observations)
+add 36 fresh Python workers for six independently selected synthetic input
+families, including the exact 1 MiB raw cap, 1,024 records and 4,096-byte keys.
+Each complete plan's ordered events, encoded length and hash are checked
+independently. Plain elapsed time, traced Python peak and OS process high-water
+memory remain distinct; startup/accounting, cache state and parent-pipeline
+limits are explicit. Linux, macOS Intel and Windows observe this bounded
+read-only workflow without resource pass thresholds. Representative application
+budgets, concurrency, NodeTree retention, full snapshot/header authentication
+and state-value acceptance remain unqualified.

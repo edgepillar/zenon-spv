@@ -1,0 +1,54 @@
+{
+  "cases": [
+    {
+      "changes_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+      "family": "empty",
+      "input_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "name": "empty",
+      "raw_bytes": 0,
+      "record_count": 0
+    },
+    {
+      "changes_hash": "c89ab8f5188d8f506acd8e2d01fe8566a4064a5918c90919ad9d122b07e32a48",
+      "family": "records",
+      "input_sha256": "1b370c7e2a01beda939a03d60c43dcab33f69ea60bd77a9af552a3ebaed19fd3",
+      "name": "records-64",
+      "raw_bytes": 64384,
+      "record_count": 64
+    },
+    {
+      "changes_hash": "6b4c8852d149f74473320665ead9e491b406a6b51f38d241ceb6a5100f03a324",
+      "family": "records",
+      "input_sha256": "19e960357476747a4016e2a57723758136a8c686ec60690a3fca7f5ba6d547a2",
+      "name": "records-256",
+      "raw_bytes": 257536,
+      "record_count": 256
+    },
+    {
+      "changes_hash": "062e9162869366087d5384e440be58c92d230766a7904a7f309aea33ec8eb2e1",
+      "family": "records",
+      "input_sha256": "9199738237776e66ae8e2027e6428ab7817601184edb8e9e13f79ba08c4f4a7b",
+      "name": "records-1024",
+      "raw_bytes": 1030144,
+      "record_count": 1024
+    },
+    {
+      "changes_hash": "234d83e3182a4901cbabfc8ffe88c1bb182fb17eb4b5361bbb2f9a55994be2fd",
+      "family": "values",
+      "input_sha256": "d64b31f86dca5e32f9d7f3440d86478e80956fb69a2e1f66cee9e7e786f56e71",
+      "name": "maximum-raw-values",
+      "raw_bytes": 1048576,
+      "record_count": 16
+    },
+    {
+      "changes_hash": "01b5b9ac46a50045bb5646c6daf4f2a92ef55de3ed4be8d8093c15f83fe44612",
+      "family": "keys",
+      "input_sha256": "da894bcde97cf1e608725cbbb94afbe3ad7f27e75d2ec3854d72ef96552b71f8",
+      "name": "maximum-keys",
+      "raw_bytes": 1045755,
+      "record_count": 255
+    }
+  ],
+  "format_version": 1,
+  "kind": "patch-plan-resource-input-selection"
+}
