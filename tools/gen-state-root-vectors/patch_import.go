@@ -27,6 +27,60 @@ type importLimits struct {
 var importCeilings = importLimits{1 << 20, 1024, 4096, 65536}
 var importDefaults = importLimits{1024, 8, 64, 128}
 
+// HexBytes counts key/value string payloads, not Go map/interpreter overhead or
+// decoded state bytes. These research caps do not qualify a resource budget.
+type importTargetLimits struct {
+	Entries  uint64 `json:"entries"`
+	HexBytes uint64 `json:"hex_bytes"`
+}
+
+var importTargetCeilings = importTargetLimits{4096, 1 << 20}
+
+func importTargetBounds(limits importTargetLimits) bool {
+	return limits.Entries > 0 && limits.Entries <= importTargetCeilings.Entries &&
+		limits.HexBytes > 0 && limits.HexBytes <= importTargetCeilings.HexBytes
+}
+
+func importHex(text string) bool {
+	if len(text)%2 != 0 {
+		return false
+	}
+	for i := range text {
+		if !('0' <= text[i] && text[i] <= '9') && !('a' <= text[i] && text[i] <= 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+// Validate without copying the caller's map. Exclusivity for this complete
+// operation is a caller precondition, not a lock or a shared-writer guarantee.
+func importTargetPreflight(target map[string]string, limits importTargetLimits) (uint64, string) {
+	if !importTargetBounds(limits) {
+		return 0, "invalid_target_limits"
+	}
+	if uint64(len(target)) > limits.Entries {
+		return 0, "target_entry_limit"
+	}
+	total := uint64(0)
+	for key, value := range target {
+		for _, part := range []string{key, value} {
+			if uint64(len(part)) > limits.HexBytes-total {
+				return 0, "target_hex_limit"
+			}
+			total += uint64(len(part))
+		}
+	}
+	// Check spelling only after the complete size bound, so large malformed
+	// strings cannot force a traversal outside the selected payload cap.
+	for key, value := range target {
+		if !importHex(key) || !importHex(value) {
+			return 0, "invalid_target_encoding"
+		}
+	}
+	return total, ""
+}
+
 type importSelection struct {
 	Name        string `json:"name"`
 	Bytes       uint64 `json:"bytes"`
@@ -208,6 +262,8 @@ type importStage struct {
 	events   []importEvent
 	state    map[string]string
 	refusal  string
+	limits   importTargetLimits
+	hexBytes uint64
 }
 
 func (s *importStage) event(event importEvent) {
@@ -228,6 +284,27 @@ func (s *importStage) event(event importEvent) {
 		s.refusal = "callback_mismatch"
 		return
 	}
+	// Bound every transient map, not just its eventual final state. Account for
+	// replacement and Delete before adding a Put, without mutating on refusal.
+	entries, total := uint64(len(s.state)), s.hexBytes
+	if old, exists := s.state[event.Key]; exists {
+		entries--
+		total -= uint64(len(event.Key)) + uint64(len(old))
+	}
+	if event.Value != nil {
+		if entries >= s.limits.Entries {
+			s.refusal = "target_entry_limit"
+			return
+		}
+		for _, part := range []string{event.Key, *event.Value} {
+			if uint64(len(part)) > s.limits.HexBytes-total {
+				s.refusal = "target_hex_limit"
+				return
+			}
+			total += uint64(len(part))
+		}
+	}
+	s.hexBytes = total
 	if event.Value == nil {
 		delete(s.state, event.Key)
 	} else {
@@ -293,17 +370,23 @@ func importInitial() map[string]string {
 		hex.EncodeToString(decodeKey(99)): hex.EncodeToString(decodeValue(123))}
 }
 
-// Injected loader/replay failures live only in this fixture harness. The import
-// contract rejects errors without forwarding partial patches to shared state.
-func importCase(input importInput) any {
-	before := append([]byte{}, input.raw...)
-	target := importInitial()
-	stage := &importStage{events: []importEvent{}, state: map[string]string{}}
-	for key, value := range target {
-		stage.state[key] = value
-	}
-	constructorCalls, replayCalls, replacements := 0, 0, 0
-	refusal := ""
+type importExecution struct {
+	stage            *importStage
+	target           map[string]string
+	constructorCalls int
+	replayCalls      int
+	replacements     int
+	rawCopies        int
+	cloneCalls       int
+	clonedEntries    int
+	refusal          string
+}
+
+// Both fixture modes use this contract. Constructor/replay fault injection is
+// confined to this research harness; no callback ever sees the original map.
+func importApply(input importInput, target map[string]string, limits importTargetLimits) importExecution {
+	stage := &importStage{expected: []importEvent{}, events: []importEvent{}, limits: limits}
+	result := importExecution{stage: stage, target: target}
 	apply := func() string {
 		if !importBounds(input.limits) {
 			return "invalid_limits"
@@ -311,10 +394,14 @@ func importCase(input importInput) any {
 		if uint64(len(input.raw)) > input.limits.RawBytes {
 			return "raw_limit"
 		}
+		total, reason := importTargetPreflight(target, limits)
+		if reason != "" {
+			return reason
+		}
 		// Copy only after the raw cap. Planning and candidate Load share no bytes
 		// with the caller's source; event keys/values are detached strings.
 		owned := append([]byte{}, input.raw...)
-		var reason string
+		result.rawCopies++
 		stage.expected, reason = importPreflight(owned, input.limits)
 		if reason != "" {
 			return reason
@@ -326,7 +413,7 @@ func importCase(input importInput) any {
 		if !matches() {
 			return "selection_mismatch"
 		}
-		constructorCalls++
+		result.constructorCalls++
 		patch, err := db.NewPatchFromDump(owned)
 		if input.fault == "load-error" {
 			err = errors.New("injected research constructor error with nonnil patch")
@@ -352,7 +439,17 @@ func importCase(input importInput) any {
 		if input.fault != "none" && input.fault != "mutate-source-after-load" {
 			patch = importReplayFault{patch, input.fault}
 		}
-		replayCalls++
+		// Clone only after complete input selection, constructor and dump checks.
+		// The target cap was checked before raw copying; exclusive ownership must
+		// continue through this clone, replay and the final pointer replacement.
+		stage.state = make(map[string]string, len(target))
+		for key, value := range target {
+			stage.state[key] = value
+			result.clonedEntries++
+		}
+		stage.hexBytes = total
+		result.cloneCalls++
+		result.replayCalls++
 		if err = patch.Replay(stage); err != nil {
 			return "replay_error"
 		}
@@ -366,20 +463,27 @@ func importCase(input importInput) any {
 			return "patch_bytes_mismatch"
 		}
 		// One map replacement after every check; no staged callback touched target.
-		target = stage.state
-		replacements++
+		result.target = stage.state
+		result.replacements++
 		return ""
 	}
-	refusal = apply()
+	result.refusal = apply()
+	return result
+}
+
+func importCase(input importInput) any {
+	before := append([]byte{}, input.raw...)
+	execution := importApply(input, importInitial(), importTargetCeilings)
+	stage, refusal := execution.stage, execution.refusal
 	result := "REJECTED"
 	if refusal == "" {
 		result = "STAGED"
 	}
 	return map[string]any{"name": input.name, "input": hex.EncodeToString(before), "source_after": hex.EncodeToString(input.raw),
 		"limits": input.limits, "selection": input.selection, "injected_fault": input.fault,
-		"preflight_records": len(stage.expected), "constructor_calls": constructorCalls, "default_replay_calls": replayCalls,
-		"staging_callbacks": stage.events, "target_before": decodeManifest(importInitial()), "target_after": decodeManifest(target),
-		"target_replacements": replacements, "research_import_result": result, "refusal": refusal, "consumer_result": "REFUSED"}
+		"preflight_records": len(stage.expected), "constructor_calls": execution.constructorCalls, "default_replay_calls": execution.replayCalls,
+		"staging_callbacks": stage.events, "target_before": decodeManifest(importInitial()), "target_after": decodeManifest(execution.target),
+		"target_replacements": execution.replacements, "research_import_result": result, "refusal": refusal, "consumer_result": "REFUSED"}
 }
 
 func generatePatchImport() any {

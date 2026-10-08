@@ -167,6 +167,18 @@ excluded snapshot state, accepted-header/profile/activation, retained hash
 provenance, real workload budgets and review remain separate gates. The native
 verifier and its state-proof refusal are unchanged.
 
+The [initial and transient target bounds](../tools/gen-state-root-vectors/README.md#bounded-initial-and-transient-patch-targets)
+check explicit entry/hex-payload caps before raw copying and delay the detached
+clone until complete input selection and constructor/dump checks pass. Every
+prospective callback map must fit, including temporary growth before a later
+Delete. The changed import mode preserves all 264 prior outputs. A separate
+46-case node-derived corpus covers exact caps, large ceiling cases, independent
+map digests, untouched original aliases and rejected partial stages; 18 research
+patches stage and all 46 proof consumers remain `REFUSED`. The independent
+Python oracle recomputes full maps rather than repeating incremental accounting.
+Whole-handoff memory, shared/durable writers and snapshot authentication remain
+unqualified; the string payload caps are research policy, not resource budgets.
+
 The [read-only raw patch planner](../tools/gen-state-root-vectors/README.md#read-only-raw-patch-plans)
 now makes the bounded byte contract usable with a local regular dump file and
 explicit caller-selected digest/count/limit inputs. Complete ordered events are
@@ -174,7 +186,7 @@ emitted only after byte parsing and output bounds pass; no constructor, Replay,
 target replacement, database or NodeTree executes. Native consumer tests cover
 file reads, actual CLI behavior, private refusals and all 264 prior inputs.
 Syntax plans never accept state proofs or authenticate snapshot completeness.
-Target-size bounds, exclusive ownership, storage durability, realistic workloads,
+Production target-size bounds, exclusive ownership, storage durability, realistic workloads,
 typed/excluded state, authenticated retained version/hash and accepted header,
 profile and activation remain separate gates. No new reference-node generation
 is needed: the existing sixteen source-pinned corpora and backend inputs are
