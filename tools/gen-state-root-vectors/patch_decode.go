@@ -1,4 +1,4 @@
-//go:build candidate_patch_decode
+//go:build candidate_patch_decode || candidate_patch_import
 
 // SPDX-License-Identifier: GPL-3.0-only
 package main

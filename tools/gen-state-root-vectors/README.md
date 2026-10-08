@@ -902,3 +902,63 @@ corpora, the 394 pinned node blobs, dependency locks and MIT runtime inputs rema
 unchanged. No resources are measured in this mode. Retained hash provenance,
 height limits, snapshot import, accepted header/profile/activation binding,
 independent review and authenticated distribution remain separate gates.
+
+## Bounded patch import and detached staging
+
+The `patch-import` mode adds a private GPL research prototype around the unchanged
+candidate decoder. It imports a selected patch only into an owned in-memory map.
+No production caller, database, NodeTree, snapshot importer, network or resource
+experiment runs. The reference node and LevelDB source/dependency lock are unchanged.
+
+Explicit positive limits bound raw bytes, records, keys and values. Hard research
+ceilings are 1 MiB, 1,024 records, 4,096 key bytes and 65,536 value bytes; default
+fixture limits are 1,024 bytes, eight records, 64 key bytes and 128 value bytes.
+These are prototype policies, not agreed protocol limits or measured resource
+budgets. The raw cap precedes copying the already resident input. An unsigned
+length is compared with its cap and remaining bytes before int conversion or
+slicing, preventing the known signed-length counterexamples from reaching Load.
+
+Preflight binds an independently selected exact byte count, ChangesHash and
+record count. Complete dump selections are constructed from literal record bytes
+before candidate decoding; the Python oracle constructs and hashes them separately.
+Nonminimal varints retain their raw spelling, and duplicate writes retain order.
+An equivalent final map cannot authorize another dump, normalize its hash or
+establish whole-snapshot completeness. Empty keys/values describe patch syntax,
+not accepted typed state domains.
+
+Constructor errors discard even a nonnil patch. Replay stages into a detached map
+and checks the entire planned callback sequence in order, including Deletes.
+Errors, missing/extra callbacks, changed values or dump mutation prevent publication.
+Successful completion replaces one owned map after all checks. The harness tests
+input alias mutation, constructor error/nil results, replay errors after one and
+all three callbacks, omitted/extra/changed callbacks and owned-dump mutation.
+These faults are deliberately injected; they are not default backend failures.
+No panic recovery is used or qualified.
+
+The 264 finite cases reuse all 232 decode inputs and add 32 limit, selection,
+staging and alias controls. There are 246 rejections before the constructor,
+18 actual constructor calls, 15 default Batch.Replay calls and 34 isolated
+callbacks. All 254 rejections preserve the complete initial target map, including
+five after staged callbacks. Ten independently selected research inputs publish
+one map each and preserve the unrelated initial key. All 264 proof consumers
+remain `REFUSED`. Twenty-eight adversarial checker tests bind bytes, strict
+types/shapes, complete callback delivery, failure effects and closed trust gates.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_patch_import_test.py
+python3 -I -B tools/gen-state-root-vectors/check_patch_import.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind patch-import \
+  --output NEW_PATCH_IMPORT_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+```
+
+Actual reference generation runs twice locally on macOS ARM64 with CGO disabled.
+Linux, macOS Intel and Windows CI check the independent fixtures without executing
+the node backend. All fifteen preceding deterministic corpora and MIT runtime
+inputs remain unchanged. Initial target copying depends on target size, and the
+prototype requires exclusive ownership; it qualifies neither shared writers,
+disk/crash durability nor production resource budgets. Authenticated complete and
+excluded snapshot state, typed domains, accepted header/profile/activation,
+retained hash provenance, anchor, schedule, context pin, independent human review
+and authenticated distribution remain separate gates.
