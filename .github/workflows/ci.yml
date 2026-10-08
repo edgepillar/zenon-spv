@@ -102,6 +102,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_plan_encodings_test.py
       - name: Patch output encoding allocation comparison
         run: python -I -B tools/gen-state-root-vectors/measure_patch_plan_encodings.py --source-revision "${{ github.sha }}"
+      - name: Whole owned patch import resource checker controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_resources_test.py
+      - name: Recorded whole owned import sample bindings (offline; no reference execution)
+        run: python -I -B tools/gen-state-root-vectors/check_patch_resources.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
@@ -334,6 +338,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_plan_encodings_test.py
       - name: Patch output encoding allocation comparison
         run: python -I -B tools/gen-state-root-vectors/measure_patch_plan_encodings.py --source-revision "${{ github.sha }}"
+      - name: Whole owned patch import resource checker controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_resources_test.py
+      - name: Recorded whole owned import sample bindings (offline; no reference execution)
+        run: python -I -B tools/gen-state-root-vectors/check_patch_resources.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
