@@ -191,3 +191,14 @@ limits are explicit. Linux, macOS Intel and Windows observe this bounded
 read-only workflow without resource pass thresholds. Representative application
 budgets, concurrency, NodeTree retention, full snapshot/header authentication
 and state-value acceptance remain unqualified.
+
+The [selected-count read improvement](../tools/gen-state-root-vectors/README.md#selected-count-patch-read-allocation-comparison)
+uses the independently selected byte count plus one instead of reserving the
+full raw ceiling for every file. Exact returned length, global/type/descriptor
+checks, raw digest/record selection and capped complete JSON publication remain
+required. A verbatim pinned historical reader and unchanged parser/encoder pins
+support 72 fresh comparison workers on the same six input families. Independent
+complete-byte checks and native controls preserve refusals and sample inventories.
+Python peak reduction observations remain separate from latency, OS accounting,
+whole-pipeline/NodeTree resources and production budgets. This read-only change
+does not add a writer, authenticate snapshots or enable state-value proofs.
