@@ -341,3 +341,9 @@ The separate [bulk guard and shared-root checks](tools/gen-state-root-vectors/RE
 
 
 The separate [retained empty-root and last-node checks](tools/gen-state-root-vectors/README.md#retained-empty-roots-and-last-node-reclamation) distinguish committed empty versions and canonical absence from missing/pruned history. Independent roots, proofs and compressed records bind last-leaf reclamation and reinsertion through clean reopen/compaction; network trust and production state-proof gates remain open.
+
+The isolated [maximum-height counterexample](tools/gen-state-root-vectors/README.md#low-level-uint64-height-boundary-counterexample)
+also binds the candidate's observed regular Commit wrap to origin and subsequent
+base loss. Three finite cases remain refused, including an empty-root match.
+This low-level synthetic boundary establishes no production reachability or fix;
+strictly increasing profile-bounded heights remain a separate caller requirement.

@@ -353,3 +353,15 @@ An omitted seed zero or accumulated delete still produces a coherent low-level b
 The [retained empty-root experiment](../tools/gen-state-root-vectors/README.md#retained-empty-roots-and-last-node-reclamation) independently binds 39 logical snapshots and 1,560 finite cells from the unchanged NodeTree. An empty committed version retains a version-to-zero-root record and canonical absence proofs. Missing folded heights and pruned versions refuse. Stored zero remains inclusion; last-leaf deletion, historical reference reclamation and later reinsertion survive clean reopen/compaction.
 
 These finite synthetic observations do not authenticate selected Momentum hashes or complete snapshots, qualify crash recovery/resource budgets, execute node lifecycle/import or enable production state proofs. The retained-hash failure and explicit header/profile/activation, anchor, schedule, context-pin and independent human-review gates remain open.
+
+### Maximum-height API boundary remains unqualified
+
+The separate [height-boundary research](../tools/gen-state-root-vectors/README.md#low-level-uint64-height-boundary-counterexample)
+reproduces a low-level regular `Commit(0)` success after a frontier at the maximum
+uint64 height. Height-zero reads ignore its written version record; the next
+commit builds from the implicit origin. All three finite consumer cases refuse,
+including an empty-root match. This synthetic boundary establishes neither
+production reachability nor a fix. Future lifecycle/import callers require an
+independent monotonic, profile-bounded height check with non-overflowing successor
+arithmetic. It cannot be inferred from an internally valid SMT proof. Hash-bound
+retained identity, chain/header validation and production activation remain open.
