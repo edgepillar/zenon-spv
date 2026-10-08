@@ -1021,6 +1021,75 @@ remain unqualified. Full snapshot/excluded-state authentication, retained-hash
 provenance, accepted VerifiedState/header/profile/activation, anchor, schedule,
 context pin, independent review and authenticated release remain separate gates.
 
+## Whole owned import resource observations
+
+`patch-resources` measures the existing research `importApply` contract in fresh
+Go processes, with resident raw input and an exclusively owned target. The
+operation includes raw/target cap validation, target hex validation, the owned
+raw copy, complete unsigned preflight, selected byte/count/ChangesHash checks,
+actual pinned node `NewPatchFromDump`, detached map cloning, actual `Batch.Replay`,
+ordered callback/transient-cap checks, post-replay dump binding and replacement.
+The map clone copies entries and shares immutable string payloads; it does not
+copy every initial key/value string. No shared or durable writer is attached.
+
+Twelve independently rebuilt literal families include empty input, 64/256/1024
+records with 128/1024/4096 initial entries, a raw 1 MiB transient hex refusal,
+4,096/4,097 initial entries, a 1 MiB initial hex payload, Put/Delete ordering,
+selection mismatch and an injected complete-replay error. Seven families stage;
+five reject with the complete original target and aliases preserved. All proof
+consumers stay `REFUSED`. SHA-256 bindings cover the complete sorted initial,
+staging, output and original-alias maps, full ordered callback manifests, and
+complete original/post-operation raw bytes. These are unsigned fixture identities,
+not SMT roots or authenticated snapshots. The Python oracle rebuilds literal
+bytes and each full prospective map independently of Go's incremental counters.
+
+Each of two generations retains all three plain and three allocation-observed
+children per family: 72 children per generation, 144 in total. Every child
+outcome is also logged before interpretation into the sealed private driver
+stderr. A failed child stops the run; no sample replacement/filtering occurs.
+The two complete original outputs and ledgers are retained. Only deterministic
+conformance is compared; variable samples remain separate in `resource-samples.json`.
+The checked-in sample file records this local Darwin/arm64 Go 1.25.14 experiment.
+Native Linux, macOS Intel and Windows CI validate the recorded bindings and 24
+checker controls; those checks do not execute the Go reference or remeasure import.
+
+Timing brackets only `importApply`. Source/build/startup, fixture construction,
+selection, initial map summary and one pre-operation GC are outside timing.
+`ReadMemStats` brackets the timer/operation in allocation mode and records
+**cumulative** `TotalAlloc`/`Mallocs` deltas and GC-cycle deltas. This process-wide
+sampling can include runtime activity; it is not an exclusive importer allocation
+counter or an operation peak. Plain children do not sample these counters.
+`getrusage(RUSAGE_SELF)` captures process lifetime RSS high water immediately
+after the operation and optional stats read, before output binding. It includes
+startup, provenance, resident inputs, initial summary, GC and measurement setup;
+post-operation map/callback binding, report construction and serialization happen
+after the capture. Linux KiB and Darwin byte units are normalized explicitly.
+Parent orchestration and source acquisition are not part of child measurements.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_patch_resources_test.py
+python3 -I -B tools/gen-state-root-vectors/check_patch_resources.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind patch-resources \
+  --output NEW_PATCH_RESOURCE_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+python3 -I -B tools/gen-state-root-vectors/check_patch_resources.py \
+  --corpus NEW_PATCH_RESOURCE_CORPUS_FILE \
+  --samples NEW_PRIVATE_EVIDENCE_DIRECTORY/resource-samples.json
+```
+
+The reference generator requires Linux or macOS and verifies all 394 pinned node
+blobs before an offline CGO-disabled build. The checker is portable and unsigned;
+it cannot authenticate reported execution provenance or prove absence of retries.
+The private first-outcome ledgers provide the narrower engineering record. The
+preceding importer and target corpora remain byte-identical after shared driver
+changes. The separate planner read/parse/encode measurements retain their own
+scope. This experiment does not measure file acquisition, snapshot reconstruction,
+NodeTree bulk/tail/archive retention, storage writers, whole import handoff or
+real-chain budgets. It qualifies no speedup, capacity, canonicality, finality,
+network activation, accepted-header/profile binding or production state value.
+See [the local observations](../../docs/native-benchmarks.md#whole-owned-research-import-observations).
+
 ## Read-only raw patch plans
 
 `plan_patch.py` consumes a regular raw dump file under **explicitly selected**

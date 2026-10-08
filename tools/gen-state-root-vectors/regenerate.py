@@ -120,11 +120,11 @@ def main(argv=None):
     parser.add_argument("--go", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--evidence-directory", type=Path, required=True)
-    parser.add_argument("--fixture-kind", choices=("bytes", "fold-filter", "applier", "wire", "rpc-methods", "rpc-dispatcher", "chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards", "empty-versions", "height-boundary", "staging-boundary", "patch-decode", "patch-import", "patch-targets"), default="bytes")
+    parser.add_argument("--fixture-kind", choices=("bytes", "fold-filter", "applier", "wire", "rpc-methods", "rpc-dispatcher", "chain-startup", "disk-lifecycle", "retention-resources", "bulk-tail", "bulk-guards", "empty-versions", "height-boundary", "staging-boundary", "patch-decode", "patch-import", "patch-targets", "patch-resources"), default="bytes")
     args = parser.parse_args(argv)
     require(not args.output.exists() and not args.output.is_symlink(), "preserve existing output")
     require(not args.evidence_directory.exists() and not args.evidence_directory.is_symlink(), "preserve existing evidence")
-    require(args.fixture_kind not in ("retention-resources", "bulk-tail") or sys.platform in ("darwin", "linux"),
+    require(args.fixture_kind not in ("retention-resources", "bulk-tail", "patch-resources") or sys.platform in ("darwin", "linux"),
             "retention resource reference requires Linux or macOS; fixture checker is portable")
     manifest_raw, manifest = source_manifest()
     original = snapshot_source(args.node_source, manifest["files"])
@@ -183,12 +183,14 @@ def main(argv=None):
             (generator / "bulk_guards.go").write_bytes((HERE / "bulk_guards.go").read_bytes())
         if args.fixture_kind == "staging-boundary":
             (generator / "staging_boundary.go").write_bytes((HERE / "staging_boundary.go").read_bytes())
-        if args.fixture_kind in ("patch-decode", "patch-import", "patch-targets"):
+        if args.fixture_kind in ("patch-decode", "patch-import", "patch-targets", "patch-resources"):
             (generator / "patch_decode.go").write_bytes((HERE / "patch_decode.go").read_bytes())
-        if args.fixture_kind in ("patch-import", "patch-targets"):
+        if args.fixture_kind in ("patch-import", "patch-targets", "patch-resources"):
             (generator / "patch_import.go").write_bytes((HERE / "patch_import.go").read_bytes())
-        if args.fixture_kind == "patch-targets":
+        if args.fixture_kind in ("patch-targets", "patch-resources"):
             (generator / "patch_targets.go").write_bytes((HERE / "patch_targets.go").read_bytes())
+        if args.fixture_kind == "patch-resources":
+            (generator / "patch_resources.go").write_bytes((HERE / "patch_resources.go").read_bytes())
         if args.fixture_kind == "height-boundary":
             (generator / "height_boundary.go").write_bytes((HERE / "height_boundary.go").read_bytes())
         if args.fixture_kind == "empty-versions":
@@ -223,6 +225,8 @@ def main(argv=None):
             build += ["-tags", "candidate_patch_import"]
         if args.fixture_kind == "patch-targets":
             build += ["-tags", "candidate_patch_import,candidate_patch_targets"]
+        if args.fixture_kind == "patch-resources":
+            build += ["-tags", "candidate_patch_import,candidate_patch_targets,candidate_patch_resources"]
         if args.fixture_kind == "height-boundary":
             build += ["-tags", "candidate_height_boundary"]
         if args.fixture_kind == "empty-versions":
@@ -235,14 +239,14 @@ def main(argv=None):
         first = execute("generate-first", command, generator)
         second = execute("generate-second", command, generator)
         resource_samples_sha256 = None
-        if args.fixture_kind in ("retention-resources", "bulk-tail"):
+        if args.fixture_kind in ("retention-resources", "bulk-tail", "patch-resources"):
             # Physical file lengths, RSS high-water marks and elapsed times vary.
             # Compare only deterministic roots/proofs/logical records; preserve
             # both unmodified process outputs and their separate measurements.
             documents = [json.loads(raw) for raw in (first, second)]
             samples = [document.pop("measurements") for document in documents]
             first, second = [encoded(document) for document in documents]
-            resource_record = {"format_version": 1, "kind": "candidate-bulk-tail-samples" if args.fixture_kind == "bulk-tail" else "candidate-retention-resource-samples",
+            resource_record = {"format_version": 1, "kind": {"bulk-tail": "candidate-bulk-tail-samples", "retention-resources": "candidate-retention-resource-samples", "patch-resources": "candidate-patch-import-resource-samples"}[args.fixture_kind],
                 "source": documents[0]["source"], "corpus_sha256": hashlib.sha256(first).hexdigest(),
                 "conformance_runs": 2, "measurement_runs_expected_to_vary": True,
                 "production_resource_budgets_qualified": False,
@@ -265,7 +269,7 @@ def main(argv=None):
                          "rpc-dispatcher": "candidate-rpc-dispatcher-research",
                          "chain-startup": "candidate-chain-startup-research",
                          "disk-lifecycle": "candidate-disk-lifecycle-research",
-                         "retention-resources": "candidate-retention-resource-research", "bulk-tail":"candidate-bulk-tail-research", "bulk-guards":"candidate-bulk-guards-research", "empty-versions":"candidate-empty-versions-research", "height-boundary":"candidate-height-boundary-research", "staging-boundary":"candidate-staging-boundary-research", "patch-decode":"candidate-patch-decode-research", "patch-import":"candidate-patch-import-research", "patch-targets":"candidate-patch-target-research"}[args.fixture_kind]
+                         "retention-resources": "candidate-retention-resource-research", "bulk-tail":"candidate-bulk-tail-research", "bulk-guards":"candidate-bulk-guards-research", "empty-versions":"candidate-empty-versions-research", "height-boundary":"candidate-height-boundary-research", "staging-boundary":"candidate-staging-boundary-research", "patch-decode":"candidate-patch-decode-research", "patch-import":"candidate-patch-import-research", "patch-targets":"candidate-patch-target-research", "patch-resources":"candidate-patch-import-resource-research"}[args.fixture_kind]
         require(document["kind"] == expected_kind, "generated fixture kind differs")
         if args.fixture_kind == "fold-filter":
             require(document["scope"]["l1_fold_filter_api_executed"] and
@@ -402,6 +406,17 @@ def main(argv=None):
                        "authenticated_snapshot_import": False, "shared_writer_atomicity": False,
                        "crash_durability": False, "resource_measurements_executed": False,
                        "production_corruption_reachability_qualified": False})
+    if args.fixture_kind == "patch-resources":
+        require(document["scope"]["whole_owned_importApply_measured"] and
+                document["scope"]["fresh_child_per_sample"] and not document["scope"]["node_database_opened"] and
+                not document["scope"]["actual_NodeTree_executed"] and not document["scope"]["production_resource_budgets_qualified"],
+                "wrong patch import resource execution boundary")
+        report.update({"deterministic_generations": 2, "deterministic_conformance_only": True,
+                       "variable_resource_samples_preserved": True, "resource_samples_sha256": resource_samples_sha256,
+                       "measurement_processes_per_generation": 72, "whole_owned_importApply_measured": True,
+                       "resident_inputs_before_measurement": True, "actual_NewPatchFromDump_executed": True,
+                       "default_Batch_Replay_executed": True, "node_database_opened": False,
+                       "actual_NodeTree_executed": False, "production_resource_budgets_qualified": False})
     if args.fixture_kind == "patch-targets":
         require(document["scope"]["initial_and_transient_target_limits_executed"] and
                 document["scope"]["cloning_after_complete_selection_and_constructor_checks"] and
