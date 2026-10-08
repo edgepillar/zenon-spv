@@ -698,3 +698,46 @@ python3 -I -B tools/gen-state-root-vectors/regenerate.py \
   --output NEW_BULK_GUARDS_CORPUS_FILE \
   --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
 ```
+
+
+## Retained empty roots and last-node reclamation
+
+Three finite fixtures cover a committed empty bulk seed, deletion of all eight
+selected keys and deletion of the last stored-zero leaf. An empty write-set
+still requires staging. A successful empty CommitBulk or regular Commit stores
+a version-to-zero-root record; it creates no zero-sentinel node or refcount.
+Missing folded heights and pruned empty heights return ErrNoVersion. Height zero
+remains the implicit empty origin. A stored zero is present, with a nonempty
+root; deleting an absent key preserves it, while deleting the last leaf empties
+the new version. Earlier retained versions still own their nodes until pruned.
+
+The actual unchanged NodeTree produces 39 logical snapshots and 1,560 finite
+Root/Prove cells: heights zero through seven, each root and four selected keys.
+The independent Python checker reconstructs complete sparse roots and proof
+bytes, compressed physical graphs, version records and shared refcounts. All
+29 retained nonzero empty-root reads and 116 corresponding absence proofs are
+bound to retained versions. There are 1,115 unavailable-version errors. Fourteen
+snapshots have a committed frontier with no physical nodes or refcounts. After
+pruning the last nonempty version, clean reopen and manual compaction preserve
+the empty state; later reinsertion restores a stored-zero inclusion proof.
+Twenty controls reject coherent wrong histories, missing/resurrected versions,
+wrong zero/value semantics, phantom sentinel references and self-selected roots.
+
+These complete synthetic fixture maps authenticate no snapshot or retained
+Momentum hash. The PR146 height-only provenance failure remains open. Caller
+exclusivity across staging and commit, accepted header/profile/activation,
+anchor, schedule and context pin remain requirements. This mode measures no
+resource costs, starts no node and qualifies no power-loss or crash recovery.
+Actual pure-Go backend execution is local macOS ARM64. Linux/macOS Intel/Windows
+CI runs fixtures and controls without this reference backend. All eleven earlier
+corpora, the 394 selected node blobs, research lock and 365 MIT runtime inputs
+remain unchanged. Production state-value acceptance and human review stay gated.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_empty_versions_test.py
+python3 -I -B tools/gen-state-root-vectors/check_empty_versions.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind empty-versions \
+  --output NEW_EMPTY_VERSIONS_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+```

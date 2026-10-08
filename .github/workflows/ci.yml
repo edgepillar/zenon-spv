@@ -84,6 +84,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_bulk_guards_test.py
       - name: Independent candidate bulk guards and selected roots
         run: python -I -B tools/gen-state-root-vectors/check_bulk_guards.py --source-revision "${{ github.sha }}"
+      - name: Candidate retained empty version controls
+        run: python -I -B tools/gen-state-root-vectors/check_empty_versions_test.py
+      - name: Independent candidate empty roots and reclaimed graph
+        run: python -I -B tools/gen-state-root-vectors/check_empty_versions.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash
@@ -278,6 +282,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_bulk_guards_test.py
       - name: Independent candidate bulk guards and selected roots
         run: python -I -B tools/gen-state-root-vectors/check_bulk_guards.py --source-revision "${{ github.sha }}"
+      - name: Candidate retained empty version controls
+        run: python -I -B tools/gen-state-root-vectors/check_empty_versions_test.py
+      - name: Independent candidate empty roots and reclaimed graph
+        run: python -I -B tools/gen-state-root-vectors/check_empty_versions.py --source-revision "${{ github.sha }}"
       - name: Independent node signatures
         id: signatures
         shell: bash

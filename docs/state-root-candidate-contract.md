@@ -346,3 +346,10 @@ These 756 finite read observations and separately recorded input-preparation, di
 The [finite bulk guard experiment](../tools/gen-state-root-vectors/README.md#bulk-ordering-staged-retry-and-shared-roots) separately executes invalid bulk heights, staged retry, serial zero/delete/reinsert accumulation and empty-write-set shared-root reference accounting on the unchanged NodeTree. An independent full sparse tree and compressed graph bind all 47 logical snapshots and 1,880 finite read cells, including clean reopen and compaction.
 
 An omitted seed zero or accumulated delete still produces a coherent low-level bulk tree. Its proofs match that observed root and fail against the separately selected complete fixture root. Neither successful CommitBulk nor self-consistent proofs authenticate snapshot completeness. Synthetic selected roots do not provide network trust inputs, repair retained-hash provenance, qualify snapshot import/resources or enable production state-value acceptance. Caller exclusivity, accepted header/profile/activation, anchor, schedule, context pin and human review remain independent requirements.
+
+
+## Empty retained versions are not unavailable history
+
+The [retained empty-root experiment](../tools/gen-state-root-vectors/README.md#retained-empty-roots-and-last-node-reclamation) independently binds 39 logical snapshots and 1,560 finite cells from the unchanged NodeTree. An empty committed version retains a version-to-zero-root record and canonical absence proofs. Missing folded heights and pruned versions refuse. Stored zero remains inclusion; last-leaf deletion, historical reference reclamation and later reinsertion survive clean reopen/compaction.
+
+These finite synthetic observations do not authenticate selected Momentum hashes or complete snapshots, qualify crash recovery/resource budgets, execute node lifecycle/import or enable production state proofs. The retained-hash failure and explicit header/profile/activation, anchor, schedule, context-pin and independent human-review gates remain open.

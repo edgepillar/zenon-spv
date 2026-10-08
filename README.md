@@ -338,3 +338,6 @@ The separate [complete fixture seed and retained tail comparison](tools/gen-stat
 
 
 The separate [bulk guard and shared-root checks](tools/gen-state-root-vectors/README.md#bulk-ordering-staged-retry-and-shared-roots) exercise staged retry, empty commits, serial zero/delete accumulation and retained references. Deliberately incomplete bulk inputs produce coherent proofs that fail against independently selected complete fixture roots; this does not authenticate snapshots or enable production state proofs.
+
+
+The separate [retained empty-root and last-node checks](tools/gen-state-root-vectors/README.md#retained-empty-roots-and-last-node-reclamation) distinguish committed empty versions and canonical absence from missing/pruned history. Independent roots, proofs and compressed records bind last-leaf reclamation and reinsertion through clean reopen/compaction; network trust and production state-proof gates remain open.
