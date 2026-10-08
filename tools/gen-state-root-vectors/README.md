@@ -646,3 +646,55 @@ python3 -I -B tools/gen-state-root-vectors/check_bulk_tail.py \
   --corpus NEW_BULK_TAIL_CORPUS_FILE \
   --resource-samples NEW_PRIVATE_EVIDENCE_DIRECTORY/resource-samples.json
 ```
+
+## Bulk ordering, staged retry and shared roots
+
+The optional `candidate_bulk_guards` mode executes four eight-key cases on fresh,
+owned `NodeTree` databases. The first distinguishes missing staging from an empty
+write-set, refuses origin/same/backward bulk heights and a regular seed gap,
+then retries the preserved stage at an allowed height. Successful commits consume
+staging. Empty bulk and regular commits reuse the same physical content graph;
+each version adds a root reference, and pruning releases obsolete references
+without deleting the latest reachable nodes.
+
+The second case calls `AccumulateFrom` serially for complete seed, zero, deletion
+and reinsertion patches, then commits one folded height plus a regular tail.
+Intermediate folded heights have no version record. The caller controls the whole
+staged sequence; this experiment does not qualify concurrent interleaving or replace
+the caller's exclusive-lock requirement. Every operation observes the frontier,
+Root/Prove bytes and exact sorted logical-record digest. Independent Python leaf
+maps reconstruct both full sparse proofs and the compressed physical node graph,
+counting each internal edge once and each retained version's root reference.
+
+Two deliberately incomplete inputs omit a stored-zero seed entry or an accumulated
+delete. Low-level `CommitBulk` accepts the resulting coherent tree. All sixteen
+final proof checks match their own observed root; eight checks from those two
+incomplete cases fail against separately described complete fixture roots. The
+expected map and root are fixed independently of the observed database. This shows
+why successful bulk commit, valid proof bytes and coherent refcounts cannot establish
+seed completeness. These selected synthetic roots are not authenticated snapshots,
+network trust inputs or a repair of the retained-Momentum-hash provenance failure.
+
+Four cases produce 47 logical-store snapshots and 1,880 finite Root/Prove cells,
+including seven guard refusals, stored-zero inclusion, absence and unavailable
+versions. The final clean reopen and manual compaction/reopen preserve bytes and
+references. Twenty controls reject altered guards, lost staged retry, foreign
+coherent state, shared-root accounting, self-selected incomplete roots and promoted
+gates. They do not perform additional resource measurements or qualify real-chain
+workloads, budgets, crash recovery, snapshot import or accepted header binding.
+
+The actual source-pinned backend runs locally on macOS ARM64 with CGO disabled.
+Linux, macOS Intel and Windows CI run fixture controls and the independent byte
+checker; they do not execute this reference backend. All ten earlier corpora, 394
+selected node blobs, the research dependency lock and 365 MIT runtime inputs remain
+unchanged. Production state-value acceptance, profile/activation, canonicality,
+finality, freshness, independent human review and authenticated release stay gated.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_bulk_guards_test.py
+python3 -I -B tools/gen-state-root-vectors/check_bulk_guards.py
+python3 -I -B tools/gen-state-root-vectors/regenerate.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE --fixture-kind bulk-guards \
+  --output NEW_BULK_GUARDS_CORPUS_FILE \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+```

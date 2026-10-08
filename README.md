@@ -335,3 +335,6 @@ MIT — see [`LICENSE`](LICENSE).
 - [`znn-sdk-go`](https://github.com/0x3639/znn-sdk-go)
 
 The separate [complete fixture seed and retained tail comparison](tools/gen-state-root-vectors/README.md#scale-churn-and-complete-fixture-seed-with-retained-tail) adds finite scale/churn experiments with the unchanged NodeTree bulk API. Independent roots, proofs and retained graph records must match sequential pruning; separately preserved local resource samples do not qualify snapshot import, authenticated history or production budgets.
+
+
+The separate [bulk guard and shared-root checks](tools/gen-state-root-vectors/README.md#bulk-ordering-staged-retry-and-shared-roots) exercise staged retry, empty commits, serial zero/delete accumulation and retained references. Deliberately incomplete bulk inputs produce coherent proofs that fail against independently selected complete fixture roots; this does not authenticate snapshots or enable production state proofs.
