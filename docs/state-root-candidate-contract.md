@@ -455,3 +455,14 @@ outside this read-only contract. The existing reference corpora/source pins,
 explicit anchor/profile/schedule/context-pin boundary and production refusal
 remain unchanged. A future writer requires its own target-size, exclusive
 ownership, rollback/durability, full snapshot and authenticated header gates.
+
+The [separate resource observation workflow](../tools/gen-state-root-vectors/README.md#read-only-patch-planner-resource-observations)
+measures six preselected synthetic input families up to the raw/key/record
+research ceilings in 36 fresh Python workers. Every complete encoded plan is
+independently bound. Operation elapsed time and traced Python allocation peak
+have narrower scope than the OS process high-water value; parent work, imports,
+pre-exec accounting and cache state are documented separately. Windows working
+set and Unix RSS observations keep distinct metrics. No threshold promotes
+these observations to production budgets or NodeTree retention evidence. This
+does not import a snapshot, authenticate a root/header/profile, or change proof
+`REFUSED`.
