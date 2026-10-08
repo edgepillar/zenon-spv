@@ -560,3 +560,26 @@ snapshot authentication, retained hashes, accepted VerifiedState/header/profile/
 activation, anchor, schedule, context pin, independent review and authenticated
 release remain separate requirements. Production state-value acceptance remains
 `REFUSED`.
+
+### Whole opened file resource boundary
+
+The [separate file resource experiment](../tools/gen-state-root-vectors/README.md#whole-opened-file-handoff-resource-observations)
+measures the complete opened-descriptor-to-owned-map call on fifteen literal
+families, including source-size/count and initial/transient target refusals.
+All 180 fresh child outcomes across two local generations bind complete maps,
+ordered callbacks, original aliases, file digests/counters and borrowed cursor.
+Fixture creation/opening, selection and initial bindings precede the measured
+call; output checks, cleanup and serialization follow resource sampling.
+
+Elapsed time, cumulative Go allocation and process lifetime RSS have distinct
+scopes. RSS includes startup and setup; recently written fixtures do not qualify
+cold-disk behavior. Native CI checks recorded Darwin/arm64 observations without
+executing or remeasuring the Go handoff. Unsigned exit/hash records do not
+authenticate execution or independent trust selection. No latency speedup,
+cross-platform equivalence or production budget follows.
+
+This evidence attaches no NodeTree/storage or shared/durable writer. Stable
+source ownership, complete/excluded snapshot authentication, retained-hash
+provenance, accepted VerifiedState/header/profile/activation, anchor, schedule,
+context pin, human review and authenticated release remain separate gates.
+Production state-value acceptance remains `REFUSED`.
