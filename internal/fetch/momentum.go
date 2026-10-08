@@ -2,7 +2,6 @@ package fetch
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -149,11 +148,10 @@ func convertAndVerifyDetailed(m rpcMomentum) (DetailedHeader, error) {
 		return DetailedHeader{}, fmt.Errorf("changes_hash: %w", err)
 	}
 
-	rawData, err := base64.StdEncoding.DecodeString(m.Data)
+	dataHash, err := hashRPCData(m.Data)
 	if err != nil {
 		return DetailedHeader{}, fmt.Errorf("data: %w", err)
 	}
-	dataHash := sha3sum(rawData)
 
 	contentSlice, err := decodeAccountHeaders(m.Content)
 	if err != nil {
@@ -268,11 +266,4 @@ func decodeHex32(s string) (chain.Hash, error) {
 	var out chain.Hash
 	copy(out[:], raw)
 	return out, nil
-}
-
-func base64ToBytesOptional(s string) ([]byte, error) {
-	if s == "" {
-		return nil, nil
-	}
-	return base64.StdEncoding.DecodeString(s)
 }

@@ -77,12 +77,27 @@ unknown, duplicate, missing, case-aliased or partial output cannot match.
 The underlying consumer retains all target, guarantee, context/tip, lossless
 integer and trust checks. The observer does not implement them again.
 
+Applications can pass the completed outer diagnostic to the separate
+[observer-report consumer](observer-report-consumer.md), with the actual observer
+exit, independently expected target count and explicit local-file/collected mode.
+It checks complete bounded stdin and child completion metadata. The outer report
+contains no target identities or context; the caller still binds the protected
+report channel to this invocation and retains the underlying expectations.
+
 Each child's stderr is discarded, counted, and capped at 16 KiB. Exceeding
 either stream cap cancels that child. Each child has its own positive deadline
 (default 30 seconds, at most one minute) and one-second pipe wait limit. An
 interrupt cancels the active direct child, waits for completion and attempts
 cleanup. This is not a whole-operation deadline or process-tree sandbox;
 preflight filesystem reads/hashes have no separate I/O deadline.
+
+The [consumer resource observation guide](consumer-resource-observation.md)
+records actual observer and sampler exits separately, uses an isolated existing
+staging root and checks its visible contents after both processes settle.
+Finite metadata samples do not cover every peak or establish physical storage
+usage. The [sampler reference](private-staging-observations.md) retains known
+disappearing-entry races and unknown allocation metadata without selecting trust
+inputs or deleting remnants.
 
 Temporary expectation/report files use mode 0600 in a newly created directory.
 The command attempts removal before emitting its result, and a cleanup failure
@@ -214,6 +229,17 @@ binary/context/retention drift, wrong targets/tips, unsupported guarantees and
 refused header extension. Native child-process tests cover actual nonzero exit,
 stream bounds, cancellation, failed start and inherited-pipe delivery failure
 despite exit zero. The offline pilot records both.
+
+`TestConcurrentObservationProcessCancellation` starts four real direct children
+behind explicit readiness/release gates. It cancels one active child after that
+child has emitted a complete matched summary, then exceeds another child's
+stdout or stderr cap while two independent siblings remain live. Both siblings
+must subsequently complete with their exact unmodified streams and exit zero.
+OS-held locks establish actual helper lifetime and release after each runner
+returns; all owned runners settle before fixture cleanup. This native offline
+case checks per-invocation cancellation, stream isolation and refusal of a
+successful diagnostic from a cancelled process. Its settlement guards are test
+controls, not latency budgets, process-tree supervision or network evidence.
 
 `TestCompiledRPCBlockObserver` adds ordinary collector/verifier/consumer/observer
 execution against node-derived v1 evidence through one loopback RPC. It covers

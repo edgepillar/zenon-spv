@@ -37,9 +37,9 @@ func decodeRPCResponse(raw []byte, requestID int) (rpcResponse, error) {
 		return rpcResponse{Result: resultRaw}, nil
 	}
 
-	var codeRaw, messageRaw, dataRaw json.RawMessage
+	var codeRaw, messageRaw json.RawMessage
 	if err := decodeRPCObject(errorRaw, map[string]*json.RawMessage{
-		"code": &codeRaw, "message": &messageRaw, "data": &dataRaw,
+		"code": &codeRaw, "message": &messageRaw, "data": nil,
 	}); err != nil {
 		return rpcResponse{}, err
 	}
@@ -55,11 +55,14 @@ func decodeRPCResponse(raw []byte, requestID int) (rpcResponse, error) {
 // decodeRPCObject rejects duplicate control fields and case aliases while
 // allowing unrelated extension members. Field names and values are not echoed
 // in parser diagnostics. Callers provide fresh temporary fields for each object.
+// A nil target marks a known field whose value is discarded after JSON scanning;
+// its presence is still tracked to reject duplicates and case aliases.
 func decodeRPCObject(raw []byte, fields map[string]*json.RawMessage) error {
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	if token, err := dec.Token(); err != nil || token != json.Delim('{') {
 		return fmt.Errorf("%w: expected an object", ErrInvalidRPCResponse)
 	}
+	var discarded map[string]bool
 	for dec.More() {
 		token, err := dec.Token()
 		name, ok := token.(string)
@@ -67,18 +70,27 @@ func decodeRPCObject(raw []byte, fields map[string]*json.RawMessage) error {
 			return fmt.Errorf("%w: malformed object member", ErrInvalidRPCResponse)
 		}
 		target, known := fields[name]
+		var value any = target
 		if !known {
 			for field := range fields {
 				if strings.EqualFold(name, field) {
 					return fmt.Errorf("%w: noncanonical control field name", ErrInvalidRPCResponse)
 				}
 			}
-			var ignored json.RawMessage
-			target = &ignored
+			value = &ignoredRPCValue{}
+		} else if target == nil {
+			if discarded[name] {
+				return fmt.Errorf("%w: duplicate control field", ErrInvalidRPCResponse)
+			}
+			if discarded == nil {
+				discarded = make(map[string]bool)
+			}
+			discarded[name] = true
+			value = &ignoredRPCValue{}
 		} else if len(*target) != 0 {
 			return fmt.Errorf("%w: duplicate control field", ErrInvalidRPCResponse)
 		}
-		if err := dec.Decode(target); err != nil {
+		if err := dec.Decode(value); err != nil {
 			return fmt.Errorf("%w: malformed member value", ErrInvalidRPCResponse)
 		}
 	}
@@ -91,3 +103,11 @@ func decodeRPCObject(raw []byte, fields map[string]*json.RawMessage) error {
 	}
 	return nil
 }
+
+// ignoredRPCValue is only passed to json.Decoder.Decode, which scans and
+// validates the complete JSON value before calling UnmarshalJSON. The callback
+// discards that validated value without making a RawMessage payload copy.
+// Decoder buffering and copies of required control fields are still allocated.
+type ignoredRPCValue struct{}
+
+func (*ignoredRPCValue) UnmarshalJSON([]byte) error { return nil }

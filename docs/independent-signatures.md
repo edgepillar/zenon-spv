@@ -77,6 +77,15 @@ local paths and raw backend error text. Failed verification/deadline outcomes
 retain safe partial process records and produce exit 2. Launch or final identity
 failures also retain completed verification outcomes. No failure is retried.
 The command's temporary public-key/message/signature files are removed on exit.
+Report delivery is part of command completion: stdout must accept the complete
+JSON record and flush successfully. A write, short-write or flush failure
+returns exit 70 with a fixed diagnostic when stderr is available. No backend
+verification is retried, and an undelivered or partially delivered report cannot
+be treated as success. The CLI discards buffered output to the failed channels
+at interpreter shutdown so Python cannot replace that exit with 120 or emit an
+I/O traceback. Callable `main` leaves caller-owned streams open. The 25 controller
+controls include real read-only descriptors, a broken pipe and unavailable
+diagnostics, alongside simulations of successful and refused report delivery.
 
 Linux, macOS and Windows CI run the controller controls and the real independent
 checker. Each job uploads `independent-signatures-*` as a separate artifact;

@@ -30,21 +30,57 @@ or an operator schedule cannot complete this track.
 
 ## Separate state-root research
 
-The candidate [digitalSloth revision](https://github.com/digitalSloth/go-zenon/tree/56ce2c384966f2f1940967257a0788d3998a5eef)
-introduces a v3 `StateRoot` hash field and a `StateRootSpork`-gated verification
-path. The header appends the root to its hash preimage; the transaction verifier
-compares it with a computed root. These are source observations from
-[`chain/nom/momentum.go`](https://github.com/digitalSloth/go-zenon/blob/56ce2c384966f2f1940967257a0788d3998a5eef/chain/nom/momentum.go)
-and [`verifier/momentum.go`](https://github.com/digitalSloth/go-zenon/blob/56ce2c384966f2f1940967257a0788d3998a5eef/verifier/momentum.go),
-not a security audit, deployment/activation claim or production endorsement.
+The [candidate commitment contract](state-root-candidate-contract.md) pins
+`digitalSloth/go-zenon@56ce2c384966f2f1940967257a0788d3998a5eef` and separates
+observed source rules from unresolved profile decisions. Its root covers token
+balances and contract storage; plasma, frontier, mailbox and the separate ZNN
+index are excluded. The first typed consumer target is a selected token balance
+under an exact verified Momentum. Refuse excluded-key queries before treating
+absence as a ledger value. Stored balances use an at-least-32-byte integer
+codec, so a present zero and an absent balance key need distinct proof results.
 
-Review node changes and base compatibility independently; specify root binding,
-key/path encoding, absent versus present-empty values, deletion, membership and
-absence proofs, activation and migration. Then require controlled testnet
-node/client conformance under an explicit profile before any accepting
-`STATE_VALUE_INCLUSION` implementation. A state root alone does not identify a
-canonical chain. The current client continues refusing v3 and state-value proofs.
-Older "no state tree" audits apply to their pinned v1/v2 baseline, not every fork.
+Proceed through the contract's coordinated deliveries: agree the commitment
+profile and resource policies; produce node-derived v3/root/proof vectors with
+an independent byte oracle; extend strict headers, RPC, bundles, persisted
+state, context and typed consumer reports; qualify node lifecycle and snapshot
+import separately; then run a read-only pilot under explicit activation and
+header trust inputs. Snapshot chunk digests and reconstructed SMT roots are
+different objects, and a partial root does not authenticate excluded state.
+Require hash-bound recovery tests and measurements of the actual `NodeTree`,
+rather than inferring bulk build costs from per-height comments.
+
+The contract is research, not an enabled profile, deployment claim or security
+endorsement. The current client continues refusing v3 and state-value proofs.
+The [candidate byte fixtures](../tools/gen-state-root-vectors/README.md) exercise
+unsigned header hashes and the candidate's storage-free SMT APIs with an
+independent oracle. They provide a first conformance baseline; activation, wire
+conversion, context/persistence, runtime typed queries and node lifecycle remain
+separate gates.
+Do not reuse the broader reserved `IAVL_STATE` kind for this partial SMT.
+The same isolated tool records the L1 family filter's exact patch events. Its
+22 cases distinguish family membership from the selected typed balance key
+grammar and empty Put events from the later empty-to-delete applier. This
+storage-free filter conformance does not qualify state transitions or a
+persisted `NodeTree`; those remain separate deliveries.
+The [separate in-memory applier fixture](../tools/gen-state-root-vectors/README.md#separate-in-memory-nodetree-applier-fixture)
+now executes six synthetic `NodeTree` commits and compares seven roots and 56
+proofs with an independent leaf-map oracle. Stored zero remains present;
+empty Put and Delete remove a leaf, and later duplicate events win. This mode
+opens and closes a temporary in-memory database. Disk recovery, retention,
+reorgs, startup, snapshot import, real resource budgets and proof RPC remain
+open; production v3 and state-value acceptance stay disabled.
+The [separate StateProof serializer fixture](../tools/gen-state-root-vectors/README.md#separate-stateproof-serializer-and-synthetic-binding-fixture)
+adds 14 actual response encodings and independent bounded wire/key/root checks.
+Seven primitive-proof cases model locally selected unsigned header identifiers
+and context pins; these are research selections, not authenticated headers or
+an enabled profile. That serializer mode excludes `LedgerApi` execution. Real readiness/retention
+gates, JSON-RPC transport and accepted `VerifiedState` binding remain separate work.
+The optional serializer build needs reference CGO; the three previous generator
+modes remain without CGO and preserve their fixtures. The MIT runtime stays
+unchanged, with v3/state-value refusal intact.
+Canonicality, consensus finality, freshness and authenticated election remain
+separate gates. Older "no state tree" audits apply to their pinned v1/v2
+baseline, not every fork. Selective extension remains preferable to a rewrite.
 
 ## Reuse and later tracks
 
@@ -59,3 +95,56 @@ Bitcoin work starts only with a concrete use case and its own Bitcoin Core
 header/retarget conformance, transaction-to-Merkle binding, reorg and freshness
 model. Portal/custody integration needs a further review; neither prototype nor
 Commons text is a ready implementation or a replacement for those gates.
+
+The [separate actual LedgerApi method fixture](../tools/gen-state-root-vectors/README.md#separate-actual-ledgerapi-method-fixture)
+now records 40 actual read-only method observations and 160 call events against
+synthetic recording chain/store stubs. Twenty controls independently check
+height/version gates, exact key/full-identifier forwarding, error precedence
+and unsigned consumer selections. Later reference versions, mismatched store
+identifiers, nonzero roots with errors and coherent provider root/proof
+replacement cannot select consumer trust inputs. Three balance and one root
+observations match only within this synthetic research scope. The same locked
+CGO reference module preserves all four previous corpora and every runtime
+input. JSON-RPC envelopes, accepted-header binding, real chain lifecycle and
+resource budgets remain separate deliveries; state-value acceptance stays off.
+
+The [separate offline HTTP/JSON-RPC fixture](../tools/gen-state-root-vectors/README.md#separate-offline-http-and-json-rpc-dispatcher-fixture)
+now qualifies 86 in-memory reference handler observations, exact response
+envelopes and 60 read-only Ledger delegate calls against the same recording
+stubs. Twenty controls keep selected request ID/method/height/raw-key bytes and
+unsigned context pins separate from permissive reference parsing and provider
+proof/root consistency. All five prior corpora and the runtime refusal remain
+unchanged. Actual reference execution is local macOS ARM64; native CI checks
+independent offline fixtures. The next node research gate is actual chain
+readiness and hash-bound retained-version provenance, followed by persisted
+recovery/retention and realistic resource measurements. Accepted `VerifiedState`
+integration and profile/activation agreement stay separate from these stubs.
+
+The [separate real chain component startup fixture](../tools/gen-state-root-vectors/README.md#separate-real-chain-component-startup-fixture)
+now exercises ten controlled cases through eleven actual `Init` calls and 66
+state-tree reads. The selected source remains unchanged; serialized unsigned
+momentums and manager/cache/genesis inputs are synthetic. Twenty controls check
+short catch-up, the ten/eleven startup gap, ancestor/hash refusals, retained
+roots/proofs and clean reopen. An ahead A tree can be retargeted to B's identifier
+while remaining ready with A's retained root; all three independent B-state
+observations refuse, including reopen. Height-only reads cannot authenticate a
+hash. This closes a bounded startup conformance step and leaves hash-bound
+version provenance unqualified. No full node, `Chain.Start`, signing, transaction
+or live RPC runs. Crash/recovery, pruning and realistic retention/resource
+measurements remain separate work, as do accepted-header/profile/activation
+binding and production state-value acceptance.
+
+The [separate controlled disk process exit and reopen fixture](../tools/gen-state-root-vectors/README.md#separate-controlled-disk-process-exit-and-reopen-fixture)
+now exercises five planned child exits after returned `NodeTree` calls and one
+normal-close control. Twelve reopens preserve the finite committed/truncated/
+pruned frontier and selected retained heights. The independent oracle checks
+240 observations, including canonical inclusion/absence proofs and exact
+unavailable-version errors; twenty controls bind the inputs and scope. Logical
+key/value record counts describe only this small one-key workload. They do not
+measure physical disk, RAM, compaction or latency. Actual backend execution is
+local macOS ARM64; native CI checks fixtures without the node or exit experiment.
+In-flight write faults, power loss, torn writes, production crash recovery and
+realistic retention/resource qualification remain open. The startup hash-bound
+version provenance failure is unchanged, as are all seven prior corpora and the
+MIT runtime. Accepted-header/profile/activation binding, human review and
+authenticated distribution remain separate gates.

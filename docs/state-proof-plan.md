@@ -1,5 +1,14 @@
 # State Proof Plan
 
+> Historical plan for the pinned v1/v2 baseline. The current source-pinned
+> state-root research and delivery gates are in the
+> [candidate commitment contract](state-root-candidate-contract.md) and
+> [native roadmap](native-roadmap.md). The candidate SMT covers balances/storage
+> only; frontier, plasma, mailbox and the separate ZNN index are outside its
+> root. An accepting implementation crosses header, activation, RPC, bundle,
+> persistence, context, proof and consumer contracts. This historical plan does
+> not enable that implementation or establish network activation.
+
 This plan captures the next step toward making `zenon-spv` closer to a
 real state-verifying SPV. The current verifier proves Momentum header
 continuity and account-header inclusion under `ContentHash`; it does not

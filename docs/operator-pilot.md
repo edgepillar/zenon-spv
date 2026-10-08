@@ -238,6 +238,12 @@ command-specific targets instead of `--bundle`. It performs one proof-only
 collection and observes its actual completion before querying/consuming. Failed
 collection cannot start the verifier; it never advances or renews local state.
 See the complete [collect-and-observe invocation](block-observer.md#collect-and-observe-from-one-explicit-rpc).
+For an existing local bundle, the [consumer resource observation guide](consumer-resource-observation.md)
+adds a finite metadata series and a separate post-exit empty-root diagnostic.
+Inputs, staging and records stay separate; actual process statuses, partial
+sampling, caller-protected directory/ACLs and immutable trust settings remain
+explicit. Its linked resource reports do not supply consumer-selected budgets
+or qualify an advancing-state network pilot.
 An explicitly operator-trusted single-RPC experiment can proceed without a
 second operator. It does not replace independently authenticated network inputs,
 corroboration for a qualified network pilot or the release review gates above.

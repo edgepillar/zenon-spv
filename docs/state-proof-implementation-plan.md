@@ -2,10 +2,12 @@
 
 > Historical implementation plan for the pinned baseline in the
 > [state commitment audit](state-commitment-audit.md). Current priorities and
-> the separate, unapproved v3 state-root research candidate are in the
-> [native roadmap](native-roadmap.md). A future accepting state verifier needs
-> the complete protocol, trust and conformance gates there, not just a new
-> commitment-kind switch.
+> the separate v3 state-root research candidate are in the
+> [native roadmap](native-roadmap.md) and
+> [candidate commitment contract](state-root-candidate-contract.md). Their
+> complete protocol, trust and conformance gates supersede this historical
+> plan's "small follow-up" estimate. The partial balance/storage SMT cannot be
+> silently enabled under the broader reserved `IAVL_STATE` kind.
 
 ## Context
 

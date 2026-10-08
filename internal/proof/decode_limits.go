@@ -8,10 +8,10 @@ import (
 	"io"
 )
 
-// DecodeLimits caps array counts and decoded proof-node bytes while reading a
-// bundle. Zero disables a cap. Other byte fields, JSON input buffers, and
-// cryptographic work still need separate bounds; these are not total process
-// memory limits.
+// DecodeLimits caps array counts, decoded proof-node bytes, and account-amount
+// JSON token bytes while reading a bundle. Zero disables a cap. Other byte
+// fields, JSON input buffers, and cryptographic work still need separate bounds;
+// these are not total process memory limits.
 type DecodeLimits struct {
 	MaxHeaders                  int
 	MaxCommitments              int
@@ -21,6 +21,7 @@ type DecodeLimits struct {
 	MaxTotalFlatEvidenceMembers int
 	MaxSegmentBlocks            int
 	MaxTotalSegmentBlocks       int
+	MaxAccountAmountBytes       int
 	MaxStateProofNodes          int
 	MaxStateProofBytes          int
 }
@@ -28,7 +29,8 @@ type DecodeLimits struct {
 func (limits DecodeLimits) validate() error {
 	if limits.MaxHeaders < 0 || limits.MaxCommitments < 0 || limits.MaxSegments < 0 || limits.MaxStateValueProofs < 0 ||
 		limits.MaxFlatEvidenceMembers < 0 || limits.MaxTotalFlatEvidenceMembers < 0 ||
-		limits.MaxSegmentBlocks < 0 || limits.MaxTotalSegmentBlocks < 0 || limits.MaxStateProofNodes < 0 || limits.MaxStateProofBytes < 0 {
+		limits.MaxSegmentBlocks < 0 || limits.MaxTotalSegmentBlocks < 0 || limits.MaxAccountAmountBytes < 0 ||
+		limits.MaxStateProofNodes < 0 || limits.MaxStateProofBytes < 0 {
 		return errors.New("bundle decode limits must be nonnegative")
 	}
 	return nil
@@ -45,8 +47,8 @@ func (err *BundleCountLimitError) Error() string {
 	return fmt.Sprintf("bundle %s count exceeds limit %d", err.Field, err.Limit)
 }
 
-// BundleByteLimitError identifies a decoded-byte refusal without exposing
-// input values. Field is the canonical path of the bounded byte collection.
+// BundleByteLimitError identifies a byte refusal without exposing input
+// values. Field is the canonical path of the bounded byte collection or token.
 type BundleByteLimitError struct {
 	Field string
 	Limit int

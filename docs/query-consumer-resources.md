@@ -50,6 +50,110 @@ latency or maximum memory. The tests do not exercise every legal
 network delays. Native CI runners are not independently selected consumer
 hardware.
 
+## Bounded input-read allocations
+
+The consumer uses the size of the validated open regular-file descriptor as a
+buffer-allocation hint. A stable nonempty file normally needs one input buffer
+with space for an EOF probe. Metadata does not select accepted bytes: a file
+that grows or shrinks is still read to EOF through at most one overflow byte.
+All buffer capacities stay within the selected input limit plus that byte.
+An unusable hint falls back to bounded incremental growth. Read failures and
+oversized inputs expose no partial bytes and retain the fixed
+`input_unavailable` process result. Existing pathname, descriptor, FIFO,
+strict-decoding and independently selected expectations checks still apply.
+This does not authenticate files or close directory-replacement races.
+
+`TestConsumerInputReadContract`, selected as `bounded_consumer_input_reader`
+in the offline pilot, compares accepted bytes, refusals and reader consumption
+with the previous `LimitReader` + `ReadAll` contract. It covers short reads,
+simultaneous data/EOF or data/error, smaller/larger/unusable size hints, the
+256 KiB and 4 MiB limits, one overflow probe and invalid limits before reading.
+Complete, truncated and trailing document bytes reach the unchanged decoder.
+The fuzz target uses the same independent bounded reference.
+
+Native CI additionally preserves three ordinary allocation observations per
+reader and size with `BenchmarkConsumerInputRead`. Sizes include the fixed
+T1/T256 report and expectations byte counts (2,264/157,932 and 699/55,897),
+plus both input caps. Repeated synthetic bytes isolate reading and do not
+constitute a valid report or trust input. The previous reader and the new
+descriptor-hint path must return the complete unchanged bytes on every
+iteration. All 36 rows per native platform are retained without filtering or
+retrying. `B/op` includes the in-memory reader and returned buffer; `allocs/op`
+counts Go allocations. Neither field measures resident memory. Timing also
+includes the identical complete-byte comparison. These reader observations
+exclude filesystem calls, descriptor validation, JSON decoding, matching,
+process startup and output. Use the existing 21-process series above for the
+whole consumer boundary; reader allocation savings alone do not establish an
+application latency or memory budget.
+
+## Oversized-token refusal allocations
+
+The strict consumer already refuses decoded strings above 4,096 bytes and
+number tokens above 21 bytes. `json.Decoder.Token` can allocate a large token
+before those checks. The consumer now applies an allocation-free necessary
+condition before token decoding, after the existing UTF-8 check. An encoded
+string cannot use more than six source bytes per accepted decoded byte; the
+filter therefore allows up to 24,576 bytes between its quotes, including
+escapes. The decoded 4,096-byte limit still applies afterward. Number tokens
+retain the same 21-byte limit. Digits inside strings are not number tokens.
+This filter neither validates JSON nor relaxes syntax, duplicates, keys,
+numeric types/ranges, shape, context or matching checks.
+
+`TestConsumerTokenPrefilter`, selected as `bounded_consumer_tokens`, compares
+the full decoder with a test-only copy of the previous strict decoder. It
+covers maximum escaped strings, control characters, multibyte UTF-8,
+surrogate pairs and replacement runes, quote/backslash parity, numeric
+boundaries, oversized tokens and fixed private process refusals. A differential
+fuzz target compares decisions and destination values; neither decoder's
+failure may become a match.
+
+`BenchmarkConsumerTokenPrefilter` preserves three ordinary native observations
+for each decoder and workload. It includes otherwise complete reports with
+32 KiB, 1 MiB and 3 MiB oversized caveat strings or integer tokens, plus the
+ordinary matching report and a matching report with a maximally escaped
+4,096-byte caveat. Every document fits the 4 MiB input limit. Both decoders must
+produce the same decision and destination values; valid cases must match the
+independently prepared expectations. All 48 rows per platform are retained.
+The reported `B/op` and `allocs/op` cover decoding and its result check, with
+fixture construction outside measurement. They exclude input reading,
+filesystem calls, process startup and output. Invalid workloads measure an
+unchanged refusal, not useful query throughput. Valid-workload timing records
+the extra byte-scan cost without establishing a latency budget. These are Go
+allocation observations, not RSS or whole-process memory measurements.
+
+## Borrowed shape traversal allocations
+
+After the unchanged complete token/syntax, duplicate-key and resource scan, the
+consumer checks exact field shapes over borrowed input spans. It no longer
+copies nested encoded values into `json.RawMessage` maps and slices. Escaped
+keys are still decoded before exact name matching. Required fields, optional
+non-null references, nullable documented pointers and field-order independence
+keep their previous meaning. The final `json.Unmarshal` owns scalar type/range
+checks and destination construction, including its previous partial destination
+behavior on a scalar error. The span traversal is not a standalone JSON parser;
+the complete bounded token scan must precede it.
+
+`TestConsumerShapeSpans`, selected as `bounded_consumer_shapes`, compares the
+decoder with the parent entry point and the separately copied scan/RawMessage
+shape reference. It includes decoded/unknown keys, quoted delimiters, nullable
+and optional values, scalar failures, existing depth/array limits, input
+preservation and fixed private process refusals. Its differential fuzz target
+allows documents through the 4 MiB report cap.
+
+`BenchmarkConsumerShapeSpans` retains three native observations for both
+decoders at each of six complete workloads: the ordinary report, 256 distinct
+targets with 256 small caveats, 256 caveats at the 4,096-byte decoded string
+limit, 170 maximally escaped caveats close to the 4 MiB input cap, and both
+large caveat documents with an unknown final field. Selected accepted reports
+must still match the complete independently prepared expectations. All 36
+rows per native platform are retained without retries or sample filtering.
+Fixture construction is outside measurement. `B/op` and `allocs/op` cover the
+decoder and decision/destination check; they are Go allocations, not RSS. Timing
+also includes result comparison and, for accepted reports, contract matching.
+Reading, files, process startup, output and network operations are excluded.
+These samples cover selected legal and refused shapes, not every legal input,
+worst-case resource use or an independently selected application budget.
+
 ## Artifact fields and validation
 
 The `compiled_query_consumer_scaling` case in the

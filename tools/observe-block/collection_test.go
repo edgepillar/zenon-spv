@@ -16,7 +16,25 @@ import (
 func TestMain(m *testing.M) {
 	if os.Getenv("ZENON_OBSERVER_COLLECTION_TEST") == "1" {
 		if len(os.Args) > 1 && os.Args[1] == "--rpc" {
+			if path := os.Getenv("ZENON_OBSERVER_COLLECTION_STARTED"); path != "" {
+				if os.WriteFile(path, []byte("started"), 0o600) != nil {
+					os.Exit(71)
+				}
+			}
 			_, _ = os.Stderr.WriteString("PRIVATE_COLLECTOR_DIAGNOSTIC\n")
+			if os.Getenv("ZENON_OBSERVER_COLLECTION_LARGE") == "1" {
+				// Stream a bounded, syntax-valid fixture without retaining it in
+				// the child. The parent captures it just like ordinary collection.
+				_, _ = os.Stdout.WriteString(`{"data":"`)
+				chunk := bytes.Repeat([]byte{'x'}, 1<<20)
+				for range 32 {
+					if _, err := os.Stdout.Write(chunk); err != nil {
+						os.Exit(71)
+					}
+				}
+				_, _ = os.Stdout.WriteString(`"}`)
+				os.Exit(0)
+			}
 			_, _ = os.Stdout.WriteString(os.Getenv("ZENON_OBSERVER_COLLECTION_OUTPUT"))
 			os.Exit(0)
 		}

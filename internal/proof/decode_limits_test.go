@@ -72,6 +72,7 @@ func TestLoadBundleByteAndCountLimits(t *testing.T) {
 	for _, limits := range []DecodeLimits{
 		{MaxHeaders: -1}, {MaxCommitments: -1}, {MaxSegments: -1}, {MaxStateValueProofs: -1},
 		{MaxFlatEvidenceMembers: -1}, {MaxTotalFlatEvidenceMembers: -1}, {MaxSegmentBlocks: -1}, {MaxTotalSegmentBlocks: -1}, {MaxStateProofNodes: -1}, {MaxStateProofBytes: -1},
+		{MaxAccountAmountBytes: -1},
 	} {
 		if _, err := LoadHeaderBundleWithLimits(path+"-absent", 1024, limits); err == nil || errors.Is(err, os.ErrNotExist) {
 			t.Fatalf("invalid limits reached the filesystem: %v", err)

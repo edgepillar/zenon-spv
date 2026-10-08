@@ -1,0 +1,3363 @@
+{
+  "backend": "NodeTree",
+  "cases": [
+    {
+      "child_clean_close_marker": false,
+      "child_exit": 73,
+      "child_observation": {
+        "boundary": "after-open",
+        "frontier_before_exit": {
+          "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+          "height": 2
+        },
+        "method_trace": [
+          "OpenFile",
+          "NewNodeTree"
+        ]
+      },
+      "input": {
+        "name": "exit-after-open",
+        "seed_height": 2,
+        "boundary": "after-open"
+      },
+      "rounds": [
+        {
+          "frontier": {
+            "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+            "height": 2
+          },
+          "reads": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "154a74cd050d7b2d75db495eb35c2eb1a61a33526504d1e0e969f9de2cc4659c",
+                "height": 1
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c8800000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001b1dd8f79be6723e9f4568b2ca7802c7506162a1e958d31c4c51df9ca6fe9f1f1",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "9ac5992183b66652c045a4f9a24f5f5b761c051bf4c9cf152afa6a7ae9b68263",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "558470e33bdf126ee33698ff4e0d38c60c2ed7060ddba76f097db605d6a786c4",
+                "height": 3
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "5657644d245861b62b37282289126641d0ce09448355952ccdbecb9bdc4710ef",
+                "height": 4
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            }
+          ],
+          "round": 1,
+          "storage": {
+            "family_counts": {
+              "format": 1,
+              "frontier": 1,
+              "node": 2,
+              "refcount": 2,
+              "version": 2
+            },
+            "key_bytes": 152,
+            "records": 8,
+            "retained_heights": [
+              1,
+              2
+            ],
+            "value_bytes": 251
+          }
+        },
+        {
+          "frontier": {
+            "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+            "height": 2
+          },
+          "reads": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "154a74cd050d7b2d75db495eb35c2eb1a61a33526504d1e0e969f9de2cc4659c",
+                "height": 1
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c8800000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001b1dd8f79be6723e9f4568b2ca7802c7506162a1e958d31c4c51df9ca6fe9f1f1",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "9ac5992183b66652c045a4f9a24f5f5b761c051bf4c9cf152afa6a7ae9b68263",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "558470e33bdf126ee33698ff4e0d38c60c2ed7060ddba76f097db605d6a786c4",
+                "height": 3
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "5657644d245861b62b37282289126641d0ce09448355952ccdbecb9bdc4710ef",
+                "height": 4
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            }
+          ],
+          "round": 2,
+          "storage": {
+            "family_counts": {
+              "format": 1,
+              "frontier": 1,
+              "node": 2,
+              "refcount": 2,
+              "version": 2
+            },
+            "key_bytes": 152,
+            "records": 8,
+            "retained_heights": [
+              1,
+              2
+            ],
+            "value_bytes": 251
+          }
+        }
+      ]
+    },
+    {
+      "child_clean_close_marker": false,
+      "child_exit": 73,
+      "child_observation": {
+        "boundary": "after-stage",
+        "frontier_before_exit": {
+          "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+          "height": 2
+        },
+        "method_trace": [
+          "OpenFile",
+          "NewNodeTree",
+          "Update"
+        ]
+      },
+      "input": {
+        "name": "exit-after-stage",
+        "seed_height": 2,
+        "boundary": "after-stage"
+      },
+      "rounds": [
+        {
+          "frontier": {
+            "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+            "height": 2
+          },
+          "reads": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "154a74cd050d7b2d75db495eb35c2eb1a61a33526504d1e0e969f9de2cc4659c",
+                "height": 1
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c8800000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001b1dd8f79be6723e9f4568b2ca7802c7506162a1e958d31c4c51df9ca6fe9f1f1",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "9ac5992183b66652c045a4f9a24f5f5b761c051bf4c9cf152afa6a7ae9b68263",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "558470e33bdf126ee33698ff4e0d38c60c2ed7060ddba76f097db605d6a786c4",
+                "height": 3
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "5657644d245861b62b37282289126641d0ce09448355952ccdbecb9bdc4710ef",
+                "height": 4
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            }
+          ],
+          "round": 1,
+          "storage": {
+            "family_counts": {
+              "format": 1,
+              "frontier": 1,
+              "node": 2,
+              "refcount": 2,
+              "version": 2
+            },
+            "key_bytes": 152,
+            "records": 8,
+            "retained_heights": [
+              1,
+              2
+            ],
+            "value_bytes": 251
+          }
+        },
+        {
+          "frontier": {
+            "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+            "height": 2
+          },
+          "reads": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "154a74cd050d7b2d75db495eb35c2eb1a61a33526504d1e0e969f9de2cc4659c",
+                "height": 1
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c8800000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001b1dd8f79be6723e9f4568b2ca7802c7506162a1e958d31c4c51df9ca6fe9f1f1",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "9ac5992183b66652c045a4f9a24f5f5b761c051bf4c9cf152afa6a7ae9b68263",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "558470e33bdf126ee33698ff4e0d38c60c2ed7060ddba76f097db605d6a786c4",
+                "height": 3
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "5657644d245861b62b37282289126641d0ce09448355952ccdbecb9bdc4710ef",
+                "height": 4
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            }
+          ],
+          "round": 2,
+          "storage": {
+            "family_counts": {
+              "format": 1,
+              "frontier": 1,
+              "node": 2,
+              "refcount": 2,
+              "version": 2
+            },
+            "key_bytes": 152,
+            "records": 8,
+            "retained_heights": [
+              1,
+              2
+            ],
+            "value_bytes": 251
+          }
+        }
+      ]
+    },
+    {
+      "child_clean_close_marker": false,
+      "child_exit": 73,
+      "child_observation": {
+        "boundary": "after-commit",
+        "frontier_before_exit": {
+          "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+          "height": 3
+        },
+        "method_trace": [
+          "OpenFile",
+          "NewNodeTree",
+          "Update",
+          "Commit"
+        ]
+      },
+      "input": {
+        "name": "exit-after-commit",
+        "seed_height": 2,
+        "boundary": "after-commit"
+      },
+      "rounds": [
+        {
+          "frontier": {
+            "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+            "height": 3
+          },
+          "reads": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "154a74cd050d7b2d75db495eb35c2eb1a61a33526504d1e0e969f9de2cc4659c",
+                "height": 1
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c8800000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001b1dd8f79be6723e9f4568b2ca7802c7506162a1e958d31c4c51df9ca6fe9f1f1",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "9ac5992183b66652c045a4f9a24f5f5b761c051bf4c9cf152afa6a7ae9b68263",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "ff575d30a6435bf3d562864f36c1d8abd11d7ea7543fa0fbc69a4d3663b4833a",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "558470e33bdf126ee33698ff4e0d38c60c2ed7060ddba76f097db605d6a786c4",
+                "height": 3
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "ff575d30a6435bf3d562864f36c1d8abd11d7ea7543fa0fbc69a4d3663b4833a",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada9cf50c66b155e0411431451fc3b554c6b6f7b6e82f8de6117869437ea9999e5600000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000003"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001294e35574759187083f890d9207769b0ed96a38af790c63cf1ed4df5913adfab",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "5657644d245861b62b37282289126641d0ce09448355952ccdbecb9bdc4710ef",
+                "height": 4
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            }
+          ],
+          "round": 1,
+          "storage": {
+            "family_counts": {
+              "format": 1,
+              "frontier": 1,
+              "node": 3,
+              "refcount": 3,
+              "version": 3
+            },
+            "key_bytes": 227,
+            "records": 11,
+            "retained_heights": [
+              1,
+              2,
+              3
+            ],
+            "value_bytes": 356
+          }
+        },
+        {
+          "frontier": {
+            "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+            "height": 3
+          },
+          "reads": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "154a74cd050d7b2d75db495eb35c2eb1a61a33526504d1e0e969f9de2cc4659c",
+                "height": 1
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c8800000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001b1dd8f79be6723e9f4568b2ca7802c7506162a1e958d31c4c51df9ca6fe9f1f1",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "9ac5992183b66652c045a4f9a24f5f5b761c051bf4c9cf152afa6a7ae9b68263",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "ff575d30a6435bf3d562864f36c1d8abd11d7ea7543fa0fbc69a4d3663b4833a",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "558470e33bdf126ee33698ff4e0d38c60c2ed7060ddba76f097db605d6a786c4",
+                "height": 3
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "ff575d30a6435bf3d562864f36c1d8abd11d7ea7543fa0fbc69a4d3663b4833a",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada9cf50c66b155e0411431451fc3b554c6b6f7b6e82f8de6117869437ea9999e5600000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000003"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001294e35574759187083f890d9207769b0ed96a38af790c63cf1ed4df5913adfab",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "5657644d245861b62b37282289126641d0ce09448355952ccdbecb9bdc4710ef",
+                "height": 4
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            }
+          ],
+          "round": 2,
+          "storage": {
+            "family_counts": {
+              "format": 1,
+              "frontier": 1,
+              "node": 3,
+              "refcount": 3,
+              "version": 3
+            },
+            "key_bytes": 227,
+            "records": 11,
+            "retained_heights": [
+              1,
+              2,
+              3
+            ],
+            "value_bytes": 356
+          }
+        }
+      ]
+    },
+    {
+      "child_clean_close_marker": false,
+      "child_exit": 73,
+      "child_observation": {
+        "boundary": "after-truncate",
+        "frontier_before_exit": {
+          "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+          "height": 2
+        },
+        "method_trace": [
+          "OpenFile",
+          "NewNodeTree",
+          "Truncate"
+        ]
+      },
+      "input": {
+        "name": "exit-after-truncate",
+        "seed_height": 3,
+        "boundary": "after-truncate"
+      },
+      "rounds": [
+        {
+          "frontier": {
+            "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+            "height": 2
+          },
+          "reads": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "154a74cd050d7b2d75db495eb35c2eb1a61a33526504d1e0e969f9de2cc4659c",
+                "height": 1
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c8800000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001b1dd8f79be6723e9f4568b2ca7802c7506162a1e958d31c4c51df9ca6fe9f1f1",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "9ac5992183b66652c045a4f9a24f5f5b761c051bf4c9cf152afa6a7ae9b68263",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "558470e33bdf126ee33698ff4e0d38c60c2ed7060ddba76f097db605d6a786c4",
+                "height": 3
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "5657644d245861b62b37282289126641d0ce09448355952ccdbecb9bdc4710ef",
+                "height": 4
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            }
+          ],
+          "round": 1,
+          "storage": {
+            "family_counts": {
+              "format": 1,
+              "frontier": 1,
+              "node": 2,
+              "refcount": 2,
+              "version": 2
+            },
+            "key_bytes": 152,
+            "records": 8,
+            "retained_heights": [
+              1,
+              2
+            ],
+            "value_bytes": 251
+          }
+        },
+        {
+          "frontier": {
+            "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+            "height": 2
+          },
+          "reads": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "154a74cd050d7b2d75db495eb35c2eb1a61a33526504d1e0e969f9de2cc4659c",
+                "height": 1
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c8800000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001b1dd8f79be6723e9f4568b2ca7802c7506162a1e958d31c4c51df9ca6fe9f1f1",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "9ac5992183b66652c045a4f9a24f5f5b761c051bf4c9cf152afa6a7ae9b68263",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "558470e33bdf126ee33698ff4e0d38c60c2ed7060ddba76f097db605d6a786c4",
+                "height": 3
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "5657644d245861b62b37282289126641d0ce09448355952ccdbecb9bdc4710ef",
+                "height": 4
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            }
+          ],
+          "round": 2,
+          "storage": {
+            "family_counts": {
+              "format": 1,
+              "frontier": 1,
+              "node": 2,
+              "refcount": 2,
+              "version": 2
+            },
+            "key_bytes": 152,
+            "records": 8,
+            "retained_heights": [
+              1,
+              2
+            ],
+            "value_bytes": 251
+          }
+        }
+      ]
+    },
+    {
+      "child_clean_close_marker": false,
+      "child_exit": 73,
+      "child_observation": {
+        "boundary": "after-prune",
+        "frontier_before_exit": {
+          "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+          "height": 3
+        },
+        "method_trace": [
+          "OpenFile",
+          "NewNodeTree",
+          "Prune"
+        ]
+      },
+      "input": {
+        "name": "exit-after-prune",
+        "seed_height": 3,
+        "boundary": "after-prune"
+      },
+      "rounds": [
+        {
+          "frontier": {
+            "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+            "height": 3
+          },
+          "reads": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "154a74cd050d7b2d75db495eb35c2eb1a61a33526504d1e0e969f9de2cc4659c",
+                "height": 1
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "9ac5992183b66652c045a4f9a24f5f5b761c051bf4c9cf152afa6a7ae9b68263",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "ff575d30a6435bf3d562864f36c1d8abd11d7ea7543fa0fbc69a4d3663b4833a",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "558470e33bdf126ee33698ff4e0d38c60c2ed7060ddba76f097db605d6a786c4",
+                "height": 3
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "ff575d30a6435bf3d562864f36c1d8abd11d7ea7543fa0fbc69a4d3663b4833a",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada9cf50c66b155e0411431451fc3b554c6b6f7b6e82f8de6117869437ea9999e5600000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000003"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001294e35574759187083f890d9207769b0ed96a38af790c63cf1ed4df5913adfab",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "5657644d245861b62b37282289126641d0ce09448355952ccdbecb9bdc4710ef",
+                "height": 4
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            }
+          ],
+          "round": 1,
+          "storage": {
+            "family_counts": {
+              "format": 1,
+              "frontier": 1,
+              "node": 1,
+              "refcount": 1,
+              "version": 1
+            },
+            "key_bytes": 77,
+            "records": 5,
+            "retained_heights": [
+              3
+            ],
+            "value_bytes": 146
+          }
+        },
+        {
+          "frontier": {
+            "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+            "height": 3
+          },
+          "reads": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "154a74cd050d7b2d75db495eb35c2eb1a61a33526504d1e0e969f9de2cc4659c",
+                "height": 1
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "9ac5992183b66652c045a4f9a24f5f5b761c051bf4c9cf152afa6a7ae9b68263",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "ff575d30a6435bf3d562864f36c1d8abd11d7ea7543fa0fbc69a4d3663b4833a",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "558470e33bdf126ee33698ff4e0d38c60c2ed7060ddba76f097db605d6a786c4",
+                "height": 3
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "ff575d30a6435bf3d562864f36c1d8abd11d7ea7543fa0fbc69a4d3663b4833a",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada9cf50c66b155e0411431451fc3b554c6b6f7b6e82f8de6117869437ea9999e5600000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000003"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001294e35574759187083f890d9207769b0ed96a38af790c63cf1ed4df5913adfab",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "5657644d245861b62b37282289126641d0ce09448355952ccdbecb9bdc4710ef",
+                "height": 4
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            }
+          ],
+          "round": 2,
+          "storage": {
+            "family_counts": {
+              "format": 1,
+              "frontier": 1,
+              "node": 1,
+              "refcount": 1,
+              "version": 1
+            },
+            "key_bytes": 77,
+            "records": 5,
+            "retained_heights": [
+              3
+            ],
+            "value_bytes": 146
+          }
+        }
+      ]
+    },
+    {
+      "child_clean_close_marker": true,
+      "child_exit": 0,
+      "child_observation": {
+        "boundary": "after-commit",
+        "frontier_before_exit": {
+          "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+          "height": 3
+        },
+        "method_trace": [
+          "OpenFile",
+          "NewNodeTree",
+          "Update",
+          "Commit"
+        ]
+      },
+      "input": {
+        "name": "clean-close",
+        "seed_height": 2,
+        "boundary": "after-commit"
+      },
+      "rounds": [
+        {
+          "frontier": {
+            "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+            "height": 3
+          },
+          "reads": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "154a74cd050d7b2d75db495eb35c2eb1a61a33526504d1e0e969f9de2cc4659c",
+                "height": 1
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c8800000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001b1dd8f79be6723e9f4568b2ca7802c7506162a1e958d31c4c51df9ca6fe9f1f1",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "9ac5992183b66652c045a4f9a24f5f5b761c051bf4c9cf152afa6a7ae9b68263",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "ff575d30a6435bf3d562864f36c1d8abd11d7ea7543fa0fbc69a4d3663b4833a",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "558470e33bdf126ee33698ff4e0d38c60c2ed7060ddba76f097db605d6a786c4",
+                "height": 3
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "ff575d30a6435bf3d562864f36c1d8abd11d7ea7543fa0fbc69a4d3663b4833a",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada9cf50c66b155e0411431451fc3b554c6b6f7b6e82f8de6117869437ea9999e5600000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000003"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001294e35574759187083f890d9207769b0ed96a38af790c63cf1ed4df5913adfab",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "5657644d245861b62b37282289126641d0ce09448355952ccdbecb9bdc4710ef",
+                "height": 4
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            }
+          ],
+          "round": 1,
+          "storage": {
+            "family_counts": {
+              "format": 1,
+              "frontier": 1,
+              "node": 3,
+              "refcount": 3,
+              "version": 3
+            },
+            "key_bytes": 227,
+            "records": 11,
+            "retained_heights": [
+              1,
+              2,
+              3
+            ],
+            "value_bytes": 356
+          }
+        },
+        {
+          "frontier": {
+            "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+            "height": 3
+          },
+          "reads": [
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "154a74cd050d7b2d75db495eb35c2eb1a61a33526504d1e0e969f9de2cc4659c",
+                "height": 1
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "bf08593c2b2746b754652c4270a5d0b38689dc914a3dcd14200041b5e3040f5b",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c8800000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "0c83ef9c1c56ba1810b4ca3c6ed5bb8810cb2c75d9303efa6f7c3be7636ca764",
+                "height": 1
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001b1dd8f79be6723e9f4568b2ca7802c7506162a1e958d31c4c51df9ca6fe9f1f1",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "9ac5992183b66652c045a4f9a24f5f5b761c051bf4c9cf152afa6a7ae9b68263",
+                "height": 2
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "656ef86f035d413b022146c3d5a982f76c8d5a9acc6af885966e8771901c9598",
+                "height": 2
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001fa793efff4f728d10a5d5a13327e9259c62d2301f934fc6edd59546b35be6110",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "ff575d30a6435bf3d562864f36c1d8abd11d7ea7543fa0fbc69a4d3663b4833a",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "558470e33bdf126ee33698ff4e0d38c60c2ed7060ddba76f097db605d6a786c4",
+                "height": 3
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "ff575d30a6435bf3d562864f36c1d8abd11d7ea7543fa0fbc69a4d3663b4833a",
+              "value": null
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada9cf50c66b155e0411431451fc3b554c6b6f7b6e82f8de6117869437ea9999e5600000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003",
+              "root": null,
+              "value": "0000000000000000000000000000000000000000000000000000000000000003"
+            },
+            {
+              "error": null,
+              "identifier": {
+                "hash": "66e80dcf7a6710cf86ad1e91e002f44e0bcef6b68cb6a4c6f96b2a5c288823d8",
+                "height": 3
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": "0089c62330d4c93bd46514704a502773bd3af8c8b45f16eeea3cbe0b5798e06eab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020001294e35574759187083f890d9207769b0ed96a38af790c63cf1ed4df5913adfab",
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": null,
+              "name": "root",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "5657644d245861b62b37282289126641d0ce09448355952ccdbecb9bdc4710ef",
+                "height": 4
+              },
+              "key": null,
+              "name": "root-other-hash",
+              "proof": null,
+              "root": "0000000000000000000000000000000000000000000000000000000000000000",
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110322222222222222222222",
+              "name": "balance",
+              "proof": null,
+              "root": null,
+              "value": null
+            },
+            {
+              "error": "trie: no such version",
+              "identifier": {
+                "hash": "07fd8856fca70dcf7b5bdf356986f8b956238f5b5376e07166bfec53177766e5",
+                "height": 4
+              },
+              "key": "0311111111111111111111111111111111111111110344444444444444444444",
+              "name": "absent-token",
+              "proof": null,
+              "root": null,
+              "value": null
+            }
+          ],
+          "round": 2,
+          "storage": {
+            "family_counts": {
+              "format": 1,
+              "frontier": 1,
+              "node": 3,
+              "refcount": 3,
+              "version": 3
+            },
+            "key_bytes": 227,
+            "records": 11,
+            "retained_heights": [
+              1,
+              2,
+              3
+            ],
+            "value_bytes": 356
+          }
+        }
+      ]
+    }
+  ],
+  "format_version": 1,
+  "kind": "candidate-disk-lifecycle-research",
+  "scope": {
+    "RPC_executed": false,
+    "actual_NodeTree_disk_APIs_executed": true,
+    "authenticated_retained_version_provenance_qualified": false,
+    "background_build_executed": false,
+    "chain_Start_executed": false,
+    "chain_component_Init_executed": false,
+    "child_defer_close_marker_checked": true,
+    "controlled_clean_close_control": true,
+    "controlled_clean_reopen_executed": true,
+    "controlled_process_exit_executed": true,
+    "full_node_started": false,
+    "header_authentication_executed": false,
+    "logical_storage_records_measured": true,
+    "network_activation_authenticated": false,
+    "network_execution": false,
+    "node_tests_executed": false,
+    "owned_databases_removed": true,
+    "power_loss_qualified": false,
+    "production_crash_recovery_qualified": false,
+    "profile_agreed": false,
+    "realistic_retention_resource_budgets_qualified": false,
+    "runtime_state_proof_acceptance": false,
+    "signing": false,
+    "small_owned_temporary_disk_LevelDB": true,
+    "synthetic": true,
+    "torn_write_qualified": false,
+    "transactions": false,
+    "unsigned": true
+  },
+  "source": {
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "56ce2c384966f2f1940967257a0788d3998a5eef",
+    "tree": "d5abff528566a561e1a53a46103cb4b15ff63c6c"
+  }
+}

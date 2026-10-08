@@ -2,7 +2,7 @@
 
 `BenchmarkRetainedCapacity` exercises full K=16, 256 and 4096 windows, with
 W=6, v2 headers, an explicit profile and required producer authorization.
-Each capacity has four measured operations:
+Each capacity has six measured operations:
 
 | Operation | Timed work |
 | --- | --- |
@@ -10,6 +10,7 @@ Each capacity has four measured operations:
 | `CommitmentFlat` | Verify one member against the oldest retained header through an immutable `VerifiedState`, including depth, evidence bounds, content hashing, membership and result guarantees. |
 | `TrustedResume` | Open/decode a full saved file, capture options/schedule, validate all retained hashes/signatures and reauthorize every producer. Reads normally use a warm filesystem cache. |
 | `Save` | Validate and serialize the full window, replace the fixture file atomically where supported, and perform the platform's file/directory sync behavior. |
+| `SegmentUser` / `SegmentEmbedded` | Verify three linked node-derived account envelopes against a populated synthetic retained window, including complete-batch limits, every candidate proof, signatures where applicable, linkage and all result checks. |
 
 Fixture construction, signatures, initial verification and initial file creation
 are outside timing. Successful-result checks remain inside. `state-B` records
@@ -40,8 +41,8 @@ costs that grow with K. Individual `VerifiedState.VerifyCommitment` calls reuse
 the complete-window protocol validation performed before an immutable handle
 was returned. Their selected-header lookup is constant-time, but each supplied
 flat content list is bounded, hashed and scanned anew. The low-level
-`VerifyCommitment` API still checks the entire caller-owned window, and segment
-queries retain that path. A larger K increases proof availability; it is not a
+`VerifyCommitment` and `VerifySegment` APIs still check the entire caller-owned
+window. Owned segment queries now reuse immutable validation as described below. A larger K increases proof availability; it is not a
 constant-cost cache. The explicit maximum remains 4096. Transient JSON
 decoding/validation can allocate much more than the file size. Hard input caps
 are not a process-memory ceiling.
@@ -115,8 +116,8 @@ outside the changed path. Saved state sizes remained 13,139, 202,500 and
 3,232,261 bytes for K=16, 256 and 4096. These results do not establish a
 portable speedup, peak RSS, a hardware memory ceiling or network performance.
 The verifier still allocates a header array proportional to K. These older
-measurements precede the individual-query change below; segment queries,
-extension, save and resume retain costs that grow with retained history.
+measurements precede the query changes below. Extension, save and resume
+retain costs that grow with retained history.
 
 Ownership tests cover initially empty, partial and full windows; batches below,
 equal to and above K; caller input mutations; predecessor, sibling and
@@ -155,11 +156,65 @@ The following values are local medians for the same one-member content proof:
 | 4096 | 43.973 | 0.989 | 448 | 11 |
 
 This removes a K-dependent layout scan from an individual query, not the cost
-of flat-content hashing or whole-state load/extension/save. Segment queries
-retain their existing validation path. The node-derived mixed v1/v2 comparison
+of flat-content hashing or whole-state load/extension/save. That individual-query change left segment queries on their existing
+validation path; the separate segment change is described below. The node-derived mixed v1/v2 comparison
 covers fresh, empty and resumed handles, eviction, depth refusal, missing,
 oversized and tampered evidence, guarantees, trust labels and unchanged context.
 A disposable local overlay removing low-level window validation failed both
 unqueried-header controls (unsupported version and invalid v2 price).
 These checks do not authenticate network inputs or establish a qualified pilot,
 independent security review, release provenance or portable speedup.
+
+## Reusing immutable state during segment queries
+
+`VerifiedState.VerifySegment` now supplies the same private validated-window
+commitment check used by owned individual queries. Its captured policy, profile
+and retained headers were already checked at construction, trusted resume and
+successful extension. The public low-level `VerifySegment` keeps the complete
+caller-owned window check for every candidate, in its existing evaluation order.
+
+Both paths still share complete-batch resource preflight, account envelope and
+amount checks, hashes/signatures, accepted-parent linkage and ordered candidate
+selection. Unused evidence still consumes the batch budgets. Every supplied
+candidate is checked again; there is no proof-result or content-hash cache.
+K/W, context pins, trust labels and bounded guarantees are unchanged.
+
+The [complete samples](segment-query-samples.json) retain all 36 measurements:
+three 300-millisecond samples for each capacity and user/embedded segment in
+each phase, with Go 1.25.14 on darwin/arm64, eight benchmark processors, no
+race instrumentation and no competing repository builds/tests. No measurement
+process or sample was retried or filtered. Both phases use modified inputs
+relative to `d25b0cd690fff9baf5ed3b447d948662b50233fd`; the baseline contains only
+the added measurement harness. Separate Go/module/JSON fingerprints and the
+unchanged harness digest bind the measured inputs.
+
+Each segment has three account blocks from the pinned delayed-inclusion corpus.
+The full v2 window, producer schedule and confirming content are synthetic.
+All three candidates share a three-member flat content list, hashed anew for
+each checked block. Setup and state-file creation stay outside timing. These
+are local resource observations, not executed-ledger or network evidence.
+
+The values below are local medians; allocation volume is bytes per operation.
+
+| K | Segment | Before microseconds | After microseconds | Before B/op | After B/op | Allocs/op in both phases |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 16 | user | 94.824 | 93.960 | 4024 | 4024 | 70 |
+| 16 | embedded | 6.765 | 6.245 | 3664 | 3664 | 61 |
+| 256 | user | 101.177 | 94.696 | 4024 | 4024 | 70 |
+| 256 | embedded | 12.984 | 6.332 | 3664 | 3664 | 61 |
+| 4096 | user | 214.960 | 93.958 | 4024 | 4024 | 70 |
+| 4096 | embedded | 126.787 | 6.456 | 3664 | 3664 | 61 |
+
+Node-derived v1/v2 comparisons cover 130 user/embedded cases across empty,
+fresh partial/full, resumed and evicted handles. They compare complete results,
+guarantees and trust labels, including valid retained suffixes, missing/changed
+evidence, failed-parent cascades, duplicate candidates and unused oversized
+proofs. Queries leave the owned state and context unchanged. Two additional
+controls mutate an unqueried caller-owned header; a disposable overlay that
+incorrectly bypassed low-level validation failed both controls.
+
+This removes repeated K-dependent layout scans from owned queries. It does not
+reduce signature or flat-content work, whole-state load/extension/save costs,
+or provide a memory ceiling, portable speedup, independent review or pilot
+qualification. The frozen review candidate and its existing evidence remain
+at their original revision; these observations describe a proposed successor.
