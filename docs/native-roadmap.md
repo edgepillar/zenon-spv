@@ -155,5 +155,14 @@ write conformance. Its independent byte oracle checks 232 cases and every byte
 prefix of the selected complete patch, including error-returned partial records
 and recovered runtime bounds panics. All four constructor callers check ordinary
 errors in the pinned source; production reachability and caller execution remain
-unqualified. Snapshot/import acceptance still needs bounded, complete and atomic
-failure handling. The native verifier and its state-proof refusal are unchanged.
+unqualified. The [bounded research import contract](../tools/gen-state-root-vectors/README.md#bounded-patch-import-and-detached-staging)
+now rejects malformed, incomplete or unselected dump bytes before the candidate
+constructor. Isolated staging checks the complete ordered callback sequence and
+publishes one owned memory map only after successful replay. Its 264 finite cases
+include all 232 decode counterexamples, explicit limits, independent raw selection,
+alias changes and injected constructor/replay failures; 254 rejections preserve
+the entire target map. This is a research prototype under an exclusive caller,
+not authenticated snapshot import or shared/durable storage. Typed state domains,
+excluded snapshot state, accepted-header/profile/activation, retained hash
+provenance, real workload budgets and review remain separate gates. The native
+verifier and its state-proof refusal are unchanged.
