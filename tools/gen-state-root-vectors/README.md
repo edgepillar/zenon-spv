@@ -1551,3 +1551,66 @@ shared/durable writer design, excluded-state authentication, accepted
 VerifiedState/header/profile/activation, anchor, schedule, context pin, human
 review and authenticated distribution remain separate gates. Production
 state-value consumers stay `REFUSED`.
+
+## File-backed deltas, retained versions and pruning
+
+The separate [tail reference](reproduce_patch_tree_tail.py) extends the complete
+file-to-map handoff to existing owned NodeTree storage. A selected complete map
+and balance-only SMT root are checked before each storage mutation. After the
+height-3 bulk seed, sorted deltas explicitly delete absent keys and put changed
+or new leaves at heights 4, 5 and 6. Unchanged leaves generate no callback. This
+keeps deleted leaves out of subsequent roots while preserving every previously
+held map alias and borrowed file cursor. File and ChangesHash digests remain
+separate from the complete map's SMT root.
+
+Eight literal families cover 8- and 32-leaf seeds, empty/stored-zero transitions,
+and tail refusals for selected record count, transient cap, excluded key, empty
+value and selected root. They bind eight bulk seeds, fourteen tail commits,
+three `Prune(5)` calls and five refusals before existing storage mutation. The
+independent model binds **68 logical snapshots and 3,808 root/proof cells**,
+including staged-but-uncommitted observations, removed heights 3/4, retained
+heights 5/6, shared no-op roots, retained empty roots and clean closure/reopen.
+It independently reconstructs complete sparse proofs and the compressed graph,
+version records and refcounts. A refused tail preserves the committed frontier,
+logical storage records and readable proofs, then reopens that existing state.
+
+The selected [corpus](testdata/candidate-patch-tree-tail.json) is compact canonical
+JSON under the checker's unchanged 2 MiB fixture ceiling; duplicate fields and
+oversized files remain refused. The separate
+[samples](testdata/candidate-patch-tree-tail-samples.json) contain all **96 fresh
+child outcomes** from two generations, three repetitions per family and plain/
+allocation modes on Darwin/arm64 with Go 1.25.14. Two earlier 96-child batches
+are retained in private engineering evidence: the first controller rejected an
+incorrect report kind; a later local CLI control rejected the second batch's
+pretty-printed corpus for exceeding the fixture ceiling. The final producer
+checks compact corpus size before execution and pins the reference binary before
+any child. All 288 child outcomes across the three source-selected batches are
+preserved, with no within-batch retry or filtering.
+
+Named phases bracket each opened-file import, complete-map/root preflight,
+sorted delta plus Update, bulk/tail commit, pruning, closure and reopening.
+Interim Root/Prove queries and logical storage observations are outside those
+phase timers and cumulative process-wide Go allocation counters. Lifetime RSS
+includes startup, fixture/selection work, pre-operation GC and interim queries;
+final alias checks and report serialization follow RSS sampling. Closed-file
+bytes include variable LevelDB overhead. These small exclusive fixtures and
+clean reopen observations establish no cold-disk, crash-recovery, realistic
+archive workload, shared-writer or production resource budget.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/reproduce_patch_tree_tail.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE \
+  --output NEW_CORPUS --samples NEW_SAMPLES \
+  --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY
+python3 -I -B tools/gen-state-root-vectors/check_patch_tree_tail.py \
+  --corpus NEW_CORPUS --samples NEW_SAMPLES
+python3 -I -B tools/gen-state-root-vectors/check_patch_tree_tail_test.py
+```
+
+Native Linux, macOS Intel and Windows CI run the independent checker and 24
+adversarial controls against recorded local observations. They do not execute
+or remeasure this Go NodeTree tail. Source/binary pins and actual exit records
+remain unsigned engineering bindings. No complete/excluded snapshot
+authentication, retained-Momentum-hash provenance repair, accepted VerifiedState/
+header/profile/activation, anchor, schedule, context pin, independent review or
+authenticated release follows. Production state-value acceptance stays `REFUSED`.

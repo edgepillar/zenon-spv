@@ -611,3 +611,30 @@ identity or accepted VerifiedState/header/profile/activation. Independent
 network trust inputs, anchor, schedule, context pin, human review and release
 authentication remain separate gates. Production state-value acceptance stays
 `REFUSED`.
+
+### Existing-storage file-backed tail boundary
+
+The [separate tail experiment](../tools/gen-state-root-vectors/README.md#file-backed-deltas-retained-versions-and-pruning)
+extends complete-map preflight to existing exclusive research storage. Each
+accepted complete map becomes an explicit sorted delta, including deletions;
+unchanged values generate no callback. Actual height-3 bulk seeds, tail commits
+at heights 4/5/6, shared and empty retained roots, `Prune(5)` and clean reopen
+bind 68 logical snapshots and 3,808 finite Root/Prove cells against independent
+sparse and compressed graph/refcount models. Five selected-input/key/value/root
+refusals precede storage mutation and preserve the previous committed frontier,
+records and proofs. All prior aliases and borrowed file cursors remain bound.
+
+The final source-selected batch contains 96 fresh children; all 288 outcomes
+across three batches are retained, including the earlier report-kind and fixture
+size qualification failures. Compact canonical corpus bytes fit the unchanged
+checker ceiling before reference execution. Source and binary pins are unsigned
+engineering evidence. Named phase allocation/time and lifetime RSS observations
+keep separate scopes; closed files include LevelDB overhead. Native CI checks
+recorded local results without Go storage execution or remeasurement.
+
+This finite tail adds no authenticated snapshot completeness, excluded-state
+proof, retained-Momentum-hash provenance, shared/durable writer, crash recovery,
+realistic archive/resource budget or accepted VerifiedState/header/profile/
+activation. Anchor, schedule, context pin, independent network trust inputs,
+human review and authenticated distribution remain separate gates. Production
+state-value acceptance remains `REFUSED`.

@@ -122,6 +122,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_tree_test.py
       - name: Recorded complete file to NodeTree handoff (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/check_patch_tree.py --source-revision "${{ github.sha }}"
+      - name: File-backed retained NodeTree tail evidence controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_tree_tail_test.py
+      - name: Recorded file-backed tail, pruning and clean reopen (offline; no Go execution)
+        run: python -I -B tools/gen-state-root-vectors/check_patch_tree_tail.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
@@ -374,6 +378,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_tree_test.py
       - name: Recorded complete file to NodeTree handoff (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/check_patch_tree.py --source-revision "${{ github.sha }}"
+      - name: File-backed retained NodeTree tail evidence controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_tree_tail_test.py
+      - name: Recorded file-backed tail, pruning and clean reopen (offline; no Go execution)
+        run: python -I -B tools/gen-state-root-vectors/check_patch_tree_tail.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
