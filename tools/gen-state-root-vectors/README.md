@@ -1663,7 +1663,7 @@ The named research profile requires exactly 32 present value bytes, at most
 8,327 proof bytes and nonzero encoded siblings. Those policies are intentionally
 stricter than some candidate inputs and are not an agreed protocol balance limit
 or canonical-proof rule. Files have separate 8 KiB selection and 16 KiB response
-limits, duplicate/depth/scalar checks, regular-file checks and bounded reads from
+limits, strict UTF-8 JSON, duplicate/depth/scalar checks, regular-file checks and bounded reads from
 owned descriptors. Errors use stable codes without input paths. Inputs must stay
 stable while read; timestamp checks are not an atomic filesystem snapshot.
 Windows symlink prechecks do not qualify concurrent reparse-point substitution.

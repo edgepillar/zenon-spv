@@ -240,6 +240,17 @@ class BalanceObservationControls(unittest.TestCase):
             path.write_bytes(b'{"x":"[[[[[[[[[["}')
             self.assertEqual(c.read_document(path, c.MAX_SELECTION)[1], {"x": "[[[[[[[[[["})
 
+    def test_utf8_json_and_utf16_utf32_depth_bypass_refusal(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "input.json"
+            deep = {"escaped_quote": '"', "nested": [[[[[[[[[[0]]]]]]]]]]}
+            for value in (SELECTED, deep):
+                for encoding in ("utf-16", "utf-16-le", "utf-16-be", "utf-32", "utf-32-le", "utf-32-be"):
+                    path.write_bytes(json.dumps(value).encode(encoding))
+                    with self.assertRaises(c.Refusal): c.read_document(path, c.MAX_SELECTION)
+            path.write_bytes(json.dumps(SELECTED).encode("utf-8"))
+            self.assertEqual(c.read_document(path, c.MAX_SELECTION)[1], SELECTED)
+
     def test_owned_regular_files_close_and_symlinks_refuse(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "input.json"; path.write_text("{}")
