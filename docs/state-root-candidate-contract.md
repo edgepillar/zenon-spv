@@ -680,3 +680,23 @@ Larger real-chain workloads, separately selected device/concurrency/acceptance
 limits, source/binary/execution authentication, accepted VerifiedState/header/
 profile/activation, hash-bound retained versions, complete/excluded snapshot
 state and independent human review remain separate gates.
+
+
+### Larger finite retained NodeTree boundary
+
+The [larger retention experiment](../tools/gen-state-root-vectors/README.md#larger-finite-nodetree-retention-observations)
+reuses the unchanged NodeTree driver with 512/4096 initial keys, 64 versions
+and a 16-version retained window. The intended complete maps are selected
+before reference execution. Independent sparse roots/proofs and compressed
+retained DAG/refcounts bind clean reopen and manual compaction/reopen; all
+twelve fresh child outcomes remain in the separate variable sample record.
+
+Query API sums, named storage phase timing, own-child high-water RSS and closed
+file lengths retain their separate boundaries. No live heap, allocated disk,
+whole pipeline latency or RSS through final output serialization is inferred.
+The historical file/tail resource budget workflow remains separate. Larger
+synthetic histories do not authenticate snapshots or retained Momentum hashes,
+execute chain/file import, qualify crash recovery, real archive budgets or a
+target consumer device, or enable production state proofs. Explicit accepted
+header/profile/activation, anchor, schedule, context pin, human review and
+authenticated distribution remain independent requirements.
