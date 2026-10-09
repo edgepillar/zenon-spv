@@ -795,3 +795,25 @@ Independent complete-byte equality is required even if an unsigned recording
 contains internally consistent hashes. The selected projection introduces no
 production state-value acceptance and authenticates no snapshot, retained hash,
 accepted header/profile/activation, canonicality, finality, freshness or release.
+
+### Complete driver projection boundary
+
+The [separate complete driver comparison](../tools/gen-state-root-vectors/README.md#complete-driver-oracle-projection)
+selects all three isolated level-retention seams used in expected-corpus
+preparation, delegation and final byte checks. Both original literal import
+histories share a fixed seven-path union; every leaf/parent and all import/map/
+delta/DAG/refcount/root/proof bytes remain independently reconstructed. Unknown
+seams or queries are refused, and original identities are restored after success
+or failure. This helper requires one serial caller.
+
+Its fresh reference/projected workers have a separate observation boundary and
+must not be compared directly with earlier outer-driver or case-only recordings.
+Four selected offline Go builds and 96 unchanged NodeTree reference children
+retain their own actual streams, child lifecycle and resource scopes. The new
+driver call includes complete preparation, delegation and final checks/inner
+persistence. Controller memory, final resource encoding/exit, compiler peak,
+simultaneous pipeline peaks, cold caches, real archives and production budgets
+remain unqualified. Unsigned recordings do not supply snapshot completeness,
+retained-hash provenance, accepted header/profile/activation, anchor, schedule,
+context pin, independent review or authenticated release. Consumers remain
+`REFUSED`; production state-value acceptance is disabled.

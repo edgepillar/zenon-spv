@@ -2075,3 +2075,79 @@ A preceding source epoch launched one worker whose invalid observer label was
 refused before timing or reconstruction. Its actual failure and source bytes
 were retained; this recording uses a distinct corrected source selection with
 24 completed workers and no within-batch retry or filtering.
+
+### Complete driver oracle projection
+
+`project_driver_oracles.py` extends selected sibling retention to the three
+isolated level-construction seams used by the existing lifecycle driver and
+its complete byte checker. A deterministic, bounded traversal selects only
+those original functions. Both literal import histories use the same seven
+explicit query paths; every leaf and parent is still hashed. Missing slots and
+unknown seams/queries are refused. Complete file/map/delta manifests, retained
+DAG/refcounts, roots and canonical proofs are unchanged. All original function
+identities are restored after success or failure, including an unexpected
+replacement. One serial caller is required; files and stdlib modules are intact.
+
+`measure_projected_driver.py` preselects four fresh Python driver workers,
+four offline Go source builds and 96 unchanged NodeTree reference children.
+Each worker retains both fixed 512/4096-key histories, 16 versions, retain 8,
+two child generations, three repetitions and plain/allocation modes. The
+first driver generation runs reference then projected; the second reverses
+that order. Literal child inputs, build flags, 600-second per-command policies,
+output capture ceilings, child cleanup and complete byte checks are preserved.
+Every actual stream, result, command outcome and resource row is sealed before
+interpretation. A failure stops the selected batch without retries or filtering.
+
+The new driver observation starts before expected-corpus reconstruction and
+covers unchanged lifecycle delegation, final complete byte/lifecycle checks,
+canonical encoding and inner file persistence. Go build wall/waited-descendant
+CPU and each reference child's wall/RSS through exit have their own nested
+observations. The original stock oracle is also mandatory in the separate
+controller and portable checker. That controller's memory is outside worker
+scope. Earlier driver and case-only recordings have different boundaries and
+are preserved separately; compare only these matched fresh workers.
+
+SELF RSS is cumulative lifetime high water through the post-call observation,
+including imports/source preselection and excluding children. It is not an
+interval RSS delta or a through-exit peak. Stored CPU nanoseconds retain native
+`getrusage` precision. Final resource report encoding/persistence and interpreter
+exit, compiler peak memory, simultaneous pipeline memory and peak disk are
+outside this measurement. Existing local Go caches are reused without flushing;
+initial contents/hits and cold/warm state are unqualified. The driver wall
+ceiling is an acceptance check, with no new hard whole-worker deadline.
+
+```sh
+python -I -B tools/gen-state-root-vectors/check_projected_driver_test.py -v
+python -I -B tools/gen-state-root-vectors/measure_projected_driver.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE \
+  --output new-driver-samples.json --evidence-directory new-driver-evidence
+python -I -B tools/gen-state-root-vectors/check_projected_driver.py \
+  --samples new-driver-samples.json
+```
+
+Choose new output/evidence paths. The portable checker and 30 adversarial
+controls run on Linux, macOS Intel and Windows against recorded data without
+launching a Go build, node, measurement worker or resource observer. Synthetic
+control envelopes are not observations. Two driver samples per mode do not
+establish a latency distribution, cold-build cost or target device budget.
+Actual archive/snapshot completeness, retained-hash provenance, accepted
+header/profile/activation, anchor, schedule, context pin, canonicality/finality/
+freshness, independent review and authenticated distribution retain separate
+gates. There is no network, wallet, signing, transaction or live deployment;
+production consumers remain `REFUSED`.
+
+The recorded CPython 3.9.6 Darwin/arm64, Go 1.25.14 batch retained two fresh
+complete driver samples per mode. All four complete corpus outputs matched
+the unchanged stock oracle, with four separately observed builds and 96
+unchanged NodeTree child result/stream bindings. The table describes this
+selected call boundary, with imports/source preselection in lifetime RSS.
+
+| Mode | Driver RSS samples (MiB) | Median RSS (MiB) | Driver wall samples (s) | Median wall (s) |
+| --- | ---: | ---: | ---: | ---: |
+| reference | 432.547, 432.594 | 432.570 | 273.437, 271.821 | 272.629 |
+| projected | 89.312, 89.391 | 89.352 | 272.742, 273.591 | 273.167 |
+
+These finite samples describe driver SELF high water through the selected
+call. They qualify no latency speedup, through-exit footprint, compiler or
+simultaneous pipeline peak, target device budget or production state-value
+acceptance. Earlier driver and case-only measurements keep their own scopes.
