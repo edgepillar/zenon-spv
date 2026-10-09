@@ -260,6 +260,14 @@ class BalanceObservationControls(unittest.TestCase):
                 fifo = Path(directory) / "input.fifo"; c.os.mkfifo(fifo)
                 with self.assertRaises(c.Refusal): c.read_document(fifo, 100)
 
+    def test_portable_reader_without_unix_open_flags(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "input.json"; path.write_bytes(b"{}")
+            with mock.patch.dict(c.os.__dict__):
+                c.os.__dict__.pop("O_NONBLOCK", None)
+                c.os.__dict__.pop("O_NOFOLLOW", None)
+                self.assertEqual(c.read_document(path, 2)[1], {})
+
     def test_request_and_observe_cli_and_private_error_redaction(self):
         command = [sys.executable, "-I", "-B", str(HERE / "observe_balance.py")]
         paths = ["--selection", str(HERE / "testdata/balance-observation-selection.json")]

@@ -204,7 +204,8 @@ def pairs(values):
 
 
 def read_document(path, limit):
-    flags = os.O_RDONLY | os.O_NONBLOCK | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0)
+    flags = (os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) |
+             getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0))
     # Windows has no portable O_NOFOLLOW. Refuse visible symlinks before open;
     # this is not an atomic reparse-point or concurrent-source guarantee.
     need(not Path(path).is_symlink(), "file_symlink")
