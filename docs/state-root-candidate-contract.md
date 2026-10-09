@@ -723,3 +723,30 @@ complete excluded ledger state. Existing retained-Momentum-hash, accepted-header
 anchor/profile/schedule/context-pin, activation, fork-choice/finality/freshness,
 target-device budget and independent release-review gates remain unchanged.
 No production state-value acceptance is enabled.
+
+### Selected reference child lifecycle boundary
+
+The [lifecycle wrapper](../tools/gen-state-root-vectors/README.md#complete-selected-reference-child-lifecycle)
+delegates unchanged literal file import, complete-map deltas and retained-tree
+work to the existing reproducer. A separately selected batch observes each
+reference child's wall interval from before spawn through exit, and per-child
+wait4 high-water RSS through final output/cleanup. This includes reference
+fixture and conformance work, plus launcher/polling overhead. It is not a
+minimum verifier footprint, proof latency percentile or production budget.
+
+The complete import/map/root/proof/DAG byte checks and all 24 ordered plain/
+allocation children remain required. Actual output, exit and wait4 capture
+records are sealed before interpretation; no failure or repetition is removed
+or retried. Copied build regular files and captured output files have separate
+length/allocated-block observations outside child timing. Periodic output
+acceptance controls may be overshot, so they are not hard peak disk bounds.
+
+The old named phase allocations, explicitly live post-GC harness heap and
+closed tree files retain their scopes. Parent parsing/hashing/memory, compiler
+time/memory, temporary input/database peaks and whole pipeline memory remain
+unmeasured. Unsigned lifecycle records do not authenticate source execution,
+target hardware, real-chain snapshots, complete/excluded state, retained
+Momentum hashes, accepted headers/profile/activation, canonicality/finality/
+freshness, or independent release review. Anchor, schedule and context-pin
+requirements are preserved. Every consumer remains `REFUSED`; production
+state-value and resource-budget acceptance stay disabled.
