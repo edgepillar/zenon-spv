@@ -774,3 +774,24 @@ real archive/target budgets, execution provenance and independent release review
 remain unqualified. The retained-hash, complete/excluded-state, accepted header/
 profile/activation, anchor, schedule and context-pin gates stay open. Consumers
 remain `REFUSED`; production state-value acceptance stays disabled.
+
+
+### Independent sparse oracle retention
+
+The separately selected sparse oracle comparison retains only explicitly selected
+query siblings while hashing every leaf/parent. It reuses the complete original
+file/map/delta and retained DAG/refcount reconstruction and must produce identical
+complete root/proof case bytes. Unknown queries and uncomputed sibling slots are
+refused; a computed zero hash is an explicit result. This oracle is an offline
+research surface for two fixed synthetic import histories, with a single serial
+caller and a restored local function seam.
+
+Reference/projected fresh Python worker SELF CPU/lifetime RSS and selected-call
+wall observations have their own source-pinned recording. They include complete
+result encoding/persistence but exclude final metric encoding and interpreter
+exit. They do not replace prior NodeTree, full-driver or compiler recordings, or
+qualify whole-pipeline peaks, cold caches, actual archives or hardware budgets.
+Independent complete-byte equality is required even if an unsigned recording
+contains internally consistent hashes. The selected projection introduces no
+production state-value acceptance and authenticates no snapshot, retained hash,
+accepted header/profile/activation, canonicality, finality, freshness or release.
