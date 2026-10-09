@@ -1,0 +1,126 @@
+{
+  "kind": "unsigned-tree-tail-resource-budget-v1",
+  "selection_id": "illustrative-retained-32",
+  "budget_basis": "illustrative",
+  "device_label": "illustrative-arm64-device",
+  "source": {
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "56ce2c384966f2f1940967257a0788d3998a5eef",
+    "tree": "d5abff528566a561e1a53a46103cb4b15ff63c6c"
+  },
+  "runtime": {
+    "platform": "darwin/arm64",
+    "go_version": "go1.25.14"
+  },
+  "workload": {
+    "case": "retained-32",
+    "serial_callers": 1
+  },
+  "limits": [
+    {
+      "id": "seed-file",
+      "metric": "phase_elapsed_ns",
+      "phase": "3/opened-file-to-owned-map",
+      "mode": "plain",
+      "ceiling": 1000000000
+    },
+    {
+      "id": "seed-preflight",
+      "metric": "phase_elapsed_ns",
+      "phase": "3/complete-balance-map-and-root-selection",
+      "mode": "plain",
+      "ceiling": 1000000000
+    },
+    {
+      "id": "bulk-commit",
+      "metric": "phase_elapsed_ns",
+      "phase": "CommitBulk",
+      "mode": "plain",
+      "ceiling": 1000000000
+    },
+    {
+      "id": "tail-delta-allocation",
+      "metric": "phase_go_total_alloc_delta_bytes",
+      "phase": "4/complete-map-delta-and-Update",
+      "mode": "allocation",
+      "ceiling": 8388608
+    },
+    {
+      "id": "tail-commit",
+      "metric": "phase_elapsed_ns",
+      "phase": "4/Commit",
+      "mode": "plain",
+      "ceiling": 1000000000
+    },
+    {
+      "id": "prune",
+      "metric": "phase_elapsed_ns",
+      "phase": "Prune/5",
+      "mode": "plain",
+      "ceiling": 1000000000
+    },
+    {
+      "id": "reopen",
+      "metric": "phase_elapsed_ns",
+      "phase": "clean-reopen-NodeTree",
+      "mode": "plain",
+      "ceiling": 1000000000
+    },
+    {
+      "id": "close-allocation",
+      "metric": "phase_go_total_alloc_delta_bytes",
+      "phase": "clean-close",
+      "mode": "allocation",
+      "ceiling": 8388608
+    },
+    {
+      "id": "own-child-rss",
+      "metric": "process_peak_rss_bytes",
+      "phase": null,
+      "mode": "plain",
+      "ceiling": 268435456
+    },
+    {
+      "id": "closed-file-lengths",
+      "metric": "closed_database_file_bytes",
+      "phase": null,
+      "mode": "plain",
+      "ceiling": 1048576
+    },
+    {
+      "id": "query-latency",
+      "metric": "query_elapsed_ns",
+      "phase": null,
+      "mode": "plain",
+      "ceiling": 100000000
+    },
+    {
+      "id": "live-go-heap",
+      "metric": "peak_live_go_heap_bytes",
+      "phase": null,
+      "mode": "allocation",
+      "ceiling": 67108864
+    },
+    {
+      "id": "allocated-disk",
+      "metric": "peak_allocated_disk_bytes",
+      "phase": null,
+      "mode": "plain",
+      "ceiling": 67108864
+    },
+    {
+      "id": "rss-through-output",
+      "metric": "process_peak_rss_through_serialization_bytes",
+      "phase": null,
+      "mode": "plain",
+      "ceiling": 268435456
+    },
+    {
+      "id": "whole-pipeline",
+      "metric": "whole_pipeline_elapsed_ns",
+      "phase": null,
+      "mode": "plain",
+      "ceiling": 10000000000
+    }
+  ]
+}
