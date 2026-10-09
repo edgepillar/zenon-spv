@@ -47,14 +47,14 @@ func runInspectState(args []string, stdout, stderr io.Writer) int {
 	tier := fs.String("window", "low", "policy window: low | medium | high")
 	retainHeaders := fs.String("retain-headers", "", "explicit retained header capacity K (W < K <= 4096)")
 	jsonOutput := fs.Bool("json", false, "emit a versioned inspection report")
-	expectedContext := fs.String("expect-context", "", "require this 64-hex verification context fingerprint")
+	expectedContext := registerContextPin(fs)
 	if err := fs.Parse(args); errors.Is(err, flag.ErrHelp) {
 		return writeInspectionOutput(stdout, stderr, []byte(inspectStateUsage), 0)
 	} else if err != nil || fs.NArg() != 0 || *statePath == "" {
 		report.Error = &reportError{Stage: "arguments", Category: "usage"}
 		return finishInspection(report, 64, *jsonOutput, stdout, stderr)
 	}
-	pin, err := parseContextPin(fs, *expectedContext)
+	pin, err := parseContextPin(expectedContext)
 	if err != nil {
 		report.Error = &reportError{Stage: "arguments", Category: "usage"}
 		return finishInspection(report, 64, *jsonOutput, stdout, stderr)
