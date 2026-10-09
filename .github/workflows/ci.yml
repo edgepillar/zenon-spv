@@ -146,6 +146,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_tree_import_lifecycle_test.py -v
       - name: Independent recorded reference child lifecycle
         run: python -I -B tools/gen-state-root-vectors/check_tree_import_lifecycle.py --source-revision "${{ github.sha }}"
+      - name: Separate driver and build resource controls
+        run: python -I -B tools/gen-state-root-vectors/check_tree_driver_resources_test.py -v
+      - name: Independent recorded driver and build resources
+        run: python -I -B tools/gen-state-root-vectors/check_tree_driver_resources.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
@@ -428,6 +432,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_tree_import_lifecycle_test.py -v
       - name: Independent recorded reference child lifecycle
         run: python -I -B tools/gen-state-root-vectors/check_tree_import_lifecycle.py --source-revision "${{ github.sha }}"
+      - name: Separate driver and build resource controls
+        run: python -I -B tools/gen-state-root-vectors/check_tree_driver_resources_test.py -v
+      - name: Independent recorded driver and build resources
+        run: python -I -B tools/gen-state-root-vectors/check_tree_driver_resources.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
