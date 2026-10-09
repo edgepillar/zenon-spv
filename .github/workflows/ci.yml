@@ -134,6 +134,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_resource_budgets_test.py
       - name: Independent recorded resource budget comparisons
         run: python -I -B tools/gen-state-root-vectors/check_resource_budgets.py --source-revision "${{ github.sha }}"
+      - name: Larger finite NodeTree retention controls
+        run: python -I -B tools/gen-state-root-vectors/check_tree_scale_test.py -v
+      - name: Independent recorded larger NodeTree retention
+        run: python -I -B tools/gen-state-root-vectors/check_tree_scale.py
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
@@ -398,6 +402,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_resource_budgets_test.py
       - name: Independent recorded resource budget comparisons
         run: python -I -B tools/gen-state-root-vectors/check_resource_budgets.py --source-revision "${{ github.sha }}"
+      - name: Larger finite NodeTree retention controls
+        run: python -I -B tools/gen-state-root-vectors/check_tree_scale_test.py -v
+      - name: Independent recorded larger NodeTree retention
+        run: python -I -B tools/gen-state-root-vectors/check_tree_scale.py
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
