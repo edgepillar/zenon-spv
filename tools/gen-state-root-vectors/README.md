@@ -1804,3 +1804,66 @@ keeps `consumer_result=REFUSED` and false production acceptance. Retained
 Momentum-hash provenance, complete/excluded snapshot state, accepted
 VerifiedState/header/profile/activation, anchor, schedule, context pin,
 independent human review and authenticated distribution retain their gates.
+
+
+### Larger opened-file NodeTree import and retained deltas
+
+The separate `tree_import_scale_test.go` experiment reuses the unchanged
+`importFileApply`, `tailDelta`, `treePreflight` and actual NodeTree/LevelDB
+observers. Its literal balance histories start with 512 or 4096 keys, commit
+16 versions and retain the final 8. Every later version has eight selected
+Put/Delete records, including stored zero values. The 4096-record seed uses
+four ordered 1024-record files, preserving the existing per-file parser cap,
+1-MiB raw cap and 4096-entry target ceiling. File digests select unsigned raw
+records; they do not authenticate a snapshot or replace the complete SMT root.
+
+The independent Python oracle rederives every raw file selection and callback,
+complete map manifest, preflight root, explicit map delta, canonical proof
+bytes and complete retained compressed DAG/refcount/frontier/version records.
+Three query/storage rounds cover normal storage, clean reopen and explicit
+compaction/reopen. This uses the larger sparse byte oracle introduced by the
+direct retention experiment; the original 1024-leaf checker remains unchanged.
+
+Two generations select three fresh children per case in each of plain and
+allocation modes: 24 children, 420 actual file imports and 3024 Root/Prove API
+calls. Corpus output must agree byte for byte across both generations and all
+modes/repetitions. Source bytes and the built test binary are sealed before any
+child. All actual exits/stdout/stderr are preserved before interpretation; no
+failed outcome is retried, overwritten or filtered.
+
+Each file-import phase includes positional reading, raw detachment, parsing,
+candidate NewPatchFromDump/Dump checks, map cloning, ordered replay, transient
+caps and map replacement. Root preflight, map-delta/Update, CommitBulk or Commit,
+Prune, open/close/reopen and compaction are separately named phases. Query API
+time sums are separate from fixture selection, conformance and serialization.
+Allocation-mode TotalAlloc, Mallocs and GC deltas measure those named phases;
+plain-mode rows leave those fields null. Instrumented timing is not an
+unmeasured plain-mode allocation count or a speedup claim.
+
+A controlled final GC followed by HeapAlloc sampling explicitly keeps all
+selected history maps, the final imported map, input metadata, conformance and
+closed tree live. This is an observation of this harness, not a minimal
+steady-state verifier heap. Process-lifetime RSS additionally includes fixture
+creation, selection and conformance work, but is sampled before final result
+binding/output. Closed database observations record regular-file lengths and
+Stat_t.Blocks multiplied by 512 separately. Allocated file bytes may differ
+from logical lengths; they are not peak disk, filesystem metadata or a
+crash/durability measurement. Input files and build workspace are excluded from
+the database columns. Whole pipeline time/memory and peak disk remain unmeasured.
+
+Reproduce with explicitly selected complete local source, Go 1.25 and new outputs:
+
+```sh
+python -I -B tools/gen-state-root-vectors/reproduce_tree_import_scale.py \
+  --node-source /path/to/selected-node --go /path/to/go1.25/bin/go \
+  --output /new/output/conformance.json --samples /new/output/samples.json \
+  --evidence-directory /new/output/evidence
+```
+
+`check_tree_import_scale.py` and its adversarial controls only validate recorded
+engineering evidence; portable native CI does not rerun this reference workload.
+The data remain synthetic balance-only complete maps. They do not import a
+full-node archive/snapshot, cover excluded state, authenticate retained Momentum
+hashes, anchor/profile/schedule/context pins or activation, establish canonicality,
+finality/freshness, qualify a target consumer device, or supply independent
+human release review. Every consumer remains `REFUSED`.

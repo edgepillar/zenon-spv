@@ -700,3 +700,26 @@ execute chain/file import, qualify crash recovery, real archive budgets or a
 target consumer device, or enable production state proofs. Explicit accepted
 header/profile/activation, anchor, schedule, context pin, human review and
 authenticated distribution remain independent requirements.
+
+
+### Larger bounded file import and retained-delta boundary
+
+The [opened-file experiment](../tools/gen-state-root-vectors/README.md#larger-opened-file-nodetree-import-and-retained-deltas)
+assembles 512/4096-key complete balance maps through the existing importer,
+then applies explicit deltas to actual NodeTree/LevelDB storage. The larger
+seed uses four ordered files of at most 1024 records each; parser and target
+caps are unchanged. An independently derived complete SMT root follows file
+assembly and precedes Update. It commits 16 versions, retains 8 and compares
+all retained DAG/refcount bytes and canonical proofs after clean reopen and
+compaction.
+
+File-import, root-preflight, delta/Update, commit/prune and storage phase
+observations, post-GC explicitly live harness heap, lifetime RSS, closed file
+lengths and closed allocated regular-file bytes have distinct scopes. Whole
+pipeline time/memory, peak disk and production budgets remain unmeasured.
+Literal input selection, raw-file digests, the complete map and matching root
+remain unsigned synthetic evidence, not an authenticated full-node snapshot or
+complete excluded ledger state. Existing retained-Momentum-hash, accepted-header,
+anchor/profile/schedule/context-pin, activation, fork-choice/finality/freshness,
+target-device budget and independent release-review gates remain unchanged.
+No production state-value acceptance is enabled.
