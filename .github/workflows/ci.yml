@@ -271,10 +271,16 @@ jobs:
           python3 tools/gen-node-momentum-vectors/check-genesis_test.py
           python3 tools/gen-node-momentum-vectors/check_bytes_test.py
           python3 tools/check-verification-context.py
+      - name: Pinned lint schema bytes
+        run: python -I -B -c "import hashlib; from pathlib import Path; assert hashlib.sha256(Path('.github/schemas/golangci.v2.6.2.jsonschema.json').read_bytes()).hexdigest() == 'fb4e21238eb335951ed287f36dd46edb56f741fbef22a27c6d89bd697fa7468f'"
       - name: Lint
         uses: golangci/golangci-lint-action@9fae48acfc02a90574d7c304a1758ef9895495fa # v7
         with:
           version: v2.6.2
+          # Validate the unchanged configuration against the pinned schema below.
+          verify: false
+      - name: Verify pinned lint configuration
+        run: golangci-lint config verify --schema .github/schemas/golangci.v2.6.2.jsonschema.json
 
   native-platform:
     name: Native platform (${{ matrix.os }})
