@@ -220,6 +220,12 @@ def read_document(path, limit):
              (after.st_size, after.st_mtime_ns), "file_changed_or_bound")
     finally:
         os.close(fd)
+    # json.loads(bytes) auto-detects UTF-16/32. That would let non-UTF-8
+    # punctuation disagree with the byte-level nesting preflight below.
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeError:
+        raise Refusal("json_encoding") from None
     # Bound nesting before json.loads; braces inside strings do not count.
     depth, quoted, escaped = 0, False, False
     for byte in raw:
@@ -238,7 +244,7 @@ def read_document(path, limit):
         elif byte in (93, 125):
             depth -= 1
     try:
-        document = json.loads(raw, object_pairs_hook=pairs,
+        document = json.loads(text, object_pairs_hook=pairs,
                               parse_constant=lambda _: (_ for _ in ()).throw(Refusal("json_constant")))
     except (UnicodeError, json.JSONDecodeError, ValueError, RecursionError) as error:
         if isinstance(error, Refusal):
