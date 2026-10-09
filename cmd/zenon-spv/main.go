@@ -276,7 +276,7 @@ func prepareVerifierContext(name string, args []string, out *verificationOutput)
 	profilePath := fs.String("protocol-profile", "", "path to an operator-attested momentum activation profile")
 	jsonOutput := fs.Bool("json", false, "emit one versioned JSON verification report")
 	showContext := fs.Bool("show-context", false, "print captured verification settings without private provenance metadata")
-	expectedContext := fs.String("expect-context", "", "require this 64-hex verification context fingerprint")
+	expectedContext := registerContextPin(fs)
 	statePath := fs.String("state", "", "path to persisted HeaderState; load if present, save after ACCEPT")
 	retainedOnly := fs.Bool("retained-only", false, "query an existing trusted state without new headers or state writes (proof commands only)")
 	schedulePath := fs.String("schedule", "", "path to producer schedule JSON; when set, header producer authorization is required (tier-2 caveat)")
@@ -290,7 +290,7 @@ func prepareVerifierContext(name string, args []string, out *verificationOutput)
 		fs.Usage()
 		return verifierContext{}, 64
 	}
-	pin, err := parseContextPin(fs, *expectedContext)
+	pin, err := parseContextPin(expectedContext)
 	if err != nil {
 		_, _ = fmt.Fprintln(out.diagnostics, err)
 		return verifierContext{}, 64
@@ -548,7 +548,7 @@ func runWatch(args []string) int {
 	genesisConfig := fs.String("genesis-config", "", "path to genesis trust root JSON file (overrides env)")
 	profilePath := fs.String("protocol-profile", "", "path to an operator-attested momentum activation profile")
 	showContext := fs.Bool("show-context", false, "log captured verification settings without private provenance metadata")
-	expectedContext := fs.String("expect-context", "", "require this 64-hex verification context fingerprint")
+	expectedContext := registerContextPin(fs)
 	jsonOutput := fs.Bool("json", false, "emit versioned JSON Lines watch events on stdout")
 	once := fs.Bool("once", false, "attempt one bounded tick, save accepted state, and exit with its outcome")
 	statePath := fs.String("state", "", "path to persisted HeaderState (required)")
@@ -570,7 +570,7 @@ func runWatch(args []string) int {
 		fmt.Fprintln(os.Stderr, "watch does not accept positional arguments")
 		return 64
 	}
-	pin, err := parseContextPin(fs, *expectedContext)
+	pin, err := parseContextPin(expectedContext)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 64
