@@ -1867,3 +1867,80 @@ full-node archive/snapshot, cover excluded state, authenticate retained Momentum
 hashes, anchor/profile/schedule/context pins or activation, establish canonicality,
 finality/freshness, qualify a target consumer device, or supply independent
 human release review. Every consumer remains `REFUSED`.
+
+### Complete selected reference child lifecycle
+
+`reproduce_tree_import_lifecycle.py` delegates the unchanged source copy, build,
+literal 512/4096-key workloads and full byte checks to the previous reproducer.
+It launches another complete, preselected set of 24 fresh children: two
+generations, three repetitions per case and both plain/allocation modes. It
+does not relabel the earlier resource samples or modify the Go child, parser,
+target ceilings, NodeTree backend or existing source corpus.
+
+The wrapper captures each selected child's wall interval immediately before
+process spawn through its individual `os.wait4` exit. This includes the child
+test harness, fixture construction, imports, map deltas, retained-tree work,
+conformance, final serialization/output and cleanup. Spawn and wait polling
+overhead are included; parent parsing/hashing and the source build are outside
+that interval. Per-child `ru_maxrss` observes the high-water RSS through exit,
+including final output. Darwin reports bytes; Linux reports KiB, converted to
+bytes. Neither metric is a minimum consumer footprint or a production device
+budget. The earlier named phase allocations, explicitly live post-GC harness
+heap, pre-output RSS and closed database sizes retain their separate scopes.
+
+The capture uses the specific child's PID with
+[Python `os.wait4`](https://docs.python.org/3/library/os.html#os.wait4).
+The normalization preserves the native unit alongside bytes; see
+[Linux `ru_maxrss`](https://man7.org/linux/man-pages/man2/getrusage.2.html)
+and [Darwin's resident-size high-water capture](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_resource.c).
+
+The checked-in record contains a fresh offline Go 1.25.14 Darwin/arm64 batch.
+Each row below covers all six children for its case/mode: two generations and
+three repetitions, without retries or filtering. The wall ranges include the
+entire selected reference child and launcher overhead described above. These
+are observations, not production latency or memory acceptance thresholds.
+
+| Initial keys | Mode | Child wall range (seconds, rounded) | Exit peak RSS range (bytes) |
+| --- | --- | --- | --- |
+| 512 | plain | 1.37–1.71 | 31,932,416–34,947,072 |
+| 512 | allocation | 1.38–1.40 | 32,948,224–34,783,232 |
+| 4096 | plain | 9.93–10.04 | 53,641,216–60,964,864 |
+| 4096 | allocation | 9.95–10.14 | 55,181,312–60,342,272 |
+
+The copied build workspace had 408 regular files, 17,984,624 logical bytes and
+18,952,192 allocated-file bytes in this batch, with unchanged logical sizes
+before/after every child. Captured stdout lengths were 93,645–102,427 bytes;
+every actual stderr was empty. Those file scopes exclude the child's input
+and database workspace, compiler caches and the parent process.
+
+Closed captured stdout/stderr file lengths and allocated blocks are separate
+from the database columns. Copied node/build regular files are inventoried
+outside child timing, before and after each child; module/compiler caches,
+evidence output and child temporary input/database workspace are excluded.
+Output acceptance ceilings are 1 MiB per stream, with periodic termination
+on excess. A writer can overshoot between polls; preserve that output rather
+than describing the ceiling as a hard disk bound. A deadline, nonzero exit,
+extra child, missing repetition or source/binary change stops the batch.
+Every actual capture is sealed before the existing interpreter sees it.
+
+```sh
+python -I -B tools/gen-state-root-vectors/reproduce_tree_import_lifecycle.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE \
+  --output NEW_PRIVATE_DIRECTORY/lifecycle-samples.json \
+  --evidence-directory NEW_PRIVATE_DIRECTORY/reference
+python -I -B tools/gen-state-root-vectors/check_tree_import_lifecycle_test.py -v
+python -I -B tools/gen-state-root-vectors/check_tree_import_lifecycle.py
+```
+
+The measurement launcher requires Unix `wait4` on Darwin or Linux and refuses
+unsupported platforms before starting a child. Its separate local capture
+controls use Python processes, including late allocation, failure, timeout
+and output excess; they never execute a node. The portable checker and its
+34 controls only validate recorded evidence in Linux/macOS/Windows CI, without
+rerunning this backend. Synthetic control DTOs are explicitly not measurements.
+
+Parent memory, compiler time/memory, temporary input/database peak disk and
+whole pipeline memory remain unmeasured. No target budget, real-chain archive,
+snapshot completeness, retained Momentum-hash provenance, accepted header,
+profile, activation, anchor, schedule, context pin, independent human review
+or authenticated distribution is qualified. Every consumer remains `REFUSED`.
