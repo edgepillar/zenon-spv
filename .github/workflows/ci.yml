@@ -301,7 +301,8 @@ jobs:
   native-platform:
     name: Native platform (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    # Intel macOS needs more time for the complete independent oracle controls.
+    timeout-minutes: ${{ matrix.os == 'macos-15-intel' && 90 || 60 }}
     strategy:
       fail-fast: false
       matrix:
