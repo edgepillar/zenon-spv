@@ -750,3 +750,27 @@ Momentum hashes, accepted headers/profile/activation, canonicality/finality/
 freshness, or independent release review. Anchor, schedule and context-pin
 requirements are preserved. Every consumer remains `REFUSED`; production
 state-value and resource-budget acceptance stay disabled.
+
+### Separate parent and source-build resource boundary
+
+The [driver observation wrapper](../tools/gen-state-root-vectors/README.md#separate-driver-self-usage-and-go-build-cost)
+preselects one unchanged lifecycle call, its single build and all 24 ordered
+reference children. It records the call's outer wall interval and explicit
+`RUSAGE_SELF` CPU differences and lifetime RSS high water through return. This
+includes source copy/build, child waiting, parent byte checks and inner evidence
+persistence; the self RSS also includes earlier imports/preflight. Final outer
+report encoding/persistence and interpreter exit remain outside the observation.
+The source build's separate wall and waited-child/descendant CPU counters do
+not measure compiler peak memory. Native CPU counters stored as nanoseconds
+do not acquire nanosecond precision, and parallel compiler CPU can exceed wall.
+
+Source/build flags, literal file inputs, child capture, complete-map deltas,
+retained graph/refcounts and every root/proof byte check remain unchanged. All
+new actual outcomes are retained; no child or failed observation is replaced.
+Default offline caches are reused without clearing, so cache state and a cold
+build are unqualified. A single driver/build recording is not a distribution.
+Temporary input/database peaks, simultaneous pipeline peak memory, peak disk,
+real archive/target budgets, execution provenance and independent release review
+remain unqualified. The retained-hash, complete/excluded-state, accepted header/
+profile/activation, anchor, schedule and context-pin gates stay open. Consumers
+remain `REFUSED`; production state-value acceptance stays disabled.

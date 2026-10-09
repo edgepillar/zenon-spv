@@ -1944,3 +1944,70 @@ whole pipeline memory remain unmeasured. No target budget, real-chain archive,
 snapshot completeness, retained Momentum-hash provenance, accepted header,
 profile, activation, anchor, schedule, context pin, independent human review
 or authenticated distribution is qualified. Every consumer remains `REFUSED`.
+
+### Separate driver self usage and Go build cost
+
+`reproduce_tree_driver_resources.py` wraps that unchanged lifecycle driver.
+It preselects one driver call, one Go build and every one of the 24 ordered
+reference children. Literal inputs, source/build flags, child capture, map
+deltas, retained DAG/refcounts and root/proof byte checks remain unchanged.
+The new record embeds freshly obtained lifecycle samples; earlier measurements
+are preserved separately. Actual observations and command outcomes are sealed
+before interpretation, including exceptional completion, without retries.
+
+The outer wall interval includes the lifecycle call's source copy, build,
+reference children, parent parsing/hashing/checks, inner report persistence and
+temporary build-directory cleanup. Preflight of the new outer selection, its
+final report encoding/persistence and interpreter exit lie outside this timer.
+The configured outer wall ceiling is an acceptance check, not a hard deadline;
+existing per-command 600-second policies remain unchanged.
+
+Parent CPU uses `getrusage(RUSAGE_SELF)` counter differences across the call.
+Parent RSS is that process's cumulative lifetime high water through the post-call
+observation, including earlier imports/preflight, and excluding children. It
+is not a difference of RSS counters, an interval-only peak or through-exit memory.
+Darwin bytes and Linux KiB are explicitly normalized. See [Python resource
+scopes](https://docs.python.org/3/library/resource.html#resource.getrusage) and
+the [Darwin implementation](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_resource.c).
+
+The Go build has its own wall interval and `RUSAGE_CHILDREN` CPU differences.
+These counters cover terminated, waited children and descendants whose parents
+waited; no other measurement child runs in this interval. Parallel compiler CPU
+can exceed wall time. Stored integer nanoseconds retain the native counter
+precision, which is not nanosecond precision. The [Linux contract](https://man7.org/linux/man-pages/man2/getrusage.2.html)
+distinguishes these CPU counters from the largest-child RSS field. We do not
+measure compiler peak memory or simultaneous pipeline memory, or sum unrelated
+high-water RSS values to invent either metric.
+
+The selected build reuses existing local default caches, with `GOPROXY` and
+`GOSUMDB` disabled. Initial cache contents, cache hits and cold/warm state are
+unmeasured. One build and driver observation do not establish a latency
+distribution or a production hardware budget. Temporary input/database peaks,
+peak disk, authenticated execution/release and all state-proof trust gates
+remain unqualified; every consumer is `REFUSED`.
+
+```sh
+python -I -B tools/gen-state-root-vectors/observe_driver_resources_test.py
+python -I -B tools/gen-state-root-vectors/reproduce_tree_driver_resources.py \
+  --node-source NODE_SOURCE --go GO_EXECUTABLE \
+  --output NEW_PRIVATE_DIRECTORY/driver-resource-samples.json \
+  --evidence-directory NEW_PRIVATE_DIRECTORY/evidence
+python -I -B tools/gen-state-root-vectors/check_tree_driver_resources_test.py -v
+python -I -B tools/gen-state-root-vectors/check_tree_driver_resources.py
+```
+
+The observer and reproducer require Darwin/Linux Unix resource APIs. Four local
+observer controls use Python children and exceptions, never a node. The portable
+checker and its 21 controls run on Linux, macOS Intel and Windows against recorded
+data, without executing a Go build or remeasuring this driver. Synthetic control
+envelopes are not actual measurements.
+
+The recorded local Darwin/arm64, Go 1.25.14 batch observed a 232.604-second
+driver call and 91.005 seconds of driver SELF CPU. Its SELF RSS high water was
+388.641 MiB before the call and 416.938 MiB after it; both are lifetime values
+including earlier preflight. The 24 child wall intervals summed to 139.462
+seconds. The selected Go build took 2.241 seconds wall and 1.336 seconds of
+waited-child/descendant CPU, with the unqualified existing cache state described
+above. The reference binary SHA-256 stayed identical to the prior lifecycle
+batch. These one-batch observations describe this research harness, not a
+minimum consumer footprint, cold-build cost or production budget.
