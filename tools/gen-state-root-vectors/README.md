@@ -1754,3 +1754,53 @@ hash provenance, complete/excluded snapshot state, independent human review and
 authenticated distribution retain their separate gates. Linux/macOS/Windows CI
 executes the offline CLI, adversarial controls and independent column checks;
 it does not reproduce these reference measurements.
+
+
+### Larger finite NodeTree retention observations
+
+`reproduce_tree_scale.py` reuses the unchanged `retentionChild` driver with two
+preselected histories: 512 and 4096 initial balance keys, 64 committed versions
+and a 16-version retained window. Each later version applies eight literal
+updates/deletes, including stored zero values. Two generations of three fresh
+plain children per case produce twelve actual child outcomes. No failed child
+or unfavorable repetition is removed or retried within a batch.
+
+The source manifest checks all 394 selected node blobs. Research inputs and the
+built reference test binary are sealed before any child. The complete intended
+maps, compact fixture byte ceiling and case inventory are selected before
+building. The independent checker derives the full sparse root/proofs and the
+compressed retained DAG/refcounts separately. It checks 252 root/proof cells,
+all retained logical records and unchanged observations before clean reopen,
+after clean reopen and after manual compaction/reopen. The older byte oracle's
+1024-leaf ceiling remains unchanged; the new local model has an explicit
+4096-leaf ceiling. These are fixture-work limits, not protocol limits.
+
+```sh
+python -I -B tools/gen-state-root-vectors/reproduce_tree_scale.py --node-source NODE_SOURCE --go GO_EXECUTABLE --output NEW_PRIVATE_EVIDENCE_DIRECTORY/conformance.json --samples NEW_PRIVATE_EVIDENCE_DIRECTORY/samples.json --evidence-directory NEW_PRIVATE_EVIDENCE_DIRECTORY/reference
+python -I -B tools/gen-state-root-vectors/check_tree_scale_test.py
+python -I -B tools/gen-state-root-vectors/check_tree_scale.py
+```
+
+All twelve samples remain separate from deterministic conformance. Named phase
+timing, aggregate patch/update/commit/prune timing, seven Root and 35 Prove calls
+per query round, process high-water RSS and three closed database file-length
+observations are distinct columns. Query batches include origin, retained,
+pruned and unavailable heights, membership and absence; their summed API times
+are not a per-request percentile or whole pipeline latency. RSS includes the
+child/runtime/fixture/NodeTree/LevelDB and is sampled before final binding and
+serialization. Closed file lengths are neither allocated blocks nor peak disk.
+The experiment measures no cumulative Go allocation or live heap.
+
+This finite scaling check does not replay a real-chain archive or execute
+file-to-map import, chain startup/background build, snapshot import, concurrency,
+crash recovery, network transport, signing or transactions. It does not qualify
+target hardware or independently selected consumer budgets. The earlier
+`assess_tree_resources.py` contract still covers its three separately recorded
+small file/tail cases; these larger samples are a separate contract.
+
+Linux, macOS Intel and Windows CI check the recorded bytes and controls without
+executing this reference backend or measuring resources again. Every report
+keeps `consumer_result=REFUSED` and false production acceptance. Retained
+Momentum-hash provenance, complete/excluded snapshot state, accepted
+VerifiedState/header/profile/activation, anchor, schedule, context pin,
+independent human review and authenticated distribution retain their gates.
