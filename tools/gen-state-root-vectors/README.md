@@ -2011,3 +2011,67 @@ waited-child/descendant CPU, with the unqualified existing cache state described
 above. The reference binary SHA-256 stayed identical to the prior lifecycle
 batch. These one-batch observations describe this research harness, not a
 minimum consumer footprint, cold-build cost or production budget.
+
+
+### Selected sparse oracle projection
+
+The separate `project_sparse_oracle.py` research entry point hashes every leaf
+and parent while releasing full depth dictionaries after advancing to the next
+depth. It retains explicit sibling slots for at most 16 preselected query paths.
+Computed empty slots contain the zero hash; an unselected query or missing slot
+is refused. The unchanged complete import oracle still constructs every selected
+file/map/delta manifest, retained storage DAG/refcount digest, root and canonical
+proof. Its isolated level-construction seam is restored after success or failure
+and requires one serial caller.
+
+The original source-pinned corpora and recordings are preserved. A separate
+comparison preselects 512/4096 initial keys, 16 versions, retain 8, two generations,
+three repetitions and both reference/projected modes (24 fresh Python workers).
+The second generation reverses mode order. Each worker independently reconstructs
+the complete case, canonically encodes and persists its result, and records the
+selected call's wall interval plus SELF CPU/lifetime RSS using the existing
+observer contract. The parent driver, final metric encoding and interpreter exit
+are outside that observation. Fresh processes do not establish cold OS/file/CPU
+caches or target hardware identity.
+
+```sh
+python -I -B tools/gen-state-root-vectors/check_oracle_projection_test.py -v
+python -I -B tools/gen-state-root-vectors/measure_oracle_projection.py \
+  --output new-oracle-samples.json --evidence-directory new-oracle-evidence
+python -I -B tools/gen-state-root-vectors/check_oracle_projection.py \
+  --samples new-oracle-samples.json
+```
+
+Select new output/evidence paths. All outcomes, raw streams, source selections,
+resource rows and complete result bytes are retained. A failed batch requires a
+separate reviewed source/selection; it must not be overwritten or relabelled as
+successful. The portable recorded-data checker recomputes the complete original
+oracle, binds every result/stream/resource row and performs no remeasurement.
+Synthetic control envelopes are not resource samples.
+
+Worker SELF lifetime high water includes imports/preflight and is never an
+interval RSS difference. CPU values stored as integer nanoseconds retain their
+native `getrusage` precision. Worker comparisons do not measure the unchanged
+full Python driver, Go compiler, simultaneous pipeline memory, through-exit RSS,
+peak disk, real archives or production device budgets. They execute no Go build,
+NodeTree/database, network, wallet, signing or transactions. Production consumers
+remain `REFUSED`; snapshot completeness, retained-hash provenance, accepted
+header/profile/activation, canonicality/finality/freshness and independent review
+and release authentication retain their separate gates.
+
+The recorded local CPython 3.9.6 Darwin/arm64 comparison retained six fresh
+worker samples for each case/mode. The table shows median selected-call wall
+time and median worker SELF lifetime RSS high water (imports/preflight included).
+
+| Initial keys | Reference RSS (MiB) | Projected RSS (MiB) | Reference wall (s) | Projected wall (s) |
+| --- | ---: | ---: | ---: | ---: |
+| 512 | 67.383 | 27.484 | 2.241 | 2.234 |
+| 4096 | 374.867 | 51.812 | 41.621 | 42.020 |
+
+All 24 complete case outputs matched. These observations support reduced
+worker high water for these two synthetic histories; they qualify no latency
+speedup, production budget or improvement to the unchanged full driver.
+A preceding source epoch launched one worker whose invalid observer label was
+refused before timing or reconstruction. Its actual failure and source bytes
+were retained; this recording uses a distinct corrected source selection with
+24 completed workers and no within-batch retry or filtering.
