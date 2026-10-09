@@ -1675,3 +1675,82 @@ schedule, context migration, retained-version provenance, independent human
 review and authenticated distribution remain separate gates. A matching balance
 observation does not prove spendability, plasma, frontier or mailbox completeness,
 state transitions, consensus finality, freshness or permission to release assets.
+
+### Offline resource budget comparisons
+
+`assess_tree_resources.py` prepares a read-only consumer limit contract for the
+recorded file-backed NodeTree tail experiment. Choose workload, runtime and
+limits separately from the measurement results. Independently selected limits,
+target device identity and execution provenance still require external evidence;
+the tool cannot authenticate them. `consumer-declared` records an unsigned
+declaration. It cannot turn a comparison into production qualification.
+
+The checked-in `testdata/tree-resource-budget-example.json` is an illustrative
+32-key, single-caller budget, with arbitrary example ceilings. It covers file
+reading, complete-map/root preflight, delta preparation, CommitBulk, a retained
+Commit, Prune, close/reopen, cumulative allocation, lifetime own-child RSS and
+closed database file lengths as separate measurements. It also requests query
+latency, whole pipeline latency, peak live Go heap, peak allocated disk and RSS
+through final output serialization. Those five measurements were not recorded;
+the example deliberately reports `INCOMPLETE`.
+
+For the current recorded bytes:
+
+```sh
+python -I -B tools/gen-state-root-vectors/assess_tree_resources.py \
+  --budget tools/gen-state-root-vectors/testdata/tree-resource-budget-example.json \
+  --expect-corpus-sha256 4977cfc6ce88fc8e6e8cfd8da5d4647d1869d7f04a616980ff20271e03e83e30 \
+  --expect-samples-sha256 5134a2e4155f55d12326a3205426588d122719b6a8766821e34bd772356d0938
+```
+
+Select the corpus and sample byte digests through the intended evidence channel.
+The values above bind the checked-in unsigned example; they are not an
+authenticated release or independently chosen consumer acceptance policy. Use
+`--corpus` and `--samples` for separately selected recorded files. The complete
+corpus and all 96 recorded child outcomes are checked before any case or mode is
+selected. Each measured limit compares all three repetitions in both
+generations, retains every value and uses their maximum. No failed child,
+generation or unfavorable repetition is discarded. Plain and allocation modes
+remain distinct. A limit is inclusive: a value equal to the ceiling is within
+that selected limit.
+
+Each limit has a unique public `id`, `metric`, `phase`, `mode` and integer
+`ceiling`. Phase metrics are `phase_elapsed_ns`,
+`phase_go_total_alloc_delta_bytes`, `phase_go_mallocs_delta` and
+`phase_go_gc_cycles`. Allocation, malloc and GC columns require `allocation`
+mode. Copy a phase name exactly from the selected case's phase inventory. For
+`process_peak_rss_bytes`, `closed_database_file_bytes` and the five unmeasured
+metrics in the example, `phase` must be null. All ceilings are unsigned uint64
+integers; booleans, negative values, floats, duplicate limit ids/measurement
+cells, unknown metrics and unknown phases refuse. The supported finite cases are
+`retained-8`, `retained-32` and `empty-transitions`, with one serial caller.
+
+Exit 0 means every requested recorded measurement is within its selected limit.
+Exit 2 means at least one limit is exceeded or a requested metric is unmeasured.
+The JSON distinguishes `EXCEEDED` from `INCOMPLETE`, retaining both lists when
+both occur. Exit 1 means malformed input, mismatched selected bytes/runtime or
+refused recorded evidence. Missing measurements retain null maxima and empty
+observations; zero is reserved for an actually measured zero, such as GC cycles.
+
+These are observations of a finite synthetic workload on the recorded
+Darwin/ARM64 reference runtime, independently of the machine running the
+checker. The report does not contain a target device/CPU/memory identity. A
+`device_label` is an unsigned public label, not a hardware match. Cumulative
+`TotalAlloc` is not peak heap or RSS; closed file lengths are not allocated blocks
+or peak disk; the recorded own-child RSS excludes final result binding and
+serialization. Named phase timing excludes interim conformance queries and
+reporting, so summing phases cannot supply query or whole pipeline latency.
+Future larger workloads and target hardware measurements need a separate
+source/binary-bound experiment with budgets selected before collection and all
+actual outcomes retained. Concurrency, realistic archives, insertion pauses,
+crash recovery and production resource budgets remain unqualified.
+
+Every report keeps `consumer_result=REFUSED`,
+`production_resource_budgets_qualified=false` and
+`production_state_value_accepted=false`, even for `WITHIN_SELECTED_LIMITS`.
+No node, network transport, wallet, signing, transaction or database writer is
+executed. Accepted VerifiedState/header/profile/activation, retained-Momentum
+hash provenance, complete/excluded snapshot state, independent human review and
+authenticated distribution retain their separate gates. Linux/macOS/Windows CI
+executes the offline CLI, adversarial controls and independent column checks;
+it does not reproduce these reference measurements.

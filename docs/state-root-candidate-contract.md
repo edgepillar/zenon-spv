@@ -658,3 +658,25 @@ than agreed protocol limits. Exact native CI validates the offline command and
 preserved original bytes; it does not execute a new node or a live consumer.
 Runtime v1/v2, `Result.Proven`, anchor/profile/schedule/context-pin boundaries,
 independent review and release gates remain unchanged.
+
+### Unsigned resource budget comparison boundary
+
+The [offline resource budget comparison](../tools/gen-state-root-vectors/README.md#offline-resource-budget-comparisons)
+prepares a consumer limit contract for the finite file-backed NodeTree tail
+samples. It binds the selected corpus/sample bytes, verifies all 96 recorded
+child outcomes and compares every selected repetition in both generations. It
+keeps file read/preflight/delta/commit/prune/close/reopen, plain/instrumented
+timing, cumulative allocation, lifetime own-child RSS and closed file lengths
+separate. Query/whole pipeline latency, peak live Go heap, peak allocated disk
+and RSS through final serialization remain unmeasured; they cannot be filled
+from another column or assumed zero.
+
+The illustrative budget has no independent consumer authorization or target
+hardware identity. A consumer declaration remains unsigned. Inclusive limits
+can yield `WITHIN_SELECTED_LIMITS`, `EXCEEDED` or `INCOMPLETE`; all retain
+`consumer_result=REFUSED` and false production resource/state-value qualification.
+This offline diagnostic executes no new reference backend or measurement.
+Larger real-chain workloads, separately selected device/concurrency/acceptance
+limits, source/binary/execution authentication, accepted VerifiedState/header/
+profile/activation, hash-bound retained versions, complete/excluded snapshot
+state and independent human review remain separate gates.
