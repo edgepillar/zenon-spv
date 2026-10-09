@@ -141,7 +141,7 @@ jobs:
       - name: Larger file NodeTree import controls
         run: python -I -B tools/gen-state-root-vectors/check_tree_import_scale_test.py -v
       - name: Independent recorded larger file NodeTree import
-        run: python -I -B tools/gen-state-root-vectors/check_tree_import_scale.py --source-revision "$SOURCE_REVISION"
+        run: python -I -B tools/gen-state-root-vectors/check_tree_import_scale.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
@@ -413,7 +413,7 @@ jobs:
       - name: Larger file NodeTree import controls
         run: python -I -B tools/gen-state-root-vectors/check_tree_import_scale_test.py -v
       - name: Independent recorded larger file NodeTree import
-        run: python -I -B tools/gen-state-root-vectors/check_tree_import_scale.py --source-revision "$SOURCE_REVISION"
+        run: python -I -B tools/gen-state-root-vectors/check_tree_import_scale.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
