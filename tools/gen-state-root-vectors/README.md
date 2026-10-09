@@ -1614,3 +1614,64 @@ remain unsigned engineering bindings. No complete/excluded snapshot
 authentication, retained-Momentum-hash provenance repair, accepted VerifiedState/
 header/profile/activation, anchor, schedule, context pin, independent review or
 authenticated release follows. Production state-value acceptance stays `REFUSED`.
+
+## Offline typed balance consumer
+
+`observe_balance.py` makes the first balance query contract usable without
+opening a node or enabling a production state-proof profile. It reads a separate
+**unsigned consumer selection** and a saved JSON-RPC response. The selection
+contains a Bech32 address/token, exact selected height/hash/root, chain/genesis,
+context pin, typed request ID and an independently selected presence/amount claim.
+The provider cannot override the key, profile or trust policy. Select the claim
+and root independently of the candidate response; a coherent provider-selected
+root and claim can describe arbitrary state.
+
+The `request` mode derives `03 || address[20] || 03 || token[10]` locally and
+prints the candidate `ledger.getProof(height, key)` request with its Base64 key.
+The `observe` mode checks the closed response envelope and typed ID, canonical
+Base64, bounded proof bytes, locally derived SHA3 path, selected root, exact
+value/proof agreement and presence/amount claim. Stored zero is present; an
+absence proof remains `present=false` even when its reported balance amount is
+zero. Null or empty absent RPC bytes do not select presence. Storage, plasma,
+mailbox and arbitrary raw-key substitution are outside this typed input shape.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/observe_balance.py request   --selection tools/gen-state-root-vectors/testdata/balance-observation-selection.json
+python3 -I -B tools/gen-state-root-vectors/observe_balance.py observe   --selection tools/gen-state-root-vectors/testdata/balance-observation-selection.json   --response tools/gen-state-root-vectors/testdata/balance-observation-response.json
+python3 -I -B tools/gen-state-root-vectors/check_balance_observations_test.py
+python3 -I -B tools/gen-state-root-vectors/check_balance_observations.py
+```
+
+These example files are unsigned synthetic fixtures. The response embeds the
+unchanged candidate serializer's stored-zero proof. The independent checker
+also reuses 18 original Go primitive/applier observations: 17 match, and a
+node-accepted 257-bit magnitude is refused by the explicit local research
+policy. It constructs no new node proof or root and performs no new reference
+backend execution. Native CI runs the actual offline CLI controls and checks
+these preserved bytes on Linux, macOS and Windows.
+
+Every successful report still says `consumer_result: REFUSED`,
+`production_state_value_accepted: false`, `header_authentication_executed: false`
+and `proven: []`. Exit 0 means only request preparation or the selected offline
+observation succeeded; it is never production acceptance. The selected header,
+chain/genesis and context pin are reported as unsigned labels, with no signature,
+VerifiedState, activation, retained-Momentum-hash provenance or canonicality
+verification. There is no trusted/accept override or network transport. The MIT
+verifier and its v1/v2 refusal behavior are unchanged.
+
+The named research profile requires exactly 32 present value bytes, at most
+8,327 proof bytes and nonzero encoded siblings. Those policies are intentionally
+stricter than some candidate inputs and are not an agreed protocol balance limit
+or canonical-proof rule. Files have separate 8 KiB selection and 16 KiB response
+limits, strict UTF-8 JSON, duplicate/depth/scalar checks, regular-file checks and bounded reads from
+owned descriptors. Errors use stable codes without input paths. Inputs must stay
+stable while read; timestamp checks are not an atomic filesystem snapshot.
+Windows symlink prechecks do not qualify concurrent reparse-point substitution.
+Keep selections, prepared requests and reports private when they contain user
+identities or values. No input file is modified or published by this tool.
+
+Accepted VerifiedState/header/profile/activation binding, anchor, producer
+schedule, context migration, retained-version provenance, independent human
+review and authenticated distribution remain separate gates. A matching balance
+observation does not prove spendability, plasma, frontier or mailbox completeness,
+state transitions, consensus finality, freshness or permission to release assets.

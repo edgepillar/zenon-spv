@@ -638,3 +638,23 @@ realistic archive/resource budget or accepted VerifiedState/header/profile/
 activation. Anchor, schedule, context pin, independent network trust inputs,
 human review and authenticated distribution remain separate gates. Production
 state-value acceptance remains `REFUSED`.
+
+### Offline typed balance consumer seam
+
+The [offline consumer](../tools/gen-state-root-vectors/README.md#offline-typed-balance-consumer)
+now prepares a locally derived candidate balance request and checks a saved
+response against a separate unsigned address/token/header/root/context selection
+and typed presence/amount claim. Its 18 preserved node-derived primitive/applier
+observations produce 17 offline matches and one local 256-bit-policy refusal;
+all production consumer outcomes remain `REFUSED`. Stored zero and absence are
+distinct. Typed RPC identity, closed shapes, Bech32, canonical Base64, bounded
+proof decoding and locally derived paths are checked before interpreting values.
+
+This research seam neither imports VerifiedState nor authenticates its supplied
+header, chain/genesis/context labels, profile activation or retained Momentum
+hash. Candidate proofs can match any separately supplied coherent root. The
+32-byte value and nonzero-sibling rules are explicit research policies rather
+than agreed protocol limits. Exact native CI validates the offline command and
+preserved original bytes; it does not execute a new node or a live consumer.
+Runtime v1/v2, `Result.Proven`, anchor/profile/schedule/context-pin boundaries,
+independent review and release gates remain unchanged.
