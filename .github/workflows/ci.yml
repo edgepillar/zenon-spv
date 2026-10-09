@@ -126,6 +126,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_tree_tail_test.py
       - name: Recorded file-backed tail, pruning and clean reopen (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/check_patch_tree_tail.py --source-revision "${{ github.sha }}"
+      - name: Offline typed balance consumer controls
+        run: python -I -B tools/gen-state-root-vectors/check_balance_observations_test.py
+      - name: Independent offline typed balance observations
+        run: python -I -B tools/gen-state-root-vectors/check_balance_observations.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
@@ -382,6 +386,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_tree_tail_test.py
       - name: Recorded file-backed tail, pruning and clean reopen (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/check_patch_tree_tail.py --source-revision "${{ github.sha }}"
+      - name: Offline typed balance consumer controls
+        run: python -I -B tools/gen-state-root-vectors/check_balance_observations_test.py
+      - name: Independent offline typed balance observations
+        run: python -I -B tools/gen-state-root-vectors/check_balance_observations.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership

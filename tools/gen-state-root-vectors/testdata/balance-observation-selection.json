@@ -1,0 +1,20 @@
+{
+  "address": "z1zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zkl3lm",
+  "claim": {
+    "amount": "0",
+    "present": true
+  },
+  "context_pin": "359f7982f39abf8cedafe29c8aed214fd9b42bbcc6b1a996fdfe2c1780a2d253",
+  "genesis_hash": "98869028212a6a6f854cc5b6877521bcadd9aea72f74343e0c3f2997e6c3fea9",
+  "header": {
+    "chain_identifier": 99,
+    "hash": "7737eeaec3786c51bc8ee4c0e57ea59801235f504c9cfe741deae553854c6c3d",
+    "height": 17,
+    "state_root": "de83bc256dd02ccedcf08e2337094c1b0c0ef1d89860e569a24d69c7156e9b08",
+    "version": 3
+  },
+  "kind": "unsigned-candidate-balance-selection-v1",
+  "profile": "research-balance-storage-smt-sha3-32-v1",
+  "request_id": "balance-fixture",
+  "token_standard": "zts1yg3zyg3zyg3zyg3z52w8gv"
+}
