@@ -154,6 +154,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_oracle_projection_test.py -v
       - name: Independent recorded selected sparse oracle comparison
         run: python -I -B tools/gen-state-root-vectors/check_oracle_projection.py --source-revision "${{ github.sha }}"
+      - name: Complete driver projection controls
+        run: python -I -B tools/gen-state-root-vectors/check_projected_driver_test.py -v
+      - name: Independent recorded complete driver projection comparison
+        run: python -I -B tools/gen-state-root-vectors/check_projected_driver.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
@@ -297,7 +301,8 @@ jobs:
   native-platform:
     name: Native platform (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    # Intel macOS needs more time for the complete independent oracle controls.
+    timeout-minutes: ${{ matrix.os == 'macos-15-intel' && 90 || 60 }}
     strategy:
       fail-fast: false
       matrix:
@@ -444,6 +449,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_oracle_projection_test.py -v
       - name: Independent recorded selected sparse oracle comparison
         run: python -I -B tools/gen-state-root-vectors/check_oracle_projection.py --source-revision "${{ github.sha }}"
+      - name: Complete driver projection controls
+        run: python -I -B tools/gen-state-root-vectors/check_projected_driver_test.py -v
+      - name: Independent recorded complete driver projection comparison
+        run: python -I -B tools/gen-state-root-vectors/check_projected_driver.py --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
