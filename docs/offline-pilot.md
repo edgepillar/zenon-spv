@@ -27,8 +27,23 @@ failure handling, native CI artifacts and independent ZIP checks.
 
 Keep source files unchanged during the run. Store the report outside the
 checkout so generating evidence does not itself change Git status. The
-default driver deadline is ten minutes (`--timeout`, positive and at most one
-hour); each selected test package also has a five-minute Go test deadline.
+source fingerprint streams selected Go/module/JSON members through a shared
+32 KiB buffer, retaining the existing sorted, length-prefixed byte encoding.
+The aggregate source payload must fit 64 MiB, matching the independent exported
+candidate checker. Path and opened-descriptor checks refuse nonregular or
+oversized members; exact descriptor length and EOF are required. Growth,
+shrinkage and read errors discard the entire fingerprint. Preflight refusal
+precedes test execution or candidate directory creation; post-run refusal
+prevents a successful report or finalized candidate. Linux/macOS opens also
+refuse final-component symlink replacement and avoid waiting for a replacement
+FIFO writer. Protected
+stable paths and same-size contents remain the caller's responsibility; this
+does not authenticate or atomically snapshot the checkout. Directory enumeration,
+corpus capture, build caches and complete pipeline memory remain separate from
+this input-buffer bound.
+
+The default driver deadline is ten minutes (`--timeout`, positive and at most one
+hour); selected test packages use that same timeout.
 The driver deadline stops the direct Go command. Its stdout copy is owned by
 `os/exec` and consumed concurrently; command waiting joins that copy before
 closing the collector channel. A two-second wait limit also releases inherited
