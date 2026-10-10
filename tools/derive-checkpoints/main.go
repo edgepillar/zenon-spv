@@ -50,14 +50,20 @@ func run(args []string) error {
 
 func runWithOutput(args []string, stdout, diagnostics io.Writer) error {
 	fs := flag.NewFlagSet("derive-checkpoints", flag.ContinueOnError)
-	fs.SetOutput(diagnostics)
+	fs.SetOutput(io.Discard)
 	peersFlag := fs.String("peers", os.Getenv("ZENON_SPV_PEERS"), "comma-separated peer URLs (or set ZENON_SPV_PEERS)")
 	fs.Lookup("peers").DefValue = ""
 	heightsFlag := fs.String("heights", "", "comma-separated heights to derive checkpoints for")
 	timeout := fs.Duration("timeout", 60*time.Second, "overall RPC timeout for all requested heights")
 	if err := fs.Parse(args); err != nil {
-		return err
+		if errors.Is(err, flag.ErrHelp) {
+			fs.SetOutput(diagnostics)
+			fs.Usage()
+			return err
+		}
+		return errors.New("invalid command syntax")
 	}
+	fs.SetOutput(diagnostics)
 	if fs.NArg() != 0 {
 		return errors.New("positional arguments are not supported")
 	}
