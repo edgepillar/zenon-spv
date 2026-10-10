@@ -48,9 +48,10 @@ func runInspectState(args []string, stdout, stderr io.Writer) int {
 	retainHeaders := fs.String("retain-headers", "", "explicit retained header capacity K (W < K <= 4096)")
 	jsonOutput := fs.Bool("json", false, "emit a versioned inspection report")
 	expectedContext := registerContextPin(fs)
+	selections := registerSelectionGuards(fs)
 	if err := fs.Parse(args); errors.Is(err, flag.ErrHelp) {
 		return writeInspectionOutput(stdout, stderr, []byte(inspectStateUsage), 0)
-	} else if err != nil || fs.NArg() != 0 || *statePath == "" {
+	} else if err != nil || selections() != nil || fs.NArg() != 0 || *statePath == "" {
 		report.Error = &reportError{Stage: "arguments", Category: "usage"}
 		return finishInspection(report, 64, *jsonOutput, stdout, stderr)
 	}

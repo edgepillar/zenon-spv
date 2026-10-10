@@ -168,7 +168,7 @@ func TestCompiledCLIStateInspection(t *testing.T) {
 		t.Fatal("successful inspection claimed unavailable proof depth")
 	}
 	missing := filepath.Join(dir, "PRIVATE_MISSING.json")
-	r = run(t, append(slices.Clone(common), "--state", missing), 2, "refused")
+	r = run(t, selectQueryCLIOption(common, "--state", missing), 2, "refused")
 	if r.Reason == nil || *r.Reason != "ReasonMissingEvidence" || r.Error != nil {
 		t.Fatal("missing state lost its explicit refusal")
 	}
@@ -182,7 +182,7 @@ func TestCompiledCLIStateInspection(t *testing.T) {
 				path = filepath.Join(path, "PRIVATE_STATE.fifo")
 				makeStateInputFIFO(t, path)
 			}
-			r := run(t, append(slices.Clone(common), "--state", path), 70, "error")
+			r := run(t, selectQueryCLIOption(common, "--state", path), 70, "error")
 			if r.Error == nil || r.Error.Stage != "state" || r.Error.Category != "operational" || r.Reason != nil {
 				t.Fatal("nonregular state lost its operational error classification")
 			}
@@ -204,7 +204,7 @@ func TestCompiledCLIStateInspection(t *testing.T) {
 		{[]string{"--genesis-config", missing}, 70, "genesis"},
 		{[]string{"--state", anchor}, 70, "state"},
 	} {
-		r = run(t, append(slices.Clone(common), tc.args...), tc.code, "error")
+		r = run(t, selectQueryCLIOption(common, tc.args[0], tc.args[1]), tc.code, "error")
 		if r.Error == nil || r.Error.Stage != tc.stage {
 			t.Fatal("inspection error lost its stage")
 		}

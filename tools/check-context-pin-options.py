@@ -290,7 +290,8 @@ def duplicate(runner, case_id, command, config, options, query, missing):
     if command.startswith("watch"):
         # Poisoned anchor prevents an accidental regression from starting a loop.
         # The expected usage refusal must precede even that missing-file error.
-        args += ["--genesis-config", missing, "--rpc", "http://127.0.0.1:1"]
+        args[args.index("--genesis-config") + 1] = missing
+        args += ["--rpc", "http://127.0.0.1:1"]
         if command == "watch-once":
             args += ["--once"]
     elif command != "inspect-state":

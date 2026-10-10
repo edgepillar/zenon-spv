@@ -234,6 +234,14 @@ func TestInspectStateDoesNotPersistSmallerWindow(t *testing.T) {
 
 func TestInspectStateArgumentsAndPrivateErrors(t *testing.T) {
 	f := inspectionFixture(t, false)
+	set := func(name, value string) []string {
+		args := slices.Clone(f.args)
+		if i := slices.Index(args, name); i >= 0 {
+			args[i+1] = value
+			return args
+		}
+		return append(args, name, value)
+	}
 	for _, tc := range []struct {
 		args  []string
 		code  int
@@ -244,9 +252,9 @@ func TestInspectStateArgumentsAndPrivateErrors(t *testing.T) {
 		{append(slices.Clone(f.args), "PRIVATE_POSITIONAL"), 64, "arguments"},
 		{append(slices.Clone(f.args), "--window", "PRIVATE_TIER"), 64, "arguments"},
 		{append(slices.Clone(f.args), "--PRIVATE_UNKNOWN"), 64, "arguments"},
-		{append(slices.Clone(f.args), "--genesis-config", "PRIVATE_MISSING"), 70, "genesis"},
-		{append(slices.Clone(f.args), "--protocol-profile", "PRIVATE_MISSING"), 70, "protocol_profile"},
-		{append(slices.Clone(f.args), "--schedule", "PRIVATE_MISSING"), 70, "schedule"},
+		{set("--genesis-config", "PRIVATE_MISSING"), 70, "genesis"},
+		{set("--protocol-profile", "PRIVATE_MISSING"), 70, "protocol_profile"},
+		{set("--schedule", "PRIVATE_MISSING"), 70, "schedule"},
 	} {
 		r := inspectionJSON(t, tc.args, tc.code)
 		if r.Status != "error" || r.Error == nil || r.Error.Stage != tc.stage {
