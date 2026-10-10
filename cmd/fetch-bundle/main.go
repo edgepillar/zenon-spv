@@ -48,6 +48,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -72,7 +73,8 @@ func main() {
 
 func run(args []string) error {
 	fs := flag.NewFlagSet("fetch-bundle", flag.ContinueOnError)
-	fs.SetOutput(os.Stderr)
+	// flag syntax errors include untrusted names and values; keep them private.
+	fs.SetOutput(io.Discard)
 	rpcURL := fs.String("rpc", os.Getenv("ZENON_SPV_RPC"), "single-peer RPC URL (or set ZENON_SPV_RPC)")
 	peersFlag := fs.String("peers", os.Getenv("ZENON_SPV_PEERS"), "comma-separated peer URLs for cross-check (or set ZENON_SPV_PEERS)")
 	// Environment defaults remain live values but must not appear in usage text.
@@ -97,8 +99,14 @@ func run(args []string) error {
 		return nil
 	})
 	if err := fs.Parse(args); err != nil {
-		return err
+		if errors.Is(err, flag.ErrHelp) {
+			fs.SetOutput(os.Stderr)
+			fs.Usage()
+			return err
+		}
+		return errors.New("invalid command syntax")
 	}
+	fs.SetOutput(os.Stderr)
 	if fs.NArg() != 0 {
 		return errors.New("fetch-bundle does not accept positional arguments")
 	}

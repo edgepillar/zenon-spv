@@ -141,6 +141,12 @@ shipped.
 
 ### How the table is derived
 
+Invalid flag syntax in `derive-producer-schedule` uses the fixed stderr
+diagnostic `derive-producer-schedule: invalid command syntax` and exits with
+code 1 before RPC or output publication. Supplied flag names and values are
+not echoed. Explicit `--help` or `-h` retains the existing usage text and
+exit code 1, without printing selected or environment peer credentials.
+
 `tools/derive-producer-schedule` iterates a declared height range
 against operator-selected peers via JSON-RPC. It requires at least two
 distinct endpoint strings, and a quorum between two and the peer count.
