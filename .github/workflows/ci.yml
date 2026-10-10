@@ -36,6 +36,8 @@ jobs:
         run: go test -v -count=1 -run '^TestObserverExpectationsReadContract$' ./tools/observe-block
       - name: Observer query staging controls
         run: go test -v -count=1 -run '^TestObserverQueryStagingContract$' ./tools/observe-block
+      - name: Complete observer workflow resource observations
+        run: go test -v -count=1 -timeout 10m -run '^TestCompiledBlockObserverResources$' ./internal/conformance
       - name: Private staging sampler controls
         run: python -I -B tools/test_private_staging.py
       - name: Observer diagnostic consumer controls
@@ -349,6 +351,8 @@ jobs:
         run: go test -v -count=1 -run '^TestObserverExpectationsReadContract$' ./tools/observe-block
       - name: Observer query staging controls
         run: go test -v -count=1 -run '^TestObserverQueryStagingContract$' ./tools/observe-block
+      - name: Complete observer workflow resource observations
+        run: go test -v -count=1 -timeout 10m -run '^TestCompiledBlockObserverResources$' ./internal/conformance
       - name: Private staging sampler controls
         run: python -I -B tools/test_private_staging.py
       - name: Observer diagnostic consumer controls
