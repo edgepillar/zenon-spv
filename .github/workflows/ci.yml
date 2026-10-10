@@ -34,6 +34,8 @@ jobs:
         run: go test -v -count=1 -run '^TestObserverPreflight(Inputs|Replacements)$' ./tools/observe-block
       - name: Observer expectations input-read controls
         run: go test -v -count=1 -run '^TestObserverExpectationsReadContract$' ./tools/observe-block
+      - name: Observer query staging controls
+        run: go test -v -count=1 -run '^TestObserverQueryStagingContract$' ./tools/observe-block
       - name: Private staging sampler controls
         run: python -I -B tools/test_private_staging.py
       - name: Observer diagnostic consumer controls
@@ -263,6 +265,8 @@ jobs:
         run: go test -run '^$' -bench '^BenchmarkCollectorStaging$' -benchtime=1x -count=3 -benchmem ./tools/observe-block
       - name: Observer expectations input-read allocation observations
         run: go test -run '^$' -bench '^BenchmarkObserverExpectationsRead$' -benchtime=100x -benchmem -cpu=1 -count=3 ./tools/observe-block
+      - name: Observer query staging allocation observations
+        run: go test -run '^$' -bench '^BenchmarkObserverQueryStaging$' -benchtime=1x -benchmem -cpu=1 -count=3 ./tools/observe-block
       - name: RPC data-hash allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCDataHashDecode$' -benchtime=3x -benchmem ./internal/fetch
       - name: Address-byte checker controls
@@ -343,6 +347,8 @@ jobs:
         run: go test -v -count=1 -run '^TestObserverPreflight(Inputs|Replacements)$' ./tools/observe-block
       - name: Observer expectations input-read controls
         run: go test -v -count=1 -run '^TestObserverExpectationsReadContract$' ./tools/observe-block
+      - name: Observer query staging controls
+        run: go test -v -count=1 -run '^TestObserverQueryStagingContract$' ./tools/observe-block
       - name: Private staging sampler controls
         run: python -I -B tools/test_private_staging.py
       - name: Observer diagnostic consumer controls
@@ -578,6 +584,8 @@ jobs:
         run: go test -run '^$' -bench '^BenchmarkCollectorStaging$' -benchtime=1x -count=3 -benchmem ./tools/observe-block
       - name: Observer expectations input-read allocation observations
         run: go test -run '^$' -bench '^BenchmarkObserverExpectationsRead$' -benchtime=100x -benchmem -cpu=1 -count=3 ./tools/observe-block
+      - name: Observer query staging allocation observations
+        run: go test -run '^$' -bench '^BenchmarkObserverQueryStaging$' -benchtime=1x -benchmem -cpu=1 -count=3 ./tools/observe-block
       - name: RPC data-hash allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCDataHashDecode$' -benchtime=3x -benchmem ./internal/fetch
       - name: Address-byte checker controls
