@@ -41,6 +41,13 @@ zenon-spv verify-headers --genesis-config anchor.json \
 and both watch modes. It accepts exactly 64 hexadecimal characters (either
 case), without a prefix or whitespace. Omission preserves existing behavior;
 an explicitly empty or malformed value exits 64 and cannot disable the check.
+Supply the option at most once. Repeated occurrences exit 64 even if their
+values match, or if a later valid value follows an empty or malformed value.
+This argument refusal happens before opening configuration, bundle or state
+files, acquiring a writer lock, or contacting RPC. It exposes no pin values;
+verification and inspection JSON reports retain their usage-error framing,
+and neither watch mode emits an event. A single-dash spelling and an equals
+separator follow the same rule. Omitted and single valid pins are unchanged.
 All verification flags must precede the bundle path.
 
 A mismatch exits 70 before new evidence verification, watch startup/RPC, or
@@ -194,6 +201,28 @@ python3 tools/check-verification-context.py
 python3 tools/check-verification-context_test.py
 go test -race ./...
 ```
+
+The compiled option checker preselects schema 1 and schema 2 contexts from
+the pinned synthetic node corpora. Its finite inventory includes two private
+state seeds, 40 omitted/single-pin checks, and 168 repeated-option refusals
+across all four verification commands, inspection and both watch modes:
+
+```sh
+python3 -I -B tools/check-context-pin-options_test.py -v
+go build -o zenon-spv ./cmd/zenon-spv
+python3 -I -B tools/check-context-pin-options.py --verifier ./zenon-spv \
+  --source-revision "$REVIEWED_COMMIT"
+```
+
+Use the platform's executable suffix when needed. The checker records real
+child exit codes and hashes of stdout/stderr before checking decisions. It
+checks state bytes, file identity, mode, size and modification time, and
+requires no new files or writer companions after repeated-option probes.
+Access times can change during reads and are excluded. The missing anchor
+on watch probes prevents a regression from starting a loop; the expected
+argument refusal must precede that missing-file error. These controls add
+no live-network evidence or independent human review. The report's source
+revision is a caller assertion; qualify source and binary identity separately.
 
 The independent encoder requires exact JSON integers, excluding booleans,
 floating-point values, strings and nulls. Context/profile versions fit uint32;
