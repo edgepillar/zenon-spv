@@ -270,7 +270,7 @@ func binaryMatches(path, expected string) bool {
 }
 
 func binaryMatchesWithOpen(path, expected string, openFile func(string) (*os.File, error)) bool {
-	f, err := checkedPreflightInput(path, maxBinaryBytes, openFile)
+	f, _, err := checkedPreflightInput(path, maxBinaryBytes, openFile)
 	if err != nil {
 		return false
 	}
@@ -285,12 +285,12 @@ func readExpectations(path string) ([]byte, bool) {
 }
 
 func readExpectationsWithOpen(path string, openFile func(string) (*os.File, error)) ([]byte, bool) {
-	f, err := checkedPreflightInput(path, maxExpectationsBytes, openFile)
+	f, size, err := checkedPreflightInput(path, maxExpectationsBytes, openFile)
 	if err != nil {
 		return nil, false
 	}
 	defer func() { _ = f.Close() }()
-	raw, err := io.ReadAll(io.LimitReader(f, maxExpectationsBytes+1))
+	raw, err := readExpectationBytes(f, maxExpectationsBytes, size)
 	return raw, err == nil && len(raw) <= maxExpectationsBytes
 }
 
