@@ -278,3 +278,122 @@ func TestCompiledCollectorSyntaxPrivacy(t *testing.T) {
 	}
 	t.Logf("offline-collector-syntax-controls %s", raw)
 }
+
+func TestCompiledMaintainerSyntaxPrivacy(t *testing.T) {
+	binaries := buildQueryCLIs(t, "derive-checkpoints", "verify-mainnet-genesis")
+	dir := t.TempDir()
+	path := filepath.Join(dir, "PRIVATE_EXISTING.json")
+	prior := []byte("PRIVATE_EXISTING_ARTIFACT\n")
+	if err := os.WriteFile(path, prior, 0600); err != nil {
+		t.Fatal(err)
+	}
+	var requests atomic.Int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests.Add(1)
+		http.Error(w, "unexpected fixture request", http.StatusInternalServerError)
+	}))
+	defer server.Close()
+	peer := server.URL + "/PRIVATE_RPC_PATH?token=PRIVATE_RPC_TOKEN"
+	unchanged := func() {
+		t.Helper()
+		raw, err := os.ReadFile(path)
+		entries, listErr := os.ReadDir(dir)
+		if err != nil || !bytes.Equal(raw, prior) || listErr != nil || len(entries) != 1 || requests.Load() != 0 {
+			t.Fatal("syntax or help reached loopback RPC or changed an existing artifact")
+		}
+	}
+	type variant struct {
+		name string
+		args []string
+	}
+	shared := []variant{
+		{"unknown_name", []string{"--PRIVATE_SYNTAX_TOKEN"}},
+		{"unknown_equals", []string{"--PRIVATE_SYNTAX_TOKEN=https://PRIVATE_USER:PRIVATE_SECRET@invalid.example/PRIVATE_PATH"}},
+		{"three_dashes", []string{"---PRIVATE_SYNTAX_TOKEN"}},
+		{"empty_name", []string{"--=PRIVATE_SYNTAX_TOKEN"}},
+		{"missing_peers", []string{"--peers"}},
+		{"invalid_timeout", []string{"--timeout", "PRIVATE_SYNTAX_TOKEN"}},
+		{"overflow_timeout", []string{"--timeout", "999999999999999999999999h"}},
+		{"missing_timeout", []string{"--timeout"}},
+	}
+	type control struct {
+		Command  string `json:"command"`
+		Variant  string `json:"variant"`
+		ExitCode int    `json:"exit_code"`
+	}
+	var records []control
+	for _, command := range []string{"derive-checkpoints", "verify-mainnet-genesis"} {
+		variants := slices.Clone(shared)
+		base := []string{"--peers", peer + "," + peer + "&alias=2"}
+		if command == "derive-checkpoints" {
+			base = append(base, "--heights", "2")
+			variants = append(variants, variant{"missing_heights", []string{"--heights"}})
+		} else {
+			base = append(base, "--genesis-config", filepath.Join(dir, "PRIVATE_MISSING.json"))
+			variants = append(variants,
+				variant{"missing_expected", []string{"--expected"}},
+				variant{"missing_genesis_config", []string{"--genesis-config"}},
+			)
+		}
+		invoke := func(args ...string) queryCLIResult {
+			t.Helper()
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			cmd := exec.CommandContext(ctx, binaries[command], args...)
+			cmd.Env = append(queryCLIEnvironment(), "ZENON_SPV_PEERS=https://PRIVATE_ENV_USER:PRIVATE_ENV_SECRET@invalid.example/PRIVATE_ENV_PATH,https://PRIVATE_ENV_PEER.invalid")
+			cmd.WaitDelay = time.Second
+			var stdout, stderr bytes.Buffer
+			cmd.Stdout, cmd.Stderr = &stdout, &stderr
+			err := cmd.Run()
+			var exit *exec.ExitError
+			if ctx.Err() != nil || !errors.As(err, &exit) || exit.ExitCode() != 1 {
+				t.Fatal("syntax or help changed the existing maintainer tool exit contract")
+			}
+			r := queryCLIResult{code: exit.ExitCode(), stdout: stdout.Bytes(), stderr: stderr.Bytes()}
+			assertOperatorPrivacy(t, r, dir)
+			unchanged()
+			return r
+		}
+		for _, variant := range variants {
+			r := invoke(append(slices.Clone(base), variant.args...)...)
+			if len(r.stdout) != 0 || string(r.stderr) != command+": invalid command syntax\n" {
+				t.Fatalf("%s/%s lost its private syntax refusal contract", command, variant.name)
+			}
+			records = append(records, control{command, variant.name, r.code})
+		}
+		r := invoke(append(slices.Clone(base), "PRIVATE_POSITIONAL_TOKEN")...)
+		if len(r.stdout) != 0 || string(r.stderr) != command+": positional arguments are not supported\n" {
+			t.Fatal("positional refusal echoed its value or changed its existing diagnostic")
+		}
+		records = append(records, control{command, "positional", r.code})
+		var help []byte
+		for _, option := range []string{"--help", "-h"} {
+			r := invoke(append(slices.Clone(base), option)...)
+			if len(r.stdout) != 0 || !strings.HasPrefix(string(r.stderr), "Usage of "+command+":\n") ||
+				!strings.Contains(string(r.stderr), "-peers") || !strings.Contains(string(r.stderr), "-timeout") ||
+				!strings.HasSuffix(string(r.stderr), command+": flag: help requested\n") {
+				t.Fatal("explicit help changed its existing usage or stream contract")
+			}
+			if help != nil && !bytes.Equal(help, r.stderr) {
+				t.Fatal("short and long help differ or disclose selected private values")
+			}
+			help = slices.Clone(r.stderr)
+		}
+	}
+	if len(records) != 21 {
+		t.Fatal("incomplete selected maintainer syntax refusal inventory")
+	}
+	raw, err := json.Marshal(struct {
+		Version            int       `json:"schema_version"`
+		Controls           []control `json:"controls"`
+		SyntaxRefusals     int       `json:"syntax_refusals"`
+		PositionalRefusals int       `json:"positional_refusals"`
+		HelpControls       int       `json:"help_controls"`
+		RPCRequests        int64     `json:"rpc_requests"`
+		OutputWrites       int       `json:"output_writes"`
+	}{1, records, 19, 2, 4, requests.Load(), 0})
+	if err != nil {
+		t.Fatal("cannot encode maintainer syntax control inventory")
+	}
+	t.Logf("offline-maintainer-syntax-controls %s", raw)
+}

@@ -57,6 +57,12 @@ endpoints from `ZENON_SPV_PEERS` are supported but are not printed by help.
 Runtime errors identify anonymous peers without endpoint credentials or query
 parameters.
 
+Invalid flag syntax emits only `verify-mainnet-genesis: invalid command syntax`
+to stderr and exits with status 1 before loading a selected genesis file or
+making RPC requests. Supplied flag names and values are omitted. Explicit
+`--help` and `-h` retain usage on stderr and status 1; positional arguments retain
+their separate fixed refusal.
+
 Stdout contains a report only after complete agreement, shape checks, and hash
 matching. Failure exits with status 1 and does not emit a success report. A
 stdout write error or short write also fails, although partial report bytes may
