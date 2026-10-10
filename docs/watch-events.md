@@ -100,7 +100,9 @@ REJECT exits 1, and REFUSED exits 2; operational failures still take precedence
 with exit 70. See [single-step watch](watch-persistence.md#single-step-watch).
 Fatal setup
 or runtime failures after argument parsing use stage-only stderr diagnostics
-in JSON mode; parser/help output remains the ordinary CLI stderr interface.
+in JSON mode. Syntax failures before startup emit the fixed stderr diagnostic
+`arguments: invalid command syntax`; explicit help still prints usage. Neither
+starts the event stream, loads state, acquires writer ownership, or queries RPC.
 Cancellation observed between ticks stops before another RPC round, including
 when an immediate catch-up timer is ready. Cancellation during a running tick
 can still produce that tick's refusal event before shutdown.

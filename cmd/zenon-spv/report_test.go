@@ -248,6 +248,9 @@ func TestJSONReportOperationalFailuresAreNotVerificationOutcomes(t *testing.T) {
 		if code := runVerification("verify-headers", args, &stdout, &stderr); code != 64 || stdout.Len() != 0 || stderr.Len() == 0 {
 			t.Fatal("syntax/help output must remain on stderr without a report")
 		}
+		if args[0] != "--help" && stderr.String() != "arguments: invalid command syntax\n" {
+			t.Fatal("syntax diagnostics disclosed untrusted arguments")
+		}
 	}
 }
 
