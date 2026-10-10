@@ -85,7 +85,7 @@ func TestCompiledRetentionDepthWorkflow(t *testing.T) {
 	if peer.calls.Load() != before {
 		t.Fatal("missing retention reached RPC")
 	}
-	wrong := append(slices.Clone(common), "--retain-headers", "17")
+	wrong := selectQueryCLIOption(common, "--retain-headers", "17")
 	if result := runQueryCLI(t, bin, append([]string{"inspect-state"}, wrong...)...); result.code != 70 || !bytes.Contains(result.stdout, []byte(`"stage":"context_pin"`)) {
 		t.Fatal("changed K matched a pinned context")
 	}

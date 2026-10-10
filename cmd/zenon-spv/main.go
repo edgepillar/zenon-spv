@@ -150,6 +150,12 @@ Height must be positive and the hash nonzero. A config file overrides env.
 values fail with exit 64 before configuration or evidence is loaded. Put all
 verify-* flags before the bundle path; watch accepts flags only.
 
+Trust, state, policy, input and execution options must each occur at most once,
+including identical repeats or mixed single/double-dash spellings. A repeated
+--retained-only cannot disable read-only mode, and a repeated watch --once
+cannot start a continuous loop. Repeats exit 64 before files, writer locks or
+RPC. --json and --show-context retain their ordinary presentation semantics.
+
 --retain-headers <K> selects retained capacity independently of depth W.
 Available on verify-*, inspect-config, inspect-state, and watch. Requires
 W < K <= 4096; omission keeps legacy W+1. Explicit K saves state schema 3
@@ -280,11 +286,16 @@ func prepareVerifierContext(name string, args []string, out *verificationOutput)
 	statePath := fs.String("state", "", "path to persisted HeaderState; load if present, save after ACCEPT")
 	retainedOnly := fs.Bool("retained-only", false, "query an existing trusted state without new headers or state writes (proof commands only)")
 	schedulePath := fs.String("schedule", "", "path to producer schedule JSON; when set, header producer authorization is required (tier-2 caveat)")
+	selections := registerSelectionGuards(fs)
 	if err := fs.Parse(args); err != nil {
 		return verifierContext{}, 64
 	}
 	out.configure(*jsonOutput, *retainedOnly, *statePath)
 	fs.SetOutput(out.diagnostics)
+	if err := selections(); err != nil {
+		_, _ = fmt.Fprintln(out.diagnostics, err)
+		return verifierContext{}, 64
+	}
 	if fs.NArg() != 1 {
 		_, _ = fmt.Fprintf(out.diagnostics, "%s: expected exactly one bundle path\n", name)
 		fs.Usage()
@@ -556,7 +567,12 @@ func runWatch(args []string) int {
 	interval := fs.Duration("interval", syncer.DefaultInterval, "tick interval between iterations (0 = default 10s; negative values invalid)")
 	safetyMargin := fs.Uint64("safety-margin", syncer.DefaultSafetyMargin, "drop this many heights below median(frontiers) per tick (0 = default 6)")
 	batchSize := fs.Uint64("batch-size", syncer.DefaultBatchSize, "max headers to fetch per tick, also capped by verifier policy (0 = default 60)")
+	selections := registerSelectionGuards(fs)
 	if err := fs.Parse(args); err != nil {
+		return 64
+	}
+	if err := selections(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		return 64
 	}
 	diagnostic := func(stage string, err error) {

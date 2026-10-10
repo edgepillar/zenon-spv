@@ -116,7 +116,7 @@ func TestCompiledCLIQueryWorkflow(t *testing.T) {
 	}{
 		{"empty headers require explicit mode", "ReasonMissingEvidence", common},
 		{"stronger depth refuses", "ReasonInsufficientFinality", append(slices.Clone(query), "--window", "medium")},
-		{"missing state cannot bootstrap a query", "ReasonMissingEvidence", append(slices.Clone(query), "--state", filepath.Join(dir, "absent.json"))},
+		{"missing state cannot bootstrap a query", "ReasonMissingEvidence", selectQueryCLIOption(query, "--state", filepath.Join(dir, "absent.json"))},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			result := runQueryCLI(t, bins["zenon-spv"], append([]string{"verify-segment"}, append(slices.Clone(tc.args), candidatePath)...)...)
@@ -219,7 +219,7 @@ func TestCompiledCLIQueryWorkflow(t *testing.T) {
 		stateUnchanged()
 	})
 	t.Run("accepted headers with failed save exit nonzero", func(t *testing.T) {
-		args := append(slices.Clone(common), "--state", unwritableCLIStatePath(t), seedPath)
+		args := append(selectQueryCLIOption(common, "--state", unwritableCLIStatePath(t)), seedPath)
 		result := runQueryCLI(t, bins["zenon-spv"], append([]string{"verify-headers"}, args...)...)
 		report := checkProcessReport(t, result, 70, "ACCEPT")
 		if report.Persistence != "failed" || report.Error == nil || report.Error.Stage != "persistence" {
@@ -233,7 +233,7 @@ func TestCompiledCLIQueryWorkflow(t *testing.T) {
 			args  []string
 		}{
 			{64, "arguments", append(slices.Clone(query), "--window", "PRIVATE_WINDOW", candidatePath)},
-			{70, "genesis", append(slices.Clone(query), "--genesis-config", filepath.Join(dir, "PRIVATE_ANCHOR"), candidatePath)},
+			{70, "genesis", append(selectQueryCLIOption(query, "--genesis-config", filepath.Join(dir, "PRIVATE_ANCHOR")), candidatePath)},
 		} {
 			result := runQueryCLI(t, bins["zenon-spv"], append([]string{"verify-segment"}, tc.args...)...)
 			report := checkProcessReport(t, result, tc.code, "")
@@ -255,7 +255,7 @@ func TestCompiledCLIQueryWorkflow(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		path := filepath.Join(dir, "saved-before-output.json")
-		args := append([]string{"verify-headers"}, append(slices.Clone(common), "--state", path, seedPath)...)
+		args := append([]string{"verify-headers"}, append(selectQueryCLIOption(common, "--state", path), seedPath)...)
 		cmd := exec.CommandContext(ctx, bins["zenon-spv"], args...)
 		cmd.Env, cmd.Stdout = queryCLIEnvironment(), writer
 		cmd.WaitDelay = time.Second
@@ -289,6 +289,18 @@ func queryCLIEnvironment() []string {
 		}
 	}
 	return env
+}
+
+// Fixtures that deliberately change an input or policy must select it once;
+// appending another flag would exercise usage refusal instead of the intended
+// missing-input, context-drift or persistence boundary.
+func selectQueryCLIOption(args []string, name, value string) []string {
+	selected := slices.Clone(args)
+	if i := slices.Index(selected, name); i >= 0 {
+		selected[i+1] = value
+		return selected
+	}
+	return append(selected, name, value)
 }
 
 func buildQueryCLIs(t *testing.T, names ...string) map[string]string {

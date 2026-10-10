@@ -32,6 +32,23 @@ class ContextPinOptionControls(unittest.TestCase):
     def test_usage_refusal_has_no_proof_or_context(self):
         self.assertTrue(check.report_matches(self.result(), "verify-commitment", 64, stage="arguments"))
 
+    def test_watch_pin_probe_has_one_selected_poisoned_anchor(self):
+        config = ["--json", "--genesis-config", "PRIVATE_SELECTED", "--state", "PRIVATE_STATE"]
+        original = list(config)
+        options = ["--expect-context", "PRIVATE_FIRST_PIN", "--expect-context", "PRIVATE_LAST_PIN"]
+        for command in ("watch", "watch-once"):
+            runner = mock.Mock()
+            runner.child.return_value = subprocess.CompletedProcess([], 64, b"", check.DUPLICATE_ERROR)
+            check.duplicate(runner, "case", command, config, options, "PRIVATE_QUERY", "PRIVATE_MISSING")
+            args = runner.child.call_args.args[1]
+            self.assertEqual(args.count("--genesis-config"), 1)
+            self.assertEqual(args[args.index("--genesis-config") + 1], "PRIVATE_MISSING")
+            self.assertEqual(args.count("--expect-context"), 2)
+            self.assertEqual(args.count("--rpc"), 1)
+            self.assertEqual(args.count("--once"), int(command == "watch-once"))
+            runner.check.assert_called_once_with("case", True)
+            self.assertEqual(config, original)
+
     def test_actual_exit_cannot_be_replaced_by_diagnostic(self):
         self.assertFalse(check.report_matches(self.result(code=0), "verify-commitment", 64, stage="arguments"))
 

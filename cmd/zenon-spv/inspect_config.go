@@ -41,9 +41,10 @@ func runInspectConfig(args []string, stdout, stderr io.Writer) int {
 	tier := fs.String("window", "low", "policy window: low | medium | high")
 	retainHeaders := fs.String("retain-headers", "", "explicit retained header capacity K (W < K <= 4096)")
 	jsonOutput := fs.Bool("json", false, "emit a versioned configuration report")
+	selections := registerSelectionGuards(fs)
 	if err := fs.Parse(args); errors.Is(err, flag.ErrHelp) {
 		return writeConfigOutput(stdout, stderr, []byte(inspectConfigUsage), 0)
-	} else if err != nil || fs.NArg() != 0 {
+	} else if err != nil || selections() != nil || fs.NArg() != 0 {
 		report.Error = &reportError{Stage: "arguments", Category: "usage"}
 		return finishConfiguration(report, 64, *jsonOutput, stdout, stderr)
 	}
