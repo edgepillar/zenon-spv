@@ -120,18 +120,16 @@ func TestCompiledBlockObserverResources(t *testing.T) {
 					}
 					observations := make([]processObservation, concurrency)
 					for slot, result := range results {
-						var report struct {
-							Version   int                   `json:"schema_version"`
-							Status    string                `json:"status"`
-							Category  *string               `json:"category"`
-							Count     int                   `json:"checked_targets"`
-							ElapsedNS int64                 `json:"elapsed_ns"`
-							Verifier  observerProcessRecord `json:"verifier"`
-							Consumer  observerProcessRecord `json:"consumer"`
-						}
-						if failures[slot] != nil || result.code != 0 || len(result.stderr) != 0 || json.Unmarshal(result.stdout, &report) != nil ||
+						var report observerResourceSummary
+						decodeErr := json.Unmarshal(result.stdout, &report)
+						if failures[slot] != nil || result.code != 0 || len(result.stderr) != 0 || decodeErr != nil ||
 							report.Version != 1 || report.Status != "matched" || report.Category != nil || report.Count != targets ||
 							report.ElapsedNS <= 0 || result.elapsed <= 0 || len(losslessObject(t, result.stdout)) != 7 {
+							record, err := json.Marshal(observerResourceFailureContext(round, slot, failures[slot] != nil, result, report, decodeErr == nil))
+							if err != nil {
+								t.Fatal("cannot encode fixed observer resource failure context")
+							}
+							t.Logf("offline-observer-workflow-resource-failure %s", record)
 							t.Fatalf("observer resource round %d slot %d did not complete its selected workflow (actual exit %d)", round, slot, result.code)
 						}
 						for _, child := range []observerProcessRecord{report.Verifier, report.Consumer} {
@@ -177,6 +175,76 @@ func TestCompiledBlockObserverResources(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+type observerResourceSummary struct {
+	Version   int                   `json:"schema_version"`
+	Status    string                `json:"status"`
+	Category  *string               `json:"category"`
+	Count     int                   `json:"checked_targets"`
+	ElapsedNS int64                 `json:"elapsed_ns"`
+	Verifier  observerProcessRecord `json:"verifier"`
+	Consumer  observerProcessRecord `json:"consumer"`
+}
+
+type observerResourceFailure struct {
+	Round            int                   `json:"round"`
+	Slot             int                   `json:"slot"`
+	ActualExit       int                   `json:"actual_exit"`
+	HelperFailure    bool                  `json:"helper_failure"`
+	StdoutBytes      int                   `json:"stdout_bytes"`
+	StderrBytes      int                   `json:"stderr_bytes"`
+	SummaryAvailable bool                  `json:"summary_available"`
+	Category         string                `json:"category"`
+	Verifier         observerProcessRecord `json:"verifier"`
+	Consumer         observerProcessRecord `json:"consumer"`
+}
+
+// Retain only actual outer outcomes, fixed application categories and numeric
+// child metadata. Never print raw summaries, helper errors or diagnostics.
+// A failed workflow is still unqualified and is neither retried nor filtered.
+func observerResourceFailureContext(round, slot int, helperFailure bool, actual queryCLIResult, report observerResourceSummary, decoded bool) observerResourceFailure {
+	r := observerResourceFailure{Round: round, Slot: slot, ActualExit: actual.code, HelperFailure: helperFailure,
+		StdoutBytes: len(actual.stdout), StderrBytes: len(actual.stderr), SummaryAvailable: decoded, Category: "unknown"}
+	if !decoded {
+		return r
+	}
+	r.Verifier, r.Consumer = report.Verifier, report.Consumer
+	if report.Category == nil {
+		r.Category = "none"
+		return r
+	}
+	switch *report.Category {
+	case "cancelled", "input_unavailable", "binary_mismatch", "cleanup_failure", "output_limit", "timeout", "process_unavailable", "process_failure",
+		"invalid_summary", "invalid_expectations", "invalid_report", "report_mismatch", "trust_mismatch", "target_mismatch", "guarantee_mismatch", "consumer_failure":
+		r.Category = *report.Category
+	}
+	return r
+}
+
+func TestObserverResourceFailureContext(t *testing.T) {
+	secret := "PRIVATE_RESOURCE_CONTEXT https://user:password@private.invalid/private-state"
+	exit := int64(2)
+	actual := queryCLIResult{code: 2, stdout: []byte(secret), stderr: []byte(secret)}
+	for _, category := range []string{"process_failure", "binary_mismatch", "report_mismatch", secret} {
+		report := observerResourceSummary{Version: 1, Status: secret, Category: &category,
+			Verifier: observerProcessRecord{ExitCode: &exit, StdoutBytes: 77}, Consumer: observerProcessRecord{StderrBytes: 12}}
+		r := observerResourceFailureContext(7, 0, false, actual, report, true)
+		raw, err := json.Marshal(r)
+		if err != nil || bytes.Contains(raw, []byte(secret)) || r.ActualExit != 2 || r.Verifier.ExitCode == nil || *r.Verifier.ExitCode != 2 ||
+			r.StdoutBytes != len(secret) || r.StderrBytes != len(secret) || r.Consumer.StderrBytes != 12 || !r.SummaryAvailable {
+			t.Fatal("failure context disclosed private text or lost actual numeric outcomes")
+		}
+		if category == secret && r.Category != "unknown" || category != secret && r.Category != category {
+			t.Fatal("failure category was not restricted to the fixed vocabulary")
+		}
+	}
+	if r := observerResourceFailureContext(7, 0, true, actual, observerResourceSummary{Verifier: observerProcessRecord{ExitCode: &exit}}, false); r.Category != "unknown" || r.SummaryAvailable || r.Verifier.ExitCode != nil || !r.HelperFailure || r.ActualExit != 2 {
+		t.Fatal("undecodable failure summary acquired child completion claims")
+	}
+	if r := observerResourceFailureContext(7, 0, false, actual, observerResourceSummary{}, true); r.Category != "none" {
+		t.Fatal("absent application category was not distinguished from unknown text")
 	}
 }
 

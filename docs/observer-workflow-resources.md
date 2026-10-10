@@ -24,6 +24,14 @@ matched target rows per complete native run. Failures stop the test and are
 not retried; earlier round records and the actual test failure stay in its log.
 No warmup or slow observation is discarded.
 
+A failed invocation also records `offline-observer-workflow-resource-failure`
+with the round, launch slot, actual outer exit, helper-failure flag, outer output
+sizes and available numeric child metadata. Application categories are restricted
+to a fixed vocabulary; unknown text becomes `unknown`, and an undecodable
+summary provides no child-completion claims. Raw summaries, paths, helper errors
+and diagnostics are omitted. This context supports investigation and does not
+qualify, retry or replace the failed workload.
+
 The selected targets and 1,000-member flat content list reuse the pinned
 node-derived content-scaling corpus. Full retained header windows, confirming
 heights, anchor, profile and producer schedule are synthetic stress inputs.
