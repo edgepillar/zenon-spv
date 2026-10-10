@@ -28,6 +28,8 @@ jobs:
         run: python -B tools/check-exported-candidate_test.py
       - name: Verification context checks
         run: python tools/check-verification-context_test.py
+      - name: Context pin option controls
+        run: python -I -B tools/check-context-pin-options_test.py -v
       - name: Private staging sampler controls
         run: python -I -B tools/test_private_staging.py
       - name: Observer diagnostic consumer controls
@@ -215,6 +217,12 @@ jobs:
           candidate_directory="${{ runner.temp }}/tested-candidate"
           executable_suffix="$(go env GOEXE)"
           python -I -B tools/check-node-query-consumer.py --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --source-revision "${{ github.sha }}"
+      - name: Independent compiled context pin options
+        shell: bash
+        run: |
+          candidate_directory="${{ runner.temp }}/tested-candidate"
+          executable_suffix="$(go env GOEXE)"
+          python -I -B tools/check-context-pin-options.py --verifier "$candidate_directory/zenon-spv$executable_suffix" --source-revision "${{ github.sha }}"
       - name: Actual observer diagnostic consumption
         shell: bash
         run: |
@@ -323,6 +331,8 @@ jobs:
         run: python -B tools/check-exported-candidate_test.py
       - name: Verification context checks
         run: python tools/check-verification-context_test.py
+      - name: Context pin option controls
+        run: python -I -B tools/check-context-pin-options_test.py -v
       - name: Private staging sampler controls
         run: python -I -B tools/test_private_staging.py
       - name: Observer diagnostic consumer controls
@@ -516,6 +526,12 @@ jobs:
           candidate_directory="${{ runner.temp }}/tested-candidate"
           executable_suffix="$(go env GOEXE)"
           python -I -B tools/check-node-query-consumer.py --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --source-revision "${{ github.sha }}"
+      - name: Independent compiled context pin options
+        shell: bash
+        run: |
+          candidate_directory="${{ runner.temp }}/tested-candidate"
+          executable_suffix="$(go env GOEXE)"
+          python -I -B tools/check-context-pin-options.py --verifier "$candidate_directory/zenon-spv$executable_suffix" --source-revision "${{ github.sha }}"
       - name: Actual observer diagnostic consumption
         shell: bash
         run: |
