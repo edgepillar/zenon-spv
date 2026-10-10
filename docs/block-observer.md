@@ -79,6 +79,24 @@ open, with an owned subprocess deadline and descriptor-close checks. Windows
 runs the common type, size, open-error and descriptor controls; those Unix
 replacement controls are explicitly skipped there.
 
+The checked descriptor size is only an allocation hint for the expectations
+snapshot. The reader still consumes complete bytes through EOF or one byte
+beyond the 256 KiB cap, preserves read failures, and handles an ordinary file
+growing or shrinking after the size check. The hint is not an expected length
+or a content, stability or trust assertion. Binary hashing uses the existing
+streamed reader.
+
+`TestObserverExpectationsReadContract` compares raw bytes, errors and consumed
+input with the ordinary `io.ReadAll(io.LimitReader(...))` reader selected from
+fork main `367281d`. It covers stale/extreme hints, short reads, errors with
+final bytes, the exact byte cap, and opened-descriptor replacement sizes. The
+same comparison also has a bounded-input fuzz target.
+`BenchmarkObserverExpectationsRead` retains both readers and measures only
+in-memory buffer allocation for empty, 699-byte, 55,897-byte and 256 KiB inputs.
+The repeated bytes are deliberately not valid expectations or evidence. CI
+records all three 100-operation repetitions on each native platform; these
+observations exclude filesystem I/O, parsing, process memory and network work.
+
 These checks do not authenticate input bytes, exclude ordinary-file replacement
 or parent-directory aliases, or prevent replacing a binary after hashing and
 before process execution. A regular replacement binary still must match its
