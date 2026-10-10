@@ -59,7 +59,7 @@ func runWithOutput(args []string, stdout, diagnostics io.Writer) error {
 		return errors.New("cannot load embedded mainnet anchor")
 	}
 	fs := flag.NewFlagSet("verify-mainnet-genesis", flag.ContinueOnError)
-	fs.SetOutput(diagnostics)
+	fs.SetOutput(io.Discard)
 	peersFlag := fs.String("peers", os.Getenv("ZENON_SPV_PEERS"), "comma-separated peer URLs (or set ZENON_SPV_PEERS)")
 	fs.Lookup("peers").DefValue = ""
 	expected := fs.String("expected", hex.EncodeToString(anchor.HeaderHash[:]), "expected nonzero 64-hex hash (defaults to the embedded mainnet anchor)")
@@ -71,8 +71,14 @@ func runWithOutput(args []string, stdout, diagnostics io.Writer) error {
 	})
 	timeout := fs.Duration("timeout", 60*time.Second, "overall RPC timeout")
 	if err := fs.Parse(args); err != nil {
-		return err
+		if errors.Is(err, flag.ErrHelp) {
+			fs.SetOutput(diagnostics)
+			fs.Usage()
+			return err
+		}
+		return errors.New("invalid command syntax")
 	}
+	fs.SetOutput(diagnostics)
 	if fs.NArg() != 0 {
 		return errors.New("positional arguments are not supported")
 	}

@@ -17,6 +17,11 @@ covers the whole collection, including all heights; it is not renewed per peer
 or per height. Environment endpoints may be supplied through `ZENON_SPV_PEERS`,
 but help output does not print those values.
 
+Invalid flag syntax emits only `derive-checkpoints: invalid command syntax` to
+stderr and exits with status 1 before RPC. Supplied flag names and values are
+omitted. Explicit `--help` and `-h` retain usage on stderr and status 1;
+positional arguments retain their separate fixed refusal.
+
 At each height the shared multi-peer client checks the exact requested height
 and count, recomputes supported momentum hashes, and requires every configured
 peer to return the same hash, public key, and signature. A failed or malformed
