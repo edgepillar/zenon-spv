@@ -1,11 +1,15 @@
 package conformance_test
 
 import (
+	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -88,7 +92,7 @@ func TestCompiledBlockObserverResources(t *testing.T) {
 					"--expect-context", pin, "--window", "low", "--retain-headers", strconv.Itoa(capacity), "--timeout", "30s"}
 				for round := range 21 {
 					results := make([]queryCLIResult, concurrency)
-					completed := make([]bool, concurrency)
+					failures := make([]error, concurrency)
 					var joined sync.WaitGroup
 					start := make(chan struct{})
 					for slot := range concurrency {
@@ -96,8 +100,7 @@ func TestCompiledBlockObserverResources(t *testing.T) {
 						go func() {
 							defer joined.Done()
 							<-start
-							results[slot] = runQueryCLIWithResources(t, time.Minute, bins["observe-block"], args...)
-							completed[slot] = true
+							results[slot], failures[slot] = runObserverResourceProcess(bins["observe-block"], args...)
 						}()
 					}
 					started := time.Now()
@@ -126,7 +129,7 @@ func TestCompiledBlockObserverResources(t *testing.T) {
 							Verifier  observerProcessRecord `json:"verifier"`
 							Consumer  observerProcessRecord `json:"consumer"`
 						}
-						if !completed[slot] || result.code != 0 || len(result.stderr) != 0 || json.Unmarshal(result.stdout, &report) != nil ||
+						if failures[slot] != nil || result.code != 0 || len(result.stderr) != 0 || json.Unmarshal(result.stdout, &report) != nil ||
 							report.Version != 1 || report.Status != "matched" || report.Category != nil || report.Count != targets ||
 							report.ElapsedNS <= 0 || result.elapsed <= 0 || len(losslessObject(t, result.stdout)) != 7 {
 							t.Fatalf("observer resource round %d slot %d did not complete its selected workflow (actual exit %d)", round, slot, result.code)
@@ -175,4 +178,31 @@ func TestCompiledBlockObserverResources(t *testing.T) {
 			})
 		}
 	}
+}
+
+// Workers return fixed errors to the joined test goroutine. They never invoke
+// testing.Fatal/FailNow, which must run on the test goroutine. The existing
+// native memory helper still owns Start, the observation handle and Wait.
+func runObserverResourceProcess(binary string, args ...string) (queryCLIResult, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, binary, args...)
+	cmd.Env, cmd.WaitDelay = queryCLIEnvironment(), time.Second
+	var output, diagnostics bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &output, &diagnostics
+	memory, elapsed, err := runProcessWithMemory(cmd)
+	result := queryCLIResult{code: -1, stdout: output.Bytes(), stderr: diagnostics.Bytes(), elapsed: elapsed, process: cmd.ProcessState, memory: memory}
+	if cmd.ProcessState != nil {
+		result.code = cmd.ProcessState.ExitCode()
+	}
+	if ctx.Err() != nil {
+		return result, errors.New("observer resource invocation timed out")
+	}
+	if err != nil {
+		var exit *exec.ExitError
+		if !errors.As(err, &exit) {
+			return result, errors.New("observer resource invocation did not complete")
+		}
+	}
+	return result, nil
 }
