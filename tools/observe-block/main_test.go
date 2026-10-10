@@ -192,13 +192,18 @@ func TestObservationProcessHelper(t *testing.T) {
 		_, _ = os.Stderr.Write(bytes.Repeat([]byte{'x'}, 32768))
 	case "sleep":
 		time.Sleep(time.Minute)
-	case "inherited pipe":
+	case "inherited pipe", "inherited stderr":
 		binary, err := os.Executable()
 		if err != nil {
 			os.Exit(71)
 		}
 		child := exec.Command(binary, "-test.run=^TestObservationProcessHelper$", "--", "hold pipe")
-		child.Stdout = os.Stdout
+		if mode == "inherited pipe" {
+			child.Stdout = os.Stdout
+		} else {
+			child.Stderr = os.Stderr
+			_, _ = io.WriteString(os.Stderr, "PRIVATE_COMPLETION_DIAGNOSTIC\n")
+		}
 		if child.Start() != nil {
 			os.Exit(71)
 		}
@@ -225,7 +230,7 @@ func TestObservationProcessBoundaries(t *testing.T) {
 	}{
 		{"success", "", 5 * time.Second}, {"failed", "process_failure", 5 * time.Second},
 		{"stdout limit", "output_limit", 5 * time.Second}, {"stderr limit", "output_limit", 5 * time.Second}, {"sleep", "timeout", 100 * time.Millisecond},
-		{"inherited pipe", "process_failure", 5 * time.Second},
+		{"inherited pipe", "output_incomplete", 5 * time.Second},
 	} {
 		t.Run(tc.mode, func(t *testing.T) {
 			r := runProcess(context.Background(), binary, []string{"-test.run=^TestObservationProcessHelper$", "--", tc.mode}, 32, tc.timeout)
@@ -264,5 +269,59 @@ func TestBoundedOutputDoesNotRetainDiagnostics(t *testing.T) {
 	}
 	if strconv.FormatInt(w.observed, 10) != "11" {
 		t.Fatal("observed bytes did not include violating write")
+	}
+}
+
+// A child can exit zero while an inherited stdout or stderr pipe stays open.
+// Both in-memory and file-staged query output must refuse incomplete delivery.
+func TestObservationOutputCompletion(t *testing.T) {
+	t.Setenv("ZENON_OBSERVER_HELPER", "1")
+	t.Setenv("GORACE", "atexit_sleep_ms=0")
+	binary, err := os.Executable()
+	if err != nil {
+		t.Fatal("cannot select helper binary")
+	}
+	for _, mode := range []string{"inherited pipe", "inherited stderr"} {
+		for _, staged := range []bool{false, true} {
+			name := strings.ReplaceAll(mode, " ", "_") + "_memory"
+			if staged {
+				name = strings.ReplaceAll(mode, " ", "_") + "_staged"
+			}
+			t.Run(name, func(t *testing.T) {
+				args := []string{"-test.run=^TestObservationProcessHelper$", "--", mode}
+				var result processResult
+				if staged {
+					path := filepath.Join(t.TempDir(), "PRIVATE_QUERY_REPORT")
+					result = stageQueryReport(context.Background(), binary, args, path, 5*time.Second)
+					raw, err := os.ReadFile(path)
+					if err != nil || string(raw) != "ACCEPT\n" || len(result.stdout) != 0 {
+						t.Fatal("staged incomplete output lost its bounded file contract")
+					}
+				} else {
+					result = runProcess(context.Background(), binary, args, 32, 5*time.Second)
+					if string(result.stdout) != "ACCEPT\n" {
+						t.Fatal("memory output did not retain exact bounded stdout")
+					}
+				}
+				if result.category != "output_incomplete" || result.code != 2 || result.ExitCode == nil ||
+					*result.ExitCode != 0 || result.StdoutBytes != 7 || result.ElapsedNS <= 0 ||
+					bytes.Contains(result.stdout, []byte("PRIVATE")) ||
+					(mode == "inherited stderr") != (result.StderrBytes > 0) {
+					t.Fatal("incomplete output accepted or lost private fixed failure classification")
+				}
+				record, err := json.Marshal(struct {
+					ID          string `json:"id"`
+					Category    string `json:"category"`
+					RefusalExit int    `json:"refusal_exit"`
+					ChildExit   int64  `json:"actual_child_exit"`
+					StdoutBytes int64  `json:"stdout_bytes"`
+					StderrBytes int64  `json:"stderr_bytes"`
+				}{name, result.category, result.code, *result.ExitCode, result.StdoutBytes, result.StderrBytes})
+				if err != nil {
+					t.Fatal("cannot encode fixed completion observation")
+				}
+				t.Logf("observer-output-completion-observation %s", record)
+			})
+		}
 	}
 }

@@ -40,6 +40,10 @@ jobs:
         run: go test -v -count=1 -run '^TestCompiledCollectorSyntaxPrivacy$' ./internal/conformance
       - name: Observer expectations input-read controls
         run: go test -v -count=1 -run '^TestObserverExpectationsReadContract$' ./tools/observe-block
+      - name: Observer output completion controls
+        run: |
+          go test -v -count=1 -run '^TestObservationOutputCompletion$' ./tools/observe-block
+          go test -v -count=1 -run '^TestObserverResourceFailureContext$' ./internal/conformance
       - name: Observer query staging controls
         run: go test -v -count=1 -run '^TestObserverQueryStagingContract$' ./tools/observe-block
       - name: Complete observer workflow resource observations
@@ -361,6 +365,10 @@ jobs:
         run: go test -v -count=1 -run '^TestCompiledCollectorSyntaxPrivacy$' ./internal/conformance
       - name: Observer expectations input-read controls
         run: go test -v -count=1 -run '^TestObserverExpectationsReadContract$' ./tools/observe-block
+      - name: Observer output completion controls
+        run: |
+          go test -v -count=1 -run '^TestObservationOutputCompletion$' ./tools/observe-block
+          go test -v -count=1 -run '^TestObserverResourceFailureContext$' ./internal/conformance
       - name: Observer query staging controls
         run: go test -v -count=1 -run '^TestObserverQueryStagingContract$' ./tools/observe-block
       - name: Complete observer workflow resource observations

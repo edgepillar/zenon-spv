@@ -271,7 +271,13 @@ No paths, target identities, fingerprints, binary pins or raw errors are echoed.
 Count zero is a failed match, never evidence that an account or block is absent.
 
 Exit 0 means complete matching, 2 means refusal/process/limit failure, 64 means
-invalid invocation, and 70 means local setup, cleanup or output failure. Check
+invalid invocation, and 70 means local setup, cleanup or output failure.
+The fixed category `output_incomplete` reports an `exec.ErrWaitDelay` from the
+existing one-second wait for output copying to finish. It remains a refusal
+with exit 2 even when the child exited 0; partially copied query output never
+reaches the consumer. Other process errors retain `process_failure`. This
+distinction changes no stream caps, child deadlines or successful report
+fields, and does not identify the cause of historical generic failures. Check
 the observer's actual process status too: a broken output channel can leave
 partial JSON. Elapsed samples include startup and observed process completion;
 total time also includes preflight, private file preparation and cleanup before
