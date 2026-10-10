@@ -106,7 +106,7 @@ func TestCompiledPinnedOperatorWorkflow(t *testing.T) {
 			if drift == "drop schedule" {
 				changed = append(slices.Clone(config), "--expect-context", pin, "--state", statePath)
 			} else {
-				changed = append(changed, "--window", "high")
+				changed = selectQueryCLIOption(changed, "--window", "high")
 			}
 			for _, command := range []string{"verify-headers", "verify-commitment", "verify-segment", "verify-state-value", "inspect-state", "watch"} {
 				args := append([]string{command}, changed...)

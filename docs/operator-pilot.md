@@ -20,6 +20,29 @@ binary hashes, scenarios, and skips on native Linux, macOS, and Windows CI.
 That is synthetic integration evidence. The following operator procedure
 still requires independently selected network trust inputs.
 
+## Keep each selection unique
+
+Every verifier trust, input, policy and execution option must occur at most
+once. This includes `--genesis-config`, `--protocol-profile`, `--schedule`,
+`--window`, `--retain-headers`, `--state` and `--retained-only`, plus watch's
+peer, quorum, timing, batch and `--once` selections. Identical repeats and mixed
+single/double-dash or equals spellings are refused with exit 64 before files,
+writer locks or RPC. The first value is preserved; a later value cannot turn
+off a selected read-only query or change a one-tick watch into a continuous loop.
+Use one explicit reviewed value when changing a selection. `--expect-context`
+keeps its existing single-pin contract; `--json` and `--show-context` retain
+ordinary presentation semantics.
+
+Duplicate and numeric/boolean conversion diagnostics contain fixed option
+names, without supplied values. Verification and inspection retain their JSON
+argument-error framing; watch emits its fixed usage diagnostic and no event.
+`TestCompiledVerifierSelectionGuards` runs 265 selected refusal controls and
+two ordinary configuration controls against a compiled verifier in each native
+CI job. It checks zero loopback requests, no created input/lock files and no
+private values in output. Existing node-derived retained-query tests cover
+single-selection proof behavior. These invocation controls authenticate neither
+trust origins nor activation, canonicality, finality, freshness or state values.
+
 ## Prepare inputs and records
 
 Use a protected local directory whose state and companion lock files other
