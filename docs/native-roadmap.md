@@ -20,6 +20,15 @@ evidence. Those completed pieces are the baseline, not new roadmap work.
 | Controlled network pilot | Use the selected block observer application with independently selected real account-block targets and authenticated network inputs, then record read-only restart, disconnect, stale peers, expiry and delayed queries on target hardware. Keep actual observations and all failures separate from synthetic artifacts. No live pilot is claimed by local application conformance. |
 | Reviewed release and integration | [Tested candidate artifacts](candidate-artifacts.md) retain each native run's exact ordinary executable bytes with its report and manifest, plus an independent archive/pin checker. Obtain independent review of that exact candidate, test a real report consumer, choose the smallest public API, verify source/binary provenance and document upgrades/support limits. The unsigned packages and CI do not substitute for independent review. |
 
+The [complete observer resource workflow](observer-workflow-resources.md)
+adds native repeated observations of the actual observer, verifier and consumer
+with full K=256/4096 windows, 16 selected targets and concurrency one/four.
+Each of the four workloads retains 21 fresh groups, successful child outcomes
+and input/cleanup checks. Native waited-process memory has distinct OS scopes;
+it is not simultaneous process-tree memory or a production capacity guarantee.
+This local synthetic workload leaves independent consumer, hardware, traffic,
+network and release acceptance gates unchanged.
+
 ## Separate consensus research
 
 Before implementation, specify which authenticated history/commitments bind
