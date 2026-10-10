@@ -216,7 +216,7 @@ func observerResourceFailureContext(round, slot int, helperFailure bool, actual 
 		return r
 	}
 	switch *report.Category {
-	case "cancelled", "input_unavailable", "binary_mismatch", "cleanup_failure", "output_limit", "timeout", "process_unavailable", "process_failure",
+	case "cancelled", "input_unavailable", "binary_mismatch", "cleanup_failure", "output_limit", "timeout", "process_unavailable", "process_failure", "output_incomplete",
 		"invalid_summary", "invalid_expectations", "invalid_report", "report_mismatch", "trust_mismatch", "target_mismatch", "guarantee_mismatch", "consumer_failure":
 		r.Category = *report.Category
 	}
@@ -227,7 +227,7 @@ func TestObserverResourceFailureContext(t *testing.T) {
 	secret := "PRIVATE_RESOURCE_CONTEXT https://user:password@private.invalid/private-state"
 	exit := int64(2)
 	actual := queryCLIResult{code: 2, stdout: []byte(secret), stderr: []byte(secret)}
-	for _, category := range []string{"process_failure", "binary_mismatch", "report_mismatch", secret} {
+	for _, category := range []string{"process_failure", "output_incomplete", "binary_mismatch", "report_mismatch", secret} {
 		report := observerResourceSummary{Version: 1, Status: secret, Category: &category,
 			Verifier: observerProcessRecord{ExitCode: &exit, StdoutBytes: 77}, Consumer: observerProcessRecord{StderrBytes: 12}}
 		r := observerResourceFailureContext(7, 0, false, actual, report, true)
