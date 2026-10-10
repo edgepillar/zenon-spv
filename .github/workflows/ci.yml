@@ -36,6 +36,8 @@ jobs:
         run: go test -v -count=1 -run '^TestCompiledVerifierSelectionGuards$' ./internal/conformance
       - name: Verifier syntax privacy controls
         run: go test -v -count=1 -run '^TestCompiledVerifierSyntaxPrivacy$' ./internal/conformance
+      - name: Collector syntax privacy controls
+        run: go test -v -count=1 -run '^TestCompiledCollectorSyntaxPrivacy$' ./internal/conformance
       - name: Observer expectations input-read controls
         run: go test -v -count=1 -run '^TestObserverExpectationsReadContract$' ./tools/observe-block
       - name: Observer query staging controls
@@ -355,6 +357,8 @@ jobs:
         run: go test -v -count=1 -run '^TestCompiledVerifierSelectionGuards$' ./internal/conformance
       - name: Verifier syntax privacy controls
         run: go test -v -count=1 -run '^TestCompiledVerifierSyntaxPrivacy$' ./internal/conformance
+      - name: Collector syntax privacy controls
+        run: go test -v -count=1 -run '^TestCompiledCollectorSyntaxPrivacy$' ./internal/conformance
       - name: Observer expectations input-read controls
         run: go test -v -count=1 -run '^TestObserverExpectationsReadContract$' ./tools/observe-block
       - name: Observer query staging controls

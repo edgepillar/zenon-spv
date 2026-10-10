@@ -32,6 +32,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -50,7 +51,8 @@ func main() {
 
 func run(args []string) error {
 	fs := flag.NewFlagSet("derive-producer-schedule", flag.ContinueOnError)
-	fs.SetOutput(os.Stderr)
+	// flag syntax errors include untrusted names and values; keep them private.
+	fs.SetOutput(io.Discard)
 	peersFlag := fs.String("peers", os.Getenv("ZENON_SPV_PEERS"), "comma-separated peer URLs (or set ZENON_SPV_PEERS); at least 3 recommended")
 	fs.Lookup("peers").DefValue = "" // Help must not print environment credentials.
 	from := fs.Uint64("from", 0, "inclusive start height (at least 2; genesis has no elected signer)")
@@ -61,8 +63,14 @@ func run(args []string) error {
 	quorum := fs.Int("quorum", 0, "minimum agreeing peers, at least 2 (0 = require unanimous over all --peers)")
 	timeout := fs.Duration("timeout", 5*time.Minute, "overall RPC timeout for the run")
 	if err := fs.Parse(args); err != nil {
-		return err
+		if errors.Is(err, flag.ErrHelp) {
+			fs.SetOutput(os.Stderr)
+			fs.Usage()
+			return err
+		}
+		return errors.New("invalid command syntax")
 	}
+	fs.SetOutput(os.Stderr)
 	if fs.NArg() != 0 {
 		return errors.New("positional arguments are not supported")
 	}
