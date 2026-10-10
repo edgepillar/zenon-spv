@@ -266,30 +266,30 @@ func regularPath(path string) (string, bool) {
 }
 
 func binaryMatches(path, expected string) bool {
-	f, err := os.Open(path)
+	return binaryMatchesWithOpen(path, expected, openPreflightInput)
+}
+
+func binaryMatchesWithOpen(path, expected string, openFile func(string) (*os.File, error)) bool {
+	f, err := checkedPreflightInput(path, maxBinaryBytes, openFile)
 	if err != nil {
 		return false
 	}
 	defer func() { _ = f.Close() }()
-	info, err := f.Stat()
-	if err != nil || !info.Mode().IsRegular() || info.Size() > maxBinaryBytes {
-		return false
-	}
 	h := sha256.New()
 	n, err := io.Copy(h, io.LimitReader(f, maxBinaryBytes+1))
 	return err == nil && n <= maxBinaryBytes && hex.EncodeToString(h.Sum(nil)) == expected
 }
 
 func readExpectations(path string) ([]byte, bool) {
-	f, err := os.Open(path)
+	return readExpectationsWithOpen(path, openPreflightInput)
+}
+
+func readExpectationsWithOpen(path string, openFile func(string) (*os.File, error)) ([]byte, bool) {
+	f, err := checkedPreflightInput(path, maxExpectationsBytes, openFile)
 	if err != nil {
 		return nil, false
 	}
 	defer func() { _ = f.Close() }()
-	info, err := f.Stat()
-	if err != nil || !info.Mode().IsRegular() || info.Size() > maxExpectationsBytes {
-		return nil, false
-	}
 	raw, err := io.ReadAll(io.LimitReader(f, maxExpectationsBytes+1))
 	return raw, err == nil && len(raw) <= maxExpectationsBytes
 }

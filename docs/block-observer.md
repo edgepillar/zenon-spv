@@ -69,6 +69,23 @@ A successful diagnostic from a failed process is never passed off as a match.
 After actual verifier success, the complete report and expectations snapshot
 are passed to the existing consumer with that actual zero exit status.
 
+Before each binary hash or expectations read, the observer checks the selected
+path's regular-file type and size again, then validates the opened descriptor
+before reading. On Linux/macOS, nonblocking open keeps a replacement FIFO from
+waiting for a writer; final-component no-follow refuses a replacement symlink.
+Both paths use the same descriptor boundary, including the optional collector
+binary. Native controls replace inputs exactly between the pathname check and
+open, with an owned subprocess deadline and descriptor-close checks. Windows
+runs the common type, size, open-error and descriptor controls; those Unix
+replacement controls are explicitly skipped there.
+
+These checks do not authenticate input bytes, exclude ordinary-file replacement
+or parent-directory aliases, or prevent replacing a binary after hashing and
+before process execution. A regular replacement binary still must match its
+selected digest; regular expectations bytes remain a trusted caller input.
+Protected directories and a caller-imposed whole-operation deadline remain
+necessary, including for stalled ordinary-file I/O.
+
 Consumer stdout is capped at 1024 bytes and must exactly match its fixed JSON
 summary encoding, including a terminating newline. Successful consumption
 requires actual consumer exit zero, schema 1, `matched`, null category and a
