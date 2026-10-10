@@ -249,7 +249,7 @@ func main() {
 		fmt.Print(usage)
 		os.Exit(0)
 	default:
-		fmt.Fprintf(os.Stderr, "unknown subcommand: %s\n\n%s", os.Args[1], usage)
+		fmt.Fprint(os.Stderr, "unknown subcommand\n\n", usage)
 		os.Exit(64)
 	}
 }
@@ -287,7 +287,7 @@ func prepareVerifierContext(name string, args []string, out *verificationOutput)
 	retainedOnly := fs.Bool("retained-only", false, "query an existing trusted state without new headers or state writes (proof commands only)")
 	schedulePath := fs.String("schedule", "", "path to producer schedule JSON; when set, header producer authorization is required (tier-2 caveat)")
 	selections := registerSelectionGuards(fs)
-	if err := fs.Parse(args); err != nil {
+	if err := parsePrivateFlags(fs, args, out.diagnostics); err != nil {
 		return verifierContext{}, 64
 	}
 	out.configure(*jsonOutput, *retainedOnly, *statePath)
@@ -568,7 +568,7 @@ func runWatch(args []string) int {
 	safetyMargin := fs.Uint64("safety-margin", syncer.DefaultSafetyMargin, "drop this many heights below median(frontiers) per tick (0 = default 6)")
 	batchSize := fs.Uint64("batch-size", syncer.DefaultBatchSize, "max headers to fetch per tick, also capped by verifier policy (0 = default 60)")
 	selections := registerSelectionGuards(fs)
-	if err := fs.Parse(args); err != nil {
+	if err := parsePrivateFlags(fs, args, os.Stderr); err != nil {
 		return 64
 	}
 	if err := selections(); err != nil {

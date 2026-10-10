@@ -51,6 +51,11 @@ remain on stderr, and exit 64 is preserved. Once flags parse and JSON mode is
 selected, operational errors use fixed stage/category fields instead of raw
 error text. Ordinary reported results and errors leave stderr empty.
 
+Syntax failures use the fixed diagnostic `arguments: invalid command syntax`,
+without echoing option names or values. Explicit help still prints usage.
+An unknown subcommand also omits the supplied name and prints usage. These
+failures do not load trust inputs, acquire a state writer lock, or query RPC.
+
 If encoding fails or a stdout write returns an error, the process exits 70
 and attempts to write a fixed diagnostic to stderr. A closed stdout pipe can
 instead terminate the process through the platform's SIGPIPE behavior.
