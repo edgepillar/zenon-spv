@@ -235,13 +235,10 @@ func observe(ctx context.Context, c configuration) (result summary, code int) {
 	}
 	args := []string{c.command, "--json", "--retained-only", "--genesis-config", c.anchor, "--protocol-profile", c.profile,
 		"--schedule", c.schedule, "--state", c.state, "--expect-context", c.pin, "--window", c.window, "--retain-headers", c.retention, c.bundle}
-	query := runProcess(ctx, c.verifier, args, maxReportBytes, c.timeout)
+	query := stageQueryReport(ctx, c.verifier, args, reportPath, c.timeout)
 	result.Verifier = query.observation
 	if query.category != "" {
 		return fail(query.category, query.code)
-	}
-	if os.WriteFile(reportPath, query.stdout, 0o600) != nil {
-		return fail("input_unavailable", 70)
 	}
 	consumer := runProcess(ctx, c.consumer, []string{"--report", reportPath, "--expectations", expectedPath, "--verifier-exit-code", "0"}, maxSummaryBytes, c.timeout)
 	result.Consumer = consumer.observation
