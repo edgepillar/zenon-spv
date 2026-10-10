@@ -36,7 +36,13 @@ shared operators remain transport and independence assumptions.
 Help and usage output omit the values of `ZENON_SPV_RPC` and `ZENON_SPV_PEERS`
 while preserving their runtime defaults. This keeps endpoint credentials out
 of the generated defaults listing; it does not redact shell history, process
-arguments, or arbitrary argument errors.
+arguments, or unrelated application diagnostics.
+
+Invalid flag syntax uses the fixed stderr diagnostic
+`fetch-bundle: invalid command syntax` and exits with code 1 before RPC or
+output publication. Supplied flag names and values are not echoed. Explicit
+`--help` or `-h` retains the existing usage text and exit code 1, without
+printing selected or environment endpoint credentials.
 
 [RPC diagnostics](rpc-diagnostics.md) identify peers by their configured list
 positions and omit endpoint credentials and free-form server error messages.
