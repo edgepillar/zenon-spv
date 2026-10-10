@@ -112,6 +112,28 @@ unknown, duplicate, missing, case-aliased or partial output cannot match.
 The underlying consumer retains all target, guarantee, context/tip, lossless
 integer and trust checks. The observer does not implement them again.
 
+The verifier's report is streamed through the existing 4 MiB stdout cap into
+an exclusively created private file, without retaining the complete report in
+the observer's memory. Both stream copies must finish and the file must close
+successfully before the consumer starts. Create, write, short-write or close
+failure refuses the observation; partial report files are never consumed and
+remain subject to the same private cleanup. The consumer still checks complete
+report bytes, actual verifier exit and the independently selected expectations.
+This changes buffering only; it does not authenticate the report channel or
+make filesystem I/O subject to a separate deadline.
+
+`TestObserverQueryStagingContract` compares completed bytes with the previous
+buffered process reader and exercises the exact cap, oversize/failed children,
+exclusive creation, write/short-write/close failure, actual child termination,
+and file closure before returning. `BenchmarkObserverQueryStaging` compares
+buffered-then-file and streamed-file capture at 0, 699, 55,897 and 4,194,304 bytes.
+Its repeated raw bytes are not valid reports or evidence. Three single-operation
+repetitions run on each native CI platform. They measure parent Go allocations
+and local capture/write time only, with uncontrolled filesystem cache state;
+they exclude child execution, report parsing, consumer calls, whole-process
+memory, durable storage and network performance. Production budgets still
+require independently selected application workloads and hardware.
+
 Applications can pass the completed outer diagnostic to the separate
 [observer-report consumer](observer-report-consumer.md), with the actual observer
 exit, independently expected target count and explicit local-file/collected mode.
