@@ -29,12 +29,16 @@ func TestCompiledPeerHelpOmitsEnvironmentEndpoints(t *testing.T) {
 				if ctx.Err() != nil || cmd.ProcessState == nil || cmd.ProcessState.ExitCode() != code || stdout.Len() != 0 {
 					t.Fatal("help or invalid syntax changed exit/stream behavior")
 				}
-				if command == "watch" && flag == "--unknown-option" {
-					if stderr.String() != "arguments: invalid command syntax\n" {
-						t.Fatal("watch syntax did not use the fixed private diagnostic")
+				if flag == "--unknown-option" {
+					want := "fetch-bundle: invalid command syntax\n"
+					if command == "watch" {
+						want = "arguments: invalid command syntax\n"
+					}
+					if stderr.String() != want {
+						t.Fatal("syntax did not use the fixed private diagnostic")
 					}
 				} else if !bytes.Contains(stderr.Bytes(), []byte("ZENON_SPV_RPC")) {
-					t.Fatal("explicit help or collector usage lost its peer configuration text")
+					t.Fatal("explicit help lost its peer configuration text")
 				}
 				if bytes.Contains(stderr.Bytes(), []byte("PRIVATE_ENV")) {
 					t.Fatal("help disclosed an environment endpoint or credential")
