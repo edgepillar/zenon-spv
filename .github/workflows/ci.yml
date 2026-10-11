@@ -241,7 +241,9 @@ jobs:
       - name: Vet
         run: go vet ./...
       - name: Test
-        run: go test -race -count=1 -coverprofile=coverage.out ./...
+        # Isolate full-package orchestration. Selected resource workload
+        # concurrency, rounds and observer completion bounds remain unchanged.
+        run: go test -p 1 -race -count=1 -coverprofile=coverage.out ./...
       - name: Offline pilot report
         id: pilot
         run: go run ./tools/offline-pilot --race --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
@@ -591,7 +593,8 @@ jobs:
       - name: Vet
         run: go vet ./...
       - name: Native test
-        run: go test -count=1 -timeout=5m ./...
+        # Keep every package while preserving concurrency within its tests.
+        run: go test -p 1 -count=1 -timeout=5m ./...
       - name: Offline pilot report
         id: pilot
         shell: bash

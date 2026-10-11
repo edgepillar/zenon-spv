@@ -131,7 +131,7 @@ func runProcessOutput(parent context.Context, path string, args []string, limit 
 		r.category, r.code = "timeout", 2
 	case cmd.Process == nil:
 		r.category, r.code = "process_unavailable", 70
-	case errors.Is(err, exec.ErrWaitDelay):
+	case err == exec.ErrWaitDelay:
 		r.category, r.code = "output_incomplete", 2
 	case err != nil || r.ExitCode == nil || *r.ExitCode != 0:
 		r.category, r.code = "process_failure", 2
