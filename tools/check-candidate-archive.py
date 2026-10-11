@@ -119,11 +119,11 @@ def file_hash(stream):
     require(stat.S_ISREG(info.st_mode) and 0 < info.st_size <= ARCHIVE_LIMIT, "archive")
     result, total = hashlib.sha256(), 0
     while True:
-        raw = stream.read(1 << 20)
+        raw = stream.read(min(1 << 20, info.st_size - total + 1))
         if not raw:
             break
         total += len(raw)
-        require(total <= ARCHIVE_LIMIT, "archive")
+        require(total <= info.st_size, "archive")
         result.update(raw)
     require(total == info.st_size, "archive")
     return result.hexdigest()

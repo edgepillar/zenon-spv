@@ -232,6 +232,114 @@ with mock.patch.object(Path, "stat", return_value=selected):
                     self.assertEqual(ordinary.read_bytes(), b"ordinary data")
                     self.assertEqual(set(root.iterdir()), {fifo, ordinary})
 
+    def test_archive_hash_stable_files_have_bounded_reads_and_real_eof(self):
+        controls = 0
+        for size, short_read in ((1, None), (1024, None), (1024, 37),
+                                 ((1 << 20) - 1, None), (1 << 20, None),
+                                 ((1 << 20) + 17, None)):
+            with self.subTest(size=size, short_read=short_read), tempfile.TemporaryDirectory() as directory:
+                payload = b"a" * size
+                path = Path(directory) / "archive.zip"
+                path.write_bytes(payload)
+                requests, returned = [], []
+                with checker.regular_archive(path) as stream:
+                    descriptor, actual_read = stream.fileno(), stream.read
+
+                    def read(count=-1):
+                        requests.append(count)
+                        raw = actual_read(min(count, short_read) if short_read else count)
+                        returned.append(len(raw))
+                        return raw
+
+                    with mock.patch.object(stream, "read", side_effect=read):
+                        self.assertEqual(checker.file_hash(stream), sha(payload))
+                self.assertTrue(stream.closed)
+                with self.assertRaises(OSError):
+                    os.fstat(descriptor)
+                total = 0
+                for requested, length in zip(requests, returned):
+                    self.assertEqual(requested, min(1 << 20, size - total + 1))
+                    self.assertLessEqual(length, requested)
+                    total += length
+                self.assertEqual(total, size)
+                self.assertEqual((requests[-1], returned[-1]), (1, 0))
+                if short_read:
+                    self.assertGreater(len(requests), 2)
+                controls += 1
+        self.assertEqual(controls, 6)
+        print('candidate-archive-hash-stable-controls {"schema_version":1,"actual_stable_file_hashes":6,"short_reads_supported":true,"one_MiB_maximum_request":true,"remaining_length_plus_one_bound":true,"real_eof_required":true,"descriptors_closed":true}')
+
+    def test_archive_hash_growth_shrinkage_and_read_errors_close(self):
+        controls = {"grow": 0, "shrink": 0, "read": 0}
+        for size in (1024, (1 << 20) + 17):
+            for mode in controls:
+                with self.subTest(size=size, mode=mode), tempfile.TemporaryDirectory() as directory:
+                    path = Path(directory) / "archive.zip"
+                    path.write_bytes(b"a" * size)
+                    requests, returned = [], []
+                    with checker.regular_archive(path) as stream:
+                        descriptor, actual_read = stream.fileno(), stream.read
+
+                        def read(count=-1):
+                            if not requests:
+                                if mode == "grow":
+                                    with path.open("ab") as target:
+                                        target.write(b"b" * (2 << 20))
+                                elif mode == "shrink":
+                                    with path.open("r+b") as target:
+                                        target.truncate(size // 2)
+                            requests.append(count)
+                            if mode == "read":
+                                raise OSError("injected read failure")
+                            raw = actual_read(count)
+                            returned.append(len(raw))
+                            return raw
+
+                        with mock.patch.object(stream, "read", side_effect=read):
+                            expected = OSError if mode == "read" else checker.Rejected
+                            with self.assertRaises(expected) as failure:
+                                checker.file_hash(stream)
+                            if mode != "read":
+                                self.assertEqual(failure.exception.category, "archive")
+                    self.assertTrue(stream.closed)
+                    with self.assertRaises(OSError):
+                        os.fstat(descriptor)
+                    self.assertLessEqual(sum(returned), size + 1)
+                    self.assertTrue(all(0 < count <= 1 << 20 for count in requests))
+                    if mode == "grow":
+                        self.assertEqual(sum(returned), size + 1)
+                        self.assertEqual(path.stat().st_size, size + (2 << 20))
+                        self.assertEqual(len(requests), 1 if size < 1 << 20 else 2)
+                    elif mode == "shrink":
+                        self.assertEqual(sum(returned), size // 2)
+                        self.assertEqual(returned[-1], 0)
+                        self.assertEqual(path.stat().st_size, size // 2)
+                    else:
+                        self.assertEqual((len(requests), sum(returned)), (1, 0))
+                    controls[mode] += 1
+        self.assertEqual(controls, {"grow": 2, "shrink": 2, "read": 2})
+
+    def test_archive_hash_descriptor_size_bounds_precede_reads(self):
+        controls = 0
+        for size in (0, checker.ARCHIVE_LIMIT + 1):
+            with self.subTest(size=size), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "archive.zip"
+                with path.open("wb") as target:
+                    target.truncate(size)
+                with path.open("rb") as stream:
+                    descriptor = stream.fileno()
+                    with mock.patch.object(stream, "read") as read:
+                        with self.assertRaises(checker.Rejected) as failure:
+                            checker.file_hash(stream)
+                        self.assertEqual(failure.exception.category, "archive")
+                        read.assert_not_called()
+                self.assertTrue(stream.closed)
+                with self.assertRaises(OSError):
+                    os.fstat(descriptor)
+                controls += 1
+        self.assertEqual(controls, 2)
+        print('candidate-archive-hash-refusal-controls {"schema_version":1,"actual_growth_refusals":2,"actual_shrinkage_refusals":2,"injected_read_errors":2,"actual_size_preconditions_refused_before_read":2,"growth_read_bytes_at_most_selected_plus_one":true,"actual_fstat_not_mocked":true,"descriptors_closed":true}')
+
     def test_metadata_entry_reads_use_selected_length_and_close(self):
         controls = 0
         for name, limit in (("manifest.json", 256 << 10), ("offline-pilot.json", 4 << 20)):
