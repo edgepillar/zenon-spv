@@ -32,6 +32,10 @@ Linux/macOS opens also refuse a final-component symlink replacement and avoid
 waiting for a replacement FIFO writer. Native Windows controls cover regular
 file identity, size, type and descriptor cleanup; they do not qualify Unix
 FIFO behavior or a Windows reparse-point ownership boundary.
+Windows captures the initial file identity from a metadata handle before
+opening the hashing descriptor, because path metadata can defer identity
+lookup until after a replacement. That metadata handle is closed before the
+read open and never reads executable contents.
 
 The final directory also contains `offline-pilot.json`, exactly matching the
 successful stdout report, and `manifest.json`. The manifest is written last

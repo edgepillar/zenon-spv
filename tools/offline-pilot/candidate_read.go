@@ -15,6 +15,10 @@ func checkedCandidateInput(path string, openFile func(string) (*os.File, error))
 	if err != nil || !before.Mode().IsRegular() || before.Size() <= 0 || before.Size() > candidateBinaryLimit {
 		return nil, 0, os.ErrInvalid
 	}
+	before, err = candidateIdentityInfo(path, before)
+	if err != nil {
+		return nil, 0, err
+	}
 	f, err := openFile(path)
 	if err != nil {
 		return nil, 0, err
