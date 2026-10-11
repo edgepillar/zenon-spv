@@ -23,7 +23,19 @@ seven executables: `zenon-spv`, `fetch-bundle`, `derive-checkpoints`,
 and `observe-block`. Windows filenames end in `.exe`. The driver does not
 perform a separate packaging build. Repeated scenario builds must have the
 same bytes, and an earlier exported executable is never overwritten.
-Each executable is a regular file of at most 128 MiB.
+Each executable must be a nonempty regular file of at most 128 MiB. The driver
+checks the selected path and opened descriptor, requiring the same file
+identity and size before hashing. It streams exactly that length through a
+32 KiB buffer, then requires real EOF and a successful close. Shrinkage,
+growth, replacement identity, read errors and close errors discard the digest.
+Linux/macOS opens also refuse a final-component symlink replacement and avoid
+waiting for a replacement FIFO writer. Native Windows controls cover regular
+file identity, size, type and descriptor cleanup; they do not qualify Unix
+FIFO behavior or a Windows reparse-point ownership boundary.
+Windows captures the initial file identity from a metadata handle before
+opening the hashing descriptor, because path metadata can defer identity
+lookup until after a replacement. That metadata handle is closed before the
+read open and never reads executable contents.
 
 The final directory also contains `offline-pilot.json`, exactly matching the
 successful stdout report, and `manifest.json`. The manifest is written last
