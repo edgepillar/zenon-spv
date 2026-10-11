@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"os"
 	"os/exec"
@@ -73,14 +71,5 @@ func captureSource() (sourceRecord, error) {
 }
 
 func captureCorpus() ([]corpusRecord, error) {
-	corpus := make([]corpusRecord, 0, len(corpusPaths))
-	for _, path := range corpusPaths {
-		raw, err := os.ReadFile(path)
-		if err != nil {
-			return nil, errors.New("cannot read pinned corpus")
-		}
-		sum := sha256.Sum256(raw)
-		corpus = append(corpus, corpusRecord{Path: path, SHA256: hex.EncodeToString(sum[:])})
-	}
-	return corpus, nil
+	return hashCorpusInputs(corpusPaths, openSourceInput)
 }
