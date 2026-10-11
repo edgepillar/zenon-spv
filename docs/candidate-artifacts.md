@@ -103,7 +103,9 @@ replaces an exported file; its temporary ZIP is removed after checking.
 The checkout input scan allows at most 32,768 entries, 32 directory levels and
 64 MiB of selected input bytes. Export input bounds match the archive checker,
 with a combined payload limit of 256 MiB minus 64 KiB of ZIP overhead. Files
-must be regular and keep their selected descriptor sizes while read; available
+must be regular. Their opened descriptors must match the selected OS file
+identity and size before source hashing or export streaming, and keep that
+size while read; available
 nonblocking/no-follow flags are used. Protected stable source/export parents
 and the CI job deadline remain required. This checks local export consistency;
 the later uploaded/downloaded ZIP still needs its separately selected GitHub
@@ -197,8 +199,12 @@ Archive input is at most 256 MiB, manifest input 256 KiB and report input 4 MiB,
 with bounded JSON
 depth, strings, collections and nodes. Before opening the selected archive
 target, it requires a nonempty regular file within the archive size limit.
-It rechecks the opened descriptor before hashing or ZIP parsing and closes it
-on rejection. On platforms with `O_NONBLOCK`, opening also uses that flag so
+It requires the opened descriptor to match the selected OS file identity and
+size before hashing or ZIP parsing, and closes it on rejection. Native controls
+replace real files at the open boundary, including replacements with identical
+bytes, and grow an archive while preserving its identity. These controls also
+check descriptor cleanup and stable-file acceptance. On platforms with
+`O_NONBLOCK`, opening also uses that flag so
 a FIFO substituted after the initial check cannot wait for a writer. The
 native FIFO subprocess controls run on Linux/macOS and explicitly skip on
 Windows where `os.mkfifo` is unavailable. Windows still runs the descriptor
