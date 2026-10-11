@@ -58,6 +58,8 @@ jobs:
         run: go test -v -count=1 -run '^TestCompiledPilotSourcePreflight$' ./tools/offline-pilot
       - name: Observer expectations input-read controls
         run: go test -v -count=1 -run '^TestObserverExpectationsReadContract$' ./tools/observe-block
+      - name: Observer stream EOF controls
+        run: go test -v -count=1 -run '^TestObservation(StreamEOF|EOFCompletionGate)$' ./tools/observe-block
       - name: Observer output completion controls
         run: |
           go test -v -count=1 -run '^TestObservationOutputCompletion$' ./tools/observe-block
@@ -401,6 +403,8 @@ jobs:
         run: go test -v -count=1 -run '^TestCompiledPilotSourcePreflight$' ./tools/offline-pilot
       - name: Observer expectations input-read controls
         run: go test -v -count=1 -run '^TestObserverExpectationsReadContract$' ./tools/observe-block
+      - name: Observer stream EOF controls
+        run: go test -v -count=1 -run '^TestObservation(StreamEOF|EOFCompletionGate)$' ./tools/observe-block
       - name: Observer output completion controls
         run: |
           go test -v -count=1 -run '^TestObservationOutputCompletion$' ./tools/observe-block

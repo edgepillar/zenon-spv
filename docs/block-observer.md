@@ -272,12 +272,16 @@ Count zero is a failed match, never evidence that an account or block is absent.
 
 Exit 0 means complete matching, 2 means refusal/process/limit failure, 64 means
 invalid invocation, and 70 means local setup, cleanup or output failure.
-The fixed category `output_incomplete` reports an `exec.ErrWaitDelay` from the
-existing one-second wait for output copying to finish. It remains a refusal
-with exit 2 even when the child exited 0; partially copied query output never
-reaches the consumer. Other process errors retain `process_failure`. This
-distinction changes no stream caps, child deadlines or successful report
-fields, and does not identify the cause of historical generic failures. Check
+Each bounded stream copy records a real read EOF without bypassing capped
+writes. After `Run` joins both copies, its exact `exec.ErrWaitDelay` can be
+settled as complete only when both streams reached EOF without a copy error.
+Missing EOF remains `output_incomplete` with exit 2 even when the child exited
+0; partially copied query output never reaches the consumer. Cancellation,
+stream limits, write errors and nonzero child exit still refuse the workflow.
+Other process errors retain `process_failure`, including errors that merely
+wrap the timer error. The one-second pipe wait, caps, child deadlines and
+successful report fields are unchanged. This does not establish the EOF state
+or cause of historical failures. Check
 the observer's actual process status too: a broken output channel can leave
 partial JSON. Elapsed samples include startup and observed process completion;
 total time also includes preflight, private file preparation and cleanup before
