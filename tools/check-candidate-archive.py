@@ -132,7 +132,7 @@ def file_hash(stream):
 def entry_bytes(archive, info, limit):
     require(0 < info.file_size <= limit, "archive")
     with archive.open(info) as stream:
-        raw = stream.read(limit + 1)
+        raw = stream.read(info.file_size + 1)
     require(len(raw) == info.file_size and len(raw) <= limit, "archive")
     return raw
 
