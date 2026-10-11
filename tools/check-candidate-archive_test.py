@@ -158,6 +158,13 @@ def central_records(raw):
     return end, records
 
 
+def metadata_entry_fixture(name, payload, compression):
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", compression=compression) as archive:
+        archive.writestr(name, payload)
+    return buffer.getvalue()
+
+
 class CandidateCheckTests(unittest.TestCase):
     def invoke(self, raw, os_name="linux", replace=None, extra_args=()):
         with tempfile.TemporaryDirectory() as directory:
@@ -224,6 +231,87 @@ with mock.patch.object(Path, "stat", return_value=selected):
                     self.assertTrue(stat.S_ISFIFO(fifo.stat().st_mode))
                     self.assertEqual(ordinary.read_bytes(), b"ordinary data")
                     self.assertEqual(set(root.iterdir()), {fifo, ordinary})
+
+    def test_metadata_entry_reads_use_selected_length_and_close(self):
+        controls = 0
+        for name, limit in (("manifest.json", 256 << 10), ("offline-pilot.json", 4 << 20)):
+            for size in (1, 1024, 128 << 10, limit):
+                payload = b"a" * size
+                for compression in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED):
+                    with self.subTest(name=name, size=size, compression=compression):
+                        raw = metadata_entry_fixture(name, payload, compression)
+                        opened, requests = [], []
+                        with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+                            actual_open = archive.open
+
+                            def record_open(*args, **kwargs):
+                                stream = actual_open(*args, **kwargs)
+                                actual_read = stream.read
+
+                                def record_read(count=-1):
+                                    requests.append(count)
+                                    return actual_read(count)
+
+                                stream.read = record_read
+                                opened.append(stream)
+                                return stream
+
+                            with mock.patch.object(archive, "open", side_effect=record_open):
+                                result = checker.entry_bytes(archive, archive.getinfo(name), limit)
+                            self.assertEqual(result, payload)
+                        self.assertEqual(requests, [size + 1])
+                        self.assertEqual(len(opened), 1)
+                        self.assertTrue(opened[0].closed)
+                        controls += 1
+        self.assertEqual(controls, 16)
+        print('candidate-metadata-read-controls {"schema_version":1,"actual_stable_entry_reads":16,"selected_length_read_requests":true,"stored_and_deflated":true,"exact_category_caps":true,"entry_streams_closed":true}')
+
+    def test_metadata_entry_crc_length_and_preopen_bounds_remain_required(self):
+        crc_refusals, length_refusals, preopen_refusals = 0, 0, 0
+        for name, limit in (("manifest.json", 256 << 10), ("offline-pilot.json", 4 << 20)):
+            payload = b"bounded metadata entry bytes"
+            for compression in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED):
+                for mode in ("crc", "length"):
+                    with self.subTest(name=name, compression=compression, mode=mode):
+                        raw = bytearray(metadata_entry_fixture(name, payload, compression))
+                        central = raw.index(b"PK\x01\x02")
+                        if mode == "crc":
+                            struct.pack_into("<I", raw, central + 16, struct.unpack_from("<I", raw, central + 16)[0] ^ 1)
+                            expected = zipfile.BadZipFile
+                        else:
+                            struct.pack_into("<I", raw, central + 24, len(payload) + 1)
+                            expected = checker.Rejected
+                        opened = []
+                        with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+                            actual_open = archive.open
+
+                            def record_open(*args, **kwargs):
+                                stream = actual_open(*args, **kwargs)
+                                opened.append(stream)
+                                return stream
+
+                            with mock.patch.object(archive, "open", side_effect=record_open):
+                                with self.assertRaises(expected) as failure:
+                                    checker.entry_bytes(archive, archive.getinfo(name), limit)
+                            if mode == "length":
+                                self.assertEqual(failure.exception.category, "archive")
+                                length_refusals += 1
+                            else:
+                                crc_refusals += 1
+                        self.assertEqual(len(opened), 1)
+                        self.assertTrue(opened[0].closed)
+            for size in (0, limit + 1):
+                with self.subTest(name=name, refused_size=size):
+                    raw = metadata_entry_fixture(name, b"a" * size, zipfile.ZIP_STORED)
+                    with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+                        with mock.patch.object(archive, "open") as opened:
+                            with self.assertRaises(checker.Rejected) as failure:
+                                checker.entry_bytes(archive, archive.getinfo(name), limit)
+                            self.assertEqual(failure.exception.category, "archive")
+                            opened.assert_not_called()
+                    preopen_refusals += 1
+        self.assertEqual((crc_refusals, length_refusals, preopen_refusals), (4, 4, 4))
+        print('candidate-metadata-refusal-controls {"schema_version":1,"actual_crc_refusals":4,"actual_length_refusals":4,"actual_preopen_size_refusals":4,"malformed_entry_streams_closed":true,"invalid_size_entries_not_opened":true}')
 
     def test_replaced_descriptor_type_and_size_are_refused_and_closed(self):
         with tempfile.TemporaryDirectory() as directory:
