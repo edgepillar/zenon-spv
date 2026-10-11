@@ -40,6 +40,10 @@ jobs:
         run: go test -v -count=1 -run '^TestCompiledCollectorSyntaxPrivacy$' ./internal/conformance
       - name: Maintainer syntax privacy controls
         run: go test -v -count=1 -run '^TestCompiledMaintainerSyntaxPrivacy$' ./internal/conformance
+      - name: Pilot source enumeration controls
+        run: go test -v -count=1 -run '^TestSource(EnumerationBoundaries|EnumerationPreservesFingerprint|DirectoryPreflight)$' ./tools/offline-pilot
+      - name: Compiled pilot source enumeration controls
+        run: go test -v -count=1 -timeout 5m -run '^TestCompiledPilotSourceEnumeration$' ./tools/offline-pilot
       - name: Pilot source fingerprint controls
         run: go test -v -count=1 -run '^TestSource(ReadContract|FingerprintStreamAndBounds|InputPreflight|NonregularOpenBoundaries|ModuleAcceptsWindowsLineEndings|FingerprintBindsNamesBytesAndFixtures)$' ./tools/offline-pilot
       - name: Pilot source input allocation observations
@@ -373,6 +377,10 @@ jobs:
         run: go test -v -count=1 -run '^TestCompiledCollectorSyntaxPrivacy$' ./internal/conformance
       - name: Maintainer syntax privacy controls
         run: go test -v -count=1 -run '^TestCompiledMaintainerSyntaxPrivacy$' ./internal/conformance
+      - name: Pilot source enumeration controls
+        run: go test -v -count=1 -run '^TestSource(EnumerationBoundaries|EnumerationPreservesFingerprint|DirectoryPreflight)$' ./tools/offline-pilot
+      - name: Compiled pilot source enumeration controls
+        run: go test -v -count=1 -timeout 5m -run '^TestCompiledPilotSourceEnumeration$' ./tools/offline-pilot
       - name: Pilot source fingerprint controls
         run: go test -v -count=1 -run '^TestSource(ReadContract|FingerprintStreamAndBounds|InputPreflight|NonregularOpenBoundaries|ModuleAcceptsWindowsLineEndings|FingerprintBindsNamesBytesAndFixtures)$' ./tools/offline-pilot
       - name: Pilot source input allocation observations
