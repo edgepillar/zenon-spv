@@ -29,18 +29,27 @@ Keep source files unchanged during the run. Store the report outside the
 checkout so generating evidence does not itself change Git status. The
 source fingerprint streams selected Go/module/JSON members through a shared
 32 KiB buffer, retaining the existing sorted, length-prefixed byte encoding.
-The aggregate source payload must fit 64 MiB, matching the independent exported
-candidate checker. Path and opened-descriptor checks refuse nonregular or
+The aggregate source payload must fit 64 MiB. Directory discovery reads at most
+64 entries per page and permits at most 32,768 child entries across `cmd`,
+`internal`, and `tools`, counting directories and ignored extensions too.
+Those three roots have depth 1; directory depth must not exceed 32. Entry and
+depth ceilings match the independent exported candidate checker. Selected paths
+are sorted after discovery, preserving the fingerprint encoding. Directory path
+and opened-descriptor checks refuse non-directory roots or replacements; every
+opened directory is closed on completion or refusal. At most 32 directory
+descriptors and one page per active level are retained, in addition to the
+bounded selected-path list. Source file path and descriptor checks refuse nonregular or
 oversized members; exact descriptor length and EOF are required. Growth,
 shrinkage and read errors discard the entire fingerprint. Preflight refusal
 precedes test execution or candidate directory creation; post-run refusal
 prevents a successful report or finalized candidate. Linux/macOS opens also
 refuse final-component symlink replacement and avoid waiting for a replacement
-FIFO writer. Protected
+FIFO writer. The same native open rules apply to directory discovery. Protected
 stable paths and same-size contents remain the caller's responsibility; this
-does not authenticate or atomically snapshot the checkout. Directory enumeration,
-corpus capture, build caches and complete pipeline memory remain separate from
-this input-buffer bound.
+does not authenticate or atomically snapshot the checkout. Corpus capture,
+build caches and complete pipeline memory remain separate from these source
+payload and discovery bounds. Discovery limits also impose no filesystem-I/O
+deadline or target-device latency budget.
 
 The default driver deadline is ten minutes (`--timeout`, positive and at most one
 hour); selected test packages use that same timeout.
