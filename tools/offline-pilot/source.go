@@ -5,11 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 	"time"
 )
@@ -33,25 +31,10 @@ func captureSource() (sourceRecord, error) {
 	if !sourceModuleMatches() {
 		return record, errors.New("run the pilot from the repository root")
 	}
-	paths := []string{"go.mod", "go.sum"}
-	for _, dir := range []string{"cmd", "internal", "tools"} {
-		err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, walkErr error) error {
-			if walkErr != nil {
-				return walkErr
-			}
-			if entry.Type()&os.ModeSymlink != 0 {
-				return errors.New("symlinked source is unsupported")
-			}
-			if !entry.IsDir() && (strings.HasSuffix(path, ".go") || strings.HasSuffix(path, ".json") || entry.Name() == "go.mod" || entry.Name() == "go.sum") {
-				paths = append(paths, filepath.ToSlash(path))
-			}
-			return nil
-		})
-		if err != nil {
-			return record, errors.New("cannot enumerate source inputs")
-		}
+	paths, err := sourceInputPaths(openSourceDirectory)
+	if err != nil {
+		return record, errors.New("cannot enumerate bounded source inputs")
 	}
-	slices.Sort(paths)
 	fingerprint, err := hashSourceInputs(paths, openSourceInput)
 	if err != nil {
 		return record, errors.New("cannot read bounded source inputs")
