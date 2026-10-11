@@ -251,6 +251,80 @@ with mock.patch.object(Path, "stat", return_value=selected):
                     with self.assertRaises(OSError):
                         actual_fstat(descriptors[0])
 
+    def test_actual_replacements_are_refused_before_hashing_or_parsing(self):
+        for mode in ("same_bytes", "same_size", "different_size"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                selected = Path(directory) / "PRIVATE_ARCHIVE.zip"
+                replacement = Path(directory) / "replacement.zip"
+                selected.write_bytes(b"old bytes")
+                raw = {"same_bytes": b"old bytes", "same_size": b"new bytes",
+                       "different_size": b"new length"}[mode]
+                replacement.write_bytes(raw)
+                self.assertFalse(os.path.samestat(selected.stat(), replacement.stat()))
+                actual_open = os.open
+                descriptors = []
+
+                def replace_at_open(path, flags):
+                    os.replace(replacement, selected)
+                    descriptor = actual_open(path, flags)
+                    descriptors.append(descriptor)
+                    return descriptor
+
+                with mock.patch.object(checker.os, "open", side_effect=replace_at_open), \
+                        mock.patch.object(checker, "file_hash") as hashed, \
+                        mock.patch.object(checker, "check_contents") as parsed:
+                    with self.assertRaises(checker.Rejected) as failure:
+                        checker.check(selected, "0" * 64, REVISION, INPUTS, "linux", "amd64")
+                    self.assertEqual(failure.exception.category, "archive")
+                    hashed.assert_not_called()
+                    parsed.assert_not_called()
+                self.assertEqual(len(descriptors), 1)
+                with self.assertRaises(OSError):
+                    os.fstat(descriptors[0])
+                self.assertEqual(selected.read_bytes(), raw)
+        print('candidate-archive-identity-controls {"schema_version":1,"actual_replacement_refusals":3,"same_bytes_control":true,"descriptors_closed":true,"hashing_and_parsing_started":false}')
+
+    def test_actual_same_inode_size_drift_precedes_hashing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            selected = Path(directory) / "PRIVATE_ARCHIVE.zip"
+            selected.write_bytes(b"old bytes")
+            initial = selected.stat()
+            actual_open = os.open
+            descriptors = []
+
+            def grow_at_open(path, flags):
+                selected.write_bytes(b"old bytes plus growth")
+                descriptor = actual_open(path, flags)
+                descriptors.append(descriptor)
+                self.assertTrue(os.path.samestat(initial, os.fstat(descriptor)))
+                return descriptor
+
+            with mock.patch.object(checker.os, "open", side_effect=grow_at_open), \
+                    mock.patch.object(checker, "file_hash") as hashed, \
+                    mock.patch.object(checker, "check_contents") as parsed:
+                with self.assertRaises(checker.Rejected) as failure:
+                    checker.check(selected, "0" * 64, REVISION, INPUTS, "linux", "amd64")
+                self.assertEqual(failure.exception.category, "archive")
+                hashed.assert_not_called()
+                parsed.assert_not_called()
+            self.assertEqual(len(descriptors), 1)
+            with self.assertRaises(OSError):
+                os.fstat(descriptors[0])
+        print('candidate-archive-size-controls {"schema_version":1,"actual_same_inode_size_refusals":1,"descriptor_closed":true,"hashing_and_parsing_started":false}')
+
+    def test_actual_stable_archive_identity_is_accepted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            selected = Path(directory) / "archive.zip"
+            raw = b"\x00\xff\x80Z\n"
+            selected.write_bytes(raw)
+            with checker.regular_archive(selected) as stream:
+                descriptor = stream.fileno()
+                self.assertTrue(os.path.samestat(selected.stat(), os.fstat(descriptor)))
+                self.assertEqual(stream.read(), raw)
+            with self.assertRaises(OSError):
+                os.fstat(descriptor)
+        print('candidate-archive-stable-identity-controls {"schema_version":1,"actual_stable_descriptors":1,"descriptor_closed":true}')
+
     def test_nonregular_empty_and_oversize_targets_precede_open_and_parsing(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

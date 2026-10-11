@@ -205,6 +205,51 @@ class ExportCheckTests(unittest.TestCase):
             with self.assertRaises(OSError):
                 os.fstat(descriptor)
 
+    def test_actual_same_size_replacements_precede_source_and_export_streaming(self):
+        for category in ("source", "export"):
+            for same_bytes in (True, False):
+                with self.subTest(category=category, same_bytes=same_bytes), tempfile.TemporaryDirectory() as directory:
+                    selected = Path(directory) / "PRIVATE_SELECTED"
+                    replacement = Path(directory) / "replacement"
+                    selected.write_bytes(b"old bytes")
+                    raw = b"old bytes" if same_bytes else b"new bytes"
+                    replacement.write_bytes(raw)
+                    self.assertFalse(os.path.samestat(selected.stat(), replacement.stat()))
+                    actual_open = os.open
+                    descriptors = []
+
+                    def replace_at_open(path, flags):
+                        os.replace(replacement, selected)
+                        descriptor = actual_open(path, flags)
+                        descriptors.append(descriptor)
+                        return descriptor
+
+                    with mock.patch.object(export.os, "open", side_effect=replace_at_open):
+                        with self.assertRaises(export.checker.Rejected) as failure:
+                            with export.regular_file(selected, 32, category):
+                                self.fail("replacement descriptor was exposed for streaming")
+                        self.assertEqual(failure.exception.category, category)
+                    self.assertEqual(len(descriptors), 1)
+                    with self.assertRaises(OSError):
+                        os.fstat(descriptors[0])
+                    self.assertEqual(selected.read_bytes(), raw)
+        print('candidate-export-identity-controls {"schema_version":1,"actual_replacement_refusals":4,"source_and_export_categories":true,"same_bytes_controls":true,"descriptors_closed":true,"streaming_started":false}')
+
+    def test_actual_stable_source_and_export_descriptors_are_accepted(self):
+        for category in ("source", "export"):
+            for raw in (b"", b"\x00\xff\x80Z\n"):
+                with self.subTest(category=category, bytes=len(raw)), tempfile.TemporaryDirectory() as directory:
+                    selected = Path(directory) / "selected"
+                    selected.write_bytes(raw)
+                    with export.regular_file(selected, 32, category) as (stream, size):
+                        descriptor = stream.fileno()
+                        self.assertTrue(os.path.samestat(selected.stat(), os.fstat(descriptor)))
+                        self.assertEqual(size, len(raw))
+                        self.assertEqual(b"".join(export.chunks(stream, size, category)), raw)
+                    with self.assertRaises(OSError):
+                        os.fstat(descriptor)
+        print('candidate-export-stable-identity-controls {"schema_version":1,"actual_stable_descriptors":4,"empty_source_read_allowed":true,"descriptors_closed":true}')
+
     def test_git_root_head_cleanliness_and_environment_are_checked(self):
         for mode in ("clean", "root", "head", "dirty"):
             with self.subTest(control=mode), tempfile.TemporaryDirectory() as directory:
