@@ -3,10 +3,8 @@ package main
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
-	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -32,9 +30,7 @@ type corpusRecord struct {
 // This is a local input fingerprint, not an authenticated source attestation.
 func captureSource() (sourceRecord, error) {
 	var record sourceRecord
-	mod, err := os.ReadFile("go.mod")
-	moduleLine, _, _ := strings.Cut(string(mod), "\n")
-	if err != nil || strings.TrimSuffix(moduleLine, "\r") != "module "+modulePath {
+	if !sourceModuleMatches() {
 		return record, errors.New("run the pilot from the repository root")
 	}
 	paths := []string{"go.mod", "go.sum"}
@@ -56,22 +52,11 @@ func captureSource() (sourceRecord, error) {
 		}
 	}
 	slices.Sort(paths)
-	h := sha256.New()
-	for _, path := range paths {
-		info, err := os.Lstat(path)
-		if err != nil || !info.Mode().IsRegular() {
-			return record, errors.New("source input is not a regular file")
-		}
-		raw, err := os.ReadFile(path)
-		if err != nil {
-			return record, errors.New("cannot read source input")
-		}
-		_, _ = h.Write(binary.BigEndian.AppendUint64(nil, uint64(len(path))))
-		_, _ = io.WriteString(h, path)
-		_, _ = h.Write(binary.BigEndian.AppendUint64(nil, uint64(len(raw))))
-		_, _ = h.Write(raw)
+	fingerprint, err := hashSourceInputs(paths, openSourceInput)
+	if err != nil {
+		return record, errors.New("cannot read bounded source inputs")
 	}
-	record.InputsSHA256 = hex.EncodeToString(h.Sum(nil))
+	record.InputsSHA256 = fingerprint
 	// Git may be unavailable in an exported source archive. Do not invent a
 	// clean revision; the input fingerprint is still available in that case.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
