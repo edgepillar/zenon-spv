@@ -22,6 +22,10 @@ var candidateExportMu sync.Mutex
 // Export the ordinary binary that the scenario will execute. Repeated builds
 // must have identical bytes; never replace an earlier export with a new build.
 func exportCandidateBinary(dir, command, path, expectedSHA string) error {
+	return exportCandidateBinaryWithInput(dir, command, path, expectedSHA, openCandidateBinary)
+}
+
+func exportCandidateBinaryWithInput(dir, command, path, expectedSHA string, openInput func(string) (io.ReadCloser, int64, error)) error {
 	candidateExportMu.Lock()
 	defer candidateExportMu.Unlock()
 	switch command {
@@ -34,31 +38,27 @@ func exportCandidateBinary(dir, command, path, expectedSHA string) error {
 	if err != nil || !filepath.IsAbs(dir) || !dirInfo.IsDir() {
 		return errors.New("candidate directory unavailable")
 	}
-	info, err := os.Lstat(path)
-	if err != nil || !info.Mode().IsRegular() || info.Size() <= 0 || info.Size() > candidateBinaryLimit {
-		return errors.New("candidate binary is not a bounded regular file")
-	}
 	filename := command
 	if runtime.GOOS == "windows" {
 		filename += ".exe"
 	}
 	destination := filepath.Join(dir, filename)
-	input, err := os.Open(path)
+	input, size, err := openInput(path)
 	if err != nil {
 		return errors.New("candidate binary cannot be read")
 	}
-	defer func() { _ = input.Close() }()
 	output, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o755)
 	if os.IsExist(err) {
-		return compareCandidateBinary(destination, expectedSHA, info.Size())
+		if input.Close() != nil {
+			return errors.New("candidate binary read failed")
+		}
+		return compareCandidateBinary(destination, expectedSHA, size)
 	}
 	if err != nil {
+		_ = input.Close()
 		return errors.New("candidate binary cannot be created")
 	}
-	digest := sha256.New()
-	n, copyErr := io.Copy(io.MultiWriter(output, digest), io.LimitReader(input, candidateBinaryLimit+1))
-	closeErr := output.Close()
-	if copyErr != nil || closeErr != nil || n != info.Size() || n > candidateBinaryLimit || hex.EncodeToString(digest.Sum(nil)) != expectedSHA {
+	if copyCandidateBinary(input, size, output, expectedSHA) != nil {
 		_ = os.Remove(destination) // Only this newly created, incomplete copy.
 		return errors.New("candidate binary copy failed")
 	}
@@ -66,18 +66,11 @@ func exportCandidateBinary(dir, command, path, expectedSHA string) error {
 }
 
 func compareCandidateBinary(path, expectedSHA string, expectedSize int64) error {
-	info, err := os.Lstat(path)
-	if err != nil || !info.Mode().IsRegular() || info.Size() != expectedSize || info.Size() > candidateBinaryLimit {
+	if expectedSize <= 0 || expectedSize > candidateBinaryLimit {
 		return errors.New("candidate binary conflicts with an earlier export")
 	}
-	file, err := os.Open(path)
-	if err != nil {
-		return errors.New("candidate binary cannot be read")
-	}
-	digest := sha256.New()
-	n, readErr := io.Copy(digest, io.LimitReader(file, candidateBinaryLimit+1))
-	closeErr := file.Close()
-	if readErr != nil || closeErr != nil || n != info.Size() || hex.EncodeToString(digest.Sum(nil)) != expectedSHA {
+	digest, size, err := candidateBinaryDigest(path)
+	if err != nil || size != expectedSize || digest != expectedSHA {
 		return errors.New("candidate binary conflicts with an earlier export")
 	}
 	return nil
@@ -188,4 +181,49 @@ func TestCandidateBinaryExport(t *testing.T) {
 			}
 		})
 	}
+	for _, mode := range []string{"read", "close", "grow", "shrink", "existing_close"} {
+		t.Run("injected_"+mode+"_refusal_preserves_export_boundary", func(t *testing.T) {
+			dir, path := setup(t)
+			destination := filepath.Join(dir, filename)
+			var before os.FileInfo
+			if mode == "existing_close" {
+				if err := os.WriteFile(destination, raw, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				var err error
+				before, err = os.Stat(destination)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			privateErr := errors.New("PRIVATE_INPUT_FAILURE")
+			input := &candidateBinaryTestInput{reader: bytes.NewReader(raw)}
+			switch mode {
+			case "read":
+				input.reader = candidateBinaryErrorReader{err: privateErr}
+			case "close", "existing_close":
+				input.closeErr = privateErr
+			case "grow":
+				input.reader = bytes.NewReader(append(bytes.Clone(raw), 0))
+			case "shrink":
+				input.reader = bytes.NewReader(raw[:len(raw)-1])
+			}
+			err := exportCandidateBinaryWithInput(dir, "zenon-spv", path, digest, func(string) (io.ReadCloser, int64, error) {
+				return input, int64(len(raw)), nil
+			})
+			if err == nil || strings.Contains(err.Error(), "PRIVATE") || input.closed != 1 {
+				t.Fatal("failed input was accepted, disclosed, or not closed exactly once")
+			}
+			if mode == "existing_close" {
+				after, statErr := os.Stat(destination)
+				got, readErr := os.ReadFile(destination)
+				if statErr != nil || readErr != nil || !bytes.Equal(got, raw) || !os.SameFile(before, after) || !before.ModTime().Equal(after.ModTime()) {
+					t.Fatal("failed repeated export replaced the prior executable")
+				}
+			} else if _, err := os.Lstat(destination); !os.IsNotExist(err) {
+				t.Fatal("failed new copy remained in the export directory")
+			}
+		})
+	}
+	t.Log("conformance-candidate-binary-export-controls {\"schema_version\":1,\"controls\":13,\"accepted_exports\":1,\"refusals\":12,\"failed_new_copies_removed\":5,\"injected_inputs_closed\":5,\"earlier_exports_preserved\":true}")
 }

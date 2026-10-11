@@ -37,6 +37,15 @@ opening the hashing descriptor, because path metadata can defer identity
 lookup until after a replacement. That metadata handle is closed before the
 read open and never reads executable contents.
 
+The conformance scenarios apply the same opened-descriptor, exact-length, real
+EOF and successful-close checks when recording a compiled executable's raw
+SHA-256, copying a new export, and comparing an earlier export. Copying closes
+both input and output before success. A read, write, size, digest or close
+failure removes only the newly created incomplete copy. A failed repeated
+export preserves the earlier file, and its selected input must also close
+successfully. These checks retain the 128 MiB limit and 32 KiB read buffer;
+they do not freeze contents between hashing, exporting and scenario execution.
+
 The final directory also contains `offline-pilot.json`, exactly matching the
 successful stdout report, and `manifest.json`. The manifest is written last
 after all seven saved executable hashes match every scenario's execution
