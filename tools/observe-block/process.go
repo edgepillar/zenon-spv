@@ -11,9 +11,10 @@ import (
 
 type processResult struct {
 	observation
-	stdout   []byte
-	category string
-	code     int
+	stdout               []byte
+	stdoutEOF, stderrEOF bool
+	category             string
+	code                 int
 }
 
 // exec copies each stream through its own goroutine and joins both before Run
@@ -25,10 +26,49 @@ type boundedOutput struct {
 	limit       int
 	observed    int64
 	exceeded    bool
+	readEOF     bool
 	retain      bool
 	cancel      context.CancelFunc
 	destination io.Writer
 	writeFailed bool
+}
+
+type observedEOFReader struct {
+	input io.Reader
+	eof   bool
+}
+
+func (r *observedEOFReader) Read(raw []byte) (int, error) {
+	n, err := r.input.Read(raw)
+	if err == io.EOF {
+		r.eof = true
+	}
+	return n, err
+}
+
+// exec's stream copy can use ReaderFrom. Hide both copy shortcuts so every
+// byte still passes through capped Write and a real Read EOF is observed.
+func (w *boundedOutput) ReadFrom(input io.Reader) (int64, error) {
+	w.readEOF = false
+	reader := &observedEOFReader{input: input}
+	n, err := io.CopyBuffer(struct{ io.Writer }{w}, reader, make([]byte, 32<<10))
+	w.readEOF = err == nil && reader.eof
+	return n, err
+}
+
+// Run joins both copying goroutines even when WaitDelay closes their pipes.
+// A timer outcome alone cannot distinguish EOF-complete copies from forced
+// closure. Accept only the exact timer error with real EOF on both streams;
+// other errors, context cancellation, caps and child status still govern below.
+func joinedCopyError(err error, stdout, stderr *boundedOutput) error {
+	complete := stdout.readEOF && stderr.readEOF
+	if err == exec.ErrWaitDelay && complete {
+		return nil
+	}
+	if err == nil && !complete {
+		return exec.ErrWaitDelay
+	}
+	return err
 }
 
 func (w *boundedOutput) Write(raw []byte) (int, error) {
@@ -72,7 +112,8 @@ func runProcessOutput(parent context.Context, path string, args []string, limit 
 	cmd.Stdout, cmd.Stderr, cmd.WaitDelay = out, diagnostics, time.Second
 	started := time.Now()
 	err := cmd.Run()
-	r := processResult{observation: observation{ElapsedNS: time.Since(started).Nanoseconds(), StdoutBytes: out.observed, StderrBytes: diagnostics.observed}, stdout: out.buffer.Bytes()}
+	err = joinedCopyError(err, out, diagnostics)
+	r := processResult{observation: observation{ElapsedNS: time.Since(started).Nanoseconds(), StdoutBytes: out.observed, StderrBytes: diagnostics.observed}, stdout: out.buffer.Bytes(), stdoutEOF: out.readEOF, stderrEOF: diagnostics.readEOF}
 	if cmd.ProcessState != nil {
 		status := int64(cmd.ProcessState.ExitCode())
 		r.ExitCode = &status
