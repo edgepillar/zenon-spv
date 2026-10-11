@@ -2,11 +2,8 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -163,29 +160,6 @@ func finalizeCandidate(dir string, report pilotReport, raw []byte) error {
 		return err
 	}
 	return writeCandidateFile(filepath.Join(dir, "manifest.json"), append(encoded, '\n'))
-}
-
-func candidateFileDigest(path string) (string, int64, error) {
-	info, err := os.Lstat(path)
-	if err != nil || !info.Mode().IsRegular() || info.Size() <= 0 || info.Size() > candidateBinaryLimit {
-		return "", 0, errors.New("candidate executable is not a bounded regular file")
-	}
-	file, err := os.Open(path)
-	if err != nil {
-		return "", 0, errors.New("candidate executable cannot be read")
-	}
-	digest := sha256.New()
-	n, readErr := io.Copy(digest, io.LimitReader(file, candidateBinaryLimit+1))
-	closeErr := file.Close()
-	if readErr != nil || closeErr != nil || n != info.Size() || n > candidateBinaryLimit {
-		return "", 0, errors.New("candidate executable read failed")
-	}
-	return hex.EncodeToString(digest.Sum(nil)), n, nil
-}
-
-func digestBytes(raw []byte) string {
-	digest := sha256.Sum256(raw)
-	return hex.EncodeToString(digest[:])
 }
 
 func writeCandidateFile(path string, raw []byte) error {

@@ -159,8 +159,14 @@ func TestCandidateManifest(t *testing.T) {
 			} else if !os.IsNotExist(err) {
 				t.Fatal("invalid candidate left a completion manifest")
 			}
+			if mode == "missing file" || mode == "changed file" || mode == "empty file" || mode == "directory file" {
+				if _, err := os.Lstat(filepath.Join(dir, "offline-pilot.json")); !os.IsNotExist(err) {
+					t.Fatal("last executable refusal left partial candidate metadata")
+				}
+			}
 		})
 	}
+	t.Log("offline-pilot-candidate-manifest-controls {\"schema_version\":1,\"controls\":20,\"accepted_manifests\":2,\"refusals\":18,\"tested_binary_bindings\":7,\"last_binary_refusals_without_metadata\":4}")
 }
 
 func TestCandidateDirectorySetup(t *testing.T) {
