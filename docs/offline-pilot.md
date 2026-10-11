@@ -46,9 +46,15 @@ prevents a successful report or finalized candidate. Linux/macOS opens also
 refuse final-component symlink replacement and avoid waiting for a replacement
 FIFO writer. The same native open rules apply to directory discovery. Protected
 stable paths and same-size contents remain the caller's responsibility; this
-does not authenticate or atomically snapshot the checkout. Corpus capture,
-build caches and complete pipeline memory remain separate from these source
-payload and discovery bounds. Discovery limits also impose no filesystem-I/O
+does not authenticate or atomically snapshot the checkout. The seven fixed
+corpus members are captured separately through one shared 32 KiB buffer, with
+their own aggregate 64 MiB ceiling and the same regular-file, descriptor length,
+EOF and close checks. Each corpus hash still covers raw bytes only, and the
+fixed path order is unchanged. Any failed member discards all corpus records;
+preflight failure emits only the fixed corpus diagnostic before test execution
+or candidate directory creation. Stable same-size contents remain caller
+inputs for both captures. Build caches and complete pipeline memory remain
+separate from these source and corpus payload bounds. Discovery limits also impose no filesystem-I/O
 deadline or target-device latency budget.
 
 The default driver deadline is ten minutes (`--timeout`, positive and at most one
