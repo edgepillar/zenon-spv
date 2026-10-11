@@ -125,6 +125,9 @@ func TestCandidateFileReadBounds(t *testing.T) {
 				return opened, err
 			})
 			if err == nil || file != nil || size != 0 {
+				if file != nil {
+					_ = file.Close()
+				}
 				t.Fatal("candidate accepted an invalid path or descriptor")
 			}
 			preflight := mode == "missing" || mode == "empty" || mode == "oversized" || mode == "directory"
