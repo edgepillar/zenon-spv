@@ -31,7 +31,8 @@ def regular_file(path, limit, category):
     descriptor = os.open(path, flags)
     try:
         opened = os.fstat(descriptor)
-        checker.require(stat.S_ISREG(opened.st_mode) and opened.st_size == selected.st_size, category)
+        checker.require(stat.S_ISREG(opened.st_mode) and opened.st_size == selected.st_size
+                        and os.path.samestat(selected, opened), category)
         with os.fdopen(descriptor, "rb") as stream:
             descriptor = None
             yield stream, opened.st_size
