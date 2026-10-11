@@ -104,7 +104,8 @@ def regular_archive(path):
     descriptor = os.open(path, flags)
     try:
         opened = os.fstat(descriptor)
-        require(stat.S_ISREG(opened.st_mode) and 0 < opened.st_size <= ARCHIVE_LIMIT, "archive")
+        require(stat.S_ISREG(opened.st_mode) and opened.st_size == selected.st_size
+                and os.path.samestat(selected, opened), "archive")
         with os.fdopen(descriptor, "rb") as source:
             descriptor = None
             yield source
