@@ -206,6 +206,15 @@ Before opening the selected archive
 target, it requires a nonempty regular file within the archive size limit.
 It requires the opened descriptor to match the selected OS file identity and
 size before hashing or ZIP parsing, and closes it on rejection. Native controls
+bound hashing reads to at most 1 MiB and the remaining descriptor-selected
+length plus one. Hashing requires the exact selected length and a real EOF;
+growth is refused after reading at most one byte beyond that length, before
+the extra bytes can update the digest. Short reads continue until EOF, and
+shrinkage or a read error prevents a successful hash. Actual-file controls
+cover the chunk boundary, partial reads, controlled growth/shrinkage after the
+descriptor size check, injected read errors and size refusal before a read.
+The caller closes the descriptor on each outcome. These controls do not freeze
+contents or establish a whole-process resource budget. The existing controls
 replace real files at the open boundary, including replacements with identical
 bytes, and grow an archive while preserving its identity. These controls also
 check descriptor cleanup and stable-file acceptance. On platforms with
