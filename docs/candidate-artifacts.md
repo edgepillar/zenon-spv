@@ -196,8 +196,13 @@ or authenticated test execution.
 The checker streams opaque binary hashes; it does not validate executable
 semantics or authenticate test execution or the overall scenario selection.
 Archive input is at most 256 MiB, manifest input 256 KiB and report input 4 MiB,
-with bounded JSON
-depth, strings, collections and nodes. Before opening the selected archive
+with bounded JSON depth, strings, collections and nodes. Metadata reads request
+the declared entry size plus one after the nonempty and category-limit checks.
+Exact returned length and the ZIP reader's CRC checks remain required, and the
+entry stream closes on success or refusal. Stored and deflated fixtures cover
+small entries, exact limits, malformed CRC/length and refusal before entry open.
+These read bounds do not qualify a whole-process peak-memory budget.
+Before opening the selected archive
 target, it requires a nonempty regular file within the archive size limit.
 It requires the opened descriptor to match the selected OS file identity and
 size before hashing or ZIP parsing, and closes it on rejection. Native controls
