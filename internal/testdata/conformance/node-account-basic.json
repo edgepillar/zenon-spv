@@ -1,0 +1,3831 @@
+{
+  "format_version": 1,
+  "source": {
+    "commit": "c64ed6279ff1d07335dab0ac36156dec8b5b71e9",
+    "methods": [
+      "verifier.AccountBlockVerifier.AccountBlock",
+      "verifier.AccountBlockVerifier.AccountBlockTransaction"
+    ],
+    "module_sum": "h1:3Vyk+6hw2dcWJLg15JEq7ITFOkaYvrVyI+W8Qb3Jlr4=",
+    "module_version": "v0.0.8-alphanet.0.20261009223306-c64ed6279ff1",
+    "repository": "https://github.com/zenon-network/go-zenon"
+  },
+  "input_files_sha256": {
+    "account-segments.json": "1faca6715c3865bae726a7a07f56ef2c43bd8a5a5c9816f618373312de43b048"
+  },
+  "scope": {
+    "actual_memory_account_and_momentum_stores": true,
+    "actual_node_entry_point_execution": true,
+    "authenticated_context": false,
+    "basic_account_checks_reached": true,
+    "canonicality": false,
+    "consensus_finality": false,
+    "disk_database_opened": false,
+    "full_node_validation": false,
+    "hash_signature_checks_reached": true,
+    "network_transport": false,
+    "new_signatures_generated": false,
+    "state_value_acceptance": false,
+    "synthetic_context_handle_selection": true,
+    "synthetic_unsigned_momentum_metadata": true
+  },
+  "observations": [
+    {
+      "name": "user-type-2/first-exact-ack/AccountBlock",
+      "profile": "first-exact-ack",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "MATCH",
+      "node_error": "",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        },
+        {
+          "method": "Momentum.GetMomentumByHeight",
+          "height": 3000
+        }
+      ],
+      "database_reads": [
+        {
+          "store": "momentum",
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000",
+          "error": ""
+        }
+      ],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/first-exact-ack/AccountBlockTransaction",
+      "profile": "first-exact-ack",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "MATCH",
+      "node_error": "",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/version-zero/AccountBlock",
+      "profile": "version-zero",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 0,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "2a98c58c6fdd0e44de0d52ca5bdf57c086f28737740d169b364eb17c5f24daae",
+      "node_method_result": "REJECT",
+      "node_error": "version_missing",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/version-zero/AccountBlockTransaction",
+      "profile": "version-zero",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 0,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "2a98c58c6fdd0e44de0d52ca5bdf57c086f28737740d169b364eb17c5f24daae",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/version-two/AccountBlock",
+      "profile": "version-two",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "a0b58c6d4692ab47fd657f1419b5273603e8da1f802dc5dd6fa3fba5a99579e1",
+      "node_method_result": "REJECT",
+      "node_error": "version_invalid",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/version-two/AccountBlockTransaction",
+      "profile": "version-two",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "a0b58c6d4692ab47fd657f1419b5273603e8da1f802dc5dd6fa3fba5a99579e1",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/chain-zero/AccountBlock",
+      "profile": "chain-zero",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 0,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "bd7c0477d42d72f1b53671dea2ea432ae9e09299443c72b6e84c08775c141388",
+      "node_method_result": "REJECT",
+      "node_error": "chain_missing",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/chain-zero/AccountBlockTransaction",
+      "profile": "chain-zero",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 0,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "bd7c0477d42d72f1b53671dea2ea432ae9e09299443c72b6e84c08775c141388",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/chain-mismatch/AccountBlock",
+      "profile": "chain-mismatch",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 100,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "bcd44fdd1d36d899463eb5f410847c8dc709d42ed4bce3e97001fde3028765f4",
+      "node_method_result": "REJECT",
+      "node_error": "chain_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/chain-mismatch/AccountBlockTransaction",
+      "profile": "chain-mismatch",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 100,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "bcd44fdd1d36d899463eb5f410847c8dc709d42ed4bce3e97001fde3028765f4",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/stored-chain-mismatch/AccountBlock",
+      "profile": "stored-chain-mismatch",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 100,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "REJECT",
+      "node_error": "chain_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/stored-chain-mismatch/AccountBlockTransaction",
+      "profile": "stored-chain-mismatch",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 100,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "MATCH",
+      "node_error": "",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/type-zero/AccountBlock",
+      "profile": "type-zero",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 0,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "59bbe28af3023d70ba9794519a2f968d2afbadbf068442ef55305d8bc09264ec",
+      "node_method_result": "REJECT",
+      "node_error": "type_missing",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/type-zero/AccountBlockTransaction",
+      "profile": "type-zero",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 0,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "59bbe28af3023d70ba9794519a2f968d2afbadbf068442ef55305d8bc09264ec",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/type-genesis/AccountBlock",
+      "profile": "type-genesis",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 1,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "be38ae5910612b376de823a69f2524f1acf8583351acec503fe189aeab4a9916",
+      "node_method_result": "REJECT",
+      "node_error": "type_genesis",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/type-genesis/AccountBlockTransaction",
+      "profile": "type-genesis",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 1,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "be38ae5910612b376de823a69f2524f1acf8583351acec503fe189aeab4a9916",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/type-unsupported/AccountBlock",
+      "profile": "type-unsupported",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 6,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "d1323233a1216dad02deeb0f594123e54981f8a8d155f28c3a350fb1249eaeca",
+      "node_method_result": "REJECT",
+      "node_error": "type_unsupported",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/type-unsupported/AccountBlockTransaction",
+      "profile": "type-unsupported",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 6,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "d1323233a1216dad02deeb0f594123e54981f8a8d155f28c3a350fb1249eaeca",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/type-contract-receive/AccountBlock",
+      "profile": "type-contract-receive",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 5,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "570455c0f5beaab300a5533717ca0765269054d02560d510fb1de4d6dca8cdd5",
+      "node_method_result": "REJECT",
+      "node_error": "type_must_be_user",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/type-contract-receive/AccountBlockTransaction",
+      "profile": "type-contract-receive",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 5,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "570455c0f5beaab300a5533717ca0765269054d02560d510fb1de4d6dca8cdd5",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/amount-negative/AccountBlock",
+      "profile": "amount-negative",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "-1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "REJECT",
+      "node_error": "amount_negative",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/amount-negative/AccountBlockTransaction",
+      "profile": "amount-negative",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "-1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "MATCH",
+      "node_error": "",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/amount-large/AccountBlock",
+      "profile": "amount-large",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "57896044618658097711785492504343953926634992332820282019728792003956564819968",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "ab251e76698b503733fb8c9418272c9bc8317eb02efb7304d52eef5740b6b3ca",
+      "node_method_result": "REJECT",
+      "node_error": "amount_too_big",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/amount-large/AccountBlockTransaction",
+      "profile": "amount-large",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "57896044618658097711785492504343953926634992332820282019728792003956564819968",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "ab251e76698b503733fb8c9418272c9bc8317eb02efb7304d52eef5740b6b3ca",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/token-zero/AccountBlock",
+      "profile": "token-zero",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1qqqqqqqqqqqqqqqqtq587y",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "af16ae0b0aeac621fda507e75aa010e2e94a9ce32eba90c6ff8b049d6524e7a9",
+      "node_method_result": "REJECT",
+      "node_error": "zts_missing",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/token-zero/AccountBlockTransaction",
+      "profile": "token-zero",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1qqqqqqqqqqqqqqqqtq587y",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "af16ae0b0aeac621fda507e75aa010e2e94a9ce32eba90c6ff8b049d6524e7a9",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/send-from-hash-nonzero/AccountBlock",
+      "profile": "send-from-hash-nonzero",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0100000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "788cc92182caf2eb4cddb7902cfc0b919a05c2a25608fa5ed75941083000e842",
+      "node_method_result": "REJECT",
+      "node_error": "from_hash_must_be_zero",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/send-from-hash-nonzero/AccountBlockTransaction",
+      "profile": "send-from-hash-nonzero",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0100000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "788cc92182caf2eb4cddb7902cfc0b919a05c2a25608fa5ed75941083000e842",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/ack-missing/AccountBlock",
+      "profile": "ack-missing",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "empty"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "REJECT",
+      "node_error": "ack_missing",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        },
+        {
+          "method": "Momentum.GetMomentumByHeight",
+          "height": 3000
+        }
+      ],
+      "database_reads": [
+        {
+          "store": "momentum",
+          "key": "020000000000000bb8",
+          "value": "",
+          "error": "not_found"
+        }
+      ],
+      "account_entries": [],
+      "momentum_entries": []
+    },
+    {
+      "name": "user-type-2/ack-missing/AccountBlockTransaction",
+      "profile": "ack-missing",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "empty"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "MATCH",
+      "node_error": "",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": []
+    },
+    {
+      "name": "user-type-2/ack-wrong-hash/AccountBlock",
+      "profile": "ack-wrong-hash",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "wrong_hash"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "REJECT",
+      "node_error": "ack_missing",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        },
+        {
+          "method": "Momentum.GetMomentumByHeight",
+          "height": 3000
+        }
+      ],
+      "database_reads": [
+        {
+          "store": "momentum",
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a008b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000",
+          "error": ""
+        }
+      ],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a008b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a008b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a008b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/ack-wrong-hash/AccountBlockTransaction",
+      "profile": "ack-wrong-hash",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "wrong_hash"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "MATCH",
+      "node_error": "",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a008b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a008b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a008b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/ack-corrupt-entry/AccountBlock",
+      "profile": "ack-corrupt-entry",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "corrupt"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "REJECT",
+      "node_error": "internal_store_error",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        },
+        {
+          "method": "Momentum.GetMomentumByHeight",
+          "height": 3000
+        }
+      ],
+      "database_reads": [
+        {
+          "store": "momentum",
+          "key": "020000000000000bb8",
+          "value": "ff",
+          "error": ""
+        }
+      ],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "ff"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/ack-corrupt-entry/AccountBlockTransaction",
+      "profile": "ack-corrupt-entry",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "corrupt"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "MATCH",
+      "node_error": "",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "ff"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/height-two-exact/AccountBlock",
+      "profile": "height-two-exact",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "exact",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "height": 2,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "a563db8fdcb637916d235302d2f8f68b9b4749512d75ea3b98ccad963453cc1a",
+      "node_method_result": "MATCH",
+      "node_error": "",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+            "height": 1
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        },
+        {
+          "method": "Account.Frontier"
+        },
+        {
+          "method": "Momentum.GetMomentumByHeight",
+          "height": 3000
+        },
+        {
+          "method": "Account.ByHeight",
+          "height": 1
+        }
+      ],
+      "database_reads": [
+        {
+          "store": "account",
+          "key": "00",
+          "value": "0a220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989831001",
+          "error": ""
+        },
+        {
+          "store": "account",
+          "key": "020000000000000001",
+          "value": "08011063180222220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989832a220a20000000000000000000000000000000000000000000000000000000000000000030013a270a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b81742160a14004f57405c0cc25ae5d2feef6a26e4e0ae26d5354a160a1401b3b6e5adcb4c127ffd198c6318c6318c6318c6522000000000000000000000000000000000000000000000000000000000000003e85a0a14e66318c6318c6318c662220a200000000000000000000000000000000000000000000000000000000000000000720400ff80019201080000000000000000aa01220a200000000000000000000000000000000000000000000000000000000000000000b201203b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29ba0140e5d1d861f830e17bac11e881a841210e9f4e1310fa388720c4a752da2fea47aa55909cab8b90e19eddcad948b8daadfb868b21943bf38fe4eeb681bcbae04f0c",
+          "error": ""
+        },
+        {
+          "store": "momentum",
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000",
+          "error": ""
+        },
+        {
+          "store": "account",
+          "key": "020000000000000001",
+          "value": "08011063180222220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989832a220a20000000000000000000000000000000000000000000000000000000000000000030013a270a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b81742160a14004f57405c0cc25ae5d2feef6a26e4e0ae26d5354a160a1401b3b6e5adcb4c127ffd198c6318c6318c6318c6522000000000000000000000000000000000000000000000000000000000000003e85a0a14e66318c6318c6318c662220a200000000000000000000000000000000000000000000000000000000000000000720400ff80019201080000000000000000aa01220a200000000000000000000000000000000000000000000000000000000000000000b201203b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29ba0140e5d1d861f830e17bac11e881a841210e9f4e1310fa388720c4a752da2fea47aa55909cab8b90e19eddcad948b8daadfb868b21943bf38fe4eeb681bcbae04f0c",
+          "error": ""
+        }
+      ],
+      "account_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989831001"
+        },
+        {
+          "key": "01fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+          "value": "0000000000000001"
+        },
+        {
+          "key": "020000000000000001",
+          "value": "08011063180222220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989832a220a20000000000000000000000000000000000000000000000000000000000000000030013a270a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b81742160a14004f57405c0cc25ae5d2feef6a26e4e0ae26d5354a160a1401b3b6e5adcb4c127ffd198c6318c6318c6318c6522000000000000000000000000000000000000000000000000000000000000003e85a0a14e66318c6318c6318c662220a200000000000000000000000000000000000000000000000000000000000000000720400ff80019201080000000000000000aa01220a200000000000000000000000000000000000000000000000000000000000000000b201203b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29ba0140e5d1d861f830e17bac11e881a841210e9f4e1310fa388720c4a752da2fea47aa55909cab8b90e19eddcad948b8daadfb868b21943bf38fe4eeb681bcbae04f0c"
+        }
+      ],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/height-two-exact/AccountBlockTransaction",
+      "profile": "height-two-exact",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "exact",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "height": 2,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "a563db8fdcb637916d235302d2f8f68b9b4749512d75ea3b98ccad963453cc1a",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+            "height": 1
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989831001"
+        },
+        {
+          "key": "01fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+          "value": "0000000000000001"
+        },
+        {
+          "key": "020000000000000001",
+          "value": "08011063180222220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989832a220a20000000000000000000000000000000000000000000000000000000000000000030013a270a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b81742160a14004f57405c0cc25ae5d2feef6a26e4e0ae26d5354a160a1401b3b6e5adcb4c127ffd198c6318c6318c6318c6522000000000000000000000000000000000000000000000000000000000000003e85a0a14e66318c6318c6318c662220a200000000000000000000000000000000000000000000000000000000000000000720400ff80019201080000000000000000aa01220a200000000000000000000000000000000000000000000000000000000000000000b201203b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29ba0140e5d1d861f830e17bac11e881a841210e9f4e1310fa388720c4a752da2fea47aa55909cab8b90e19eddcad948b8daadfb868b21943bf38fe4eeb681bcbae04f0c"
+        }
+      ],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/height-two-empty/AccountBlock",
+      "profile": "height-two-empty",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "height": 2,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "a563db8fdcb637916d235302d2f8f68b9b4749512d75ea3b98ccad963453cc1a",
+      "node_method_result": "REJECT",
+      "node_error": "internal_store_error",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+            "height": 1
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        },
+        {
+          "method": "Account.Frontier"
+        }
+      ],
+      "database_reads": [
+        {
+          "store": "account",
+          "key": "00",
+          "value": "",
+          "error": "not_found"
+        },
+        {
+          "store": "account",
+          "key": "020000000000000000",
+          "value": "",
+          "error": "not_found"
+        }
+      ],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/height-two-empty/AccountBlockTransaction",
+      "profile": "height-two-empty",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "height": 2,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "a563db8fdcb637916d235302d2f8f68b9b4749512d75ea3b98ccad963453cc1a",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+            "height": 1
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/height-two-wrong-frontier/AccountBlock",
+      "profile": "height-two-wrong-frontier",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "wrong_hash",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "height": 2,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "a563db8fdcb637916d235302d2f8f68b9b4749512d75ea3b98ccad963453cc1a",
+      "node_method_result": "REJECT",
+      "node_error": "previous_missing",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+            "height": 1
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        },
+        {
+          "method": "Account.Frontier"
+        }
+      ],
+      "database_reads": [
+        {
+          "store": "account",
+          "key": "00",
+          "value": "0a220a20fb3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989831001",
+          "error": ""
+        },
+        {
+          "store": "account",
+          "key": "020000000000000001",
+          "value": "08011063180222220a20fb3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989832a220a20000000000000000000000000000000000000000000000000000000000000000030013a270a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b81742160a14004f57405c0cc25ae5d2feef6a26e4e0ae26d5354a160a1401b3b6e5adcb4c127ffd198c6318c6318c6318c6522000000000000000000000000000000000000000000000000000000000000003e85a0a14e66318c6318c6318c662220a200000000000000000000000000000000000000000000000000000000000000000720400ff80019201080000000000000000aa01220a200000000000000000000000000000000000000000000000000000000000000000b201203b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29ba0140e5d1d861f830e17bac11e881a841210e9f4e1310fa388720c4a752da2fea47aa55909cab8b90e19eddcad948b8daadfb868b21943bf38fe4eeb681bcbae04f0c",
+          "error": ""
+        }
+      ],
+      "account_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20fb3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989831001"
+        },
+        {
+          "key": "01fb3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+          "value": "0000000000000001"
+        },
+        {
+          "key": "020000000000000001",
+          "value": "08011063180222220a20fb3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989832a220a20000000000000000000000000000000000000000000000000000000000000000030013a270a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b81742160a14004f57405c0cc25ae5d2feef6a26e4e0ae26d5354a160a1401b3b6e5adcb4c127ffd198c6318c6318c6318c6522000000000000000000000000000000000000000000000000000000000000003e85a0a14e66318c6318c6318c662220a200000000000000000000000000000000000000000000000000000000000000000720400ff80019201080000000000000000aa01220a200000000000000000000000000000000000000000000000000000000000000000b201203b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29ba0140e5d1d861f830e17bac11e881a841210e9f4e1310fa388720c4a752da2fea47aa55909cab8b90e19eddcad948b8daadfb868b21943bf38fe4eeb681bcbae04f0c"
+        }
+      ],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/height-two-wrong-frontier/AccountBlockTransaction",
+      "profile": "height-two-wrong-frontier",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "wrong_hash",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "height": 2,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "a563db8fdcb637916d235302d2f8f68b9b4749512d75ea3b98ccad963453cc1a",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+            "height": 1
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20fb3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989831001"
+        },
+        {
+          "key": "01fb3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+          "value": "0000000000000001"
+        },
+        {
+          "key": "020000000000000001",
+          "value": "08011063180222220a20fb3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989832a220a20000000000000000000000000000000000000000000000000000000000000000030013a270a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b81742160a14004f57405c0cc25ae5d2feef6a26e4e0ae26d5354a160a1401b3b6e5adcb4c127ffd198c6318c6318c6318c6522000000000000000000000000000000000000000000000000000000000000003e85a0a14e66318c6318c6318c662220a200000000000000000000000000000000000000000000000000000000000000000720400ff80019201080000000000000000aa01220a200000000000000000000000000000000000000000000000000000000000000000b201203b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29ba0140e5d1d861f830e17bac11e881a841210e9f4e1310fa388720c4a752da2fea47aa55909cab8b90e19eddcad948b8daadfb868b21943bf38fe4eeb681bcbae04f0c"
+        }
+      ],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/height-two-corrupt-frontier/AccountBlock",
+      "profile": "height-two-corrupt-frontier",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "corrupt",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "height": 2,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "a563db8fdcb637916d235302d2f8f68b9b4749512d75ea3b98ccad963453cc1a",
+      "node_method_result": "REJECT",
+      "node_error": "internal_store_error",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+            "height": 1
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        },
+        {
+          "method": "Account.Frontier"
+        }
+      ],
+      "database_reads": [
+        {
+          "store": "account",
+          "key": "00",
+          "value": "0a220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989831001",
+          "error": ""
+        },
+        {
+          "store": "account",
+          "key": "020000000000000001",
+          "value": "ff",
+          "error": ""
+        }
+      ],
+      "account_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989831001"
+        },
+        {
+          "key": "01fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+          "value": "0000000000000001"
+        },
+        {
+          "key": "020000000000000001",
+          "value": "ff"
+        }
+      ],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/height-two-corrupt-frontier/AccountBlockTransaction",
+      "profile": "height-two-corrupt-frontier",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "corrupt",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "height": 2,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "a563db8fdcb637916d235302d2f8f68b9b4749512d75ea3b98ccad963453cc1a",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+            "height": 1
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989831001"
+        },
+        {
+          "key": "01fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+          "value": "0000000000000001"
+        },
+        {
+          "key": "020000000000000001",
+          "value": "ff"
+        }
+      ],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/height-two-previous-ack-ahead/AccountBlock",
+      "profile": "height-two-previous-ack-ahead",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "ack_ahead",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "height": 2,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "a563db8fdcb637916d235302d2f8f68b9b4749512d75ea3b98ccad963453cc1a",
+      "node_method_result": "REJECT",
+      "node_error": "ack_gap",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+            "height": 1
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        },
+        {
+          "method": "Account.Frontier"
+        },
+        {
+          "method": "Momentum.GetMomentumByHeight",
+          "height": 3000
+        },
+        {
+          "method": "Account.ByHeight",
+          "height": 1
+        }
+      ],
+      "database_reads": [
+        {
+          "store": "account",
+          "key": "00",
+          "value": "0a220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989831001",
+          "error": ""
+        },
+        {
+          "store": "account",
+          "key": "020000000000000001",
+          "value": "08011063180222220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989832a220a20000000000000000000000000000000000000000000000000000000000000000030013a270a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b91742160a14004f57405c0cc25ae5d2feef6a26e4e0ae26d5354a160a1401b3b6e5adcb4c127ffd198c6318c6318c6318c6522000000000000000000000000000000000000000000000000000000000000003e85a0a14e66318c6318c6318c662220a200000000000000000000000000000000000000000000000000000000000000000720400ff80019201080000000000000000aa01220a200000000000000000000000000000000000000000000000000000000000000000b201203b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29ba0140e5d1d861f830e17bac11e881a841210e9f4e1310fa388720c4a752da2fea47aa55909cab8b90e19eddcad948b8daadfb868b21943bf38fe4eeb681bcbae04f0c",
+          "error": ""
+        },
+        {
+          "store": "momentum",
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000",
+          "error": ""
+        },
+        {
+          "store": "account",
+          "key": "020000000000000001",
+          "value": "08011063180222220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989832a220a20000000000000000000000000000000000000000000000000000000000000000030013a270a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b91742160a14004f57405c0cc25ae5d2feef6a26e4e0ae26d5354a160a1401b3b6e5adcb4c127ffd198c6318c6318c6318c6522000000000000000000000000000000000000000000000000000000000000003e85a0a14e66318c6318c6318c662220a200000000000000000000000000000000000000000000000000000000000000000720400ff80019201080000000000000000aa01220a200000000000000000000000000000000000000000000000000000000000000000b201203b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29ba0140e5d1d861f830e17bac11e881a841210e9f4e1310fa388720c4a752da2fea47aa55909cab8b90e19eddcad948b8daadfb868b21943bf38fe4eeb681bcbae04f0c",
+          "error": ""
+        }
+      ],
+      "account_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989831001"
+        },
+        {
+          "key": "01fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+          "value": "0000000000000001"
+        },
+        {
+          "key": "020000000000000001",
+          "value": "08011063180222220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989832a220a20000000000000000000000000000000000000000000000000000000000000000030013a270a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b91742160a14004f57405c0cc25ae5d2feef6a26e4e0ae26d5354a160a1401b3b6e5adcb4c127ffd198c6318c6318c6318c6522000000000000000000000000000000000000000000000000000000000000003e85a0a14e66318c6318c6318c662220a200000000000000000000000000000000000000000000000000000000000000000720400ff80019201080000000000000000aa01220a200000000000000000000000000000000000000000000000000000000000000000b201203b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29ba0140e5d1d861f830e17bac11e881a841210e9f4e1310fa388720c4a752da2fea47aa55909cab8b90e19eddcad948b8daadfb868b21943bf38fe4eeb681bcbae04f0c"
+        }
+      ],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/height-two-previous-ack-ahead/AccountBlockTransaction",
+      "profile": "height-two-previous-ack-ahead",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "ack_ahead",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "height": 2,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "a563db8fdcb637916d235302d2f8f68b9b4749512d75ea3b98ccad963453cc1a",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+            "height": 1
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989831001"
+        },
+        {
+          "key": "01fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+          "value": "0000000000000001"
+        },
+        {
+          "key": "020000000000000001",
+          "value": "08011063180222220a20fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e3989832a220a20000000000000000000000000000000000000000000000000000000000000000030013a270a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b91742160a14004f57405c0cc25ae5d2feef6a26e4e0ae26d5354a160a1401b3b6e5adcb4c127ffd198c6318c6318c6318c6522000000000000000000000000000000000000000000000000000000000000003e85a0a14e66318c6318c6318c662220a200000000000000000000000000000000000000000000000000000000000000000720400ff80019201080000000000000000aa01220a200000000000000000000000000000000000000000000000000000000000000000b201203b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29ba0140e5d1d861f830e17bac11e881a841210e9f4e1310fa388720c4a752da2fea47aa55909cab8b90e19eddcad948b8daadfb868b21943bf38fe4eeb681bcbae04f0c"
+        }
+      ],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/hash-zero/AccountBlock",
+      "profile": "hash-zero",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "MATCH",
+      "node_error": "",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        },
+        {
+          "method": "Momentum.GetMomentumByHeight",
+          "height": 3000
+        }
+      ],
+      "database_reads": [
+        {
+          "store": "momentum",
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000",
+          "error": ""
+        }
+      ],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/hash-zero/AccountBlockTransaction",
+      "profile": "hash-zero",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "REJECT",
+      "node_error": "hash_missing",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/hash-mutated/AccountBlock",
+      "profile": "hash-mutated",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fb3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "MATCH",
+      "node_error": "",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        },
+        {
+          "method": "Momentum.GetMomentumByHeight",
+          "height": 3000
+        }
+      ],
+      "database_reads": [
+        {
+          "store": "momentum",
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000",
+          "error": ""
+        }
+      ],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/hash-mutated/AccountBlockTransaction",
+      "profile": "hash-mutated",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fb3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "5dHYYfgw4XusEeiBqEEhDp9OExD6OIcgxKdS2i/qR6pVkJyri5Dhnt3K2Ui42q37hoshlDvzj+TutoG8uuBPDA=="
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "REJECT",
+      "node_error": "hash_mismatch",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/signature-empty/AccountBlock",
+      "profile": "signature-empty",
+      "method": "AccountBlock",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": null
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "MATCH",
+      "node_error": "",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        },
+        {
+          "method": "Momentum.ChainIdentifier"
+        },
+        {
+          "method": "Momentum.GetMomentumByHeight",
+          "height": 3000
+        }
+      ],
+      "database_reads": [
+        {
+          "store": "momentum",
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000",
+          "error": ""
+        }
+      ],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "name": "user-type-2/signature-empty/AccountBlockTransaction",
+      "profile": "signature-empty",
+      "method": "AccountBlockTransaction",
+      "store_plan": {
+        "chain_id": 99,
+        "account_seed": "empty",
+        "momentum_seed": "exact"
+      },
+      "account_block": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "blockType": 2,
+        "hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "momentumAcknowledged": {
+          "hash": "a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "height": 3000
+        },
+        "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+        "toAddress": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+        "amount": "1000",
+        "tokenStandard": "zts1znnxxxxxxxxxxxxx9z4ulx",
+        "fromBlockHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "descendantBlocks": [],
+        "data": "AP+AAQ==",
+        "fusedPlasma": 0,
+        "difficulty": 0,
+        "nonce": "0000000000000000",
+        "basePlasma": 0,
+        "usedPlasma": 0,
+        "changesHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": null
+      },
+      "computed_hash": "fa3140fe8fb0666a77a798323aad982776860bceea3a01fe85d105418e398983",
+      "node_method_result": "REJECT",
+      "node_error": "signature_missing",
+      "store_calls": [
+        {
+          "method": "Chain.GetAccountStore",
+          "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+          "identifier": {
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "height": 0
+          }
+        },
+        {
+          "method": "Chain.GetFrontierMomentumStore"
+        }
+      ],
+      "database_reads": [],
+      "account_entries": [],
+      "momentum_entries": [
+        {
+          "key": "00",
+          "value": "0a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94210b817"
+        },
+        {
+          "key": "01a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc942",
+          "value": "0000000000000bb8"
+        },
+        {
+          "key": "020000000000000bb8",
+          "value": "080110631a220a20a108b8a4d0ea4d70d25a769a4a4947ecb03543b6bf5f368667046e236e2fc94222220a20000000000000000000000000000000000000000000000000000000000000000028b8174a220a200000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    }
+  ]
+}

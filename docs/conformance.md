@@ -359,6 +359,24 @@ and corruption controls bind the preserved source/input bytes. Synthetic store
 faults establish neither remotely reachable errors nor authenticated context;
 full node validation and runtime acceptance remain separate.
 
+## Recorded account basic checks and store reads
+
+The [basic account memory-store experiment](../tools/gen-node-account-basic-vectors/README.md)
+adds 50 actual calls to the node's `AccountBlock` and `AccountBlockTransaction`
+methods. Actual in-memory account/momentum stores receive explicit serialized
+seeds behind caller-selected context handles. All 11 method `MATCH`, 39 `REJECT`
+and zero panic outcomes remain recorded. An independent byte oracle checks the
+50 complete hash preimages, 100 complete seed maps and 21 raw database reads.
+It also reconstructs the complete selected protobuf records and lookup keys.
+
+This reaches selected basic version, chain, type, amount and previous/acknowledgement
+checks and contrasts them with the transaction method's cryptographic checks.
+Unsigned synthetic momentum metadata and selected historical handles provide no
+authenticated context. Neither method alone establishes complete protocol
+validation. Difficulty, receive/mailbox/contract/consensus execution and real
+chain histories are outside this selection. Native CI checks the fixed corpus
+and corruption controls; it does not execute a new reference node.
+
 ## Known gaps
 
 These are *known* and *documented*, not bugs.
