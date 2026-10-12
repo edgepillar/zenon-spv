@@ -240,6 +240,11 @@ jobs:
         run: python -I -B tools/gen-node-static-vectors/check.py --openssl openssl --source-revision "${{ github.sha }}" > "${{ runner.temp }}/node-static-signatures.json"
       - name: Node static runtime boundaries
         run: go test -v -count=1 -run '^TestNodeStatic' ./internal/conformance
+      - name: Node account context corpus controls
+        run: python -I -B tools/gen-node-account-context-vectors/check_test.py -v
+      - name: Independent node account context checks
+        shell: bash
+        run: python -I -B tools/gen-node-account-context-vectors/check.py --source-revision "${{ github.sha }}"
       - name: Node account transaction corpus controls
         run: python -I -B tools/gen-node-account-vectors/check_test.py -v
       - name: Independent node account transaction checks
@@ -640,6 +645,11 @@ jobs:
           python -I -B tools/gen-node-static-vectors/check.py --openssl "$signature_backend" --source-revision "${{ github.sha }}" > "${{ runner.temp }}/node-static-signatures.json"
       - name: Node static runtime boundaries
         run: go test -v -count=1 -run '^TestNodeStatic' ./internal/conformance
+      - name: Node account context corpus controls
+        run: python -I -B tools/gen-node-account-context-vectors/check_test.py -v
+      - name: Independent node account context checks
+        shell: bash
+        run: python -I -B tools/gen-node-account-context-vectors/check.py --source-revision "${{ github.sha }}"
       - name: Node account transaction corpus controls
         run: python -I -B tools/gen-node-account-vectors/check_test.py -v
       - name: Independent node account transaction checks
