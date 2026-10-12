@@ -817,3 +817,18 @@ remain unqualified. Unsigned recordings do not supply snapshot completeness,
 retained-hash provenance, accepted header/profile/activation, anchor, schedule,
 context pin, independent review or authenticated release. Consumers remain
 `REFUSED`; production state-value acceptance is disabled.
+
+### Temporary input/database workspace boundary
+
+The [separate workspace observation](temporary-workspace-observations.md)
+adds non-atomic directory/stat rows in each selected reference child's owned
+temporary directory. All 24 unchanged literal file/map/delta/NodeTree children
+and complete root/proof/DAG/refcount checks remain required. Input files and
+database lengths/allocated blocks are observed separately; copied source/build,
+compiler caches and evidence retain their other scopes. Every actual point,
+race and failure is preserved without retries or filtering. Sampling I/O is
+included in these new child wall observations. Observed maxima are not true
+peak disk, instantaneous footprints or production budgets. Compiler peak,
+simultaneous pipeline memory, real archives, accepted header/profile/activation,
+retained-hash provenance and independent release review remain unqualified.
+Anchor, schedule and context pins remain explicit; consumers remain `REFUSED`.
