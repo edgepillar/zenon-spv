@@ -236,3 +236,15 @@ current default. Actual Python peak observations qualify neither an API-wide
 zero-copy guarantee, latency improvement, causal OS delta, NodeTree/retention
 resources nor production budgets. All proof, snapshot and accepted trust gates
 remain separate.
+# Recorded account transaction method conformance
+
+The [actual account transaction observations](../tools/gen-node-account-vectors/README.md)
+add the exported node method to the source-pinned account byte checks. Existing
+synthetic signatures are reused across 58 retained calls, with exact opaque
+context lookup traces and independently reconstructed bytes. The separate SPV
+tests keep the original signed chain and commitments fixed; a method match
+cannot furnish missing commitment evidence, activation, producer authority,
+canonicality, consensus finality or state proofs. Direct nil calls and forbidden
+user descendants remain recorded method boundaries. This adds no runtime
+validation or accepting network/state profile. Real store execution and full
+account protocol validation remain separate conformance work.
