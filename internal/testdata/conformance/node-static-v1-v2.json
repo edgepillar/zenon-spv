@@ -1,0 +1,2921 @@
+{
+  "format_version": 1,
+  "source": {
+    "commit": "c64ed6279ff1d07335dab0ac36156dec8b5b71e9",
+    "function": "verifier.MomentumStatic",
+    "module_sum": "h1:3Vyk+6hw2dcWJLg15JEq7ITFOkaYvrVyI+W8Qb3Jlr4=",
+    "module_version": "v0.0.8-alphanet.0.20261009223306-c64ed6279ff1",
+    "repository": "https://github.com/zenon-network/go-zenon"
+  },
+  "input_files_sha256": {
+    "historical-testnet-genesis.json": "c43c63adecc5e0ccbca5a0be40070ac911d71b7466f998801c84aebc23d7f89b",
+    "momentum-v1-v2.json": "91747c6b7adba4e256fcb397d64348117edc9df874df7f25e2c56b776426dec9"
+  },
+  "observations": [
+    {
+      "name": "baseline/v1-empty",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/v1-binary-data",
+      "baseline": "v1-binary-data",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "ff4c5bc00d80c6d417c12ee4f516cf0540764aa3d83e43827b41fa04c90c6174",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "AP+AAQB/",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "XPS3CdaxQLG7+jVYLe01052is/jVHlQgT3Cd3sYfkdJWUSMDMGVBkSshFcYz+iJCvTzISuSUSppbwpvRNzAlAA==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "ff4c5bc00d80c6d417c12ee4f516cf0540764aa3d83e43827b41fa04c90c6174",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "710f2e4fd4435598f21f41a1c6e0d15552395976fae4da582a0f262128664c38",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "XPS3CdaxQLG7+jVYLe01052is/jVHlQgT3Cd3sYfkdJWUSMDMGVBkSshFcYz+iJCvTzISuSUSppbwpvRNzAlAA==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "ff4c5bc00d80c6d417c12ee4f516cf0540764aa3d83e43827b41fa04c90c6174",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/v1-sorted-content",
+      "baseline": "v1-sorted-content",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "d95084135baf8ce4a622622614e686fb9d5b6b022e6319ea82737f1bd80b820f",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "Ey7SNqPX574cmKfiLpwbQ8GqVK7HIE7WjdooA+MTDHIUIsUuh7IYA5DhSsH4Az2xyWJLW5c51Ww4MXeqFTZXAA==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "d95084135baf8ce4a622622614e686fb9d5b6b022e6319ea82737f1bd80b820f",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "Ey7SNqPX574cmKfiLpwbQ8GqVK7HIE7WjdooA+MTDHIUIsUuh7IYA5DhSsH4Az2xyWJLW5c51Ww4MXeqFTZXAA==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "d95084135baf8ce4a622622614e686fb9d5b6b022e6319ea82737f1bd80b820f",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/v1-wide-integers",
+      "baseline": "v1-wide-integers",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 9007199254740993,
+        "hash": "ef06f7d2e684a5c1b8a8fe75edbcc9f4415dd30dd43260982ebfd04426537d1c",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 4294967297,
+        "timestamp": 9007199254740995,
+        "data": "",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "60H/RFWPf5FC0+GeZk3/38WiprGu5t68znpW9Qg6cLvzoKpDMvDQSC8hS8mXUaTEL0DaGnmohoojmstk+YD8Ag==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 9007199254740993,
+        "hash": "ef06f7d2e684a5c1b8a8fe75edbcc9f4415dd30dd43260982ebfd04426537d1c",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 4294967297,
+        "timestamp": 9007199254740995,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "60H/RFWPf5FC0+GeZk3/38WiprGu5t68znpW9Qg6cLvzoKpDMvDQSC8hS8mXUaTEL0DaGnmohoojmstk+YD8Ag==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "ef06f7d2e684a5c1b8a8fe75edbcc9f4415dd30dd43260982ebfd04426537d1c",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/v1-max-integers",
+      "baseline": "v1-max-integers",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 18446744073709551615,
+        "hash": "c94a084f06af6f57676979fa44b2fb9309dba3d680d34c0d8ff4f9629c8c25d0",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 18446744073709551615,
+        "timestamp": 18446744073709551615,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "87SfQNOnvX0mCOIrGD/I2u964IFHB7lKwsdz4dGoUrFSvveHl2T8QhIVwmGXkUC6YJBiAwECjemi1ej/MeBbCw==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 18446744073709551615,
+        "hash": "c94a084f06af6f57676979fa44b2fb9309dba3d680d34c0d8ff4f9629c8c25d0",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 18446744073709551615,
+        "timestamp": 18446744073709551615,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "87SfQNOnvX0mCOIrGD/I2u964IFHB7lKwsdz4dGoUrFSvveHl2T8QhIVwmGXkUC6YJBiAwECjemi1ej/MeBbCw==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "c94a084f06af6f57676979fa44b2fb9309dba3d680d34c0d8ff4f9629c8c25d0",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/v1-price-fields-not-hashed",
+      "baseline": "v1-price-fields-not-hashed",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 123,
+        "nextWorkPrice": 456
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 123,
+        "nextWorkPrice": 456
+      },
+      "computed_hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/v2-zero-prices",
+      "baseline": "v2-zero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "36ef0a4f05ead56a98091bcd82e883ac47b2c15f32ed27e4fb67f56cfff54e07",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "rxg1jut6jOBBBvKfqHmBTbFfNrtMeR4IQ/18rCtXSzKdN31t+uAhY9uhO6+Vr4AKDMe9s8fCRx2YovUTtXenCg==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "36ef0a4f05ead56a98091bcd82e883ac47b2c15f32ed27e4fb67f56cfff54e07",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "rxg1jut6jOBBBvKfqHmBTbFfNrtMeR4IQ/18rCtXSzKdN31t+uAhY9uhO6+Vr4AKDMe9s8fCRx2YovUTtXenCg==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "36ef0a4f05ead56a98091bcd82e883ac47b2c15f32ed27e4fb67f56cfff54e07",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/v2-nonzero-prices",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/v2-max-prices",
+      "baseline": "v2-max-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7aa7a412d21f7c488f15a654fb4a50e25fc0f5d1ed28adb887fa247b58d17d96",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "hXcvzzjggZ+C0CkaOVJYbndQQBCv06fkFX8sW/Uqqtxe2u/FZ+n8xzA5yf8uGlkEoRXvWfXSDOWK5t2yDdwcBA==",
+        "nextFusionPrice": 18446744073709551615,
+        "nextWorkPrice": 18446744073709551615
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7aa7a412d21f7c488f15a654fb4a50e25fc0f5d1ed28adb887fa247b58d17d96",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "hXcvzzjggZ+C0CkaOVJYbndQQBCv06fkFX8sW/Uqqtxe2u/FZ+n8xzA5yf8uGlkEoRXvWfXSDOWK5t2yDdwcBA==",
+        "nextFusionPrice": 18446744073709551615,
+        "nextWorkPrice": 18446744073709551615
+      },
+      "computed_hash": "7aa7a412d21f7c488f15a654fb4a50e25fc0f5d1ed28adb887fa247b58d17d96",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/v1-chain-1",
+      "baseline": "v1-chain-1",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "665cee4ede525d49eeee0374b8fa96df2c5b3ea9e162628d6502259e0a54eced",
+        "previousHash": "5afabefbecb36961e89f1167a2e3601d37ef339442f38209dc9d64d77f2dad98",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "AAD/",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "O06aD6RBNZLthky9swGaftjseOrVAJ/ovu+7HxAJJwQY27cNcFlNJBFwY9KtDM0WMtLyCTRgMhX2jGlw7NomBw==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "665cee4ede525d49eeee0374b8fa96df2c5b3ea9e162628d6502259e0a54eced",
+        "previousHash": "5afabefbecb36961e89f1167a2e3601d37ef339442f38209dc9d64d77f2dad98",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "0f1db3854c636d58baa949ced8e05934f5baa1428f794942a4e0c02f57cdc4e1",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "O06aD6RBNZLthky9swGaftjseOrVAJ/ovu+7HxAJJwQY27cNcFlNJBFwY9KtDM0WMtLyCTRgMhX2jGlw7NomBw==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "665cee4ede525d49eeee0374b8fa96df2c5b3ea9e162628d6502259e0a54eced",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/v1-chain-2",
+      "baseline": "v1-chain-2",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "453c48fff78c76de2698ddd8cb92f466d7dc9f939ec2c04fd1ce197fcfb4cd86",
+        "previousHash": "665cee4ede525d49eeee0374b8fa96df2c5b3ea9e162628d6502259e0a54eced",
+        "height": 1002,
+        "timestamp": 1700000010,
+        "data": "AAH/",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fsqBNaq+/xiGC3pkoiQxAEGMsBFZCfF84kIH3KtepZXJDOZr8z1hG1vhQjShKGwaJfMDuVlHcU95ycEO8dFKAw==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "453c48fff78c76de2698ddd8cb92f466d7dc9f939ec2c04fd1ce197fcfb4cd86",
+        "previousHash": "665cee4ede525d49eeee0374b8fa96df2c5b3ea9e162628d6502259e0a54eced",
+        "height": 1002,
+        "timestamp": 1700000010,
+        "dataHash": "5d2c94acf510892956130132f5c48d538fc0efe0fa99561d24cd5990c42d88ce",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fsqBNaq+/xiGC3pkoiQxAEGMsBFZCfF84kIH3KtepZXJDOZr8z1hG1vhQjShKGwaJfMDuVlHcU95ycEO8dFKAw==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "453c48fff78c76de2698ddd8cb92f466d7dc9f939ec2c04fd1ce197fcfb4cd86",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/v1-chain-3",
+      "baseline": "v1-chain-3",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "007b2e1f2bd0224384929fa35f8462a5763c9d49c982c0ee77ff9dc4f0abb349",
+        "previousHash": "453c48fff78c76de2698ddd8cb92f466d7dc9f939ec2c04fd1ce197fcfb4cd86",
+        "height": 1003,
+        "timestamp": 1700000020,
+        "data": "AAL/",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "dzYST4tWlOL1CX6vVRQyaecJgKp57qqers6wf9sepcWN5WTpXub6UtnEPVz/AdUpGMjFUuNqp2lASDeSCdqRAw==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "007b2e1f2bd0224384929fa35f8462a5763c9d49c982c0ee77ff9dc4f0abb349",
+        "previousHash": "453c48fff78c76de2698ddd8cb92f466d7dc9f939ec2c04fd1ce197fcfb4cd86",
+        "height": 1003,
+        "timestamp": 1700000020,
+        "dataHash": "09c31b29ed14f897ad6e5ff111efc2aa11348c5b0cf96229c5c46df89dcfaa20",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "dzYST4tWlOL1CX6vVRQyaecJgKp57qqers6wf9sepcWN5WTpXub6UtnEPVz/AdUpGMjFUuNqp2lASDeSCdqRAw==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "007b2e1f2bd0224384929fa35f8462a5763c9d49c982c0ee77ff9dc4f0abb349",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/v1-chain-4",
+      "baseline": "v1-chain-4",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "b4fb926dfcb69b9ea271ab0541f9577953fbb0dc2fb494f4b5da180676dabbe8",
+        "previousHash": "007b2e1f2bd0224384929fa35f8462a5763c9d49c982c0ee77ff9dc4f0abb349",
+        "height": 1004,
+        "timestamp": 1700000030,
+        "data": "AAP/",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "nNRcOhoXgAXjoH41+mnVjnlY7fIXtp+fZDCNp3hjzMCvelsCm+wmkOI0UIaMWEKsPwUpgR15bJyx14O/VVQSCg==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "b4fb926dfcb69b9ea271ab0541f9577953fbb0dc2fb494f4b5da180676dabbe8",
+        "previousHash": "007b2e1f2bd0224384929fa35f8462a5763c9d49c982c0ee77ff9dc4f0abb349",
+        "height": 1004,
+        "timestamp": 1700000030,
+        "dataHash": "cb420f2cd59dcb8595c337b3751a638dd929f8bd5fda8df63402441ba26c8d61",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "nNRcOhoXgAXjoH41+mnVjnlY7fIXtp+fZDCNp3hjzMCvelsCm+wmkOI0UIaMWEKsPwUpgR15bJyx14O/VVQSCg==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "b4fb926dfcb69b9ea271ab0541f9577953fbb0dc2fb494f4b5da180676dabbe8",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/v1-chain-5",
+      "baseline": "v1-chain-5",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "658640997a89037975c233193b614a7e30915641abaa7dc9411146c823d80d41",
+        "previousHash": "b4fb926dfcb69b9ea271ab0541f9577953fbb0dc2fb494f4b5da180676dabbe8",
+        "height": 1005,
+        "timestamp": 1700000040,
+        "data": "AAT/",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "9G2tb8Q+QjMv+uvHEJNGgb4OnpzbnQLjAuIp7B/m/jLJBP3D7VUhO1CqA62ZcrBNvOPP+9dvmNR92Swa48y8CA==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "658640997a89037975c233193b614a7e30915641abaa7dc9411146c823d80d41",
+        "previousHash": "b4fb926dfcb69b9ea271ab0541f9577953fbb0dc2fb494f4b5da180676dabbe8",
+        "height": 1005,
+        "timestamp": 1700000040,
+        "dataHash": "535dbedff2c19971f73e19eeec136c6d554b4a5d607ef16363aaa286dd7db48a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "9G2tb8Q+QjMv+uvHEJNGgb4OnpzbnQLjAuIp7B/m/jLJBP3D7VUhO1CqA62ZcrBNvOPP+9dvmNR92Swa48y8CA==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "658640997a89037975c233193b614a7e30915641abaa7dc9411146c823d80d41",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/v1-chain-6",
+      "baseline": "v1-chain-6",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "354a3799d62e810b74fe2e7835674087380f5552e1acccf518e3765f30f5679f",
+        "previousHash": "658640997a89037975c233193b614a7e30915641abaa7dc9411146c823d80d41",
+        "height": 1006,
+        "timestamp": 1700000050,
+        "data": "AAX/",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "86vBA6D5/Bq4ag1+nwdeJQ+YaveCh37GveRegX8SND65HC+nv1itZzwM/1WTrUb8mY1gV2WCXvgJLj7EdMAoBw==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "354a3799d62e810b74fe2e7835674087380f5552e1acccf518e3765f30f5679f",
+        "previousHash": "658640997a89037975c233193b614a7e30915641abaa7dc9411146c823d80d41",
+        "height": 1006,
+        "timestamp": 1700000050,
+        "dataHash": "1082720cd0c6413b5c6ff1f2a013441981e50cef74ddc8873f7c68d6cb90aa22",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "86vBA6D5/Bq4ag1+nwdeJQ+YaveCh37GveRegX8SND65HC+nv1itZzwM/1WTrUb8mY1gV2WCXvgJLj7EdMAoBw==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "354a3799d62e810b74fe2e7835674087380f5552e1acccf518e3765f30f5679f",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/transition-1",
+      "baseline": "transition-1",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "32843579da3587b40110892ae0c864f16749df110e6f5f9f4e51e1d596944059",
+        "previousHash": "690e7fe32bdd2d0294cd0dd134567715182e66f72d0bc9b2dbbe08c4702c9bf9",
+        "height": 2001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "NHRt+O5PEQMknMHlFTy6sh1arwOi9ecDr1zA57rFbZbBTObogtHxFXaxDEz/dvX1epUaMxHNg0o1YNop7e4kBg==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "32843579da3587b40110892ae0c864f16749df110e6f5f9f4e51e1d596944059",
+        "previousHash": "690e7fe32bdd2d0294cd0dd134567715182e66f72d0bc9b2dbbe08c4702c9bf9",
+        "height": 2001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "NHRt+O5PEQMknMHlFTy6sh1arwOi9ecDr1zA57rFbZbBTObogtHxFXaxDEz/dvX1epUaMxHNg0o1YNop7e4kBg==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "32843579da3587b40110892ae0c864f16749df110e6f5f9f4e51e1d596944059",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/transition-2",
+      "baseline": "transition-2",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "1ee5384d5265fddb1f44263bd4215aa2264227d3e05f580c9e228882ea976a7c",
+        "previousHash": "32843579da3587b40110892ae0c864f16749df110e6f5f9f4e51e1d596944059",
+        "height": 2002,
+        "timestamp": 1700000010,
+        "data": "",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "t368tEd3pUwK8TokFd+xJ3fp7Za6xXgKvNCp7UOvcUJ0S9ySqYJ1AfPmr0XTAH96NQSW8SypTbN2a3dQd1t/Cg==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "1ee5384d5265fddb1f44263bd4215aa2264227d3e05f580c9e228882ea976a7c",
+        "previousHash": "32843579da3587b40110892ae0c864f16749df110e6f5f9f4e51e1d596944059",
+        "height": 2002,
+        "timestamp": 1700000010,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "t368tEd3pUwK8TokFd+xJ3fp7Za6xXgKvNCp7UOvcUJ0S9ySqYJ1AfPmr0XTAH96NQSW8SypTbN2a3dQd1t/Cg==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "1ee5384d5265fddb1f44263bd4215aa2264227d3e05f580c9e228882ea976a7c",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/transition-3",
+      "baseline": "transition-3",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "3a9f557877a875bc66a01bf095fe952c7648feeb3cf3bcf001dea8144e5ac8b2",
+        "previousHash": "1ee5384d5265fddb1f44263bd4215aa2264227d3e05f580c9e228882ea976a7c",
+        "height": 2003,
+        "timestamp": 1700000020,
+        "data": "",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "wChmUa6Djutgt02tvgW6asKd4+nO2JTJT2qeodrdrv1dok6k+PkrbGoqQ1/iXUcHSB62os5KX4gZ/3LPE1h/BQ==",
+        "nextFusionPrice": 1200,
+        "nextWorkPrice": 1400
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "3a9f557877a875bc66a01bf095fe952c7648feeb3cf3bcf001dea8144e5ac8b2",
+        "previousHash": "1ee5384d5265fddb1f44263bd4215aa2264227d3e05f580c9e228882ea976a7c",
+        "height": 2003,
+        "timestamp": 1700000020,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "wChmUa6Djutgt02tvgW6asKd4+nO2JTJT2qeodrdrv1dok6k+PkrbGoqQ1/iXUcHSB62os5KX4gZ/3LPE1h/BQ==",
+        "nextFusionPrice": 1200,
+        "nextWorkPrice": 1400
+      },
+      "computed_hash": "3a9f557877a875bc66a01bf095fe952c7648feeb3cf3bcf001dea8144e5ac8b2",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/transition-4",
+      "baseline": "transition-4",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "583bf2bc2912504000f16163cbf7fdedec92c1714819855ba1d1da7ff785656b",
+        "previousHash": "3a9f557877a875bc66a01bf095fe952c7648feeb3cf3bcf001dea8144e5ac8b2",
+        "height": 2004,
+        "timestamp": 1700000030,
+        "data": "",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "VJ4JbNQWCD6N3bNCu8eF9WU6Rv14w3XkoMrBKi8XGBDsPrAElAYQfj1TevyfoRyZKIuy24oGYs2xOODatkxMAg==",
+        "nextFusionPrice": 1300,
+        "nextWorkPrice": 1600
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "583bf2bc2912504000f16163cbf7fdedec92c1714819855ba1d1da7ff785656b",
+        "previousHash": "3a9f557877a875bc66a01bf095fe952c7648feeb3cf3bcf001dea8144e5ac8b2",
+        "height": 2004,
+        "timestamp": 1700000030,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "VJ4JbNQWCD6N3bNCu8eF9WU6Rv14w3XkoMrBKi8XGBDsPrAElAYQfj1TevyfoRyZKIuy24oGYs2xOODatkxMAg==",
+        "nextFusionPrice": 1300,
+        "nextWorkPrice": 1600
+      },
+      "computed_hash": "583bf2bc2912504000f16163cbf7fdedec92c1714819855ba1d1da7ff785656b",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/transition-5",
+      "baseline": "transition-5",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "2c70a8199d7f6be2fed22180fe988617ecbf2d7d84d6e6bbf58a06b139227612",
+        "previousHash": "583bf2bc2912504000f16163cbf7fdedec92c1714819855ba1d1da7ff785656b",
+        "height": 2005,
+        "timestamp": 1700000040,
+        "data": "",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "kX5phw0A7oKkghM5VVFr1yDqvk1Y9Qw2OfJ409bO5Kl9Du6kbt28by7sxaj6yUU5HwJyiYqwK1LPB9J3kKHIAQ==",
+        "nextFusionPrice": 1400,
+        "nextWorkPrice": 1800
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "2c70a8199d7f6be2fed22180fe988617ecbf2d7d84d6e6bbf58a06b139227612",
+        "previousHash": "583bf2bc2912504000f16163cbf7fdedec92c1714819855ba1d1da7ff785656b",
+        "height": 2005,
+        "timestamp": 1700000040,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "kX5phw0A7oKkghM5VVFr1yDqvk1Y9Qw2OfJ409bO5Kl9Du6kbt28by7sxaj6yUU5HwJyiYqwK1LPB9J3kKHIAQ==",
+        "nextFusionPrice": 1400,
+        "nextWorkPrice": 1800
+      },
+      "computed_hash": "2c70a8199d7f6be2fed22180fe988617ecbf2d7d84d6e6bbf58a06b139227612",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "baseline/transition-6",
+      "baseline": "transition-6",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "95cfab08a0f74588385570cc5a2bba67979059fa82c75e9dcfb7bf212d3de39f",
+        "previousHash": "2c70a8199d7f6be2fed22180fe988617ecbf2d7d84d6e6bbf58a06b139227612",
+        "height": 2006,
+        "timestamp": 1700000050,
+        "data": "",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "QHsAimTVYyNzKPaFAJ8Ej1dkFyEvfSZuK7460rkEJJVVRyoU7JAhVbF8dsDo3EU62yl6o3t2PPQIVZA3sLrPCQ==",
+        "nextFusionPrice": 1500,
+        "nextWorkPrice": 2000
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "95cfab08a0f74588385570cc5a2bba67979059fa82c75e9dcfb7bf212d3de39f",
+        "previousHash": "2c70a8199d7f6be2fed22180fe988617ecbf2d7d84d6e6bbf58a06b139227612",
+        "height": 2006,
+        "timestamp": 1700000050,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "QHsAimTVYyNzKPaFAJ8Ej1dkFyEvfSZuK7460rkEJJVVRyoU7JAhVbF8dsDo3EU62yl6o3t2PPQIVZA3sLrPCQ==",
+        "nextFusionPrice": 1500,
+        "nextWorkPrice": 2000
+      },
+      "computed_hash": "95cfab08a0f74588385570cc5a2bba67979059fa82c75e9dcfb7bf212d3de39f",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "nil",
+      "baseline": "",
+      "momentum": null,
+      "header": null,
+      "computed_hash": null,
+      "node_static_result": "REJECT",
+      "node_error": "missing_momentum"
+    },
+    {
+      "name": "historical-unsigned-genesis",
+      "baseline": "historical-testnet-genesis",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 3,
+        "hash": "34edb7f5564f1671bf0d1792eaa87bd3f13dcfbd00df4311904df06d159903ac",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "timestamp": 1666083600,
+        "data": "",
+        "content": [
+          {
+            "address": "z1qqz5agr7999awlyn6a24mwn79hwgh3jtrzdl6n",
+            "hash": "63187a932595463027cb2c90ddff1ebd93e0e1b58872ba61cf0583cf37668fc4",
+            "height": 1
+          },
+          {
+            "address": "z1qq93vhxwmlsqt2xlnx0fuz9qh9nzzhy73gdcss",
+            "hash": "1d159eed02b83afc2a4d08a01070b52fdd107ce6fe2639361c702801d29b9b1e",
+            "height": 1
+          },
+          {
+            "address": "z1qq5ry662s7urrccf3zfuj087njwrarvaaq6zw6",
+            "hash": "2942afb636de83e21f866d9b6f286bdc49e2108ddb75d50cf01fbc4008a9b7ce",
+            "height": 1
+          },
+          {
+            "address": "z1qq5kwtu8axug5wfu9clmjhfefumek48dq5v2ws",
+            "hash": "2c80df0d16bf44894b5adfbb33adbb5447b86747db77ab202264787190945557",
+            "height": 1
+          },
+          {
+            "address": "z1qqu3my49gy6ztswxwhux7quwlugps90wdf749s",
+            "hash": "fa2c34319b1729b080061b112cb0a5d8f297264ec731d1f89d2aaf2d3ecf414e",
+            "height": 1
+          },
+          {
+            "address": "z1qqamfw375f5w7a76a4jlfk0g8eqk34hw6p3ktg",
+            "hash": "6d15c7e0357f305e77677ad2b243febd2923ea21f4122a803160880de91f6619",
+            "height": 1
+          },
+          {
+            "address": "z1qpp8g8v4hrd5ernfrgsn86jmv09ra6zrvhvmr7",
+            "hash": "559c7fdb89b7cdf6f67908ed8be59132eb3e3f345d2d2ca8f7c29272e9c27032",
+            "height": 1
+          },
+          {
+            "address": "z1qppv30synk6qwpjp7lnd6pdph909vmkt5m0r98",
+            "hash": "e38c28c58327337c1948fbf6a988d2a83eedd1987ad2a33dd6b35189c9f5e48f",
+            "height": 1
+          },
+          {
+            "address": "z1qpytyvvgrm7ck8sh87tjvt6n8a8zxu5ecyuhg4",
+            "hash": "a2f17432f2bfaabc22b05162580c49867cfb81d18e8852fe23a47736384c7d7d",
+            "height": 1
+          },
+          {
+            "address": "z1qp4kymnylrr5c0j3zrx8mt8q04dthgelxzcsfr",
+            "hash": "afb1ae2a257bfd013a69047dcff308f94ed7018e34f107d5b53723ca5e687d74",
+            "height": 1
+          },
+          {
+            "address": "z1qp7qc553p3wes096paqr77xrsve8hxwml6nzkc",
+            "hash": "e61b19aafdbf5e5fa20c373ea274c0950915f1f22926f4a06a8a72aa61fae663",
+            "height": 1
+          },
+          {
+            "address": "z1qplzv7agheh7swshclw7lf6p4tfklve6ac2qjl",
+            "hash": "47b850e9bb5656da8670bf914a925a8e87ca774cc220aca33df6b64a5c66e9ea",
+            "height": 1
+          },
+          {
+            "address": "z1qzqpj7syxjuzlxxq6jgualgx83w56gdlulalyj",
+            "hash": "185d9837e0b9eacd2b712c2e814eb238443614f6e6df6e0bf2e9ec2873ca0514",
+            "height": 1
+          },
+          {
+            "address": "z1qzpqmrvzx3qsd5al2ut5srlqydeez6xf0hjc03",
+            "hash": "9c4f112fff5000ccc0f884125bad6ea20873b6224701d9b587fae1090256a143",
+            "height": 1
+          },
+          {
+            "address": "z1qzpstygztjusnnr9828w0mhx2yjnzj8lpeakp7",
+            "hash": "509ad6bfa3eece79160c86179ec5a7f68ca314213530d2aef84672ad35767f4c",
+            "height": 1
+          },
+          {
+            "address": "z1qz9dk7q90pgmld2papzm2sq4sjckk2ug64t2mw",
+            "hash": "ddf1cab53cede586de075a4702daa88210a77a3c3d5747b3109021be9e4c14d2",
+            "height": 1
+          },
+          {
+            "address": "z1qzxqpsd7t3eysr89hplevyv8zan3s83edas4rq",
+            "hash": "c4665328f34dff31c7090232df5794a20848f06e1d8b5d1b581f94b6b72c4f18",
+            "height": 1
+          },
+          {
+            "address": "z1qz2c9hzv5er6mth6rhpype4hpc25a9g3rvpqfg",
+            "hash": "25e1ce8f03311ab64db72031de858185a4fac7ac0b6755e8a0ed52bb1f0804cc",
+            "height": 1
+          },
+          {
+            "address": "z1qz07atuhae782fea09rdhrtr8urtrskqvgr6ft",
+            "hash": "17a98a9777d73b376de59114d648f69bc5c22fc2be870d5844c55bd1d726f761",
+            "height": 1
+          },
+          {
+            "address": "z1qz596lv9qc9la47p8z9pk4rsea8kvfah75pt3k",
+            "hash": "101bcd01a8d4585839c05de2dd82cefb76970c9d63808d3ccb3643cb316eeec2",
+            "height": 1
+          },
+          {
+            "address": "z1qzkjg40w3j3gkwwpnurdam26hemqh952cxvsvs",
+            "hash": "8ee8c9c3af006c0f2225dbf3a10e5573addab419300df6668a9553a985bb7cd2",
+            "height": 1
+          },
+          {
+            "address": "z1qzk593pnmmj0rg7nwe75jwq9ztt3l5rkwtecn9",
+            "hash": "fd3d8bc12c66d97a2a4e35b37030bf031338c085231df92eb1e52563ba92a1f1",
+            "height": 1
+          },
+          {
+            "address": "z1qzk7yacyvccy363hgyusthrw0smmq3g8l8nscg",
+            "hash": "eff0c0a87b29a389e4bb7eca061e012fc32b09a408428366f1dcf6c3ed669889",
+            "height": 1
+          },
+          {
+            "address": "z1qzhcwfmj5p9q6zy9kgy4rjwgx2elrx7485v0a9",
+            "hash": "14f632e88010ddf7275633c2508f0ede43a8c68367d54f386f86e6626034b296",
+            "height": 1
+          },
+          {
+            "address": "z1qzam8gc99v65m2rs2cnr8egr3mu8gpn93srdn4",
+            "hash": "0dd77aa0663e669c41eb6f0e8b9e90c821c2fd2be488b3ee853370dc57ee440c",
+            "height": 1
+          },
+          {
+            "address": "z1qz7s27e744p6qfgqf3s9k3ae23xqnde8cgzzhc",
+            "hash": "7735c22d20070eabc197351684df5fa6915d0e91d16c59cbf549850d3e9af075",
+            "height": 1
+          },
+          {
+            "address": "z1qrqsclgp2pfca7yg74lzke0ve93zvdqyvxfxd8",
+            "hash": "da7997b4ce322280b3c66ac0b9cbf15080b080180834fe081a394bf4f8739ba1",
+            "height": 1
+          },
+          {
+            "address": "z1qryraj6s0a6pqyk5jr3nmph7qalcqw32gfwznv",
+            "hash": "8a35cfc4fc2e53a8c22fb44c4462c7fb0c069bb578a2d343ee034867c7558287",
+            "height": 1
+          },
+          {
+            "address": "z1qr8fmf2regmlgs004d32jnujw3p5hhgsdw5vwe",
+            "hash": "396c70c7d7046296cb06d88aa0552aa1edc759d50bb01d07f871b53727166b09",
+            "height": 1
+          },
+          {
+            "address": "z1qrgggsruzcs9hlwpl22hp7dff5h778txudmsl4",
+            "hash": "f554b79c79940e95df32439a900ce7fdae40028bff9320c16cb78acb05745627",
+            "height": 1
+          },
+          {
+            "address": "z1qrgg5uklyvlfjc756emdh69fysq25ulm8hh5mx",
+            "hash": "da13c16189c1afd09314db5b5195914108b20118757f657020f66379897da0df",
+            "height": 1
+          },
+          {
+            "address": "z1qr2ulnrclz5zwtxue9q9vz4z0fav9ma8r3kxfh",
+            "hash": "a65f715fabb80941081350213c67d00ebc1206cbacbd6cc867881e15880d59c3",
+            "height": 1
+          },
+          {
+            "address": "z1qrtespp2tuywtng6lz322efzfwh4l7av435c6c",
+            "hash": "7074fe140bfacc5b2a69660b3de2fde1215191ed92aa5f345e806d1a0295cd07",
+            "height": 1
+          },
+          {
+            "address": "z1qr4a43ml9eus9f7cu4l6ysur4fax0gggv5p0pv",
+            "hash": "34fe0858eb5d9a7a70971773cea8ac96c7a5b236e109e5c16171c6a0e95e2605",
+            "height": 1
+          },
+          {
+            "address": "z1qrh56m9dhmlyeu7yysnytatjkg674849gvn393",
+            "hash": "86cc6708084e70d9b5214a24c02d7afb48bbbe75104853761be2e701d70b3093",
+            "height": 1
+          },
+          {
+            "address": "z1qrelm8zplr9wel4l3vy7wfc4sj9scme9ckq3vl",
+            "hash": "f4c91bc08938497fe23179cf4649d26b7249a9bbd9de2f8aa65a986b1636b828",
+            "height": 1
+          },
+          {
+            "address": "z1qr62n74l9r6rve7upu6qwfu28tg38j5qqdfa43",
+            "hash": "ee65e6a9b32307790e9d63daec4d4871f2fac347134624feb2a3b4745263e78d",
+            "height": 1
+          },
+          {
+            "address": "z1qrm0x99zhz8kw5flxch0t3mj8f8rzufyyre8z0",
+            "hash": "6890ac417ef70fc82040154f19de8267c5f6f9b590dd80c5c9b680e482cf15ec",
+            "height": 1
+          },
+          {
+            "address": "z1qrupr2rvzllzgk26qezwuflwujmn0z3gsxjnjv",
+            "hash": "8a676ade35f8931ab63b007ff1212a4753d46b4738921c90c1bd11ddd0b59f7a",
+            "height": 1
+          },
+          {
+            "address": "z1qrushuttcge5gmw3eh2qpfzddmxm9hcq807fyz",
+            "hash": "b255e1ead8ff4d16709fb095ce8015ca6c847d8e18500159400129c01369b7fa",
+            "height": 1
+          },
+          {
+            "address": "z1qra28ful32ap5fz22wzgm6p2xrf64kmfz7fg6v",
+            "hash": "b66cb3d991388f3608d380ec935a7055125ba274321892f691e2595e66621189",
+            "height": 1
+          },
+          {
+            "address": "z1qrantskdqaue5q8qzll97nx75g9vn05h2668l0",
+            "hash": "90665372fe07f86f2cfd18cf4081996ef09d1ab3905c26ac5255205fb7621541",
+            "height": 1
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "298778752479e25ec2d519f516ee315ca19c838c70a90ded658b56822441f14c",
+            "height": 1
+          },
+          {
+            "address": "z1qxemdeddedxplasmaxxxxxxxxxxxxxxxxsctrp",
+            "hash": "5a42fbcf3bd88768f8010ec54ed2aaba05a07339dca06c781975591bbf1abd60",
+            "height": 1
+          },
+          {
+            "address": "z1qxemdeddedxt0kenxxxxxxxxxxxxxxxxh9amk0",
+            "hash": "39ec4fd4e995e2ecb62ffe7e6c085dbe63e403ec3b398b068e26995f0c21f4bc",
+            "height": 1
+          },
+          {
+            "address": "z1qxemdeddedxsp0rkxxxxxxxxxxxxxxxx956u48",
+            "hash": "9d3f15e4d47adabbb47e19f841a65f55efca4c23998761af7f137a610d96b339",
+            "height": 1
+          },
+          {
+            "address": "z1qxemdeddedxswapxxxxxxxxxxxxxxxxxxl4yww",
+            "hash": "08f6ff780733a3290307ebee0091806e96696e0411b6a749779b57ae470bcb76",
+            "height": 1
+          }
+        ],
+        "changesHash": "28e31e7c60a21831dad54fca3df07cde38f63806918416a251c0f4fb678abb03",
+        "publicKey": null,
+        "signature": null,
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 3,
+        "hash": "34edb7f5564f1671bf0d1792eaa87bd3f13dcfbd00df4311904df06d159903ac",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "height": 1,
+        "timestamp": 1666083600,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "2bc28f5bc6cf45c399ff250bb56cb0eac50ed818e9839c0294d3db7be8cfb7cd",
+        "changesHash": "28e31e7c60a21831dad54fca3df07cde38f63806918416a251c0f4fb678abb03",
+        "publicKey": null,
+        "signature": null,
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "34edb7f5564f1671bf0d1792eaa87bd3f13dcfbd00df4311904df06d159903ac",
+      "node_static_result": "REJECT",
+      "node_error": "signature_missing"
+    },
+    {
+      "name": "v1-empty/hash",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e32ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e32ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+      "node_static_result": "REJECT",
+      "node_error": "hash_mismatch"
+    },
+    {
+      "name": "v1-empty/data",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/w==",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "444b89ecce395aec5dc98f19defd3a23bca0822fc72226f58ca46a17eeeca442",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "8d4df6c88a4547525accdd979998b4ef93f91fc61b61a2618b02364762559c63",
+      "node_static_result": "REJECT",
+      "node_error": "hash_mismatch"
+    },
+    {
+      "name": "v1-empty/chain",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 98,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 98,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "9747c5978af6d55fbc8d608dc39b88d9e314c50c0adbbd6c9f7fd168712a6e53",
+      "node_static_result": "REJECT",
+      "node_error": "hash_mismatch"
+    },
+    {
+      "name": "v1-empty/height",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1002,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1002,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "f79f02a1a4ec6ae95e5f1cf5d5e7f4ae3d830e4c286511f2d45879748efa4238",
+      "node_static_result": "REJECT",
+      "node_error": "hash_mismatch"
+    },
+    {
+      "name": "v1-empty/previous",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "108b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "108b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "3d119f0d6667237a567bd5541b86f8e4061549054d86644806c046ab42da493a",
+      "node_static_result": "REJECT",
+      "node_error": "hash_mismatch"
+    },
+    {
+      "name": "v1-empty/signature-empty",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+      "node_static_result": "REJECT",
+      "node_error": "signature_missing"
+    },
+    {
+      "name": "v1-empty/public-key-empty",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+      "node_static_result": "REJECT",
+      "node_error": "public_key_missing"
+    },
+    {
+      "name": "v1-empty/both-empty",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "",
+        "signature": "",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "",
+        "signature": "",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+      "node_static_result": "REJECT",
+      "node_error": "signature_missing"
+    },
+    {
+      "name": "v1-empty/public-key-short",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2g==",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2g==",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+      "node_static_result": "REJECT",
+      "node_error": "internal_signature_format"
+    },
+    {
+      "name": "v1-empty/public-key-long",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ikA",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ikA",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+      "node_static_result": "REJECT",
+      "node_error": "internal_signature_format"
+    },
+    {
+      "name": "v1-empty/signature-short",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVd",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVd",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+      "node_static_result": "REJECT",
+      "node_error": "signature_invalid"
+    },
+    {
+      "name": "v1-empty/signature-long",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQA=",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQA=",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+      "node_static_result": "REJECT",
+      "node_error": "signature_invalid"
+    },
+    {
+      "name": "v1-empty/signature-bit",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "ffahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "ffahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+      "node_static_result": "REJECT",
+      "node_error": "signature_invalid"
+    },
+    {
+      "name": "v1-empty/public-key-bit",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "OmonvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "OmonvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+      "node_static_result": "REJECT",
+      "node_error": "signature_invalid"
+    },
+    {
+      "name": "v1-empty/prices",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 1,
+        "nextWorkPrice": 1
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "fPahNIy/1Ob+qUKUI1stsu6GPl9ZTf8l9+e+B2dCUGrx3Pb/kypHpyBLL6iLIvugYZHndRisSCX5ee/BAiVdCQ==",
+        "nextFusionPrice": 1,
+        "nextWorkPrice": 1
+      },
+      "computed_hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+      "node_static_result": "MATCH",
+      "node_error": ""
+    },
+    {
+      "name": "v1-empty/hash-and-empty",
+      "baseline": "v1-empty",
+      "momentum": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e32ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "",
+        "content": [],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "",
+        "signature": "",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "header": {
+        "version": 1,
+        "chainIdentifier": 99,
+        "hash": "e32ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "contentHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "",
+        "signature": "",
+        "nextFusionPrice": 0,
+        "nextWorkPrice": 0
+      },
+      "computed_hash": "e22ae9749d4a42dc1ae5addde94c40c35cfb0d8a0ddb4c62d82170260acc9c1b",
+      "node_static_result": "REJECT",
+      "node_error": "hash_mismatch"
+    },
+    {
+      "name": "v2-nonzero-prices/hash",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7838318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7838318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+      "node_static_result": "REJECT",
+      "node_error": "hash_mismatch"
+    },
+    {
+      "name": "v2-nonzero-prices/data",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA/w==",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "43a4c4143dfbc7016852f75c2f34cb8125524da99edfe82bb8fbe57c6fefc591",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "0b1dca35546cefc9233c109f7b2be3c018b9a948eda454573dde387734012827",
+      "node_static_result": "REJECT",
+      "node_error": "hash_mismatch"
+    },
+    {
+      "name": "v2-nonzero-prices/chain",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 98,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 98,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "86f11774aa2eb9b63de4a9f903847947e9f9c15c599853ad6b504006e601091e",
+      "node_static_result": "REJECT",
+      "node_error": "hash_mismatch"
+    },
+    {
+      "name": "v2-nonzero-prices/height",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1002,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1002,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "70a3cd054b89edd906f5a0e133d5be564fabb2f9ada035608486fd3c9dba43d0",
+      "node_static_result": "REJECT",
+      "node_error": "hash_mismatch"
+    },
+    {
+      "name": "v2-nonzero-prices/previous",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "108b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "108b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "117908e7dfac49d3abae4ece7f60207fbebff7d67df1658e132fe7d1842addb1",
+      "node_static_result": "REJECT",
+      "node_error": "hash_mismatch"
+    },
+    {
+      "name": "v2-nonzero-prices/signature-empty",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+      "node_static_result": "REJECT",
+      "node_error": "signature_missing"
+    },
+    {
+      "name": "v2-nonzero-prices/public-key-empty",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+      "node_static_result": "REJECT",
+      "node_error": "public_key_missing"
+    },
+    {
+      "name": "v2-nonzero-prices/both-empty",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "",
+        "signature": "",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "",
+        "signature": "",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+      "node_static_result": "REJECT",
+      "node_error": "signature_missing"
+    },
+    {
+      "name": "v2-nonzero-prices/public-key-short",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2g==",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2g==",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+      "node_static_result": "REJECT",
+      "node_error": "internal_signature_format"
+    },
+    {
+      "name": "v2-nonzero-prices/public-key-long",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ikA",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ikA",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+      "node_static_result": "REJECT",
+      "node_error": "internal_signature_format"
+    },
+    {
+      "name": "v2-nonzero-prices/signature-short",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGf",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGf",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+      "node_static_result": "REJECT",
+      "node_error": "signature_invalid"
+    },
+    {
+      "name": "v2-nonzero-prices/signature-long",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQA=",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQA=",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+      "node_static_result": "REJECT",
+      "node_error": "signature_invalid"
+    },
+    {
+      "name": "v2-nonzero-prices/signature-bit",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+SYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+SYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+      "node_static_result": "REJECT",
+      "node_error": "signature_invalid"
+    },
+    {
+      "name": "v2-nonzero-prices/public-key-bit",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "OmonvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "OmonvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+      "node_static_result": "REJECT",
+      "node_error": "signature_invalid"
+    },
+    {
+      "name": "v2-nonzero-prices/prices",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967298,
+        "nextWorkPrice": 9007199254740994
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=",
+        "signature": "+CYx4rHmhPdkNg1cYy9deHLJr7fx30bkZr0O6q7zd11MmL4vWoJ8R7FeoTCqSpRca6vQa/I3zHUwlZg2FnGfDQ==",
+        "nextFusionPrice": 4294967298,
+        "nextWorkPrice": 9007199254740994
+      },
+      "computed_hash": "7427c95d83dd7d93c4b9f285dddb5ae7c29ca1ce5f4ee89654b9286a0c846805",
+      "node_static_result": "REJECT",
+      "node_error": "hash_mismatch"
+    },
+    {
+      "name": "v2-nonzero-prices/hash-and-empty",
+      "baseline": "v2-nonzero-prices",
+      "momentum": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7838318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "data": "/wCA",
+        "content": [
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "12d1e2c5663f7b055266fa57453b743e0a1a69a4afaee237c04aa1bff7ac722a",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "df50176b620c3d0e0775a2d1634a56607f6adba09a1665c92d6847f6780a1612",
+            "height": 2
+          },
+          {
+            "address": "z1qp84wszupnp94ewjlmhk5fhyuzhzd4f4t6fkyy",
+            "hash": "0693ac7513155c3f8a579837a75b14e339e2ca73f85d6d7e20bde572c498981f",
+            "height": 256
+          },
+          {
+            "address": "z1qxemdeddedxpyllarxxxxxxxxxxxxxxxsy3fmg",
+            "hash": "decf78afd8f74068fd6f5be9741e487446a1caf24e8c4b787d7ba27db5823d85",
+            "height": 9007199254740993
+          }
+        ],
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "",
+        "signature": "",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "header": {
+        "version": 2,
+        "chainIdentifier": 99,
+        "hash": "7838318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+        "previousHash": "118b19efdc1fcae67e2f83e1ec2473d4418ab3a4606f3867ed3d5a23db269b8f",
+        "height": 1001,
+        "timestamp": 1700000000,
+        "dataHash": "3e1ee671b1b3f647cac6d830c0ed77adbb4f5e6351bff8078bca3cfb148bce9a",
+        "contentHash": "186beacf22386c2bf43a3e7ffea143e3e121c32a196e5f5aadb4143d3ffda2ad",
+        "changesHash": "44d648f4b9e43e2ee36777ff1db0b95681c4e2c51dffe2d3f333ea400ec8521f",
+        "publicKey": "",
+        "signature": "",
+        "nextFusionPrice": 4294967297,
+        "nextWorkPrice": 9007199254740993
+      },
+      "computed_hash": "7938318f0031390eab5bae6bfae5c7078ec63ec5dd53f3e5a7a3a2450abab7e1",
+      "node_static_result": "REJECT",
+      "node_error": "hash_mismatch"
+    }
+  ],
+  "scope": {
+    "actual_node_static_execution": true,
+    "canonicality": false,
+    "consensus_finality": false,
+    "full_node_validation": false,
+    "network_activation": false,
+    "network_transport": false,
+    "new_signatures_generated": false,
+    "producer_authorization": false,
+    "state_value_acceptance": false
+  }
+}

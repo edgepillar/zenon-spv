@@ -57,6 +57,17 @@ Python-recomputed messages in all three native CI jobs, retaining unsigned
 embedded/genesis semantics and intentionally invalid scalar vectors. Go
 verification and network trust inputs remain separate.
 
+The separate [actual node static observations](../tools/gen-node-static-vectors/README.md)
+execute the exported `MomentumStatic` function at a distinct official node pin.
+All 55 selected observations remain in the corpus, including hash/signature
+failures, missing fields, malformed key widths, and unsigned historical genesis.
+An offline Python checker reconstructs 54 complete byte projections and runs 26
+independent OpenSSL checks. Runtime tests preserve the original synthetic trust
+inputs, resource-price rejection, error precedence, and activation/producer
+refusal. Historical corpora and runtime implementation remain unchanged. Native
+CI checks the recorded corpus; it does not execute a new node or authenticate
+network trust inputs.
+
 The [account amount corpus](account-amount-validation.md) adds seven node-derived
 account-block hash vectors, including invalid magnitudes that expose truncation
 and sign aliases. RPC and offline segment tests enforce the scalar bound;
