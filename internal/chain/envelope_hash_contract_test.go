@@ -55,7 +55,12 @@ func referenceAccountEnvelope(b chain.AccountBlock) []byte {
 	binary.BigEndian.PutUint64(raw[96:104], b.MomentumAcknowledged.Height)
 	copy(raw[104:124], b.Address[:])
 	copy(raw[124:144], b.ToAddress[:])
-	amount.FillBytes(raw[144 : 144+width])
+	// Extract low bytes from a private magnitude. Keep this oracle independent
+	// of the production amount encoder's Bytes and FillBytes operations.
+	for offset := 144 + width - 1; amount.Sign() != 0; offset-- {
+		raw[offset] = byte(amount.Uint64())
+		amount.Rsh(amount, 8)
+	}
 	p := 144 + width
 	copy(raw[p:p+10], b.TokenStandard[:])
 	copy(raw[p+10:p+42], b.FromBlockHash[:])
