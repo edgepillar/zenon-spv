@@ -68,6 +68,18 @@ refusal. Historical corpora and runtime implementation remain unchanged. Native
 CI checks the recorded corpus; it does not execute a new node or authenticate
 network trust inputs.
 
+The [actual account transaction observations](../tools/gen-node-account-vectors/README.md)
+call the exported `AccountBlockTransaction` method at the same distinct official
+node pin with opaque recording context stubs. All 58 selections are retained,
+including the historical user-send descendants and two direct programmatic nil
+calls. Twenty method matches, 36 rejections and two nil panics are separate from
+the SPV's eight bounded inclusion acceptances, 35 rejections and 15 refusals.
+Python independently reconstructs 56 preimages and exact context calls before
+16 OpenSSL checks. Existing signatures, anchor, momentums and commitments remain
+fixed. This method experiment does not execute `AccountBlock`, authenticate
+chain context, or prove full-node acceptance; coherent unsigned embedded matches
+cannot supply absent commitments. Runtime validation remains unchanged.
+
 The [account amount corpus](account-amount-validation.md) adds seven node-derived
 account-block hash vectors, including invalid magnitudes that expose truncation
 and sign aliases. RPC and offline segment tests enforce the scalar bound;
