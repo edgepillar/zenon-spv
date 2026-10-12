@@ -74,6 +74,13 @@ and sign aliases. RPC and offline segment tests enforce the scalar bound;
 Python independently reconstructs their complete hash preimages. These vectors
 do not imply complete account-block or state-transition validation.
 
+The [account amount hash allocation follow-up](account-amount-hash-allocations.md)
+checks the same seven node vectors plus the nil form of the recorded zero. Each
+native CI job retains three allocation observations per workload without a
+portable performance threshold. The fixed-offset Go oracle independently
+extracts magnitude bytes by shifting a private integer. Negative and wide
+values remain serialization controls; RPC and segment scalar bounds are unchanged.
+
 The [linked account corpus](../internal/testdata/conformance/README.md#linked-account-segments)
 adds all four post-genesis account types and nine node-derived momentums.
 Local RPC conversion, offline bundle decoding, owned-state verification,

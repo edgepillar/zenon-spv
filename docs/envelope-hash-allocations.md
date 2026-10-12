@@ -1,5 +1,9 @@
 # Signed-envelope hash allocations
 
+This page retains the earlier implementation and sample record. The subsequent
+[account amount follow-up](account-amount-hash-allocations.md) removes the ordinary
+amount allocations and records a separate comparison without replacing these samples.
+
 Momentum and account-block hashes previously grew an initially empty slice
 while appending signed fields, then allocated the digest through `Sum(nil)`.
 The hasher now starts with a private stack buffer sized for the ordinary
