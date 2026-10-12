@@ -248,3 +248,16 @@ canonicality, consensus finality or state proofs. Direct nil calls and forbidden
 user descendants remain recorded method boundaries. This adds no runtime
 validation or accepting network/state profile. Real store execution and full
 account protocol validation remain separate conformance work.
+
+## Actual node missing-account context gate
+
+The [separate context failure corpus](../tools/gen-node-account-context-vectors/README.md)
+extends the opaque-store transaction experiment with 50 actual calls through
+both node entry points. Exact synthetic store plans, complete account preimages,
+lookup arguments and error precedence are independently checked. All 38 returned
+errors and 12 selected nil-store/frontier panics remain; no validator success,
+basic account checks, signature checks, chain startup or new signatures occur.
+This closes a bounded source-pinned missing-state conformance gap. It does not
+establish fault reachability on a real node, authenticate context or expand
+runtime acceptance. Real store/consensus inputs, consumer and trust selection,
+network qualification, independent review and release remain separate gates.
