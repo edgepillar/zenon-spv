@@ -95,15 +95,25 @@ func validContext(c settings) bool {
 
 // Only called for validated hash strings. The order and full-width encoding
 // are intentionally independent of the verifier's private implementation.
+// Stream the encoding and reuse scratch buffers after each synchronous Write.
 func settingsFingerprint(c settings) string {
 	domain := "zenon-spv/verification-context/v1\x00"
 	if c.Version == 2 {
 		domain = "zenon-spv/verification-context/v2\x00"
 	}
-	raw := []byte(domain)
-	u64 := func(v uint64) { raw = binary.BigEndian.AppendUint64(raw, v) }
-	text := func(v string) { u64(uint64(len(v))); raw = append(raw, v...) }
-	hash := func(v string) { b, _ := hex.DecodeString(v); raw = append(raw, b...) }
+	digest := sha3.New256()
+	_, _ = digest.Write([]byte(domain))
+	var integer [8]byte
+	u64 := func(v uint64) {
+		binary.BigEndian.PutUint64(integer[:], v)
+		_, _ = digest.Write(integer[:])
+	}
+	text := func(v string) { u64(uint64(len(v))); _, _ = digest.Write([]byte(v)) }
+	var hashBytes [32]byte
+	hash := func(v string) {
+		n, _ := hex.Decode(hashBytes[:], []byte(v))
+		_, _ = digest.Write(hashBytes[:n])
+	}
 	u64(uint64(c.Version))
 	u64(c.Anchor.ChainID)
 	u64(c.Anchor.Height)
@@ -137,6 +147,6 @@ func settingsFingerprint(c settings) string {
 		u64(cp.Height)
 		hash(cp.Hash)
 	}
-	digest := sha3.Sum256(raw)
-	return hex.EncodeToString(digest[:])
+	var result [32]byte
+	return hex.EncodeToString(digest.Sum(result[:0]))
 }

@@ -172,6 +172,12 @@ compiled-process elapsed time and native peak memory for 1, 16 and 256 matched
 targets. It excludes preparation and verifier execution, uses recently written
 files, and makes no latency, concurrency or maximum-RSS guarantee.
 
+The [context hash observations](consumer-context-hash-allocations.md) record
+bounded digest-function allocations for both context schemas and 0/16/256
+checkpoints. Streaming preserves the independently selected complete encoding
+and fingerprints. These function observations exclude parsing, file reads,
+validation and process memory.
+
 Unit tests cover full-width integers, ambiguous JSON, published context
 fingerprints and fixed private output. A compiled node-corpus workflow covers
 commitments and flattened segments, explicit retention, reordered rows,
