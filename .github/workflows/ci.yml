@@ -232,12 +232,22 @@ jobs:
         id: signatures
         shell: bash
         run: python -B tools/gen-node-momentum-vectors/check-signatures.py --openssl openssl --source-revision "${{ github.sha }}" > "${{ runner.temp }}/node-signatures.json"
+      - name: Node static corpus controls
+        run: python -I -B tools/gen-node-static-vectors/check_test.py -v
+      - name: Independent node static checks
+        id: node_static
+        shell: bash
+        run: python -I -B tools/gen-node-static-vectors/check.py --openssl openssl --source-revision "${{ github.sha }}" > "${{ runner.temp }}/node-static-signatures.json"
+      - name: Node static runtime boundaries
+        run: go test -v -count=1 -run '^TestNodeStatic' ./internal/conformance
       - name: Upload independent signature report
         if: ${{ !cancelled() && steps.signatures.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: independent-signatures-linux
-          path: ${{ runner.temp }}/node-signatures.json
+          path: |
+            ${{ runner.temp }}/node-signatures.json
+            ${{ runner.temp }}/node-static-signatures.json
           if-no-files-found: error
           retention-days: 14
       - name: Build
@@ -602,12 +612,27 @@ jobs:
             signature_backend="$(brew --prefix openssl@3)/bin/openssl"
           fi
           python -B tools/gen-node-momentum-vectors/check-signatures.py --openssl "$signature_backend" --source-revision "${{ github.sha }}" > "${{ runner.temp }}/node-signatures.json"
+      - name: Node static corpus controls
+        run: python -I -B tools/gen-node-static-vectors/check_test.py -v
+      - name: Independent node static checks
+        id: node_static
+        shell: bash
+        run: |
+          signature_backend=openssl
+          if [ "$RUNNER_OS" = macOS ]; then
+            signature_backend="$(brew --prefix openssl@3)/bin/openssl"
+          fi
+          python -I -B tools/gen-node-static-vectors/check.py --openssl "$signature_backend" --source-revision "${{ github.sha }}" > "${{ runner.temp }}/node-static-signatures.json"
+      - name: Node static runtime boundaries
+        run: go test -v -count=1 -run '^TestNodeStatic' ./internal/conformance
       - name: Upload independent signature report
         if: ${{ !cancelled() && steps.signatures.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: independent-signatures-${{ matrix.os }}
-          path: ${{ runner.temp }}/node-signatures.json
+          path: |
+            ${{ runner.temp }}/node-signatures.json
+            ${{ runner.temp }}/node-static-signatures.json
           if-no-files-found: error
           retention-days: 14
       - name: Build
