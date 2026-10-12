@@ -132,7 +132,18 @@ func (b *AccountBlock) ComputeHash() Hash {
 	buf = append(buf, b.MomentumAcknowledged.Bytes()...)
 	buf = append(buf, b.Address[:]...)
 	buf = append(buf, b.ToAddress[:]...)
-	buf = append(buf, accountAmountBytes(b.Amount)...)
+	// Fixed-width magnitudes use scratch space owned by this call. FillBytes
+	// preserves the absolute-value encoding without mutating Amount. Wider
+	// low-level inputs keep the node's non-truncating serialization path.
+	var amount [32]byte
+	if b.Amount == nil || b.Amount.BitLen() <= len(amount)*8 {
+		if b.Amount != nil {
+			b.Amount.FillBytes(amount[:])
+		}
+		buf = append(buf, amount[:]...)
+	} else {
+		buf = append(buf, accountAmountBytes(b.Amount)...)
+	}
 	buf = append(buf, b.TokenStandard[:]...)
 	buf = append(buf, b.FromBlockHash[:]...)
 	buf = append(buf, b.DescendantBlocksHash[:]...)
