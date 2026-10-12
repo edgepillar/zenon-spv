@@ -2076,6 +2076,19 @@ refused before timing or reconstruction. Its actual failure and source bytes
 were retained; this recording uses a distinct corrected source selection with
 24 completed workers and no within-batch retry or filtering.
 
+### Temporary input and database observations
+
+The [separate workspace wrapper](../../docs/temporary-workspace-observations.md)
+observes one owned child `TMPDIR` at a time while delegating the unchanged
+literal import, map-delta and retained NodeTree workloads. It preserves complete
+root/proof/DAG/refcount byte checks and records input files separately from
+database files. Non-atomic directory/stat rows, races and failures are retained;
+observed maxima are not true peak disk or instantaneous footprints. Sampling
+I/O changes the new child wall observation scope. Compiler caches, copied
+sources and evidence storage remain separate. Production consumers remain
+`REFUSED`; real archive, target-budget, header/profile/activation and release
+gates remain open.
+
 ### Complete driver oracle projection
 
 `project_driver_oracles.py` extends selected sibling retention to the three
