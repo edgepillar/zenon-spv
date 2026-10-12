@@ -84,6 +84,12 @@ jobs:
         run: python -I -B tools/check-node-query-consumer_test.py
       - name: Signature checker controls
         run: python -B tools/gen-node-momentum-vectors/check-signatures_test.py
+      - name: Owned workspace stat controls
+        run: python -I -B tools/gen-state-root-vectors/observe_temp_workspace_test.py -v
+      - name: Workspace observation envelope controls
+        run: python -I -B tools/gen-state-root-vectors/check_temp_workspace_test.py -v
+      - name: Independent temporary input and database observations
+        run: python -I -B tools/gen-state-root-vectors/check_temp_workspace.py
       - name: Candidate state-root byte controls
         run: python -I -B tools/gen-state-root-vectors/check_test.py
       - name: Independent candidate state-root bytes
@@ -435,6 +441,12 @@ jobs:
         run: python -I -B tools/check-node-query-consumer_test.py
       - name: Signature checker controls
         run: python -B tools/gen-node-momentum-vectors/check-signatures_test.py
+      - name: Owned workspace stat controls
+        run: python -I -B tools/gen-state-root-vectors/observe_temp_workspace_test.py -v
+      - name: Workspace observation envelope controls
+        run: python -I -B tools/gen-state-root-vectors/check_temp_workspace_test.py -v
+      - name: Independent temporary input and database observations
+        run: python -I -B tools/gen-state-root-vectors/check_temp_workspace.py
       - name: Candidate state-root byte controls
         run: python -I -B tools/gen-state-root-vectors/check_test.py
       - name: Independent candidate state-root bytes
