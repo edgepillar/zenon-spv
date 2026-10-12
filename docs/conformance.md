@@ -350,6 +350,15 @@ State-value layer:
       `ReasonCode` is in place; the histogram is later).
 - [ ] Conformance report publication — deferred.
 
+The [separate missing-account context experiment](../tools/gen-node-account-context-vectors/README.md)
+records 50 actual calls across the node's `AccountBlock` and
+`AccountBlockTransaction` entry points. Its 38 errors and 12 programmatic
+nil-store/frontier panics occur in the shared context gate before basic account
+or hash/signature checks. Independent complete preimages, exact lookup traces
+and corruption controls bind the preserved source/input bytes. Synthetic store
+faults establish neither remotely reachable errors nor authenticated context;
+full node validation and runtime acceptance remain separate.
+
 ## Known gaps
 
 These are *known* and *documented*, not bugs.
