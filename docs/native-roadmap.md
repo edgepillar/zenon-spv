@@ -261,3 +261,31 @@ This closes a bounded source-pinned missing-state conformance gap. It does not
 establish fault reachability on a real node, authenticate context or expand
 runtime acceptance. Real store/consensus inputs, consumer and trust selection,
 network qualification, independent review and release remain separate gates.
+
+# Recorded account basic checks with memory stores
+
+The [basic account store observations](../tools/gen-node-account-basic-vectors/README.md)
+close a finite gap left by the transaction/context experiments. Fifty actual
+method calls use actual in-memory account and momentum stores. The independent
+oracle checks complete hash preimages, complete protobuf seed records and all
+selected database reads. Basic checks reject negative amounts or absent/corrupt
+acknowledgements even where the selected transaction method succeeds; the basic
+method does not substitute for hash/signature validation.
+
+Caller-selected handles and unsigned momentum metadata remain synthetic trust
+inputs. The experiment does not qualify account execution, full node validation,
+real-chain histories, nonzero PoW, receive/mailbox/contract paths, consensus,
+production resources, canonicality, finality, network activation or state-value
+acceptance. Those remain separate roadmap gates, as do independent review and
+authenticated release distribution.
+
+The follow-up native runtime regression consumes all 50 immutable observations
+against the original fixture's independently selected trust/commitment inputs.
+It distinguishes ten accepted inclusion/signature observations, thirty rejected
+inputs and ten unsupported-version/type refusals. Basic-method matches cannot
+bypass hashes/signatures, transaction-method matches cannot bypass scalar checks,
+and the selected memory stores cannot supply a missing retained committing header
+or a missing account commitment proof.
+This adds runtime boundary coverage without changing acceptance or authenticating
+the synthetic store history. Hosted CI for this follow-up must be qualified
+against its eventual exact published source.
