@@ -278,3 +278,14 @@ real-chain histories, nonzero PoW, receive/mailbox/contract paths, consensus,
 production resources, canonicality, finality, network activation or state-value
 acceptance. Those remain separate roadmap gates, as do independent review and
 authenticated release distribution.
+
+The follow-up native runtime regression consumes all 50 immutable observations
+against the original fixture's independently selected trust/commitment inputs.
+It distinguishes ten accepted inclusion/signature observations, thirty rejected
+inputs and ten unsupported-version/type refusals. Basic-method matches cannot
+bypass hashes/signatures, transaction-method matches cannot bypass scalar checks,
+and the selected memory stores cannot supply a missing retained committing header
+or a missing account commitment proof.
+This adds runtime boundary coverage without changing acceptance or authenticating
+the synthetic store history. Hosted CI for this follow-up must be qualified
+against its eventual exact published source.
