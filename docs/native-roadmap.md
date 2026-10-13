@@ -302,3 +302,16 @@ conversion gap, without executing a new node or enabling an acceptance profile.
 Native CI must qualify the sixty RPC controls against their exact published source.
 Real histories, nonzero PoW, receive/mailbox/contract execution, independent
 consumer/network inputs and reviewed release remain separate roadmap gates.
+
+The [compiled observer follow-up](../internal/conformance/cli_node_account_basic_test.go)
+adds the same fifty recorded inputs to actual proof-only collection, retained-only
+verification and independently selected query consumption. Thirty-eight collection
+failures emit no partial bundle; both empty signatures stop at the verifier;
+ten observations match the original target with inclusion/signature guarantees.
+Eight additional controls keep missing retained headers or omitted confirmations
+from reaching consumption and make different consumer targets/tips fail there.
+Every run checks actual completion, exact read-only requests, input preservation,
+summary privacy and removal of raw private files. The fifty-eight native controls
+require exact source/artifact qualification. All trust attestations are synthetic;
+full protocol execution, real histories, independent consumer/network selection,
+human review and authenticated release remain separate gates.

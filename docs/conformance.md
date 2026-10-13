@@ -412,6 +412,25 @@ Actual fetch conversion in this finite offline fixture does not establish live
 RPC compatibility, full node validation, authenticated context or production
 qualification. No reference-node execution or signature generation is added.
 
+The [compiled observer controls](../internal/conformance/cli_node_account_basic_test.go)
+extend that corpus to the ordinary collector, verifier, query consumer and
+observer binaries. All fifty immutable account observations pass through actual
+proof-only collection against the original signed momentum bytes. Thirty-eight
+stop at collection without publishing a partial bundle; both missing signatures
+stop at verification. Ten observations match the independently selected original
+target with inclusion and signature guarantees. Synthetic anchor, profile,
+schedule, retained state, context and consumer expectations are selected before
+the application collects any candidate; node `MATCH` supplies none of them.
+
+Eight controls use both positive node entry points: an absent retained committing
+header and explicitly omitted confirming heights stop before consumption; a
+different original target or expected tip reaches the consumer and fails its
+independent selection checks. Actual child exits, request counts, privacy-safe
+summaries, unchanged input bytes/identities/modes and private workspace removal
+are checked for every run. Native CI must qualify all fifty-eight leaf controls
+against the exact published source. This finite loopback workflow adds no new
+node execution, signature, authenticated context, live pilot or production claim.
+
 ## Known gaps
 
 These are *known* and *documented*, not bugs.
