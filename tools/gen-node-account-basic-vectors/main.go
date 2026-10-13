@@ -49,6 +49,7 @@ type call struct {
 	Address    string            `json:"address,omitempty"`
 	Identifier *types.HashHeight `json:"identifier,omitempty"`
 	Height     uint64            `json:"height,omitempty"`
+	Hash       *types.Hash       `json:"hash,omitempty"`
 }
 type entry struct {
 	Key   string `json:"key"`
@@ -351,6 +352,9 @@ func record(raw json.RawMessage, profile, method string) (observation, error) {
 	return r, nil
 }
 func run() error {
+	if len(os.Args) == 3 && os.Args[1] == "--receive" {
+		return runReceive(os.Args[2])
+	}
 	if len(os.Args) != 2 {
 		return fmt.Errorf("usage: gen-node-account-basic-vectors SEGMENTS_FIXTURE")
 	}

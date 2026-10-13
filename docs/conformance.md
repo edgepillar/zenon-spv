@@ -359,6 +359,29 @@ and corruption controls bind the preserved source/input bytes. Synthetic store
 faults establish neither remotely reachable errors nor authenticated context;
 full node validation and runtime acceptance remain separate.
 
+## Recorded receive protocol-store boundaries
+
+The [separate receive memory-store mode](../tools/gen-node-account-basic-vectors/README.md#separate-user-receive-memory-store-mode)
+records 44 actual calls through both node entry points with the original signed
+user receive. An independent byte oracle reconstructs all complete preimages,
+88 logical store maps with iterator/Get status and 120 ordered validation reads.
+It distinguishes absent or corrupt source indexes/bodies, confirmation heights,
+received markers and receiver mismatch before/at/after the ledger frontier gate.
+Deleted memory-store tombstones and present empty markers have different `Get`
+statuses. Synthetic absent-confirmation and incoherent-index matches remain
+recorded; they do not authenticate history or establish real-node reachability.
+
+The [native runtime controls](../internal/conformance/node_account_receive_test.go)
+keep the original signed headers, anchor and commitments fixed. Thirty-six
+unchanged receive projections prove only bounded inclusion/signatures; eight
+changed signed inputs reject. The four missing retained-header/proof controls
+refuse even for exact positive node methods. `STATE_TRANSITION` stays unproven:
+inclusion does not prove source availability, successful receive execution or
+eligibility under a supplied ledger's received/confirmation records. No runtime
+acceptance or trust input changes. New actual node execution is local macOS ARM64;
+native CI checks the recorded corpus, not a new node. Full protocol, real histories,
+mailbox/contract/nonzero-PoW paths and network/release acceptance remain separate.
+
 ## Recorded account basic checks and store reads
 
 The [basic account memory-store experiment](../tools/gen-node-account-basic-vectors/README.md)
