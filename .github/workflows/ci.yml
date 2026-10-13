@@ -249,6 +249,8 @@ jobs:
         run: go test -v -count=1 -run '^TestNodeAccountBasic(Runtime|Match)' ./internal/conformance
       - name: Node account basic RPC boundaries
         run: go test -v -count=1 -run '^TestNodeAccountBasicRPC' ./internal/conformance
+      - name: Recorded account basic observer boundaries
+        run: go test -v -count=1 -run '^TestCompiledNodeAccountBasicObserver$' ./internal/conformance
       - name: Node account context corpus controls
         run: python -I -B tools/gen-node-account-context-vectors/check_test.py -v
       - name: Independent node account context checks
@@ -663,6 +665,8 @@ jobs:
         run: go test -v -count=1 -run '^TestNodeAccountBasic(Runtime|Match)' ./internal/conformance
       - name: Node account basic RPC boundaries
         run: go test -v -count=1 -run '^TestNodeAccountBasicRPC' ./internal/conformance
+      - name: Recorded account basic observer boundaries
+        run: go test -v -count=1 -run '^TestCompiledNodeAccountBasicObserver$' ./internal/conformance
       - name: Node account context corpus controls
         run: python -I -B tools/gen-node-account-context-vectors/check_test.py -v
       - name: Independent node account context checks

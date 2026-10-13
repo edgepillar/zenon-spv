@@ -74,6 +74,24 @@ The fifty-four lower-level controls and sixty RPC controls run in separate
 native CI steps; actual RPC conversion of these fixed inputs is a finite
 integration result, not production or full protocol qualification.
 
+The [compiled observer regressions](../../internal/conformance/cli_node_account_basic_test.go)
+exercise all fifty unchanged observations through the ordinary proof-only
+collector, retained-only verifier, query consumer and observer. Original signed
+momentum bytes and locally selected trust/context inputs are fixed before any
+collection. Thirty-eight conversion failures publish no partial bundle; both
+empty signatures stop at the verifier; ten observations match the independently
+selected original target with inclusion and signature guarantees. Node `MATCH`
+is not a consumer expectation or an authentication source.
+
+Both positive node entry points also exercise four independent selection gates:
+missing retained committing headers, deliberately omitted confirming heights,
+another original consumer target and an earlier expected tip. All fifty-eight
+runs check actual child exits, exact request counts, summary privacy, unchanged
+input bytes/identities/modes, absent state writer locks and private file cleanup.
+No corpus regeneration, new node call, key/signature, protocol activation or live
+network execution is added. Exact native CI/artifact qualification is required
+before treating this local compiled workflow as delivered.
+
 From this directory, regeneration with a Go 1.25 toolchain is:
 
 ```sh
@@ -87,6 +105,7 @@ The independent checks, run from the repository root, are:
 python3 -I -B tools/gen-node-account-basic-vectors/check.py
 python3 -I -B tools/gen-node-account-basic-vectors/check_test.py -v
 go test -count=1 -run '^TestNodeAccountBasic' ./internal/conformance
+go test -count=1 -run '^TestCompiledNodeAccountBasicObserver$' ./internal/conformance
 ```
 
 `MATCH` means one method returned no error in this finite synthetic context.
