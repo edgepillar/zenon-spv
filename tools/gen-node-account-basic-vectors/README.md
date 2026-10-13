@@ -55,6 +55,25 @@ header. Queries preserve the selected state. The
 projection is a fixed-corpus test adapter, not a production RPC decoder or an
 authenticated node context.
 
+The separate [RPC regressions](../../internal/conformance/node_account_basic_rpc_test.go)
+send the same fifty recorded account blocks through the actual fetch client and
+a loopback HTTP/JSON-RPC peer. The requested account and ranges are selected from
+the original fixture, independently of the response. Expected conversion errors
+are selected by fixed input profiles, never by node `MATCH`: thirty-eight fail
+without partial results. Twelve blocks reach `VerifySegment` under the original
+trust/commitment inputs; ten accept inclusion/signatures and both empty-signature
+cases reject. Every query preserves the selected state. Four controls keep
+missing retained headers/proofs refused even after successful RPC conversion.
+
+Six additional controls use the original signed two-block user segment. A
+valid first row is discarded when the later row has a wrong hash, invalid amount,
+unsupported version, wrong height or different account. The different-account
+control is an original hash-consistent embedded block. No new node observation,
+signature, corpus regeneration, real RPC service or network pilot occurs.
+The fifty-four lower-level controls and sixty RPC controls run in separate
+native CI steps; actual RPC conversion of these fixed inputs is a finite
+integration result, not production or full protocol qualification.
+
 From this directory, regeneration with a Go 1.25 toolchain is:
 
 ```sh

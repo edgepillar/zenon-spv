@@ -287,5 +287,18 @@ bypass hashes/signatures, transaction-method matches cannot bypass scalar checks
 and the selected memory stores cannot supply a missing retained committing header
 or a missing account commitment proof.
 This adds runtime boundary coverage without changing acceptance or authenticating
-the synthetic store history. Hosted CI for this follow-up must be qualified
-against its eventual exact published source.
+the synthetic store history. Its merged source has exact native-platform CI
+and artifact qualification; that evidence remains bounded to its recorded scope.
+
+The next [RPC integration controls](../internal/conformance/node_account_basic_rpc_test.go)
+use the actual fetch client with loopback HTTP/JSON-RPC envelopes and the same
+fifty immutable node observations. Thirty-eight fail conversion with no returned
+blocks; twelve reach the unchanged segment verifier, where ten accept inclusion
+and signatures and two reject missing signatures. Independently selected original
+accounts, ranges, trust inputs and commitments remain separate from provider
+payloads and node method results. Four missing commitment-input controls and six
+complete-range controls preserve those boundaries. This closes a finite RPC
+conversion gap, without executing a new node or enabling an acceptance profile.
+Native CI must qualify the sixty RPC controls against their exact published source.
+Real histories, nonzero PoW, receive/mailbox/contract execution, independent
+consumer/network inputs and reviewed release remain separate roadmap gates.
