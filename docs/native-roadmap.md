@@ -315,3 +315,25 @@ summary privacy and removal of raw private files. The fifty-eight native control
 require exact source/artifact qualification. All trust attestations are synthetic;
 full protocol execution, real histories, independent consumer/network selection,
 human review and authenticated release remain separate gates.
+
+## Recorded receive protocol-store boundaries
+
+The [separate receive mode](../tools/gen-node-account-basic-vectors/README.md#separate-user-receive-memory-store-mode)
+adds 44 actual node method calls with memory account/ledger stores and the
+original signed user receive. The independent oracle checks all preimages,
+88 complete store maps and 120 raw reads, including actual prefixed snapshot
+reads. Source/confirmation/received and receiver-frontier checks belong to the
+basic method; a transaction-method match does not establish those checks.
+Absent confirmations, an incoherent index, an empty received marker and the
+exact receiver enforcement boundary are retained as scoped method observations.
+
+The native runtime controls preserve 36 inclusion/signature acceptances of the
+unchanged original receive, reject eight changed signed inputs and refuse four
+missing retained-header/proof selections. Inclusion never claims receive execution
+eligibility or state transition. The original first-send corpus/locks, signed
+history and runtime acceptance remain unchanged. Reference execution is local
+macOS ARM64; CI consumes recorded bytes on the three native platforms. Full
+execution, real authenticated histories, mailbox/contract/nonzero-PoW paths,
+independent consumer/network inputs, reviewed release and authenticated
+distribution remain separate gates. Exact published source/artifact qualification
+is required before treating this local step as delivered.

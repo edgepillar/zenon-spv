@@ -114,3 +114,73 @@ history, authenticated context, production resource limits, canonicality,
 consensus finality, network activation or state-value acceptance. Difficulty is
 zero and receive/mailbox/contract/sequencer paths are outside this selection.
 All earlier corpora and runtime trust inputs remain unchanged.
+
+## Separate user receive memory-store mode
+
+The `--receive` mode records 44 additional calls at the same pinned node commit,
+using the original signed `user-type-3` receive. Twenty-two explicitly selected
+profiles run through both exported methods. Actual memory account and ledger
+stores contain synthetic previous/source account records, hash indexes,
+confirmation heights, acknowledgement/frontier identifiers and received markers.
+The adapters preserve raw read interception through the ledger's actual
+`Subset`/`Snapshot` implementation. The complete 88 store maps and 120 database
+reads are retained. Every input block and map is checked unchanged after each call.
+Each iterator entry also pins its actual `Get` status: the memory database's
+empty deletion tombstone is absent to `Get`, while a present empty marker is not.
+These seed-status reads occur outside the 120 recorded validator reads.
+
+The [separate corpus](../../internal/testdata/conformance/node-account-receive.json)
+has SHA-256 `153c7563d863ccfb1563a1bdaca310215a415236ef0bf9e85c2e44228a1fe21c`.
+It records 23 `MATCH`, 21 `REJECT` and no panic. The transaction method performs
+no protocol-store reads for these selections. The basic method distinguishes
+missing/corrupt source indexes and bodies, confirmation later than the selected
+acknowledgement, previous acknowledgement ordering and already received sources.
+Four changed receive fields fail basic constraints and original hash binding in
+the transaction method. No signature or claimed receive hash is regenerated.
+
+At this source, an absent confirmation record returns zero. It does not become
+an authenticated historical confirmation. Receiver mismatch is enforced using
+the ledger frontier at `10109240`, including at/after the boundary even when the
+receive acknowledges `3000`; the before-boundary method selection matches.
+A present empty received-marker value is still treated as received. One explicitly
+incoherent hash-index selection resolves another original send and matches below
+that receiver boundary. Such synthetic store selections qualify neither reachable
+live-node states nor validation of an authenticated ledger's indexes or history.
+All observations, including these matches, remain in the corpus.
+
+The [independent checker](check_receive.py) reconstructs complete preimages,
+protobuf source/index/frontier records, big-endian heights, ordered method calls
+and every raw read, including prefixed snapshot reads and missing-key errors.
+It imports no node/database/protobuf implementation and starts no signature process.
+Its [corruption controls](check_receive_test.py) bind inventory, byte/lookup/error
+precedence, the frontier boundary and explicit scope limits.
+
+The [runtime boundaries](../../internal/conformance/node_account_receive_test.go)
+keep the original signed momentums, trust inputs and commitments separate from
+the supplied stores. Thirty-six unchanged receive observations prove only bounded
+inclusion/signatures; eight changed signed inputs reject. `STATE_TRANSITION`
+remains unproven, including where the basic method rejects a supplied context.
+Both exact positive entry points also refuse a missing retained committing header
+or missing supplied commitment. Method matches cannot furnish either input.
+
+Regenerate this separate corpus from the module directory:
+
+```sh
+CGO_ENABLED=0 GOWORK=off GOTOOLCHAIN=local go run -mod=readonly . --receive ../../internal/testdata/conformance/account-segments.json > node-account-receive.json
+```
+
+Run the offline checks from the repository root:
+
+```sh
+python3 -I -B tools/gen-node-account-basic-vectors/check_receive.py
+python3 -I -B tools/gen-node-account-basic-vectors/check_receive_test.py -v
+go test -v -count=1 -run '^TestNodeAccountReceive' ./internal/conformance
+```
+
+The original no-flag generator output and all earlier fixtures/locks remain
+byte-for-byte unchanged. Actual new reference method execution is local macOS
+ARM64 with CGO disabled. Linux/macOS Intel/Windows CI consumes the recorded
+corpus; it does not execute that node. Full account execution, contract/mailbox
+paths, nonzero PoW, authenticated histories/activation, independent network and
+consumer inputs, production budgets, review and distribution remain separate
+gates. The MIT runtime and its state-value refusal are unchanged.
