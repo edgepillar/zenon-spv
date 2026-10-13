@@ -390,6 +390,28 @@ the selected verified state unchanged. With a retained header but no supplied
 proof, both methods' positive observations also refuse. This lower-level projection
 is separate from production RPC decoding and from full node validation.
 
+The [RPC integration regressions](../internal/conformance/node_account_basic_rpc_test.go)
+now pass all 50 unchanged observations through the actual read-only fetch client
+against a loopback HTTP/JSON-RPC peer. The account/range selections and the
+verified state/commitments come from the original signed fixture. Thirty-eight
+observations fail conversion with no partial result: unsupported layouts/types,
+invalid envelopes/amounts or locally recomputed hash mismatches. Of the twelve
+returned blocks, ten pass the original inclusion/signature checks and both
+missing-signature observations are rejected by `VerifySegment`. Node `MATCH`
+does not select either expectation or trust inputs. All queries preserve the
+selected state, and both positive method observations still refuse each of
+missing retained headers and missing supplied proofs.
+
+Six further transport controls preserve the original signed two-block range
+and discard its valid first row when the second has a bad hash, amount, version,
+height or account. The other-account response uses an original hash-consistent
+embedded vector rather than a fabricated hash. These are extra local transport
+controls, not additional reference-node observations. Both CI jobs run the
+sixty RPC leaf controls separately from the fifty-four lower-level controls.
+Actual fetch conversion in this finite offline fixture does not establish live
+RPC compatibility, full node validation, authenticated context or production
+qualification. No reference-node execution or signature generation is added.
+
 ## Known gaps
 
 These are *known* and *documented*, not bugs.
