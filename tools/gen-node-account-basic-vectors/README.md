@@ -44,6 +44,17 @@ reordered calls/records, seed/read corruption, type aliases and scope claims.
 Native CI runs these checks on the recorded corpus; it does not execute a new
 reference node on the three hosts.
 
+The [SPV runtime regressions](../../internal/conformance/node_account_basic_test.go)
+project these 50 observations into the lower-level segment verifier. Trust inputs
+and commitments come from the original signed fixture rather than from selected
+store handles or a node method result. Expected SPV outcomes are 10 `ACCEPT`,
+30 `REJECT` and 10 `REFUSED`; the accepted scope is inclusion and user signature
+verification. The two positive method observations also refuse when the committing
+header is outside the retained state or when no proof is supplied with a retained
+header. Queries preserve the selected state. The
+projection is a fixed-corpus test adapter, not a production RPC decoder or an
+authenticated node context.
+
 From this directory, regeneration with a Go 1.25 toolchain is:
 
 ```sh
@@ -56,6 +67,7 @@ The independent checks, run from the repository root, are:
 ```sh
 python3 -I -B tools/gen-node-account-basic-vectors/check.py
 python3 -I -B tools/gen-node-account-basic-vectors/check_test.py -v
+go test -count=1 -run '^TestNodeAccountBasic' ./internal/conformance
 ```
 
 `MATCH` means one method returned no error in this finite synthetic context.
