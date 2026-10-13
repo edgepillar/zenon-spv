@@ -382,6 +382,20 @@ acceptance or trust input changes. New actual node execution is local macOS ARM6
 native CI checks the recorded corpus, not a new node. Full protocol, real histories,
 mailbox/contract/nonzero-PoW paths and network/release acceptance remain separate.
 
+The [receive RPC controls](../internal/conformance/node_account_receive_rpc_test.go)
+bridge these 44 immutable observations through the production fetch client and
+loopback HTTP/JSON-RPC. Expected account/range selections and commitment inputs
+come from the original signed fixture. Thirty-six unchanged receives prove only
+inclusion/signatures; eight changed signed fields fail hash conversion without
+any returned block. Every observation also exercises the complete original
+send/receive range, where a failed later receive discards the valid first row.
+Four additional positive-method controls refuse absent retained committing
+headers and supplied account proofs. All 92 controls preserve verified state
+and require the exact single read-only request. Store-only protocol failures
+do not change these inclusion outcomes or prove `STATE_TRANSITION`.
+No new node method call, corpus regeneration, signature or live RPC occurs;
+native source/artifact qualification is a separate delivery condition.
+
 ## Recorded account basic checks and store reads
 
 The [basic account memory-store experiment](../tools/gen-node-account-basic-vectors/README.md)
