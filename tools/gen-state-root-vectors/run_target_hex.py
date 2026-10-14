@@ -45,7 +45,7 @@ def main(argv=None):
                         and tests_run == len(control_names) > 0)
         else:
             revision_programs = ('check_patch_file_resources.py', 'check_tree_import_scale.py',
-                                 'check_tree_import_lifecycle.py')
+                                 'check_tree_import_lifecycle.py', 'check_tree_driver_resources.py')
             arguments = ['--source-revision', args.source_revision] if args.program in revision_programs else []
             program.main(arguments)
     HEX.require(hashlib.sha256(Path(__file__).read_bytes()).hexdigest() == runner_pin)
