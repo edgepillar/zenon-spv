@@ -37,6 +37,10 @@ SEAMS = {
     'check_tree_import_lifecycle.py': ('program.SCALE.FILE.TARGET', 'program.SCALE.TAIL.RESOURCE.TARGET'),
     'check_tree_import_lifecycle_test.py': (
         'program.CHECK.SCALE.FILE.TARGET', 'program.CHECK.SCALE.TAIL.RESOURCE.TARGET'),
+    'check_tree_driver_resources.py': (
+        'program.LIFE.SCALE.FILE.TARGET', 'program.LIFE.SCALE.TAIL.RESOURCE.TARGET'),
+    'check_tree_driver_resources_test.py': (
+        'program.CHECK.LIFE.SCALE.FILE.TARGET', 'program.CHECK.LIFE.SCALE.TAIL.RESOURCE.TARGET'),
 }
 
 

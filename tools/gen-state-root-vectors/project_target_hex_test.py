@@ -92,8 +92,8 @@ class HexSeamControls(unittest.TestCase):
     def intact(self):
         self.assertTrue(all(module.target_refusal is original for _, module, original in self.seams))
 
-    def test_all_eight_programs_have_exact_distinct_selected_seams(self):
-        self.assertEqual(len(HEX.SEAMS), 8)
+    def test_all_ten_programs_have_exact_distinct_selected_seams(self):
+        self.assertEqual(len(HEX.SEAMS), 10)
         for selected in HEX.SEAMS:
             program = HEX.load('hex_all_seams', selected)
             seams, inputs = HEX.selected_seams(program, selected)
@@ -131,6 +131,30 @@ class HexSeamControls(unittest.TestCase):
             self.intact()
             self.assertFalse(bindings['builtin_str_translate_only'])
         self.intact()
+
+    def test_driver_exception_restoration_and_missing_seam_refusal(self):
+        for selected in ('check_tree_driver_resources.py', 'check_tree_driver_resources_test.py'):
+            with self.subTest(program=selected):
+                program = HEX.load('hex_driver_fixture', selected)
+                seams, _ = HEX.selected_seams(program, selected)
+                for mode in HEX.MODES:
+                    with self.assertRaisesRegex(RuntimeError, 'injected driver failure'):
+                        with HEX.selected_oracles(program, selected, mode):
+                            raise RuntimeError('injected driver failure')
+                    self.assertTrue(all(module.target_refusal is original for _, module, original in seams))
+                owner_path, _, _ = seams[-1]
+                parent_path, name = owner_path.rsplit('.', 1)
+                parent = program
+                for part in parent_path.split('.')[1:]:
+                    parent = getattr(parent, part)
+                owner = getattr(parent, name)
+                delattr(parent, name)
+                try:
+                    with self.assertRaises(ValueError):
+                        HEX.selected_seams(program, selected)
+                    self.assertTrue(all(module.target_refusal is original for _, module, original in seams))
+                finally:
+                    setattr(parent, name, owner)
 
     def test_translated_mode_restores_all_identities_and_separates_source_pins(self):
         with HEX.selected_oracles(self.program, 'check_patch_file_resources.py', 'translated') as bindings:
@@ -258,7 +282,7 @@ class HexCLIControls(unittest.TestCase):
 
     def test_import_lifecycle_and_workspace_forward_only_original_CLI_arguments(self):
         for selected in ('check_tree_import_scale.py', 'check_tree_import_lifecycle.py',
-                         'check_temp_workspace.py'):
+                         'check_tree_driver_resources.py', 'check_temp_workspace.py'):
             with self.subTest(program=selected):
                 program = RUN.HEX.load('hex_revision_forwarding_fixture', selected)
                 seams, _ = RUN.HEX.selected_seams(program, selected)
@@ -296,6 +320,21 @@ class HexCLIControls(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     RUN.main(['--program', 'check_patch_file_resources_test.py', '--mode', 'translated',
                               '--source-revision', 'ab' * 20])
+            self.assertEqual(output.getvalue(), '')
+            self.assertTrue(all(module.target_refusal is original for _, module, original in seams))
+
+    def test_driver_failed_skipped_filtered_and_untyped_suites_emit_no_success_recipe(self):
+        selected = 'check_tree_driver_resources_test.py'
+        program = RUN.HEX.load('hex_failed_driver_suite_fixture', selected)
+        seams, _ = RUN.HEX.selected_seams(program, selected)
+        for success, skipped, count in ((False, [], 21), (True, ['injected'], 21),
+                                        (True, [], 20), (True, [], 0), (True, [], True), (True, [], 21.0)):
+            result = SimpleNamespace(wasSuccessful=lambda: success, skipped=skipped, testsRun=count)
+            output = io.StringIO()
+            with mock.patch.object(RUN.HEX, 'load', return_value=program), \
+                    mock.patch.object(RUN.unittest.TextTestRunner, 'run', return_value=result), redirect_stdout(output):
+                with self.assertRaises(ValueError):
+                    RUN.main(['--program', selected, '--mode', 'translated', '--source-revision', 'ab' * 20])
             self.assertEqual(output.getvalue(), '')
             self.assertTrue(all(module.target_refusal is original for _, module, original in seams))
 
