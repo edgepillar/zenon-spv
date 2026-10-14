@@ -2167,10 +2167,11 @@ acceptance. Earlier driver and case-only measurements keep their own scopes.
 
 ### Selected target hex validation
 
-`run_target_hex.py` provides an explicit, serial execution recipe for eight
+`run_target_hex.py` provides an explicit, serial execution recipe for ten
 complete existing programs: the opened-file resource checker and controls, and
 the temporary-workspace checker and controls, plus the larger file NodeTree
-import and complete reference child lifecycle checkers and controls. CI selects
+import, complete reference child lifecycle, and separate driver/build resource
+checkers and controls. CI selects
 `--mode translated`.
 The original programs, all recorded corpora, sample bytes and their
 `research_source_inputs` remain unchanged. A separate current execution manifest
@@ -2190,6 +2191,12 @@ python -I -B tools/gen-state-root-vectors/run_target_hex.py \
   --source-revision "$SOURCE_REVISION"
 python -I -B tools/gen-state-root-vectors/run_target_hex.py \
   --program check_tree_import_lifecycle.py --mode translated \
+  --source-revision "$SOURCE_REVISION"
+python -I -B tools/gen-state-root-vectors/run_target_hex.py \
+  --program check_tree_driver_resources_test.py --mode translated \
+  --source-revision "$SOURCE_REVISION"
+python -I -B tools/gen-state-root-vectors/run_target_hex.py \
+  --program check_tree_driver_resources.py --mode translated \
   --source-revision "$SOURCE_REVISION"
 ```
 
@@ -2215,6 +2222,14 @@ and the complete child lifecycle suite retains all 34 controls, including child
 identity, actual exits, output completeness, generation order and recorded source
 binding. Their data checkers receive the original `--source-revision` argument;
 the workspace checker's original parser still receives no extra arguments.
+The driver/build checker retains all 21 controls and its complete child byte
+oracle, including 24 lifecycle children, 420 file imports and 3,024 query API
+calls in the recorded corpus. Its original report and source pins stay intact,
+and its original `--source-revision` argument is forwarded. No build, reference
+child or resource observer runs in this portable replay. SELF lifetime RSS
+through driver return and waited-child CPU remain separate; compiler peak
+memory, through-exit RSS, cache state and simultaneous pipeline memory remain
+unqualified. Synthetic counter envelopes in controls are not measurements.
 Successful CI and this optimization establish
 no historical execution authentication, node validity, peak-resource budget,
 network activation, canonicality, finality or production state-value acceptance.

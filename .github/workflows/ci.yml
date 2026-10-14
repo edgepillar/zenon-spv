@@ -199,9 +199,9 @@ jobs:
       - name: Independent recorded reference child lifecycle
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_lifecycle.py --mode translated --source-revision "${{ github.sha }}"
       - name: Separate driver and build resource controls
-        run: python -I -B tools/gen-state-root-vectors/check_tree_driver_resources_test.py -v
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Independent recorded driver and build resources
-        run: python -I -B tools/gen-state-root-vectors/check_tree_driver_resources.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources.py --mode translated --source-revision "${{ github.sha }}"
       - name: Selected sparse oracle projection controls
         run: python -I -B tools/gen-state-root-vectors/check_oracle_projection_test.py -v
       - name: Independent recorded selected sparse oracle comparison
@@ -621,9 +621,9 @@ jobs:
       - name: Independent recorded reference child lifecycle
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_lifecycle.py --mode translated --source-revision "${{ github.sha }}"
       - name: Separate driver and build resource controls
-        run: python -I -B tools/gen-state-root-vectors/check_tree_driver_resources_test.py -v
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Independent recorded driver and build resources
-        run: python -I -B tools/gen-state-root-vectors/check_tree_driver_resources.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources.py --mode translated --source-revision "${{ github.sha }}"
       - name: Selected sparse oracle projection controls
         run: python -I -B tools/gen-state-root-vectors/check_oracle_projection_test.py -v
       - name: Independent recorded selected sparse oracle comparison

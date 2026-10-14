@@ -386,7 +386,7 @@ resource limits, consumer/network trust, human review and release remain open.
 ## Qualification cost: selected target hex validation
 
 The [selected hex recipe](../tools/gen-state-root-vectors/README.md#selected-target-hex-validation)
-optimizes character membership in eight existing complete Python qualification
+optimizes character membership in ten existing complete Python qualification
 programs. All prospective-map copies, full entry/byte accounting, error ordering
 and independent byte checks remain required. Builtin strings use `str.translate`;
 other types retain the original iteration behavior. The original producer inputs
@@ -404,3 +404,10 @@ sample files, complete graph/proof checks, ordered refusals and actual child
 exit/completeness requirements remain intact. Only the selected loaded function
 instances change; original commands and child processes retain their own source.
 Local timing observations do not establish a whole CI or production speedup.
+
+The separate driver/build resource checker and all 21 controls also use the
+explicit seam. Their complete child byte checks, source/sample bindings, SELF
+lifetime RSS, nested build intervals and waited-child CPU contracts stay intact.
+This portable replay performs no build or new resource observation. Compiler
+peak memory, whole-pipeline memory, cache state and production budgets remain
+unqualified; the recorded measurements keep their original boundaries.
