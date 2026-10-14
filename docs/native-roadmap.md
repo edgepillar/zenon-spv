@@ -386,7 +386,7 @@ resource limits, consumer/network trust, human review and release remain open.
 ## Qualification cost: selected target hex validation
 
 The [selected hex recipe](../tools/gen-state-root-vectors/README.md#selected-target-hex-validation)
-optimizes character membership in four existing complete Python qualification
+optimizes character membership in eight existing complete Python qualification
 programs. All prospective-map copies, full entry/byte accounting, error ordering
 and independent byte checks remain required. Builtin strings use `str.translate`;
 other types retain the original iteration behavior. The original producer inputs
@@ -397,3 +397,10 @@ stay unchanged. Finite equivalence and rollback controls do not qualify a native
 CI speedup or production workload budget. Exact source, native CI and artifact
 validation remain required before delivery. Trust, activation, independent review
 and authenticated distribution gates are unchanged.
+
+The larger file NodeTree import and complete child lifecycle checkers and
+their 28 and 34 controls now use the same explicit seam. Their recorded source,
+sample files, complete graph/proof checks, ordered refusals and actual child
+exit/completeness requirements remain intact. Only the selected loaded function
+instances change; original commands and child processes retain their own source.
+Local timing observations do not establish a whole CI or production speedup.

@@ -8,12 +8,13 @@ state-value proofs, see [`state-proof-plan.md`](state-proof-plan.md).
 The prior peer-review implementation plan is retained as historical
 context in [`peer-review-plan.md`](peer-review-plan.md).
 
-Four complete research qualification programs can use the explicitly selected
+Eight complete research qualification programs can use the explicitly selected
 [target hex recipe](../tools/gen-state-root-vectors/README.md#selected-target-hex-validation).
 It preserves full independent map checks and existing producer/source/sample
 bytes, while binding the current optimizer separately. Source/seam identity,
 2,647 finite equivalence checks, rollback and CLI controls accompany this opt-in
-execution. Original commands and unmodified child CLI tests remain available;
+execution. The larger file NodeTree import and complete child lifecycle suites
+retain all 62 existing controls. Original commands and unmodified child CLI tests remain available;
 the recipe makes no production or historical execution-authentication claim.
 
 The current native-client scope is defined in the

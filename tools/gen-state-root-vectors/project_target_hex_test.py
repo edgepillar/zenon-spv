@@ -92,13 +92,39 @@ class HexSeamControls(unittest.TestCase):
     def intact(self):
         self.assertTrue(all(module.target_refusal is original for _, module, original in self.seams))
 
-    def test_all_four_programs_have_exact_distinct_selected_seams(self):
+    def test_all_eight_programs_have_exact_distinct_selected_seams(self):
+        self.assertEqual(len(HEX.SEAMS), 8)
         for selected in HEX.SEAMS:
             program = HEX.load('hex_all_seams', selected)
             seams, inputs = HEX.selected_seams(program, selected)
             self.assertEqual(tuple(name for name, _, _ in seams), HEX.SEAMS[selected])
             self.assertEqual(len({id(module) for _, module, _ in seams}), len(seams))
             self.assertEqual(inputs['check_patch_targets.py'], HEX.REFERENCE_SHA256)
+
+    def test_import_and_lifecycle_identity_restoration_and_missing_seam_refusal(self):
+        for selected in ('check_tree_import_scale.py', 'check_tree_import_scale_test.py',
+                         'check_tree_import_lifecycle.py', 'check_tree_import_lifecycle_test.py'):
+            with self.subTest(program=selected):
+                program = HEX.load('hex_import_lifecycle_fixture', selected)
+                seams, _ = HEX.selected_seams(program, selected)
+                for mode in HEX.MODES:
+                    with self.assertRaisesRegex(RuntimeError, 'injected lifecycle failure'):
+                        with HEX.selected_oracles(program, selected, mode):
+                            raise RuntimeError('injected lifecycle failure')
+                    self.assertTrue(all(module.target_refusal is original for _, module, original in seams))
+                owner_path, _, _ = seams[-1]
+                parent_path, name = owner_path.rsplit('.', 1)
+                parent = program
+                for part in parent_path.split('.')[1:]:
+                    parent = getattr(parent, part)
+                owner = getattr(parent, name)
+                delattr(parent, name)
+                try:
+                    with self.assertRaises(ValueError):
+                        HEX.selected_seams(program, selected)
+                    self.assertTrue(all(module.target_refusal is original for _, module, original in seams))
+                finally:
+                    setattr(parent, name, owner)
 
     def test_reference_mode_leaves_all_function_identities_intact(self):
         with HEX.selected_oracles(self.program, 'check_patch_file_resources.py', 'reference') as bindings:
@@ -229,6 +255,27 @@ class HexCLIControls(unittest.TestCase):
                               '--source-revision', 'main')
         self.assertEqual(result.returncode, 1)
         self.assertEqual(result.stdout, b'')
+
+    def test_import_lifecycle_and_workspace_forward_only_original_CLI_arguments(self):
+        for selected in ('check_tree_import_scale.py', 'check_tree_import_lifecycle.py',
+                         'check_temp_workspace.py'):
+            with self.subTest(program=selected):
+                program = RUN.HEX.load('hex_revision_forwarding_fixture', selected)
+                seams, _ = RUN.HEX.selected_seams(program, selected)
+                output = io.StringIO()
+                with mock.patch.object(RUN.HEX, 'load', return_value=program), \
+                        mock.patch.object(program, 'main') as main, redirect_stdout(output):
+                    RUN.main(['--program', selected, '--mode', 'translated',
+                              '--source-revision', 'ab' * 20])
+                main.assert_called_once_with([] if selected == 'check_temp_workspace.py'
+                                             else ['--source-revision', 'ab' * 20])
+                recipe = json.loads(output.getvalue())
+                self.assertEqual(recipe['source_revision'], 'ab' * 20)
+                self.assertEqual(recipe['program'], selected)
+                self.assertIsNone(recipe['tests_run'])
+                self.assertEqual(recipe['control_names'], [])
+                self.assertTrue(recipe['selected_function_identities_restored'])
+                self.assertTrue(all(module.target_refusal is original for _, module, original in seams))
 
     def test_actual_unknown_program_mode_and_test_filter_refused(self):
         for arguments in (('--program', '../check.py'), ('--mode', 'fast'), ('--case', 'one')):
