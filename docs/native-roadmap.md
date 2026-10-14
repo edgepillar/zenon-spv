@@ -352,3 +352,17 @@ signatures, network pilot or runtime acceptance change. Protocol-store outcomes
 never select expected inclusion results, and `STATE_TRANSITION` remains unproven.
 Exact source/artifact qualification remains required before delivery; real
 histories, execution, independent consumer/network inputs and review remain open.
+
+The [compiled receive observer follow-up](../internal/conformance/cli_node_account_receive_test.go)
+passes all 44 recorded observations through ordinary proof-only collection,
+retained-only verification and independently selected query consumption.
+Thirty-six unchanged receives match bounded inclusion/signature requirements;
+eight changed signed inputs stop collection without a partial bundle or a later
+child. Eight additional positive-method controls retain absent-header/proof and
+different consumer target/tip boundaries. All 52 controls check actual completion,
+exact read-only requests, input preservation, summary privacy and private cleanup.
+No reference node is rerun and no signed input, corpus or runtime policy changes.
+Synthetic store outcomes and this compiled workflow establish neither execution
+eligibility nor state transition. Native CI and artifact qualification must bind
+the exact published source before delivery. Independent consumer/network trust,
+human review and authenticated distribution remain separate gates.
