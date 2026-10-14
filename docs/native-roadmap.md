@@ -337,3 +337,18 @@ execution, real authenticated histories, mailbox/contract/nonzero-PoW paths,
 independent consumer/network inputs, reviewed release and authenticated
 distribution remain separate gates. Exact published source/artifact qualification
 is required before treating this local step as delivered.
+
+The [receive RPC follow-up](../internal/conformance/node_account_receive_rpc_test.go)
+passes all 44 unchanged recorded inputs through the production fetch client and
+a loopback HTTP/JSON-RPC peer. Thirty-six unchanged receives reach inclusion and
+signature verification; eight changed signed inputs fail hash conversion before
+any block is returned. Every observation also exercises the original two-block
+send/receive range: a failed later receive discards the valid first send.
+Four further controls keep missing retained committing headers and supplied
+proofs refused after both positive node method observations convert successfully.
+These 92 native controls use original account/range/trust/commitment selections
+and preserve verified state. They add no node calls, corpus regeneration,
+signatures, network pilot or runtime acceptance change. Protocol-store outcomes
+never select expected inclusion results, and `STATE_TRANSITION` remains unproven.
+Exact source/artifact qualification remains required before delivery; real
+histories, execution, independent consumer/network inputs and review remain open.
