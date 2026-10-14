@@ -8,7 +8,7 @@ state-value proofs, see [`state-proof-plan.md`](state-proof-plan.md).
 The prior peer-review implementation plan is retained as historical
 context in [`peer-review-plan.md`](peer-review-plan.md).
 
-Eighteen complete research qualification programs can use the explicitly selected
+22 complete research qualification programs can use the explicitly selected
 [target hex recipe](../tools/gen-state-root-vectors/README.md#selected-target-hex-validation).
 It preserves full independent map checks and existing producer/source/sample
 bytes, while binding the current optimizer separately. Source/seam identity,
@@ -28,6 +28,10 @@ The sparse-oracle and complete-driver projection pairs retain all 58 controls,
 every-leaf hashing, unknown-query refusal, complete stock bytes and the original
 worker/build/lifecycle outcome bindings. Current hex execution recipes remain
 separate from their recorded projection modes and source pins.
+The whole owned-import resource and fixed prior/candidate callback comparison
+pairs preserve all 45 controls, all 12 complete corpus cases and every recorded
+sample and ownership-control outcome. Their current hex recipes leave original
+source pins, full maps, callbacks, byte counts and error ordering unchanged.
 
 The current native-client scope is defined in the
 [`verification contract`](verification-contract.md). The
