@@ -484,6 +484,28 @@ are checked for every run. Native CI must qualify all fifty-eight leaf controls
 against the exact published source. This finite loopback workflow adds no new
 node execution, signature, authenticated context, live pilot or production claim.
 
+## Recorded account PoW bytes and method composition
+
+The [isolated PoW mode](../tools/gen-node-account-basic-vectors/README.md#separate-finite-account-pow-mode)
+records 32 preselected nonce/difficulty probes and 64 actual basic/transaction
+method calls with the original claimed hash and signature. An independent
+Python oracle reconstructs complete account/PoW preimages, SHA3 hashes,
+little-endian comparisons, all 28 returned unsigned producer thresholds,
+128 complete store maps and ten raw reads. Ten probes match; the two account
+methods record 11 matches, 53 rejections and no panic. Failed work stops before
+acknowledgement reads; matching changed work cannot authorize a different signed
+account hash. Adverse controls retain width/endian, upper-half signed-target,
+outcome, input-binding, map/read and scope refusals.
+
+Actual reference execution is local macOS ARM64. Native CI checks these immutable
+bytes without executing a new node. The zero-difficulty producer helper is not
+called. The original basic/receive corpora and module locks remain unchanged.
+No nonce generation, wallet/signing, transaction, network or production run
+occurs. This adds no runtime acceptance or account-PoW/state-transition guarantee;
+full protocol resources, authenticated nonzero-PoW histories, consumer/network
+trust, review and release remain separate gates. Exact source/native artifacts
+must qualify the published step before delivery.
+
 ## Known gaps
 
 These are *known* and *documented*, not bugs.

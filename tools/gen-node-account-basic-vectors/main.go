@@ -355,6 +355,9 @@ func run() error {
 	if len(os.Args) == 3 && os.Args[1] == "--receive" {
 		return runReceive(os.Args[2])
 	}
+	if len(os.Args) == 3 && os.Args[1] == "--pow" {
+		return runPoW(os.Args[2])
+	}
 	if len(os.Args) != 2 {
 		return fmt.Errorf("usage: gen-node-account-basic-vectors SEGMENTS_FIXTURE")
 	}
