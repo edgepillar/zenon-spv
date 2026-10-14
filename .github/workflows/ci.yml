@@ -171,13 +171,13 @@ jobs:
       - name: Recorded whole file handoff samples (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_file_resources.py --mode translated --source-revision "${{ github.sha }}"
       - name: Complete file to NodeTree handoff evidence controls
-        run: python -I -B tools/gen-state-root-vectors/check_patch_tree_test.py
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Recorded complete file to NodeTree handoff (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/check_patch_tree.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree.py --mode translated --source-revision "${{ github.sha }}"
       - name: File-backed retained NodeTree tail evidence controls
-        run: python -I -B tools/gen-state-root-vectors/check_patch_tree_tail_test.py
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree_tail_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Recorded file-backed tail, pruning and clean reopen (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/check_patch_tree_tail.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree_tail.py --mode translated --source-revision "${{ github.sha }}"
       - name: Offline typed balance consumer controls
         run: python -I -B tools/gen-state-root-vectors/check_balance_observations_test.py
       - name: Independent offline typed balance observations
@@ -203,13 +203,13 @@ jobs:
       - name: Independent recorded driver and build resources
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources.py --mode translated --source-revision "${{ github.sha }}"
       - name: Selected sparse oracle projection controls
-        run: python -I -B tools/gen-state-root-vectors/check_oracle_projection_test.py -v
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_oracle_projection_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Independent recorded selected sparse oracle comparison
-        run: python -I -B tools/gen-state-root-vectors/check_oracle_projection.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_oracle_projection.py --mode translated --source-revision "${{ github.sha }}"
       - name: Complete driver projection controls
-        run: python -I -B tools/gen-state-root-vectors/check_projected_driver_test.py -v
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Independent recorded complete driver projection comparison
-        run: python -I -B tools/gen-state-root-vectors/check_projected_driver.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver.py --mode translated --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
@@ -593,13 +593,13 @@ jobs:
       - name: Recorded whole file handoff samples (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_file_resources.py --mode translated --source-revision "${{ github.sha }}"
       - name: Complete file to NodeTree handoff evidence controls
-        run: python -I -B tools/gen-state-root-vectors/check_patch_tree_test.py
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Recorded complete file to NodeTree handoff (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/check_patch_tree.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree.py --mode translated --source-revision "${{ github.sha }}"
       - name: File-backed retained NodeTree tail evidence controls
-        run: python -I -B tools/gen-state-root-vectors/check_patch_tree_tail_test.py
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree_tail_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Recorded file-backed tail, pruning and clean reopen (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/check_patch_tree_tail.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree_tail.py --mode translated --source-revision "${{ github.sha }}"
       - name: Offline typed balance consumer controls
         run: python -I -B tools/gen-state-root-vectors/check_balance_observations_test.py
       - name: Independent offline typed balance observations
@@ -625,13 +625,13 @@ jobs:
       - name: Independent recorded driver and build resources
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources.py --mode translated --source-revision "${{ github.sha }}"
       - name: Selected sparse oracle projection controls
-        run: python -I -B tools/gen-state-root-vectors/check_oracle_projection_test.py -v
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_oracle_projection_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Independent recorded selected sparse oracle comparison
-        run: python -I -B tools/gen-state-root-vectors/check_oracle_projection.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_oracle_projection.py --mode translated --source-revision "${{ github.sha }}"
       - name: Complete driver projection controls
-        run: python -I -B tools/gen-state-root-vectors/check_projected_driver_test.py -v
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Independent recorded complete driver projection comparison
-        run: python -I -B tools/gen-state-root-vectors/check_projected_driver.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver.py --mode translated --source-revision "${{ github.sha }}"
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
