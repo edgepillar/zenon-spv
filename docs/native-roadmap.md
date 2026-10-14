@@ -382,3 +382,18 @@ service or network pilot runs. The MIT verifier's account-PoW, state-transition
 and state-value boundaries remain unchanged. Exact published source/native
 CI/artifacts must qualify this finite step; authenticated histories, protocol
 resource limits, consumer/network trust, human review and release remain open.
+
+## Qualification cost: selected target hex validation
+
+The [selected hex recipe](../tools/gen-state-root-vectors/README.md#selected-target-hex-validation)
+optimizes character membership in four existing complete Python qualification
+programs. All prospective-map copies, full entry/byte accounting, error ordering
+and independent byte checks remain required. Builtin strings use `str.translate`;
+other types retain the original iteration behavior. The original producer inputs
+and recorded source pins stay intact. A separate execution manifest binds the
+current runner and selected function seams, which restore on success or failure.
+The original commands remain available, and later imports and child CLI programs
+stay unchanged. Finite equivalence and rollback controls do not qualify a native
+CI speedup or production workload budget. Exact source, native CI and artifact
+validation remain required before delivery. Trust, activation, independent review
+and authenticated distribution gates are unchanged.
