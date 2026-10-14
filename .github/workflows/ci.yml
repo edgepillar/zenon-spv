@@ -86,10 +86,12 @@ jobs:
         run: python -B tools/gen-node-momentum-vectors/check-signatures_test.py
       - name: Owned workspace stat controls
         run: python -I -B tools/gen-state-root-vectors/observe_temp_workspace_test.py -v
+      - name: Selected target hex seam controls
+        run: python -I -B tools/gen-state-root-vectors/project_target_hex_test.py -v
       - name: Workspace observation envelope controls
-        run: python -I -B tools/gen-state-root-vectors/check_temp_workspace_test.py -v
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Independent temporary input and database observations
-        run: python -I -B tools/gen-state-root-vectors/check_temp_workspace.py
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace.py --mode translated --source-revision "${{ github.sha }}"
       - name: Candidate state-root byte controls
         run: python -I -B tools/gen-state-root-vectors/check_test.py
       - name: Independent candidate state-root bytes
@@ -165,9 +167,9 @@ jobs:
       - name: Recorded file handoff and complete owned map bindings (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/check_patch_file.py --source-revision "${{ github.sha }}"
       - name: Whole opened file handoff resource evidence controls
-        run: python -I -B tools/gen-state-root-vectors/check_patch_file_resources_test.py
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_file_resources_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Recorded whole file handoff samples (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/check_patch_file_resources.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_file_resources.py --mode translated --source-revision "${{ github.sha }}"
       - name: Complete file to NodeTree handoff evidence controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_tree_test.py
       - name: Recorded complete file to NodeTree handoff (offline; no Go execution)
@@ -506,10 +508,12 @@ jobs:
         run: python -B tools/gen-node-momentum-vectors/check-signatures_test.py
       - name: Owned workspace stat controls
         run: python -I -B tools/gen-state-root-vectors/observe_temp_workspace_test.py -v
+      - name: Selected target hex seam controls
+        run: python -I -B tools/gen-state-root-vectors/project_target_hex_test.py -v
       - name: Workspace observation envelope controls
-        run: python -I -B tools/gen-state-root-vectors/check_temp_workspace_test.py -v
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Independent temporary input and database observations
-        run: python -I -B tools/gen-state-root-vectors/check_temp_workspace.py
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace.py --mode translated --source-revision "${{ github.sha }}"
       - name: Candidate state-root byte controls
         run: python -I -B tools/gen-state-root-vectors/check_test.py
       - name: Independent candidate state-root bytes
@@ -585,9 +589,9 @@ jobs:
       - name: Recorded file handoff and complete owned map bindings (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/check_patch_file.py --source-revision "${{ github.sha }}"
       - name: Whole opened file handoff resource evidence controls
-        run: python -I -B tools/gen-state-root-vectors/check_patch_file_resources_test.py
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_file_resources_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Recorded whole file handoff samples (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/check_patch_file_resources.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_file_resources.py --mode translated --source-revision "${{ github.sha }}"
       - name: Complete file to NodeTree handoff evidence controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_tree_test.py
       - name: Recorded complete file to NodeTree handoff (offline; no Go execution)

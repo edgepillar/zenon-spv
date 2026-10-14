@@ -2164,3 +2164,44 @@ These finite samples describe driver SELF high water through the selected
 call. They qualify no latency speedup, through-exit footprint, compiler or
 simultaneous pipeline peak, target device budget or production state-value
 acceptance. Earlier driver and case-only measurements keep their own scopes.
+
+### Selected target hex validation
+
+`run_target_hex.py` provides an explicit, serial execution recipe for four
+complete existing programs: the opened-file resource checker and controls, and
+the temporary-workspace checker and controls. CI selects `--mode translated`.
+The original programs, all recorded corpora, sample bytes and their
+`research_source_inputs` remain unchanged. A separate current execution manifest
+binds the runner, optimizer, selected program and loaded dependency files. It
+does not relabel the old captured producer as using the new implementation.
+
+```sh
+python -I -B tools/gen-state-root-vectors/project_target_hex_test.py -v
+python -I -B tools/gen-state-root-vectors/run_target_hex.py \
+  --program check_temp_workspace_test.py --mode translated \
+  --source-revision "$SOURCE_REVISION"
+python -I -B tools/gen-state-root-vectors/run_target_hex.py \
+  --program check_patch_file_resources.py --mode reference \
+  --source-revision "$SOURCE_REVISION"
+```
+
+Only the exact pinned `target_refusal` function instances are selected. Builtin
+strings use C-level `str.translate` to detect characters outside lowercase hex;
+odd length, non-builtin iteration, limits and error precedence stay unchanged.
+Every prospective map is still copied and fully recounted and validated. The
+Python oracle does not adopt the Go prototype's incremental counters. Later
+imports and subprocesses retain the original implementation; there is no
+process-wide import hook. Unknown source, seams, nesting or unexpected function
+replacement refuses, and all selected original identities are restored even
+after an exception. The caller must be serial and keep the checkout stable.
+
+The controls compare 2,647 finite results and exception types, all 46 original
+target cases, source/seam refusal and restoration, and actual CLI success and
+refusal. A selected test program runs its whole suite without filters or skips;
+success emits the separate recipe only after restoration. The file controls
+keep their actual unmodified CLI children. The resource checker still binds all
+180 recorded child samples, and workspace controls keep their full lifecycle,
+map, root, proof and observation checks. The original direct commands remain
+available for historical replay. Successful CI and this optimization establish
+no historical execution authentication, node validity, peak-resource budget,
+network activation, canonicality, finality or production state-value acceptance.
