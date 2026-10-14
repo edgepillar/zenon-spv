@@ -366,3 +366,19 @@ Synthetic store outcomes and this compiled workflow establish neither execution
 eligibility nor state transition. Native CI and artifact qualification must bind
 the exact published source before delivery. Independent consumer/network trust,
 human review and authenticated distribution remain separate gates.
+
+## Recorded account PoW byte and method boundaries
+
+The [separate finite PoW corpus](../tools/gen-node-account-basic-vectors/README.md#separate-finite-account-pow-mode)
+records 32 fixed nonce/difficulty probes and 64 method calls at the same pinned
+node source. Independent SHA3, byte-order and unsigned threshold checks cover
+both sides of `2^63` and the maximum `uint64` values. Ten nonce probes match;
+the memory-store methods record 11 matches, 53 rejections and no panic. Complete
+hash preimages, 128 store maps and ten raw reads keep method composition explicit.
+Matching work does not re-sign changed input or establish a full protocol match.
+The zero-difficulty producer helper is not called. Previous corpora and module
+locks remain unchanged. No wallet, nonce search, signature generation, node
+service or network pilot runs. The MIT verifier's account-PoW, state-transition
+and state-value boundaries remain unchanged. Exact published source/native
+CI/artifacts must qualify this finite step; authenticated histories, protocol
+resource limits, consumer/network trust, human review and release remain open.
