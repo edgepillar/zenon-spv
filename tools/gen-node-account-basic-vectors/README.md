@@ -228,3 +228,53 @@ corpus; it does not execute that node. Full account execution, contract/mailbox
 paths, nonzero PoW, authenticated histories/activation, independent network and
 consumer inputs, production budgets, review and distribution remain separate
 gates. The MIT runtime and its state-value refusal are unchanged.
+
+## Separate finite account PoW mode
+
+The `--pow` mode uses the same pinned node module and the original signed first
+user send. Eight explicitly selected unsigned difficulties and four fixed
+eight-byte nonces produce 32 probes and 64 account method observations. The
+selection includes zero, one, two, 1,000, both sides of `2^63`, and the two
+largest `uint64` values. It performs no nonce search, randomness, wallet API,
+key/signature generation, chain startup or network operation.
+
+The [separate corpus](../../internal/testdata/conformance/node-account-pow.json)
+has SHA-256 `560ff77f5fe092e99222399309da164c0539dec749e95b0e1788cd52fe30716f`.
+It records actual `GetAccountBlockHash`, `CheckPoWNonce`, SHA3 and 28 nonzero
+producer-threshold returns. The zero-difficulty producer helper is deliberately
+not called; its nil/zero input behavior is outside this selection. Complete
+address/previous-hash and nonce/hash preimages, full 32-byte hashes, the first
+eight hash bytes interpreted little-endian, and producer threshold bytes are
+retained. The unsigned target is `2^64 - floor(2^64 / difficulty)` for nonzero
+difficulty. The nonce checker uses a zero target at zero difficulty; the basic
+account method skips its PoW check there.
+
+Ten probes match and 22 do not. The actual memory-store methods record 11
+`MATCH`, 53 `REJECT` and no panic. Failed work stops the basic method before
+acknowledgement reads. A matching changed nonce/difficulty can reach the basic
+method successfully while the transaction method rejects the unchanged claimed
+hash before signature verification. The 128 complete store maps and ten raw acknowledgement
+reads remain synthetic context evidence. No mutated block is re-signed.
+
+The [independent Python checker](check_pow.py) reconstructs every PoW byte
+input, unsigned threshold, account hash preimage, complete store map and ordered
+read. Its [adverse controls](check_pow_test.py) reject endian/width substitutions,
+upper-half signed-target regressions, forged outcomes, altered signatures,
+coherent-looking input rebinding, missing/reordered data and inflated claims.
+It imports no node/database/protobuf backend and runs no signature process.
+The original no-flag and `--receive` outputs and module locks remain unchanged.
+
+```sh
+CGO_ENABLED=0 GOWORK=off GOTOOLCHAIN=local go run -mod=readonly . --pow ../../internal/testdata/conformance/account-segments.json > node-account-pow.json
+python3 -I -B check_pow.py
+python3 -I -B check_pow_test.py -v
+```
+
+Actual reference execution is local macOS ARM64 with CGO disabled. Native CI
+checks recorded bytes without executing a new reference node. A nonce match
+does not establish permitted protocol difficulty, plasma accounting, full
+account execution, an authenticated signed nonzero-PoW history, activation,
+canonicality or finality. The MIT verifier still does not establish account PoW
+or state transitions. Runtime acceptance, state-value refusal, independent
+consumer/network trust and release gates remain unchanged. Exact published
+source and native CI/artifact qualification are required before delivery.
