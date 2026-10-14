@@ -32,6 +32,11 @@ SEAMS = {
         'program.CHECK.LEGACY.PREVIOUS.IMPORT.TAIL.RESOURCE.TARGET',
         'program.CHECK.LEGACY.PROJECTOR.PROJECT.IMPORT.FILE.TARGET',
         'program.CHECK.LEGACY.PROJECTOR.PROJECT.IMPORT.TAIL.RESOURCE.TARGET'),
+    'check_tree_import_scale.py': ('program.FILE.TARGET', 'program.TAIL.RESOURCE.TARGET'),
+    'check_tree_import_scale_test.py': ('program.CHECK.FILE.TARGET', 'program.CHECK.TAIL.RESOURCE.TARGET'),
+    'check_tree_import_lifecycle.py': ('program.SCALE.FILE.TARGET', 'program.SCALE.TAIL.RESOURCE.TARGET'),
+    'check_tree_import_lifecycle_test.py': (
+        'program.CHECK.SCALE.FILE.TARGET', 'program.CHECK.SCALE.TAIL.RESOURCE.TARGET'),
 }
 
 

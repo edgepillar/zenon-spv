@@ -191,13 +191,13 @@ jobs:
       - name: Independent recorded larger NodeTree retention
         run: python -I -B tools/gen-state-root-vectors/check_tree_scale.py
       - name: Larger file NodeTree import controls
-        run: python -I -B tools/gen-state-root-vectors/check_tree_import_scale_test.py -v
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_scale_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Independent recorded larger file NodeTree import
-        run: python -I -B tools/gen-state-root-vectors/check_tree_import_scale.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_scale.py --mode translated --source-revision "${{ github.sha }}"
       - name: Complete reference child lifecycle controls
-        run: python -I -B tools/gen-state-root-vectors/check_tree_import_lifecycle_test.py -v
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_lifecycle_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Independent recorded reference child lifecycle
-        run: python -I -B tools/gen-state-root-vectors/check_tree_import_lifecycle.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_lifecycle.py --mode translated --source-revision "${{ github.sha }}"
       - name: Separate driver and build resource controls
         run: python -I -B tools/gen-state-root-vectors/check_tree_driver_resources_test.py -v
       - name: Independent recorded driver and build resources
@@ -613,13 +613,13 @@ jobs:
       - name: Independent recorded larger NodeTree retention
         run: python -I -B tools/gen-state-root-vectors/check_tree_scale.py
       - name: Larger file NodeTree import controls
-        run: python -I -B tools/gen-state-root-vectors/check_tree_import_scale_test.py -v
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_scale_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Independent recorded larger file NodeTree import
-        run: python -I -B tools/gen-state-root-vectors/check_tree_import_scale.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_scale.py --mode translated --source-revision "${{ github.sha }}"
       - name: Complete reference child lifecycle controls
-        run: python -I -B tools/gen-state-root-vectors/check_tree_import_lifecycle_test.py -v
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_lifecycle_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Independent recorded reference child lifecycle
-        run: python -I -B tools/gen-state-root-vectors/check_tree_import_lifecycle.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_lifecycle.py --mode translated --source-revision "${{ github.sha }}"
       - name: Separate driver and build resource controls
         run: python -I -B tools/gen-state-root-vectors/check_tree_driver_resources_test.py -v
       - name: Independent recorded driver and build resources
