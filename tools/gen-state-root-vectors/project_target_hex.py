@@ -41,6 +41,30 @@ SEAMS = {
         'program.LIFE.SCALE.FILE.TARGET', 'program.LIFE.SCALE.TAIL.RESOURCE.TARGET'),
     'check_tree_driver_resources_test.py': (
         'program.CHECK.LIFE.SCALE.FILE.TARGET', 'program.CHECK.LIFE.SCALE.TAIL.RESOURCE.TARGET'),
+    'check_patch_tree.py': ('program.FILE.TARGET', 'program.RESOURCE.TARGET'),
+    'check_patch_tree_test.py': ('program.CHECK.FILE.TARGET', 'program.CHECK.RESOURCE.TARGET'),
+    'check_patch_tree_tail.py': ('program.FILE.TARGET', 'program.RESOURCE.TARGET'),
+    'check_patch_tree_tail_test.py': ('program.CHECK.FILE.TARGET', 'program.CHECK.RESOURCE.TARGET'),
+    'check_oracle_projection.py': (
+        'program.IMPORT.FILE.TARGET', 'program.IMPORT.TAIL.RESOURCE.TARGET',
+        'program.DRIVER.LIFE.SCALE.FILE.TARGET', 'program.DRIVER.LIFE.SCALE.TAIL.RESOURCE.TARGET'),
+    'check_oracle_projection_test.py': (
+        'program.CHECK.IMPORT.FILE.TARGET', 'program.CHECK.IMPORT.TAIL.RESOURCE.TARGET',
+        'program.CHECK.DRIVER.LIFE.SCALE.FILE.TARGET',
+        'program.CHECK.DRIVER.LIFE.SCALE.TAIL.RESOURCE.TARGET'),
+    'check_projected_driver.py': (
+        'program.PREVIOUS.IMPORT.FILE.TARGET', 'program.LEGACY.LIFE.SCALE.FILE.TARGET',
+        'program.PREVIOUS.IMPORT.TAIL.RESOURCE.TARGET', 'program.PROJECTOR.PROJECT.IMPORT.FILE.TARGET',
+        'program.LEGACY.LIFE.SCALE.TAIL.RESOURCE.TARGET',
+        'program.PROJECTOR.PROJECT.IMPORT.TAIL.RESOURCE.TARGET'),
+    'check_projected_driver_test.py': (
+        'program.CHECK.PREVIOUS.IMPORT.FILE.TARGET', 'program.CHECK.LEGACY.LIFE.SCALE.FILE.TARGET',
+        'program.CHECK.PREVIOUS.IMPORT.TAIL.RESOURCE.TARGET',
+        'program.CHECK.PROJECTOR.PROJECT.IMPORT.FILE.TARGET',
+        'program.OLD_CONTROLS.CHECK.LIFE.SCALE.FILE.TARGET',
+        'program.CHECK.LEGACY.LIFE.SCALE.TAIL.RESOURCE.TARGET',
+        'program.CHECK.PROJECTOR.PROJECT.IMPORT.TAIL.RESOURCE.TARGET',
+        'program.OLD_CONTROLS.CHECK.LIFE.SCALE.TAIL.RESOURCE.TARGET'),
 }
 
 

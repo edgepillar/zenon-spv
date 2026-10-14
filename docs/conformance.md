@@ -8,7 +8,7 @@ state-value proofs, see [`state-proof-plan.md`](state-proof-plan.md).
 The prior peer-review implementation plan is retained as historical
 context in [`peer-review-plan.md`](peer-review-plan.md).
 
-Ten complete research qualification programs can use the explicitly selected
+Eighteen complete research qualification programs can use the explicitly selected
 [target hex recipe](../tools/gen-state-root-vectors/README.md#selected-target-hex-validation).
 It preserves full independent map checks and existing producer/source/sample
 bytes, while binding the current optimizer separately. Source/seam identity,
@@ -19,6 +19,15 @@ retain all 62 existing controls. The driver/build resource envelope retains all
 and waited-child CPU scopes. The portable checker performs no build or resource
 observation. Original commands and unmodified child CLI tests remain available;
 the recipe makes no production or historical execution-authentication claim.
+The complete file-to-NodeTree handoff and retained-tail suites preserve all 49
+controls, complete sparse/compressed graph and proof bytes, refcounts, pruning,
+clean reopen, original aliases and actual CLI children. Recorded samples and
+their source bindings remain unchanged; no reference node or database runs in
+the portable checkers.
+The sparse-oracle and complete-driver projection pairs retain all 58 controls,
+every-leaf hashing, unknown-query refusal, complete stock bytes and the original
+worker/build/lifecycle outcome bindings. Current hex execution recipes remain
+separate from their recorded projection modes and source pins.
 
 The current native-client scope is defined in the
 [`verification contract`](verification-contract.md). The

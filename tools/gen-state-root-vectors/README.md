@@ -2167,11 +2167,12 @@ acceptance. Earlier driver and case-only measurements keep their own scopes.
 
 ### Selected target hex validation
 
-`run_target_hex.py` provides an explicit, serial execution recipe for ten
+`run_target_hex.py` provides an explicit, serial execution recipe for eighteen
 complete existing programs: the opened-file resource checker and controls, and
 the temporary-workspace checker and controls, plus the larger file NodeTree
 import, complete reference child lifecycle, and separate driver/build resource
-checkers and controls. CI selects
+checkers and controls, plus complete file-to-NodeTree handoff and retained-tail
+checker/control pairs, and sparse-oracle/complete-driver projection pairs. CI selects
 `--mode translated`.
 The original programs, all recorded corpora, sample bytes and their
 `research_source_inputs` remain unchanged. A separate current execution manifest
@@ -2197,6 +2198,18 @@ python -I -B tools/gen-state-root-vectors/run_target_hex.py \
   --source-revision "$SOURCE_REVISION"
 python -I -B tools/gen-state-root-vectors/run_target_hex.py \
   --program check_tree_driver_resources.py --mode translated \
+  --source-revision "$SOURCE_REVISION"
+python -I -B tools/gen-state-root-vectors/run_target_hex.py \
+  --program check_patch_tree_test.py --mode translated \
+  --source-revision "$SOURCE_REVISION"
+python -I -B tools/gen-state-root-vectors/run_target_hex.py \
+  --program check_patch_tree_tail.py --mode translated \
+  --source-revision "$SOURCE_REVISION"
+python -I -B tools/gen-state-root-vectors/run_target_hex.py \
+  --program check_oracle_projection_test.py --mode translated \
+  --source-revision "$SOURCE_REVISION"
+python -I -B tools/gen-state-root-vectors/run_target_hex.py \
+  --program check_projected_driver.py --mode translated \
   --source-revision "$SOURCE_REVISION"
 ```
 
@@ -2230,6 +2243,26 @@ child or resource observer runs in this portable replay. SELF lifetime RSS
 through driver return and waited-child CPU remain separate; compiler peak
 memory, through-exit RSS, cache state and simultaneous pipeline memory remain
 unqualified. Synthetic counter envelopes in controls are not measurements.
+The complete file-to-NodeTree handoff and retained-tail suites retain all 25
+and 24 controls. Full selected maps and roots, compressed physical records and
+refcounts, sparse proof bytes, stored-zero/absence distinctions, refusal order,
+original aliases, pruning and clean reopen remain required. Their actual CLI
+children keep the original implementation and fixture/duplicate-field limits.
+All 132 handoff and 96 tail sample/command outcomes and recorded source pins
+remain bound. Both data checkers receive their original `--source-revision`
+argument; their original report is followed by the separate current recipe.
+This portable replay performs no Go, LevelDB or new resource observation.
+The sparse-oracle and complete-driver projection pairs retain all 28 and 30
+controls. Their level projection functions and recorded reference/projected
+modes do not change. Every leaf and parent is still hashed; unknown queries and
+missing siblings refuse; complete stock case/corpus bytes and every worker,
+build and lifecycle outcome remain bound. The 24 oracle workers and four driver
+workers with 96 reference children remain recorded, unsigned observations.
+The current hex recipe selects only the listed, already-loaded target validators;
+later imports in projection controls remain original. Both data checkers receive
+their original `--source-revision` argument. No worker, build, node or resource
+observer launches in these portable checkers. Their original producer/source
+pins, result hashes and measurement boundaries remain intact.
 Successful CI and this optimization establish
 no historical execution authentication, node validity, peak-resource budget,
 network activation, canonicality, finality or production state-value acceptance.
