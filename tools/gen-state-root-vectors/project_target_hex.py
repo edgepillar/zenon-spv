@@ -19,6 +19,10 @@ DELETE_HEX = {ord(c): None for c in '0123456789abcdef'}
 MAX_MODULES = 128
 MODES = ('reference', 'translated')
 SEAMS = {
+    'check_patch_resources.py': ('program.TARGET',),
+    'check_patch_resources_test.py': ('program.CHECK.TARGET',),
+    'check_patch_import_comparison.py': ('program.RESOURCE.TARGET',),
+    'check_patch_import_comparison_test.py': ('program.CHECK.RESOURCE.TARGET',),
     'check_patch_file_resources.py': ('program.FILE.TARGET', 'program.RESOURCE.TARGET'),
     'check_patch_file_resources_test.py': ('program.CHECK.FILE.TARGET', 'program.CHECK.RESOURCE.TARGET'),
     'check_temp_workspace.py': (
