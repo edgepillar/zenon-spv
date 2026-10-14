@@ -163,6 +163,29 @@ remains unproven, including where the basic method rejects a supplied context.
 Both exact positive entry points also refuse a missing retained committing header
 or missing supplied commitment. Method matches cannot furnish either input.
 
+The [receive RPC controls](../../internal/conformance/node_account_receive_rpc_test.go)
+use the same 44 pinned observations through the production fetch client and a
+loopback HTTP/JSON-RPC peer. Request account, height and count come from the
+original signed fixture, independently of peer fields and protocol-store outcomes.
+The 36 unchanged inputs convert to the original signed receive and prove bounded
+inclusion/signatures. All eight changed signed inputs fail hash conversion with
+no returned block. None of the supplied confirmation, received-marker or source
+store selections supplies execution eligibility to the verifier.
+
+All 44 observations also run as the later row of the original two-block
+send/receive range. The same eight errors discard the valid first send; 36
+complete ranges preserve both original blocks and their bounded guarantees.
+Four positive-method controls refuse a missing retained committing header or
+supplied account proof after successful conversion. All 92 controls preserve
+verified state and check the exact single read-only request. No new node method,
+key/signature, corpus, real RPC endpoint or network qualification is introduced.
+Native CI runs lower-level receive and RPC controls in separate steps, avoiding
+duplicate execution; exact source/artifact qualification remains required.
+
+```sh
+go test -v -count=1 -run '^TestNodeAccountReceiveRPC' ./internal/conformance
+```
+
 Regenerate this separate corpus from the module directory:
 
 ```sh
