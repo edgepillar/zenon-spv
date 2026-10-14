@@ -386,7 +386,7 @@ resource limits, consumer/network trust, human review and release remain open.
 ## Qualification cost: selected target hex validation
 
 The [selected hex recipe](../tools/gen-state-root-vectors/README.md#selected-target-hex-validation)
-optimizes character membership in ten existing complete Python qualification
+optimizes character membership in eighteen existing complete Python qualification
 programs. All prospective-map copies, full entry/byte accounting, error ordering
 and independent byte checks remain required. Builtin strings use `str.translate`;
 other types retain the original iteration behavior. The original producer inputs
@@ -411,3 +411,19 @@ lifetime RSS, nested build intervals and waited-child CPU contracts stay intact.
 This portable replay performs no build or new resource observation. Compiler
 peak memory, whole-pipeline memory, cache state and production budgets remain
 unqualified; the recorded measurements keep their original boundaries.
+
+The complete file-to-NodeTree handoff and retained-tail checker/control pairs
+also select the explicit seam. All 25 handoff and 24 tail controls remain,
+including full compressed records/refcounts, sparse proof bytes, stored-zero
+and absence distinctions, refusal ordering, pruning and clean reopen. Their
+original CLI children, corpus/sample bytes and recorded source inputs stay
+unchanged. Portable replay performs no Go, LevelDB or resource observation;
+the 132 handoff and 96 tail child samples retain their recorded scopes.
+
+The sparse-oracle and complete-driver projection pairs use the same hex-only
+selection and retain all 28 and 30 controls. This selection changes no level
+projection function, selected query set, every-leaf hashing, complete stock
+oracle, captured worker/build/child outcome or recorded resource boundary.
+The 24 oracle workers and four complete driver workers remain recorded evidence;
+the portable checkers launch no new workers, builds, nodes or observers. Their
+reference/projected modes remain separate from the current hex execution mode.
