@@ -44,7 +44,9 @@ def main(argv=None):
             HEX.require(result.wasSuccessful() and not result.skipped and type(tests_run) is int
                         and tests_run == len(control_names) > 0)
         else:
-            arguments = ['--source-revision', args.source_revision] if args.program == 'check_patch_file_resources.py' else []
+            revision_programs = ('check_patch_file_resources.py', 'check_tree_import_scale.py',
+                                 'check_tree_import_lifecycle.py')
+            arguments = ['--source-revision', args.source_revision] if args.program in revision_programs else []
             program.main(arguments)
     HEX.require(hashlib.sha256(Path(__file__).read_bytes()).hexdigest() == runner_pin)
     bindings['current_execution_inputs']['run_target_hex.py'] = runner_pin

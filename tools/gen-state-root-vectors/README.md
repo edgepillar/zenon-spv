@@ -2167,9 +2167,11 @@ acceptance. Earlier driver and case-only measurements keep their own scopes.
 
 ### Selected target hex validation
 
-`run_target_hex.py` provides an explicit, serial execution recipe for four
+`run_target_hex.py` provides an explicit, serial execution recipe for eight
 complete existing programs: the opened-file resource checker and controls, and
-the temporary-workspace checker and controls. CI selects `--mode translated`.
+the temporary-workspace checker and controls, plus the larger file NodeTree
+import and complete reference child lifecycle checkers and controls. CI selects
+`--mode translated`.
 The original programs, all recorded corpora, sample bytes and their
 `research_source_inputs` remain unchanged. A separate current execution manifest
 binds the runner, optimizer, selected program and loaded dependency files. It
@@ -2182,6 +2184,12 @@ python -I -B tools/gen-state-root-vectors/run_target_hex.py \
   --source-revision "$SOURCE_REVISION"
 python -I -B tools/gen-state-root-vectors/run_target_hex.py \
   --program check_patch_file_resources.py --mode reference \
+  --source-revision "$SOURCE_REVISION"
+python -I -B tools/gen-state-root-vectors/run_target_hex.py \
+  --program check_tree_import_scale_test.py --mode translated \
+  --source-revision "$SOURCE_REVISION"
+python -I -B tools/gen-state-root-vectors/run_target_hex.py \
+  --program check_tree_import_lifecycle.py --mode translated \
   --source-revision "$SOURCE_REVISION"
 ```
 
@@ -2202,6 +2210,11 @@ success emits the separate recipe only after restoration. The file controls
 keep their actual unmodified CLI children. The resource checker still binds all
 180 recorded child samples, and workspace controls keep their full lifecycle,
 map, root, proof and observation checks. The original direct commands remain
-available for historical replay. Successful CI and this optimization establish
+available for historical replay. The larger import suite retains all 28 controls,
+and the complete child lifecycle suite retains all 34 controls, including child
+identity, actual exits, output completeness, generation order and recorded source
+binding. Their data checkers receive the original `--source-revision` argument;
+the workspace checker's original parser still receives no extra arguments.
+Successful CI and this optimization establish
 no historical execution authentication, node validity, peak-resource budget,
 network activation, canonicality, finality or production state-value acceptance.
