@@ -186,6 +186,27 @@ duplicate execution; exact source/artifact qualification remains required.
 go test -v -count=1 -run '^TestNodeAccountReceiveRPC' ./internal/conformance
 ```
 
+The [compiled receive observer controls](../../internal/conformance/cli_node_account_receive_test.go)
+use ordinary collector, verifier, query-consumer and observer binaries for all
+44 recorded receive inputs. Original trust, commitments and consumer targets
+are selected before collection. Thirty-six unchanged inputs match the original
+receive with inclusion/signature guarantees, including store-only method
+rejections; eight altered signed inputs fail collection with no partial bundle
+or later child execution. No `MATCH` supplies receive execution eligibility.
+
+Eight positive-method controls keep missing retained committing headers or
+collected confirmations refused, and make independently selected different
+targets or tips fail at consumption. All 52 controls preserve input identities,
+modes and bytes, require exact read-only requests and actual process completion,
+check summary privacy and remove raw private observation files. This adds no
+corpus regeneration, node execution, runtime acceptance or network pilot.
+Exact native source/artifact qualification, independent consumer/network inputs,
+human review and authenticated distribution remain separate delivery gates.
+
+```sh
+go test -v -count=1 -run '^TestCompiledNodeAccountReceiveObserver$' ./internal/conformance
+```
+
 Regenerate this separate corpus from the module directory:
 
 ```sh

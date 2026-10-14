@@ -396,6 +396,22 @@ do not change these inclusion outcomes or prove `STATE_TRANSITION`.
 No new node method call, corpus regeneration, signature or live RPC occurs;
 native source/artifact qualification is a separate delivery condition.
 
+The [compiled receive observer controls](../internal/conformance/cli_node_account_receive_test.go)
+carry all 44 recorded observations through the ordinary collector, retained-only
+verifier, query consumer and observer binaries. Thirty-six unchanged receives
+match the independently selected original target with inclusion/signature
+guarantees; eight altered signed inputs fail collection without a partial bundle
+or later verifier/consumer execution. The synthetic source, confirmation and
+received-marker method outcomes do not choose these expected results.
+Eight positive-method controls keep missing retained headers or collected
+confirmations from reaching consumption, and make independently selected wrong
+targets or tips fail at the consumer. All 52 controls require actual child exits,
+exact read-only requests, unchanged input identities/modes/bytes, private summary
+output and removal of raw observation files. This local compiled path proves
+neither receive execution eligibility nor `STATE_TRANSITION`, authenticates no
+history and enables no runtime acceptance. Exact native source/artifact
+qualification remains a separate delivery condition.
+
 ## Recorded account basic checks and store reads
 
 The [basic account memory-store experiment](../tools/gen-node-account-basic-vectors/README.md)
