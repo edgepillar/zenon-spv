@@ -475,3 +475,13 @@ comparisons and populated ownership/budget controls cover the change. Native
 allocation observations retain the whole original M/P and compiled consumer
 grids. They do not qualify process memory, latency, canonicality, finality,
 network activation, state-value acceptance or production readiness.
+
+The [fresh grouped CLI build follow-up](conformance-cli-builds.md) reduces
+repeated Go-tool launches within one conformance scenario. It creates every
+selected ordinary executable in that test's own directory with bounded build
+parallelism; there is no cross-test executable cache. Complete byte comparisons
+with the pinned individual-build helper, private-output mutation and unchanged
+candidate-export identities cover all seven commands. Existing test selections,
+content/retention grids, concurrency and all 59 offline pilot scenarios remain
+required. This test-harness change does not strengthen runtime or proof claims,
+and its component observations do not qualify a whole-CI speedup.

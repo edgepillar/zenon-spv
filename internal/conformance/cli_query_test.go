@@ -335,24 +335,22 @@ func buildQueryCLIs(t *testing.T, names ...string) map[string]string {
 	if len(names) == 0 {
 		names = []string{"zenon-spv", "fetch-bundle"}
 	}
+	// Keep every ordinary executable fresh and private to this test. One Go
+	// invocation shares package loading across the selected commands, while
+	// -p 1 bounds build concurrency. There is no executable cache or retry.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(len(names))*time.Minute)
+	cmd := exec.CommandContext(ctx, goTool, queryCLIBuildArguments(binDir, names)...)
+	cmd.Dir = "../.."
+	cmd.Env = append(queryCLIEnvironment(), "GOTOOLCHAIN=local", "GOWORK=off", "GOPROXY=off", "GOSUMDB=off", "GOFLAGS=", "GOENV=off")
+	output, err := cmd.CombinedOutput()
+	cancel()
+	if err != nil {
+		t.Fatalf("build selected CLIs: %v\n%s", err, output)
+	}
 	for _, name := range names {
-		pkg := "./cmd/" + name
-		switch name {
-		case "derive-producer-schedule", "derive-checkpoints", "verify-mainnet-genesis", "consume-query-report", "observe-block":
-			pkg = "./tools/" + name
-		}
 		path := filepath.Join(binDir, name)
 		if runtime.GOOS == "windows" {
 			path += ".exe"
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-		cmd := exec.CommandContext(ctx, goTool, "build", "-trimpath", "-o", path, pkg)
-		cmd.Dir = "../.."
-		cmd.Env = append(queryCLIEnvironment(), "GOTOOLCHAIN=local", "GOWORK=off", "GOPROXY=off", "GOSUMDB=off", "GOFLAGS=", "GOENV=off")
-		output, err := cmd.CombinedOutput()
-		cancel()
-		if err != nil {
-			t.Fatalf("build %s: %v\n%s", name, err, output)
 		}
 		digestHex, _, err := candidateBinaryDigest(path)
 		if err != nil {
@@ -374,6 +372,19 @@ func buildQueryCLIs(t *testing.T, names ...string) map[string]string {
 		bins[name] = path
 	}
 	return bins
+}
+
+func queryCLIBuildArguments(binDir string, names []string) []string {
+	args := []string{"build", "-p", "1", "-trimpath", "-o", binDir + string(os.PathSeparator)}
+	for _, name := range names {
+		pkg := "./cmd/" + name
+		switch name {
+		case "derive-producer-schedule", "derive-checkpoints", "verify-mainnet-genesis", "consume-query-report", "observe-block":
+			pkg = "./tools/" + name
+		}
+		args = append(args, pkg)
+	}
+	return args
 }
 
 func runQueryCLI(t *testing.T, binary string, args ...string) queryCLIResult {
