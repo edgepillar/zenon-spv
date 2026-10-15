@@ -15,6 +15,7 @@ import tempfile
 import unittest
 from unittest import mock
 import zipfile
+from types import SimpleNamespace
 
 HERE = Path(__file__).resolve().parent
 
@@ -303,6 +304,49 @@ class DirectCandidateControls(unittest.TestCase):
                     with self.assertRaises(CHECK.Rejected):
                         members.open(info)
                     # Successful partial consumption must also fail the context.
+
+    def test_native_path_and_descriptor_metadata_views_stay_stable(self):
+        fields = ("st_dev", "st_ino", "st_mode", "st_nlink", "st_size", "st_mtime_ns", "st_ctime_ns")
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            write_members(directory, payloads())
+            path = directory / "zenon-spv"
+            with EXPORT.regular_file(path, CHECK.BINARY_LIMIT, "export") as (stream, _):
+                descriptor_before, path_before = os.fstat(stream.fileno()), path.lstat()
+                self.assertTrue(os.path.samestat(descriptor_before, path_before))
+                stream.read(1)
+                self.assertEqual(EXPORT.file_identity(os.fstat(stream.fileno())), EXPORT.file_identity(descriptor_before))
+                self.assertEqual(EXPORT.file_identity(path.lstat()), EXPORT.file_identity(path_before))
+                native_differences = [field for field in fields if getattr(descriptor_before, field) != getattr(path_before, field)]
+            actual_fstat, actual_check = os.fstat, CHECK.check_payloads
+            for field in ("st_mode", "st_mtime_ns", "st_ctime_ns"):
+                for drift in (False, True):
+                    changed = False
+
+                    def descriptor_view(fd):
+                        info = actual_fstat(fd)
+                        values = {name: getattr(info, name) for name in fields}
+                        delta = (2 if changed else 1) * (0o200 if field == "st_mode" else 100)
+                        values[field] = values[field] ^ delta if field == "st_mode" else values[field] + delta
+                        return SimpleNamespace(**values)
+
+                    def complete_payloads(*args):
+                        nonlocal changed
+                        result = actual_check(*args)
+                        changed = drift
+                        return result
+
+                    with self.subTest(field=field, drift=drift), \
+                            mock.patch.object(EXPORT.os, "fstat", side_effect=descriptor_view), \
+                            mock.patch.object(CHECK, "check_payloads", side_effect=complete_payloads):
+                        code, result = invoke(directory)
+                    self.assertEqual(code, 2 if drift else 0, result)
+                    if drift:
+                        self.assertEqual(result["category"], "export")
+        print("direct-candidate-metadata-views " + json.dumps({"schema_version": 1,
+              "same_file_identity_required": True, "metadata_views_checked_independently": True,
+              "synthetic_stable_views": 3, "synthetic_descriptor_drift_refusals": 3,
+              "native_differing_fields": native_differences, "native_each_view_stable": True}, separators=(",", ":")))
 
     @unittest.skipUnless(hasattr(os, "mkfifo"), "native FIFO creation is unavailable")
     def test_fifo_is_refused_before_open(self):

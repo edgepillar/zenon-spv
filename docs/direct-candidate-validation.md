@@ -30,7 +30,10 @@ opened descriptor identities and sizes must agree before reading; available
 nonblocking/no-follow flags remain in use. Each descriptor can be selected by
 the shared validator only once. After all payload checks, every descriptor and
 current path must retain its device/inode, mode, link count, size, modification
-time and change time. The directory must retain its identity and exact member
+time and change time. Path and descriptor metadata have separate initial
+snapshots: platform APIs may expose different metadata values for the same file.
+Their OS file identity and size must agree, and each view must remain stable
+against its own snapshot. The directory must retain its identity and exact member
 inventory. ExitStack closes every descriptor on success or failure.
 
 These are cooperative stable-input checks, not an atomic filesystem snapshot
@@ -50,7 +53,10 @@ qualification; the direct check cannot establish GitHub artifact provenance.
 all three platform naming recipes and 28 adverse payload refusals. It also checks
 exact layout/aggregate limits, short binary reads, read failures, descriptor
 cleanup, repeated/nonselected adapter requests, links, FIFO admission and
-post-read member/directory changes. These are opaque synthetic fixtures.
+post-read member/directory changes. A separate native metadata control reports
+which path/descriptor fields differ, and three finite alternate-view controls
+require stable views to pass while later descriptor changes are refused.
+These are opaque synthetic fixtures.
 
 A seven-binary 28 MiB fixture asserts one read of every payload and no new ZIP or
 workspace. The fixture establishes an avoided logical copy, not physical APFS
