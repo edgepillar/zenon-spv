@@ -93,19 +93,21 @@ Before that upload, native CI also checks the actual exported directory with
 `tools/check-exported-candidate.py`. It independently reads the current
 checkout's Go/module/JSON inputs using the offline pilot's length-prefixed
 SHA-256 format, checks its clean Git root and expected checkout revision,
-then streams the nine exported files into a private temporary ZIP. The
-existing archive checker must accept its layout, metadata, execution records,
-source/platform pins and actual payload hashes. A second checkout check
+then opens all nine exported regular files and streams each member once through
+the existing archive checker's shared complete payload validator. No temporary
+candidate ZIP is created. Exact directory layout, metadata, execution records,
+source/platform pins and actual payload hashes must pass. A second checkout check
 refuses source drift during validation. Candidate upload requires this step
 and the pilot to succeed. The checker never executes an exported binary or
-replaces an exported file; its temporary ZIP is removed after checking.
+replaces an exported file. See the [direct validation contract](direct-candidate-validation.md).
 
 The checkout input scan allows at most 32,768 entries, 32 directory levels and
 64 MiB of selected input bytes. Export input bounds match the archive checker,
 with a combined payload limit of 256 MiB minus 64 KiB of ZIP overhead. Files
 must be regular. Their opened descriptors must match the selected OS file
 identity and size before source hashing or export streaming, and keep that
-size while read; available
+size while read. Direct export validation also retains all nine descriptors
+until final path/descriptor metadata and exact directory inventory checks pass; available
 nonblocking/no-follow flags are used. Protected stable source/export parents
 and the CI job deadline remain required. This checks local export consistency;
 the later uploaded/downloaded ZIP still needs its separately selected GitHub

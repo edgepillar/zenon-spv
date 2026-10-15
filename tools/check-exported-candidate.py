@@ -10,9 +10,9 @@ import stat
 import struct
 import subprocess
 import sys
-import tempfile
 import zipfile
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.dont_write_bytecode = True
 spec = importlib.util.spec_from_file_location("candidate_archive", Path(__file__).with_name("check-candidate-archive.py"))
@@ -102,6 +102,7 @@ def source_pin(root, revision):
 
 
 def write_archive(directory, destination, os_name):
+    # Explicit legacy packaging utility. Default verification does not call it.
     checker.require(directory.is_dir() and not directory.is_symlink(), "export")
     suffix = ".exe" if os_name == "windows" else ""
     limits = {name + suffix: checker.BINARY_LIMIT for name in checker.COMMANDS}
@@ -123,15 +124,64 @@ def write_archive(directory, destination, os_name):
                         entry.write(raw)
 
 
+def file_identity(info):
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink, info.st_size,
+            info.st_mtime_ns, info.st_ctime_ns)
+
+
+def candidate_layout(directory, expected):
+    selected = directory.lstat()
+    checker.require(stat.S_ISDIR(selected.st_mode), "export")
+    names = set()
+    with os.scandir(directory) as children:
+        for child in children:
+            names.add(child.name)
+            checker.require(len(names) <= len(expected), "export")
+    checker.require(names == set(expected), "export")
+    return selected
+
+
+class OpenedMembers:
+    """Expose each already checked regular descriptor to the validator once."""
+
+    def __init__(self, streams, infos):
+        self.streams, self.infos, self.used = streams, infos, set()
+
+    def open(self, info):
+        checker.require(self.infos.get(info.filename) is info and info.filename not in self.used, "export")
+        self.used.add(info.filename)
+        return contextlib.nullcontext(self.streams[info.filename])
+
+
+@contextlib.contextmanager
+def opened_candidate(directory, os_name):
+    suffix = ".exe" if os_name == "windows" else ""
+    limits = {name + suffix: checker.BINARY_LIMIT for name in checker.COMMANDS}
+    limits.update({"manifest.json": 256 << 10, "offline-pilot.json": 4 << 20})
+    selected = candidate_layout(directory, limits)
+    streams, infos, identities, total = {}, {}, {}, 0
+    with contextlib.ExitStack() as stack:
+        for name, limit in sorted(limits.items()):
+            stream, size = stack.enter_context(regular_file(directory / name, limit, "export"))
+            total += size
+            checker.require(size > 0 and total <= checker.ARCHIVE_LIMIT - (64 << 10), "export")
+            streams[name] = stream
+            infos[name] = SimpleNamespace(filename=name, file_size=size)
+            identities[name] = file_identity(os.fstat(stream.fileno()))
+        members = OpenedMembers(streams, infos)
+        yield members, infos
+        checker.require(members.used == set(limits), "export")
+        for name, stream in streams.items():
+            checker.require(file_identity(os.fstat(stream.fileno())) == identities[name]
+                            and file_identity((directory / name).lstat()) == identities[name], "export")
+        checker.require(os.path.samestat(selected, candidate_layout(directory, limits)), "export")
+
+
 def verify(directory, root, revision, os_name, architecture):
     inputs = source_pin(root, revision)
-    with tempfile.TemporaryDirectory(prefix="candidate-ci-check-") as scratch:
-        archive = Path(scratch) / "candidate.zip"
-        write_archive(directory, archive, os_name)
-        with checker.regular_archive(archive) as stream:
-            archive_digest = checker.file_hash(stream)
-        result = checker.check(archive, archive_digest, revision, inputs, os_name, architecture)
-        checker.require(source_pin(root, revision) == inputs, "source")
+    with opened_candidate(directory, os_name) as (members, infos):
+        result = checker.check_payloads(members, infos, revision, inputs, os_name, architecture)
+    checker.require(source_pin(root, revision) == inputs, "source")
     return result
 
 
