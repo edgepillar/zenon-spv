@@ -44,7 +44,8 @@ def main(argv=None):
             HEX.require(result.wasSuccessful() and not result.skipped and type(tests_run) is int
                         and tests_run == len(control_names) > 0)
         else:
-            revision_programs = ('check_patch_file_resources.py', 'check_tree_import_scale.py',
+            revision_programs = ('check_patch_resources.py', 'check_patch_import_comparison.py',
+                                 'check_patch_file_resources.py', 'check_tree_import_scale.py',
                                  'check_tree_import_lifecycle.py', 'check_tree_driver_resources.py',
                                  'check_patch_tree.py', 'check_patch_tree_tail.py',
                                  'check_oracle_projection.py', 'check_projected_driver.py')

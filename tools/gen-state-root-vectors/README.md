@@ -2167,12 +2167,13 @@ acceptance. Earlier driver and case-only measurements keep their own scopes.
 
 ### Selected target hex validation
 
-`run_target_hex.py` provides an explicit, serial execution recipe for eighteen
+`run_target_hex.py` provides an explicit, serial execution recipe for 22
 complete existing programs: the opened-file resource checker and controls, and
 the temporary-workspace checker and controls, plus the larger file NodeTree
 import, complete reference child lifecycle, and separate driver/build resource
 checkers and controls, plus complete file-to-NodeTree handoff and retained-tail
-checker/control pairs, and sparse-oracle/complete-driver projection pairs. CI selects
+checker/control pairs, sparse-oracle/complete-driver projection pairs, and the
+whole owned-import resource and fixed prior/candidate callback comparison pairs. CI selects
 `--mode translated`.
 The original programs, all recorded corpora, sample bytes and their
 `research_source_inputs` remain unchanged. A separate current execution manifest
@@ -2263,6 +2264,15 @@ later imports in projection controls remain original. Both data checkers receive
 their original `--source-revision` argument. No worker, build, node or resource
 observer launches in these portable checkers. Their original producer/source
 pins, result hashes and measurement boundaries remain intact.
+The whole owned-import resource and callback comparison pairs retain all 24 and
+21 controls. All 12 complete resource corpus cases, prospective maps and byte
+counts, exact callbacks/aliases, refusal ordering and original CLI children stay
+required. The comparison binds all 288 recorded samples and 36 ownership-control
+outcomes to their original source pins. Both data commands forward their original
+`--source-revision` argument and retain their original reports before the separate
+current execution recipe. No reference importer, node or resource observer runs
+in these portable checkers; their unsigned producer measurements establish no
+authenticated execution, latency speedup or production resource budget.
 Successful CI and this optimization establish
 no historical execution authentication, node validity, peak-resource budget,
 network activation, canonicality, finality or production state-value acceptance.
