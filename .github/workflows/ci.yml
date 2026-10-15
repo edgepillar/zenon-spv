@@ -46,6 +46,8 @@ jobs:
         run: go test -v -count=1 -run '^TestFlatRowCapacity' ./internal/proof
       - name: Flat row capacity allocation observations
         run: go test -run '^$' -bench '^BenchmarkFlatRowCapacity$' -benchtime=1x -benchmem -cpu=1 -count=3 ./internal/proof
+      - name: Fresh grouped CLI build controls
+        run: go test -v -count=1 -run '^TestQueryCLIBuild' ./internal/conformance
       - name: Observer preflight input controls
         run: go test -v -count=1 -run '^TestObserverPreflight(Inputs|Replacements)$' ./tools/observe-block
       - name: Verifier unique selection controls
@@ -484,6 +486,8 @@ jobs:
         run: go test -v -count=1 -run '^TestFlatRowCapacity' ./internal/proof
       - name: Flat row capacity allocation observations
         run: go test -run '^$' -bench '^BenchmarkFlatRowCapacity$' -benchtime=1x -benchmem -cpu=1 -count=3 ./internal/proof
+      - name: Fresh grouped CLI build controls
+        run: go test -v -count=1 -run '^TestQueryCLIBuild' ./internal/conformance
       - name: Observer preflight input controls
         run: go test -v -count=1 -run '^TestObserverPreflight(Inputs|Replacements)$' ./tools/observe-block
       - name: Verifier unique selection controls
