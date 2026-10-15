@@ -167,13 +167,17 @@ def opened_candidate(directory, os_name):
             checker.require(size > 0 and total <= checker.ARCHIVE_LIMIT - (64 << 10), "export")
             streams[name] = stream
             infos[name] = SimpleNamespace(filename=name, file_size=size)
-            identities[name] = file_identity(os.fstat(stream.fileno()))
+            descriptor_info = os.fstat(stream.fileno())
+            path_info = (directory / name).lstat()
+            checker.require(stat.S_ISREG(path_info.st_mode) and path_info.st_size == size
+                            and os.path.samestat(descriptor_info, path_info), "export")
+            identities[name] = (file_identity(descriptor_info), file_identity(path_info))
         members = OpenedMembers(streams, infos)
         yield members, infos
         checker.require(members.used == set(limits), "export")
         for name, stream in streams.items():
-            checker.require(file_identity(os.fstat(stream.fileno())) == identities[name]
-                            and file_identity((directory / name).lstat()) == identities[name], "export")
+            checker.require(file_identity(os.fstat(stream.fileno())) == identities[name][0]
+                            and file_identity((directory / name).lstat()) == identities[name][1], "export")
         checker.require(os.path.samestat(selected, candidate_layout(directory, limits)), "export")
 
 
