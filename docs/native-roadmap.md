@@ -465,3 +465,13 @@ Native allocation observations keep their own scope and do not qualify a
 whole-CI speedup, production resource budget or stronger proof guarantee.
 Exact source/native CI/artifact qualification remains required before delivery;
 independent consumer/network inputs, human review and release gates remain open.
+
+The flat-list follow-up in the same [row-storage contract](bundle-row-owned-slots.md#bounded-flat-list-capacity-hint)
+adds a private initial-capacity hint for flat account headers. Encoded bytes,
+remaining row allowances and a fixed 100,000-slot ceiling bound the reservation;
+the original JSON decoder and refusal order still govern acceptance. A separate
+16,640-case array oracle, 8,192 adverse byte substitutions, 6,480 pinned-reference
+comparisons and populated ownership/budget controls cover the change. Native
+allocation observations retain the whole original M/P and compiled consumer
+grids. They do not qualify process memory, latency, canonicality, finality,
+network activation, state-value acceptance or production readiness.

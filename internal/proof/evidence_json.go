@@ -94,6 +94,7 @@ func (flat *flatEvidenceJSON) UnmarshalJSON(raw []byte) error {
 		Headers bundleRows[chain.AccountHeader] `json:"sorted_headers"`
 	}{Headers: bundleRows[chain.AccountHeader]{target: &decoded.SortedHeaders,
 		field: "commitments.flat.sorted_headers", limit: flat.decoder.limits.MaxFlatEvidenceMembers, budget: flat.decoder.flat,
+		capacityHint: flatRowsCapacityHint,
 	}}
 	if err := json.Unmarshal(raw, &wire); err != nil {
 		return err

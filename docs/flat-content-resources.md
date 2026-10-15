@@ -59,6 +59,12 @@ measures removal of one temporary object per decoded row. It retains the
 original JSON decoder, refusal order, count/byte guards and complete wire lists.
 Its allocation observations are separate from process-memory and timing claims.
 
+The same document's [bounded flat-list capacity hint](bundle-row-owned-slots.md#bounded-flat-list-capacity-hint)
+reduces backing-array growth for complete account-header lists. Its initial
+reservation is limited by encoded bytes, active row allowances and a fixed
+ceiling; it does not replace the original decoder or qualify a latency gain.
+The full repeated wire lists and every existing workload below remain intact.
+
 `BenchmarkFlatContent` supplies two operations for each row:
 
 - `Verify`: preflight and verify the already-decoded batch, including checks of

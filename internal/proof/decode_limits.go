@@ -64,6 +64,8 @@ type bundleRows[T any] struct {
 	limit  int
 	budget *rowBudget
 	decode func(*json.Decoder, *T) error
+	// An optional private storage hint cannot authorize rows or consume budget.
+	capacityHint func(contents []byte, ceiling int) int
 }
 
 func (rows *bundleRows[T]) UnmarshalJSON(raw []byte) error {
@@ -77,7 +79,18 @@ func (rows *bundleRows[T]) UnmarshalJSON(raw []byte) error {
 		if first != json.Delim('[') {
 			return fmt.Errorf("bundle %s must be an array or null", rows.field)
 		}
-		decoded = make([]T, 0)
+		capacity := 0
+		if rows.capacityHint != nil {
+			ceiling := int(^uint(0) >> 1)
+			if rows.limit > 0 {
+				ceiling = rows.limit
+			}
+			if rows.budget != nil {
+				ceiling = min(ceiling, rows.budget.remaining)
+			}
+			capacity = max(0, min(ceiling, rows.capacityHint(raw[d.InputOffset():], ceiling)))
+		}
+		decoded = make([]T, 0, capacity)
 		decode := rows.decode
 		if decode == nil {
 			decode = func(d *json.Decoder, row *T) error { return d.Decode(row) }
@@ -110,4 +123,74 @@ func (rows *bundleRows[T]) UnmarshalJSON(raw []byte) error {
 	}
 	*rows.target = decoded
 	return nil
+}
+
+const flatCapacityMaxRows = 100_000
+const flatCapacityWireBytes = 128
+
+// flatRowsCapacityHint only suggests storage for account-header rows. At most
+// 100,000 slots and one slot per 128 encoded bytes can be reserved, further
+// capped by the caller's remaining array/aggregate allowance. An account header
+// occupies at most 64 bytes on supported Go platforms, so the requested initial
+// row capacity uses at most half the contents length, excluding allocator and
+// metadata overhead. Sparse/short encodings can still grow normally; this hint
+// is neither a count nor a process-memory limit.
+func flatRowsCapacityHint(contents []byte, ceiling int) int {
+	ceiling = min(ceiling, flatCapacityMaxRows, len(contents)/flatCapacityWireBytes)
+	if ceiling <= 0 {
+		return 0
+	}
+	count, depth := 0, 0
+	inString, inValue := false, false
+	for index := 0; index < len(contents); index++ {
+		value := contents[index]
+		if inString {
+			// Most account-header bytes are unescaped hash/address text. Skip
+			// those spans without branching over every byte. Backslash parity
+			// only decides whether a found quote closes this string.
+			next := bytes.IndexByte(contents[index:], '"')
+			if next < 0 {
+				return count
+			}
+			index += next
+			escaped := false
+			for before := index - 1; before >= 0 && contents[before] == '\\'; before-- {
+				escaped = !escaped
+			}
+			inString = escaped
+			continue
+		}
+		if depth == 0 {
+			switch value {
+			case ' ', '\t', '\r', '\n':
+				continue
+			case ']':
+				return count
+			case ',':
+				inValue = false
+				continue
+			}
+			if !inValue {
+				count++
+				if count == ceiling {
+					return count
+				}
+				inValue = true
+			}
+		}
+		switch value {
+		case '"':
+			inString = true
+		case '[', '{':
+			depth++
+		case ']', '}':
+			if depth > 0 {
+				depth--
+			}
+		}
+	}
+	// Malformed/incomplete input can yield a smaller or larger hint, within
+	// the same bounds. The original JSON decoder still owns every syntax,
+	// type, trailing-input, count and byte refusal, in its original order.
+	return count
 }
