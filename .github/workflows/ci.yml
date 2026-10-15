@@ -42,6 +42,10 @@ jobs:
         run: go test -v -count=1 -run '^TestBundleRowOwnedSlots' ./internal/proof
       - name: Proof bundle row allocation observations
         run: go test -run '^$' -bench '^BenchmarkProofBundleRowOwnedSlots$' -benchtime=1x -benchmem -cpu=1 -count=3 ./internal/proof
+      - name: Flat row capacity controls
+        run: go test -v -count=1 -run '^TestFlatRowCapacity' ./internal/proof
+      - name: Flat row capacity allocation observations
+        run: go test -run '^$' -bench '^BenchmarkFlatRowCapacity$' -benchtime=1x -benchmem -cpu=1 -count=3 ./internal/proof
       - name: Observer preflight input controls
         run: go test -v -count=1 -run '^TestObserverPreflight(Inputs|Replacements)$' ./tools/observe-block
       - name: Verifier unique selection controls
@@ -476,6 +480,10 @@ jobs:
         run: go test -v -count=1 -run '^TestBundleRowOwnedSlots' ./internal/proof
       - name: Proof bundle row allocation observations
         run: go test -run '^$' -bench '^BenchmarkProofBundleRowOwnedSlots$' -benchtime=1x -benchmem -cpu=1 -count=3 ./internal/proof
+      - name: Flat row capacity controls
+        run: go test -v -count=1 -run '^TestFlatRowCapacity' ./internal/proof
+      - name: Flat row capacity allocation observations
+        run: go test -run '^$' -bench '^BenchmarkFlatRowCapacity$' -benchtime=1x -benchmem -cpu=1 -count=3 ./internal/proof
       - name: Observer preflight input controls
         run: go test -v -count=1 -run '^TestObserverPreflight(Inputs|Replacements)$' ./tools/observe-block
       - name: Verifier unique selection controls
