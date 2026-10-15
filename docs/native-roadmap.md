@@ -390,6 +390,17 @@ and state-value boundaries remain unchanged. Exact published source/native
 CI/artifacts must qualify this finite step; authenticated histories, protocol
 resource limits, consumer/network trust, human review and release remain open.
 
+The [native PoW boundary follow-up](node-account-pow-boundaries.md) now consumes
+all 64 immutable method observations through actual segment verification and
+loopback production RPC conversion. Its 324 controls distinguish changed claimed
+hashes from coherent hashes with unchanged signatures, preserve exact upper-half
+`uint64` inputs, discard failed complete ranges and refuse missing commitment
+inputs through both layers. Node work or method matches never select trust or
+expected acceptance. No corpus, signature, runtime policy, reference-node call
+or resource observation changes. Native source/CI/artifact qualification remains
+required; account PoW, state transitions, real histories and independent network,
+review and release gates remain separate.
+
 ## Qualification cost: selected target hex validation
 
 The [selected hex recipe](../tools/gen-state-root-vectors/README.md#selected-target-hex-validation)
