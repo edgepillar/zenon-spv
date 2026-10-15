@@ -386,7 +386,7 @@ resource limits, consumer/network trust, human review and release remain open.
 ## Qualification cost: selected target hex validation
 
 The [selected hex recipe](../tools/gen-state-root-vectors/README.md#selected-target-hex-validation)
-optimizes character membership in eighteen existing complete Python qualification
+optimizes character membership in 22 existing complete Python qualification
 programs. All prospective-map copies, full entry/byte accounting, error ordering
 and independent byte checks remain required. Builtin strings use `str.translate`;
 other types retain the original iteration behavior. The original producer inputs
@@ -427,3 +427,12 @@ oracle, captured worker/build/child outcome or recorded resource boundary.
 The 24 oracle workers and four complete driver workers remain recorded evidence;
 the portable checkers launch no new workers, builds, nodes or observers. Their
 reference/projected modes remain separate from the current hex execution mode.
+
+The whole owned-import resource and fixed prior/candidate callback comparison
+pairs also select the explicit hex seam and retain all 24 and 21 controls.
+All 12 complete corpus cases, prospective maps, callback/alias bytes, target
+counts, refusal ordering and original CLI children remain required. The
+comparison still binds all 288 recorded samples and 36 ownership-control
+outcomes to their original source pins. The portable checkers execute no new
+reference importer, node or resource observer and qualify no latency or budget
+claim about those recorded producers.

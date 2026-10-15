@@ -155,13 +155,13 @@ jobs:
       - name: Patch output encoding allocation comparison
         run: python -I -B tools/gen-state-root-vectors/measure_patch_plan_encodings.py --source-revision "${{ github.sha }}"
       - name: Whole owned patch import resource checker controls
-        run: python -I -B tools/gen-state-root-vectors/check_patch_resources_test.py
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_resources_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Recorded whole owned import sample bindings (offline; no reference execution)
-        run: python -I -B tools/gen-state-root-vectors/check_patch_resources.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_resources.py --mode translated --source-revision "${{ github.sha }}"
       - name: Owned patch callback reuse comparison controls
-        run: python -I -B tools/gen-state-root-vectors/check_patch_import_comparison_test.py
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_import_comparison_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Recorded fixed prior and candidate import comparison (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/check_patch_import_comparison.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_import_comparison.py --mode translated --source-revision "${{ github.sha }}"
       - name: Opened regular file handoff evidence controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_file_test.py
       - name: Recorded file handoff and complete owned map bindings (offline; no Go execution)
@@ -577,13 +577,13 @@ jobs:
       - name: Patch output encoding allocation comparison
         run: python -I -B tools/gen-state-root-vectors/measure_patch_plan_encodings.py --source-revision "${{ github.sha }}"
       - name: Whole owned patch import resource checker controls
-        run: python -I -B tools/gen-state-root-vectors/check_patch_resources_test.py
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_resources_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Recorded whole owned import sample bindings (offline; no reference execution)
-        run: python -I -B tools/gen-state-root-vectors/check_patch_resources.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_resources.py --mode translated --source-revision "${{ github.sha }}"
       - name: Owned patch callback reuse comparison controls
-        run: python -I -B tools/gen-state-root-vectors/check_patch_import_comparison_test.py
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_import_comparison_test.py --mode translated --source-revision "${{ github.sha }}"
       - name: Recorded fixed prior and candidate import comparison (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/check_patch_import_comparison.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_import_comparison.py --mode translated --source-revision "${{ github.sha }}"
       - name: Opened regular file handoff evidence controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_file_test.py
       - name: Recorded file handoff and complete owned map bindings (offline; no Go execution)
