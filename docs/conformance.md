@@ -531,6 +531,16 @@ full protocol resources, authenticated nonzero-PoW histories, consumer/network
 trust, review and release remain separate gates. Exact source/native artifacts
 must qualify the published step before delivery.
 
+The [compiled PoW observer controls](node-account-pow-observer.md) bind those same
+64 observations to the ordinary collector/verifier/consumer pipeline. Their 134
+controls retain two original inclusion/signature matches, 62 no-partial collection
+failures, 62 coherent-hash signature rejections and eight missing-evidence or
+consumer-selection boundaries. Original fixture targets and explicit trust inputs
+are selected before collection; method or work matches never supply them. Exact
+requests, child completion, privacy, unchanged inputs and raw private cleanup are
+checked without changing runtime policy, generating signatures or rerunning a
+node. Exact source/native CI/artifacts must qualify this separate compiled scope.
+
 ## Known gaps
 
 These are *known* and *documented*, not bugs.

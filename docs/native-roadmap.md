@@ -401,6 +401,20 @@ or resource observation changes. Native source/CI/artifact qualification remains
 required; account PoW, state transitions, real histories and independent network,
 review and release gates remain separate.
 
+The [compiled PoW observer follow-up](node-account-pow-observer.md) carries every
+one of the same 64 observations through ordinary proof-only collection,
+retained-only verification and independently selected query consumption. Two
+original signed inputs match; 62 changed claimed hashes stop collection without
+a partial bundle. A further 62 coherent-hash controls reach the unchanged
+signature check and stop before consumption. Eight controls preserve missing
+commitment and independently selected consumer target/tip boundaries. All 134
+controls reuse one fresh four-command build within their private test directory
+and check actual exits, exact requests, privacy, input preservation and cleanup.
+No reference node, corpus, signature, runtime policy or resource producer changes.
+Exact native source/CI/artifact qualification remains required before delivery;
+account-PoW, execution, real histories, consumer/network trust, independent review
+and release acceptance remain separate gates.
+
 ## Qualification cost: selected target hex validation
 
 The [selected hex recipe](../tools/gen-state-root-vectors/README.md#selected-target-hex-validation)
