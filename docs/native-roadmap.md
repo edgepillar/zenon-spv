@@ -520,3 +520,17 @@ before success. Native tests, resource grids and all 59 offline pilot scenarios
 remain unchanged. Avoiding a logical payload copy does not establish physical
 disk reclaim, whole-CI latency or production capacity. Uploaded artifacts still
 require exact-source native and independent archive qualification.
+
+The [bounded graph reuse follow-up](conformance-graph-reuse.md) shares complete
+pure graph results across four already loaded oracle instances within each
+selected driver checker process. Full ordered byte maps are the keys, and every
+miss runs the unchanged independent graph function. Fresh result dictionaries,
+input rechecks, explicit logical-byte/entry limits and restoration preserve
+ownership and failure boundaries. All 21 existing driver controls, complete
+sample bindings, physical graph/proof checks and recorded source inputs remain
+required. The separate 33 controls include 512 path/value bit comparisons with
+the pinned original and a distinct full sparse-level root oracle. This optional
+current execution recipe creates no disk cache and changes no runtime or trust
+policy. Local graph-call reductions do not qualify whole-CI latency, process
+RSS, production budgets, real-chain state values or release acceptance. Exact
+native source/CI/artifact qualification remains required before delivery.
