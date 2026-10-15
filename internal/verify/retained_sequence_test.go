@@ -189,13 +189,13 @@ func sequenceCheckState(t *testing.T, f sequenceFixture, m sequenceModel, state 
 		t.Fatal("retained state differs from independent list model")
 	}
 	for i, index := range m.indices {
-		if !reflect.DeepEqual(snapshot.RetainedWindow[i], f.headers[index]) {
+		if !sequenceHeadersEqual(snapshot.RetainedWindow[i], f.headers[index]) {
 			t.Fatal("retained ordering or signed envelope differs from model")
 		}
 	}
 	tip, hasTip := state.Tip()
 	if hasTip != (len(m.indices) != 0) || state.Empty() != (len(m.indices) == 0) ||
-		hasTip && !reflect.DeepEqual(tip, f.headers[m.next-1]) {
+		hasTip && !sequenceHeadersEqual(tip, f.headers[m.next-1]) {
 		t.Fatal("tip advanced on an unsuccessful operation")
 	}
 	summary, err := state.RetainedSummary()
@@ -231,7 +231,7 @@ func sequenceCheckState(t *testing.T, f sequenceFixture, m sequenceModel, state 
 	}
 	for _, index := range indices {
 		h, ok := state.HeaderAtHeight(f.anchor.Height + uint64(index+1))
-		if ok != slices.Contains(m.indices, index) || ok && !reflect.DeepEqual(h, f.headers[index]) {
+		if ok != slices.Contains(m.indices, index) || ok && !sequenceHeadersEqual(h, f.headers[index]) {
 			t.Fatal("retained lookup differs from model")
 		}
 		for fault := 0; fault < 4; fault++ {

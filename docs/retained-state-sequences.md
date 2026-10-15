@@ -59,6 +59,27 @@ ten-minute default and one-hour maximum; there is no shorter hidden five-minute
 package limit. Full-capacity race instrumentation can take substantially longer
 than ordinary execution. A timeout is a failed/incomplete run, never a pass.
 
+The shared sequence oracle compares every retained header field directly rather
+than using reflection for each envelope. All five hashes, six unsigned scalars,
+public-key bytes and signature bytes remain compared, including the distinction
+between nil and empty slices. A positional assertion on a local Header-shaped
+type makes added fields a compilation error until the oracle is updated. This
+comparison is test-only; it performs no header validation and changes no fixture,
+cryptographic check, sequence step, capacity, predecessor or selected query.
+
+`TestSequenceHeaderEqualityMatchesReflection` checks both argument orders against
+the separate reflection oracle for all 2,432 single-bit field mutations and
+4,096 key/signature shape pairs. The pairs include nil, empty, short and oversized
+byte slices. Identical aliases, independent allocations and spare capacity must
+remain equal without mutating either input. Native CI runs these controls.
+The small comparator benchmark separates this test-oracle cost from verifier
+execution; it establishes no whole-suite, pipeline, device or network speedup.
+
+```sh
+go test -v -count=1 -run '^TestSequenceHeaderEqualityMatchesReflection$' ./internal/verify
+go test -run '^$' -bench '^BenchmarkSequenceHeaderEquality$' -benchtime=20000x -benchmem -cpu=1 -count=3 ./internal/verify
+```
+
 ```sh
 go test -run '^TestRetainedCapacitySequenceModel$' -count=1 ./internal/verify
 ```
