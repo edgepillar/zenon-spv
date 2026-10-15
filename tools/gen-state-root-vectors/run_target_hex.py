@@ -7,6 +7,7 @@ recipe binds the current checker, optimizer and dependency sources. It does not
 authenticate historical execution or qualify node, hardware or state proofs.
 """
 import argparse
+from contextlib import nullcontext
 import hashlib
 import importlib.util
 import json
@@ -26,13 +27,24 @@ def main(argv=None):
     parser.add_argument('--program', choices=tuple(HEX.SEAMS), required=True)
     parser.add_argument('--mode', choices=HEX.MODES, required=True)
     parser.add_argument('--source-revision', required=True)
+    parser.add_argument('--reuse-graphs', action='store_true',
+                        help='reuse bounded complete pure graph results for the selected driver checker only')
     args = parser.parse_args(argv)
     HEX.require(re.fullmatch(r'[0-9a-f]{40}', args.source_revision) is not None)
     runner_pin = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    graph = None
+    if args.reuse_graphs:
+        spec = importlib.util.spec_from_file_location('bounded_conformance_graph_reuse',
+                                                     HERE.parent / 'conformance_graph_reuse.py')
+        graph = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(graph)
+        graph.require(args.program in graph.SEAMS)
+        graph.verify_sources()
     program = HEX.load('selected_target_hex_program', args.program)
     tests_run = None
     control_names = []
-    with HEX.selected_oracles(program, args.program, args.mode) as bindings:
+    graph_scope = graph.selected_graphs(program, args.program) if graph is not None else nullcontext(None)
+    with graph_scope as reused, HEX.selected_oracles(program, args.program, args.mode) as bindings:
         if args.program.endswith('_test.py'):
             suite = unittest.defaultTestLoader.loadTestsFromModule(program)
             def names(tests):
@@ -53,6 +65,15 @@ def main(argv=None):
             program.main(arguments)
     HEX.require(hashlib.sha256(Path(__file__).read_bytes()).hexdigest() == runner_pin)
     bindings['current_execution_inputs']['run_target_hex.py'] = runner_pin
+    if reused is not None:
+        graph_report = {
+            'format_version': 1, 'kind': 'bounded-conformance-graph-reuse-execution',
+            'source_revision': args.source_revision, 'program': args.program, 'mode': args.mode,
+            'tests_run': tests_run, 'control_names': control_names,
+            'runner_sha256': runner_pin, 'checks_completed': True,
+            'graph_reuse': reused.report(),
+        }
+        print(json.dumps(graph_report, sort_keys=True, separators=(',', ':')))
     report = {
         'format_version': 1, 'kind': 'selected-target-hex-execution',
         'source_revision': args.source_revision, 'program': args.program, 'mode': args.mode,
