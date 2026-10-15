@@ -54,6 +54,11 @@ separately measures fixed-size hex conversion allocations used by every
 serialized/decoded content member. It preserves this entire M/P grid and its
 expected roots; conversion measurements are not whole-workflow timing claims.
 
+The [owned row storage comparison](bundle-row-owned-slots.md) separately
+measures removal of one temporary object per decoded row. It retains the
+original JSON decoder, refusal order, count/byte guards and complete wire lists.
+Its allocation observations are separate from process-memory and timing claims.
+
 `BenchmarkFlatContent` supplies two operations for each row:
 
 - `Verify`: preflight and verify the already-decoded batch, including checks of
