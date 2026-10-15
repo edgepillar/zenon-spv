@@ -453,3 +453,15 @@ assertions stay intact. Comparator measurements have a separate scope from
 complete test or pipeline timings. This changes no runtime verifier, signed
 fixture, trust input, network behavior or production acceptance gate. Exact
 published source/native CI/artifact qualification remains required for delivery.
+
+The [bundle row storage follow-up](bundle-row-owned-slots.md) removes one
+temporary allocation per decoded row by filling private result-slice slots.
+All count checks still precede a callback, only successful rows consume shared
+budgets, and receivers change only after complete success. The pinned old
+helper, 3,024 finite cases, ownership/error-order controls and bounded fuzzing
+cover all six concrete row types. Both full flat-content and compiled consumer
+grids retain their original inputs, signatures, targets and trust boundaries.
+Native allocation observations keep their own scope and do not qualify a
+whole-CI speedup, production resource budget or stronger proof guarantee.
+Exact source/native CI/artifact qualification remains required before delivery;
+independent consumer/network inputs, human review and release gates remain open.
