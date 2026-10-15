@@ -24,6 +24,8 @@ jobs:
           python-version: '3.13'
       - name: Candidate archive checks
         run: python tools/check-candidate-archive_test.py
+      - name: Direct candidate validation controls
+        run: python -I -B tools/check-direct-candidate_test.py -v
       - name: Exported candidate checker controls
         run: python -B tools/check-exported-candidate_test.py
       - name: Verification context checks
@@ -468,6 +470,8 @@ jobs:
           python-version: '3.13'
       - name: Candidate archive checks
         run: python tools/check-candidate-archive_test.py
+      - name: Direct candidate validation controls
+        run: python -I -B tools/check-direct-candidate_test.py -v
       - name: Exported candidate checker controls
         run: python -B tools/check-exported-candidate_test.py
       - name: Verification context checks

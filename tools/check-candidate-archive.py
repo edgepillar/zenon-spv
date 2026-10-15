@@ -340,98 +340,104 @@ def check_contents(source, revision, inputs_sha256, os_name, architecture):
                     and info.compress_type in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED), "layout")
         local_zip_metadata(source, archive, infos)
         by_name = {info.filename: info for info in infos}
-        manifest = metadata(entry_bytes(archive, by_name["manifest.json"], 256 << 10))
-        exact_keys(manifest, ("schema_version", "mode", "test_status", "os", "architecture", "go_version",
-                              "source", "corpus", "report", "binaries"))
-        require(type(manifest["schema_version"]) is int and manifest["schema_version"] == 1
-                and manifest["mode"] == "offline_synthetic_candidate")
-        require(manifest["os"] == os_name and manifest["architecture"] == architecture, "platform_pin")
-        require(type(manifest["go_version"]) is str and len(manifest["go_version"]) <= 32
-                and (manifest["go_version"] == "unknown"
-                     or re.fullmatch(r"go[0-9]+\.[0-9]+(?:\.[0-9]+|(?:beta|rc)[0-9]+)?", manifest["go_version"])))
-        require(manifest["test_status"] in ("passed", "passed_with_skips"))
-        exact_keys(manifest["source"], ("revision", "modified", "inputs_sha256"))
-        require(manifest["source"] == {"revision": revision, "modified": False, "inputs_sha256": inputs_sha256}
-                and manifest["source"]["modified"] is False, "source_pin")
-        corpus = manifest["corpus"]
-        require(type(corpus) is list and len(corpus) == len(CORPUS))
-        for record, expected_path in zip(corpus, CORPUS):
-            exact_keys(record, ("path", "sha256"))
-            require(record["path"] == expected_path and digest(record["sha256"]))
-        report_record = manifest["report"]
-        exact_keys(report_record, ("filename", "sha256", "bytes"))
-        require(report_record["filename"] == "offline-pilot.json" and digest(report_record["sha256"])
-                and integer(report_record["bytes"], 1, 4 << 20))
-        raw = entry_bytes(archive, by_name["offline-pilot.json"], 4 << 20)
-        require(len(raw) == report_record["bytes"] and hashlib.sha256(raw).hexdigest() == report_record["sha256"], "report_pin")
-        report = metadata(raw)
-        exact_keys(report, ("schema_version", "mode", "status", "error", "runner", "test_parent_race_enabled",
-                            "source", "source_matches_after_run", "corpus", "cases", "caveats"))
-        require(type(report["schema_version"]) is int and report["schema_version"] == 1
-                and report["mode"] == "offline_synthetic" and report["status"] == manifest["test_status"]
-                and report["error"] is None and report["source_matches_after_run"] is True
-                and type(report["test_parent_race_enabled"]) is bool and report["source"] == manifest["source"]
-                and report["corpus"] == corpus)
-        require(report["source"]["modified"] is False)
-        runner = report["runner"]
-        exact_keys(runner, ("schema_version", "command", "go_version", "os", "architecture", "source"))
-        require(type(runner["schema_version"]) is int and runner["schema_version"] == 1
-                and runner["command"] == "offline-pilot" and runner["os"] == os_name
-                and runner["architecture"] == architecture and runner["go_version"] == manifest["go_version"])
-        if runner["source"] is not None:
-            exact_keys(runner["source"], ("vcs", "revision", "modified"))
-            require(runner["source"]["vcs"] == "git" and runner["source"]["revision"] == revision
-                    and runner["source"]["modified"] is False)
-        require(type(report["caveats"]) is list and all(type(c) is str for c in report["caveats"]))
-        binaries = manifest["binaries"]
-        require(type(binaries) is list and len(binaries) == len(COMMANDS))
-        binary_map = {}
-        for binary, command in zip(binaries, COMMANDS):
-            exact_keys(binary, ("command", "filename", "sha256", "bytes"))
-            require(binary["command"] == command and binary["filename"] == command + suffix
-                    and digest(binary["sha256"]) and integer(binary["bytes"], 1, BINARY_LIMIT))
-            info = by_name[binary["filename"]]
-            require(info.file_size == binary["bytes"], "binary_pin")
-            result, total = hashlib.sha256(), 0
-            with archive.open(info) as stream:
-                while True:
-                    block = stream.read(1 << 20)
-                    if not block:
-                        break
-                    total += len(block)
-                    require(total <= BINARY_LIMIT, "binary_pin")
-                    result.update(block)
-            require(total == binary["bytes"] and result.hexdigest() == binary["sha256"], "binary_pin")
-            binary_map[command] = binary["sha256"]
-        cases = report["cases"]
-        require(type(cases) is list and 0 < len(cases) <= 256)
-        seen, observed, skipped = set(), set(), 0
-        for case in cases:
-            exact_keys(case, ("id", "package", "test", "status", "passed_subtests", "skipped_subtests",
-                              "failed_subtests", "binaries"), ("resource_samples", "query_resource_samples"))
-            require(type(case["id"]) is str and re.fullmatch(r"[a-z0-9_]{1,128}", case["id"])
-                    and case["id"] not in seen and case["package"] in PACKAGES
-                    and type(case["test"]) is str and re.fullmatch(r"Test[A-Za-z0-9_]+", case["test"]))
-            seen.add(case["id"])
-            require(integer(case["passed_subtests"]) and integer(case["skipped_subtests"])
-                    and type(case["failed_subtests"]) is int and case["failed_subtests"] == 0
-                    and case["status"] in ("passed", "passed_with_skips")
-                    and (case["status"] == "passed_with_skips") == (case["skipped_subtests"] > 0))
-            skipped += case["skipped_subtests"]
-            require(integer(skipped))
-            require(type(case["binaries"]) is list and len(case["binaries"]) <= len(COMMANDS))
-            recorded = set()
-            for binary in case["binaries"]:
-                exact_keys(binary, ("command", "sha256"))
-                command = binary["command"]
-                require(command in binary_map and command not in recorded and binary["sha256"] == binary_map[command], "execution_pin")
-                recorded.add(command)
-                observed.add(command)
-            verifier_resources(case, os_name)
-            query_resources(case, os_name)
-        require("compiled_content_scaling" in seen)
-        require("compiled_query_consumer_scaling" in seen)
-        require(observed == set(COMMANDS) and (report["status"] == "passed_with_skips") == (skipped > 0), "execution_pin")
+        return check_payloads(archive, by_name, revision, inputs_sha256, os_name, architecture)
+
+
+def check_payloads(archive, by_name, revision, inputs_sha256, os_name, architecture):
+    """Apply the complete member contract after a caller has checked its layout."""
+    suffix = ".exe" if os_name == "windows" else ""
+    manifest = metadata(entry_bytes(archive, by_name["manifest.json"], 256 << 10))
+    exact_keys(manifest, ("schema_version", "mode", "test_status", "os", "architecture", "go_version",
+                          "source", "corpus", "report", "binaries"))
+    require(type(manifest["schema_version"]) is int and manifest["schema_version"] == 1
+            and manifest["mode"] == "offline_synthetic_candidate")
+    require(manifest["os"] == os_name and manifest["architecture"] == architecture, "platform_pin")
+    require(type(manifest["go_version"]) is str and len(manifest["go_version"]) <= 32
+            and (manifest["go_version"] == "unknown"
+                 or re.fullmatch(r"go[0-9]+\.[0-9]+(?:\.[0-9]+|(?:beta|rc)[0-9]+)?", manifest["go_version"])))
+    require(manifest["test_status"] in ("passed", "passed_with_skips"))
+    exact_keys(manifest["source"], ("revision", "modified", "inputs_sha256"))
+    require(manifest["source"] == {"revision": revision, "modified": False, "inputs_sha256": inputs_sha256}
+            and manifest["source"]["modified"] is False, "source_pin")
+    corpus = manifest["corpus"]
+    require(type(corpus) is list and len(corpus) == len(CORPUS))
+    for record, expected_path in zip(corpus, CORPUS):
+        exact_keys(record, ("path", "sha256"))
+        require(record["path"] == expected_path and digest(record["sha256"]))
+    report_record = manifest["report"]
+    exact_keys(report_record, ("filename", "sha256", "bytes"))
+    require(report_record["filename"] == "offline-pilot.json" and digest(report_record["sha256"])
+            and integer(report_record["bytes"], 1, 4 << 20))
+    raw = entry_bytes(archive, by_name["offline-pilot.json"], 4 << 20)
+    require(len(raw) == report_record["bytes"] and hashlib.sha256(raw).hexdigest() == report_record["sha256"], "report_pin")
+    report = metadata(raw)
+    exact_keys(report, ("schema_version", "mode", "status", "error", "runner", "test_parent_race_enabled",
+                        "source", "source_matches_after_run", "corpus", "cases", "caveats"))
+    require(type(report["schema_version"]) is int and report["schema_version"] == 1
+            and report["mode"] == "offline_synthetic" and report["status"] == manifest["test_status"]
+            and report["error"] is None and report["source_matches_after_run"] is True
+            and type(report["test_parent_race_enabled"]) is bool and report["source"] == manifest["source"]
+            and report["corpus"] == corpus)
+    require(report["source"]["modified"] is False)
+    runner = report["runner"]
+    exact_keys(runner, ("schema_version", "command", "go_version", "os", "architecture", "source"))
+    require(type(runner["schema_version"]) is int and runner["schema_version"] == 1
+            and runner["command"] == "offline-pilot" and runner["os"] == os_name
+            and runner["architecture"] == architecture and runner["go_version"] == manifest["go_version"])
+    if runner["source"] is not None:
+        exact_keys(runner["source"], ("vcs", "revision", "modified"))
+        require(runner["source"]["vcs"] == "git" and runner["source"]["revision"] == revision
+                and runner["source"]["modified"] is False)
+    require(type(report["caveats"]) is list and all(type(c) is str for c in report["caveats"]))
+    binaries = manifest["binaries"]
+    require(type(binaries) is list and len(binaries) == len(COMMANDS))
+    binary_map = {}
+    for binary, command in zip(binaries, COMMANDS):
+        exact_keys(binary, ("command", "filename", "sha256", "bytes"))
+        require(binary["command"] == command and binary["filename"] == command + suffix
+                and digest(binary["sha256"]) and integer(binary["bytes"], 1, BINARY_LIMIT))
+        info = by_name[binary["filename"]]
+        require(info.file_size == binary["bytes"], "binary_pin")
+        result, total = hashlib.sha256(), 0
+        with archive.open(info) as stream:
+            while True:
+                block = stream.read(1 << 20)
+                if not block:
+                    break
+                total += len(block)
+                require(total <= BINARY_LIMIT, "binary_pin")
+                result.update(block)
+        require(total == binary["bytes"] and result.hexdigest() == binary["sha256"], "binary_pin")
+        binary_map[command] = binary["sha256"]
+    cases = report["cases"]
+    require(type(cases) is list and 0 < len(cases) <= 256)
+    seen, observed, skipped = set(), set(), 0
+    for case in cases:
+        exact_keys(case, ("id", "package", "test", "status", "passed_subtests", "skipped_subtests",
+                          "failed_subtests", "binaries"), ("resource_samples", "query_resource_samples"))
+        require(type(case["id"]) is str and re.fullmatch(r"[a-z0-9_]{1,128}", case["id"])
+                and case["id"] not in seen and case["package"] in PACKAGES
+                and type(case["test"]) is str and re.fullmatch(r"Test[A-Za-z0-9_]+", case["test"]))
+        seen.add(case["id"])
+        require(integer(case["passed_subtests"]) and integer(case["skipped_subtests"])
+                and type(case["failed_subtests"]) is int and case["failed_subtests"] == 0
+                and case["status"] in ("passed", "passed_with_skips")
+                and (case["status"] == "passed_with_skips") == (case["skipped_subtests"] > 0))
+        skipped += case["skipped_subtests"]
+        require(integer(skipped))
+        require(type(case["binaries"]) is list and len(case["binaries"]) <= len(COMMANDS))
+        recorded = set()
+        for binary in case["binaries"]:
+            exact_keys(binary, ("command", "sha256"))
+            command = binary["command"]
+            require(command in binary_map and command not in recorded and binary["sha256"] == binary_map[command], "execution_pin")
+            recorded.add(command)
+            observed.add(command)
+        verifier_resources(case, os_name)
+        query_resources(case, os_name)
+    require("compiled_content_scaling" in seen)
+    require("compiled_query_consumer_scaling" in seen)
+    require(observed == set(COMMANDS) and (report["status"] == "passed_with_skips") == (skipped > 0), "execution_pin")
     return {"schema_version": 1, "status": "verified", "category": None, "binaries": len(COMMANDS),
             "test_status": report["status"], "skipped_subtests": skipped}
 
