@@ -90,10 +90,13 @@ func (rows *bundleRows[T]) UnmarshalJSON(raw []byte) error {
 				return &BundleCountLimitError{Field: rows.budget.field, Limit: rows.budget.limit}
 			}
 			var row T
-			if err := decode(d, &row); err != nil {
+			// Decode into a fresh owned slice slot instead of making each row
+			// escape separately through the callback. Neither the slice nor a
+			// partially decoded slot reaches the receiver on failure.
+			decoded = append(decoded, row)
+			if err := decode(d, &decoded[len(decoded)-1]); err != nil {
 				return err
 			}
-			decoded = append(decoded, row)
 			if rows.budget != nil {
 				rows.budget.remaining--
 			}
