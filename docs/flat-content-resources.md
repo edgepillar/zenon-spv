@@ -49,6 +49,11 @@ and smaller per-proof/aggregate budgets to refuse without proof guarantees.
 
 ## What is measured
 
+The [hash/address text buffer comparison](chain-text-hex-allocations.md)
+separately measures fixed-size hex conversion allocations used by every
+serialized/decoded content member. It preserves this entire M/P grid and its
+expected roots; conversion measurements are not whole-workflow timing claims.
+
 `BenchmarkFlatContent` supplies two operations for each row:
 
 - `Verify`: preflight and verify the already-decoded batch, including checks of
