@@ -436,3 +436,13 @@ comparison still binds all 288 recorded samples and 36 ownership-control
 outcomes to their original source pins. The portable checkers execute no new
 reference importer, node or resource observer and qualify no latency or budget
 claim about those recorded producers.
+
+The [retained-state sequence oracle](retained-state-sequences.md) now uses an
+all-field header comparison in its repeated full-window checks. Independent
+reflection equivalence controls retain nil/empty distinctions and every scalar,
+hash, public-key and signature bit. Both sequence matrices, their exact steps,
+retained capacities, immutable predecessors, cryptographic validation and query
+assertions stay intact. Comparator measurements have a separate scope from
+complete test or pipeline timings. This changes no runtime verifier, signed
+fixture, trust input, network behavior or production acceptance gate. Exact
+published source/native CI/artifact qualification remains required for delivery.
