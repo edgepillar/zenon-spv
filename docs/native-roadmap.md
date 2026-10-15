@@ -510,3 +510,13 @@ candidate-export identities cover all seven commands. Existing test selections,
 content/retention grids, concurrency and all 59 offline pilot scenarios remain
 required. This test-harness change does not strengthen runtime or proof claims,
 and its component observations do not qualify a whole-CI speedup.
+
+The [direct candidate validation follow-up](direct-candidate-validation.md)
+removes the redundant temporary uncompressed ZIP before native CI upload.
+The existing directory and ZIP readers share the complete member validator;
+all payload, source/platform, scenario and resource checks remain required.
+Nine bounded regular descriptors are consumed once and checked for changes
+before success. Native tests, resource grids and all 59 offline pilot scenarios
+remain unchanged. Avoiding a logical payload copy does not establish physical
+disk reclaim, whole-CI latency or production capacity. Uploaded artifacts still
+require exact-source native and independent archive qualification.
