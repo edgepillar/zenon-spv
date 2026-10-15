@@ -29,6 +29,13 @@ it is not simultaneous process-tree memory or a production capacity guarantee.
 This local synthetic workload leaves independent consumer, hardware, traffic,
 network and release acceptance gates unchanged.
 
+The [hash/address text buffer comparison](chain-text-hex-allocations.md) removes
+intermediate conversion allocations while preserving exact legacy bytes,
+errors and failure atomicity. Finite byte-position controls, a pinned codec
+reference and native allocation observations complement the unchanged
+large-content inclusion and budget workloads. These observations do not set
+production memory or latency limits.
+
 ## Separate consensus research
 
 Before implementation, specify which authenticated history/commitments bind

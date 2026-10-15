@@ -3,7 +3,6 @@ package chain
 import (
 	"encoding/hex"
 	"errors"
-	"strings"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -43,20 +42,26 @@ func (a Address) IsZero() bool {
 
 // MarshalText emits Address as a lowercase hex string.
 func (a Address) MarshalText() ([]byte, error) {
-	return []byte(hex.EncodeToString(a[:])), nil
+	text := make([]byte, 2*AddressSize)
+	hex.Encode(text, a[:])
+	return text, nil
 }
 
 // UnmarshalText accepts a hex string with optional 0x prefix.
 func (a *Address) UnmarshalText(text []byte) error {
-	s := strings.TrimPrefix(string(text), "0x")
-	if len(s) != 2*AddressSize {
+	if len(text) >= 2 && text[0] == '0' && text[1] == 'x' {
+		text = text[2:]
+	}
+	if len(text) != 2*AddressSize {
 		return errors.New("chain.Address: invalid hex length")
 	}
-	b, err := hex.DecodeString(s)
-	if err != nil {
+	// Decode privately: hex.Decode may write a prefix before reporting an
+	// invalid digit. A failed conversion must leave the receiver unchanged.
+	var decoded Address
+	if _, err := hex.Decode(decoded[:], text); err != nil {
 		return err
 	}
-	copy(a[:], b)
+	*a = decoded
 	return nil
 }
 
