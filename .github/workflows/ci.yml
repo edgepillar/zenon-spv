@@ -97,7 +97,12 @@ jobs:
       - name: Observer diagnostic consumer controls
         run: |
           python -I -B tools/consume-observer-report_test.py
+          python -I -B tools/consume-observer-advance_test.py -v
           python -I -B tools/check-observer-report-consumer_test.py
+      - name: Advancing observer application controls
+        run: |
+          go test -v -count=1 -run '^TestAdvance(StateSelection|FailureStopsCollection)$' ./tools/observe-block
+          go test -v -count=1 -run '^TestCompiledAdvancingBlockObserver$' ./internal/conformance
       - name: Independent consumer controls
         run: python -I -B tools/check-query-consumer_test.py
       - name: Independent node consumer controls
@@ -545,7 +550,12 @@ jobs:
       - name: Observer diagnostic consumer controls
         run: |
           python -I -B tools/consume-observer-report_test.py
+          python -I -B tools/consume-observer-advance_test.py -v
           python -I -B tools/check-observer-report-consumer_test.py
+      - name: Advancing observer application controls
+        run: |
+          go test -v -count=1 -run '^TestAdvance(StateSelection|FailureStopsCollection)$' ./tools/observe-block
+          go test -v -count=1 -run '^TestCompiledAdvancingBlockObserver$' ./internal/conformance
       - name: Independent consumer controls
         run: python -I -B tools/check-query-consumer_test.py
       - name: Independent node consumer controls
