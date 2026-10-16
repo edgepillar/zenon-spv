@@ -1,0 +1,29 @@
+{
+  "after_bytes": 31200,
+  "after_git_blob": "a8d8e15e69df299d9c952a3700b23bca8da0780d",
+  "after_sha256": "5b629baefd0064543122d7fa653e86804ebbf07593a542dd0055dd5e39b6ddce",
+  "authenticated_retained_version_provenance_qualified": false,
+  "base_revision": "56ce2c384966f2f1940967257a0788d3998a5eef",
+  "base_tree": "d5abff528566a561e1a53a46103cb4b15ff63c6c",
+  "before_git_blob": "1a947fd64a6a5e922c256157d10d8ff412fc1471",
+  "before_sha256": "951abad916d989b20eb934c4c3f486311a8b10b86f94654f0775302631235135",
+  "blocked_ahead_error": "state tree: ahead frontier requires authenticated retained-version recovery",
+  "experimental_only": true,
+  "format_version": 1,
+  "guarded_node_tree": "c39bda7a640821c0a88adb99ecac9cc912dbbbba",
+  "kind": "experimental-startup-quarantine-patch",
+  "low_level_height_only_API_repaired": false,
+  "path": "chain/state_tree.go",
+  "persisted_schema_changed": false,
+  "production_qualified": false,
+  "replacements": [
+    {
+      "after": "func (s *stateTree) Init(chainManager db.Manager, momentumStore store.Momentum) error {\n\tif err := s.open(); err != nil {\n\t\treturn err\n\t}\n\n\ts.changes.Lock()\n\tdefer s.changes.Unlock()\n\n\t// Initialization must re-establish readiness, including on a reused component.\n\ts.ready.Store(false)\n",
+      "before": "func (s *stateTree) Init(chainManager db.Manager, momentumStore store.Momentum) error {\n\tif err := s.open(); err != nil {\n\t\treturn err\n\t}\n\n\ts.changes.Lock()\n\tdefer s.changes.Unlock()\n"
+    },
+    {
+      "after": "\t// Height-only retained roots cannot authenticate an ahead tree's rollback target.\n\t// Preserve the database and require a separately reviewed recovery decision.\n\tif treeFrontier.Height > chainFrontier.Height {\n\t\treturn errors.New(\"state tree: ahead frontier requires authenticated retained-version recovery\")\n\t}\n\n\tif treeFrontier.Height < chainFrontier.Height &&\n\t\tchainFrontier.Height-treeFrontier.Height > stateTreeBuildTailBatchSize {",
+      "before": "\tif treeFrontier.Height < chainFrontier.Height &&\n\t\tchainFrontier.Height-treeFrontier.Height > stateTreeBuildTailBatchSize {"
+    }
+  ]
+}

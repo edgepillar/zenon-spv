@@ -2276,3 +2276,36 @@ authenticated execution, latency speedup or production resource budget.
 Successful CI and this optimization establish
 no historical execution authentication, node validity, peak-resource budget,
 network activation, canonicality, finality or production state-value acceptance.
+
+## Experimental ahead-tree startup quarantine
+
+The separate [quarantine comparison](../../docs/state-tree-startup-quarantine.md)
+prepares a reviewable experimental patch for the original 394-blob node source.
+It clears readiness during component Init and refuses an ahead tree before a
+height-only rollback can relabel its retained root. Complete logical records
+stay unchanged, including on refused reopen. A reused, previously-ready
+component also drops readiness when its new initialization refuses.
+
+The source variants execute the ten original startup selections and two
+previously-ready cases: 15 initialization phases, 90 reads and 43 full logical
+database snapshots per variant. An independent byte oracle checks the comparison.
+The valid matching rollback is deliberately unavailable in the guarded variant.
+Low-level height-only reads, already mislabelled databases, live reorg repair,
+accepted-header/profile binding and production state values remain unqualified.
+
+`prepare_startup_quarantine.py` only stages a new owned workspace and prints an
+explicit build/run plan. The node source and frozen research module lock are
+checked before preparation. Compiler overlays exclude four unrelated upstream
+test files without changing their source; only the tagged component probe runs.
+Acquisition, offline dependency selection, quotas, bounded process supervision
+and cleanup belong to the caller. The local reference run builds each variant
+once and records two complete generations. Native CI checks the recorded corpus
+and adverse controls without executing this reference node or CGO experiment.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_startup_quarantine_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_startup_quarantine.py
+```
+
+This is a conservative recovery-policy proposal for separate node review.
+It does not change the MIT verifier or enable its v3/state-value acceptance.
