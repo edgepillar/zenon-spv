@@ -2,7 +2,7 @@
 """Consume a complete trusted observer diagnostic, never a chain proof.
 
 The caller supplies the actual outer process exit, independently expected target
-count and selected local-file/collected mode. This command reads only bounded
+count and selected local-file/collected/advancing mode. This command reads only bounded
 stdin; it does not open report paths, execute children or choose trust inputs.
 """
 
@@ -16,8 +16,8 @@ INT64_MAX = (1 << 63) - 1
 ROOT_FIELDS = {"schema_version", "status", "category", "checked_targets",
                "elapsed_ns", "verifier", "consumer"}
 CHILD_FIELDS = {"exit_code", "elapsed_ns", "stdout_bytes", "stderr_bytes"}
-STDOUT_LIMITS = {"verifier": 4 << 20, "consumer": 1024, "collector": 64 << 20}
-USAGE = "consume-observer-report: require one --mode local-file|collected, --observer-exit-code and --expected-targets 1..256\n"
+STDOUT_LIMITS = {"verifier": 4 << 20, "consumer": 1024, "collector": 64 << 20, "watch": 4 << 20}
+USAGE = "consume-observer-report: require one --mode local-file|collected|advancing, --observer-exit-code and --expected-targets 1..256\n"
 
 
 class Invalid(ValueError):
@@ -62,7 +62,7 @@ def selections(args):
         if not value:
             raise Invalid("empty option")
         fields[name] = value
-    if len(fields) != 3 or fields["--mode"] not in {"local-file", "collected"}:
+    if len(fields) != 3 or fields["--mode"] not in {"local-file", "collected", "advancing"}:
         raise Invalid("incomplete selection")
     numbers = []
     for name in ("--observer-exit-code", "--expected-targets"):
@@ -94,6 +94,9 @@ def decision(raw, mode, expected):
                        parse_int=parse_integer, parse_float=noninteger, parse_constant=noninteger)
     children = ("verifier", "consumer") if mode == "local-file" else ("collector", "verifier", "consumer")
     fields = ROOT_FIELDS if mode == "local-file" else ROOT_FIELDS | {"collector"}
+    if mode == "advancing":
+        children = ("watch", *children)
+        fields = fields | {"watch"}
     if type(value) is not dict or set(value) != fields:
         return "invalid_report"
     if not integer(value["elapsed_ns"]):
@@ -106,7 +109,7 @@ def decision(raw, mode, expected):
             return "invalid_report"
         if not integer(child["exit_code"]) or child["exit_code"] != 0:
             return "report_mismatch"
-    version = 1 if mode == "local-file" else 2
+    version = {"local-file": 1, "collected": 2, "advancing": 3}[mode]
     if (not integer(value["schema_version"]) or value["schema_version"] != version or
             value["status"] != "matched" or value["category"] is not None or
             not integer(value["checked_targets"], 1, 256) or value["checked_targets"] != expected):

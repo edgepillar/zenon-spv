@@ -14,6 +14,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	if os.Getenv("ZENON_OBSERVER_ADVANCE_TEST") == "1" {
+		advancementFixtureChild()
+	}
 	if os.Getenv("ZENON_OBSERVER_COLLECTION_TEST") == "1" {
 		if len(os.Args) > 1 && os.Args[1] == "--rpc" {
 			if path := os.Getenv("ZENON_OBSERVER_COLLECTION_STARTED"); path != "" {
