@@ -115,6 +115,8 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/observe_temp_workspace_test.py -v
       - name: Selected target hex seam controls
         run: python -I -B tools/gen-state-root-vectors/project_target_hex_test.py -v
+      - name: Bounded target hex batch controls
+        run: python -I -B tools/gen-state-root-vectors/project_target_hex_batch_test.py -v
       - name: Bounded graph oracle reuse controls
         run: python -I -B tools/conformance_graph_reuse_test.py -v
       - name: Workspace observation envelope controls
@@ -588,6 +590,8 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/observe_temp_workspace_test.py -v
       - name: Selected target hex seam controls
         run: python -I -B tools/gen-state-root-vectors/project_target_hex_test.py -v
+      - name: Bounded target hex batch controls
+        run: python -I -B tools/gen-state-root-vectors/project_target_hex_batch_test.py -v
       - name: Bounded graph oracle reuse controls
         run: python -I -B tools/conformance_graph_reuse_test.py -v
       - name: Workspace observation envelope controls

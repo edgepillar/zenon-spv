@@ -2413,3 +2413,17 @@ Normal resources include controlled fixture and query work; race results are
 separate functional observations. Full-node, production retention/concurrency,
 crash/power-loss, agreed profile, accepted-header and distribution gates remain
 open. All production state-value consumers remain `REFUSED`.
+
+### Bounded complete-map hex batching
+
+The [bounded batching follow-up](../../docs/conformance-hex-batching.md) shares
+one translation for ordinary maps of 32 through 4,096 entries within 1 MiB of
+hex characters. Each field retains its own parity check; non-ASCII text refuses
+before aggregation. Other input types and changed translation tables retain the
+prior pointwise behavior. The original checker programs, recorded corpora and
+producer pins stay unchanged. Complete maps are still recounted on every call;
+no map identity cache or incremental counter is used.
+
+```sh
+python -I -B tools/gen-state-root-vectors/project_target_hex_batch_test.py -v
+```

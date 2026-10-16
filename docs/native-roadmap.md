@@ -444,6 +444,10 @@ and independent byte checks remain required. Builtin strings use `str.translate`
 other types retain the original iteration behavior. The original producer inputs
 and recorded source pins stay intact. A separate execution manifest binds the
 current runner and selected function seams, which restore on success or failure.
+The [bounded batching follow-up](conformance-hex-batching.md) reduces separate
+field translations while retaining each field's even-length check and all
+complete-map counts. Its new adverse controls complement the unchanged original
+controls; local timing observations do not qualify a whole CI speedup.
 The original commands remain available, and later imports and child CLI programs
 stay unchanged. Finite equivalence and rollback controls do not qualify a native
 CI speedup or production workload budget. Exact source, native CI and artifact
