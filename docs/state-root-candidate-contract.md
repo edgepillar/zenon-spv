@@ -257,6 +257,15 @@ failed qualification gate. This synthetic temporary-database reproduction is
 not a demonstrated remote attack or a production crash/reorg qualification. Existing [mid-build reorg tests](https://github.com/digitalSloth/go-zenon/blob/56ce2c384966f2f1940967257a0788d3998a5eef/chain/tests/state_tree_build_test.go#L94-L180)
 also mean that a blanket claim that all such reorgs are skipped is unsupported.
 
+The separate [experimental startup quarantine](state-tree-startup-quarantine.md)
+compares a preventive refusal with that unchanged baseline. Its temporary node
+variant clears readiness during Init and refuses an ahead tree before rollback,
+preserving complete logical records. It deliberately loses the valid matching
+rollback path and adds no retained-hash metadata or live reorg repair. This is a
+review candidate for a recovery decision, not completion of the provenance gate
+or an enabled state-value profile. Existing mislabelled equal-height data cannot
+be authenticated by this guard.
+
 The [controlled disk exit/reopen fixture](../tools/gen-state-root-vectors/README.md#separate-controlled-disk-process-exit-and-reopen-fixture)
 adds five planned process exits after returned Open/New, Update, Commit,
 Truncate or Prune calls, plus a normal-close control. Two reopens per case

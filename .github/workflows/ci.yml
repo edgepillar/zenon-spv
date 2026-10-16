@@ -149,6 +149,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_chain_startup_test.py
       - name: Independent candidate chain startup roots and proofs
         run: python -I -B tools/gen-state-root-vectors/check_chain_startup.py --source-revision "${{ github.sha }}"
+      - name: Experimental startup quarantine controls
+        run: python -I -B tools/gen-state-root-vectors/check_startup_quarantine_test.py -v
+      - name: Independent experimental startup quarantine observations
+        run: python -I -B tools/gen-state-root-vectors/check_startup_quarantine.py --source-revision "${{ github.sha }}"
       - name: Candidate disk lifecycle exit controls
         run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle_test.py
       - name: Independent candidate disk lifecycle roots and retention
@@ -604,6 +608,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_chain_startup_test.py
       - name: Independent candidate chain startup roots and proofs
         run: python -I -B tools/gen-state-root-vectors/check_chain_startup.py --source-revision "${{ github.sha }}"
+      - name: Experimental startup quarantine controls
+        run: python -I -B tools/gen-state-root-vectors/check_startup_quarantine_test.py -v
+      - name: Independent experimental startup quarantine observations
+        run: python -I -B tools/gen-state-root-vectors/check_startup_quarantine.py --source-revision "${{ github.sha }}"
       - name: Candidate disk lifecycle exit controls
         run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle_test.py
       - name: Independent candidate disk lifecycle roots and retention
