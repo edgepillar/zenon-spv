@@ -169,6 +169,16 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_genesis_background_test.py -v
       - name: Independent recorded source-genesis background observations
         run: python -I -B tools/gen-state-root-vectors/check_genesis_background_corpus.py --source-revision "${{ github.sha }}"
+      - name: Source-default retention model controls
+        run: python -I -B tools/gen-state-root-vectors/default_retention_model_test.py -v
+      - name: Source-default retention preparation controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_default_retention_test.py -v
+      - name: Source-default retention observation controls
+        run: python -I -B tools/gen-state-root-vectors/check_default_retention_test.py -v
+      - name: Recorded source-default retention controls
+        run: python -I -B tools/gen-state-root-vectors/check_default_retention_corpus_test.py -v
+      - name: Independent recorded source-default retention observations
+        run: python -I -B tools/gen-state-root-vectors/check_default_retention_corpus.py --source-revision "${{ github.sha }}"
       - name: Candidate disk lifecycle exit controls
         run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle_test.py
       - name: Independent candidate disk lifecycle roots and retention
@@ -644,6 +654,16 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_genesis_background_test.py -v
       - name: Independent recorded source-genesis background observations
         run: python -I -B tools/gen-state-root-vectors/check_genesis_background_corpus.py --source-revision "${{ github.sha }}"
+      - name: Source-default retention model controls
+        run: python -I -B tools/gen-state-root-vectors/default_retention_model_test.py -v
+      - name: Source-default retention preparation controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_default_retention_test.py -v
+      - name: Source-default retention observation controls
+        run: python -I -B tools/gen-state-root-vectors/check_default_retention_test.py -v
+      - name: Recorded source-default retention controls
+        run: python -I -B tools/gen-state-root-vectors/check_default_retention_corpus_test.py -v
+      - name: Independent recorded source-default retention observations
+        run: python -I -B tools/gen-state-root-vectors/check_default_retention_corpus.py --source-revision "${{ github.sha }}"
       - name: Candidate disk lifecycle exit controls
         run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle_test.py
       - name: Independent candidate disk lifecycle roots and retention
