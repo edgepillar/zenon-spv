@@ -554,3 +554,17 @@ current execution recipe creates no disk cache and changes no runtime or trust
 policy. Local graph-call reductions do not qualify whole-CI latency, process
 RSS, production budgets, real-chain state values or release acceptance. Exact
 native source/CI/artifact qualification remains required before delivery.
+
+The [current-node retained-identity M2 proposal](state-tree-hash-bound-versions.md)
+selects all 439 blobs of 33d7 and keeps historical 56ce fixtures unchanged. An
+experimental disk-format-3 patch binds retained roots to Momentum hash/height,
+restores matching ahead-tree recovery, refuses divergent targets and preserves
+incompatible records. Its local two-variant comparison records 64 Init phases,
+946 selected reads and 322 logical snapshots per generation, with independent
+SMT/proof and compressed-record checks. Cache, missing-node and metadata faults
+retain their exact refusal and partial-scan limits. Forty portable controls and
+native source/CI/artifact qualification are required for delivery. Caller-written
+identity metadata is not accepted-header or state-transition authentication;
+M2 node review, migration, physical storage/concurrency, representative resource
+and agreed profile/activation gates remain open. M3 production v3/state-value
+acceptance remains disabled.

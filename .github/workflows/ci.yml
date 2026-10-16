@@ -153,6 +153,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_startup_quarantine_test.py -v
       - name: Independent experimental startup quarantine observations
         run: python -I -B tools/gen-state-root-vectors/check_startup_quarantine.py --source-revision "${{ github.sha }}"
+      - name: Current-node retained hash identity controls
+        run: python -I -B tools/gen-state-root-vectors/check_hash_bound_versions_test.py -v
+      - name: Independent current-node retained hash identity observations
+        run: python -I -B tools/gen-state-root-vectors/report_hash_bound_versions.py --source-revision "${{ github.sha }}"
       - name: Candidate disk lifecycle exit controls
         run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle_test.py
       - name: Independent candidate disk lifecycle roots and retention
@@ -612,6 +616,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_startup_quarantine_test.py -v
       - name: Independent experimental startup quarantine observations
         run: python -I -B tools/gen-state-root-vectors/check_startup_quarantine.py --source-revision "${{ github.sha }}"
+      - name: Current-node retained hash identity controls
+        run: python -I -B tools/gen-state-root-vectors/check_hash_bound_versions_test.py -v
+      - name: Independent current-node retained hash identity observations
+        run: python -I -B tools/gen-state-root-vectors/report_hash_bound_versions.py --source-revision "${{ github.sha }}"
       - name: Candidate disk lifecycle exit controls
         run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle_test.py
       - name: Independent candidate disk lifecycle roots and retention
