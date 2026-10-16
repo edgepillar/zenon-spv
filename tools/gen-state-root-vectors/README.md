@@ -2460,7 +2460,7 @@ python3 -I -B tools/gen-state-root-vectors/check_default_retention_corpus_test.p
 python3 -I -B tools/gen-state-root-vectors/check_default_retention_corpus.py
 ```
 
-These 62 controls and the recorded comparison are scheduled in native CI without
+These 64 controls and the recorded comparison are scheduled in native CI without
 starting a node, Go build, LevelDB, network or resource observer. The separate
 preparer returns an exact source/build/run plan for fresh owned workspaces;
 source acquisition, bounded supervision, durable evidence retention and checked

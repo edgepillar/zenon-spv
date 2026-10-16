@@ -4,7 +4,7 @@
 import copy
 import importlib.util
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import tempfile
 import unittest
 from unittest import mock
@@ -24,6 +24,15 @@ def parent():
             "history_height": 4096, "retention_test_override": 256}
 
 
+def fixture_parent():
+    selected = os.environ.get("SPV_TASK_SCRATCH")
+    if selected:
+        return selected
+    if os.environ.get("GITHUB_ACTIONS") == "true" and os.environ.get("RUNNER_TEMP"):
+        return os.environ["RUNNER_TEMP"]
+    raise RuntimeError("Select owned task scratch or GitHub Actions runner temporary storage")
+
+
 class DefaultRetentionPreparationControls(unittest.TestCase):
     def test_only_tag_and_output_change_in_the_inherited_build(self):
         before = parent()
@@ -39,15 +48,17 @@ class DefaultRetentionPreparationControls(unittest.TestCase):
         self.assertEqual(before, original)
 
     def test_exact_new_test_is_selected_and_defaults_have_no_override(self):
-        result = M.plan(Path("/owned/new-component"), "/selected/go", parent())
-        self.assertEqual(result["run_argv"], ["/owned/new-component/generator/default-retention.test",
-                                             "-test.v", "-test.timeout=540s",
-                                             "-test.run=^TestCandidateDefaultRetention$"])
-        self.assertEqual((result["history_height"], result["mutation_keys"],
-                          result["source_effective_retention"]), (32768, 256, 17380))
-        self.assertEqual((result["retention_override"], result["bulk_batch_override"]), (0, 0))
-        self.assertEqual((result["expected_pruned_roots"], result["expected_archive_roots"]), (17381, 32768))
-        self.assertEqual(result["parent_probe_compiled_but_not_selected"], [M.P.PROBE, M.G.PROBE])
+        for workspace in (Path("/owned/new-component"), PureWindowsPath("C:/owned/new-component")):
+            with self.subTest(workspace=str(workspace)):
+                result = M.plan(workspace, "/selected/go", parent())
+                self.assertEqual(result["run_argv"], [str(workspace / "generator/default-retention.test"),
+                                                     "-test.v", "-test.timeout=540s",
+                                                     "-test.run=^TestCandidateDefaultRetention$"])
+                self.assertEqual((result["history_height"], result["mutation_keys"],
+                                  result["source_effective_retention"]), (32768, 256, 17380))
+                self.assertEqual((result["retention_override"], result["bulk_batch_override"]), (0, 0))
+                self.assertEqual((result["expected_pruned_roots"], result["expected_archive_roots"]), (17381, 32768))
+                self.assertEqual(result["parent_probe_compiled_but_not_selected"], [M.P.PROBE, M.G.PROBE])
 
     def test_old_preparation_record_and_runtime_identity_are_preserved(self):
         before = parent()
@@ -64,19 +75,38 @@ class DefaultRetentionPreparationControls(unittest.TestCase):
             self.assertIs(result[field], False)
 
     def test_existing_destination_is_refused_before_parent_preparation(self):
-        with tempfile.TemporaryDirectory(prefix="default-retention-plan-", dir=os.environ["SPV_TASK_SCRATCH"]) as directory:
+        with tempfile.TemporaryDirectory(prefix="default-retention-plan-", dir=fixture_parent()) as directory:
             with mock.patch.object(M.G, "prepare") as selected:
                 with self.assertRaises(ValueError):
                     M.prepare(Path("/unselected/source"), Path(directory), "/selected/go")
                 selected.assert_not_called()
 
     def test_unknown_source_inventory_is_refused_before_source_adoption(self):
-        with tempfile.TemporaryDirectory(prefix="default-retention-inventory-", dir=os.environ["SPV_TASK_SCRATCH"]) as directory:
+        with tempfile.TemporaryDirectory(prefix="default-retention-inventory-", dir=fixture_parent()) as directory:
             root = Path(directory)
             (root / "node").mkdir()
             (root / "node/unselected.txt").write_text("isolated fixture\n")
             with self.assertRaises(ValueError):
                 M.verify(root)
+
+    def test_local_fixture_storage_requires_an_explicit_owned_path(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            with self.assertRaises(RuntimeError):
+                fixture_parent()
+        with mock.patch.dict(os.environ, {"SPV_TASK_SCRATCH": "selected-owned-fixture"}, clear=True):
+            self.assertEqual(fixture_parent(), "selected-owned-fixture")
+
+    def test_hosted_fixture_storage_is_limited_to_the_selected_runner(self):
+        for environment in ({"RUNNER_TEMP": "runner-fixture"}, {"GITHUB_ACTIONS": "true"},
+                            {"GITHUB_ACTIONS": "false", "RUNNER_TEMP": "runner-fixture"}):
+            with self.subTest(environment=environment), mock.patch.dict(os.environ, environment, clear=True):
+                with self.assertRaises(RuntimeError):
+                    fixture_parent()
+        with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "RUNNER_TEMP": "runner-fixture"}, clear=True):
+            self.assertEqual(fixture_parent(), "runner-fixture")
+        with mock.patch.dict(os.environ, {"SPV_TASK_SCRATCH": "owned-fixture", "GITHUB_ACTIONS": "true",
+                                        "RUNNER_TEMP": "runner-fixture"}, clear=True):
+            self.assertEqual(fixture_parent(), "owned-fixture")
 
 
 if __name__ == "__main__":
