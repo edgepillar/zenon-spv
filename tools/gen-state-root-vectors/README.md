@@ -2431,3 +2431,40 @@ earlier count authorize an oversized aggregate.
 ```sh
 python -I -B tools/gen-state-root-vectors/project_target_hex_batch_test.py -v
 ```
+
+### Recorded source-default retention
+
+The [source-default retention observation](../../docs/state-tree-default-retention.md)
+extends the earlier source-genesis component to 32,768 controlled heights and
+256 distinct balance addresses. Its effective retention is the source default
+17,380; retention and bulk-batch overrides remain zero. Three fresh ordinary
+processes per policy preserve 17,381 inclusive-horizon pruned roots or all
+32,768 archive roots, with actual patch-stream, Stop and clean-reopen checks.
+One ordinary binary is reused; equal complete logical outputs occupy two CAS
+objects. All six samples and an explicit first-workspace cleanup erratum remain
+part of the evidence.
+
+The independent model seals its full roots/proofs before backend execution.
+The [recorded corpus](testdata/candidate-default-retention.json) stores observed
+roots once with an explicit reversible hash/height codec. Expanded tables must
+match the complete actual payload bytes and SHA-256, then the separate witness
+model checks every root and selected canonical proof. Fifteen proof keys at six
+heights are queried twice per case; this does not claim individual proof queries
+for every mutation key. Whole-process resources include fixture and query work.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/default_retention_model_test.py -v
+python3 -I -B tools/gen-state-root-vectors/prepare_default_retention_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_default_retention_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_default_retention_corpus_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_default_retention_corpus.py
+```
+
+These 64 controls and the recorded comparison are scheduled in native CI without
+starting a node, Go build, LevelDB, network or resource observer. The separate
+preparer returns an exact source/build/run plan for fresh owned workspaces;
+source acquisition, bounded supervision, durable evidence retention and checked
+cleanup remain the caller's responsibility. A one-host default-window workload
+does not qualify continuous VM history, production budgets, snapshot import,
+activation, accepted-header state values or authenticated distribution. Prior
+corpora and their producer pins remain unchanged; consumers remain `REFUSED`.
