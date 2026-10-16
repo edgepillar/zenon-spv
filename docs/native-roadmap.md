@@ -568,3 +568,14 @@ identity metadata is not accepted-header or state-transition authentication;
 M2 node review, migration, physical storage/concurrency, representative resource
 and agreed profile/activation gates remain open. M3 production v3/state-value
 acceptance remains disabled.
+
+The [terminal Stop M2 component proposal](state-tree-terminal-stop.md) follows
+the current-node retained-identity proposal. Stop-before-Init and controlled
+concurrent launch schedules expose reopening and post-Stop worker publication
+in that parent. A one-file experimental patch makes the instance terminal and
+serializes launch admission. Two locally race-built variants each completed
+two fresh generations; thirty recorded-data controls retain exact scope.
+Injected scheduler checkpoints, no executed background batches and unexercised
+update/truncate stop guards leave representative lifecycle/concurrency/resource
+qualification open. M1 consumer selection, M2 profile agreement, accepted-header
+state-value binding and M4/M5 acceptance gates remain separate.

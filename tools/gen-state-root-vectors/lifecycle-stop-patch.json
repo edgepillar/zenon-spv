@@ -1,0 +1,70 @@
+{
+  "SMT_profile_changed": false,
+  "after_bytes": 32011,
+  "after_git_blob": "f4354be89f7e0dd3dfb4af1877e8e6d70b863f08",
+  "after_sha256": "cbe8e224386104220ec3d90e705cf1f35c3a8c5199df9794c3c27036b392097c",
+  "automatic_migration_added": false,
+  "base_revision": "33d7d1ee1b6a915c40aea196e2a10f1e893d171f",
+  "base_tree": "40d71efb7e462d5bbd0f27d83ed7588e121c3cb6",
+  "before_bytes": 31222,
+  "before_git_blob": "4577bc6a06fb5ebc8ad7fd1e7096297c650b7bf4",
+  "before_sha256": "c4fad60ce7e56739eea6f688209f8e7062a6b80b750498d58651cac7fc060fc8",
+  "disk_format_changed": false,
+  "experimental_only": true,
+  "file": "chain/state_tree.go",
+  "format_version": 1,
+  "hash_identity_parent_tree": "28c9eec1156633836357028e16a3958edbc635c4",
+  "hash_identity_patch_sha256": "a1a00190d81fcd5eed0326570d95b29e8869d82edd2c5a0804bb3af440e506ef",
+  "kind": "experimental-monotonic-state-tree-stop",
+  "mode": "100644",
+  "modified_node_tree_without_probes": "d3d9215bc9ea23b2e700aad53ebb23d4bdea3428",
+  "network_activation_authenticated": false,
+  "production_qualified": false,
+  "replacements": [
+    {
+      "after": "// GetProof) before the build has reached the chain frontier. While not ready, the read methods\n// fail closed, the producer does not stamp v3, and the verifier cannot check a v3 root, so once\n// StateRootSpork activates the node stops advancing until the build completes.\nvar ErrStateTreeNotReady = errors.New(\"state tree: not yet built to the chain frontier\")\n\n// ErrStateTreeStopped is terminal for this component instance. Rebuild/restart\n// requires a fresh instance; a closed quit channel and stopOnce are not reset.\nvar ErrStateTreeStopped = errors.New(\"state tree: stopped\")\n\ntype stateTree struct {\n\tdir               string\n\tarchive           bool\n\tretentionOverride uint64 // 0 = use retentionFloor()\n\tbulkBatchOverride uint64 // 0 = use stateTreeBuildBulkBatchSize (tests only, mirrors retentionOverride)\n\tlog               log15.Logger\n\tchanges           sync.Mutex\n\tlaunches          sync.Mutex // serializes build admission and Stop snapshots\n\n\t// ready latches true once the build reaches the chain frontier. It is read by\n\t// ComputeStateRoot/StateRoot/GetProof without holding changes, so it's a separate atomic\n\t// rather than being guarded by that mutex.\n\tready atomic.Bool\n",
+      "before": "// GetProof) before the build has reached the chain frontier. While not ready, the read methods\n// fail closed, the producer does not stamp v3, and the verifier cannot check a v3 root, so once\n// StateRootSpork activates the node stops advancing until the build completes.\nvar ErrStateTreeNotReady = errors.New(\"state tree: not yet built to the chain frontier\")\n\ntype stateTree struct {\n\tdir               string\n\tarchive           bool\n\tretentionOverride uint64 // 0 = use retentionFloor()\n\tbulkBatchOverride uint64 // 0 = use stateTreeBuildBulkBatchSize (tests only, mirrors retentionOverride)\n\tlog               log15.Logger\n\tchanges           sync.Mutex\n\n\t// ready latches true once the build reaches the chain frontier. It is read by\n\t// ComputeStateRoot/StateRoot/GetProof without holding changes, so it's a separate atomic\n\t// rather than being guarded by that mutex.\n\tready atomic.Bool\n"
+    },
+    {
+      "after": "}\n\n// open opens the private tree without wiping or migrating an incompatible database.\n// Failed opens release their new handle; a reused component revalidates its committed base.\nfunc (s *stateTree) open() error {\n\tif s.stopped() {\n\t\treturn ErrStateTreeStopped\n\t}\n\tif s.ldb != nil {\n\t\tif s.tree == nil {\n\t\t\treturn errors.New(\"state tree: open handle has no tree\")\n\t\t}\n\t\t_, err := s.tree.Root(s.tree.FrontierIdentifier())\n",
+      "before": "}\n\n// open opens the private tree without wiping or migrating an incompatible database.\n// Failed opens release their new handle; a reused component revalidates its committed base.\nfunc (s *stateTree) open() error {\n\tif s.ldb != nil {\n\t\tif s.tree == nil {\n\t\t\treturn errors.New(\"state tree: open handle has no tree\")\n\t\t}\n\t\t_, err := s.tree.Root(s.tree.FrontierIdentifier())\n"
+    },
+    {
+      "after": "}\n\n// StateTreeReady reports whether the build has reached the chain frontier. Before it does,\n// ComputeStateRoot/StateRoot/GetProof fail closed with ErrStateTreeNotReady, and the producer\n// must not stamp or enforce v3 (spec \u00a77).\nfunc (s *stateTree) stopped() bool {\n\tselect {\n\tcase <-s.quit:\n\t\treturn true\n\tdefault:\n\t\treturn false\n\t}\n}\n\nfunc (s *stateTree) StateTreeReady() bool {\n\treturn !s.stopped() && s.ready.Load()\n}\n\n// tailStart is the first height the build commits its own version for; everything below it is\n// folded into one accumulated commit because a non-archive node would prune it immediately.\nfunc (s *stateTree) tailStart(treeFrontierHeight, chainFrontierHeight uint64) uint64 {\n",
+      "before": "}\n\n// StateTreeReady reports whether the build has reached the chain frontier. Before it does,\n// ComputeStateRoot/StateRoot/GetProof fail closed with ErrStateTreeNotReady, and the producer\n// must not stamp or enforce v3 (spec \u00a77).\nfunc (s *stateTree) StateTreeReady() bool {\n\treturn s.ready.Load()\n}\n\n// tailStart is the first height the build commits its own version for; everything below it is\n// folded into one accumulated commit because a non-archive node would prune it immediately.\nfunc (s *stateTree) tailStart(treeFrontierHeight, chainFrontierHeight uint64) uint64 {\n"
+    },
+    {
+      "after": "// offline builds. A bounded call performs either a bulk sub-range or a tail sub-range, never both.\n//\n// The caller must hold s.changes for the whole call and, whenever the chain is live, the chain's\n// insert lock around it.\nfunc (s *stateTree) catchUp(chainManager db.Manager, momentumStore store.Momentum, bulkLimit, tailLimit uint64) (bool, error) {\n\tif s.stopped() {\n\t\treturn false, ErrStateTreeStopped\n\t}\n\tfrontierDB := chainManager.Frontier()\n\tif frontierDB == nil {\n\t\treturn false, errors.Errorf(\"can't build state tree: chain db is stopped\")\n\t}\n\tchainFrontier := db.GetFrontierIdentifier(frontierDB)\n",
+      "before": "// offline builds. A bounded call performs either a bulk sub-range or a tail sub-range, never both.\n//\n// The caller must hold s.changes for the whole call and, whenever the chain is live, the chain's\n// insert lock around it.\nfunc (s *stateTree) catchUp(chainManager db.Manager, momentumStore store.Momentum, bulkLimit, tailLimit uint64) (bool, error) {\n\tfrontierDB := chainManager.Frontier()\n\tif frontierDB == nil {\n\t\treturn false, errors.Errorf(\"can't build state tree: chain db is stopped\")\n\t}\n\tchainFrontier := db.GetFrontierIdentifier(frontierDB)\n"
+    },
+    {
+      "after": "\tif changes == nil {\n\t\treturn errors.Errorf(\"changes can't be nil\")\n\t}\n\ts.changes.Lock()\n\tdefer s.changes.Unlock()\n\tif s.stopped() {\n\t\treturn ErrStateTreeStopped\n\t}\n\n\tidentifier := detailed.Momentum.Identifier()\n\tfrontier := s.tree.FrontierIdentifier()\n\tif identifier.Height != frontier.Height+1 {\n\t\tif !s.ready.Load() {\n",
+      "before": "\tif changes == nil {\n\t\treturn errors.Errorf(\"changes can't be nil\")\n\t}\n\ts.changes.Lock()\n\tdefer s.changes.Unlock()\n\n\tidentifier := detailed.Momentum.Identifier()\n\tfrontier := s.tree.FrontierIdentifier()\n\tif identifier.Height != frontier.Height+1 {\n\t\tif !s.ready.Load() {\n"
+    },
+    {
+      "after": "\tif insertLocker == nil {\n\t\treturn errors.Errorf(\"insertLocker can't be nil\")\n\t}\n\ts.changes.Lock()\n\tdefer s.changes.Unlock()\n\tif s.stopped() {\n\t\treturn ErrStateTreeStopped\n\t}\n\tif !s.ready.Load() && identifier.Height >= s.tree.FrontierIdentifier().Height {\n\t\t// Nothing above the target is committed: the build has not reached this height, or the\n\t\t// fold being undone was skipped.\n\t\ts.log.Debug(\"skipping state-tree truncate while the build owns the tree\", \"target\", identifier, \"tree-frontier\", s.tree.FrontierIdentifier())\n\t\treturn nil\n",
+      "before": "\tif insertLocker == nil {\n\t\treturn errors.Errorf(\"insertLocker can't be nil\")\n\t}\n\ts.changes.Lock()\n\tdefer s.changes.Unlock()\n\tif !s.ready.Load() && identifier.Height >= s.tree.FrontierIdentifier().Height {\n\t\t// Nothing above the target is committed: the build has not reached this height, or the\n\t\t// fold being undone was skipped.\n\t\ts.log.Debug(\"skipping state-tree truncate while the build owns the tree\", \"target\", identifier, \"tree-frontier\", s.tree.FrontierIdentifier())\n\t\treturn nil\n"
+    },
+    {
+      "after": "\treturn s.tree.Truncate(identifier)\n}\n\n// StateRoot returns the committed root at identifier (spec \u00a79 RPC hook).\nfunc (s *stateTree) StateRoot(identifier types.HashHeight) (types.Hash, error) {\n\tif !s.StateTreeReady() {\n\t\treturn types.Hash{}, ErrStateTreeNotReady\n\t}\n\treturn s.tree.Root(identifier)\n}\n\n",
+      "before": "\treturn s.tree.Truncate(identifier)\n}\n\n// StateRoot returns the committed root at identifier (spec \u00a79 RPC hook).\nfunc (s *stateTree) StateRoot(identifier types.HashHeight) (types.Hash, error) {\n\tif !s.ready.Load() {\n\t\treturn types.Hash{}, ErrStateTreeNotReady\n\t}\n\treturn s.tree.Root(identifier)\n}\n\n"
+    },
+    {
+      "after": "// immutable/content-addressed, so a cache hit can only return the root a recompute would\n// produce.\nfunc (s *stateTree) ComputeStateRoot(previous types.HashHeight, changes db.Patch) (types.Hash, error) {\n\ts.changes.Lock()\n\tdefer s.changes.Unlock()\n\tif !s.StateTreeReady() {\n\t\treturn types.Hash{}, ErrStateTreeNotReady\n\t}\n\t// A cache hit must still refer to a retained, readable, exact-identity version.\n\tif _, err := s.tree.Root(previous); err != nil {\n\t\treturn types.Hash{}, err\n",
+      "before": "// immutable/content-addressed, so a cache hit can only return the root a recompute would\n// produce.\nfunc (s *stateTree) ComputeStateRoot(previous types.HashHeight, changes db.Patch) (types.Hash, error) {\n\ts.changes.Lock()\n\tdefer s.changes.Unlock()\n\tif !s.ready.Load() {\n\t\treturn types.Hash{}, ErrStateTreeNotReady\n\t}\n\t// A cache hit must still refer to a retained, readable, exact-identity version.\n\tif _, err := s.tree.Root(previous); err != nil {\n\t\treturn types.Hash{}, err\n"
+    },
+    {
+      "after": "\treturn root, nil\n}\n\n// GetProof returns the value (nil if absent) and a proof for key at identifier (spec \u00a79 RPC).\nfunc (s *stateTree) GetProof(identifier types.HashHeight, key []byte) (value []byte, proof []byte, err error) {\n\tif !s.StateTreeReady() {\n\t\treturn nil, nil, ErrStateTreeNotReady\n\t}\n\treturn s.tree.Prove(identifier, key)\n}\n\n",
+      "before": "\treturn root, nil\n}\n\n// GetProof returns the value (nil if absent) and a proof for key at identifier (spec \u00a79 RPC).\nfunc (s *stateTree) GetProof(identifier types.HashHeight, key []byte) (value []byte, proof []byte, err error) {\n\tif !s.ready.Load() {\n\t\treturn nil, nil, ErrStateTreeNotReady\n\t}\n\treturn s.tree.Prove(identifier, key)\n}\n\n"
+    },
+    {
+      "after": "\n// startBuild launches runBuild. chain.Start calls it once; the exported test driver may call it\n// again after a build has exited. Each launch owns a fresh exit channel, published under changes\n// so stop() joins whichever build is current.\nfunc (s *stateTree) startBuild(c *chain) {\n\t// Keep admission serialized while joining a previous worker. Stop closes\n\t// quit before waiting for this lock, so a pending launch cannot deadlock it.\n\ts.launches.Lock()\n\tdefer s.launches.Unlock()\n\ts.changes.Lock()\n\tif s.stopped() {\n\t\ts.changes.Unlock()\n\t\treturn\n\t}\n\tprevious := s.buildExited\n\ts.changes.Unlock()\n\tif previous != nil {\n\t\t<-previous\n\t}\n\n\ts.changes.Lock()\n\tif s.stopped() {\n\t\ts.changes.Unlock()\n\t\treturn\n\t}\n\texited := make(chan struct{})\n\ts.buildExited = exited\n\ts.changes.Unlock()\n\n\tgo func() {\n\t\tdefer close(exited)\n",
+      "before": "\n// startBuild launches runBuild. chain.Start calls it once; the exported test driver may call it\n// again after a build has exited. Each launch owns a fresh exit channel, published under changes\n// so stop() joins whichever build is current.\nfunc (s *stateTree) startBuild(c *chain) {\n\ts.changes.Lock()\n\tprevious := s.buildExited\n\ts.changes.Unlock()\n\tif previous != nil {\n\t\t// A live build goroutine from an earlier launch must finish (and close its exit channel)\n\t\t// before this launch overwrites buildExited, or it would be orphaned: stop() would never\n\t\t// join it.\n\t\t<-previous\n\t}\n\n\texited := make(chan struct{})\n\ts.changes.Lock()\n\ts.buildExited = exited\n\ts.changes.Unlock()\n\n\tgo func() {\n\t\tdefer close(exited)\n"
+    },
+    {
+      "after": "}\n\nfunc (s *stateTree) stop() error {\n\ts.stopOnce.Do(func() {\n\t\tclose(s.quit)\n\t\ts.launches.Lock()\n\t\ts.changes.Lock()\n\t\ts.ready.Store(false)\n\t\ts.clearRootCache()\n\t\texited := s.buildExited\n\t\ts.changes.Unlock()\n\t\ts.launches.Unlock()\n\t\tif exited != nil {\n\t\t\t<-exited // never while holding changes: the build takes it per batch\n\t\t}\n\t\tif s.ldb != nil {\n\t\t\ts.stopErr = s.ldb.Close()\n",
+      "before": "}\n\nfunc (s *stateTree) stop() error {\n\ts.stopOnce.Do(func() {\n\t\tclose(s.quit)\n\t\ts.changes.Lock()\n\t\ts.ready.Store(false)\n\t\ts.clearRootCache()\n\t\texited := s.buildExited\n\t\ts.changes.Unlock()\n\t\tif exited != nil {\n\t\t\t<-exited // never while holding changes: the build takes it per batch\n\t\t}\n\t\tif s.ldb != nil {\n\t\t\ts.stopErr = s.ldb.Close()\n"
+    }
+  ],
+  "state_value_acceptance_enabled": false
+}

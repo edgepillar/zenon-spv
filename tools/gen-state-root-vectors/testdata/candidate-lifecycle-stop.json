@@ -1,0 +1,3877 @@
+{
+  "consumer_result": "REFUSED",
+  "format_version": 1,
+  "kind": "current-node-stop-lifecycle-comparison",
+  "scope": {
+    "RPC_executed": false,
+    "actual_disk_NodeTree_read_APIs_executed": true,
+    "actual_state_tree_component_Init_Stop_executed": true,
+    "authenticated_retained_provenance": false,
+    "automatic_migration_performed": false,
+    "background_build_batches_executed": false,
+    "baseline_orphan_launches_controlled_before_loop": true,
+    "chain_Start_executed": false,
+    "complete_current_node_revision_qualified": false,
+    "controlled_channel_schedules": true,
+    "full_node_started": false,
+    "header_authentication_executed": false,
+    "inflight_patch_callbacks_executed": true,
+    "network_activation_authenticated": false,
+    "network_execution": false,
+    "physical_crash_or_power_loss_qualified": false,
+    "production_concurrency_qualified": false,
+    "production_state_value_accepted": false,
+    "profile_agreed": false,
+    "race_detector_selected_in_local_component_builds": true,
+    "runtime_state_value_acceptance": false,
+    "scheduler_or_backend_executed_by_checker": false,
+    "selected_logical_records_and_clean_reopen_compared": true,
+    "signing": false,
+    "synthetic": true,
+    "test_only_source_checkpoints_injected": true,
+    "transactions": false,
+    "unsigned": true,
+    "upstream_tests_executed": false
+  },
+  "source": {
+    "checkpoint_source_is_separate_from_uninstrumented_proposal": true,
+    "hash_identity_parent_tree": "28c9eec1156633836357028e16a3958edbc635c4",
+    "historical_source_records_rebound": false,
+    "monotonic_stop_tree": "d3d9215bc9ea23b2e700aad53ebb23d4bdea3428",
+    "node_blobs": 439,
+    "node_original_tree": "40d71efb7e462d5bbd0f27d83ed7588e121c3cb6",
+    "node_revision": "33d7d1ee1b6a915c40aea196e2a10f1e893d171f",
+    "producer_and_oracle_inputs": {
+      "check.py": "e12669998c97086abcd6da1d6e70fb3c99e6db5fd8dd9a1be6eb063d343a13e1",
+      "check_hash_bound_versions.py": "3e67c975f6cd1433cfce9bb5fcac70fa3f4854413b021fd9014b4218e3d93579",
+      "check_lifecycle_stop.py": "24cf8d6c093cb145314337c62577457fbcc5451e4632d88b2e5a791bc23ed354",
+      "check_retention.py": "1ac663522fc16ce96983d9a6fb5e0973fd75ad190d3724c72598f2684c211753",
+      "go.mod": "a0de865eafa939dc4acb62364284736095eb38108643ac44767dc5ea72269e9d",
+      "go.sum": "b8d715d77c7ca1ea1ac9548df868f57753d434dbefd52ad6d5f3c49685dd7da1",
+      "hash-bound-versions-patch.json": "a1a00190d81fcd5eed0326570d95b29e8869d82edd2c5a0804bb3af440e506ef",
+      "hash_bound_versions_probe_test.go": "9be0d6d365e80100be3b1cc7eed80155ef681d0b03a5b3d00db027c914655c00",
+      "lifecycle-stop-patch.json": "2778017b5de86be222956a600dcb8bed49dd5fd543566f0230e6c2a042a8a165",
+      "lifecycle_stop_probe_test.go": "7888b983a16a2e26204a3aab33df1cf0a6907c1e2ab0ca2ae8b991c76de8b99a",
+      "node-recovery-source-pins.json": "12ec9f524b1a4c3ba45344fa619f433df2b11a63eaf523ea695d9ca4ba84f460",
+      "prepare_hash_bound_versions.py": "9ee8d59f58ccd6fa89f430cb6db69984ee29cdb3621a1df66f662f7b88a4f74c",
+      "prepare_lifecycle_stop.py": "5b6db5d47d87d19891e748c15a2c789bc99165d9273d4fd99b79f6e5cdb0419f",
+      "regenerate.py": "d761f1b0671c74f0167a5e9aab7c8067e1ee35ad390c1cbd8c3fa151c4300448"
+    }
+  },
+  "variants": {
+    "hash-bound": {
+      "background_build_batches_executed": false,
+      "cases": [
+        {
+          "backend_after_final_stop": {
+            "error": null,
+            "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e"
+          },
+          "checkpoints": {
+            "launch_entry": 1,
+            "launch_snapshot": 1,
+            "worker_claimed": 1
+          },
+          "consumer_result": "REFUSED",
+          "harness_extra_close_required": true,
+          "inflight_compute": null,
+          "init_errors": [
+            null
+          ],
+          "launch_admission": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "identifier": {
+                "hash": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8",
+                "height": 1
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "method": "GetPatch"
+            }
+          ],
+          "name": "stop-before-init",
+          "phases": [
+            {
+              "handle_assigned": false,
+              "name": "stopped-empty",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [],
+              "retained_frontier": null,
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "init-after-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+                  "value": null
+                },
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+                  "root": null,
+                  "value": "0000000000000000000000000000000000000000000000000000000000000002"
+                }
+              ],
+              "ready": true,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "after-final-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+                  "value": null
+                },
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+                  "root": null,
+                  "value": "0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "ComputeStateRoot",
+                  "patch_callbacks": {
+                    "dump": 1,
+                    "replay": 1
+                  },
+                  "proof": null,
+                  "root": "0cef9d5b2faf8882ac40b3d7fa76d7adf02e268dbd6368faabcb758e97f21a53",
+                  "value": null
+                }
+              ],
+              "ready": true,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": true
+            }
+          ],
+          "records_after_close_reopen": [
+            {
+              "key": "00",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+            },
+            {
+              "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "030000000000000001",
+              "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+            },
+            {
+              "key": "030000000000000002",
+              "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+            },
+            {
+              "key": "05",
+              "value": "03"
+            },
+            {
+              "key": "060000000000000001",
+              "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+            },
+            {
+              "key": "060000000000000002",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+            }
+          ],
+          "start_calls": 1,
+          "stop_errors": [
+            null,
+            null
+          ]
+        },
+        {
+          "backend_after_final_stop": {
+            "error": "database-closed",
+            "root": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "checkpoints": {
+            "launch_entry": 0,
+            "launch_snapshot": 0,
+            "worker_claimed": 0
+          },
+          "consumer_result": "REFUSED",
+          "harness_extra_close_required": false,
+          "inflight_compute": null,
+          "init_errors": [
+            null,
+            "database-closed"
+          ],
+          "launch_admission": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "identifier": {
+                "hash": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8",
+                "height": 1
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "method": "GetPatch"
+            }
+          ],
+          "name": "init-before-stop",
+          "phases": [
+            {
+              "handle_assigned": true,
+              "name": "initialized",
+              "quit_closed": false,
+              "reads": [
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+                  "value": null
+                },
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+                  "root": null,
+                  "value": "0000000000000000000000000000000000000000000000000000000000000002"
+                }
+              ],
+              "ready": true,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "after-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "ComputeStateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "reinit-after-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "ComputeStateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            }
+          ],
+          "records_after_close_reopen": [
+            {
+              "key": "00",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+            },
+            {
+              "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "030000000000000001",
+              "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+            },
+            {
+              "key": "030000000000000002",
+              "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+            },
+            {
+              "key": "05",
+              "value": "03"
+            },
+            {
+              "key": "060000000000000001",
+              "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+            },
+            {
+              "key": "060000000000000002",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+            }
+          ],
+          "start_calls": 0,
+          "stop_errors": [
+            null
+          ]
+        },
+        {
+          "backend_after_final_stop": {
+            "error": "database-closed",
+            "root": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "checkpoints": {
+            "launch_entry": 0,
+            "launch_snapshot": 0,
+            "worker_claimed": 0
+          },
+          "consumer_result": "REFUSED",
+          "harness_extra_close_required": false,
+          "inflight_compute": null,
+          "init_errors": [
+            null
+          ],
+          "launch_admission": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "identifier": {
+                "hash": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8",
+                "height": 1
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "method": "GetPatch"
+            }
+          ],
+          "name": "pending-stop-lock",
+          "phases": [
+            {
+              "handle_assigned": true,
+              "name": "initialized",
+              "quit_closed": false,
+              "reads": [
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+                  "value": null
+                },
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+                  "root": null,
+                  "value": "0000000000000000000000000000000000000000000000000000000000000002"
+                }
+              ],
+              "ready": true,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "stop-intent",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+                  "value": null
+                },
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+                  "root": null,
+                  "value": "0000000000000000000000000000000000000000000000000000000000000002"
+                }
+              ],
+              "ready": true,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "after-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "ComputeStateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            }
+          ],
+          "records_after_close_reopen": [
+            {
+              "key": "00",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+            },
+            {
+              "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "030000000000000001",
+              "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+            },
+            {
+              "key": "030000000000000002",
+              "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+            },
+            {
+              "key": "05",
+              "value": "03"
+            },
+            {
+              "key": "060000000000000001",
+              "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+            },
+            {
+              "key": "060000000000000002",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+            }
+          ],
+          "start_calls": 0,
+          "stop_errors": [
+            null
+          ]
+        },
+        {
+          "backend_after_final_stop": {
+            "error": "database-closed",
+            "root": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "checkpoints": {
+            "launch_entry": 0,
+            "launch_snapshot": 0,
+            "worker_claimed": 0
+          },
+          "consumer_result": "REFUSED",
+          "harness_extra_close_required": false,
+          "inflight_compute": null,
+          "init_errors": [
+            null
+          ],
+          "launch_admission": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "identifier": {
+                "hash": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8",
+                "height": 1
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "method": "GetPatch"
+            }
+          ],
+          "name": "pending-init-stop",
+          "phases": [
+            {
+              "handle_assigned": true,
+              "name": "stop-intent",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "05",
+                  "value": "03"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "after-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "ComputeStateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            }
+          ],
+          "records_after_close_reopen": [
+            {
+              "key": "00",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+            },
+            {
+              "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "030000000000000001",
+              "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+            },
+            {
+              "key": "030000000000000002",
+              "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+            },
+            {
+              "key": "05",
+              "value": "03"
+            },
+            {
+              "key": "060000000000000001",
+              "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+            },
+            {
+              "key": "060000000000000002",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+            }
+          ],
+          "start_calls": 0,
+          "stop_errors": [
+            null
+          ]
+        },
+        {
+          "backend_after_final_stop": {
+            "error": "database-closed",
+            "root": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "checkpoints": {
+            "launch_entry": 0,
+            "launch_snapshot": 0,
+            "worker_claimed": 0
+          },
+          "consumer_result": "REFUSED",
+          "harness_extra_close_required": false,
+          "inflight_compute": {
+            "error": null,
+            "patch_callbacks": {
+              "dump": 1,
+              "replay": 1
+            },
+            "root": "0cef9d5b2faf8882ac40b3d7fa76d7adf02e268dbd6368faabcb758e97f21a53"
+          },
+          "init_errors": [
+            null
+          ],
+          "launch_admission": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "identifier": {
+                "hash": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8",
+                "height": 1
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "method": "GetPatch"
+            }
+          ],
+          "name": "pending-compute-stop",
+          "phases": [
+            {
+              "handle_assigned": true,
+              "name": "initialized",
+              "quit_closed": false,
+              "reads": [
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+                  "value": null
+                },
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+                  "root": null,
+                  "value": "0000000000000000000000000000000000000000000000000000000000000002"
+                }
+              ],
+              "ready": true,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "stop-intent",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+                  "value": null
+                },
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+                  "root": null,
+                  "value": "0000000000000000000000000000000000000000000000000000000000000002"
+                }
+              ],
+              "ready": true,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "after-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "ComputeStateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            }
+          ],
+          "records_after_close_reopen": [
+            {
+              "key": "00",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+            },
+            {
+              "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "030000000000000001",
+              "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+            },
+            {
+              "key": "030000000000000002",
+              "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+            },
+            {
+              "key": "05",
+              "value": "03"
+            },
+            {
+              "key": "060000000000000001",
+              "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+            },
+            {
+              "key": "060000000000000002",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+            }
+          ],
+          "start_calls": 0,
+          "stop_errors": [
+            null
+          ]
+        },
+        {
+          "backend_after_final_stop": {
+            "error": "database-closed",
+            "root": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "checkpoints": {
+            "launch_entry": 2,
+            "launch_snapshot": 2,
+            "worker_claimed": 2
+          },
+          "consumer_result": "REFUSED",
+          "harness_extra_close_required": false,
+          "inflight_compute": null,
+          "init_errors": [
+            null
+          ],
+          "launch_admission": {
+            "published_after_stop_returned": true,
+            "stop_returned_while_snapshots_held": true,
+            "workers_awaited_by_harness": 2
+          },
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "identifier": {
+                "hash": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8",
+                "height": 1
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "method": "GetPatch"
+            }
+          ],
+          "name": "held-launches-stop",
+          "phases": [
+            {
+              "handle_assigned": true,
+              "name": "initialized",
+              "quit_closed": false,
+              "reads": [
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+                  "value": null
+                },
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+                  "root": null,
+                  "value": "0000000000000000000000000000000000000000000000000000000000000002"
+                }
+              ],
+              "ready": true,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "stop-intent",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "after-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "ComputeStateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            }
+          ],
+          "records_after_close_reopen": [
+            {
+              "key": "00",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+            },
+            {
+              "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "030000000000000001",
+              "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+            },
+            {
+              "key": "030000000000000002",
+              "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+            },
+            {
+              "key": "05",
+              "value": "03"
+            },
+            {
+              "key": "060000000000000001",
+              "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+            },
+            {
+              "key": "060000000000000002",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+            }
+          ],
+          "start_calls": 2,
+          "stop_errors": [
+            null
+          ]
+        }
+      ],
+      "consumer_result": "REFUSED",
+      "format_version": 1,
+      "kind": "current-node-stop-lifecycle-observations",
+      "node_revision": "33d7d1ee1b6a915c40aea196e2a10f1e893d171f",
+      "production_state_value_accepted": false,
+      "variant": "hash-bound"
+    },
+    "monotonic-stop": {
+      "background_build_batches_executed": false,
+      "cases": [
+        {
+          "backend_after_final_stop": null,
+          "checkpoints": {
+            "launch_entry": 1,
+            "launch_snapshot": 0,
+            "worker_claimed": 0
+          },
+          "consumer_result": "REFUSED",
+          "harness_extra_close_required": false,
+          "inflight_compute": null,
+          "init_errors": [
+            "stopped"
+          ],
+          "launch_admission": null,
+          "manager_trace": [],
+          "name": "stop-before-init",
+          "phases": [
+            {
+              "handle_assigned": false,
+              "name": "stopped-empty",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [],
+              "retained_frontier": null,
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": false,
+              "name": "init-after-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [],
+              "retained_frontier": null,
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": false,
+              "name": "after-final-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "ComputeStateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [],
+              "retained_frontier": null,
+              "root_cache_present": false
+            }
+          ],
+          "records_after_close_reopen": [],
+          "start_calls": 1,
+          "stop_errors": [
+            null,
+            null
+          ]
+        },
+        {
+          "backend_after_final_stop": {
+            "error": "database-closed",
+            "root": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "checkpoints": {
+            "launch_entry": 0,
+            "launch_snapshot": 0,
+            "worker_claimed": 0
+          },
+          "consumer_result": "REFUSED",
+          "harness_extra_close_required": false,
+          "inflight_compute": null,
+          "init_errors": [
+            null,
+            "stopped"
+          ],
+          "launch_admission": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "identifier": {
+                "hash": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8",
+                "height": 1
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "method": "GetPatch"
+            }
+          ],
+          "name": "init-before-stop",
+          "phases": [
+            {
+              "handle_assigned": true,
+              "name": "initialized",
+              "quit_closed": false,
+              "reads": [
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+                  "value": null
+                },
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+                  "root": null,
+                  "value": "0000000000000000000000000000000000000000000000000000000000000002"
+                }
+              ],
+              "ready": true,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "after-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "ComputeStateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "reinit-after-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "ComputeStateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            }
+          ],
+          "records_after_close_reopen": [
+            {
+              "key": "00",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+            },
+            {
+              "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "030000000000000001",
+              "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+            },
+            {
+              "key": "030000000000000002",
+              "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+            },
+            {
+              "key": "05",
+              "value": "03"
+            },
+            {
+              "key": "060000000000000001",
+              "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+            },
+            {
+              "key": "060000000000000002",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+            }
+          ],
+          "start_calls": 0,
+          "stop_errors": [
+            null
+          ]
+        },
+        {
+          "backend_after_final_stop": {
+            "error": "database-closed",
+            "root": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "checkpoints": {
+            "launch_entry": 0,
+            "launch_snapshot": 0,
+            "worker_claimed": 0
+          },
+          "consumer_result": "REFUSED",
+          "harness_extra_close_required": false,
+          "inflight_compute": null,
+          "init_errors": [
+            null
+          ],
+          "launch_admission": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "identifier": {
+                "hash": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8",
+                "height": 1
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "method": "GetPatch"
+            }
+          ],
+          "name": "pending-stop-lock",
+          "phases": [
+            {
+              "handle_assigned": true,
+              "name": "initialized",
+              "quit_closed": false,
+              "reads": [
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+                  "value": null
+                },
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+                  "root": null,
+                  "value": "0000000000000000000000000000000000000000000000000000000000000002"
+                }
+              ],
+              "ready": true,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "stop-intent",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "after-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "ComputeStateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            }
+          ],
+          "records_after_close_reopen": [
+            {
+              "key": "00",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+            },
+            {
+              "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "030000000000000001",
+              "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+            },
+            {
+              "key": "030000000000000002",
+              "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+            },
+            {
+              "key": "05",
+              "value": "03"
+            },
+            {
+              "key": "060000000000000001",
+              "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+            },
+            {
+              "key": "060000000000000002",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+            }
+          ],
+          "start_calls": 0,
+          "stop_errors": [
+            null
+          ]
+        },
+        {
+          "backend_after_final_stop": {
+            "error": "database-closed",
+            "root": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "checkpoints": {
+            "launch_entry": 0,
+            "launch_snapshot": 0,
+            "worker_claimed": 0
+          },
+          "consumer_result": "REFUSED",
+          "harness_extra_close_required": false,
+          "inflight_compute": null,
+          "init_errors": [
+            "stopped"
+          ],
+          "launch_admission": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            }
+          ],
+          "name": "pending-init-stop",
+          "phases": [
+            {
+              "handle_assigned": true,
+              "name": "stop-intent",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "05",
+                  "value": "03"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "after-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "ComputeStateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "05",
+                  "value": "03"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                "height": 0
+              },
+              "root_cache_present": false
+            }
+          ],
+          "records_after_close_reopen": [
+            {
+              "key": "05",
+              "value": "03"
+            }
+          ],
+          "start_calls": 0,
+          "stop_errors": [
+            null
+          ]
+        },
+        {
+          "backend_after_final_stop": {
+            "error": "database-closed",
+            "root": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "checkpoints": {
+            "launch_entry": 0,
+            "launch_snapshot": 0,
+            "worker_claimed": 0
+          },
+          "consumer_result": "REFUSED",
+          "harness_extra_close_required": false,
+          "inflight_compute": {
+            "error": null,
+            "patch_callbacks": {
+              "dump": 1,
+              "replay": 1
+            },
+            "root": "0cef9d5b2faf8882ac40b3d7fa76d7adf02e268dbd6368faabcb758e97f21a53"
+          },
+          "init_errors": [
+            null
+          ],
+          "launch_admission": null,
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "identifier": {
+                "hash": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8",
+                "height": 1
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "method": "GetPatch"
+            }
+          ],
+          "name": "pending-compute-stop",
+          "phases": [
+            {
+              "handle_assigned": true,
+              "name": "initialized",
+              "quit_closed": false,
+              "reads": [
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+                  "value": null
+                },
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+                  "root": null,
+                  "value": "0000000000000000000000000000000000000000000000000000000000000002"
+                }
+              ],
+              "ready": true,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "stop-intent",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "after-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "ComputeStateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            }
+          ],
+          "records_after_close_reopen": [
+            {
+              "key": "00",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+            },
+            {
+              "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "030000000000000001",
+              "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+            },
+            {
+              "key": "030000000000000002",
+              "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+            },
+            {
+              "key": "05",
+              "value": "03"
+            },
+            {
+              "key": "060000000000000001",
+              "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+            },
+            {
+              "key": "060000000000000002",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+            }
+          ],
+          "start_calls": 0,
+          "stop_errors": [
+            null
+          ]
+        },
+        {
+          "backend_after_final_stop": {
+            "error": "database-closed",
+            "root": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "checkpoints": {
+            "launch_entry": 2,
+            "launch_snapshot": 1,
+            "worker_claimed": 0
+          },
+          "consumer_result": "REFUSED",
+          "harness_extra_close_required": false,
+          "inflight_compute": null,
+          "init_errors": [
+            null
+          ],
+          "launch_admission": {
+            "published_after_stop_returned": false,
+            "stop_returned_while_snapshots_held": false,
+            "workers_awaited_by_harness": 0
+          },
+          "manager_trace": [
+            {
+              "method": "Frontier"
+            },
+            {
+              "method": "Frontier"
+            },
+            {
+              "identifier": {
+                "hash": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8",
+                "height": 1
+              },
+              "method": "GetPatch"
+            },
+            {
+              "identifier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "method": "GetPatch"
+            }
+          ],
+          "name": "held-launches-stop",
+          "phases": [
+            {
+              "handle_assigned": true,
+              "name": "initialized",
+              "quit_closed": false,
+              "reads": [
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "d7ce1fff7d7289110a29f85b511516431c65f3b359c3e201cbc75e8b9b808a3e",
+                  "value": null
+                },
+                {
+                  "error": null,
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": "01c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a1400000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002",
+                  "root": null,
+                  "value": "0000000000000000000000000000000000000000000000000000000000000002"
+                }
+              ],
+              "ready": true,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "stop-intent",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            },
+            {
+              "handle_assigned": true,
+              "name": "after-stop",
+              "quit_closed": true,
+              "reads": [
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "StateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "GetProof",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": null,
+                  "value": null
+                },
+                {
+                  "error": "not-ready",
+                  "identifier": {
+                    "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                    "height": 2
+                  },
+                  "method": "ComputeStateRoot",
+                  "patch_callbacks": {
+                    "dump": 0,
+                    "replay": 0
+                  },
+                  "proof": null,
+                  "root": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "value": null
+                }
+              ],
+              "ready": false,
+              "records": [
+                {
+                  "key": "00",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+                },
+                {
+                  "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+                },
+                {
+                  "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+                },
+                {
+                  "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+                  "value": "0000000000000001"
+                },
+                {
+                  "key": "030000000000000001",
+                  "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+                },
+                {
+                  "key": "030000000000000002",
+                  "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+                },
+                {
+                  "key": "05",
+                  "value": "03"
+                },
+                {
+                  "key": "060000000000000001",
+                  "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+                },
+                {
+                  "key": "060000000000000002",
+                  "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+                }
+              ],
+              "retained_frontier": {
+                "hash": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba",
+                "height": 2
+              },
+              "root_cache_present": false
+            }
+          ],
+          "records_after_close_reopen": [
+            {
+              "key": "00",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba0000000000000002"
+            },
+            {
+              "key": "010bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000002"
+            },
+            {
+              "key": "017bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "00c3a6036d0cae16514c1ca5fd4ad998dabdf4a73b68634fe06adf56766dd29ada0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            {
+              "key": "020bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "027bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88",
+              "value": "0000000000000001"
+            },
+            {
+              "key": "030000000000000001",
+              "value": "7bb2dd29aa0d4a6d5a5670bb83e19eda6b5c49306743aaa44ef5773187a03c88"
+            },
+            {
+              "key": "030000000000000002",
+              "value": "0bb13077a997d0799e484d8f63c047ed11a1c87ce243e30418d3410ed5075a14"
+            },
+            {
+              "key": "05",
+              "value": "03"
+            },
+            {
+              "key": "060000000000000001",
+              "value": "a45ab29a22f8ca78ba4377e23acc5523db3cc0cd2aa4f075d2cdb56fda96a2f8"
+            },
+            {
+              "key": "060000000000000002",
+              "value": "ba365014f9350bd9cb243d7f63eeba342395166e7dded86633973fb2324042ba"
+            }
+          ],
+          "start_calls": 2,
+          "stop_errors": [
+            null
+          ]
+        }
+      ],
+      "consumer_result": "REFUSED",
+      "format_version": 1,
+      "kind": "current-node-stop-lifecycle-observations",
+      "node_revision": "33d7d1ee1b6a915c40aea196e2a10f1e893d171f",
+      "production_state_value_accepted": false,
+      "variant": "monotonic-stop"
+    }
+  }
+}
