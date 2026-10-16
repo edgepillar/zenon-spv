@@ -2424,6 +2424,10 @@ prior pointwise behavior. The original checker programs, recorded corpora and
 producer pins stay unchanged. Complete maps are still recounted on every call;
 no map identity cache or incremental counter is used.
 
+Allocation admission checks the actual collected string lengths again before
+joining; side effects in reference-compatible length/limit hooks cannot make an
+earlier count authorize an oversized aggregate.
+
 ```sh
 python -I -B tools/gen-state-root-vectors/project_target_hex_batch_test.py -v
 ```

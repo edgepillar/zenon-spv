@@ -113,6 +113,10 @@ def batched_encoding(target, total):
             if len(text) % 2 or not text.isascii():
                 return True
             fields.append(text)
+    # Length/limit hooks may have replaced values after the earlier map count.
+    # Admit the actual collected builtin fields, never that potentially stale sum.
+    if sum(map(len, fields)) > MAX_BATCH_HEX_BYTES:
+        return None
     return bool(''.join(fields).translate(DELETE_HEX))
 
 

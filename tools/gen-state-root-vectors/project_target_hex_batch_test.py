@@ -237,6 +237,49 @@ class BatchHexControls(unittest.TestCase):
             value[list(value)[-1]] = field
             self.compare(value)
 
+    def postcount_mutation(self, kind):
+        def execute(use_candidate):
+            value = target()
+            first, last = list(value)[0], list(value)[-1]
+            events, observed = [], []
+            class Limits(dict):
+                def __getitem__(self, key):
+                    if key == 'hex_bytes':
+                        events.append('hex-lookup')
+                        if events.count('hex-lookup') == 3:
+                            value[first] = '00' * (1 << 20)
+                    return super().__getitem__(key)
+            class Text(str):
+                def __len__(self):
+                    events.append('field-length')
+                    value[first], value[last] = '00' * (1 << 20), '00'
+                    return super().__len__()
+            limits = Limits(HEX.REFERENCE.CEILINGS) if kind == 'limit' else HEX.REFERENCE.CEILINGS
+            if kind == 'field':
+                value[last] = Text('00')
+            original = HEX.batched_encoding
+            def inspect(current, total):
+                admitted = original(current, total)
+                observed.append((total, sum(len(k) + len(v) for k, v in current.items()), admitted))
+                return admitted
+            with mock.patch.object(HEX, 'batched_encoding', side_effect=inspect):
+                result = outcome(candidate if use_candidate else HEX.REFERENCE.target_refusal, value, limits)
+            return result, events, observed
+        reference, selected = execute(False), execute(True)
+        self.assertEqual(reference[:2], selected[:2])
+        self.assertEqual(selected[0], ('RETURN', ''))
+        self.assertEqual(len(selected[2]), 1)
+        before, after, admission = selected[2][0]
+        self.assertLess(before, HEX.MAX_BATCH_HEX_BYTES)
+        self.assertGreater(after, HEX.MAX_BATCH_HEX_BYTES)
+        self.assertIsNone(admission)
+
+    def test_mutating_limit_lookup_cannot_admit_postcount_aggregate_growth(self):
+        self.postcount_mutation('limit')
+
+    def test_self_replacing_length_hook_cannot_hide_postcount_aggregate_growth(self):
+        self.postcount_mutation('field')
+
 
 if __name__ == '__main__':
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(BatchHexControls)
@@ -249,6 +292,7 @@ if __name__ == '__main__':
         'minimum_batch_entries': HEX.MIN_BATCH_ENTRIES, 'maximum_batch_entries': HEX.MAX_BATCH_ENTRIES,
         'maximum_batch_hex_characters': HEX.MAX_BATCH_HEX_BYTES,
         'per_field_parity_preserved': True, 'nonbuiltin_pointwise_behavior_preserved': True,
+        'actual_aggregate_character_bound_rechecked': True,
         'cache_or_incremental_counters_used': False, 'production_acceptance_enabled': False,
         'source_inputs': {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
                           for path in (Path(__file__), HERE / 'project_target_hex.py', HERE / 'check_patch_targets.py')},

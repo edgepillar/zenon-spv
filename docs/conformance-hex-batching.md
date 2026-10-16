@@ -19,6 +19,13 @@ still precede encoding checks. Only an exact builtin dictionary with 32 through
 The translation table must be the ordinary exact dictionary that removes the
 16 lowercase hexadecimal code points.
 
+The earlier map count is not reused as an allocation bound. Reference-compatible
+length/limit hooks can replace values after that count. Immediately before
+joining, the optimizer checks the complete size of the collected exact-string
+fields again. If it exceeds the hard cap, the prior pointwise path runs without
+joining. This separate allocation guard does not repeat target-limit callbacks
+or change their original refusal order and results.
+
 Each eligible field must be an exact builtin string, have even length and carry
 the ASCII flag. Two odd fields therefore cannot cancel when concatenated.
 Non-ASCII text refuses before aggregation. The aggregate translation still
@@ -54,7 +61,9 @@ batch/byte limits, odd fields whose total is even, first/middle/last corruption,
 reused map identities, non-builtin mapping/string/limit traces, custom type hooks
 and changed translation tables. They compare standard-table behavior with the
 unchanged character-iteration oracle. Separate fallback controls retain the
-prior translation-table behavior. The original seam controls and all 22 complete
+prior translation-table behavior. Two further controls cover post-count growth
+from a limit lookup and a self-replacing length hook, including unchanged callback
+traces and refusal results. The original seam controls and all 22 complete
 selected checker/control programs remain required in CI.
 
 For timing comparisons, use the same complete command in two isolated, fixed
@@ -71,8 +80,8 @@ without retries or sample filtering:
 
 | Selected optimizer | Complete checker seconds, in execution order | Median seconds |
 | --- | --- | ---: |
-| Previous pointwise translation | 2.622591, 2.525671, 2.585382 | 2.585382 |
-| Bounded batching | 1.955925, 2.258549, 1.994711 | 1.994711 |
+| Previous pointwise translation | 2.615154, 2.746473, 2.542932 | 2.615154 |
+| Bounded batching with the final allocation guard | 2.045449, 2.201453, 2.064422 | 2.064422 |
 
 Baseline and candidate alternated in fresh child workers. This timing includes
 module imports, identical preparation of the pinned previous function and the
@@ -80,7 +89,7 @@ complete existing checker main, including output formatting. It excludes
 interpreter launch and task-manager capture overhead. All six original checker
 reports have SHA-256
 `f3c0ad3d598d0aeefa950e65c40d78420b5744d4fd36b9c4aca64609195030c5`.
-The approximately 23% median decrease applies only to this bounded observation.
+The approximately 21% median decrease applies only to this bounded observation.
 
 The tradeoff is additional temporary memory. Separate one-call `tracemalloc`
 observations on 32-entry maps at the 1 MiB character ceiling reported 1,050,371
