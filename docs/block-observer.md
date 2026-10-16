@@ -1,13 +1,15 @@
-# Read-only block observer
+# Bounded block observer
 
 `tools/observe-block` is a selected reference application for the native-client
 pilot. It performs one account-block inclusion check by running the
 reviewed verifier and [query-report consumer](query-report-consumer.md), then
 prints a fixed summary with actual child completion and elapsed-time records.
 It supports complete commitment or segment batches of 1..256 targets. It does
-not choose trust inputs, advance state, or run a background monitor. Its local
-file mode makes no RPC requests. An explicit single-RPC mode first runs a pinned
-collector for one bounded proof-only collection.
+not choose trust inputs or run a background monitor. Its default modes do not
+write state: local file mode makes no RPC requests, and explicit single-RPC mode
+first runs a pinned collector for one bounded proof-only collection. An optional
+[`--advance-state-once` mode](#advance-once-before-observing) first attempts one
+bounded watch tick against the same explicit RPC and saved context.
 
 This completes a local application connection, not a public-network pilot or
 independent review. `matched` means the entire diagnostic matched the selected
@@ -136,7 +138,7 @@ require independently selected application workloads and hardware.
 
 Applications can pass the completed outer diagnostic to the separate
 [observer-report consumer](observer-report-consumer.md), with the actual observer
-exit, independently expected target count and explicit local-file/collected mode.
+exit, independently expected target count and explicit local-file/collected/advancing mode.
 It checks complete bounded stdin and child completion metadata. The outer report
 contains no target identities or context; the caller still binds the protected
 report channel to this invocation and retains the underlying expectations.
@@ -160,7 +162,7 @@ Temporary expectation/report files use mode 0600 in a newly created directory.
 The command attempts removal before emitting its result, and a cleanup failure
 cannot report a match. Abrupt termination or cleanup failure can leave raw
 files, so the parent directory must already be private; Windows protection
-depends on its ACLs. The observer writes no state or companion writer lock.
+depends on its ACLs. Default modes write no state or companion writer lock.
 Keep concurrent writers and all legitimate input replacements under the
 application's control; a tip/context mismatch must be investigated explicitly.
 
@@ -228,8 +230,9 @@ The existing retained-only query still validates the full proof and saved
 context; the existing consumer still matches the exact independently prepared
 tip/targets and required guarantees/trust allowances. Those checks follow
 collection and are not replaced by JSON syntax validation. State, anchor,
-profile, schedule and caller expectations are never written. There is no
-profile renewal or implicit state initialization/advancement.
+profile, schedule and caller expectations are never written. This default RPC
+mode never writes state or initializes/advances it implicitly. There is no
+profile renewal in any mode.
 
 Collection uses summary schema 2: the existing seven fields plus a `collector`
 process record with the same actual-exit/time/byte fields as the other children.
@@ -238,6 +241,73 @@ collector with non-JSON output refuses with `invalid_bundle`; other child,
 setup, cleanup and output categories/exit rules remain the same. Each child has
 its own deadline, not one deadline for the whole operation or a process-tree
 sandbox. Syntax checks and private filesystem work have no separate deadline.
+
+## Advance once before observing
+
+Applications that need advancing history can explicitly add all three options
+to the RPC invocation above:
+
+```bash
+  --advance-state-once --watch-safety-margin "$SAFETY_MARGIN" \
+  --watch-batch-size "$BATCH_SIZE"
+```
+
+This selection requires an existing regular saved-state file, complete RPC
+collection inputs and every existing binary/trust/context/expectations option.
+It cannot accompany local file mode. Both watch policies must be canonical
+unsigned decimal integers: the margin can be zero, and batch size must be
+positive and at most the explicit K. Duplicate, disabled or incomplete selections
+are refused before any child starts. There is no implicit margin or batch size.
+
+The observer checks all three executable pins and local input paths and snapshots
+the preselected expectations before contacting the RPC. It then runs the pinned
+verifier's `watch --json --once` with quorum one and the same explicit endpoint,
+anchor, profile, schedule, state, context pin and K/W. The existing watcher checks
+and saves one bounded prefix, or reports that it is caught up. It holds its
+ordinary writer lock while running. A single RPC remains an operator-trusted
+source; this mode provides no peer independence or authenticated fork choice.
+
+Watch stdout is discarded and counted up to 4 MiB; stderr is discarded and
+counted up to 16 KiB. Actual exit zero, both complete streams, the per-child
+deadline and the existing output-close boundary are required before collection
+starts. Failure starts neither collector, retained-only query nor consumer.
+A success-looking watch message cannot replace the actual process outcome.
+The observer does not parse watch output as inclusion, freshness or finality.
+
+After successful watch completion, the existing collection, retained-only query
+and strict consumer run unchanged. The consumer still requires every selected
+target and the complete independently selected final tip/context. One batch
+may save a useful prefix while leaving that query unavailable. Refusal does not
+trigger another tick, widen trust allowances, change expected identities, renew
+coverage or lower depth. The caller decides whether and when to invoke another
+tick using the same independently prepared expectations.
+
+**This mode can write header state even when the final observation refuses.**
+The observer never rolls back saved progress after a collection, query, consumer
+or cleanup failure. Timeout or interruption can occur after a save. Preserve
+the actual outcomes and inspect the saved state/context before continuing; do
+not infer unchanged state from a nonzero observer exit. Serialize state writers
+and protect all input paths through the whole operation, including the gap
+between watch releasing its lock and the retained-only query opening state.
+No wallet, signing, transaction or background service is started.
+
+Advancing mode emits schema 3: schema 2's eight fields plus `watch`, with the
+same actual-exit/time/byte fields as the other children. Even preflight refusals
+retain the selected schema with unstarted child exits null. Use explicit
+`--mode advancing` in the independent observer-report consumer. Schemas 1 and 2
+retain their exact shapes and cannot be silently treated as schema 3.
+
+`TestCompiledAdvancingBlockObserver` uses original signed node-corpus bytes,
+synthetic trust selections and an owned loopback peer. Separate ordinary
+processes reload a six-header saved state, advance three single-header prefixes,
+refuse early delayed queries, match all five preselected targets at the intended
+tip, and recheck caught-up state. Disconnected, malformed, aliased-range,
+expired-profile and stale-peer controls preserve the initial saved bytes and
+stop consumption. Unit controls cover failed-success text, deadlines, stream
+caps, every binary pin before watch and saved progress after a later failure.
+These are local application controls. Real-network advancing/restart/fork and
+persistence-failure observations, target hardware, independent review and
+authenticated distribution remain open pilot/release gates.
 
 A single-RPC run is suitable for an explicitly operator-trusted engineering
 experiment. It does not supply independent operator corroboration, authenticate

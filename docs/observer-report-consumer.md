@@ -2,7 +2,7 @@
 
 `tools/consume-observer-report.py` checks a completed [block observer](block-observer.md)
 diagnostic using an actual outer process exit, independently selected target count
-and explicit `local-file` or `collected` mode. It reads bounded binary stdin and
+and explicit `local-file`, `collected` or `advancing` mode. It reads bounded binary stdin and
 prints one fixed schema 1 summary. It never launches a child, opens report paths,
 loads state, selects a peer/trust input, retries or verifies a chain proof.
 
@@ -48,18 +48,23 @@ file through shell redirection remains the caller's protected-file responsibilit
 | Actual observer exit | Integer zero provided separately by the caller. Nonzero exits refuse before stdin is read. |
 | `--mode local-file` | Schema 1 with the exact seven outer fields and only verifier/consumer observations. |
 | `--mode collected` | Schema 2 with the same fields plus a required collector observation. |
+| `--mode advancing` | Schema 3 with the same fields plus required watch and collector observations. |
 | `checked_targets` | An integer in 1..256 equal to the independently selected expected count. |
 | `status`, `category` | `matched` and null. |
 | Each child | Exact `exit_code`, `elapsed_ns`, `stdout_bytes`, `stderr_bytes` fields; reported integer exit zero, not null or a Boolean. |
 | Time/count metadata | Lossless nonnegative signed 64-bit integers. Zero clock ticks are allowed. |
-| Successful child stdout | Positive and within the existing observer caps: verifier 4 MiB, consumer 1024 bytes, collector 64 MiB. |
+| Successful child stdout | Positive and within the existing observer caps: watch/verifier 4 MiB each, consumer 1024 bytes, collector 64 MiB. |
 | Child stderr count | Nonnegative and at most 16 KiB. Raw diagnostics are never echoed. |
 
 The decoder rejects duplicate fields, including escaped aliases, unknown or
 missing fields, wrong types, floating/nonfinite numbers, invalid UTF-8, oversized
 integers/documents, partial JSON and trailing documents. Object key order and
 ordinary JSON whitespace may differ. A collected diagnostic cannot be silently
-treated as a local-file diagnostic by omitting the collector field.
+treated as a local-file diagnostic by omitting the collector field. Advancing
+diagnostics require all four child completions and cannot match either older
+mode. Watch completion is process metadata only; it does not identify a saved
+tip, prove progress or erase state writes when a later child fails. The caller
+must retain the selected invocation and actual saved-state context.
 
 Success produces:
 
@@ -91,6 +96,7 @@ prove cleanup, peak/physical storage, sustainable arrival rate or a consumer SLA
 
 ```bash
 "$PYTHON" -I -B tools/consume-observer-report_test.py
+"$PYTHON" -I -B tools/consume-observer-advance_test.py
 "$PYTHON" -I -B tools/check-observer-report-consumer_test.py
 "$PYTHON" -I -B tools/check-observer-report-consumer.py \
   --observer "$OBSERVE" --verifier "$SPV" --consumer "$CONSUME" \
@@ -129,3 +135,8 @@ without claiming qualification or automatically retrying. This is offline
 interoperability with synthetic trust selections, not a live network pilot,
 independent review or authenticated distribution. Candidate artifact checks bind
 the native report's four ordinary executables to the exported payloads separately.
+The additional nine advancing-reader controls use synthetic schema-3 metadata
+to require explicit mode, complete four-child success, strict shape/types,
+actual outer completion and the unchanged input/output bounds. They retain
+schema-1/2 compatibility; actual advancing process conformance is exercised
+separately by the compiled observer test described in the application guide.

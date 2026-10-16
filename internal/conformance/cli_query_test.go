@@ -581,7 +581,11 @@ func newQueryCLIPeer(t *testing.T, c accountSegmentCorpus, initiallyBad bool, wa
 	p.bad.Store(initiallyBad)
 	var frontier map[string]json.RawMessage
 	if len(watchTip) != 0 {
-		if err := json.Unmarshal(c.Chain.Vectors[8].Momentum, &frontier); err != nil {
+		selected := watchTip[0]
+		if selected.Height < 4001 || selected.Height > 4009 {
+			t.Fatal("watch hint is outside the selected node corpus")
+		}
+		if err := json.Unmarshal(c.Chain.Vectors[selected.Height-4001].Momentum, &frontier); err != nil {
 			t.Fatal(err)
 		}
 		// Only a height hint is synthetic. Every target/range reply below is
