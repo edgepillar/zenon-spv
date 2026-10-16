@@ -579,3 +579,15 @@ Injected scheduler checkpoints, no executed background batches and unexercised
 update/truncate stop guards leave representative lifecycle/concurrency/resource
 qualification open. M1 consumer selection, M2 profile agreement, accepted-header
 state-value binding and M4/M5 acceptance gates remain separate.
+
+The [source-genesis background M4 component experiment](state-tree-genesis-background.md)
+executes the uninstrumented terminal-node worker on 19,257 source-derived
+projection leaves and a 4,096-height unsigned fixture suffix. Six fresh normal
+processes and three race processes cover actual build batches, the inclusive
+257-root test retention boundary, archive retention, clean reopen and controlled
+stop/resume. Independent expectations precede execution; recorded-data native
+checks and full source-input reconstruction have separate scopes. These are
+bounded component observations with controlled manager/cache/genesis adapters.
+Production retention, ongoing VM workload, whole-node/hardware budgets, crash
+recovery, accepted headers and independent acceptance remain open. This advances
+M4 evidence without enabling v3 or production state-value verification.

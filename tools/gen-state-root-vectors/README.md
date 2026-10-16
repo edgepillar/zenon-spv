@@ -2379,3 +2379,37 @@ Use `prepare_lifecycle_stop.py` only with the full pinned source and new private
 quota-accounted workspaces. It returns a race-build/run plan with explicit
 checkpoint and compiler-overlay pins and executes no command. Every production
 state-value result remains `REFUSED`.
+
+## Source-genesis actual background component experiment
+
+The [M4 component observation](../../docs/state-tree-genesis-background.md) executes
+the real terminal-node worker without injected runtime checkpoints. The complete
+source-derived genesis dump has 103,821 logical keys and 19,257 projected leaves;
+an independent source decoder checks all 14,091 balances. Independent initial
+and final full projections and a selected-witness forest agree on the unsigned
+4,096-height history. Controlled suffix patches are not VM or accepted-header
+validation.
+
+Six normal processes and three race processes cover pruned/archive builds,
+clean reopen and controlled stop/resume. The override 256 retains 257 final roots,
+including the inclusive horizon at 3,840. The compact recorded corpus shares equal
+root/query tables once; original outputs and failure evidence remain separate.
+The recorded checker runs no node, CGO, database or network and does not repeat
+the complete initial input reconstruction. Use the separate full deriver with a
+pinned raw dump and the complete selected source for that comparison.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_genesis_models_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_genesis_background_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_genesis_background_corpus.py
+```
+
+The preparer returns explicit resource/race build plans for fresh owned
+workspaces. The foreground measurement wrapper preserves the component process's
+exit and wait4 memory/CPU scope on macOS/Linux. Follow the linked source,
+offline-dependency, quota, output-cap and cleanup contracts. Existing databases,
+historical manifests and protected evidence are never migrated or adopted.
+Normal resources include controlled fixture and query work; race results are
+separate functional observations. Full-node, production retention/concurrency,
+crash/power-loss, agreed profile, accepted-header and distribution gates remain
+open. All production state-value consumers remain `REFUSED`.
