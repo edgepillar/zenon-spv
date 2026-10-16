@@ -3,8 +3,8 @@
 """Select a pinned, serial hex-validation seam without rebinding old recordings.
 
 The original source and every prospective-map copy, entry count, byte sum and
-refusal order stay intact. Only exact builtin str character membership uses
-str.translate. Non-builtin strings keep the reference iteration semantics.
+refusal order stay intact. Exact builtin ASCII strings may share one bounded
+str.translate call. Non-builtin inputs keep the pointwise reference semantics.
 This opt-in research seam is separate from recorded producer source inputs.
 """
 from contextlib import contextmanager
@@ -16,6 +16,10 @@ from types import FunctionType, ModuleType
 HERE = Path(__file__).resolve().parent
 REFERENCE_SHA256 = 'f0871b4aa89a6b07f99a023029858fe2a7be61455d7968780e836af77db7e2c5'
 DELETE_HEX = {ord(c): None for c in '0123456789abcdef'}
+HEX_CODEPOINTS = frozenset(map(ord, '0123456789abcdef'))
+MIN_BATCH_ENTRIES = 32
+MAX_BATCH_ENTRIES = 4096
+MAX_BATCH_HEX_BYTES = 1 << 20
 MAX_MODULES = 128
 MODES = ('reference', 'translated')
 SEAMS = {
@@ -87,17 +91,50 @@ def load(name, file):
 REFERENCE = load('unchanged_target_hex_reference', 'check_patch_targets.py')
 
 
+def batched_encoding(target, total):
+    """Return a builtin-only encoding result, or None for the old field path.
+
+    Admission follows the complete byte count. Each field keeps its own parity
+    check; joining two odd fields cannot turn them into a valid encoding. ASCII
+    flags bound the aggregate strings to one byte per character. There is no
+    retained map, cache key, observed-result reuse or incremental byte counter.
+    """
+    if (type(target) is not dict or not MIN_BATCH_ENTRIES <= len(target) <= MAX_BATCH_ENTRIES
+            or total > MAX_BATCH_HEX_BYTES or type(DELETE_HEX) is not dict
+            or len(DELETE_HEX) != 16
+            or any(type(code) is not int or value is not None or code not in HEX_CODEPOINTS
+                   for code, value in DELETE_HEX.items())):
+        return None
+    fields = []
+    for key, value in target.items():
+        for text in (key, value):
+            if type(text) is not str:
+                return None
+            if len(text) % 2 or not text.isascii():
+                return True
+            fields.append(text)
+    # Length/limit hooks may have replaced values after the earlier map count.
+    # Admit the actual collected builtin fields, never that potentially stale sum.
+    if sum(map(len, fields)) > MAX_BATCH_HEX_BYTES:
+        return None
+    return bool(''.join(fields).translate(DELETE_HEX))
+
+
 def target_refusal(target, limits, ceilings):
     if any(type(limits[field]) is not int or not 0 < limits[field] <= cap
            for field, cap in ceilings.items()):
         return 'invalid_target_limits'
     if len(target) > limits['entries']:
         return 'target_entry_limit'
-    if sum(len(key) + len(value) for key, value in target.items()) > limits['hex_bytes']:
+    total = sum(len(key) + len(value) for key, value in target.items())
+    if total > limits['hex_bytes']:
         return 'target_hex_limit'
-    if any(len(text) % 2 or (bool(text.translate(DELETE_HEX)) if type(text) is str
-                            else any(c not in '0123456789abcdef' for c in text))
-           for item in target.items() for text in item):
+    invalid = batched_encoding(target, total)
+    if invalid is None:
+        invalid = any(len(text) % 2 or (bool(text.translate(DELETE_HEX)) if type(text) is str
+                                      else any(c not in '0123456789abcdef' for c in text))
+                      for item in target.items() for text in item)
+    if invalid:
         return 'invalid_target_encoding'
     return ''
 
