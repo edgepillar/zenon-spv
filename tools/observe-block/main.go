@@ -1,4 +1,5 @@
-// Command observe-block performs one bounded, read-only block check.
+// Command observe-block performs one bounded block check. Its default modes
+// are read-only; explicitly selected advancement first attempts one watch tick.
 // It supervises reviewed verifier and consumer binaries and can first collect
 // proof-only evidence from an explicitly selected RPC through a pinned collector.
 // It neither chooses trust inputs nor turns diagnostic matching into finality.
@@ -37,6 +38,7 @@ type configuration struct {
 	pin, window, retention                                                      string
 	timeout                                                                     time.Duration
 	collection                                                                  collectionConfiguration
+	advance                                                                     advanceConfiguration
 }
 
 type observation struct {
@@ -55,6 +57,7 @@ type summary struct {
 	Verifier       observation  `json:"verifier"`
 	Consumer       observation  `json:"consumer"`
 	Collector      *observation `json:"collector,omitempty"`
+	Watch          *observation `json:"watch,omitempty"`
 }
 
 type consumption struct {
@@ -118,9 +121,17 @@ func parseConfiguration(args []string) (configuration, bool) {
 		{"collector", &c.collection.binary}, {"collector-sha256", &c.collection.hash}, {"rpc", &c.collection.rpc},
 		{"height", &c.collection.height}, {"count", &c.collection.count}, {"commitments", &c.collection.commitments}, {"segments", &c.collection.segments},
 		{"momentum-heights", &c.collection.momentumHeights},
+		{"watch-safety-margin", &c.advance.safetyMargin}, {"watch-batch-size", &c.advance.batchSize},
 	} {
 		add(option.name, option.value)
 	}
+	fs.BoolFunc("advance-state-once", "explicitly attempt one state-writing watch tick before RPC observation", func(value string) error {
+		if seen["advance-state-once"] || value != "true" {
+			return errors.New("duplicate or disabled advancement selection")
+		}
+		seen["advance-state-once"], c.advance.enabled = true, true
+		return nil
+	})
 	fs.Func("timeout", "per-child deadline, positive and at most one minute", func(value string) error {
 		if seen["timeout"] {
 			return errors.New("duplicate option")
@@ -145,7 +156,7 @@ func parseConfiguration(args []string) (configuration, bool) {
 	k, err := strconv.Atoi(c.retention)
 	p := verify.PolicyForTier(c.window)
 	p.RetainHeaders = k
-	return c, err == nil && k > 0 && p.ValidateRetention() == nil && validCollectionSelection(c, seen, k)
+	return c, err == nil && k > 0 && p.ValidateRetention() == nil && validCollectionSelection(c, seen, k) && validAdvanceSelection(c, seen, k)
 }
 
 func digest(value string) bool {
@@ -167,6 +178,9 @@ func observe(ctx context.Context, c configuration) (result summary, code int) {
 	result = summary{Version: 1, Status: "not_matched"}
 	if c.collection.binary != "" {
 		result.Version, result.Collector = 2, &observation{}
+	}
+	if c.advance.enabled {
+		result.Version, result.Watch = 3, &observation{}
 	}
 	fail := func(category string, status int) (summary, int) {
 		result.Status, result.Category, result.CheckedTargets = "not_matched", &category, 0
@@ -222,6 +236,18 @@ func observe(ctx context.Context, c configuration) (result summary, code int) {
 	expectedPath, reportPath := filepath.Join(private, "expectations.json"), filepath.Join(private, "query.json")
 	if os.WriteFile(expectedPath, expected, 0o600) != nil {
 		return fail("input_unavailable", 70)
+	}
+	if c.advance.enabled {
+		// The explicit watch can save header state even if a later observation
+		// fails. Never roll it back, retry, or infer inclusion from its output.
+		// The retained-only query and strict consumer still check the caller's
+		// independently selected complete tip/context/targets after this tick.
+		watched := runProcessOutput(ctx, c.verifier, advanceArguments(c), maxReportBytes, c.timeout, io.Discard)
+		watchObservation := watched.observation
+		result.Watch = &watchObservation
+		if watched.category != "" {
+			return fail(watched.category, watched.code)
+		}
 	}
 	if c.collection.binary != "" {
 		c.bundle = filepath.Join(private, "candidate.json")
