@@ -191,7 +191,15 @@ python3 -I -B tools/gen-state-root-vectors/check_default_retention_corpus_test.p
 python3 -I -B tools/gen-state-root-vectors/check_default_retention_corpus.py
 ```
 
-These 62 controls and the recorded comparison are scheduled in native CI.
+The first native CI head exposed two preparation-fixture errors because the
+local managed-scratch environment variable is absent on hosted runners. Fixture
+selection now requires local owned task scratch or explicitly selects GitHub
+Actions' runner temporary directory; it has no implicit local fallback. The
+expected output path also uses the platform's native path representation.
+Neither correction changes the prepared component, binary, recorded samples or
+independent expectations, so the six component processes are not rerun.
+
+These 64 controls and the recorded comparison are scheduled in native CI.
 The portable checks execute no node, Go build, LevelDB, network or new resource
 measurement. Exact-head CI success must be verified separately; corpus receipt
 hashes do not authenticate execution, the reference host or distribution.
