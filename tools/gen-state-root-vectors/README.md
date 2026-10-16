@@ -2352,3 +2352,30 @@ Caller-written metadata is not authenticated header or state-transition
 provenance. Complete-node, concurrency, storage-fault, migration/downgrade,
 representative resource, profile/activation, consumer and independent-review
 gates remain separate. Every production state-value result stays `REFUSED`.
+
+## Experimental current-node terminal Stop
+
+The [M2 lifecycle proposal](../../docs/state-tree-terminal-stop.md) layers an
+exact one-file patch on the current-node hash identity proposal. It makes Stop
+terminal, refuses newly admitted reads after stop intent and serializes build
+admission. The original 439-file source and historical evidence stay pinned.
+Three separate test checkpoints expose selected schedules; no background build
+batch or full node runs. Each paired generation records six cases per variant,
+14 Init and 14 Stop calls, 34 phases, 82 reads and 46 logical snapshots.
+
+Each variant was built once locally with Go 1.25.14, CGO and the race detector,
+then executed twice with new databases. Independent byte/schedule expectations
+were sealed first. Thirty adverse controls and native CI verify the recorded
+corpus without rerunning the reference node. Source/compilation checks alone
+cover the new update/truncate stop guards; selected concurrency is not general
+production concurrency, crash recovery, profile agreement or header binding.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_lifecycle_stop_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_lifecycle_stop.py
+```
+
+Use `prepare_lifecycle_stop.py` only with the full pinned source and new private
+quota-accounted workspaces. It returns a race-build/run plan with explicit
+checkpoint and compiler-overlay pins and executes no command. Every production
+state-value result remains `REFUSED`.

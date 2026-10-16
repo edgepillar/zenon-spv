@@ -353,3 +353,7 @@ The separate [serial staging and injected replay checks](tools/gen-state-root-ve
 bind failed replacement replay, partial accumulation, stage loss on clean reopen
 and complete retries to independent roots/proofs. Default batch replay returns
 nil; custom interface errors are explicit research inputs. All consumers refuse.
+
+The separate [terminal state-tree Stop proposal](docs/state-tree-terminal-stop.md)
+records stopped-instance reopening and controlled concurrent build admission
+against the current-node identity proposal. It adds no runtime acceptance.

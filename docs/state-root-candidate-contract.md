@@ -851,3 +851,12 @@ peak disk, instantaneous footprints or production budgets. Compiler peak,
 simultaneous pipeline memory, real archives, accepted header/profile/activation,
 retained-hash provenance and independent release review remain unqualified.
 Anchor, schedule and context pins remain explicit; consumers remain `REFUSED`.
+
+The separate [terminal state-tree Stop comparison](state-tree-terminal-stop.md)
+adds controlled lifecycle evidence on the current-node identity proposal. It
+compares stopped-instance reopening, stop-intent readiness, an already admitted
+compute and two held build launches. The proposed terminal/launch guards change
+no disk format, SMT profile or consumer acceptance. The local race detector
+covers only the declared checkpoint schedules; native CI reads their recorded
+bytes. Full-node builds, representative concurrency/resources, migration,
+profile/activation and authenticated accepted-header/root provenance stay open.
