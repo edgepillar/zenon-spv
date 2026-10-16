@@ -305,9 +305,27 @@ tip, and recheck caught-up state. Disconnected, malformed, aliased-range,
 expired-profile and stale-peer controls preserve the initial saved bytes and
 stop consumption. Unit controls cover failed-success text, deadlines, stream
 caps, every binary pin before watch and saved progress after a later failure.
-These are local application controls. Real-network advancing/restart/fork and
-persistence-failure observations, target hardware, independent review and
-authenticated distribution remain open pilot/release gates.
+A separate `TestCompiledAdvancingObserverPersistence` runs seven compiled
+process flows. A held writer stops before RPC. Replacing only the owned state
+destination with a directory after the signed range is requested makes the
+actual save fail before collection; the companion lock and parent stay intact.
+Explicit fault removal restores the original saved bytes, and a new process
+extends that old prefix. Later collection failure and a deliberately different
+preselected consumer tip preserve successfully saved progress. Separate caught-up
+restarts use the already selected expectations. Every flow checks actual child
+exits, the complete reloaded header prefix, writer-lock release, unchanged trust
+files, private cleanup and the actual separately implemented outer-reader result. The two
+expectation variants are prepared before execution; no report selects them.
+These are local filesystem/process controls, including a controlled destination
+replacement. They do not qualify disk exhaustion, torn writes, in-flight storage
+I/O faults, post-rename durability errors or physical power-loss recovery.
+
+The [finite advancing-history observation](advancing-history-observation.md)
+adds three fresh-process ticks over one gateway's historical testnet data and
+an unchanged-profile expiry refusal. Its earlier setup/auditor failures and
+the boundary between real forwarding and controlled local faults are retained.
+Independent network/fork qualification, representative hardware/workloads,
+independent review and authenticated distribution remain open acceptance gates.
 
 A single-RPC run is suitable for an explicitly operator-trusted engineering
 experiment. It does not supply independent operator corroboration, authenticate
