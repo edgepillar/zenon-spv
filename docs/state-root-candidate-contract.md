@@ -266,6 +266,16 @@ review candidate for a recovery decision, not completion of the provenance gate
 or an enabled state-value profile. Existing mislabelled equal-height data cannot
 be authenticated by this guard.
 
+The separate [current-node retained-identity proposal](state-tree-hash-bound-versions.md)
+selects 33d7/439 blobs and records an experimental disk-format-3 hash mapping,
+exact-identity read/rollback guards, cache/base validation and non-destructive
+format refusal. Its finite comparison restores matching ahead-tree rollback
+while refusing the other retained hash. Historical 56ce records are unchanged.
+The new metadata is still caller-supplied: it does not authenticate an accepted
+header/root or state transition. Full-node, physical crash/storage, migration,
+concurrency, resource and protocol/activation acceptance remain separate gates.
+Production v3/state-value verification stays disabled.
+
 The [controlled disk exit/reopen fixture](../tools/gen-state-root-vectors/README.md#separate-controlled-disk-process-exit-and-reopen-fixture)
 adds five planned process exits after returned Open/New, Update, Commit,
 Truncate or Prune calls, plus a normal-close control. Two reopens per case

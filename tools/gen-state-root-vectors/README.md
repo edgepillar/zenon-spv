@@ -2309,3 +2309,46 @@ python3 -I -B tools/gen-state-root-vectors/check_startup_quarantine.py
 
 This is a conservative recovery-policy proposal for separate node review.
 It does not change the MIT verifier or enable its v3/state-value acceptance.
+
+## Experimental current-node hash-bound retained versions
+
+The separate [M2 identity proposal](../../docs/state-tree-hash-bound-versions.md)
+selects the complete current 33d7 node snapshot: 439 blobs with exact Git and
+SHA-256 pins. Historical 56ce/394-blob source selections and records remain
+unchanged. A two-file experimental descriptor adds retained Momentum hash
+metadata, pairs its collection with root retention, checks identities on public
+tree reads and rollback, preserves incompatible stores, resets readiness and
+ancestry, and validates retained membership before a memoized root is reused.
+
+The disk marker changes from 2 to 3; this is separate from Momentum version 3.
+There is no existing-database migration. The unpatched baseline wipes unknown
+formats, so the two variants require separate fresh owned workspaces. The
+candidate rejects missing nonzero node references on the selected read/write
+path; it does not scan every descendant during initialization.
+
+The local component comparison builds each variant once and records two fresh
+complete generations. Each generation compares 64 Init observations, 946
+selected read observations and 322 complete logical record snapshots against
+an independently selected full sparse-tree and compressed-node/refcount model.
+Matching ahead-tree recovery succeeds; a different retained target hash refuses
+without changing records. Prune/truncate/closed-backend cache controls, malformed
+or missing metadata, missing root/child nodes, empty versions, staged failure and
+origin wrap remain explicit cases. Forty adverse controls bind bytes and scope.
+
+`prepare_hash_bound_versions.py` verifies the full current source and the exact
+patch inverse before staging a nonexistent workspace. An explicit compiler
+overlay excludes six original test files while the tagged chain probe runs.
+The preparer executes no command or migration. Use the approved caller-owned
+storage/process supervisor, offline dependencies and private caches for its
+returned build/run plan.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_hash_bound_versions_test.py -v
+python3 -I -B tools/gen-state-root-vectors/report_hash_bound_versions.py
+```
+
+Native CI checks the recorded data without executing the reference node again.
+Caller-written metadata is not authenticated header or state-transition
+provenance. Complete-node, concurrency, storage-fault, migration/downgrade,
+representative resource, profile/activation, consumer and independent-review
+gates remain separate. Every production state-value result stays `REFUSED`.
