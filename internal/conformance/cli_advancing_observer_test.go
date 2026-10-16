@@ -145,14 +145,19 @@ func TestCompiledAdvancingBlockObserver(t *testing.T) {
 		if ctx.Err() != nil || diagnostics.Len() != 0 || consumed.Len() > 1024 {
 			t.Fatal("actual advancing report consumption did not complete privately")
 		}
+		// Python's native text stdout uses CRLF on Windows. Keep the exact
+		// fixed JSON bytes and permit only these two complete line endings.
+		matches := func(value string) bool {
+			return consumed.String() == value+"\n" || consumed.String() == value+"\r\n"
+		}
 		if want == 0 {
-			if readerErr != nil || consumed.String() != "{\"schema_version\":1,\"status\":\"matched\",\"category\":null,\"checked_targets\":5}\n" {
+			if readerErr != nil || !matches("{\"schema_version\":1,\"status\":\"matched\",\"category\":null,\"checked_targets\":5}") {
 				t.Fatal("independent reader did not match the actual complete advancing diagnostic")
 			}
 		} else {
 			var exit *exec.ExitError
-			if !errors.As(readerErr, &exit) || exit.ExitCode() != 2 || consumed.String() != "{\"schema_version\":1,\"status\":\"not_matched\",\"category\":\"process_failure\",\"checked_targets\":0}\n" {
-				t.Fatal("independent reader accepted a refused advancing observation")
+			if !errors.As(readerErr, &exit) || exit.ExitCode() != 2 || !matches("{\"schema_version\":1,\"status\":\"not_matched\",\"category\":\"process_failure\",\"checked_targets\":0}") {
+				t.Fatal("independent reader exit or fixed refusal output differed")
 			}
 		}
 		resumed, err := verify.LoadTrustedState(statePath, c.Chain.Anchor, opts)

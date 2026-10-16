@@ -33,6 +33,9 @@ are explicit caller selections/records. Keep the actual reader status as well;
 stdout that looks successful cannot override a nonzero exit. Native process APIs
 should supply the completed UTF-8 stdout bytes directly without a shell text
 conversion. The shell example does not qualify Windows/Git Bash execution.
+The Python CLI uses native text stdout, including a final CRLF on Windows;
+retain the actual bytes and exit. Native compiled conformance accepts only the
+same fixed JSON followed by LF or CRLF, without trimming other content.
 
 Stdin has a 16 KiB bound plus one overflow probe; short reads continue until EOF.
 Parsing occurs only after EOF, so a read failure or trailing document cannot
