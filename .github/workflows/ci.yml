@@ -163,6 +163,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/prepare_recovery_successor_test.py -v
       - name: Independent successor recovery expectation controls
         run: python -I -B tools/gen-state-root-vectors/check_recovery_successor_test.py -v
+      - name: Successor terminal source preparation controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_terminal_stop_successor_test.py -v
+      - name: Successor terminal recorded comparison controls
+        run: python -I -B tools/gen-state-root-vectors/check_terminal_stop_successor_test.py -v
+      - name: Independent successor terminal observations
+        run: python -I -B tools/gen-state-root-vectors/check_terminal_stop_successor.py --source-revision "${{ github.sha }}"
       - name: Independent current-node retained hash identity observations
         run: python -I -B tools/gen-state-root-vectors/report_hash_bound_versions.py --source-revision "${{ github.sha }}"
       - name: Current-node terminal stop controls
@@ -654,6 +660,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/prepare_recovery_successor_test.py -v
       - name: Independent successor recovery expectation controls
         run: python -I -B tools/gen-state-root-vectors/check_recovery_successor_test.py -v
+      - name: Successor terminal source preparation controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_terminal_stop_successor_test.py -v
+      - name: Successor terminal recorded comparison controls
+        run: python -I -B tools/gen-state-root-vectors/check_terminal_stop_successor_test.py -v
+      - name: Independent successor terminal observations
+        run: python -I -B tools/gen-state-root-vectors/check_terminal_stop_successor.py --source-revision "${{ github.sha }}"
       - name: Independent current-node retained hash identity observations
         run: python -I -B tools/gen-state-root-vectors/report_hash_bound_versions.py --source-revision "${{ github.sha }}"
       - name: Current-node terminal stop controls
