@@ -584,6 +584,17 @@ update/truncate stop guards leave representative lifecycle/concurrency/resource
 qualification open. M1 consumer selection, M2 profile agreement, accepted-header
 state-value binding and M4/M5 acceptance gates remain separate.
 
+The [separate terminal successor](state-tree-terminal-successor.md) selects the
+complete `9c71` source and its experimental retained-identity parent. A fresh
+one-file terminal proposal and two race-built variants reproduce the same six
+controlled schedules in two complete processes per variant, against expectations
+sealed before execution. Thirty-nine portable preparation/recorded-data controls
+and exact native source/CI/artifact qualification retain this new scope. The
+earlier `33d7` lifecycle and resource observations remain unchanged and do not
+qualify this successor's production concurrency, background batches or resources.
+M1 consumer inputs, M2 profile agreement, accepted-header state values and M4/M5
+acceptance gates remain open.
+
 The [source-genesis background M4 component experiment](state-tree-genesis-background.md)
 executes the uninstrumented terminal-node worker on 19,257 source-derived
 projection leaves and a 4,096-height unsigned fixture suffix. Six fresh normal
