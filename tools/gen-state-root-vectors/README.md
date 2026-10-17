@@ -2561,3 +2561,42 @@ execution, dependency verification, quotas and supervision remain caller-owned.
 Network activation, agreed profiles, accepted-header roots, continuous VM history,
 snapshot/crash/concurrency qualification, production budgets and distribution
 remain separate gates. Current runtime state values remain `REFUSED`.
+
+
+### Recorded successor offline rebuild compatibility
+
+The [offline rebuild comparison](../../docs/state-tree-offline-rebuild-successor.md)
+keeps the complete selected 467-file node, its own modules and the experimental
+identity/terminal parent. Its exported rebuild helper still uses height-only
+root identifiers. Three actual parent rebuilds refuse that mismatch; a separate
+one-file caller patch uses complete chain momentum identifiers and preserves the
+trie's strict identity checks.
+
+Two ordinary binaries and two fresh local macOS ARM processes cover 17 cases
+over 64 controlled heights, including standard, short-retention and archive
+rebuilds, prebuild/reopen, delta catch-up and seven selected refusal paths.
+Independent expectations precede execution. The prior source-genesis process
+record is explicitly reused without claiming a new generator run. There are
+1,650 canonical proof matches, 90 no-version refusals and 34 complete closed
+reopen comparisons. This is a functional component comparison; the completed
+32,768-height resource samples are not repeated.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/prepare_offline_rebuild_successor_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_offline_rebuild_successor_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_offline_rebuild_successor_corpus_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_offline_rebuild_successor_corpus.py
+```
+
+The 21 portable controls and recorded reader execute no node, compiler, LevelDB
+or resource measurement. Five complete snapshot preimages and explicit
+references reconstruct both original observation payloads without repeated
+tables or ZIP packaging. The preparer returns commands for fresh owned source;
+the caller supplies verified dependencies, caps, supervision and durable output
+acknowledgement before removing its temporary databases.
+
+The original unpatched node and production prebuild CLI are not characterized
+as failing. Frozen-chain adapters do not qualify live stop/reorg concurrency,
+authenticated snapshots, production resource budgets or accepted-header state
+values. Current consumers remain `REFUSED`; independent consumer/profile/review
+and distribution gates stay separate.

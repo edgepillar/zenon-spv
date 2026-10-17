@@ -620,3 +620,18 @@ One-host measurements do not qualify production concurrency, continuous VM
 history, snapshot/crash recovery, consumer hardware budgets or activation.
 M1 consumer/anchor inputs, M2 profile agreement, accepted-header state values and
 M5 review/distribution gates remain open; runtime state values remain `REFUSED`.
+
+
+The [successor offline rebuild compatibility experiment](state-tree-offline-rebuild-successor.md)
+characterizes the exported rebuild helper on the selected `9c71`
+identity/terminal proposal. Three actual parent rebuilds fail because they query
+retained roots with height-only identifiers. A separate caller patch obtains
+complete chain momentum identities without relaxing the trie's checks. Two
+ordinary binaries and two fresh processes cover 17 bounded cases, prebuild and
+delta/reopen behavior, 1,650 canonical proof matches and seven corrected-caller
+refusals. The 64-height functional workload does not repeat completed long
+retention measurements. Twenty-one portable preparation/recorded-data controls
+and reference-based corpus reconstruction perform no hosted node execution.
+This does not characterize the unpatched node or production prebuild CLI as
+failing, qualify live concurrency/snapshot/crash recovery, or open M1/M2/M3/M5
+acceptance gates. Runtime state values remain `REFUSED`.
