@@ -1,0 +1,33 @@
+{
+  "SMT_profile_changed": false,
+  "after_bytes": 32090,
+  "after_git_blob": "a5e3804c3ce58c4759c2b52897ee738dc5307228",
+  "after_sha256": "31ace48cb9b0f50b66d421f2acb7220ee151dd8209cf2b86d6359d192044d45e",
+  "automatic_migration_added": false,
+  "base_blob_count": 467,
+  "base_revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+  "base_tree": "d0f5dfb09e737a806cfc743bb6ba9ddd101ebcd6",
+  "before_bytes": 31695,
+  "before_git_blob": "c43d1cc800ff571f81ff8dfdc42930563361d0a9",
+  "before_sha256": "83311a1a529a76351c7ca2137bae67395010b3ab883558f5702a3e31601c731f",
+  "disk_format_changed_relative_to_terminal_parent": false,
+  "experimental_only": true,
+  "file": "chain/state_tree.go",
+  "format_version": 1,
+  "historical_source_records_rebound": false,
+  "kind": "experimental-successor-full-identifier-offline-rebuild",
+  "mode": "100644",
+  "modified_node_tree_without_probes": "e60c875a06361f04d05301c0e4c61fd429995c5a",
+  "network_activation_authenticated": false,
+  "production_qualified": false,
+  "public_Root_identity_checks_relaxed": false,
+  "replacements": [
+    {
+      "after": "\tfrontier := st.tree.FrontierIdentifier()\n\tfrontierStore := c.GetFrontierMomentumStore()\n\tif frontierStore == nil {\n\t\treturn nil, errors.Errorf(\"can't rebuild state tree: chain db is stopped\")\n\t}\n\troots := make(map[uint64]types.Hash)\n\tfor h := uint64(1); h <= frontier.Height; h++ {\n\t\tmomentum, err := frontierStore.GetMomentumByHeight(h)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tif momentum == nil || momentum.Height != h {\n\t\t\treturn nil, errors.Errorf(\"state tree rebuild: missing or mismatched momentum at height %d\", h)\n\t\t}\n\t\troot, err := st.tree.Root(momentum.Identifier())\n",
+      "before": "\tfrontier := st.tree.FrontierIdentifier()\n\troots := make(map[uint64]types.Hash)\n\tfor h := uint64(1); h <= frontier.Height; h++ {\n\t\troot, err := st.tree.Root(types.HashHeight{Height: h})\n"
+    }
+  ],
+  "state_value_acceptance_enabled": false,
+  "terminal_parent_tree": "2ab95e67aa184e7faa3f080c6b08d8980a8e16f9",
+  "terminal_patch_sha256": "845be9c2a61dcac285d2f1d465cf2fe3b22d33bb96fc3ab58fb345f504889be5"
+}
