@@ -2499,3 +2499,31 @@ These 53 offline controls and the bounded local component comparison do not
 qualify the complete node, live recovery, crash safety, realistic retention
 budgets, accepted-header state values or production use. Consumers remain
 `REFUSED`.
+
+## Separate 9c71 terminal-instance comparison
+
+The [terminal successor](../../docs/state-tree-terminal-successor.md) layers an
+exact one-file terminal-instance proposal on the selected `9c71` identity parent.
+The earlier `33d7` lifecycle records keep their original source and meaning.
+Complete parent/layered source, module and compiler-overlay checks prevent a
+blind rebase or a freely editable build-plan checksum from selecting other code.
+
+Two locally race-built variants each ran two fresh process generations. Each
+paired generation contains 14 initializations, 14 Stop calls, six launches,
+34 phases, 82 selected reads and 46 logical snapshots. Independent expectations
+precede execution. Actual binary/process identities and source pins are in the
+[execution manifest](testdata/successor-terminal-stop-execution.json).
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/prepare_terminal_stop_successor_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_terminal_stop_successor_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_terminal_stop_successor.py
+```
+
+These 39 portable controls and their recorded-data reader start no node,
+compiler, LevelDB, network or resource observer. Three declared scheduler
+checkpoints and held workers do not qualify live background batches or production
+concurrency. Existing update/truncate guards remain outside direct runtime
+observation. Full source/native CI/artifact qualification is required for delivery;
+profile, accepted-header state values, realistic resources, independent review
+and authenticated distribution remain separate gates. Consumers remain `REFUSED`.
