@@ -1,0 +1,159 @@
+{
+  "accepted_header_binding": false,
+  "archive_observation_recovered_from_protected_original_capture_without_reexecution": true,
+  "archive_supervisor_extraction_failure_preserved": true,
+  "authenticated_snapshot_import": false,
+  "balance_value_encoding_agreed": false,
+  "binary": {
+    "bytes": 11401330,
+    "sha256": "c27178c52e2c641555be44b49ae632b9e08d0249cf76a918ef48dad83e857030"
+  },
+  "consumer_result": "REFUSED",
+  "corpus": {
+    "bytes": 1833034,
+    "file": "successor-raw-kv-roundtrip-corpus.json",
+    "sha256": "dc176eaf518f13d9d90f467f98319bbda8269096e0e44b4ca3db49188db62814"
+  },
+  "distribution_authenticated": false,
+  "early_input_guard_refusals": 2,
+  "format_version": 1,
+  "full_node_or_chain_wrappers_executed": false,
+  "independent_expectations_sha256": "1e25aceb4f8f164e5ea1910dea0db0c9a49cbb2ff1fe2feb71d0e88953fa6512",
+  "independent_human_review_complete": false,
+  "kind": "successor-raw-kv-roundtrip-recorded-local-execution",
+  "model_and_oracle_selected_before_all_node_processes": true,
+  "ordinary_builds": 1,
+  "original_transport_JSON_reconstructed": false,
+  "original_transports": {
+    "archive": {
+      "bytes": 4880138,
+      "sha256": "61ddf417898d2bd187d574980f06139e42e8f63cc7052f6fb263406d8a544d6e"
+    },
+    "retain-5": {
+      "bytes": 564318,
+      "sha256": "0640b9ec4ed970fab4fdf1f84517098bbbe635ec0abe057b6328b49274d61a90"
+    }
+  },
+  "policies": [
+    {
+      "actual_exit": 0,
+      "canonical_proof_positions": 2826,
+      "elapsed_ns": 839370000,
+      "output_complete": true,
+      "peak_rss_bytes": 67518464,
+      "policy": "archive",
+      "root_and_probe_error_queries": 650
+    },
+    {
+      "actual_exit": 0,
+      "canonical_proof_positions": 189,
+      "elapsed_ns": 875902125,
+      "output_complete": true,
+      "peak_rss_bytes": 29982720,
+      "policy": "retain-5",
+      "root_and_probe_error_queries": 650
+    }
+  ],
+  "production_resources_qualified": false,
+  "raw_dump_and_canonical_proof_preimages_preserved": true,
+  "selected_tool_sources": {
+    "check_raw_kv_roundtrip_successor.py": {
+      "bytes": 8228,
+      "sha256": "42f8506f6b021acb194b74f81ba45c2d8ae05dd5f55357deafb290d61d51b226"
+    },
+    "prepare_raw_kv_roundtrip_successor.py": {
+      "bytes": 8208,
+      "sha256": "a3cbb3c4547adc73adca078ddb5b19d011a28674de9f86714510bbfd719aee36"
+    },
+    "raw_kv_roundtrip_codec.py": {
+      "bytes": 6818,
+      "sha256": "5bf502fca828b97cc1c4860f8b410a4fc77c27f6c82182f493f6f100963cc16d"
+    },
+    "raw_kv_roundtrip_successor_corpus.py": {
+      "bytes": 9059,
+      "sha256": "173dae45e770e9d17e1ff979acd740051f00fdd2064befd4a7cfac2cfaa3db06"
+    },
+    "raw_kv_roundtrip_successor_model.py": {
+      "bytes": 15679,
+      "sha256": "49c72d1f56e55e2d97b6eba349930001761dc579ef8325117f3d606f2691783c"
+    },
+    "raw_kv_roundtrip_successor_probe_test.go": {
+      "bytes": 14167,
+      "sha256": "d94b76d41ba697f114fc39ccfbd34dcfd7454f3c1ef4a87d0c57ca67e8485d27"
+    }
+  },
+  "source": {
+    "L1_fold_sha256": "b3f9712b23c179aaf7bda3f7df98d04fd83b20be77d2eda41f43a6965525a1f3",
+    "experimental_disk_format": 3,
+    "module_sha256": "ac08476abe3df0bc67f1c5c6868f04889b864310f16a37b0d51a6598b9017a45",
+    "node_revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+    "nodestore_sha256": "fbc188a1759effbf0bae36dbb920154f7bac862ff6e0a60de59c5b13f5e9066a",
+    "original_node_tree": "d0f5dfb09e737a806cfc743bb6ba9ddd101ebcd6",
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "selected_Batch_source_sha256": "299129fbb88354f140bd7e7c83ffda6554e9af906ab68589f72e7c212f49c096",
+    "selected_runtime_tree": "e60c875a06361f04d05301c0e4c61fd429995c5a",
+    "source_blobs": 467,
+    "sum_sha256": "e536610c08abc9f4b979ce39cd5ae7323c3df14a189d186d911ee1d1184b8537"
+  },
+  "source_inputs": {
+    "check.py": {
+      "bytes": 15352,
+      "sha256": "e12669998c97086abcd6da1d6e70fb3c99e6db5fd8dd9a1be6eb063d343a13e1"
+    },
+    "check_retention.py": {
+      "bytes": 17916,
+      "sha256": "1ac663522fc16ce96983d9a6fb5e0973fd75ad190d3724c72598f2684c211753"
+    },
+    "node-offline-rebuild-9c71-patch.json": {
+      "bytes": 2164,
+      "sha256": "674baa97de325e69517d730f2fc638399db4411e69b079f6a4bbe2365ffe39fb"
+    },
+    "node-recovery-9c71-patch.json": {
+      "bytes": 165858,
+      "sha256": "6d7508cc0ef0dd01a0ccb136a1f562d9ea356a0c18c4e68a2f33f5c32503564b"
+    },
+    "node-recovery-9c71-source-pins.json": {
+      "bytes": 109139,
+      "sha256": "80104c7c6b5086a6b851c9c5e82920c5bd196c4252781acf88fc9c4b74d6cc84"
+    },
+    "node-terminal-stop-9c71-patch.json": {
+      "bytes": 67388,
+      "sha256": "845be9c2a61dcac285d2f1d465cf2fe3b22d33bb96fc3ab58fb345f504889be5"
+    },
+    "prepare_offline_rebuild_successor.py": {
+      "bytes": 10859,
+      "sha256": "90305012d8d31d1cd2a8d5fcb03645d4651ecad483b3bb23a126c1c98961a6ff"
+    },
+    "prepare_recovery_successor.py": {
+      "bytes": 14807,
+      "sha256": "3e381833a16a11522e70caccb29cb95d82b184fb403c2ece8eb2ec63f6b84315"
+    },
+    "prepare_terminal_stop_successor.py": {
+      "bytes": 11655,
+      "sha256": "69eaab69ae4e6f4f7c9fc79f5bda94d774f2ea3efcf9ec19808d788656044ee4"
+    },
+    "raw_kv_roundtrip_codec.py": {
+      "bytes": 6818,
+      "sha256": "5bf502fca828b97cc1c4860f8b410a4fc77c27f6c82182f493f6f100963cc16d"
+    },
+    "raw_kv_roundtrip_successor_model.py": {
+      "bytes": 15679,
+      "sha256": "49c72d1f56e55e2d97b6eba349930001761dc579ef8325117f3d606f2691783c"
+    },
+    "regenerate.py": {
+      "bytes": 34659,
+      "sha256": "d761f1b0671c74f0167a5e9aab7c8067e1ee35ad390c1cbd8c3fa151c4300448"
+    }
+  },
+  "successful_component_processes": 2,
+  "toolchain": {
+    "CGO_ENABLED": 1,
+    "GOARCH": "arm64",
+    "GOOS": "darwin",
+    "race": false,
+    "version": "go1.25.14"
+  },
+  "total_canonical_proof_positions": 3015,
+  "total_probe_process_launches": 4,
+  "total_root_and_probe_error_queries": 1300
+}
