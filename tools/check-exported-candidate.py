@@ -181,10 +181,12 @@ def opened_candidate(directory, os_name):
         checker.require(os.path.samestat(selected, candidate_layout(directory, limits)), "export")
 
 
-def verify(directory, root, revision, os_name, architecture):
+def verify(directory, root, revision, os_name, architecture, require_skip_ledger=False):
+    checker.require(type(require_skip_ledger) is bool, "arguments")
     inputs = source_pin(root, revision)
     with opened_candidate(directory, os_name) as (members, infos):
-        result = checker.check_payloads(members, infos, revision, inputs, os_name, architecture)
+        result = checker.check_payloads(members, infos, revision, inputs, os_name, architecture,
+                                        **({"require_skip_ledger": True} if require_skip_ledger else {}))
     checker.require(source_pin(root, revision) == inputs, "source")
     return result
 
@@ -194,6 +196,7 @@ def main(argv=None, output=None):
     parser = checker.Parser(prog="check-exported-candidate", allow_abbrev=False, add_help=False)
     for name in ("directory", "expect-revision", "expect-os", "expect-architecture"):
         parser.add_argument("--" + name, action=checker.Once, required=True)
+    parser.add_argument("--require-skip-ledger", action=checker.OnceBoolean, nargs=0, default=None)
     code = 0
     try:
         args = parser.parse_args(argv)
@@ -202,7 +205,8 @@ def main(argv=None, output=None):
                         and type(args.expect_architecture) is str
                         and 0 < len(args.expect_architecture) <= 24
                         and all(c in "abcdefghijklmnopqrstuvwxyz0123456789_" for c in args.expect_architecture), "arguments")
-        result = verify(Path(args.directory), Path.cwd(), args.expect_revision, args.expect_os, args.expect_architecture)
+        result = verify(Path(args.directory), Path.cwd(), args.expect_revision, args.expect_os, args.expect_architecture,
+                        **({"require_skip_ledger": True} if args.require_skip_ledger else {}))
     except checker.Rejected as failure:
         result = {"schema_version": 1, "status": "rejected", "category": failure.category,
                   "binaries": 0, "test_status": None, "skipped_subtests": 0}

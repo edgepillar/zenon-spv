@@ -52,6 +52,79 @@ def digest(value, lengths=(64,)):
     return type(value) is str and len(value) in lengths and re.fullmatch(r"[0-9a-f]+", value) is not None
 
 
+# These identifiers are source-owned. Never infer a reason from a platform
+# name alone or export dynamic test names, diagnostic text or their hashes.
+SKIP_SLOTS = {
+    "state_save_permission_probe": ("collect_query_resume", "internal/conformance",
+                                    "TestCompiledCLIQueryWorkflow", "readonly_directory_writable", False),
+    "consumer_fifo_selected": ("consumer_input_fifo", "tools/consume-query-report",
+                               "TestConsumerInputFIFOOpenIsBounded", "native_fifo_nofollow_unavailable", True),
+    "consumer_fifo_replacement": ("consumer_input_fifo", "tools/consume-query-report",
+                                  "TestConsumerInputFIFOOpenIsBounded", "native_fifo_nofollow_unavailable", True),
+    "consumer_fifo_symlink_replacement": ("consumer_input_fifo", "tools/consume-query-report",
+                                          "TestConsumerInputFIFOOpenIsBounded", "native_fifo_nofollow_unavailable", True),
+    "state_input_fifo": ("state_inspection", "internal/conformance",
+                         "TestCompiledCLIStateInspection", "native_fifo_unavailable", True),
+}
+SKIP_RECORD_LIMIT = 256
+
+
+def check_skip_ledger(report, os_name, require_complete=False):
+    """Validate diagnostic accounting; this is not native execution evidence."""
+    require(type(require_complete) is bool and type(report) is dict, "skip_ledger")
+    version = report.get("schema_version")
+    require(type(version) is int and version in (1, 2), "skip_ledger")
+    if version == 1:
+        require("skip_ledger" not in report and not require_complete, "skip_ledger")
+        return {"coverage": "unknown", "records": None}
+    require("skip_ledger" in report and os_name in ("linux", "darwin", "windows"), "skip_ledger")
+    ledger = report["skip_ledger"]
+    require(type(ledger) is dict and set(ledger) == {"schema_version", "coverage", "records"}, "skip_ledger")
+    require(type(ledger["schema_version"]) is int and ledger["schema_version"] == 1
+            and ledger["coverage"] in ("complete", "unknown")
+            and type(ledger["records"]) is list and len(ledger["records"]) <= SKIP_RECORD_LIMIT, "skip_ledger")
+    cases = report.get("cases")
+    require(type(cases) is list and 0 < len(cases) <= 256, "skip_ledger")
+    selected = {}
+    for case in cases:
+        require(type(case) is dict and {"id", "test", "package", "status", "skipped_subtests"} <= set(case), "skip_ledger")
+        require(type(case["id"]) is str and re.fullmatch(r"[a-z0-9_]{1,128}", case["id"])
+                and case["id"] not in selected and type(case["test"]) is str
+                and re.fullmatch(r"Test[A-Za-z0-9_]+", case["test"])
+                and integer(case["skipped_subtests"]), "skip_ledger")
+        selected[case["id"]] = case
+    children, roots, seen = {}, {}, set()
+    unknown = False
+    for index, record in enumerate(ledger["records"], 1):
+        require(type(record) is dict and set(record) == {"scenario", "scope", "ordinal", "control", "reason"}, "skip_ledger")
+        require(type(record["scenario"]) is str and record["scenario"] in selected
+                and record["scope"] in ("child", "root") and type(record["ordinal"]) is int
+                and record["ordinal"] == index and type(record["control"]) is str
+                and type(record["reason"]) is str, "skip_ledger")
+        scenario = record["scenario"]
+        counts = children if record["scope"] == "child" else roots
+        counts[scenario] = counts.get(scenario, 0) + 1
+        if record["control"] == "unknown":
+            require(record["reason"] == "unreported", "skip_ledger")
+            unknown = True
+            continue
+        require(record["control"] in SKIP_SLOTS, "skip_ledger")
+        expected_scenario, package, root, reason, windows_only = SKIP_SLOTS[record["control"]]
+        case = selected[scenario]
+        identity = (scenario, record["control"])
+        require(record["scope"] == "child" and scenario == expected_scenario
+                and case["package"] == package and case["test"] == root
+                and record["reason"] == reason and (not windows_only or os_name == "windows")
+                and identity not in seen, "skip_ledger")
+        seen.add(identity)
+    for scenario, case in selected.items():
+        require(children.get(scenario, 0) == case["skipped_subtests"]
+                and roots.get(scenario, 0) == (1 if case["status"] == "skipped" else 0), "skip_ledger")
+    require((ledger["coverage"] == "unknown") == unknown
+            and (not require_complete or not unknown), "skip_ledger")
+    return {"coverage": ledger["coverage"], "records": len(ledger["records"])}
+
+
 def metadata(raw):
     def pairs(values):
         result = {}
@@ -318,16 +391,19 @@ def query_resources(case, os_name):
     require(seen == set(QUERY_WORKLOADS))
 
 
-def check(path, archive_sha256, revision, inputs_sha256, os_name, architecture):
+def check(path, archive_sha256, revision, inputs_sha256, os_name, architecture, require_skip_ledger=False):
+    require(type(require_skip_ledger) is bool, "arguments")
     # These expectations must come from an independently selected source/CI
     # record. Copying them out of this archive establishes no authenticity.
     with regular_archive(path) as source:
         require(file_hash(source) == archive_sha256, "archive_pin")
         source.seek(0)
-        return check_contents(source, revision, inputs_sha256, os_name, architecture)
+        return check_contents(source, revision, inputs_sha256, os_name, architecture,
+                              **({"require_skip_ledger": True} if require_skip_ledger else {}))
 
 
-def check_contents(source, revision, inputs_sha256, os_name, architecture):
+def check_contents(source, revision, inputs_sha256, os_name, architecture, require_skip_ledger=False):
+    require(type(require_skip_ledger) is bool, "arguments")
     suffix = ".exe" if os_name == "windows" else ""
     expected_names = {command + suffix for command in COMMANDS} | {"manifest.json", "offline-pilot.json"}
     central_zip_metadata(source, expected_names)
@@ -340,11 +416,13 @@ def check_contents(source, revision, inputs_sha256, os_name, architecture):
                     and info.compress_type in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED), "layout")
         local_zip_metadata(source, archive, infos)
         by_name = {info.filename: info for info in infos}
-        return check_payloads(archive, by_name, revision, inputs_sha256, os_name, architecture)
+        return check_payloads(archive, by_name, revision, inputs_sha256, os_name, architecture,
+                              **({"require_skip_ledger": True} if require_skip_ledger else {}))
 
 
-def check_payloads(archive, by_name, revision, inputs_sha256, os_name, architecture):
+def check_payloads(archive, by_name, revision, inputs_sha256, os_name, architecture, require_skip_ledger=False):
     """Apply the complete member contract after a caller has checked its layout."""
+    require(type(require_skip_ledger) is bool, "arguments")
     suffix = ".exe" if os_name == "windows" else ""
     manifest = metadata(entry_bytes(archive, by_name["manifest.json"], 256 << 10))
     exact_keys(manifest, ("schema_version", "mode", "test_status", "os", "architecture", "go_version",
@@ -371,9 +449,14 @@ def check_payloads(archive, by_name, revision, inputs_sha256, os_name, architect
     raw = entry_bytes(archive, by_name["offline-pilot.json"], 4 << 20)
     require(len(raw) == report_record["bytes"] and hashlib.sha256(raw).hexdigest() == report_record["sha256"], "report_pin")
     report = metadata(raw)
+    require(type(report) is dict, "metadata")
+    report_schema = report.get("schema_version")
+    require(type(report_schema) is int and report_schema in (1, 2), "metadata")
     exact_keys(report, ("schema_version", "mode", "status", "error", "runner", "test_parent_race_enabled",
-                        "source", "source_matches_after_run", "corpus", "cases", "caveats"))
-    require(type(report["schema_version"]) is int and report["schema_version"] == 1
+                        "source", "source_matches_after_run", "corpus", "cases", "caveats"), ("skip_ledger",) if report_schema == 2 else ())
+    require(report_schema != 2 or "skip_ledger" in report, "skip_ledger")
+    require(not require_skip_ledger or report_schema == 2, "skip_ledger")
+    require(type(report["schema_version"]) is int and report["schema_version"] in (1, 2)
             and report["mode"] == "offline_synthetic" and report["status"] == manifest["test_status"]
             and report["error"] is None and report["source_matches_after_run"] is True
             and type(report["test_parent_race_enabled"]) is bool and report["source"] == manifest["source"]
@@ -437,6 +520,7 @@ def check_payloads(archive, by_name, revision, inputs_sha256, os_name, architect
         query_resources(case, os_name)
     require("compiled_content_scaling" in seen)
     require("compiled_query_consumer_scaling" in seen)
+    check_skip_ledger(report, os_name, require_complete=require_skip_ledger or report_schema == 2)
     require(observed == set(COMMANDS) and (report["status"] == "passed_with_skips") == (skipped > 0), "execution_pin")
     return {"schema_version": 1, "status": "verified", "category": None, "binaries": len(COMMANDS),
             "test_status": report["status"], "skipped_subtests": skipped}
@@ -449,6 +533,11 @@ class Once(argparse.Action):
         setattr(namespace, self.dest, value)
 
 
+class OnceBoolean(Once):
+    def __call__(self, parser, namespace, value, option_string=None):
+        super().__call__(parser, namespace, True, option_string)
+
+
 class Parser(argparse.ArgumentParser):
     def error(self, _message):
         raise Rejected("arguments")
@@ -459,6 +548,7 @@ def main(argv=None, output=None):
     parser = Parser(prog="check-candidate-archive", allow_abbrev=False)
     for name in ("archive", "expect-archive-sha256", "expect-revision", "expect-inputs", "expect-os", "expect-architecture"):
         parser.add_argument("--" + name, action=Once, required=True)
+    parser.add_argument("--require-skip-ledger", action=OnceBoolean, nargs=0, default=None)
     code = 0
     try:
         args = parser.parse_args(argv)
@@ -466,7 +556,8 @@ def main(argv=None, output=None):
                 and digest(args.expect_inputs) and args.expect_os in ("linux", "darwin", "windows")
                 and re.fullmatch(r"[a-z0-9_]{1,24}", args.expect_architecture) is not None, "arguments")
         result = check(Path(args.archive), args.expect_archive_sha256, args.expect_revision, args.expect_inputs,
-                       args.expect_os, args.expect_architecture)
+                       args.expect_os, args.expect_architecture,
+                       **({"require_skip_ledger": True} if args.require_skip_ledger else {}))
     except Rejected as failure:
         result = {"schema_version": 1, "status": "rejected", "category": failure.category,
                   "binaries": 0, "test_status": None, "skipped_subtests": 0}

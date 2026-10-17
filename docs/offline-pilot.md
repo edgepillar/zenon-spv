@@ -153,7 +153,7 @@ acceptance gate. See [compiled query conformance](compiled-query-conformance.md)
 and the [verification contract](verification-contract.md) for the individual
 guarantees and their limits.
 
-## Report schema 1
+## Report schema 2 and historical compatibility
 
 | Field | Meaning |
 | --- | --- |
@@ -166,6 +166,7 @@ guarantees and their limits.
 | `source_matches_after_run` | Whether a second source snapshot equals the initial snapshot. This checks the endpoints, not continuous filesystem history. |
 | `corpus` | Repository-relative names and SHA-256 hashes of the seven compatibility corpus files. This is an input inventory, not a claim that every vector was exercised. |
 | `cases` | Fixed scenario IDs, package/test names, statuses, child test counts, hashes of compiled executables actually built by that scenario, and optional bounded `resource_samples` or `query_resource_samples`. |
+| `skip_ledger` | Versioned diagnostic coverage and bounded source-owned records of actual skip completions. Schema 2 always includes this field. |
 | `caveats` | Fixed trust and interpretation limits. |
 
 Executable records contain exactly `command` and `sha256`, with nonempty
@@ -187,7 +188,7 @@ set counter with source `windows_peak_working_set`. Other platforms use null
 and `unavailable`.
 See [flat-content resources](flat-content-resources.md) for counter semantics
 and the distinction between samples and performance guarantees. These fields
-are additive to schema 1; other cases omit them.
+remain compatible with schemas 1 and 2; other cases omit them.
 
 Only `compiled_query_consumer_scaling` carries `query_resource_samples`: three
 fixed workload IDs, matched target count, report and expectations byte sizes,
@@ -221,12 +222,42 @@ produce a passing report. Tests with failed children fail the report even
 if their parent is reported as passing. A completely skipped scenario is
 incomplete. Child test counts include nested test groups, not just leaves.
 
-`passed_with_skips` means all selected scenarios ran but at least one child
-test was skipped. For example, the real read-only-directory save-failure
-check is skipped on filesystems or under privileges that still allow the
-write. Inspect the relevant scenario before using that boundary as evidence.
-The report deliberately does not copy dynamic child names or skip/error text.
-Run the named test privately with `go test -count=1 -v` for detailed diagnostics.
+Schema 2 always includes a version-1 `skip_ledger` object, even when its
+`records` list is empty. Records contain only `scenario`, `scope`, `ordinal`,
+`control` and `reason`. The ordinal follows actual skip-completion order;
+`scope` distinguishes a child from a completely skipped root. Safe control and
+reason codes come from a fixed source-owned allowlist. They are bound to the
+same active test's marker and actual skip completion. An operating-system name
+alone never supplies a reason. A marker without its skip completion cannot
+complete the report.
+
+Unreported skips use `unknown` / `unreported` and make diagnostic coverage
+`unknown`. Unknown coverage is not complete platform qualification. A skipped
+root remains incomplete. A normal diagnostic run may retain
+`passed_with_skips` with unknown coverage, but a schema-2 candidate cannot
+receive a completion manifest without a complete, consistent ledger. Existing
+process, source, binary and scenario checks still apply.
+
+The collector accepts at most 256 ledger records and 256 bytes per recognized
+marker. The independent Python reader keeps the existing 256-element metadata
+array ceiling. Oversized, duplicated, mismatched, orphaned or unfinished
+markers are refused. Raw child names, private diagnostics and hashes of those
+names are not exported.
+
+Schema-1 reports and candidate manifests remain readable without rewriting
+their bytes. Their absent diagnostic ledger stays unknown. For current M0
+qualification, pass `--require-skip-ledger` to either
+`tools/check-candidate-archive.py` or `tools/check-exported-candidate.py` with
+the usual independently selected source, platform and payload pins. The mode
+refuses a schema-1 report. Every schema-2 candidate's ledger is checked even
+without that option; the default mode retains historical schema-1 compatibility.
+Direct exported-file checking still creates no ZIP or secondary workspace.
+
+`passed_with_skips` continues to mean that all selected scenarios ran and at
+least one child was skipped. A known reason documents that omitted boundary;
+it does not make the boundary pass. Run the named test privately when more
+diagnostic detail is needed. This report-format version is unrelated to a
+Zenon header version and enables no new header or state-value acceptance.
 
 The tool exits 0 for `passed` and `passed_with_skips`, 1 for `failed` or
 `incomplete`, 64 for invalid arguments, and 70 for setup/report-output errors.
