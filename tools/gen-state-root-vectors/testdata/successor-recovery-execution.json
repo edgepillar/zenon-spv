@@ -1,0 +1,195 @@
+{
+  "accepted_v3_header_binding_qualified": false,
+  "authenticated_retained_provenance": false,
+  "compiled_binaries": {
+    "baseline": {
+      "bytes": 15423634,
+      "sha256": "b9cf6857d7a28c6c5ef5a14d5bf645404755cdaf25583fd4dec11f7e25f54553"
+    },
+    "hash-bound": {
+      "bytes": 15441922,
+      "sha256": "a9c2bcb9274102235acd9fae29c6699741f9bd1434599089608f29565dad3928"
+    }
+  },
+  "complete_node_revision_qualified": false,
+  "consumer_result": "REFUSED",
+  "executed_scope": "selected chain.Init and NodeTree disk APIs with synthetic recording dependencies; no Chain.Start",
+  "expected_data_sealed_before_fresh_generations": {
+    "bytes": 6727,
+    "sha256": "fc4ad912c9260eeb829725a351d411fb0d073fe64c290bfe9d811b19574542d6"
+  },
+  "format_version": 1,
+  "fresh_generations_after_expectation_correction": 2,
+  "full_node_started": false,
+  "generation_commands": {
+    "baseline": [
+      {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 424996,
+          "sha256": "64ecedc3576f2f7eee640314e5530e622ef7bafa54a0f36bee2e3e370d2937fb"
+        }
+      },
+      {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 424996,
+          "sha256": "44fd0f1d0ac5873f59ea00d29853dba91ac9e7937347706f5d1da501840ca80d"
+        }
+      }
+    ],
+    "hash-bound": [
+      {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 454307,
+          "sha256": "e382f56996d746c4cd0b5faa1f48c4fbbe6581ee4bcb8ada6d4ead718e32cbd5"
+        }
+      },
+      {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 454307,
+          "sha256": "98c5360b51c5876ccc54e689c1edf0a51eb8c8e42281b37ccce7b132cf2af217"
+        }
+      }
+    ]
+  },
+  "historical_records_or_expected_data_rewritten": false,
+  "hosted_backend_execution_qualified": false,
+  "independent_comparisons": [
+    {
+      "chain_cases_per_variant": 26,
+      "complete_logical_database_snapshots": 322,
+      "complete_node_revision_qualified": false,
+      "component_initializations": 64,
+      "consumer_result": "REFUSED",
+      "kind": "successor-recovery-component-content-comparison",
+      "low_level_cases_per_variant": 11,
+      "process_exit_freshness_and_binary_provenance_inferred": false,
+      "production_state_value_accepted": false,
+      "read_api_observations": 946,
+      "reference_execution_performed_in_checker": false,
+      "selected_node_revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+      "variants": [
+        "baseline",
+        "hash-bound"
+      ]
+    },
+    {
+      "chain_cases_per_variant": 26,
+      "complete_logical_database_snapshots": 322,
+      "complete_node_revision_qualified": false,
+      "component_initializations": 64,
+      "consumer_result": "REFUSED",
+      "kind": "successor-recovery-component-content-comparison",
+      "low_level_cases_per_variant": 11,
+      "process_exit_freshness_and_binary_provenance_inferred": false,
+      "production_state_value_accepted": false,
+      "read_api_observations": 946,
+      "reference_execution_performed_in_checker": false,
+      "selected_node_revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+      "variants": [
+        "baseline",
+        "hash-bound"
+      ]
+    }
+  ],
+  "initial_comparison_passed": false,
+  "initial_model_correction": "Source-derived errors.Join shutdown semantics; old expectations and the mismatching first observation retained separately. Both fresh generations use the corrected, sealed model.",
+  "kind": "successor-recovery-local-component-record",
+  "network_chain_or_RPC_execution": false,
+  "node_client_protocol_profile_agreed": false,
+  "production_state_value_accepted": false,
+  "realistic_retention_acceptance": false,
+  "resources": {
+    "OS_enforced_quota": false,
+    "baseline_recompiled_after_model_correction": false,
+    "cache_and_staged_workspace_logical_bytes_at_end": 293498923,
+    "dependency_transports_after_model_correction": 0,
+    "measurement_is_peak_or_physical_allocation": false,
+    "owned_scratch_removed_after_success": true,
+    "production_free_space_floor_bytes": 10737418240,
+    "protected_CAS_objects_retained": true,
+    "task_quota_bytes": 3221225472,
+    "task_reservation_bytes": 2147483648
+  },
+  "retained_private_execution_receipt": {
+    "bytes": 12362,
+    "sha256": "d1ff5a80413e604b6bc3ac89dbe10dcd99198123aba1cdabe274eca4f74ef884"
+  },
+  "source": {
+    "blob_count": 467,
+    "historical_source_patch_or_records_rebound": false,
+    "modified_node_tree_without_probe": "249f3e33e54263efc7c3cad16c02a4784df74040",
+    "patch_sha256": "6d7508cc0ef0dd01a0ccb136a1f562d9ea356a0c18c4e68a2f33f5c32503564b",
+    "producer_inputs": {
+      "check.py": "e12669998c97086abcd6da1d6e70fb3c99e6db5fd8dd9a1be6eb063d343a13e1",
+      "check_recovery_successor.py": "d81a0025bf370615d9d0a871bb6f963388a894853198907e9220b1aeb0a64a5a",
+      "check_retention.py": "1ac663522fc16ce96983d9a6fb5e0973fd75ad190d3724c72598f2684c211753",
+      "hash_bound_versions_successor_probe_test.go": "5c0f5a8397cb7816582ed6a2191844dd1ac5184437810b19564a856aa83e1734",
+      "node-recovery-9c71-patch.json": "6d7508cc0ef0dd01a0ccb136a1f562d9ea356a0c18c4e68a2f33f5c32503564b",
+      "node-recovery-9c71-source-pins.json": "80104c7c6b5086a6b851c9c5e82920c5bd196c4252781acf88fc9c4b74d6cc84",
+      "prepare_recovery_successor.py": "3e381833a16a11522e70caccb29cb95d82b184fb403c2ece8eb2ec63f6b84315",
+      "regenerate.py": "d761f1b0671c74f0167a5e9aab7c8067e1ee35ad390c1cbd8c3fa151c4300448"
+    },
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+    "selected_node_go_mod_sha256": "ac08476abe3df0bc67f1c5c6868f04889b864310f16a37b0d51a6598b9017a45",
+    "selected_node_go_sum_sha256": "e536610c08abc9f4b979ce39cd5ae7323c3df14a189d186d911ee1d1184b8537",
+    "selection": "complete-selected-source-explicit-local-variants",
+    "source_manifest_sha256": "80104c7c6b5086a6b851c9c5e82920c5bd196c4252781acf88fc9c4b74d6cc84",
+    "tree": "d0f5dfb09e737a806cfc743bb6ba9ddd101ebcd6"
+  },
+  "toolchain": {
+    "CGO_ENABLED": 1,
+    "GOARCH": "arm64",
+    "GOOS": "darwin",
+    "go_executable": {
+      "bytes": 14167280,
+      "sha256": "55770db639faa42f3ebc998ac583b008f7ff2b4bbb9dbb8a76511a9a6ffa4a19"
+    },
+    "version": "go1.25.14"
+  },
+  "total_builds_per_variant": 1,
+  "variant_recordings": {
+    "baseline": {
+      "bytes": 424881,
+      "path": "testdata/successor-recovery-baseline.json",
+      "sha256": "e301b6a59a74ae1c7e40a85deb7fbc28473d14cc69354e7d6cf9755f6470a58e"
+    },
+    "hash-bound": {
+      "bytes": 454192,
+      "path": "testdata/successor-recovery-hash-bound.json",
+      "sha256": "91c82c275ddeb2061123f6396f62ca783cf7483f8394ac851dd29c8fb21171d0"
+    }
+  }
+}
