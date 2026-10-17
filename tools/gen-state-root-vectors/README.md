@@ -2468,3 +2468,34 @@ cleanup remain the caller's responsibility. A one-host default-window workload
 does not qualify continuous VM history, production budgets, snapshot import,
 activation, accepted-header state values or authenticated distribution. Prior
 corpora and their producer pins remain unchanged; consumers remain `REFUSED`.
+
+## Separate 9c71 recovery successor comparison
+
+The [successor comparison](../../docs/state-tree-recovery-successor.md) selects
+the complete 467-file `9c71ae82fc983e16f914ae085d4034030c8ebe3b` source and a new
+two-file experimental descriptor. Historical source selections and observations
+remain unchanged. This baseline already refuses incompatible database formats
+and stops every chain manager even after a backend close error.
+
+`prepare_recovery_successor.py` binds the complete source, patch inverse, staged
+tree, eight explicit compiler overlays and the selected node's own module files.
+It returns a private build/run plan and executes no compiler or node.
+`check_recovery_successor.py` separately derives complete logical records,
+independent SMT proofs and hash-identity outcomes before backend execution.
+
+Both variants matched those expectations in two fresh macOS arm64 component
+generations, using Go 1.25.14 with CGO enabled. Each variant was compiled once;
+protected inputs and binaries were reused after the source-derived model
+correction. The local execution record preserves actual outcome and content
+pins. Hosted CI is configured to recheck the source/preparation controls and
+recorded tables, without executing the node experiment on each hosted platform.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/prepare_recovery_successor_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_recovery_successor_test.py -v
+```
+
+These 53 offline controls and the bounded local component comparison do not
+qualify the complete node, live recovery, crash safety, realistic retention
+budgets, accepted-header state values or production use. Consumers remain
+`REFUSED`.
