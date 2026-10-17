@@ -738,6 +738,7 @@ func unwritableCLIStatePath(t *testing.T) string {
 	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
 	if probe, err := os.CreateTemp(dir, "permission-probe-"); err == nil {
 		_ = probe.Close()
+		t.Log("offline-pilot-skip v1 control=state_save_permission_probe reason=readonly_directory_writable")
 		t.Skip("filesystem or process privileges allow writes in a read-only directory")
 	}
 	return path

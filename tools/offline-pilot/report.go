@@ -37,10 +37,11 @@ type eventCollector struct {
 	active         map[string]bool
 	packages       map[string]string
 	queryFragments map[string]string
+	skips          *skipCollector
 }
 
 func newCollector(manifest []scenario) *eventCollector {
-	c := &eventCollector{active: make(map[string]bool), packages: make(map[string]string), queryFragments: make(map[string]string)}
+	c := &eventCollector{active: make(map[string]bool), packages: make(map[string]string), queryFragments: make(map[string]string), skips: newSkipCollector()}
 	for _, s := range manifest {
 		c.cases = append(c.cases, caseResult{scenario: s, Status: "missing", Binaries: []binaryRecord{}})
 		c.packages[modulePath+"/"+s.Package] = "missing"
@@ -122,6 +123,9 @@ func (c *eventCollector) event(e testEvent) error {
 		if !c.active[key] {
 			return errors.New("test completion without execution")
 		}
+		if err := c.skips.complete(result.ID, key, e.Action, nested); err != nil {
+			return err
+		}
 		c.active[key] = false
 		if !nested {
 			result.Status = e.Action
@@ -136,6 +140,13 @@ func (c *eventCollector) event(e testEvent) error {
 			}
 		}
 	case "output":
+		handled, err := c.skips.output(result.ID, e.Test, key, e.Output, c.active[key])
+		if err != nil {
+			return err
+		}
+		if handled {
+			return nil
+		}
 		// test2json can split a single long Log line into multiple output events.
 		// Reassemble only recognized, bounded query records from the same active
 		// workload. Never retain unrelated diagnostics or emit fragment text.
@@ -241,7 +252,7 @@ func (c *eventCollector) finish(processOK bool) string {
 			status = "incomplete"
 		}
 	}
-	if len(c.queryFragments) != 0 {
+	if len(c.queryFragments) != 0 || c.skips.unfinished() {
 		status = "incomplete"
 	}
 	if !processOK || slices.ContainsFunc(c.cases, func(r caseResult) bool { return r.Status == "failed" }) {

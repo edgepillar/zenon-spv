@@ -88,11 +88,18 @@ func candidateCommands() []string {
 // Finalization never rebuilds a command. It binds exported bytes to every
 // scenario's recorded execution hash and writes the manifest last.
 func finalizeCandidate(dir string, report pilotReport, raw []byte) error {
-	if report.SchemaVersion != 1 || report.Mode != "offline_synthetic" || report.Error != nil ||
+	if (report.SchemaVersion != 1 && report.SchemaVersion != 2) || report.Mode != "offline_synthetic" || report.Error != nil ||
 		!report.InputsUnchanged || (report.Status != "passed" && report.Status != "passed_with_skips") ||
 		!hexDigest(report.Source.InputsSHA256, 64) || len(report.Cases) != len(scenarios) || len(raw) > 4<<20 ||
 		report.Runner.OS != runtime.GOOS || report.Runner.Architecture != runtime.GOARCH || len(report.Corpus) != len(corpusPaths) {
 		return errors.New("candidate requires complete successful execution")
+	}
+	if report.SchemaVersion == 1 {
+		if report.SkipLedger != nil {
+			return errors.New("legacy candidate has unexpected skip diagnostics")
+		}
+	} else if validateSkipLedger(report.SkipLedger, report.Cases, report.Runner.OS, true) != nil {
+		return errors.New("candidate requires complete skip diagnostics")
 	}
 	canonical, err := json.MarshalIndent(report, "", "  ")
 	if err != nil || !bytes.Equal(raw, append(canonical, '\n')) {
