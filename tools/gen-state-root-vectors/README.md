@@ -2527,3 +2527,37 @@ concurrency. Existing update/truncate guards remain outside direct runtime
 observation. Full source/native CI/artifact qualification is required for delivery;
 profile, accepted-header state values, realistic resources, independent review
 and authenticated distribution remain separate gates. Consumers remain `REFUSED`.
+
+### Recorded successor source-default retention
+
+The [separate successor observation](../../docs/state-tree-default-retention-successor.md)
+selects all 467 source blobs at `9c71` and its experimental identity/terminal
+runtime. Two freshly executed source-genesis generators independently match the
+finite input byte contract; historical `33d7` executions remain unchanged.
+Source module/sum files replace no historical dependency lock. New independent
+expectations are sealed before actual background batches, Stop and clean reopen
+on 32,768 controlled heights and 256 distinct balance addresses.
+
+One ordinary binary serves all six preselected component processes, three per
+policy. Source-default pruned retention keeps 17,381 roots; archive keeps 32,768.
+Normal resource observations exclude race instrumentation. A bounded private
+supervisor retains complete payloads before acknowledging cleanup of each fresh
+database and checks actual workspace absence. Equal payload bytes share CAS
+objects; there is no recursive ZIP packaging or hard-linked evidence.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/prepare_default_retention_successor_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_default_retention_successor_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_default_retention_successor_corpus_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_default_retention_successor_corpus.py
+```
+
+These 24 portable controls and the recorded comparison execute no new node,
+LevelDB, compiler or resource observer. Invalid receipts are refused before
+large-table expansion or model replay. A cached replay is keyed by complete
+sealed witness bytes; complete original payload lengths and SHA-256 remain
+mandatory. The preparer only returns arguments; fresh acquisition, source-genesis
+execution, dependency verification, quotas and supervision remain caller-owned.
+Network activation, agreed profiles, accepted-header roots, continuous VM history,
+snapshot/crash/concurrency qualification, production budgets and distribution
+remain separate gates. Current runtime state values remain `REFUSED`.
