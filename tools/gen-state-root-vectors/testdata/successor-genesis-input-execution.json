@@ -1,0 +1,154 @@
+{
+  "NodeTree_backend_executed": false,
+  "actual_compile": {
+    "actual_exit": 0,
+    "output_complete": true,
+    "reason": null,
+    "state": "COMPLETE",
+    "stderr": {
+      "bytes": 1422,
+      "sha256": "830ad20016ab113a8f0052fc3ede8c0e35757fda7b42934cf8df72175fa9e254"
+    }
+  },
+  "binary": {
+    "bytes": 18297234,
+    "sha256": "63dbcb742d0503f2e36f302180ef2a2562ce0dbed5d47745864a1b2b9e526082"
+  },
+  "consumer_result": "REFUSED",
+  "format_version": 1,
+  "fresh_generations": [
+    {
+      "actual_command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 906,
+          "sha256": "8711014086e919c6dec0f3b3fb9d81a97c1f92f51e037444704e105fe567cec6"
+        },
+        "stdout": {
+          "bytes": 10849399,
+          "sha256": "a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75"
+        }
+      },
+      "generation": 0,
+      "metadata": {
+        "Go_version": "go1.25.14",
+        "NodeTree_executed": false,
+        "chain_Init_or_Start_executed": false,
+        "chain_identifier": 1,
+        "disk_database_opened": false,
+        "genesis_momentum_hash": "9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0",
+        "height": 1,
+        "in_memory_genesis_VM_derivation": true,
+        "kind": "pinned-successor-source-unsigned-genesis-input",
+        "network_executed": false,
+        "node_revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+        "node_tree": "d0f5dfb09e737a806cfc743bb6ba9ddd101ebcd6",
+        "platform": "darwin/arm64",
+        "production_acceptance": false,
+        "raw_input_bytes": 10849399,
+        "raw_input_sha256": "a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75",
+        "replay_counts": {
+          "BalancePuts": 14091,
+          "Deletes": 0,
+          "KeyBytes": 3449826,
+          "Puts": 103821,
+          "StoragePuts": 5166,
+          "ValueBytes": 7073988
+        },
+        "signing_or_broadcast_executed": false,
+        "stdout_written_bytes": 10849399,
+        "version": 1
+      },
+      "raw_input": {
+        "bytes": 10849399,
+        "sha256": "a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75"
+      }
+    },
+    {
+      "actual_command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 906,
+          "sha256": "e2de017e4e3272366bf8063a5dab3699fbb38b617eacb2b1ea7c4dd1ef5a6443"
+        },
+        "stdout": {
+          "bytes": 10849399,
+          "sha256": "a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75"
+        }
+      },
+      "generation": 1,
+      "metadata": {
+        "Go_version": "go1.25.14",
+        "NodeTree_executed": false,
+        "chain_Init_or_Start_executed": false,
+        "chain_identifier": 1,
+        "disk_database_opened": false,
+        "genesis_momentum_hash": "9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0",
+        "height": 1,
+        "in_memory_genesis_VM_derivation": true,
+        "kind": "pinned-successor-source-unsigned-genesis-input",
+        "network_executed": false,
+        "node_revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+        "node_tree": "d0f5dfb09e737a806cfc743bb6ba9ddd101ebcd6",
+        "platform": "darwin/arm64",
+        "production_acceptance": false,
+        "raw_input_bytes": 10849399,
+        "raw_input_sha256": "a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75",
+        "replay_counts": {
+          "BalancePuts": 14091,
+          "Deletes": 0,
+          "KeyBytes": 3449826,
+          "Puts": 103821,
+          "StoragePuts": 5166,
+          "ValueBytes": 7073988
+        },
+        "signing_or_broadcast_executed": false,
+        "stdout_written_bytes": 10849399,
+        "version": 1
+      },
+      "raw_input": {
+        "bytes": 10849399,
+        "sha256": "a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75"
+      }
+    }
+  ],
+  "historical_source_records_rebound": false,
+  "independent_replay_counts": {
+    "BalancePuts": 14091,
+    "Deletes": 0,
+    "KeyBytes": 3449826,
+    "Puts": 103821,
+    "StoragePuts": 5166,
+    "ValueBytes": 7073988
+  },
+  "independent_sparse_root": "864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d",
+  "independently_decoded_balance_rows": 14091,
+  "kind": "recorded-successor-unsigned-source-genesis-input",
+  "logical_keys": 103821,
+  "network_authenticated_genesis": false,
+  "node_revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+  "node_tree": "d0f5dfb09e737a806cfc743bb6ba9ddd101ebcd6",
+  "production_qualified": false,
+  "projection_mapping_sha256": "715b9c5e19c3950ddd9ad58f7209de30c1352db7df3637a2da3a2318daf83874",
+  "projection_nonempty_keys": 19257,
+  "protected_qualification": {
+    "bytes": 7399,
+    "sha256": "b616df6c5262ce3404961a401c829b0c0b00829d943dd6044d60b4289b0b5815"
+  },
+  "raw_input": {
+    "bytes": 10849399,
+    "sha256": "a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75"
+  },
+  "same_payload_per_digest": true,
+  "source_blob_count": 467,
+  "source_config_sha256": "e93eed28a65182ddbf997499704f01de6654a652a147bff83c5beb95123a8fe8",
+  "source_generator_sha256": "9177241e41f562a8e2bab5759cda0b32e71881bba4548bb5945dbe4b4da20bb4",
+  "source_module_sha256": "ac08476abe3df0bc67f1c5c6868f04889b864310f16a37b0d51a6598b9017a45",
+  "source_sum_sha256": "e536610c08abc9f4b979ce39cd5ae7323c3df14a189d186d911ee1d1184b8537"
+}
