@@ -159,6 +159,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_startup_quarantine.py --source-revision "${{ github.sha }}"
       - name: Current-node retained hash identity controls
         run: python -I -B tools/gen-state-root-vectors/check_hash_bound_versions_test.py -v
+      - name: Successor source and recovery preparation controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_recovery_successor_test.py -v
+      - name: Independent successor recovery expectation controls
+        run: python -I -B tools/gen-state-root-vectors/check_recovery_successor_test.py -v
       - name: Independent current-node retained hash identity observations
         run: python -I -B tools/gen-state-root-vectors/report_hash_bound_versions.py --source-revision "${{ github.sha }}"
       - name: Current-node terminal stop controls
@@ -646,6 +650,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_startup_quarantine.py --source-revision "${{ github.sha }}"
       - name: Current-node retained hash identity controls
         run: python -I -B tools/gen-state-root-vectors/check_hash_bound_versions_test.py -v
+      - name: Successor source and recovery preparation controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_recovery_successor_test.py -v
+      - name: Independent successor recovery expectation controls
+        run: python -I -B tools/gen-state-root-vectors/check_recovery_successor_test.py -v
       - name: Independent current-node retained hash identity observations
         run: python -I -B tools/gen-state-root-vectors/report_hash_bound_versions.py --source-revision "${{ github.sha }}"
       - name: Current-node terminal stop controls
