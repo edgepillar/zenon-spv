@@ -197,6 +197,20 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_offline_rebuild_successor_corpus_test.py -v
       - name: Independent successor offline rebuild observations
         run: python -I -B tools/gen-state-root-vectors/check_offline_rebuild_successor_corpus.py --source-revision "${{ github.sha }}"
+      - name: Successor raw store codec controls
+        run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
+      - name: Successor raw store independent model controls
+        run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_successor_model_test.py -v
+      - name: Successor raw store preparation controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_raw_kv_roundtrip_successor_test.py -v
+      - name: Successor raw store observation controls
+        run: python -I -B tools/gen-state-root-vectors/check_raw_kv_roundtrip_successor_test.py -v
+      - name: Successor raw store shared preimage controls
+        run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_successor_corpus_test.py -v
+      - name: Successor raw store recorded source controls
+        run: python -I -B tools/gen-state-root-vectors/check_raw_kv_roundtrip_successor_corpus_test.py -v
+      - name: Independent successor raw store observations
+        run: python -I -B tools/gen-state-root-vectors/check_raw_kv_roundtrip_successor_corpus.py --source-revision "${{ github.sha }}"
       - name: Source-default retention model controls
         run: python -I -B tools/gen-state-root-vectors/default_retention_model_test.py -v
       - name: Source-default retention preparation controls
@@ -710,6 +724,20 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_offline_rebuild_successor_corpus_test.py -v
       - name: Independent successor offline rebuild observations
         run: python -I -B tools/gen-state-root-vectors/check_offline_rebuild_successor_corpus.py --source-revision "${{ github.sha }}"
+      - name: Successor raw store codec controls
+        run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
+      - name: Successor raw store independent model controls
+        run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_successor_model_test.py -v
+      - name: Successor raw store preparation controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_raw_kv_roundtrip_successor_test.py -v
+      - name: Successor raw store observation controls
+        run: python -I -B tools/gen-state-root-vectors/check_raw_kv_roundtrip_successor_test.py -v
+      - name: Successor raw store shared preimage controls
+        run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_successor_corpus_test.py -v
+      - name: Successor raw store recorded source controls
+        run: python -I -B tools/gen-state-root-vectors/check_raw_kv_roundtrip_successor_corpus_test.py -v
+      - name: Independent successor raw store observations
+        run: python -I -B tools/gen-state-root-vectors/check_raw_kv_roundtrip_successor_corpus.py --source-revision "${{ github.sha }}"
       - name: Source-default retention model controls
         run: python -I -B tools/gen-state-root-vectors/default_retention_model_test.py -v
       - name: Source-default retention preparation controls

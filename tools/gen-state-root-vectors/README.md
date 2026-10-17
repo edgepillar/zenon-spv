@@ -2563,6 +2563,34 @@ snapshot/crash/concurrency qualification, production budgets and distribution
 remain separate gates. Current runtime state values remain `REFUSED`.
 
 
+### Recorded successor raw store roundtrip
+
+The [raw store comparison](../../docs/state-tree-raw-kv-roundtrip-successor.md)
+uses the unchanged experimental 9c71 runtime and its own module files. One
+ordinary binary observes archive and short-retention dump/load restoration,
+tail update, truncation and same-height fork reuse. An independently sealed
+model checks every raw record, refcount, retained identity, root and selected
+canonical proof across ten stages. The complete shared corpus preserves 2,974
+raw-record and 585 proof preimages without repeated transport JSON. Original
+transport digests remain separate selected observations; the portable reader
+does not reconstruct those JSON bytes.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
+python3 -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_successor_model_test.py -v
+python3 -I -B tools/gen-state-root-vectors/prepare_raw_kv_roundtrip_successor_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_raw_kv_roundtrip_successor_test.py -v
+python3 -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_successor_corpus_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_raw_kv_roundtrip_successor_corpus_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_raw_kv_roundtrip_successor_corpus.py
+```
+
+These checks run no new reference process or resource measurement. The recorded
+processes are local macOS arm64 observations; source-pinned native CI replay is
+separate. Full-node/snapshot authentication, agreed balance encoding, accepted
+header binding and production resource qualification remain open. State values
+remain `REFUSED`.
+
 ### Recorded successor offline rebuild compatibility
 
 The [offline rebuild comparison](../../docs/state-tree-offline-rebuild-successor.md)
