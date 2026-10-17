@@ -606,3 +606,17 @@ bounded component observations with controlled manager/cache/genesis adapters.
 Production retention, ongoing VM workload, whole-node/hardware budgets, crash
 recovery, accepted headers and independent acceptance remain open. This advances
 M4 evidence without enabling v3 or production state-value verification.
+
+
+The [successor source-default retention M4 observation](state-tree-default-retention-successor.md)
+selects complete `9c71` source and its own module/sum files. A fresh unsigned
+source-genesis execution and independent expectation derivation precede six
+ordinary component processes on 32,768 controlled heights, with source-default
+pruning and archive retention, actual background batches, Stop and clean reopen.
+The earlier `33d7` observations keep their original scope. Twenty-four portable
+source/recorded-data controls and a separately pinned corpus retain the successor
+observations without starting a reference node or resource observer in CI.
+One-host measurements do not qualify production concurrency, continuous VM
+history, snapshot/crash recovery, consumer hardware budgets or activation.
+M1 consumer/anchor inputs, M2 profile agreement, accepted-header state values and
+M5 review/distribution gates remain open; runtime state values remain `REFUSED`.
