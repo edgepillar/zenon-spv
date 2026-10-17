@@ -32,6 +32,7 @@ type pilotReport struct {
 	InputsUnchanged bool             `json:"source_matches_after_run"`
 	Corpus          []corpusRecord   `json:"corpus"`
 	Cases           []caseResult     `json:"cases"`
+	SkipLedger      *skipLedger      `json:"skip_ledger,omitempty"`
 	Caveats         []string         `json:"caveats"`
 }
 
@@ -73,7 +74,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 	collector := newCollector(scenarios)
 	report := pilotReport{
-		SchemaVersion: 1, Mode: "offline_synthetic", Status: "incomplete", Race: *race,
+		SchemaVersion: 2, Mode: "offline_synthetic", Status: "incomplete", Race: *race,
 		Runner: buildinfo.Capture("offline-pilot"), Source: before, Corpus: corpus,
 		Caveats: []string{
 			"Selected tests use synthetic fixtures and loopback RPC; this is not a live-network pilot.",
@@ -82,7 +83,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 			"Input and executable hashes describe this local run; they are not signed attestations or proof of a reproducible build.",
 			"Go module cache, toolchain, build environment, and local test execution remain trusted.",
 			"Compiled child CLIs use ordinary builds even when test parents enable the race detector.",
-			"A passed scenario can contain skipped subtests; inspect each scenario's status and skip count.",
+			"A passed scenario can contain skipped subtests; inspect the source-owned skip ledger and its diagnostic coverage.",
 		},
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
@@ -107,6 +108,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	report.Error = processError
 	report.Status = collector.finish(processOK)
 	report.Cases = collector.cases
+	report.SkipLedger = collector.skips.snapshot()
 	after, err := captureSource()
 	report.InputsUnchanged = err == nil && reflect.DeepEqual(before, after)
 	if !report.InputsUnchanged {

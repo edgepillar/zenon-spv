@@ -1176,5 +1176,246 @@ with mock.patch.object(Path, "stat", return_value=selected):
                     self.assertEqual((code, result["category"]), (2, "layout"))
 
 
+
+
+# Golden source-owned slots, independent of the checker's lookup table.
+PILOT_SKIP_GOLDEN = (
+    ("state_save_permission_probe", "collect_query_resume", "internal/conformance",
+     "TestCompiledCLIQueryWorkflow", "readonly_directory_writable"),
+    ("consumer_fifo_selected", "consumer_input_fifo", "tools/consume-query-report",
+     "TestConsumerInputFIFOOpenIsBounded", "native_fifo_nofollow_unavailable"),
+    ("consumer_fifo_replacement", "consumer_input_fifo", "tools/consume-query-report",
+     "TestConsumerInputFIFOOpenIsBounded", "native_fifo_nofollow_unavailable"),
+    ("consumer_fifo_symlink_replacement", "consumer_input_fifo", "tools/consume-query-report",
+     "TestConsumerInputFIFOOpenIsBounded", "native_fifo_nofollow_unavailable"),
+    ("state_input_fifo", "state_inspection", "internal/conformance",
+     "TestCompiledCLIStateInspection", "native_fifo_unavailable"),
+)
+
+
+class PilotSkipLedgerControls(unittest.TestCase):
+    def current_fixture(self, os_name="linux", slot=None):
+        files, manifest, report = fixture(os_name)
+        report["schema_version"] = 2
+        report["skip_ledger"] = {"schema_version": 1, "coverage": "complete", "records": []}
+        if slot is not None:
+            control, scenario, package, root, reason = slot
+            report["cases"][0].update(id=scenario, package=package, test=root,
+                                      status="passed_with_skips", skipped_subtests=1)
+            report["status"] = manifest["test_status"] = "passed_with_skips"
+            report["skip_ledger"]["records"].append(
+                {"scenario": scenario, "scope": "child", "ordinal": 1, "control": control, "reason": reason})
+        return files, manifest, report
+
+    def call_archive(self, files, manifest, report, os_name="linux", extra_args=(), **pack_options):
+        raw = pack(files, manifest, report, **pack_options)
+        with tempfile.TemporaryDirectory(prefix="pilot-skip-archive-") as temporary:
+            path = Path(temporary) / "PRIVATE_ARCHIVE.zip"
+            path.write_bytes(raw)
+            before = path.stat()
+            args = ["--archive", str(path), "--expect-archive-sha256", sha(raw),
+                    "--expect-revision", REVISION, "--expect-inputs", INPUTS,
+                    "--expect-os", os_name, "--expect-architecture", "amd64", *extra_args]
+            output = io.StringIO()
+            code = checker.main(args, output)
+            self.assertNotIn("PRIVATE", output.getvalue())
+            self.assertEqual(path.read_bytes(), raw)
+            self.assertEqual(path.stat().st_mtime_ns, before.st_mtime_ns)
+            self.assertEqual(list(Path(temporary).iterdir()), [path])
+            return code, json.loads(output.getvalue())
+
+    def call_exported(self, files, manifest, report, os_name="linux", extra_args=()):
+        selected = importlib.util.spec_from_file_location(
+            "pilot_skip_exported", Path(__file__).with_name("check-exported-candidate.py"))
+        exported = importlib.util.module_from_spec(selected)
+        selected.loader.exec_module(exported)
+        raw_report = json.dumps(report).encode()
+        selected_manifest = copy.deepcopy(manifest)
+        selected_manifest["report"] = {"filename": "offline-pilot.json", "sha256": sha(raw_report),
+                                       "bytes": len(raw_report)}
+        members = dict(files, **{"manifest.json": json.dumps(selected_manifest).encode(),
+                                 "offline-pilot.json": raw_report})
+        with tempfile.TemporaryDirectory(prefix="pilot-skip-members-") as temporary:
+            directory = Path(temporary)
+            for name, raw in members.items():
+                (directory / name).write_bytes(raw)
+            before = {name: (directory / name).stat().st_mtime_ns for name in members}
+            output = io.StringIO()
+            with mock.patch.object(exported, "source_pin", return_value=INPUTS), \
+                    mock.patch.object(exported, "write_archive", side_effect=AssertionError("packaging forbidden")):
+                code = exported.main(["--directory", str(directory), "--expect-revision", REVISION,
+                                      "--expect-os", os_name, "--expect-architecture", "amd64", *extra_args], output)
+            self.assertNotIn("PRIVATE", output.getvalue())
+            self.assertEqual({p.name for p in directory.iterdir()}, set(members))
+            for name, raw in members.items():
+                self.assertEqual((directory / name).read_bytes(), raw)
+                self.assertEqual((directory / name).stat().st_mtime_ns, before[name])
+            return code, json.loads(output.getvalue())
+
+    def test_current_empty_and_legacy_compatibility(self):
+        for os_name in ("linux", "darwin", "windows"):
+            with self.subTest(os=os_name):
+                files, manifest, report = self.current_fixture(os_name)
+                code, result = self.call_archive(files, manifest, report, os_name, ("--require-skip-ledger",))
+                self.assertEqual(code, 0)
+                self.assertEqual(result["status"], "verified")
+                self.assertEqual(result["skipped_subtests"], 0)
+                files, manifest, report = fixture(os_name)
+                self.assertEqual(checker.check_skip_ledger(report, os_name),
+                                 {"coverage": "unknown", "records": None})
+                self.assertEqual(self.call_archive(files, manifest, report, os_name)[0], 0)
+                code, result = self.call_archive(files, manifest, report, os_name, ("--require-skip-ledger",))
+                self.assertEqual((code, result["category"]), (2, "skip_ledger"))
+
+    def test_all_source_owned_slots(self):
+        self.assertEqual(set(checker.SKIP_SLOTS), {slot[0] for slot in PILOT_SKIP_GOLDEN})
+        for slot in PILOT_SKIP_GOLDEN:
+            platforms = ("linux", "darwin", "windows") if slot[0] == "state_save_permission_probe" else ("windows",)
+            for os_name in platforms:
+                with self.subTest(control=slot[0], os=os_name):
+                    files, manifest, report = self.current_fixture(os_name, slot)
+                    self.assertEqual(checker.check_skip_ledger(report, os_name, True),
+                                     {"coverage": "complete", "records": 1})
+                    code, result = self.call_archive(files, manifest, report, os_name, ("--require-skip-ledger",))
+                    self.assertEqual(code, 0)
+                    self.assertEqual(result["test_status"], "passed_with_skips")
+                    self.assertEqual(result["skipped_subtests"], 1)
+
+    def test_missing_unknown_and_inconsistent_current_ledgers(self):
+        for mode in ("missing", "nil", "wrong version", "bool version", "nil records", "wrong coverage",
+                     "missing entry", "wrong ordinal", "bool ordinal", "wrong scope", "unknown control",
+                     "unknown reason", "wrong scenario", "wrong root", "wrong package",
+                     "duplicate control", "wrong count", "extra field", "extra record field"):
+            with self.subTest(mode=mode):
+                files, manifest, report = self.current_fixture("windows", PILOT_SKIP_GOLDEN[1])
+                ledger = report["skip_ledger"]
+                if mode == "missing":
+                    del report["skip_ledger"]
+                elif mode == "nil":
+                    report["skip_ledger"] = None
+                elif mode == "wrong version":
+                    ledger["schema_version"] = 2
+                elif mode == "bool version":
+                    ledger["schema_version"] = True
+                elif mode == "nil records":
+                    ledger["records"] = None
+                elif mode == "wrong coverage":
+                    ledger["coverage"] = "unknown"
+                elif mode == "missing entry":
+                    ledger["records"] = []
+                elif mode == "wrong ordinal":
+                    ledger["records"][0]["ordinal"] = 2
+                elif mode == "bool ordinal":
+                    ledger["records"][0]["ordinal"] = True
+                elif mode == "wrong scope":
+                    ledger["records"][0]["scope"] = "PRIVATE_SCOPE"
+                elif mode == "unknown control":
+                    ledger["records"][0]["control"] = "PRIVATE_CONTROL"
+                elif mode == "unknown reason":
+                    ledger["records"][0]["reason"] = "PRIVATE_REASON"
+                elif mode == "wrong scenario":
+                    ledger["records"][0]["scenario"] = "private_scenario"
+                elif mode == "wrong root":
+                    report["cases"][0]["test"] = "TestPrivate"
+                elif mode == "wrong package":
+                    report["cases"][0]["package"] = "internal/chain"
+                elif mode == "duplicate control":
+                    ledger["records"].append(copy.deepcopy(ledger["records"][0]))
+                    ledger["records"][1]["ordinal"] = 2
+                    report["cases"][0]["skipped_subtests"] = 2
+                elif mode == "wrong count":
+                    report["cases"][0]["skipped_subtests"] = 2
+                elif mode == "extra field":
+                    ledger["PRIVATE_FIELD"] = "PRIVATE_VALUE"
+                elif mode == "extra record field":
+                    ledger["records"][0]["PRIVATE_FIELD"] = "PRIVATE_VALUE"
+                self.assertEqual(self.call_archive(files, manifest, report, "windows")[0], 2)
+
+    def test_platform_and_scenario_binding(self):
+        for os_name in ("linux", "darwin"):
+            with self.subTest(os=os_name):
+                files, manifest, report = self.current_fixture(os_name, PILOT_SKIP_GOLDEN[1])
+                code, result = self.call_archive(files, manifest, report, os_name)
+                self.assertEqual((code, result["category"]), (2, "skip_ledger"))
+
+    def test_unknown_and_root_diagnostics_do_not_complete_candidates(self):
+        for root in (False, True):
+            with self.subTest(root=root):
+                files, manifest, report = self.current_fixture()
+                report["status"] = manifest["test_status"] = "passed_with_skips"
+                case = report["cases"][0]
+                case.update(status="skipped" if root else "passed_with_skips", skipped_subtests=0 if root else 1)
+                report["skip_ledger"] = {"schema_version": 1, "coverage": "unknown", "records": [
+                    {"scenario": "example", "scope": "root" if root else "child", "ordinal": 1,
+                     "control": "unknown", "reason": "unreported"}]}
+                self.assertEqual(checker.check_skip_ledger(report, "linux", False),
+                                 {"coverage": "unknown", "records": 1})
+                with self.assertRaises(checker.Rejected):
+                    checker.check_skip_ledger(report, "linux", True)
+                self.assertEqual(self.call_archive(files, manifest, report)[0], 2)
+
+    def test_exact_boundary_and_global_metadata_limits(self):
+        _, _, report = self.current_fixture()
+        case = report["cases"][0]
+        case.update(status="passed_with_skips", skipped_subtests=256)
+        ledger = report["skip_ledger"]
+        ledger["coverage"] = "unknown"
+        ledger["records"] = [{"scenario": "example", "scope": "child", "ordinal": i,
+                              "control": "unknown", "reason": "unreported"} for i in range(1, 257)]
+        checker.metadata(json.dumps(report).encode())
+        self.assertEqual(checker.check_skip_ledger(report, "linux"), {"coverage": "unknown", "records": 256})
+        ledger["records"].append(dict(ledger["records"][-1], ordinal=257))
+        case["skipped_subtests"] = 257
+        with self.assertRaises(checker.Rejected):
+            checker.check_skip_ledger(report, "linux")
+        with self.assertRaises(checker.Rejected):
+            checker.metadata(json.dumps(report).encode())
+
+    def test_direct_members_match_archive_contract_without_packaging(self):
+        for os_name in ("linux", "darwin", "windows"):
+            with self.subTest(os=os_name):
+                files, manifest, report = self.current_fixture(os_name, PILOT_SKIP_GOLDEN[0])
+                archive = self.call_archive(files, manifest, report, os_name, ("--require-skip-ledger",))
+                direct = self.call_exported(files, manifest, report, os_name, ("--require-skip-ledger",))
+                self.assertEqual(direct, archive)
+                self.assertEqual(direct[0], 0)
+                files, manifest, report = fixture(os_name)
+                self.assertEqual(self.call_exported(files, manifest, report, os_name)[0], 0)
+                code, result = self.call_exported(files, manifest, report, os_name, ("--require-skip-ledger",))
+                self.assertEqual((code, result["category"]), (2, "skip_ledger"))
+
+    def test_current_mode_is_unambiguous_and_privacy_filtered(self):
+        for extra in (("--require-skip-ledger", "--require-skip-ledger"),
+                      ("--require-skip-ledger=PRIVATE_VALUE",),
+                      ("--require-skip-ledger", "PRIVATE_VALUE")):
+            with self.subTest(extra=extra):
+                files, manifest, report = self.current_fixture()
+                self.assertEqual(self.call_archive(files, manifest, report, extra_args=extra)[0], 64)
+                self.assertEqual(self.call_exported(files, manifest, report, extra_args=extra)[0], 64)
+
+    def test_current_reports_keep_source_report_and_binary_pins(self):
+        controls = (
+            ("report_pin", lambda value: value["report"].update(sha256="a"*64)),
+            ("source_pin", lambda value: value["source"].update(revision="a"*40)),
+            ("binary_pin", lambda value: value["binaries"][0].update(sha256="a"*64)),
+        )
+        for category, mutate in controls:
+            with self.subTest(category=category):
+                files, manifest, report = self.current_fixture()
+                code, result = self.call_archive(files, manifest, report, mutate_manifest=mutate)
+                self.assertEqual((code, result["category"]), (2, category))
+
+    def test_duplicate_and_unknown_ledger_metadata_are_refused(self):
+        mutations = (
+            lambda raw: raw.replace(b'"coverage": "complete"', b'"coverage": "complete", "coverage": "complete"', 1),
+            lambda raw: raw.replace(b'"coverage": "complete"', b'"Coverage": "complete"', 1),
+            lambda raw: raw.replace(b'"records": []', b'"records": [], "PRIVATE_FIELD": "PRIVATE_VALUE"', 1),
+        )
+        for mutate in mutations:
+            with self.subTest(mutate=mutations.index(mutate)):
+                files, manifest, report = self.current_fixture()
+                self.assertEqual(self.call_archive(files, manifest, report, mutate_report_raw=mutate)[0], 2)
+
+
 if __name__ == "__main__":
     unittest.main()
