@@ -25,6 +25,11 @@ This is **not a full Zenon light client.** See [`docs/trust-model.md`](docs/trus
 
 **Momentum layouts v1 and v2 are supported.** Verification of v2 requires an explicit `--protocol-profile` bound to the configured checkpoint and a height range. Without a profile, verification remains v1-only and makes no activation claim. The profile is an operator attestation, not independent proof of network activation. See [`docs/header-versions.md`](docs/header-versions.md).
 
+The separate [native cache forward-replay experiment](docs/cache-forward-replay.md)
+records a full-identifier preflight fix and real-manager recovery controls on
+one selected node source. It leaves the verifier's guarantees and state-value
+refusal unchanged.
+
 ## What it does NOT do
 
 | Capability | Status |
