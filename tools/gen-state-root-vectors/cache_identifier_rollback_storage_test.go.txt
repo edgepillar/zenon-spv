@@ -1,0 +1,244 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Prepared only in the selected experimental node's cache/storage package.
+package storage
+
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/zenon-network/go-zenon/common"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+func candidateID(height uint64) types.HashHeight {
+	return types.HashHeight{Hash: types.NewHash([]byte(fmt.Sprint(height))), Height: height}
+}
+
+func candidateSerializedID(height uint64) []byte {
+	id := candidateID(height)
+	return id.Serialize()
+}
+
+func candidateCache(t *testing.T, count int) (*cacheManager, string) {
+	t.Helper()
+	root := t.TempDir()
+	m := NewCacheDBManager(root).(*cacheManager)
+	t.Cleanup(func() {
+		if err := m.Stop(); err != nil {
+			t.Fatal(err)
+		}
+	})
+	for i := 1; i <= count; i++ {
+		patch := db.NewPatch()
+		patch.Put([]byte("balance"), []byte(fmt.Sprint(i)))
+		if err := m.Add(candidateID(uint64(i)), patch); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return m, root
+}
+
+// Include rollback metadata, not just the wrapper's visible cache subset.
+func candidateRaw(t *testing.T, m *cacheManager) []byte {
+	t.Helper()
+	var result bytes.Buffer
+	it := m.ldb.NewIterator(nil, nil)
+	for it.Next() {
+		fmt.Fprintf(&result, "%x:%x\n", it.Key(), it.Value())
+	}
+	err := it.Error()
+	it.Release()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return result.Bytes()
+}
+
+func candidateRefusesWithoutWrite(t *testing.T, m *cacheManager, target types.HashHeight, mismatch bool) {
+	t.Helper()
+	before := candidateRaw(t, m)
+	writes := 0
+	write := m.write
+	m.write = func(batch *leveldb.Batch) error { writes++; return write(batch) }
+	err := m.RollbackTo(target)
+	m.write = write
+	if err == nil || (mismatch && !errors.Is(err, ErrCacheIdentityMismatch)) {
+		t.Fatalf("unexpected refusal: %v", err)
+	}
+	if writes != 0 || !bytes.Equal(before, candidateRaw(t, m)) {
+		t.Fatal("refusal changed raw cache or rollback records")
+	}
+}
+
+func TestCandidateCacheRollbackWrongRetainedHash(t *testing.T) {
+	for _, height := range []uint64{1, 3} {
+		t.Run(fmt.Sprint(height), func(t *testing.T) {
+			m, _ := candidateCache(t, 3)
+			wrong := candidateID(height)
+			wrong.Hash[0] ^= 1
+			candidateRefusesWithoutWrite(t, m, wrong, true)
+		})
+	}
+}
+
+func TestCandidateCacheRollbackAndReopen(t *testing.T) {
+	m, root := candidateCache(t, 4)
+	if err := m.RollbackTo(candidateID(1)); err != nil {
+		t.Fatal(err)
+	}
+	if GetFrontierIdentifier(m.DB()) != candidateID(1) {
+		t.Fatal("wrong retained identity")
+	}
+	value, err := m.DB().Get([]byte("balance"))
+	if err != nil || string(value) != "1" {
+		t.Fatalf("wrong retained content: %q %v", value, err)
+	}
+	before := candidateRaw(t, m)
+	if err := m.RollbackTo(candidateID(1)); err != nil || !bytes.Equal(before, candidateRaw(t, m)) {
+		t.Fatal("exact target was not a no-op")
+	}
+	for height := uint64(2); height <= 4; height++ {
+		has, err := m.ldb.Has(common.JoinBytes(rollbackByte, common.Uint64ToBytes(height)), nil)
+		if err != nil || has {
+			t.Fatal("consumed rollback entry retained")
+		}
+	}
+	if err := m.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	reopened := NewCacheDBManager(root).(*cacheManager)
+	defer reopened.Stop()
+	if GetFrontierIdentifier(reopened.DB()) != candidateID(1) || !bytes.Equal(before, candidateRaw(t, reopened)) {
+		t.Fatal("closed reopen changed target identity or content")
+	}
+}
+
+func TestCandidateCacheRollbackToEmpty(t *testing.T) {
+	m, _ := candidateCache(t, 1)
+	if err := m.RollbackTo(types.ZeroHashHeight); err != nil {
+		t.Fatal(err)
+	}
+	if GetFrontierIdentifier(m.DB()) != types.ZeroHashHeight || len(candidateRaw(t, m)) != 0 {
+		t.Fatal("empty predecessor was not restored")
+	}
+}
+
+func TestCandidateCacheRollbackWindow(t *testing.T) {
+	m, _ := candidateCache(t, 102)
+	candidateRefusesWithoutWrite(t, m, candidateID(1), false)
+	candidateRefusesWithoutWrite(t, m, candidateID(103), false)
+	if err := m.RollbackTo(candidateID(2)); err != nil {
+		t.Fatal(err)
+	}
+	if GetFrontierIdentifier(m.DB()) != candidateID(2) {
+		t.Fatal("100-step boundary target lost")
+	}
+}
+
+func TestCandidateCacheRollbackMissingEarlierPatch(t *testing.T) {
+	m, _ := candidateCache(t, 4)
+	if err := m.ldb.Delete(common.JoinBytes(rollbackByte, common.Uint64ToBytes(2)), nil); err != nil {
+		t.Fatal(err)
+	}
+	candidateRefusesWithoutWrite(t, m, candidateID(1), false)
+}
+
+func TestCandidateCacheRollbackCorruptHistory(t *testing.T) {
+	for _, name := range []string{"invalid-batch", "missing-frontier", "invalid-protobuf", "non-unit-height", "wrong-presence", "invalid-current-protobuf"} {
+		t.Run(name, func(t *testing.T) {
+			m, _ := candidateCache(t, 4)
+			key := common.JoinBytes(rollbackByte, common.Uint64ToBytes(2))
+			patch := db.NewPatch()
+			var raw []byte
+			switch name {
+			case "invalid-batch":
+				raw = []byte{255}
+			case "missing-frontier":
+				patch.Put([]byte("balance"), []byte("1"))
+				raw = patch.Dump()
+			case "invalid-protobuf":
+				patch.Put(frontierIdentifierKey, []byte{255})
+				raw = patch.Dump()
+			case "non-unit-height":
+				patch.Put(frontierIdentifierKey, candidateSerializedID(0))
+				raw = patch.Dump()
+			case "wrong-presence":
+				key = common.JoinBytes(storageByte, frontierIdentifierKey)
+				raw = append([]byte{1}, candidateSerializedID(4)...)
+			case "invalid-current-protobuf":
+				key = common.JoinBytes(storageByte, frontierIdentifierKey)
+				raw = []byte{0, 255}
+			}
+			if err := m.ldb.Put(key, raw, nil); err != nil {
+				t.Fatal(err)
+			}
+			candidateRefusesWithoutWrite(t, m, candidateID(1), false)
+		})
+	}
+}
+
+func TestCandidateCacheRollbackWriteFailure(t *testing.T) {
+	for _, failAt := range []int{1, 2} {
+		t.Run(fmt.Sprint(failAt), func(t *testing.T) {
+			m, root := candidateCache(t, 4)
+			before := candidateRaw(t, m)
+			write := m.write
+			writes := 0
+			failure := errors.New("injected write rejection before native write")
+			m.write = func(batch *leveldb.Batch) error {
+				writes++
+				if writes == failAt {
+					return failure
+				}
+				return write(batch)
+			}
+			err := m.RollbackTo(candidateID(1))
+			m.write = write
+			if !errors.Is(err, failure) || writes != failAt || !strings.Contains(err.Error(), fmt.Sprintf("after %d acknowledged steps", failAt-1)) {
+				t.Fatalf("write outcome not explicit: %v", err)
+			}
+			want := candidateID(uint64(5 - failAt))
+			if GetFrontierIdentifier(m.DB()) != want {
+				t.Fatal("incorrect partial frontier")
+			}
+			if (failAt == 1) != bytes.Equal(before, candidateRaw(t, m)) {
+				t.Fatal("partial write status mislabeled as atomic")
+			}
+			if err := m.Stop(); err != nil {
+				t.Fatal(err)
+			}
+			reopened := NewCacheDBManager(root).(*cacheManager)
+			defer reopened.Stop()
+			if GetFrontierIdentifier(reopened.DB()) != want {
+				t.Fatal("partial frontier changed across reopen")
+			}
+			if err := reopened.RollbackTo(candidateID(1)); err != nil {
+				t.Fatal(err)
+			}
+			if GetFrontierIdentifier(reopened.DB()) != candidateID(1) {
+				t.Fatal("explicit fresh recovery failed")
+			}
+		})
+	}
+}
+
+func TestCandidateCacheRollbackStop(t *testing.T) {
+	m, root := candidateCache(t, 2)
+	if err := m.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.RollbackTo(candidateID(1)); !errors.Is(err, leveldb.ErrClosed) {
+		t.Fatalf("stopped manager: %v", err)
+	}
+	handle, err := leveldb.OpenFile(filepath.Join(root, "cache"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer handle.Close()
+}
