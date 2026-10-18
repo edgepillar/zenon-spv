@@ -1,0 +1,637 @@
+{
+  "cases": [
+    {
+      "case": "canonical-cache-clean-reopen",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 341,
+          "sha256": "b7a05b279e6452674a61d2d3372228d538d37e56c975e7319b07ec42d22a6cd4"
+        },
+        "stdout": {
+          "bytes": 5427,
+          "sha256": "bc8ebbe4cceb6576f29a93c7aa058fa310b7237a7b8197176bc6579808ea2453"
+        }
+      },
+      "generation": "parent",
+      "stderr_diagnostics": {
+        "normal_process_complete": true,
+        "runtime_panic_observed": false
+      },
+      "stdout_utf8": "{\"case\":\"canonical-cache-clean-reopen\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"canonical-cache-clean-reopen\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready_after_stop\":false,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"canonical-ledger-cache-tree-primed\"}\n{\"case\":\"canonical-cache-clean-reopen\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"frontier_raw_value\":\"000a220a209e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01001\",\"key_bytes\":11,\"metadata_only_fixture\":false,\"raw_store_sha256\":\"33c14df4764554b5dab40e2112c659a3a3a3fa9cfda5b61fe3c77a298939d941\",\"records\":2,\"stage\":\"cache-fixture-before-public-init\",\"value_bytes\":42}\n{\"cache_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"canonical-cache-clean-reopen\",\"error\":\"none\",\"frontiers_equal\":true,\"ledger_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready\":true,\"stage\":\"public-init-returned\"}\n{\"case\":\"canonical-cache-clean-reopen\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"proof_error\":\"none\",\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"root_error\":\"none\",\"stage\":\"public-state-query\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\"}\n{\"case\":\"canonical-cache-clean-reopen\",\"ready\":false,\"stage\":\"public-stop\"}\n{\"case\":\"canonical-cache-clean-reopen\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"frontier_raw_value\":\"000a220a209e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01001\",\"key_bytes\":11,\"raw_store_sha256\":\"33c14df4764554b5dab40e2112c659a3a3a3fa9cfda5b61fe3c77a298939d941\",\"records\":2,\"stage\":\"cache-fixture-after-public-stop\",\"value_bytes\":42}\n{\"cache_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"canonical-cache-clean-reopen\",\"error\":\"none\",\"ledger_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready\":true,\"stage\":\"public-clean-reopen\"}\n{\"case\":\"canonical-cache-clean-reopen\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"proof_error\":\"none\",\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"root_error\":\"none\",\"stage\":\"reopened-state-query\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\"}\n"
+    },
+    {
+      "case": "foreign-same-height-cache",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 143,
+          "sha256": "415ff0c35dadf8f8a726c5317a98902761f4807ace1c6786ab6a1ab3c20d39f6"
+        },
+        "stdout": {
+          "bytes": 2370,
+          "sha256": "cd73eb9175e265636a2c6e31a72aedf1231785f65fa450a89575971099b3422f"
+        }
+      },
+      "generation": "parent",
+      "stderr_diagnostics": {
+        "normal_process_complete": true,
+        "runtime_panic_observed": false
+      },
+      "stdout_utf8": "{\"case\":\"foreign-same-height-cache\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"foreign-same-height-cache\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready_after_stop\":false,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"canonical-ledger-cache-tree-primed\"}\n{\"case\":\"foreign-same-height-cache\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"frontier_raw_value\":\"000a220a209f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01001\",\"key_bytes\":11,\"metadata_only_fixture\":true,\"raw_store_sha256\":\"a6273298e1834f543f2fc80082ce911905f2918dc96892b5d55f98f1c1013e16\",\"records\":2,\"stage\":\"cache-fixture-before-public-init\",\"value_bytes\":42}\n{\"cache_frontier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"foreign-same-height-cache\",\"error\":\"cache-frontier-identity-mismatch\",\"frontiers_equal\":false,\"ledger_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready\":false,\"stage\":\"public-init-returned\"}\n{\"case\":\"foreign-same-height-cache\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"\",\"proof_error\":\"not-ready\",\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"root_error\":\"not-ready\",\"stage\":\"public-state-query\",\"value\":\"\"}\n{\"case\":\"foreign-same-height-cache\",\"ready\":false,\"stage\":\"public-stop\"}\n{\"case\":\"foreign-same-height-cache\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"frontier_raw_value\":\"000a220a209f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01001\",\"key_bytes\":11,\"raw_store_sha256\":\"a6273298e1834f543f2fc80082ce911905f2918dc96892b5d55f98f1c1013e16\",\"records\":2,\"stage\":\"cache-fixture-after-public-stop\",\"value_bytes\":42}\n"
+    },
+    {
+      "case": "foreign-ahead-cache-with-wrong-retained-target",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 242,
+          "sha256": "d35bc7092a837e727dccf8326121b7efc867049bdad411150532b1b6b55f25d7"
+        },
+        "stdout": {
+          "bytes": 4398,
+          "sha256": "cdeaef2abd141ae42f8c37e49dc3d99ef21250083a994a7dcd548e2564400b95"
+        }
+      },
+      "generation": "parent",
+      "stderr_diagnostics": {
+        "normal_process_complete": true,
+        "runtime_panic_observed": false
+      },
+      "stdout_utf8": "{\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready_after_stop\":false,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"canonical-ledger-cache-tree-primed\"}\n{\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"frontier_raw_value\":\"000a220a209d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01002\",\"key_bytes\":20,\"metadata_only_fixture\":true,\"raw_store_sha256\":\"d44e0d0ab186f076daf1d3f8798707fb6c2211eff307b6efa984ff21f7392fdb\",\"records\":3,\"stage\":\"cache-fixture-before-public-init\",\"value_bytes\":84}\n{\"cache_frontier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"error\":\"none\",\"frontiers_equal\":false,\"ledger_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready\":true,\"stage\":\"public-init-returned\"}\n{\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"proof_error\":\"none\",\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"root_error\":\"none\",\"stage\":\"public-state-query\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\"}\n{\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"ready\":false,\"stage\":\"public-stop\"}\n{\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"frontier_raw_value\":\"000a220a209f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01001\",\"key_bytes\":11,\"raw_store_sha256\":\"a6273298e1834f543f2fc80082ce911905f2918dc96892b5d55f98f1c1013e16\",\"records\":2,\"stage\":\"cache-fixture-after-public-stop\",\"value_bytes\":42}\n{\"cache_frontier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"error\":\"cache-frontier-identity-mismatch\",\"ledger_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready\":false,\"stage\":\"public-clean-reopen\"}\n{\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"\",\"proof_error\":\"not-ready\",\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"root_error\":\"not-ready\",\"stage\":\"reopened-state-query\",\"value\":\"\"}\n"
+    },
+    {
+      "case": "canonical-retained-cache-under-ahead-frontier",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 440,
+          "sha256": "8634b22ee95401751abf5ea38abe3a423e8e9acb6a6bf8249e0ee9ac679d01ac"
+        },
+        "stdout": {
+          "bytes": 5580,
+          "sha256": "ee56d56334e8cd43d178597856220c6c3499a98772cf3f532464bb36af055f76"
+        }
+      },
+      "generation": "parent",
+      "stderr_diagnostics": {
+        "normal_process_complete": true,
+        "runtime_panic_observed": false
+      },
+      "stdout_utf8": "{\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready_after_stop\":false,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"canonical-ledger-cache-tree-primed\"}\n{\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"frontier_raw_value\":\"000a220a209d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01002\",\"key_bytes\":20,\"metadata_only_fixture\":false,\"raw_store_sha256\":\"a4660c48905e9e82516dca425f46fc3952cab45058df6b82b65e7b6b570765ad\",\"records\":3,\"stage\":\"cache-fixture-before-public-init\",\"value_bytes\":84}\n{\"cache_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"error\":\"none\",\"frontiers_equal\":true,\"ledger_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready\":true,\"stage\":\"public-init-returned\"}\n{\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"proof_error\":\"none\",\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"root_error\":\"none\",\"stage\":\"public-state-query\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\"}\n{\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"ready\":false,\"stage\":\"public-stop\"}\n{\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"frontier_raw_value\":\"000a220a209e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01001\",\"key_bytes\":11,\"raw_store_sha256\":\"33c14df4764554b5dab40e2112c659a3a3a3fa9cfda5b61fe3c77a298939d941\",\"records\":2,\"stage\":\"cache-fixture-after-public-stop\",\"value_bytes\":42}\n{\"cache_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"error\":\"none\",\"ledger_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready\":true,\"stage\":\"public-clean-reopen\"}\n{\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"proof_error\":\"none\",\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"root_error\":\"none\",\"stage\":\"reopened-state-query\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\"}\n"
+    },
+    {
+      "case": "canonical-cache-clean-reopen",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 341,
+          "sha256": "b7a05b279e6452674a61d2d3372228d538d37e56c975e7319b07ec42d22a6cd4"
+        },
+        "stdout": {
+          "bytes": 5427,
+          "sha256": "bc8ebbe4cceb6576f29a93c7aa058fa310b7237a7b8197176bc6579808ea2453"
+        }
+      },
+      "generation": "candidate",
+      "stderr_diagnostics": {
+        "normal_process_complete": true,
+        "runtime_panic_observed": false
+      },
+      "stdout_utf8": "{\"case\":\"canonical-cache-clean-reopen\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"canonical-cache-clean-reopen\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready_after_stop\":false,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"canonical-ledger-cache-tree-primed\"}\n{\"case\":\"canonical-cache-clean-reopen\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"frontier_raw_value\":\"000a220a209e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01001\",\"key_bytes\":11,\"metadata_only_fixture\":false,\"raw_store_sha256\":\"33c14df4764554b5dab40e2112c659a3a3a3fa9cfda5b61fe3c77a298939d941\",\"records\":2,\"stage\":\"cache-fixture-before-public-init\",\"value_bytes\":42}\n{\"cache_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"canonical-cache-clean-reopen\",\"error\":\"none\",\"frontiers_equal\":true,\"ledger_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready\":true,\"stage\":\"public-init-returned\"}\n{\"case\":\"canonical-cache-clean-reopen\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"proof_error\":\"none\",\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"root_error\":\"none\",\"stage\":\"public-state-query\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\"}\n{\"case\":\"canonical-cache-clean-reopen\",\"ready\":false,\"stage\":\"public-stop\"}\n{\"case\":\"canonical-cache-clean-reopen\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"frontier_raw_value\":\"000a220a209e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01001\",\"key_bytes\":11,\"raw_store_sha256\":\"33c14df4764554b5dab40e2112c659a3a3a3fa9cfda5b61fe3c77a298939d941\",\"records\":2,\"stage\":\"cache-fixture-after-public-stop\",\"value_bytes\":42}\n{\"cache_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"canonical-cache-clean-reopen\",\"error\":\"none\",\"ledger_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready\":true,\"stage\":\"public-clean-reopen\"}\n{\"case\":\"canonical-cache-clean-reopen\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"proof_error\":\"none\",\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"root_error\":\"none\",\"stage\":\"reopened-state-query\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\"}\n"
+    },
+    {
+      "case": "foreign-same-height-cache",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 143,
+          "sha256": "415ff0c35dadf8f8a726c5317a98902761f4807ace1c6786ab6a1ab3c20d39f6"
+        },
+        "stdout": {
+          "bytes": 2370,
+          "sha256": "cd73eb9175e265636a2c6e31a72aedf1231785f65fa450a89575971099b3422f"
+        }
+      },
+      "generation": "candidate",
+      "stderr_diagnostics": {
+        "normal_process_complete": true,
+        "runtime_panic_observed": false
+      },
+      "stdout_utf8": "{\"case\":\"foreign-same-height-cache\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"foreign-same-height-cache\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready_after_stop\":false,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"canonical-ledger-cache-tree-primed\"}\n{\"case\":\"foreign-same-height-cache\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"frontier_raw_value\":\"000a220a209f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01001\",\"key_bytes\":11,\"metadata_only_fixture\":true,\"raw_store_sha256\":\"a6273298e1834f543f2fc80082ce911905f2918dc96892b5d55f98f1c1013e16\",\"records\":2,\"stage\":\"cache-fixture-before-public-init\",\"value_bytes\":42}\n{\"cache_frontier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"foreign-same-height-cache\",\"error\":\"cache-frontier-identity-mismatch\",\"frontiers_equal\":false,\"ledger_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready\":false,\"stage\":\"public-init-returned\"}\n{\"case\":\"foreign-same-height-cache\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"\",\"proof_error\":\"not-ready\",\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"root_error\":\"not-ready\",\"stage\":\"public-state-query\",\"value\":\"\"}\n{\"case\":\"foreign-same-height-cache\",\"ready\":false,\"stage\":\"public-stop\"}\n{\"case\":\"foreign-same-height-cache\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"frontier_raw_value\":\"000a220a209f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01001\",\"key_bytes\":11,\"raw_store_sha256\":\"a6273298e1834f543f2fc80082ce911905f2918dc96892b5d55f98f1c1013e16\",\"records\":2,\"stage\":\"cache-fixture-after-public-stop\",\"value_bytes\":42}\n"
+    },
+    {
+      "case": "foreign-ahead-cache-with-wrong-retained-target",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 143,
+          "sha256": "415ff0c35dadf8f8a726c5317a98902761f4807ace1c6786ab6a1ab3c20d39f6"
+        },
+        "stdout": {
+          "bytes": 2517,
+          "sha256": "5387fe7c0a2b8a7c0dd3ebb4db173623539d85cc0bb1ca2fcaccd5cd09b33db0"
+        }
+      },
+      "generation": "candidate",
+      "stderr_diagnostics": {
+        "normal_process_complete": true,
+        "runtime_panic_observed": false
+      },
+      "stdout_utf8": "{\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready_after_stop\":false,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"canonical-ledger-cache-tree-primed\"}\n{\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"frontier_raw_value\":\"000a220a209d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01002\",\"key_bytes\":20,\"metadata_only_fixture\":true,\"raw_store_sha256\":\"d44e0d0ab186f076daf1d3f8798707fb6c2211eff307b6efa984ff21f7392fdb\",\"records\":3,\"stage\":\"cache-fixture-before-public-init\",\"value_bytes\":84}\n{\"cache_frontier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"error\":\"cache-frontier-identity-mismatch\",\"frontiers_equal\":false,\"ledger_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready\":false,\"stage\":\"public-init-returned\"}\n{\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"\",\"proof_error\":\"not-ready\",\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"root_error\":\"not-ready\",\"stage\":\"public-state-query\",\"value\":\"\"}\n{\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"ready\":false,\"stage\":\"public-stop\"}\n{\"case\":\"foreign-ahead-cache-with-wrong-retained-target\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"frontier_raw_value\":\"000a220a209d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01002\",\"key_bytes\":20,\"raw_store_sha256\":\"d44e0d0ab186f076daf1d3f8798707fb6c2211eff307b6efa984ff21f7392fdb\",\"records\":3,\"stage\":\"cache-fixture-after-public-stop\",\"value_bytes\":84}\n"
+    },
+    {
+      "case": "canonical-retained-cache-under-ahead-frontier",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 440,
+          "sha256": "8634b22ee95401751abf5ea38abe3a423e8e9acb6a6bf8249e0ee9ac679d01ac"
+        },
+        "stdout": {
+          "bytes": 5580,
+          "sha256": "ee56d56334e8cd43d178597856220c6c3499a98772cf3f532464bb36af055f76"
+        }
+      },
+      "generation": "candidate",
+      "stderr_diagnostics": {
+        "normal_process_complete": true,
+        "runtime_panic_observed": false
+      },
+      "stdout_utf8": "{\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready_after_stop\":false,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"canonical-ledger-cache-tree-primed\"}\n{\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"frontier_raw_value\":\"000a220a209d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01002\",\"key_bytes\":20,\"metadata_only_fixture\":false,\"raw_store_sha256\":\"a4660c48905e9e82516dca425f46fc3952cab45058df6b82b65e7b6b570765ad\",\"records\":3,\"stage\":\"cache-fixture-before-public-init\",\"value_bytes\":84}\n{\"cache_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"error\":\"none\",\"frontiers_equal\":true,\"ledger_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready\":true,\"stage\":\"public-init-returned\"}\n{\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"proof_error\":\"none\",\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"root_error\":\"none\",\"stage\":\"public-state-query\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\"}\n{\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"ready\":false,\"stage\":\"public-stop\"}\n{\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"frontier_raw_value\":\"000a220a209e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01001\",\"key_bytes\":11,\"raw_store_sha256\":\"33c14df4764554b5dab40e2112c659a3a3a3fa9cfda5b61fe3c77a298939d941\",\"records\":2,\"stage\":\"cache-fixture-after-public-stop\",\"value_bytes\":42}\n{\"cache_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"error\":\"none\",\"ledger_frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"ready\":true,\"stage\":\"public-clean-reopen\"}\n{\"case\":\"canonical-retained-cache-under-ahead-frontier\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"proof_error\":\"none\",\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"root_error\":\"none\",\"stage\":\"reopened-state-query\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\"}\n"
+    }
+  ],
+  "consumer_result": "REFUSED",
+  "execution": {
+    "Go_binary_sha256": "55770db639faa42f3ebc998ac583b008f7ff2b4bbb9dbb8a76511a9a6ffa4a19",
+    "Go_version": "go1.25.14",
+    "actual_case_processes": 8,
+    "candidate_binary": {
+      "bytes": 19855250,
+      "sha256": "b71cac649034ac9c56443367b70ebd0f35c9dd12b915fdf276114d38394c9d7a"
+    },
+    "linked_modules": 25,
+    "native_control_public_container_note": {
+      "bytes": 3401,
+      "sha256": "2b0cfce79517c43ffce18c8e3c47c24179a67b068c03591b1234d4c4473f8d66"
+    },
+    "native_unit_controls": {
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 22222,
+          "sha256": "898dfc888de7971f13f216d7e48db25f7292b4d4e10f27bba716b37c3032434a"
+        }
+      },
+      "package_pass_results": 2,
+      "pass_inventory": [
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackWrongRetainedHash/1"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackWrongRetainedHash/3"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackWrongRetainedHash"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackAndReopen"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackToEmpty"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackWindow"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackMissingEarlierPatch"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackCorruptHistory/invalid-batch"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackCorruptHistory/missing-frontier"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackCorruptHistory/invalid-protobuf"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackCorruptHistory/non-unit-height"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackCorruptHistory/wrong-presence"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackCorruptHistory/invalid-current-protobuf"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackCorruptHistory"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackWriteFailure/1"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackWriteFailure/2"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackWriteFailure"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage",
+          "Test": "TestCandidateCacheRollbackStop"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain/cache/storage"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain",
+          "Test": "TestCandidateChainCacheLegacyRollbackRefused"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain",
+          "Test": "TestCandidateChainCacheExactTarget"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain",
+          "Test": "TestCandidateChainCacheIncompleteOptionalRollback"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain",
+          "Test": "TestCandidateChainCacheRollbackError"
+        },
+        {
+          "Package": "github.com/zenon-network/go-zenon/chain"
+        }
+      ],
+      "race_detector": true,
+      "root_tests": 12,
+      "skipped_or_failed": 0,
+      "test_pass_results": 22
+    },
+    "new_source_or_dependency_transports": 0,
+    "ordinary_entrypoint_builds": 2,
+    "parent_binary": {
+      "bytes": 19854050,
+      "sha256": "c456b21cae181606add0e3cfc8a86984b5121e2b7a79ee94a3e364c4324baac0"
+    },
+    "parent_binary_reused_for_additional_controls": true,
+    "physical_reclaim_or_peak_disk_claim": false,
+    "platform": "darwin/arm64",
+    "runs": [
+      {
+        "commands": {
+          "binary_info": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stdout": {
+              "bytes": 3077,
+              "sha256": "c51fed509a6c1bd6d5f909e393f968b059d4c43472031298ee72cf675a6a8585"
+            }
+          },
+          "build": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 1422,
+              "sha256": "e1ae73968084970580e41c25557bd950b09098e872e23f5bf5ec7024651b3e88"
+            },
+            "stdout": {
+              "bytes": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "compiler_version": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stdout": {
+              "bytes": 34,
+              "sha256": "701f70956d50072291a29dc76dfb6e8b79cccfc141fc7e9a98aac8fc9ddae245"
+            }
+          }
+        },
+        "post_run_owned_workspace_logical_bytes": 316731980,
+        "presealed_plan": {
+          "bytes": 9080,
+          "sha256": "ab149304d087c5ec6efa22a5b1bcb1467377196a0e837dcb0eb178f642dc65b9"
+        },
+        "private_execution": {
+          "bytes": 48370,
+          "sha256": "fd75efc6feca7077e2eda89e9ed2b0cfef78d57829c1abc9696e3d80c2ed790c"
+        },
+        "task_outcome": "SUCCESS"
+      },
+      {
+        "commands": {
+          "binary_info": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stdout": {
+              "bytes": 3076,
+              "sha256": "99fa4230a8f74d7fd7d6b4d2119d085345ae529d170f2caad76c2babdc20bac5"
+            }
+          },
+          "build": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 1422,
+              "sha256": "6d59d2bf3d7c4398e505ef04b613b9e2bdbd04aa634670e6319934491d8c1280"
+            },
+            "stdout": {
+              "bytes": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "compiler_version": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stdout": {
+              "bytes": 34,
+              "sha256": "701f70956d50072291a29dc76dfb6e8b79cccfc141fc7e9a98aac8fc9ddae245"
+            }
+          },
+          "native_unit_controls": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stdout": {
+              "bytes": 22222,
+              "sha256": "898dfc888de7971f13f216d7e48db25f7292b4d4e10f27bba716b37c3032434a"
+            }
+          }
+        },
+        "post_run_owned_workspace_logical_bytes": 574252912,
+        "presealed_plan": {
+          "bytes": 13298,
+          "sha256": "59f27cdb035edb7dd9db5869f11cb3583ba430dfa49f6f389459077766fd3939"
+        },
+        "private_execution": {
+          "bytes": 72130,
+          "sha256": "a98cb24caebdd1ca184a4c7bdfe83431aefebbee724a83bfad8eba42732c3b35"
+        },
+        "task_outcome": "SUCCESS"
+      }
+    ],
+    "selected_linked_dependencies": [
+      {
+        "go_sum": "h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=",
+        "module": "filippo.io/edwards25519",
+        "version": "v1.1.0"
+      },
+      {
+        "go_sum": "h1:fzn1qaOt32TuLjFlkzYSsBC35Q3KUjT1SwPxiMSCF5k=",
+        "module": "github.com/btcsuite/btcd/btcec/v2",
+        "version": "v2.2.0"
+      },
+      {
+        "go_sum": "h1:xfbtw8lwpp0G6NwSHb+UE67ryTFHJAiNuipusjXSohQ=",
+        "module": "github.com/btcsuite/btcd/btcutil",
+        "version": "v1.1.3"
+      },
+      {
+        "go_sum": "h1:q0rUy8C/TYNBQS1+CGKw68tLOFYSNEs0TFnxxnS9+4U=",
+        "module": "github.com/btcsuite/btcd/chaincfg/chainhash",
+        "version": "v1.0.1"
+      },
+      {
+        "go_sum": "h1:sk9/l/KqpunDwP7pSjUg0keiOOLEnOBHzykLrsPppp4=",
+        "module": "github.com/deckarep/golang-set",
+        "version": "v1.8.0"
+      },
+      {
+        "go_sum": "h1:7PltbUIQB7u/FfZ39+DGa/ShuMyJ5ilcvdfma9wOH6Y=",
+        "module": "github.com/decred/dcrd/crypto/blake256",
+        "version": "v1.0.1"
+      },
+      {
+        "go_sum": "h1:8UrgZ3GkP4i/CLijOJx79Yu+etlyjdBU4sfcs2WYQMs=",
+        "module": "github.com/decred/dcrd/dcrec/secp256k1/v4",
+        "version": "v4.2.0"
+      },
+      {
+        "go_sum": "h1:HbEgsDo1YTGIf4KB/NNpn+XH+PiNJXUZ9ksRxiqWyMc=",
+        "module": "github.com/ethereum/go-ethereum",
+        "version": "v1.10.22"
+      },
+      {
+        "go_sum": "h1:ntEHSVwIt7PNXNpgPmVfMrNhLtgjlmnZha2kOpuRiDw=",
+        "module": "github.com/go-stack/stack",
+        "version": "v1.8.1"
+      },
+      {
+        "go_sum": "h1:yAGX7huGHXlcLOEtBnF4w7FQwA26wojNCwOYAEhLjQM=",
+        "module": "github.com/golang/snappy",
+        "version": "v0.0.4"
+      },
+      {
+        "go_sum": "h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/QY=",
+        "module": "github.com/gorilla/websocket",
+        "version": "v1.5.1"
+      },
+      {
+        "go_sum": "h1:dg1dEPuWpEqDnvIw251EVy4zlP8gWbsGj4BsUKCRpYs=",
+        "module": "github.com/hashicorp/golang-lru",
+        "version": "v0.5.5-0.20210104140557-80c98217689d"
+      },
+      {
+        "go_sum": "h1:n1DqxAo4oWPMvH1+v+DLYlMCecgumhhgnxAPdqDIFHI=",
+        "module": "github.com/inconshreveable/log15",
+        "version": "v0.0.0-20201112154412-8562bdadbbac"
+      },
+      {
+        "go_sum": "h1:jF+Du6AlPIjs2BiUiQlKOX0rt3SujHxPnksPKZbaA40=",
+        "module": "github.com/mattn/go-colorable",
+        "version": "v0.1.12"
+      },
+      {
+        "go_sum": "h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=",
+        "module": "github.com/mattn/go-isatty",
+        "version": "v0.0.20"
+      },
+      {
+        "go_sum": "h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=",
+        "module": "github.com/pkg/errors",
+        "version": "v0.9.1"
+      },
+      {
+        "go_sum": "h1:+1+c1VGhc88SSonWP6foOcLhvnKlUeu/erjjvaPEYiI=",
+        "module": "github.com/shirou/gopsutil",
+        "version": "v3.21.11+incompatible"
+      },
+      {
+        "go_sum": "h1:epCh84lMvA70Z7CTTCmYQn2CKbY8j86K7/FAIr141uY=",
+        "module": "github.com/syndtr/goleveldb",
+        "version": "v1.0.1-0.20210819022825-2ae1ddf74ef7"
+      },
+      {
+        "go_sum": "h1:IJ1AZGZRWbY8T5Vfk04D9WOA5WSejdflXxP03OUqALw=",
+        "module": "github.com/tklauser/go-sysconf",
+        "version": "v0.3.10"
+      },
+      {
+        "go_sum": "h1:5eUemwrMargf3BSLRRCalXT93Ns6pQJIjYQN2nyfOP8=",
+        "module": "github.com/tyler-smith/go-bip39",
+        "version": "v1.1.0"
+      },
+      {
+        "go_sum": "h1:ihbySMvVjLAeSH1IbfcRTkD/iNscyz8rGzjF/E5hV6U=",
+        "module": "golang.org/x/crypto",
+        "version": "v0.31.0"
+      },
+      {
+        "go_sum": "h1:d/OCCoBEUq33pjydKrGQhw7IlUPI2Oylr+8qLx49kac=",
+        "module": "golang.org/x/net",
+        "version": "v0.25.0"
+      },
+      {
+        "go_sum": "h1:Fksou7UEQUWlKvIdsqzJmUmCX3cZuD2+P3XyyzwMhlA=",
+        "module": "golang.org/x/sys",
+        "version": "v0.28.0"
+      },
+      {
+        "go_sum": "h1:pPC6BG5ex8PDFnkbrGU3EixyhKcQ2aDuBS36lqK/C7I=",
+        "module": "google.golang.org/protobuf",
+        "version": "v1.32.0"
+      },
+      {
+        "go_sum": "h1:1Lc07Kr7qY4U2YPouBjpCLxpiyxIVoxqXgkXLknAOE8=",
+        "module": "gopkg.in/natefinch/lumberjack.v2",
+        "version": "v2.0.0"
+      }
+    ],
+    "verified_dependency_inputs": 75,
+    "whole_module_graph_verification": "NOT_QUALIFIED_PRIOR_MISSING_UNUSED_PROXY_INPUT_NOT_RETRIED"
+  },
+  "format_version": 1,
+  "kind": "recorded-native-cache-identifier-rollback",
+  "scope": {
+    "Chain_Start_called": false,
+    "accepted_header_binding": false,
+    "canonical_clean_reopens_recorded": true,
+    "checker_executes_reference_backend": false,
+    "complete_alternate_chain_cache_application_qualified": false,
+    "concurrent_public_lifecycle_qualified": false,
+    "experimental_native_cache_identity_fix": true,
+    "full_node_service_executed": false,
+    "hosted_checks_replay_recorded_bytes": true,
+    "live_reorg_qualified": false,
+    "network_activation_authenticated": false,
+    "network_or_consensus_executed": false,
+    "node_client_profile_agreed": false,
+    "power_loss_qualified": false,
+    "prewrite_identity_refusal_observed": true,
+    "production_qualified": false,
+    "public_record_authenticates_private_receipts": false,
+    "race_native_component_controls_recorded": true,
+    "real_disk_ledger_cache_and_NodeTree_managers": true,
+    "real_public_Chain_Init_and_Stop": true,
+    "runtime_state_value_acceptance": false,
+    "separate_native_cache_frontier_metadata_fault_fixtures": true,
+    "source_embedded_unsigned_genesis_VM": true,
+    "test_overlays_or_scheduler_hooks": false,
+    "whole_window_atomicity_claimed": false
+  },
+  "source": {
+    "added_native_control_targets": [
+      "chain/cache/storage/candidate_identifier_rollback_test.go",
+      "chain/candidate_cache_identifier_rollback_test.go"
+    ],
+    "candidate_build_tree": "22b5e4721422e4e303b8da2ba3ae243f01925f53",
+    "candidate_runtime_tree": "49db80f94e48e980f84de35299f80c6f3b4dcb54",
+    "module_sha256": "ac08476abe3df0bc67f1c5c6868f04889b864310f16a37b0d51a6598b9017a45",
+    "original_tree": "d0f5dfb09e737a806cfc743bb6ba9ddd101ebcd6",
+    "parent_build_tree": "fddb1aa97799fbe1303f2c37ce950a80ac8e82e5",
+    "parent_runtime_tree": "8420610538a6a51fd43ed4c6f0e2feb2db8f120f",
+    "patch_sha256": "b6c2f6750a8f448ae31d0155327e717e40508e16125f4c9af23fefbbfbffb003",
+    "probe": {
+      "bytes": 8091,
+      "sha256": "c00dde5ddf977e6d140307ee7f1ab54e9005a7c4880db104edb6e54841eb980e"
+    },
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+    "source_blobs": 467,
+    "source_manifest_sha256": "80104c7c6b5086a6b851c9c5e82920c5bd196c4252781acf88fc9c4b74d6cc84",
+    "sum_sha256": "e536610c08abc9f4b979ce39cd5ae7323c3df14a189d186d911ee1d1184b8537"
+  }
+}
