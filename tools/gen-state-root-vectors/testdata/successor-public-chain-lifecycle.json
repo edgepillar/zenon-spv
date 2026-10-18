@@ -1,0 +1,1029 @@
+{
+  "consumer_result": "REFUSED",
+  "execution": {
+    "Go_binary_sha256": "55770db639faa42f3ebc998ac583b008f7ff2b4bbb9dbb8a76511a9a6ffa4a19",
+    "Go_version": "go1.25.14",
+    "actual_builds": 2,
+    "actual_case_processes": 6,
+    "new_dependency_transports": 0,
+    "ordinary_binaries": {
+      "offline-identity-parent": {
+        "bytes": 19802578,
+        "sha256": "f5be16ee5ae802be21290347c1c8bd36d504d930f4243c9490decd1c949d0e66"
+      },
+      "public-chain-terminal": {
+        "bytes": 19802818,
+        "sha256": "bc182ea44ae428da95e00ef2b1cc345633dddc9637031929fa0d8b178cb7fa7a"
+      }
+    },
+    "original_final_comparison_emitted": false,
+    "original_task_outcome": "FAILURE",
+    "physical_reclaim_or_peak_disk_claim": false,
+    "platform": "darwin/arm64",
+    "post_run_owned_workspace_logical_bytes": 408707196,
+    "presealed_plan": {
+      "bytes": 4826,
+      "sha256": "610566abc43021fd3edc9cedf28a9f26bc8f55d2f6410dec41dc98d2e4fdbbcb"
+    },
+    "private_read_only_reconciliation": {
+      "bytes": 60968,
+      "sha256": "28d2393e2c1a90371a33c7d05181bf67c5dfab4b98a771eeee0f2259e00cac77"
+    },
+    "selected_linked_dependencies": [
+      {
+        "extracted_cache_h1": "h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=",
+        "go_sum": "h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=",
+        "module": "filippo.io/edwards25519",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=",
+            "payload": {
+              "bytes": 55809,
+              "sha256": "9ac43a686d06fdebd719f7af3866c87eb069302272dfb131007adf471c308b65"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:BxyFTGdWcka3PhytdK4V28tE5sGfRvvvRV7EaN4VDT4=",
+            "payload": {
+              "bytes": 40,
+              "sha256": "099556fc4d7e6f5cb135efdd8b6bb4c0932e38ea058c53fc5fa5ce285572fb61"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 200,
+              "sha256": "86bbe49796e2b9ac0376376a828e8b16e02c2f610f4129a35388634652fb6b86"
+            }
+          }
+        ],
+        "version": "v1.1.0"
+      },
+      {
+        "extracted_cache_h1": "h1:fzn1qaOt32TuLjFlkzYSsBC35Q3KUjT1SwPxiMSCF5k=",
+        "go_sum": "h1:fzn1qaOt32TuLjFlkzYSsBC35Q3KUjT1SwPxiMSCF5k=",
+        "module": "github.com/btcsuite/btcd/btcec/v2",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:fzn1qaOt32TuLjFlkzYSsBC35Q3KUjT1SwPxiMSCF5k=",
+            "payload": {
+              "bytes": 89780,
+              "sha256": "0baca2ccee8e811c62b4389d01c95d6fde207008a121a7ded61074d048655658"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:U7MHm051Al6XmscBQ0BoNydpOTsFAn707034b5nY8zU=",
+            "payload": {
+              "bytes": 320,
+              "sha256": "2b3b298aafaa11bc812bacf32a8032dbedcbd942684f8f7cc2bb28d9af5a1bbe"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 50,
+              "sha256": "f65290f9208373188745920d102e15ef5ae397d5e29976fa571525cc46127ca0"
+            }
+          }
+        ],
+        "version": "v2.2.0"
+      },
+      {
+        "extracted_cache_h1": "h1:xfbtw8lwpp0G6NwSHb+UE67ryTFHJAiNuipusjXSohQ=",
+        "go_sum": "h1:xfbtw8lwpp0G6NwSHb+UE67ryTFHJAiNuipusjXSohQ=",
+        "module": "github.com/btcsuite/btcd/btcutil",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:xfbtw8lwpp0G6NwSHb+UE67ryTFHJAiNuipusjXSohQ=",
+            "payload": {
+              "bytes": 154819,
+              "sha256": "28ec77eb2c680a6933524b7261210a7bf4988164c6064fedc0d33f3a3f982be7"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:UR7dsSJzJUfMmFiiLlIrMq1lS9jh9EdCV7FStZSnpi0=",
+            "payload": {
+              "bytes": 465,
+              "sha256": "f31831d960b242b47ecb728f58e86ea89f94e717cf1a40ca71c49af641f08d96"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 216,
+              "sha256": "415b252b6c6c6e583d7b20a0269f9ec89e6c8a82cf3fbf0e1c32657e02c18e0e"
+            }
+          }
+        ],
+        "version": "v1.1.3"
+      },
+      {
+        "extracted_cache_h1": "h1:q0rUy8C/TYNBQS1+CGKw68tLOFYSNEs0TFnxxnS9+4U=",
+        "go_sum": "h1:q0rUy8C/TYNBQS1+CGKw68tLOFYSNEs0TFnxxnS9+4U=",
+        "module": "github.com/btcsuite/btcd/chaincfg/chainhash",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:q0rUy8C/TYNBQS1+CGKw68tLOFYSNEs0TFnxxnS9+4U=",
+            "payload": {
+              "bytes": 11324,
+              "sha256": "b074247d190ceb1322508a8b0791f4cdb195ada94b45ffa79799a5f84a721be1"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:7SFka0XMvUgj3hfZtydOrQY2mwhPclbT2snogU7SQQc=",
+            "payload": {
+              "bytes": 60,
+              "sha256": "8108d695b549ba49a5b6e104cda2979657cbb9f3d7eae63ddc86363952449b5c"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 50,
+              "sha256": "23cc9b56d8d6b4f6356914f06983b9a3c5c0d9d48b143c5c27f8045ec16d8394"
+            }
+          }
+        ],
+        "version": "v1.0.1"
+      },
+      {
+        "extracted_cache_h1": "h1:sk9/l/KqpunDwP7pSjUg0keiOOLEnOBHzykLrsPppp4=",
+        "go_sum": "h1:sk9/l/KqpunDwP7pSjUg0keiOOLEnOBHzykLrsPppp4=",
+        "module": "github.com/deckarep/golang-set",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:sk9/l/KqpunDwP7pSjUg0keiOOLEnOBHzykLrsPppp4=",
+            "payload": {
+              "bytes": 21258,
+              "sha256": "fcbd32794e0ff1a412bd9ed6a9ac6d43f2ff8fd5f15e5c839df06b8283241c0a"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:5nI87KwE7wgsBU1F4GKAw2Qod7p5kyS383rP6+o6qqo=",
+            "payload": {
+              "bytes": 47,
+              "sha256": "4d51c3e4d5aabdf4d9e6390f0e9275f956704582c57e37f54af597fb984c0d2d"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 50,
+              "sha256": "ce9634a21deaab1e2398ae66d8ea06f1eef1ce07ed845a4f3925ab5e0feab5c0"
+            }
+          }
+        ],
+        "version": "v1.8.0"
+      },
+      {
+        "extracted_cache_h1": "h1:7PltbUIQB7u/FfZ39+DGa/ShuMyJ5ilcvdfma9wOH6Y=",
+        "go_sum": "h1:7PltbUIQB7u/FfZ39+DGa/ShuMyJ5ilcvdfma9wOH6Y=",
+        "module": "github.com/decred/dcrd/crypto/blake256",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:7PltbUIQB7u/FfZ39+DGa/ShuMyJ5ilcvdfma9wOH6Y=",
+            "payload": {
+              "bytes": 9272,
+              "sha256": "e4343d55494a93eb7bb7b59be9359fb8007fd36652b27a725db024f61605d515"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:2OfgNZ5wDpcsFmHmCK5gZTPcCXqlm2ArzUIkw9czNJo=",
+            "payload": {
+              "bytes": 55,
+              "sha256": "ab88bb5afb45e536a0bfaac356756d7ebc0ce50f45e32f7240c1b3340e3f0b48"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 230,
+              "sha256": "71f988914f4cac8dd7f0816dec323ab1339ffc97d9e0b786ba5fc0ea19bd237e"
+            }
+          }
+        ],
+        "version": "v1.0.1"
+      },
+      {
+        "extracted_cache_h1": "h1:8UrgZ3GkP4i/CLijOJx79Yu+etlyjdBU4sfcs2WYQMs=",
+        "go_sum": "h1:8UrgZ3GkP4i/CLijOJx79Yu+etlyjdBU4sfcs2WYQMs=",
+        "module": "github.com/decred/dcrd/dcrec/secp256k1/v4",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:8UrgZ3GkP4i/CLijOJx79Yu+etlyjdBU4sfcs2WYQMs=",
+            "payload": {
+              "bytes": 697152,
+              "sha256": "9b3594cedab7e820108cd9f2f7f17a9edf60345baf91f7e1bd298413dba44c63"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:v57UDF4pDQJcEfFUCRop3lJL149eHGSe9Jvczhzjo/0=",
+            "payload": {
+              "bytes": 113,
+              "sha256": "d400d0e3700821588de43766576a091582d1a033be2324bafda06d683f4409d5"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 230,
+              "sha256": "f71e34c50495eea5090e6a4ee16269ac421c1f6a4adbee6fd2aa8dfe9fd4ec88"
+            }
+          }
+        ],
+        "version": "v4.2.0"
+      },
+      {
+        "extracted_cache_h1": "h1:HbEgsDo1YTGIf4KB/NNpn+XH+PiNJXUZ9ksRxiqWyMc=",
+        "go_sum": "h1:HbEgsDo1YTGIf4KB/NNpn+XH+PiNJXUZ9ksRxiqWyMc=",
+        "module": "github.com/ethereum/go-ethereum",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:HbEgsDo1YTGIf4KB/NNpn+XH+PiNJXUZ9ksRxiqWyMc=",
+            "payload": {
+              "bytes": 14294602,
+              "sha256": "d8c98a3e38fc4f7efebde4e3b5e8a2c50d73143c421695d0cd7b30889c396ca2"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:EYFyF19u3ezGLD4RqOkLq+ZCXzYbLoNDdZlMt7kyKFg=",
+            "payload": {
+              "bytes": 5178,
+              "sha256": "b0cb42472408ccd5a8f005572341e8a8470cd96270e8ca90f6e373e8f002488e"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 200,
+              "sha256": "a6cf939d5d1ab75cf5703d07a822b950ce0addf42bbad22c537b0b17d04d3dc5"
+            }
+          }
+        ],
+        "version": "v1.10.22"
+      },
+      {
+        "extracted_cache_h1": "h1:ntEHSVwIt7PNXNpgPmVfMrNhLtgjlmnZha2kOpuRiDw=",
+        "go_sum": "h1:ntEHSVwIt7PNXNpgPmVfMrNhLtgjlmnZha2kOpuRiDw=",
+        "module": "github.com/go-stack/stack",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:ntEHSVwIt7PNXNpgPmVfMrNhLtgjlmnZha2kOpuRiDw=",
+            "payload": {
+              "bytes": 10631,
+              "sha256": "944a204de02272c5718a6819f1f4f6d433a0ef50ca9e737154fceae742694477"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:dcoOX6HbPZSZptuspn9bctJ+N/CnF5gGygcUP3XYfe4=",
+            "payload": {
+              "bytes": 42,
+              "sha256": "59885252908f44191d242c2384fbcc10b551763eb579c76c31301ef2b231194b"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 50,
+              "sha256": "2ff3a3194cb76d292381f47a00ceca2f8add7d201f1258476d6e653466921a76"
+            }
+          }
+        ],
+        "version": "v1.8.1"
+      },
+      {
+        "extracted_cache_h1": "h1:yAGX7huGHXlcLOEtBnF4w7FQwA26wojNCwOYAEhLjQM=",
+        "go_sum": "h1:yAGX7huGHXlcLOEtBnF4w7FQwA26wojNCwOYAEhLjQM=",
+        "module": "github.com/golang/snappy",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:yAGX7huGHXlcLOEtBnF4w7FQwA26wojNCwOYAEhLjQM=",
+            "payload": {
+              "bytes": 79582,
+              "sha256": "ea4545ca44ee990554094df6de440386a440a5bd99106e048939409d63beb423"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=",
+            "payload": {
+              "bytes": 32,
+              "sha256": "f56debc9765b8492979fefa31209b67c9627d90e2469c6159c940daf6d249905"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 50,
+              "sha256": "e3ddef56d836be107aa8d60d74cedfd3cbb5fb6367ec5dd893af4e831271d5ed"
+            }
+          }
+        ],
+        "version": "v0.0.4"
+      },
+      {
+        "extracted_cache_h1": "h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/QY=",
+        "go_sum": "h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/QY=",
+        "module": "github.com/gorilla/websocket",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/QY=",
+            "payload": {
+              "bytes": 79063,
+              "sha256": "e0183e81bbc710dbbcb9b2b206a89614dd3540ddfbbd59b52861edf953eda753"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:x3kM2JMyaluk02fnUJpQuwD2dCS5NDG2ZHL0uE0tcaY=",
+            "payload": {
+              "bytes": 79,
+              "sha256": "e3ee0a2e6672d9a6e52574dabb563030a6ee4bd3405ad8a2a9063a178ee05d8a"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 193,
+              "sha256": "a81fd5937ab2cbecc2d0950f88e1456f8f803a35282a0bb1c1924bb4dfcc5ee8"
+            }
+          }
+        ],
+        "version": "v1.5.1"
+      },
+      {
+        "extracted_cache_h1": "h1:dg1dEPuWpEqDnvIw251EVy4zlP8gWbsGj4BsUKCRpYs=",
+        "go_sum": "h1:dg1dEPuWpEqDnvIw251EVy4zlP8gWbsGj4BsUKCRpYs=",
+        "module": "github.com/hashicorp/golang-lru",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:dg1dEPuWpEqDnvIw251EVy4zlP8gWbsGj4BsUKCRpYs=",
+            "payload": {
+              "bytes": 22535,
+              "sha256": "548f72792c61d5319fb77237ed1687cfa31b7ed06b5916c7fc0520a55ee45848"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:iADmTwqILo4mZ8BN3D2Q6+9jd8WM5uGBxy+E8yxSoD4=",
+            "payload": {
+              "bytes": 48,
+              "sha256": "1618fd16c29c3e3a09499a103e2e32b63c268d8206c901d48da72e281f4e3bbe"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 80,
+              "sha256": "d3928f7cd21c4972bf1d47314c3d3b3a720614fb2a5d4d5d25a65a4701e11fe8"
+            }
+          }
+        ],
+        "version": "v0.5.5-0.20210104140557-80c98217689d"
+      },
+      {
+        "extracted_cache_h1": "h1:n1DqxAo4oWPMvH1+v+DLYlMCecgumhhgnxAPdqDIFHI=",
+        "go_sum": "h1:n1DqxAo4oWPMvH1+v+DLYlMCecgumhhgnxAPdqDIFHI=",
+        "module": "github.com/inconshreveable/log15",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:n1DqxAo4oWPMvH1+v+DLYlMCecgumhhgnxAPdqDIFHI=",
+            "payload": {
+              "bytes": 36425,
+              "sha256": "7bcdfcf1b3d69569e6c77942a0bacb8b60a152cf010ba27cae994350b6577ae0"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:cOaXtrgN4ScfRrD9Bre7U1thNq5RtJ8ZoP4iXVGRj6o=",
+            "payload": {
+              "bytes": 40,
+              "sha256": "7fed6370677c9ae877d9debbf3b11e0bfb9d3a8b1eee7ffcda6eba8b24f6f4be"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 78,
+              "sha256": "242d60603ec74a82ad580cf336299a99ea9a820919f0a4f9fdb28c980c88cd1f"
+            }
+          }
+        ],
+        "version": "v0.0.0-20201112154412-8562bdadbbac"
+      },
+      {
+        "extracted_cache_h1": "h1:jF+Du6AlPIjs2BiUiQlKOX0rt3SujHxPnksPKZbaA40=",
+        "go_sum": "h1:jF+Du6AlPIjs2BiUiQlKOX0rt3SujHxPnksPKZbaA40=",
+        "module": "github.com/mattn/go-colorable",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:jF+Du6AlPIjs2BiUiQlKOX0rt3SujHxPnksPKZbaA40=",
+            "payload": {
+              "bytes": 13979,
+              "sha256": "c4637499409a4081fbbd7ea0640aa0af30c0e06a70aa1b207780b0251650d8cd"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:u5H1YNBxpqRaxsYJYSkiCWKzEfiAb1Gb520KVy5xxl4=",
+            "payload": {
+              "bytes": 160,
+              "sha256": "301b4efcc69da40b91ccc8d2cc58e88595e8ad8712aca01403f10086d96b1813"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 51,
+              "sha256": "8ce95ae54e31f868098e2353586768ca90605d90f7c5cc4a8dc731d5b66b3e94"
+            }
+          }
+        ],
+        "version": "v0.1.12"
+      },
+      {
+        "extracted_cache_h1": "h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=",
+        "go_sum": "h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=",
+        "module": "github.com/mattn/go-isatty",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=",
+            "payload": {
+              "bytes": 8936,
+              "sha256": "f2d5f89ca451577e17464b9bb596dc0d0ecececb5eaa63622c41b57cd0b7b8cc"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=",
+            "payload": {
+              "bytes": 76,
+              "sha256": "1eeabef1b4d98db73c6c2073289163649bc9a044552aca86b9d592fe84eaa1c8"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 193,
+              "sha256": "72bd2c026b677d85f9a0813c5e882f888dfea4e616d9e087ca7cd5f93ff6fed6"
+            }
+          }
+        ],
+        "version": "v0.0.20"
+      },
+      {
+        "extracted_cache_h1": "h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=",
+        "go_sum": "h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=",
+        "module": "github.com/pkg/errors",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=",
+            "payload": {
+              "bytes": 17866,
+              "sha256": "d4c36b8bcd0616290a3913215e0f53b931bd6e00670596f2960df1b44af2bd07"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=",
+            "payload": {
+              "bytes": 29,
+              "sha256": "df28c6a823f181d76179697177c0c5943c6ffb38f3c10b2dc53be360ee7d4589"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 50,
+              "sha256": "5d8c58c4cf06efa07ac322b254ced1c5a61a2515113f54f7b63c324a144c1280"
+            }
+          }
+        ],
+        "version": "v0.9.1"
+      },
+      {
+        "extracted_cache_h1": "h1:+1+c1VGhc88SSonWP6foOcLhvnKlUeu/erjjvaPEYiI=",
+        "go_sum": "h1:+1+c1VGhc88SSonWP6foOcLhvnKlUeu/erjjvaPEYiI=",
+        "module": "github.com/shirou/gopsutil",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:+1+c1VGhc88SSonWP6foOcLhvnKlUeu/erjjvaPEYiI=",
+            "payload": {
+              "bytes": 271605,
+              "sha256": "2079d749fb3bd347e9fd10418826ebf0d48ff5c171455060ef7d9bf842ccb8d9"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=",
+            "payload": {
+              "bytes": 34,
+              "sha256": "2bb7d1e998eeb28fa43f6bafa6ee1e6a3b0cc6bad18cf2584abffc85652ac4ee"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 65,
+              "sha256": "60fb01bc111b98dd94bdc669f83171c28959f6e734f9c345ce4146b76d352d6a"
+            }
+          }
+        ],
+        "version": "v3.21.11+incompatible"
+      },
+      {
+        "extracted_cache_h1": "h1:epCh84lMvA70Z7CTTCmYQn2CKbY8j86K7/FAIr141uY=",
+        "go_sum": "h1:epCh84lMvA70Z7CTTCmYQn2CKbY8j86K7/FAIr141uY=",
+        "module": "github.com/syndtr/goleveldb",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:epCh84lMvA70Z7CTTCmYQn2CKbY8j86K7/FAIr141uY=",
+            "payload": {
+              "bytes": 210348,
+              "sha256": "27a3ccd9769cc0df353edf9f2baec88a6fac82c766e317b1c697d06c1654052c"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:q4W45IWZaF22tdD+VEXcAWRA037jwmWEB5VWYORlTpc=",
+            "payload": {
+              "bytes": 391,
+              "sha256": "90dd527494166972fe0748ab6c9ddd7d851791aa7c56f103052c41f782e5a9c3"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 80,
+              "sha256": "6aa018ef54232e9636745bdc600b2f92d36cff34441656d24138dbbdc4ebf1f2"
+            }
+          }
+        ],
+        "version": "v1.0.1-0.20210819022825-2ae1ddf74ef7"
+      },
+      {
+        "extracted_cache_h1": "h1:IJ1AZGZRWbY8T5Vfk04D9WOA5WSejdflXxP03OUqALw=",
+        "go_sum": "h1:IJ1AZGZRWbY8T5Vfk04D9WOA5WSejdflXxP03OUqALw=",
+        "module": "github.com/tklauser/go-sysconf",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:IJ1AZGZRWbY8T5Vfk04D9WOA5WSejdflXxP03OUqALw=",
+            "payload": {
+              "bytes": 94228,
+              "sha256": "0eac91ee205589007df1dbc413a34e34521f4b60e2fe5ff07f7653e76e9d2821"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:C8XykCvCb+Gn0oNCWPIlcb0RuglQTYaQ2hGm7jmxEFk=",
+            "payload": {
+              "bytes": 149,
+              "sha256": "26f728281c7533404504fba3a914244eba2498af0599e5210590d13c779599c8"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 51,
+              "sha256": "8788c7c49caf69399f14b7fe8649c38128750daf5262cdb0f88266a3e7216ba1"
+            }
+          }
+        ],
+        "version": "v0.3.10"
+      },
+      {
+        "extracted_cache_h1": "h1:5eUemwrMargf3BSLRRCalXT93Ns6pQJIjYQN2nyfOP8=",
+        "go_sum": "h1:5eUemwrMargf3BSLRRCalXT93Ns6pQJIjYQN2nyfOP8=",
+        "module": "github.com/tyler-smith/go-bip39",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:5eUemwrMargf3BSLRRCalXT93Ns6pQJIjYQN2nyfOP8=",
+            "payload": {
+              "bytes": 82219,
+              "sha256": "418226d3b0e8c7b1c869beb473d0d61445d9d9d3259e6fecb19aa94dc8898a3e"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:gUYDtqQw1JS3ZJ8UWVcGTGqqr6YIN3CWg+kkNaLt55U=",
+            "payload": {
+              "bytes": 112,
+              "sha256": "3c51ceb18a089eda7d85202c6722c5630efdd3c951305cecdeb41ac8fc0b86b2"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 50,
+              "sha256": "04f84e4f82674a6c37fe9d19130a4d2cce3b4e0ae0a1bdcf04f4f95ae80ec540"
+            }
+          }
+        ],
+        "version": "v1.1.0"
+      },
+      {
+        "extracted_cache_h1": "h1:ihbySMvVjLAeSH1IbfcRTkD/iNscyz8rGzjF/E5hV6U=",
+        "go_sum": "h1:ihbySMvVjLAeSH1IbfcRTkD/iNscyz8rGzjF/E5hV6U=",
+        "module": "golang.org/x/crypto",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:ihbySMvVjLAeSH1IbfcRTkD/iNscyz8rGzjF/E5hV6U=",
+            "payload": {
+              "bytes": 1792511,
+              "sha256": "7cbc5fbc206b07db3c691ad59bc1b31f2c32a1dae2b04c9a7772f93a696381bf"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:kDsLvtWBEx7MV9tJOj9bnXsPbxwJQ6csT/x4KIN4Ssk=",
+            "payload": {
+              "bytes": 190,
+              "sha256": "d9b77e394a68075877cb53b5034517bcff5a0d537e758cde578e5ed20713a5ec"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 193,
+              "sha256": "e2079076cb75f559a02dea81dfe6cc70eb89a46559d36ec5a8ab548dbcc0bfb7"
+            }
+          }
+        ],
+        "version": "v0.31.0"
+      },
+      {
+        "extracted_cache_h1": "h1:d/OCCoBEUq33pjydKrGQhw7IlUPI2Oylr+8qLx49kac=",
+        "go_sum": "h1:d/OCCoBEUq33pjydKrGQhw7IlUPI2Oylr+8qLx49kac=",
+        "module": "golang.org/x/net",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:d/OCCoBEUq33pjydKrGQhw7IlUPI2Oylr+8qLx49kac=",
+            "payload": {
+              "bytes": 1891278,
+              "sha256": "7fd8464681c3011736f2c75beb20f88fff553a17f4f574325bce5ca5dc1fcf83"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:JkAGAh7GEvH74S6FOH42FLoXpXbE/aqXSrIQjXgsiwM=",
+            "payload": {
+              "bytes": 155,
+              "sha256": "137ee52b54c10b479ebe6b887a0206fb4f54581f54ba293b7f4bb682cf529f67"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 190,
+              "sha256": "bbebef090a4e0f39a000863dc226924b63e999aa7739c9db18169bb52ba83d1f"
+            }
+          }
+        ],
+        "version": "v0.25.0"
+      },
+      {
+        "extracted_cache_h1": "h1:Fksou7UEQUWlKvIdsqzJmUmCX3cZuD2+P3XyyzwMhlA=",
+        "go_sum": "h1:Fksou7UEQUWlKvIdsqzJmUmCX3cZuD2+P3XyyzwMhlA=",
+        "module": "golang.org/x/sys",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:Fksou7UEQUWlKvIdsqzJmUmCX3cZuD2+P3XyyzwMhlA=",
+            "payload": {
+              "bytes": 1983555,
+              "sha256": "0ed47a83fe7d7a7e743e815172bc10c1ac0ed0d31ebb095e75717428e09aa895"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=",
+            "payload": {
+              "bytes": 33,
+              "sha256": "d227b325f621f4ebe28d39ba773ea99b870f393b7c09c34592c365b16dd560de"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 190,
+              "sha256": "3bc8954aeab2eb495796f554ccc1029fc2cf355ada6a0053370ffc5fb3019825"
+            }
+          }
+        ],
+        "version": "v0.28.0"
+      },
+      {
+        "extracted_cache_h1": "h1:pPC6BG5ex8PDFnkbrGU3EixyhKcQ2aDuBS36lqK/C7I=",
+        "go_sum": "h1:pPC6BG5ex8PDFnkbrGU3EixyhKcQ2aDuBS36lqK/C7I=",
+        "module": "google.golang.org/protobuf",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:pPC6BG5ex8PDFnkbrGU3EixyhKcQ2aDuBS36lqK/C7I=",
+            "payload": {
+              "bytes": 1627267,
+              "sha256": "c2c117cf29abee8697dabdc69662accf66171bea0efa2749988867ae8ef2362d"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:c6P6GXX6sHbq/GpV6MGZEdwhWPcYBgnhAHhKbcUYpos=",
+            "payload": {
+              "bytes": 201,
+              "sha256": "d1006aa580b9cc7caf2e1fa1c2005e39ab8733c41ce6851c1fbc17f98058e55c"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 195,
+              "sha256": "d11bfd6912ea4fdebb5db61e02d16aecce4b9f6c069ef597a4c0122718698fba"
+            }
+          }
+        ],
+        "version": "v1.32.0"
+      },
+      {
+        "extracted_cache_h1": "h1:1Lc07Kr7qY4U2YPouBjpCLxpiyxIVoxqXgkXLknAOE8=",
+        "go_sum": "h1:1Lc07Kr7qY4U2YPouBjpCLxpiyxIVoxqXgkXLknAOE8=",
+        "module": "gopkg.in/natefinch/lumberjack.v2",
+        "payloads": [
+          {
+            "extension": "zip",
+            "independent_h1": "h1:1Lc07Kr7qY4U2YPouBjpCLxpiyxIVoxqXgkXLknAOE8=",
+            "payload": {
+              "bytes": 17854,
+              "sha256": "8c268e36660d6ce36af808d74b9be80207c05463679703e93d857e954c637aaa"
+            }
+          },
+          {
+            "extension": "mod",
+            "independent_h1": "h1:l0ndWWf7gzL7RNwBG7wST/UCcT4T24xpD6X8LsfU/+k=",
+            "payload": {
+              "bytes": 40,
+              "sha256": "3b4d1618b1a8de798fe1fc75a123d36cf4247f5aa254a9e9a4f151adf700c8d7"
+            }
+          },
+          {
+            "extension": "info",
+            "payload": {
+              "bytes": 50,
+              "sha256": "1a69a92a19fe37a65dfdd9a6da4410c2e4b09c0f6072960d5a7f5babea597ba5"
+            }
+          }
+        ],
+        "version": "v2.0.0"
+      }
+    ],
+    "whole_module_graph_verification": {
+      "actual_exit": 1,
+      "checksum_mismatch_observed": false,
+      "classification": "NOT_QUALIFIED_OFFLINE_PROXY_OMITS_UNUSED_REQUIREMENT",
+      "missing_module": "github.com/BurntSushi/toml@v1.2.1",
+      "output_complete": true
+    }
+  },
+  "format_version": 1,
+  "kind": "recorded-public-chain-terminal-lifecycle",
+  "scope": {
+    "accepted_header_binding": false,
+    "checker_executes_reference_backend": false,
+    "concurrent_lifecycle_qualified": false,
+    "full_node_service_executed": false,
+    "network_activation_authenticated": false,
+    "network_or_consensus_executed": false,
+    "node_client_profile_agreed": false,
+    "normal_init_start_query_and_clean_reopen": true,
+    "power_loss_or_reorg_qualified": false,
+    "private_process_receipts_authenticated_by_public_record": false,
+    "production_qualified": false,
+    "race_detector_selected": false,
+    "real_disk_ledger_cache_and_NodeTree_managers": true,
+    "real_public_Chain_Init_Start_Stop": true,
+    "runtime_state_value_acceptance": false,
+    "source_embedded_unsigned_genesis_VM": true,
+    "test_overlay_or_scheduler_hooks": false,
+    "upstream_test_suite_executed": false
+  },
+  "selection": {
+    "cases": [
+      "init-after-stop",
+      "start-after-stop",
+      "stop-before-init"
+    ],
+    "genesis_dump": {
+      "bytes": 10849399,
+      "sha256": "a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75"
+    },
+    "genesis_identifier": {
+      "hash": "9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0",
+      "height": 1
+    },
+    "root": "864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d",
+    "witness": {
+      "consumer_result": "REFUSED",
+      "ledger_raw_input_has_key": true,
+      "path": "25723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52c",
+      "present_in_projection": true,
+      "proof": "0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0",
+      "raw_key": "0300000000000000000000000000000000000000000304066318c6318c6318c6",
+      "selection": "balance",
+      "typed_domain_refused": false,
+      "value": "00000000000000000000000000000000000000000000000000000000000186a0"
+    }
+  },
+  "source": {
+    "candidate_runtime_tree": "8420610538a6a51fd43ed4c6f0e2feb2db8f120f",
+    "module_sha256": "ac08476abe3df0bc67f1c5c6868f04889b864310f16a37b0d51a6598b9017a45",
+    "original_tree": "d0f5dfb09e737a806cfc743bb6ba9ddd101ebcd6",
+    "parent_runtime_tree": "e60c875a06361f04d05301c0e4c61fd429995c5a",
+    "patch": {
+      "bytes": 12654,
+      "sha256": "a72bb29d7b42eb22529de8a9c1d4c978936e300bcbade11b72e681442bbc7020"
+    },
+    "probe": {
+      "bytes": 4585,
+      "sha256": "d3d5221300f7face9a213ef67470a66af86673eda39ac5bc6ab0eab272e68efe"
+    },
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+    "source_blobs": 467,
+    "source_manifest_sha256": "80104c7c6b5086a6b851c9c5e82920c5bd196c4252781acf88fc9c4b74d6cc84",
+    "sum_sha256": "e536610c08abc9f4b979ce39cd5ae7323c3df14a189d186d911ee1d1184b8537"
+  },
+  "variants": {
+    "offline-identity-parent": [
+      {
+        "case": "init-after-stop",
+        "command": {
+          "actual_exit": 2,
+          "output_complete": true,
+          "reason": null,
+          "state": "COMPLETE",
+          "stderr": {
+            "bytes": 1195,
+            "sha256": "e23c6d213f17c3e30119d8d070efb03f539ed1c56b0a36d23707adb72314e66f"
+          },
+          "stdout": {
+            "bytes": 2241,
+            "sha256": "71b0fb0893a2db890cb79e83b7210d5c04f428a332e29b4ba476ea316e89032b"
+          }
+        },
+        "stderr_diagnostics": {
+          "normal_process_complete": false,
+          "public_Chain_Init_frame": true,
+          "runtime_nil_pointer_panic": true
+        },
+        "stdout_utf8": "{\"case\":\"init-after-stop\",\"genesis_VM_derivation\":true,\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"init-after-stop\",\"ready\":true,\"stage\":\"initialized\"}\n{\"case\":\"init-after-stop\",\"ready\":true,\"stage\":\"started\"}\n{\"case\":\"init-after-stop\",\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"proof_error\":null,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"root_error\":null,\"stage\":\"query\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\",\"wrong_hash_error\":\"trie: retained version Momentum hash mismatch\"}\n{\"case\":\"init-after-stop\",\"ready\":false,\"stage\":\"stopped\"}\n{\"case\":\"init-after-stop\",\"error\":null,\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"clean-reopen\"}\n{\"call\":\"init-after-stop\",\"case\":\"init-after-stop\",\"stage\":\"terminal-call-selected\"}\n"
+      },
+      {
+        "case": "start-after-stop",
+        "command": {
+          "actual_exit": 0,
+          "output_complete": true,
+          "reason": null,
+          "state": "COMPLETE",
+          "stderr": {
+            "bytes": 832,
+            "sha256": "cbe589ed5f29ad50815de0be3e9e310e2a3b30fc0060f0613f73c40dca97e2c4"
+          },
+          "stdout": {
+            "bytes": 2414,
+            "sha256": "7f10dc559e05e870da214cf02fd0f966b08b778133e92598ca74db77ea72f7e5"
+          }
+        },
+        "stderr_diagnostics": {
+          "normal_process_complete": true,
+          "public_Chain_Init_frame": false,
+          "runtime_nil_pointer_panic": false
+        },
+        "stdout_utf8": "{\"case\":\"start-after-stop\",\"genesis_VM_derivation\":true,\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"start-after-stop\",\"ready\":true,\"stage\":\"initialized\"}\n{\"case\":\"start-after-stop\",\"ready\":true,\"stage\":\"started\"}\n{\"case\":\"start-after-stop\",\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"proof_error\":null,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"root_error\":null,\"stage\":\"query\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\",\"wrong_hash_error\":\"trie: retained version Momentum hash mismatch\"}\n{\"case\":\"start-after-stop\",\"ready\":false,\"stage\":\"stopped\"}\n{\"case\":\"start-after-stop\",\"error\":null,\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"clean-reopen\"}\n{\"call\":\"start-after-stop\",\"case\":\"start-after-stop\",\"stage\":\"terminal-call-selected\"}\n{\"case\":\"start-after-stop\",\"error\":null,\"ready\":false,\"stage\":\"terminal-call-returned\"}\n{\"case\":\"start-after-stop\",\"error\":null,\"ready\":false,\"stage\":\"repeat-stop\"}\n"
+      },
+      {
+        "case": "stop-before-init",
+        "command": {
+          "actual_exit": 2,
+          "output_complete": true,
+          "reason": null,
+          "state": "COMPLETE",
+          "stderr": {
+            "bytes": 403,
+            "sha256": "4c8e4bd041ba7e1879aa4c897d18cd3251f40e0c103cc50877332420dc1c925e"
+          },
+          "stdout": {
+            "bytes": 527,
+            "sha256": "332b640e6a658efe5cd31d7bc19c29ed25b38aef56b2a9e7927537c95f965195"
+          }
+        },
+        "stderr_diagnostics": {
+          "normal_process_complete": false,
+          "public_Chain_Init_frame": true,
+          "runtime_nil_pointer_panic": true
+        },
+        "stdout_utf8": "{\"case\":\"stop-before-init\",\"genesis_VM_derivation\":true,\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"stop-before-init\",\"error\":null,\"ready\":false,\"stage\":\"stopped-before-init\"}\n{\"call\":\"stop-before-init\",\"case\":\"stop-before-init\",\"stage\":\"terminal-call-selected\"}\n"
+      }
+    ],
+    "public-chain-terminal": [
+      {
+        "case": "init-after-stop",
+        "command": {
+          "actual_exit": 0,
+          "output_complete": true,
+          "reason": null,
+          "state": "COMPLETE",
+          "stderr": {
+            "bytes": 535,
+            "sha256": "4622c470ca8a7ef00bb32210f791f4ef78b85cd98c9dde6b4a46163e0d037519"
+          },
+          "stdout": {
+            "bytes": 2427,
+            "sha256": "1f345c7e11e67ee5e3fa337e2bc97f35bd67b6b3eee1850511b34f937f5e898c"
+          }
+        },
+        "stderr_diagnostics": {
+          "normal_process_complete": true,
+          "public_Chain_Init_frame": false,
+          "runtime_nil_pointer_panic": false
+        },
+        "stdout_utf8": "{\"case\":\"init-after-stop\",\"genesis_VM_derivation\":true,\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"init-after-stop\",\"ready\":true,\"stage\":\"initialized\"}\n{\"case\":\"init-after-stop\",\"ready\":true,\"stage\":\"started\"}\n{\"case\":\"init-after-stop\",\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"proof_error\":null,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"root_error\":null,\"stage\":\"query\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\",\"wrong_hash_error\":\"trie: retained version Momentum hash mismatch\"}\n{\"case\":\"init-after-stop\",\"ready\":false,\"stage\":\"stopped\"}\n{\"case\":\"init-after-stop\",\"error\":null,\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"clean-reopen\"}\n{\"call\":\"init-after-stop\",\"case\":\"init-after-stop\",\"stage\":\"terminal-call-selected\"}\n{\"case\":\"init-after-stop\",\"error\":\"chain instance is stopped\",\"ready\":false,\"stage\":\"terminal-call-returned\"}\n{\"case\":\"init-after-stop\",\"error\":null,\"ready\":false,\"stage\":\"repeat-stop\"}\n"
+      },
+      {
+        "case": "start-after-stop",
+        "command": {
+          "actual_exit": 0,
+          "output_complete": true,
+          "reason": null,
+          "state": "COMPLETE",
+          "stderr": {
+            "bytes": 832,
+            "sha256": "cbe589ed5f29ad50815de0be3e9e310e2a3b30fc0060f0613f73c40dca97e2c4"
+          },
+          "stdout": {
+            "bytes": 2437,
+            "sha256": "1e4d6c2b7eaf921b92b8ffa669adb7cb20c460884ef112e5f0afe015c58c9214"
+          }
+        },
+        "stderr_diagnostics": {
+          "normal_process_complete": true,
+          "public_Chain_Init_frame": false,
+          "runtime_nil_pointer_panic": false
+        },
+        "stdout_utf8": "{\"case\":\"start-after-stop\",\"genesis_VM_derivation\":true,\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"start-after-stop\",\"ready\":true,\"stage\":\"initialized\"}\n{\"case\":\"start-after-stop\",\"ready\":true,\"stage\":\"started\"}\n{\"case\":\"start-after-stop\",\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"proof_error\":null,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"root_error\":null,\"stage\":\"query\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\",\"wrong_hash_error\":\"trie: retained version Momentum hash mismatch\"}\n{\"case\":\"start-after-stop\",\"ready\":false,\"stage\":\"stopped\"}\n{\"case\":\"start-after-stop\",\"error\":null,\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"clean-reopen\"}\n{\"call\":\"start-after-stop\",\"case\":\"start-after-stop\",\"stage\":\"terminal-call-selected\"}\n{\"case\":\"start-after-stop\",\"error\":\"chain instance is stopped\",\"ready\":false,\"stage\":\"terminal-call-returned\"}\n{\"case\":\"start-after-stop\",\"error\":null,\"ready\":false,\"stage\":\"repeat-stop\"}\n"
+      },
+      {
+        "case": "stop-before-init",
+        "command": {
+          "actual_exit": 0,
+          "output_complete": true,
+          "reason": null,
+          "state": "COMPLETE",
+          "stderr": {
+            "bytes": 40,
+            "sha256": "67c3d5f845c051efb7938c006ca130f38e507476c56fdaa7c999136204b796de"
+          },
+          "stdout": {
+            "bytes": 715,
+            "sha256": "bfbe15b996eaf01b192fc7f7cd29a18afa6276c1f903bafcad3b51a1318c85a6"
+          }
+        },
+        "stderr_diagnostics": {
+          "normal_process_complete": true,
+          "public_Chain_Init_frame": false,
+          "runtime_nil_pointer_panic": false
+        },
+        "stdout_utf8": "{\"case\":\"stop-before-init\",\"genesis_VM_derivation\":true,\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"stop-before-init\",\"error\":null,\"ready\":false,\"stage\":\"stopped-before-init\"}\n{\"call\":\"stop-before-init\",\"case\":\"stop-before-init\",\"stage\":\"terminal-call-selected\"}\n{\"case\":\"stop-before-init\",\"error\":\"chain instance is stopped\",\"ready\":false,\"stage\":\"terminal-call-returned\"}\n{\"case\":\"stop-before-init\",\"error\":null,\"ready\":false,\"stage\":\"repeat-stop\"}\n"
+      }
+    ]
+  }
+}
