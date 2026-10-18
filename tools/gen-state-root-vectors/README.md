@@ -2649,3 +2649,24 @@ python3 -I -B tools/gen-state-root-vectors/check_public_chain_lifecycle_successo
 The preparer returns commands without executing them. Portable controls rebuild
 both Git trees and independently check the recorded canonical witness; no new
 node builds, genesis projections, dependency downloads or database cases occur.
+
+### Public Chain startup with foreign retained identities
+
+The [foreign-startup experiment](../../docs/public-chain-foreign-startup.md)
+keeps the existing experimental runtime unchanged and adds only a tagged ordinary
+command. Four actual real-manager Darwin ARM64 processes cover a clean canonical
+start, two refused foreign identities with unchanged raw stores, and rollback
+from a foreign ahead frontier to the correctly retained source-genesis version.
+The portable reader checks every recorded event and separately folds three
+256-level byte witnesses. It executes no backend or network request.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/prepare_public_chain_foreign_startup_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_public_chain_foreign_startup_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_public_chain_foreign_startup.py
+```
+
+This remains an unsigned source-genesis startup component experiment. It does
+not qualify live reorg, consensus, concurrent shutdown, header/root binding or
+production values. Runtime state-value acceptance and the consumer stay refused;
+whole-module-graph verification remains not qualified.
