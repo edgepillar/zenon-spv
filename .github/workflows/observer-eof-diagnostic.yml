@@ -33,5 +33,5 @@ jobs:
       - name: One instrumented generation, no retries
         shell: pwsh
         run: |
-          python -B tools/diagnose-observer-eof/run.py --source-root $env:GITHUB_WORKSPACE --scratch-parent $env:RUNNER_TEMP --go (Get-Command go).Source
+          python -B tools/diagnose-observer-eof/run.py --source-root $env:GITHUB_WORKSPACE --scratch-parent $env:RUNNER_TEMP --go (Get-Command go).Source --full-resource-sequence
           exit $LASTEXITCODE

@@ -31,9 +31,12 @@ Instrumentation affects timing and binary identity. These are not ordinary
 release binaries and an instrumented pass cannot qualify the failed main run.
 
 The dedicated branch workflow runs one generation with Go 1.25.14 on Windows
-amd64. It selects K=4096, 16 targets, four concurrent invocations and 21 rounds.
+amd64. The original isolated selection uses K=4096, 16 targets, four concurrent
+invocations and 21 rounds. Without an extra selection flag that default stays
+unchanged. The current workflow explicitly selects the original full resource
+sequence as described below.
 The observer's 30-second deadline, one-second pipe wait and 4 MiB report bound
-are unchanged. There is no rerun, filtering, timeout increase or acceptance of
+are unchanged. There is no automatic retry within a generation, filtering, timeout increase or acceptance of
 an exit code in place of real EOF. Failure retains its actual result. Completing
 the selected workload without a failure is `NOT_REPRODUCED`, not a repair or a
 root-cause finding. This workflow does not change the ordinary CI workflow.
@@ -50,6 +53,31 @@ limit fails with the workspace held. This does not increase the observer's
 one-second pipe wait or alter any test assertion. A subsequent source-bound
 generation is the first execution of the selected resource phase, not a retry
 or replacement of an observed resource sample.
+
+## Original resource sequence comparison
+
+The isolated generation in [run 39091623542](https://github.com/edgepillar/zenon-spv/actions/runs/39091623542)
+completed 84 observer invocations and recorded 336 real stream EOFs. It did not
+reproduce the ordinary-main refusal. It omitted 126 earlier observer invocations
+in the original test. A separate, preselected comparison checks whether that
+sequence matters; the hypothesis is unconfirmed.
+
+The explicit `--full-resource-sequence` selection uses the unchanged original
+test order: K256/C1, K256/C4, K4096/C1 and K4096/C4, each with 16 targets and
+21 rounds. A complete generation contains 210 observer invocations, 420 child
+invocations and 840 stream observations. Version 2 of the overlay manifest names
+all four workloads and preserves the original subtest failure behavior: a
+failing subtest stops at its first failed round, and later original subtests may
+still run. Every joined slot has a fixed workload label. No slow or failing
+sample is removed, replaced or automatically retried. This deliberately repeats
+the isolated workload after its original preceding sequence; its samples are
+new observations, not independent unique cases or a replacement for prior runs.
+
+Only diagnostic selection and labels change. The observer's timer, deadlines,
+acceptance rules, original workload loops and assertions are unchanged. The
+four-workload generation also cannot qualify the failed ordinary-main run or
+establish a root cause merely by passing. This remains a diagnostic branch;
+the production sources and ordinary CI workflow are untouched.
 
 For local controls, select an approved managed task's scratch parent and an
 explicit compiler. The runner requires 10 GiB free plus 1 GiB expected allocation,
