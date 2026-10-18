@@ -1,0 +1,355 @@
+{
+  "cases": [
+    {
+      "case": "canonical-source-genesis-clean-reopen",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 343,
+          "sha256": "52740efeda38ce97bb54697d07ad57edcd28dd28a95884ef008959a974323fd3"
+        },
+        "stdout": {
+          "bytes": 5120,
+          "sha256": "41e708154d58740d89418a25c81c60e34c966391261b37d5c22af46c19120980"
+        }
+      },
+      "stderr_diagnostics": {
+        "normal_process_complete": true,
+        "runtime_panic_observed": false
+      },
+      "stdout_utf8": "{\"case\":\"canonical-source-genesis-clean-reopen\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"canonical-source-genesis-clean-reopen\",\"ready_after_stop\":false,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"canonical-ledger-primed\"}\n{\"case\":\"canonical-source-genesis-clean-reopen\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"key_bytes\":2541878,\"raw_store_sha256\":\"4fce74d75dc9a096f83c06eb0dbf9d8ef569358a48092d8a5309d6eb0d4ec47f\",\"records\":77030,\"roots\":[{\"error\":\"none\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\"},{\"error\":\"version-hash-mismatch\",\"identifier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\"},{\"error\":\"no-version\",\"identifier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\"}],\"stage\":\"fixture-before-public-init\",\"value_bytes\":4254290}\n{\"case\":\"canonical-source-genesis-clean-reopen\",\"error\":\"none\",\"ready\":true,\"stage\":\"public-init-returned\"}\n{\"case\":\"canonical-source-genesis-clean-reopen\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"proof_error\":\"none\",\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"root_error\":\"none\",\"stage\":\"public-query\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\"}\n{\"case\":\"canonical-source-genesis-clean-reopen\",\"identifier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"\",\"proof_error\":\"version-hash-mismatch\",\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"root_error\":\"version-hash-mismatch\",\"stage\":\"public-query\",\"value\":\"\"}\n{\"case\":\"canonical-source-genesis-clean-reopen\",\"identifier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"proof\":\"\",\"proof_error\":\"no-version\",\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"root_error\":\"no-version\",\"stage\":\"public-query\",\"value\":\"\"}\n{\"case\":\"canonical-source-genesis-clean-reopen\",\"ready\":false,\"stage\":\"public-stop\"}\n{\"case\":\"canonical-source-genesis-clean-reopen\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"key_bytes\":2541878,\"raw_store_sha256\":\"4fce74d75dc9a096f83c06eb0dbf9d8ef569358a48092d8a5309d6eb0d4ec47f\",\"records\":77030,\"roots\":[{\"error\":\"none\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\"},{\"error\":\"version-hash-mismatch\",\"identifier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\"},{\"error\":\"no-version\",\"identifier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\"}],\"stage\":\"fixture-after-public-stop\",\"value_bytes\":4254290}\n{\"case\":\"canonical-source-genesis-clean-reopen\",\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"public-clean-reopen\"}\n"
+    },
+    {
+      "case": "foreign-same-height-frontier-identity",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 145,
+          "sha256": "cf4e8b1c9793bdc1d64aa91cd201b6c21de2e2b937202b8acdb3763bb1066b25"
+        },
+        "stdout": {
+          "bytes": 3711,
+          "sha256": "5f855b949228e1474295d8234d45b73c1c2ba310968379503424bc8c19839c26"
+        }
+      },
+      "stderr_diagnostics": {
+        "normal_process_complete": true,
+        "runtime_panic_observed": false
+      },
+      "stdout_utf8": "{\"case\":\"foreign-same-height-frontier-identity\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"foreign-same-height-frontier-identity\",\"ready_after_stop\":false,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"canonical-ledger-primed\"}\n{\"case\":\"foreign-same-height-frontier-identity\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"key_bytes\":86,\"raw_store_sha256\":\"4e3e4737e0ebb7b084fd58af33e7a188d3843abd4c571f781a56ab7c1be10e94\",\"records\":6,\"roots\":[{\"error\":\"version-hash-mismatch\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\"},{\"error\":\"none\",\"identifier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"29e6754c2098f405b067f62f92bc48a22ea23b45c1a7b9cc05556ed03dc385c7\"},{\"error\":\"no-version\",\"identifier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\"}],\"stage\":\"fixture-before-public-init\",\"value_bytes\":178}\n{\"case\":\"foreign-same-height-frontier-identity\",\"error\":\"chain-frontier-identity-mismatch\",\"ready\":false,\"stage\":\"public-init-returned\"}\n{\"case\":\"foreign-same-height-frontier-identity\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"\",\"proof_error\":\"not-ready\",\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"root_error\":\"not-ready\",\"stage\":\"public-query\",\"value\":\"\"}\n{\"case\":\"foreign-same-height-frontier-identity\",\"identifier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"\",\"proof_error\":\"not-ready\",\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"root_error\":\"not-ready\",\"stage\":\"public-query\",\"value\":\"\"}\n{\"case\":\"foreign-same-height-frontier-identity\",\"identifier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"proof\":\"\",\"proof_error\":\"not-ready\",\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"root_error\":\"not-ready\",\"stage\":\"public-query\",\"value\":\"\"}\n{\"case\":\"foreign-same-height-frontier-identity\",\"ready\":false,\"stage\":\"public-stop\"}\n{\"case\":\"foreign-same-height-frontier-identity\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"key_bytes\":86,\"raw_store_sha256\":\"4e3e4737e0ebb7b084fd58af33e7a188d3843abd4c571f781a56ab7c1be10e94\",\"records\":6,\"roots\":[{\"error\":\"version-hash-mismatch\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\"},{\"error\":\"none\",\"identifier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"29e6754c2098f405b067f62f92bc48a22ea23b45c1a7b9cc05556ed03dc385c7\"},{\"error\":\"no-version\",\"identifier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\"}],\"stage\":\"fixture-after-public-stop\",\"value_bytes\":178}\n"
+    },
+    {
+      "case": "foreign-ahead-frontier-without-canonical-retained-version",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 145,
+          "sha256": "cf4e8b1c9793bdc1d64aa91cd201b6c21de2e2b937202b8acdb3763bb1066b25"
+        },
+        "stdout": {
+          "bytes": 3870,
+          "sha256": "e9fefc5fdf0b09efcdb5f4f4c64e04a31313faaca8cdb474039cb58919e5ac8b"
+        }
+      },
+      "stderr_diagnostics": {
+        "normal_process_complete": true,
+        "runtime_panic_observed": false
+      },
+      "stdout_utf8": "{\"case\":\"foreign-ahead-frontier-without-canonical-retained-version\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"foreign-ahead-frontier-without-canonical-retained-version\",\"ready_after_stop\":false,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"canonical-ledger-primed\"}\n{\"case\":\"foreign-ahead-frontier-without-canonical-retained-version\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"key_bytes\":104,\"raw_store_sha256\":\"574bd21297e10db4966ba3d4aea124b1b65d63fcf091492285db1799bdcd2146\",\"records\":8,\"roots\":[{\"error\":\"version-hash-mismatch\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\"},{\"error\":\"none\",\"identifier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"29e6754c2098f405b067f62f92bc48a22ea23b45c1a7b9cc05556ed03dc385c7\"},{\"error\":\"none\",\"identifier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"root\":\"29e6754c2098f405b067f62f92bc48a22ea23b45c1a7b9cc05556ed03dc385c7\"}],\"stage\":\"fixture-before-public-init\",\"value_bytes\":242}\n{\"case\":\"foreign-ahead-frontier-without-canonical-retained-version\",\"error\":\"version-hash-mismatch\",\"ready\":false,\"stage\":\"public-init-returned\"}\n{\"case\":\"foreign-ahead-frontier-without-canonical-retained-version\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"\",\"proof_error\":\"not-ready\",\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"root_error\":\"not-ready\",\"stage\":\"public-query\",\"value\":\"\"}\n{\"case\":\"foreign-ahead-frontier-without-canonical-retained-version\",\"identifier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"\",\"proof_error\":\"not-ready\",\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"root_error\":\"not-ready\",\"stage\":\"public-query\",\"value\":\"\"}\n{\"case\":\"foreign-ahead-frontier-without-canonical-retained-version\",\"identifier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"proof\":\"\",\"proof_error\":\"not-ready\",\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"root_error\":\"not-ready\",\"stage\":\"public-query\",\"value\":\"\"}\n{\"case\":\"foreign-ahead-frontier-without-canonical-retained-version\",\"ready\":false,\"stage\":\"public-stop\"}\n{\"case\":\"foreign-ahead-frontier-without-canonical-retained-version\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"key_bytes\":104,\"raw_store_sha256\":\"574bd21297e10db4966ba3d4aea124b1b65d63fcf091492285db1799bdcd2146\",\"records\":8,\"roots\":[{\"error\":\"version-hash-mismatch\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\"},{\"error\":\"none\",\"identifier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"29e6754c2098f405b067f62f92bc48a22ea23b45c1a7b9cc05556ed03dc385c7\"},{\"error\":\"none\",\"identifier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"root\":\"29e6754c2098f405b067f62f92bc48a22ea23b45c1a7b9cc05556ed03dc385c7\"}],\"stage\":\"fixture-after-public-stop\",\"value_bytes\":242}\n"
+    },
+    {
+      "case": "canonical-retained-genesis-under-foreign-ahead-frontier",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 343,
+          "sha256": "52740efeda38ce97bb54697d07ad57edcd28dd28a95884ef008959a974323fd3"
+        },
+        "stdout": {
+          "bytes": 5294,
+          "sha256": "e91dbeace046a48587abbac0035114b7eba8795ec8747bc59180b9ead014cba6"
+        }
+      },
+      "stderr_diagnostics": {
+        "normal_process_complete": true,
+        "runtime_panic_observed": false
+      },
+      "stdout_utf8": "{\"case\":\"canonical-retained-genesis-under-foreign-ahead-frontier\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"network_started\":false,\"raw_patch_bytes\":10849399,\"raw_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"source-genesis\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"canonical-retained-genesis-under-foreign-ahead-frontier\",\"ready_after_stop\":false,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"canonical-ledger-primed\"}\n{\"case\":\"canonical-retained-genesis-under-foreign-ahead-frontier\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"key_bytes\":2542886,\"raw_store_sha256\":\"94bf3c97dab64a5ebf24c7c2530beb8eb1ccdc6a5f32d2dd30ac822cd8eb9b0d\",\"records\":77062,\"roots\":[{\"error\":\"none\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\"},{\"error\":\"version-hash-mismatch\",\"identifier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\"},{\"error\":\"none\",\"identifier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"root\":\"7f5f225685590ad9dfc37c8caaa9f32bfd27b0a77a6d5fbb3fea2b749a47686a\"}],\"stage\":\"fixture-before-public-init\",\"value_bytes\":4256373}\n{\"case\":\"canonical-retained-genesis-under-foreign-ahead-frontier\",\"error\":\"none\",\"ready\":true,\"stage\":\"public-init-returned\"}\n{\"case\":\"canonical-retained-genesis-under-foreign-ahead-frontier\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"proof_error\":\"none\",\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"root_error\":\"none\",\"stage\":\"public-query\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\"}\n{\"case\":\"canonical-retained-genesis-under-foreign-ahead-frontier\",\"identifier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"proof\":\"\",\"proof_error\":\"version-hash-mismatch\",\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"root_error\":\"version-hash-mismatch\",\"stage\":\"public-query\",\"value\":\"\"}\n{\"case\":\"canonical-retained-genesis-under-foreign-ahead-frontier\",\"identifier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"proof\":\"\",\"proof_error\":\"no-version\",\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"root_error\":\"no-version\",\"stage\":\"public-query\",\"value\":\"\"}\n{\"case\":\"canonical-retained-genesis-under-foreign-ahead-frontier\",\"ready\":false,\"stage\":\"public-stop\"}\n{\"case\":\"canonical-retained-genesis-under-foreign-ahead-frontier\",\"framing\":\"ordered u64be key length, key bytes, u64be value length, value bytes\",\"frontier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"key_bytes\":2541878,\"raw_store_sha256\":\"4fce74d75dc9a096f83c06eb0dbf9d8ef569358a48092d8a5309d6eb0d4ec47f\",\"records\":77030,\"roots\":[{\"error\":\"none\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\"},{\"error\":\"version-hash-mismatch\",\"identifier\":{\"hash\":\"9f204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\"},{\"error\":\"no-version\",\"identifier\":{\"hash\":\"9d204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\"}],\"stage\":\"fixture-after-public-stop\",\"value_bytes\":4254290}\n{\"case\":\"canonical-retained-genesis-under-foreign-ahead-frontier\",\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"stage\":\"public-clean-reopen\"}\n"
+    }
+  ],
+  "consumer_result": "REFUSED",
+  "execution": {
+    "Go_binary_sha256": "55770db639faa42f3ebc998ac583b008f7ff2b4bbb9dbb8a76511a9a6ffa4a19",
+    "Go_version": "go1.25.14",
+    "actual_builds": 1,
+    "actual_case_processes": 4,
+    "commands": {
+      "binary_info": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 3075,
+          "sha256": "f8cb36f09e6dc1dd07a5cdac79c44c5d22e4e2645bd50a54c146d4d2ba6ba050"
+        }
+      },
+      "build": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 1422,
+          "sha256": "6d59d2bf3d7c4398e505ef04b613b9e2bdbd04aa634670e6319934491d8c1280"
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "compiler_version": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 34,
+          "sha256": "701f70956d50072291a29dc76dfb6e8b79cccfc141fc7e9a98aac8fc9ddae245"
+        }
+      }
+    },
+    "new_source_or_dependency_transports": 0,
+    "ordinary_binary": {
+      "bytes": 19854162,
+      "sha256": "bb0058427f7fd676d3424a79891991b1206982704c88aa536e6f598345a72dce"
+    },
+    "original_task_outcome": "SUCCESS",
+    "physical_reclaim_or_peak_disk_claim": false,
+    "platform": "darwin/arm64",
+    "post_run_owned_workspace_logical_bytes": 359728029,
+    "presealed_plan": {
+      "bytes": 9233,
+      "sha256": "0ba1ffd9377de4621a42a918c95ee5547baa3772e9c2bf6d72767f2fd5239963"
+    },
+    "private_execution": {
+      "bytes": 63430,
+      "sha256": "7c2753744b6caeb90964a3ada6452d58a1cf9599b55fd7e539f7e32e8c9f490f"
+    },
+    "selected_linked_dependencies": [
+      {
+        "go_sum": "h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=",
+        "module": "filippo.io/edwards25519",
+        "version": "v1.1.0"
+      },
+      {
+        "go_sum": "h1:fzn1qaOt32TuLjFlkzYSsBC35Q3KUjT1SwPxiMSCF5k=",
+        "module": "github.com/btcsuite/btcd/btcec/v2",
+        "version": "v2.2.0"
+      },
+      {
+        "go_sum": "h1:xfbtw8lwpp0G6NwSHb+UE67ryTFHJAiNuipusjXSohQ=",
+        "module": "github.com/btcsuite/btcd/btcutil",
+        "version": "v1.1.3"
+      },
+      {
+        "go_sum": "h1:q0rUy8C/TYNBQS1+CGKw68tLOFYSNEs0TFnxxnS9+4U=",
+        "module": "github.com/btcsuite/btcd/chaincfg/chainhash",
+        "version": "v1.0.1"
+      },
+      {
+        "go_sum": "h1:sk9/l/KqpunDwP7pSjUg0keiOOLEnOBHzykLrsPppp4=",
+        "module": "github.com/deckarep/golang-set",
+        "version": "v1.8.0"
+      },
+      {
+        "go_sum": "h1:7PltbUIQB7u/FfZ39+DGa/ShuMyJ5ilcvdfma9wOH6Y=",
+        "module": "github.com/decred/dcrd/crypto/blake256",
+        "version": "v1.0.1"
+      },
+      {
+        "go_sum": "h1:8UrgZ3GkP4i/CLijOJx79Yu+etlyjdBU4sfcs2WYQMs=",
+        "module": "github.com/decred/dcrd/dcrec/secp256k1/v4",
+        "version": "v4.2.0"
+      },
+      {
+        "go_sum": "h1:HbEgsDo1YTGIf4KB/NNpn+XH+PiNJXUZ9ksRxiqWyMc=",
+        "module": "github.com/ethereum/go-ethereum",
+        "version": "v1.10.22"
+      },
+      {
+        "go_sum": "h1:ntEHSVwIt7PNXNpgPmVfMrNhLtgjlmnZha2kOpuRiDw=",
+        "module": "github.com/go-stack/stack",
+        "version": "v1.8.1"
+      },
+      {
+        "go_sum": "h1:yAGX7huGHXlcLOEtBnF4w7FQwA26wojNCwOYAEhLjQM=",
+        "module": "github.com/golang/snappy",
+        "version": "v0.0.4"
+      },
+      {
+        "go_sum": "h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/QY=",
+        "module": "github.com/gorilla/websocket",
+        "version": "v1.5.1"
+      },
+      {
+        "go_sum": "h1:dg1dEPuWpEqDnvIw251EVy4zlP8gWbsGj4BsUKCRpYs=",
+        "module": "github.com/hashicorp/golang-lru",
+        "version": "v0.5.5-0.20210104140557-80c98217689d"
+      },
+      {
+        "go_sum": "h1:n1DqxAo4oWPMvH1+v+DLYlMCecgumhhgnxAPdqDIFHI=",
+        "module": "github.com/inconshreveable/log15",
+        "version": "v0.0.0-20201112154412-8562bdadbbac"
+      },
+      {
+        "go_sum": "h1:jF+Du6AlPIjs2BiUiQlKOX0rt3SujHxPnksPKZbaA40=",
+        "module": "github.com/mattn/go-colorable",
+        "version": "v0.1.12"
+      },
+      {
+        "go_sum": "h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=",
+        "module": "github.com/mattn/go-isatty",
+        "version": "v0.0.20"
+      },
+      {
+        "go_sum": "h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=",
+        "module": "github.com/pkg/errors",
+        "version": "v0.9.1"
+      },
+      {
+        "go_sum": "h1:+1+c1VGhc88SSonWP6foOcLhvnKlUeu/erjjvaPEYiI=",
+        "module": "github.com/shirou/gopsutil",
+        "version": "v3.21.11+incompatible"
+      },
+      {
+        "go_sum": "h1:epCh84lMvA70Z7CTTCmYQn2CKbY8j86K7/FAIr141uY=",
+        "module": "github.com/syndtr/goleveldb",
+        "version": "v1.0.1-0.20210819022825-2ae1ddf74ef7"
+      },
+      {
+        "go_sum": "h1:IJ1AZGZRWbY8T5Vfk04D9WOA5WSejdflXxP03OUqALw=",
+        "module": "github.com/tklauser/go-sysconf",
+        "version": "v0.3.10"
+      },
+      {
+        "go_sum": "h1:5eUemwrMargf3BSLRRCalXT93Ns6pQJIjYQN2nyfOP8=",
+        "module": "github.com/tyler-smith/go-bip39",
+        "version": "v1.1.0"
+      },
+      {
+        "go_sum": "h1:ihbySMvVjLAeSH1IbfcRTkD/iNscyz8rGzjF/E5hV6U=",
+        "module": "golang.org/x/crypto",
+        "version": "v0.31.0"
+      },
+      {
+        "go_sum": "h1:d/OCCoBEUq33pjydKrGQhw7IlUPI2Oylr+8qLx49kac=",
+        "module": "golang.org/x/net",
+        "version": "v0.25.0"
+      },
+      {
+        "go_sum": "h1:Fksou7UEQUWlKvIdsqzJmUmCX3cZuD2+P3XyyzwMhlA=",
+        "module": "golang.org/x/sys",
+        "version": "v0.28.0"
+      },
+      {
+        "go_sum": "h1:pPC6BG5ex8PDFnkbrGU3EixyhKcQ2aDuBS36lqK/C7I=",
+        "module": "google.golang.org/protobuf",
+        "version": "v1.32.0"
+      },
+      {
+        "go_sum": "h1:1Lc07Kr7qY4U2YPouBjpCLxpiyxIVoxqXgkXLknAOE8=",
+        "module": "gopkg.in/natefinch/lumberjack.v2",
+        "version": "v2.0.0"
+      }
+    ],
+    "verified_dependency_inputs": 75,
+    "whole_module_graph_verification": "NOT_QUALIFIED_PRIOR_MISSING_UNUSED_PROXY_INPUT_NOT_RETRIED"
+  },
+  "format_version": 1,
+  "kind": "recorded-public-chain-foreign-startup",
+  "scope": {
+    "Chain_Start_called": false,
+    "accepted_header_binding": false,
+    "before_after_raw_store_digest_recorded": true,
+    "canonical_clean_reopen_recorded": true,
+    "checker_executes_reference_backend": false,
+    "concurrent_lifecycle_qualified": false,
+    "full_node_service_executed": false,
+    "live_reorg_qualified": false,
+    "network_activation_authenticated": false,
+    "network_or_consensus_executed": false,
+    "node_client_profile_agreed": false,
+    "power_loss_qualified": false,
+    "production_qualified": false,
+    "public_record_authenticates_private_receipts": false,
+    "race_detector_selected": false,
+    "raw_database_bytes_reconstructed_by_reader": false,
+    "real_disk_ledger_cache_and_NodeTree_managers": true,
+    "real_public_Chain_Init_and_Stop": true,
+    "runtime_source_changed": false,
+    "runtime_state_value_acceptance": false,
+    "separate_native_format_foreign_tree_fixtures": true,
+    "source_embedded_unsigned_genesis_VM": true,
+    "test_overlay_or_scheduler_hooks": false
+  },
+  "selection": {
+    "canonical_proof": "0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0",
+    "canonical_root": "864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d",
+    "canonical_value": "00000000000000000000000000000000000000000000000000000000000186a0",
+    "cases": [
+      "canonical-source-genesis-clean-reopen",
+      "foreign-same-height-frontier-identity",
+      "foreign-ahead-frontier-without-canonical-retained-version",
+      "canonical-retained-genesis-under-foreign-ahead-frontier"
+    ],
+    "foreign_full_projection_root": "7f5f225685590ad9dfc37c8caaa9f32bfd27b0a77a6d5fbb3fea2b749a47686a",
+    "foreign_single_leaf_root": "29e6754c2098f405b067f62f92bc48a22ea23b45c1a7b9cc05556ed03dc385c7",
+    "foreign_value": "00000000000000000000000000000000000000000000000000000000000186a1",
+    "genesis_dump": {
+      "bytes": 10849399,
+      "sha256": "a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75"
+    },
+    "genesis_identifier": {
+      "hash": "9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0",
+      "height": 1
+    },
+    "key": "0300000000000000000000000000000000000000000304066318c6318c6318c6"
+  },
+  "source": {
+    "build_tree": "6b5c452bd643d1b11e4b640cb398adfdf59ec12b",
+    "module_sha256": "ac08476abe3df0bc67f1c5c6868f04889b864310f16a37b0d51a6598b9017a45",
+    "original_tree": "d0f5dfb09e737a806cfc743bb6ba9ddd101ebcd6",
+    "probe": {
+      "bytes": 9182,
+      "sha256": "fe68017e2386db2565c4b1724cc21f0045c83434b46bbe4d3bd20c75d042d729"
+    },
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+    "runtime_changed": false,
+    "runtime_tree": "8420610538a6a51fd43ed4c6f0e2feb2db8f120f",
+    "source_blobs": 467,
+    "source_manifest_sha256": "80104c7c6b5086a6b851c9c5e82920c5bd196c4252781acf88fc9c4b74d6cc84",
+    "sum_sha256": "e536610c08abc9f4b979ce39cd5ae7323c3df14a189d186d911ee1d1184b8537"
+  }
+}
