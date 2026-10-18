@@ -58,6 +58,52 @@ class PreparationTests(unittest.TestCase):
                 self.assertIn(selected, resource)
             self.assertEqual(resource.count('t.Logf("observer-eof-diagnostic-attempt %s", raw)'), 1)
 
+    def test_full_sequence_manifest_binds_original_order_and_all_samples(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory).resolve()
+            root = self.fixture(base)
+            manifest = C.prepare(root, base / "overlay", full_resource_sequence=True)
+            self.assertEqual(manifest["schema_version"], 2)
+            self.assertEqual([w["name"] for w in manifest["workloads"]],
+                             ["K256_T16_C1", "K256_T16_C4", "K4096_T16_C1", "K4096_T16_C4"])
+            self.assertEqual(sum(w["rounds"] * w["concurrency"] for w in manifest["workloads"]), 210)
+            self.assertEqual(manifest["expected_observer_invocations_if_complete"], 210)
+            self.assertEqual((manifest["observer_timeout_seconds"], manifest["pipe_wait_delay_seconds"]), (30, 1))
+            self.assertNotIn("concurrency", manifest)
+            self.assertNotIn("retained_headers", manifest)
+            mapping = json.loads((base / "overlay/overlay.json").read_text())["Replace"]
+            resource = Path(mapping[str(root / "internal/conformance/cli_observer_resources_test.go")]).read_text()
+            self.assertIn('Workload string `json:"workload"`', resource)
+            self.assertIn('Observation observerResourceFailure `json:"observation"`', resource)
+            for relative, digest in C.PINS.items():
+                self.assertEqual(C.sha((root / relative).read_bytes()), digest)
+
+    def test_full_sequence_changes_only_diagnostic_resource_labels(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory).resolve()
+            root = self.fixture(base)
+            single = C.prepare(root, base / "single")
+            full = C.prepare(root, base / "full", full_resource_sequence=True)
+            different = [name for name in single["overlay_files"]
+                         if single["overlay_files"][name] != full["overlay_files"][name]]
+            self.assertEqual(different, ["internal/conformance/cli_observer_resources_test.go"])
+            mapping = json.loads((base / "full/overlay.json").read_text())["Replace"]
+            resource = Path(mapping[str(root / "internal/conformance/cli_observer_resources_test.go")]).read_text()
+            before = (root / "internal/conformance/cli_observer_resources_test.go").read_text()
+            # Keep all original loops, bounds and assertions, including the
+            # first-failure t.Fatal and later t.Run behavior, byte-for-byte.
+            self.assertEqual(before[before.index("\t\t\t\t\tfor slot, result := range results {"):],
+                             resource[resource.index("\t\t\t\t\tfor slot, result := range results {", resource.index('t.Logf("observer-eof-diagnostic-attempt')):])
+
+    def test_non_boolean_sequence_selection_refused_before_allocation(self):
+        for selected in (None, 0, 1, "full"):
+            with self.subTest(selected=selected), tempfile.TemporaryDirectory() as directory:
+                base = Path(directory).resolve()
+                root = self.fixture(base)
+                with self.assertRaises(ValueError):
+                    C.prepare(root, base / "overlay", full_resource_sequence=selected)
+                self.assertFalse((base / "overlay").exists())
+
     def test_source_drift_refused_before_allocation(self):
         for name in C.PINS:
             with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:

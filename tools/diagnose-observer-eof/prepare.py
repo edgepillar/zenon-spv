@@ -52,7 +52,7 @@ def unlinked_path(path):
     return path
 
 
-def changes(relative, definitions):
+def changes(relative, definitions, full_resource_sequence=False):
     if relative == "tools/observe-block/main.go":
         return [("type observation struct {\n", "type observation struct {\n\tPipeDiagnostic *pipeDiagnostic `json:\"pipe_diagnostic,omitempty\"`\n")]
     if relative == "tools/observe-block/process.go":
@@ -85,14 +85,22 @@ def changes(relative, definitions):
 \t\t\t\t\t\tt.Logf("observer-eof-diagnostic-attempt %s", raw)
 \t\t\t\t\t}
 """
+        if full_resource_sequence:
+            old = "json.Marshal(observerResourceFailureContext(round, slot, failures[slot] != nil, result, report, decodeErr == nil))"
+            new = """json.Marshal(struct {
+\t\t\t\t\t\t\tWorkload string `json:"workload"`
+\t\t\t\t\t\t\tObservation observerResourceFailure `json:"observation"`
+\t\t\t\t\t\t}{name, observerResourceFailureContext(round, slot, failures[slot] != nil, result, report, decodeErr == nil)})"""
+            require(after.count(old) == 1)
+            after = after.replace(old, new, 1)
         return [(before, after)]
     raise ValueError("unselected diagnostic file")
 
 
-def transform(relative, raw, definitions):
-    require(relative in PINS and sha(raw) == PINS[relative])
+def transform(relative, raw, definitions, full_resource_sequence=False):
+    require(relative in PINS and sha(raw) == PINS[relative] and type(full_resource_sequence) is bool)
     transformed = raw.decode("utf-8")
-    edits = changes(relative, definitions)
+    edits = changes(relative, definitions, full_resource_sequence)
     for before, after in edits:
         require(transformed.count(before) == 1)
         transformed = transformed.replace(before, after, 1)
@@ -104,7 +112,8 @@ def transform(relative, raw, definitions):
     return transformed.encode()
 
 
-def prepare(root, destination):
+def prepare(root, destination, *, full_resource_sequence=False):
+    require(type(full_resource_sequence) is bool)
     root, destination = unlinked_path(root), unlinked_path(destination)
     require(root.is_dir() and destination.parent.is_dir() and not destination.exists())
     require(root != destination and root not in destination.parents and destination not in root.parents)
@@ -115,7 +124,7 @@ def prepare(root, destination):
         require(sha(originals[relative]) == digest)
     templates = {name: regular(HERE / name) for name in ("pipe_diagnostics.go.txt", "pipe_diagnostics_test.go.txt")}
     definitions = templates["pipe_diagnostics.go.txt"].decode().split("// BEGIN TYPES\n")[1].split("// END TYPES\n")[0]
-    modified = {name: transform(name, raw, definitions) for name, raw in originals.items()}
+    modified = {name: transform(name, raw, definitions, full_resource_sequence) for name, raw in originals.items()}
     modified["tools/observe-block/zz_eof_diagnostic.go"] = templates["pipe_diagnostics.go.txt"]
     modified["tools/observe-block/zz_eof_diagnostic_test.go"] = templates["pipe_diagnostics_test.go.txt"]
     for name in modified.keys() - originals.keys():
@@ -139,6 +148,17 @@ def prepare(root, destination):
         "retained_headers": 4096, "targets": 16, "concurrency": 4, "rounds": 21,
         "failure_policy": "retain all joined slots; stop at first failed round; no retries or filtering",
     }
+    if full_resource_sequence:
+        for name in ("retained_headers", "concurrency", "rounds"):
+            del manifest[name]
+        manifest.update(
+            schema_version=2, resource_selection="original-four-workload-sequence",
+            maximum_retained_headers=4096, maximum_concurrency=4, rounds_per_workload=21,
+            expected_observer_invocations_if_complete=210,
+            workloads=[{"name": "K%d_T16_C%d" % (k, c), "retained_headers": k, "targets": 16,
+                        "concurrency": c, "rounds": 21} for k in (256, 4096) for c in (1, 4)],
+            failure_policy="retain all joined slots; preserve original subtest order and stop each failing subtest at its first failed round; later original subtests may execute; no retries or filtering",
+        )
     (destination / "manifest.json").write_text(json.dumps(manifest, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     return manifest
 
@@ -147,9 +167,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--destination", type=Path, required=True)
+    parser.add_argument("--full-resource-sequence", action="store_true")
     args = parser.parse_args()
     try:
-        manifest = prepare(args.source_root, args.destination)
+        manifest = prepare(args.source_root, args.destination, full_resource_sequence=args.full_resource_sequence)
     except (OSError, ValueError, UnicodeError, IndexError):
         print("diagnostic preparation refused", file=sys.stderr)
         return 2

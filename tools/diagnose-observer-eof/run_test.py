@@ -21,6 +21,13 @@ with mock.patch.dict(sys.modules, {"prepare": P}):
 
 
 class CaptureTests(unittest.TestCase):
+    def test_resource_selection_preserves_single_and_original_full_patterns(self):
+        self.assertEqual(C.resource_pattern(False), "^TestCompiledBlockObserverResources$/^K4096_T16_C4$")
+        self.assertEqual(C.resource_pattern(True), "^TestCompiledBlockObserverResources$")
+        for unknown in (0, 1, None, "full"):
+            with self.assertRaises(ValueError):
+                C.resource_pattern(unknown)
+
     def capture(self, program, timeout=5, out_limit=4096, err_limit=4096):
         with tempfile.TemporaryDirectory() as directory:
             raw_out, raw_err = io.BytesIO(), io.BytesIO()

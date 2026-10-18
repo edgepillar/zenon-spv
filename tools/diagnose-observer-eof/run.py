@@ -23,6 +23,12 @@ import prepare as P
 
 CONTROLS = "^Test(ObserverEOFDiagnostic.*|Observation(StreamEOF|EOFCompletionGate|OutputCompletion|ProcessBoundaries)|Concurrent(File)?ObservationProcessCancellation|ProcessFileCapturePreservesCompletion|FileCaptureWriteFailureStopsAndJoinsLiveChild)$"
 WORKLOAD = "^TestCompiledBlockObserverResources$/^K4096_T16_C4$"
+FULL_WORKLOAD = "^TestCompiledBlockObserverResources$"
+
+
+def resource_pattern(full_resource_sequence):
+    P.require(type(full_resource_sequence) is bool)
+    return FULL_WORKLOAD if full_resource_sequence else WORKLOAD
 
 
 def image_pin(path):
@@ -145,17 +151,19 @@ def main():
     parser.add_argument("--scratch-parent", required=True, type=Path)
     parser.add_argument("--go", required=True)
     parser.add_argument("--controls-only", action="store_true")
+    parser.add_argument("--full-resource-sequence", action="store_true")
     args = parser.parse_args()
     root, parent = P.unlinked_path(args.source_root), P.unlinked_path(args.scratch_parent)
     P.require(root.is_dir() and parent.is_dir() and root != parent and root not in parent.parents)
     P.require(args.controls_only or sys.platform == "win32")
+    P.require(not (args.controls_only and args.full_resource_sequence))
     P.require(shutil.disk_usage(parent).free >= (10 << 30) + (1 << 30))
     # The temporary context owns only this newly created directory. Ordinary
     # Go tests clean their own TempDirs; all output has already streamed once.
     workspace = tempfile.TemporaryDirectory(prefix="observer-eof-diagnostic-", dir=parent)
     try:
         work = Path(workspace.name)
-        manifest = P.prepare(root, work / "overlay")
+        manifest = P.prepare(root, work / "overlay", full_resource_sequence=args.full_resource_sequence)
         print("observer-eof-overlay-selection " + json.dumps(manifest, sort_keys=True), flush=True)
         env = os.environ.copy()
         env.update(GOTOOLCHAIN="local", GOWORK="off", GOENV="off", GOFLAGS="", PYTHONDONTWRITEBYTECODE="1",
@@ -185,9 +193,10 @@ def main():
             commands.append(("instrumented-EOF-controls", [args.go, "test", "-p", "1", "-overlay", env["SPV_OBSERVER_EOF_OVERLAY"],
                                              "-v", "-count=1", "-timeout", "3m", "-run", CONTROLS, "./tools/observe-block"], 240))
         if not args.controls_only:
-            commands.append(("instrumented-Windows-resource-generation", [args.go, "test", "-p", "1", "-overlay",
+            label = "instrumented-Windows-resource-full-sequence" if args.full_resource_sequence else "instrumented-Windows-resource-generation"
+            commands.append((label, [args.go, "test", "-p", "1", "-overlay",
                              env["SPV_OBSERVER_EOF_OVERLAY"], "-v", "-count=1", "-timeout", "10m", "-run",
-                             WORKLOAD, "./internal/conformance"], 660))
+                             resource_pattern(args.full_resource_sequence), "./internal/conformance"], 660))
         for label, argv, timeout in commands:
             print("observer-eof-command-selection " + json.dumps({"label": label, "attempt": 1, "timeout_seconds": timeout}), flush=True)
             try:
