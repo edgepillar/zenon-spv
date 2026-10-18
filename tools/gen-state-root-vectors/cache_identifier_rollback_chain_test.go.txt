@@ -1,0 +1,80 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Prepared only in the selected experimental node's chain package.
+package chain
+
+import (
+	"errors"
+	"testing"
+
+	"github.com/zenon-network/go-zenon/chain/cache/storage"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+// Existing alternate CacheManager implementations still compile. Height-only
+// fallback must refuse before Pop when the new optional capability is absent.
+type candidateLegacyCache struct {
+	current db.DB
+	pops    int
+}
+
+func (m *candidateLegacyCache) DB() db.DB                            { return m.current }
+func (m *candidateLegacyCache) Add(types.HashHeight, db.Patch) error { return nil }
+func (m *candidateLegacyCache) Pop() error                           { m.pops++; return nil }
+func (m *candidateLegacyCache) Stop() error                          { return nil }
+
+type candidateIncompleteRollback struct {
+	*candidateLegacyCache
+	calls   int
+	failure error
+}
+
+func (m *candidateIncompleteRollback) RollbackTo(types.HashHeight) error { m.calls++; return m.failure }
+
+func candidateChainCacheDB(t *testing.T) (db.DB, types.HashHeight, types.HashHeight) {
+	t.Helper()
+	current := types.HashHeight{Hash: types.NewHash([]byte("current")), Height: 2}
+	target := types.HashHeight{Hash: types.NewHash([]byte("target")), Height: 1}
+	d := db.NewMemDB()
+	if err := d.Put([]byte{0}, current.Serialize()); err != nil {
+		t.Fatal(err)
+	}
+	return d, current, target
+}
+
+func TestCandidateChainCacheLegacyRollbackRefused(t *testing.T) {
+	d, _, target := candidateChainCacheDB(t)
+	m := &candidateLegacyCache{current: d}
+	if err := NewChainCache(m).rollbackTo(target); err == nil || m.pops != 0 {
+		t.Fatal("legacy height-only fallback was allowed")
+	}
+}
+
+func TestCandidateChainCacheExactTarget(t *testing.T) {
+	d, current, _ := candidateChainCacheDB(t)
+	m := &candidateLegacyCache{current: d}
+	if err := NewChainCache(m).rollbackTo(current); err != nil || m.pops != 0 {
+		t.Fatal("exact identifier is not a no-op")
+	}
+	current.Hash[0] ^= 1
+	if err := NewChainCache(m).rollbackTo(current); !errors.Is(err, storage.ErrCacheIdentityMismatch) || m.pops != 0 {
+		t.Fatal("same-height foreign hash accepted")
+	}
+}
+
+func TestCandidateChainCacheIncompleteOptionalRollback(t *testing.T) {
+	d, _, target := candidateChainCacheDB(t)
+	m := &candidateIncompleteRollback{candidateLegacyCache: &candidateLegacyCache{current: d}}
+	if err := NewChainCache(m).rollbackTo(target); !errors.Is(err, storage.ErrCacheIdentityMismatch) || m.calls != 1 || m.pops != 0 {
+		t.Fatal("nil backend result bypassed final identity check")
+	}
+}
+
+func TestCandidateChainCacheRollbackError(t *testing.T) {
+	d, _, target := candidateChainCacheDB(t)
+	failure := errors.New("uncertain backend rollback")
+	m := &candidateIncompleteRollback{candidateLegacyCache: &candidateLegacyCache{current: d}, failure: failure}
+	if err := NewChainCache(m).rollbackTo(target); !errors.Is(err, failure) || m.calls != 1 || m.pops != 0 {
+		t.Fatal("backend error was lost or followed by fallback")
+	}
+}

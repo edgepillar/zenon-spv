@@ -2670,3 +2670,23 @@ This remains an unsigned source-genesis startup component experiment. It does
 not qualify live reorg, consensus, concurrent shutdown, header/root binding or
 production values. Runtime state-value acceptance and the consumer stay refused;
 whole-module-graph verification remains not qualified.
+
+### Native cache rollback identity
+
+The [cache identity experiment](../../docs/cache-identifier-rollback.md)
+reproduces public startup with different ledger and cache hashes after a
+height-only rollback. A separate experimental fix validates the full retained
+identifier path before writing. Eight recorded real-manager cases compare the
+parent and candidate; 12 race-enabled native test roots produced 22 passing
+results. The 28 portable controls and independent reader check those recordings,
+both complete source trees and two independently reconstructed metadata images.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/prepare_cache_identifier_rollback_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_cache_identifier_rollback_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_cache_identifier_rollback.py
+```
+
+The reader starts no backend or network request. It does not establish whole
+rollback-window atomicity, full-service reorg behavior, accepted-header binding,
+activation or production values. State-value acceptance remains refused.
