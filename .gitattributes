@@ -1,4 +1,5 @@
 # Keep pilot source, checker and fixture fingerprints identical across checkouts.
+.gitattributes text eol=lf
 *.go text eol=lf
 *.go.txt text eol=lf
 *.json text eol=lf

@@ -84,7 +84,9 @@ class CacheIdentifierPreparationTests(unittest.TestCase):
         # commit, network, global configuration or reference node execution.
         attributes = (HERE.parents[1] / ".gitattributes").read_bytes()
         rule = b"*.go.txt text eol=lf\n"
+        self_rule = b".gitattributes text eol=lf\n"
         self.assertEqual(attributes.count(rule), 1)
+        self.assertEqual(attributes.count(self_rule), 1)
         original_extras = G.extra_sources()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
@@ -105,7 +107,8 @@ class CacheIdentifierPreparationTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
             git("init", "--quiet", "--template=" + template.as_posix())
             attr = repository / ".gitattributes"
-            attr.write_bytes(attributes.replace(rule, b""))
+            before_attributes = attributes.replace(rule, b"").replace(self_rule, b"")
+            attr.write_bytes(before_attributes)
             paths = []
             for name in G.CONTROL_SOURCES:
                 relative = "tools/gen-state-root-vectors/" + name
@@ -118,7 +121,9 @@ class CacheIdentifierPreparationTests(unittest.TestCase):
             git("add", "--", ".gitattributes", *paths)
             before = root / "before"
             before.mkdir()
-            git("checkout-index", "--prefix=" + before.as_posix() + "/", "--", *paths)
+            git("checkout-index", "--prefix=" + before.as_posix() + "/", "--", ".gitattributes", *paths)
+            self.assertEqual((before / ".gitattributes").read_bytes(),
+                             before_attributes.replace(b"\n", b"\r\n"))
             for name, pin in G.CONTROL_SOURCES.items():
                 raw = (before / "tools/gen-state-root-vectors" / name).read_bytes()
                 self.assertIn(b"\r\n", raw)
@@ -130,7 +135,8 @@ class CacheIdentifierPreparationTests(unittest.TestCase):
             git("add", "--", ".gitattributes")
             after = root / "after"
             after.mkdir()
-            git("checkout-index", "--prefix=" + after.as_posix() + "/", "--", *paths)
+            git("checkout-index", "--prefix=" + after.as_posix() + "/", "--", ".gitattributes", *paths)
+            self.assertEqual((after / ".gitattributes").read_bytes(), attributes)
             with mock.patch.object(G, "HERE", after / "tools/gen-state-root-vectors"):
                 self.assertEqual(G.extra_sources(), original_extras)
             for name, pin in G.CONTROL_SOURCES.items():
