@@ -66,6 +66,56 @@ class CaptureTests(unittest.TestCase):
         self.assertEqual(r["reason"], "timeout")
         self.assertTrue(r["copy_threads_joined"])
 
+    def test_owned_control_image_removed_after_transient_access_denial(self):
+        with tempfile.TemporaryDirectory() as directory:
+            image = Path(directory) / "controls.exe"
+            image.write_bytes(b"isolated-test-image")
+            selected = C.image_pin(image)
+            original = Path.unlink
+            calls = []
+            def unlink(path):
+                calls.append(path)
+                if len(calls) == 1:
+                    raise PermissionError("isolated access-denied fixture")
+                return original(path)
+            with mock.patch.object(C.sys, "platform", "win32"), mock.patch.object(Path, "unlink", unlink):
+                report = C.remove_control_image(image, selected)
+            self.assertFalse(image.exists())
+            self.assertEqual(report["removal_attempts"], 2)
+            self.assertEqual(report["lock_holder"], "UNKNOWN")
+            self.assertFalse(report["observer_deadline_or_pipe_wait_changed"])
+
+    def test_changed_control_image_held(self):
+        with tempfile.TemporaryDirectory() as directory:
+            image = Path(directory) / "controls.exe"
+            image.write_bytes(b"selected-image")
+            selected = C.image_pin(image)
+            image.write_bytes(b"changed-image")
+            with mock.patch.object(C.sys, "platform", "win32"):
+                with self.assertRaises(RuntimeError):
+                    C.remove_control_image(image, selected)
+            self.assertEqual(image.read_bytes(), b"changed-image")
+
+    def test_permanent_control_image_access_denial_held(self):
+        with tempfile.TemporaryDirectory() as directory:
+            image = Path(directory) / "controls.exe"
+            image.write_bytes(b"selected-image")
+            selected = C.image_pin(image)
+            with mock.patch.object(C.sys, "platform", "win32"), mock.patch.object(Path, "unlink", side_effect=PermissionError("isolated hold")), mock.patch.object(C.sys, "stdout", io.StringIO()):
+                with self.assertRaises(RuntimeError):
+                    C.remove_control_image(image, selected, timeout=0)
+            self.assertTrue(image.exists())
+
+    def test_uncertain_control_image_removal_held(self):
+        with tempfile.TemporaryDirectory() as directory:
+            image = Path(directory) / "controls.exe"
+            image.write_bytes(b"selected-image")
+            selected = C.image_pin(image)
+            with mock.patch.object(C.sys, "platform", "win32"), mock.patch.object(Path, "unlink", side_effect=OSError("isolated uncertain outcome")):
+                with self.assertRaises(RuntimeError):
+                    C.remove_control_image(image, selected)
+            self.assertTrue(image.exists())
+
 
 if __name__ == "__main__":
     unittest.main()
