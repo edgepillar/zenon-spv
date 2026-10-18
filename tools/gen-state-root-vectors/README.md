@@ -2628,3 +2628,24 @@ as failing. Frozen-chain adapters do not qualify live stop/reorg concurrency,
 authenticated snapshots, production resource budgets or accepted-header state
 values. Current consumers remain `REFUSED`; independent consumer/profile/review
 and distribution gates stay separate.
+
+### Public Chain terminal lifecycle with real managers
+
+The [public Chain comparison](../../docs/public-chain-terminal-lifecycle.md)
+records real ledger/cache/NodeTree managers and public `Init`, `Start` and `Stop`
+on the complete selected 9c71 source. Two parent Init calls panic and a stopped
+Start returns false success. The separate experimental outer guard returns an
+explicit error in all three cases. Four normal paths retain root/proof equality
+and clean manager reopen. This is sequential local evidence, not full node,
+reorg, concurrency, activation or state-value qualification. The late incomplete
+whole-module-graph verification and original failed task remain explicit.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/prepare_public_chain_lifecycle_successor_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_public_chain_lifecycle_successor_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_public_chain_lifecycle_successor.py
+```
+
+The preparer returns commands without executing them. Portable controls rebuild
+both Git trees and independently check the recorded canonical witness; no new
+node builds, genesis projections, dependency downloads or database cases occur.
