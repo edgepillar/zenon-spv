@@ -2,5 +2,6 @@
 *.go text eol=lf
 *.json text eol=lf
 *.py text eol=lf
+tools/diagnose-observer-eof/*.go.txt text eol=lf
 go.mod text eol=lf
 go.sum text eol=lf

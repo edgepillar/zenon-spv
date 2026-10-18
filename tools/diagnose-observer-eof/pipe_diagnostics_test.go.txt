@@ -1,0 +1,89 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// These controls exist only in an explicitly selected diagnostic overlay.
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"io"
+	"os"
+	"os/exec"
+	"strings"
+	"testing"
+	"time"
+)
+
+func TestObserverEOFDiagnosticVocabulary(t *testing.T) {
+	private := errors.New("PRIVATE_ERROR https://user:password@private.invalid/path")
+	cases := []struct { err error; want string }{
+		{nil, "none"}, {io.EOF, "eof"}, {exec.ErrWaitDelay, "wait_delay_exact"},
+		{errors.Join(private, exec.ErrWaitDelay), "wait_delay_wrapped"},
+		{os.ErrClosed, "file_closed"}, {context.DeadlineExceeded, "deadline"},
+		{context.Canceled, "cancelled"}, {io.ErrShortWrite, "short_write"},
+		{&exec.ExitError{}, "exit_error"}, {private, "other"},
+	}
+	for _, tc := range cases {
+		if got := diagnosticError(tc.err); got != tc.want { t.Fatal("diagnostic error escaped the fixed vocabulary") }
+	}
+}
+
+func TestObserverEOFDiagnosticCopy(t *testing.T) {
+	cases := []struct { name string; input io.Reader; limit int; want string; eof bool }{
+		{"complete", strings.NewReader("abc"), 32, "none", true},
+		{"data_and_EOF", &eofTestReader{[]byte("abc"), io.EOF}, 32, "none", true},
+		{"read_failure", &eofTestReader{[]byte("abc"), os.ErrClosed}, 32, "file_closed", false},
+		{"limit", strings.NewReader("abc"), 2, "other", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := &boundedOutput{limit: tc.limit, cancel: func(){}}
+			_, err := out.ReadFrom(tc.input)
+			trace := out.trace
+			if !trace.Started || !trace.Completed || trace.ReadCalls < 1 || trace.ElapsedNS < 0 ||
+				trace.RealEOF != tc.eof || trace.RealEOF != out.readEOF || trace.CopyError != tc.want || diagnosticError(err) != tc.want {
+				t.Fatal("diagnostic lost joined copy evidence")
+			}
+			if tc.eof && trace.TerminalRead != "eof" { t.Fatal("complete copy did not observe Read EOF") }
+		})
+	}
+}
+
+func TestObserverEOFDiagnosticJoinedProcess(t *testing.T) {
+	t.Setenv("ZENON_OBSERVER_HELPER", "1")
+	t.Setenv("GORACE", "atexit_sleep_ms=0")
+	binary, err := os.Executable()
+	if err != nil { t.Fatal("cannot select diagnostic control helper") }
+	for _, mode := range []string{"success", "failed"} {
+		r := runProcess(context.Background(), binary, []string{"-test.run=^TestObservationProcessHelper$", "--", mode}, 32, 5*time.Second)
+		d := r.PipeDiagnostic
+		if d == nil || !d.Stdout.RealEOF || !d.Stderr.RealEOF || !d.Stdout.Completed || !d.Stderr.Completed || d.RawWaitDelayExact {
+			t.Fatal("joined diagnostic lost native stream completion")
+		}
+		if mode == "success" && (d.RawRunError != "none" || d.JoinedError != "none" || r.code != 0) { t.Fatal("diagnostic changed native success") }
+		if mode == "failed" && (d.RawRunError != "exit_error" || d.JoinedError != "exit_error" || r.category != "process_failure") { t.Fatal("diagnostic hid a nonzero child exit") }
+		raw, err := json.Marshal(d)
+		if err != nil || strings.Contains(string(raw), "PRIVATE") { t.Fatal("pipe diagnostic exposed private input") }
+	}
+}
+
+func TestObserverEOFDiagnosticHeldStream(t *testing.T) {
+	t.Setenv("ZENON_OBSERVER_HELPER", "1")
+	t.Setenv("GORACE", "atexit_sleep_ms=0")
+	binary, err := os.Executable()
+	if err != nil { t.Fatal("cannot select diagnostic held-stream helper") }
+	for _, mode := range []string{"inherited pipe", "inherited stderr"} {
+		r := runProcess(context.Background(), binary, []string{"-test.run=^TestObservationProcessHelper$", "--", mode}, 32, 5*time.Second)
+		d := r.PipeDiagnostic
+		if d == nil || !d.RawWaitDelayExact || d.RawRunError != "wait_delay_exact" || d.JoinedError != "wait_delay_exact" ||
+			r.category != "output_incomplete" || r.code != 2 || r.ExitCode == nil || *r.ExitCode != 0 {
+			t.Fatal("held pipe acquired a complete or successful diagnostic")
+		}
+		held, complete := d.Stdout, d.Stderr
+		if mode == "inherited stderr" { held, complete = d.Stderr, d.Stdout }
+		if !held.Started || !held.Completed || held.RealEOF || held.TerminalRead != "file_closed" || held.CopyError != "file_closed" ||
+			!complete.Started || !complete.Completed || !complete.RealEOF || complete.TerminalRead != "eof" || complete.CopyError != "none" {
+			t.Fatal("held-stream diagnostic did not distinguish real EOF from forced pipe closure")
+		}
+	}
+}
