@@ -2690,3 +2690,26 @@ python3 -I -B tools/gen-state-root-vectors/check_cache_identifier_rollback.py
 The reader starts no backend or network request. It does not establish whole
 rollback-window atomicity, full-service reorg behavior, accepted-header binding,
 activation or production values. State-value acceptance remains refused.
+
+### Native cache forward replay preflight
+
+The [forward-replay experiment](../../docs/cache-forward-replay.md) records a
+foreign behind-cache base becoming ready with matching current identifiers.
+The separate experimental preflight checks the selected ledger's full starting
+identifier before replay. Three valid cache starts still replay or reopen; the
+foreign base refuses without cache writes. The changed runtime reruns the 12
+prior rollback component roots and seven new subcases: 13 roots and 30 passing
+race-enabled results. The parent binary and its four observations are reused.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/prepare_cache_forward_replay_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_cache_forward_replay_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_cache_forward_replay.py
+```
+
+The 31 portable controls and reader check 70 events and 15 queries, reconstruct
+the 160-byte v1 second-momentum hash frame and three small cache images, and
+fold the selected canonical witness. No backend, compiler or network runs in
+the reader. Full node recovery, live reorg, activation, accepted-header binding,
+independent review and authenticated distribution remain open. State-value
+acceptance and the consumer remain refused.

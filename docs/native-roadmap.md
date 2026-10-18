@@ -98,6 +98,15 @@ sequential cases include normal initialization and clean manager reopen; full
 node recovery, reorg and concurrent lifecycle qualification remain open. The
 original task's late whole-module-graph failure is retained explicitly.
 
+Cache recovery also needs the selected ledger's full identifier. The
+[rollback identity experiment](cache-identifier-rollback.md) validates the
+retained rollback path. The separate
+[forward-replay preflight experiment](cache-forward-replay.md) reproduces a
+foreign behind-cache base becoming ready at a matching current identifier,
+then checks refusal before writing and valid empty/behind-cache replay. Its
+changed runtime reruns the prior rollback component controls. These finite
+experiments leave M2 agreement and full node qualification open.
+
 For M3, obtain the expected root from the owned accepted v3 header/context.
 Derive the selected address/token key locally and carry exact presence,
 absence and value semantics through transport, saved state and the consumer.
