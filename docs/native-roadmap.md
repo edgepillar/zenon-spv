@@ -28,7 +28,7 @@ historical observations keep their original revisions.
 | Milestone | Owner and current state | Required exit |
 | --- | --- | --- |
 | M0: one review candidate | Maintainer and release reviewer. Mechanical source/binary/report/scenario binding is complete for the selected revision; independent acceptance is open. | Preserve the exact candidate and its failures, complete case inventory, platform limits and change ledger during review. |
-| M1: real v1/v2 consumer | Application integrator and operator; the consumer owner and acceptance inputs are still to be selected. This is the next product priority. | The selected real consumer obtains its bounded inclusion result across the declared advancing-history and failure plan. Claim independent qualification only with demonstrated independent selection, corroboration and provenance. |
+| M1: real v1/v2 consumer | The operator selected the existing CLI for testnet account-block inclusion observation. A bounded operator-trusted development comparison of the frozen candidate is recorded; independent consumer/network acceptance remains open. | The selected real consumer obtains its bounded inclusion result across the declared advancing-history and failure plan. Claim independent qualification only with demonstrated independent selection, corroboration and provenance. |
 | M2: partial-SMT agreement and recovery | Node maintainer, SPV maintainer and protocol reviewer. Candidate specification and finite experimental fixes exist; agreement and full node qualification remain open. | Agree key/value/proof/activation/resource rules and qualify full momentum hash/height binding through recovery, retention and reorg on one selected node revision. |
 | M3: one accepted-v3 balance flow | SPV maintainer and consumer integrator, after M2. Runtime v3 and state-value acceptance remain refused. | Bind an owned accepted header/context to its StateRoot, a locally derived address/token key, bounded proof and strict typed consumer result, while preserving v1/v2 compatibility and default refusal. |
 | M4: representative node/import workload | Node/snapshot maintainer, operator and performance reviewer. Recorded component cases remain scoped evidence. | Meet declared hardware/workload budgets and qualify actual import, retention, reorg, interruption and activation paths, including the trust or derivation of excluded snapshot state. |
@@ -90,6 +90,13 @@ recovery, import and live reorg. The
 [raw-store roundtrip](state-tree-raw-kv-roundtrip-successor.md) retain their exact
 source/caller/component limits. Successful primitive or recorded comparisons
 do not qualify an unexecuted chain wrapper or production recovery path.
+
+The [public Chain lifecycle comparison](public-chain-terminal-lifecycle.md)
+additionally reproduces two `Chain.Init` panics and a false `Start` success on
+stopped real managers, then checks a separate experimental outer guard. Its six
+sequential cases include normal initialization and clean manager reopen; full
+node recovery, reorg and concurrent lifecycle qualification remain open. The
+original task's late whole-module-graph failure is retained explicitly.
 
 For M3, obtain the expected root from the owned accepted v3 header/context.
 Derive the selected address/token key locally and carry exact presence,

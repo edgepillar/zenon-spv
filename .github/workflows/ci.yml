@@ -197,6 +197,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_offline_rebuild_successor_corpus_test.py -v
       - name: Independent successor offline rebuild observations
         run: python -I -B tools/gen-state-root-vectors/check_offline_rebuild_successor_corpus.py --source-revision "${{ github.sha }}"
+      - name: Public Chain lifecycle source controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_public_chain_lifecycle_successor_test.py -v
+      - name: Public Chain lifecycle recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_public_chain_lifecycle_successor_test.py -v
+      - name: Independent recorded public Chain lifecycle
+        run: python -I -B tools/gen-state-root-vectors/check_public_chain_lifecycle_successor.py --source-revision "${{ github.sha }}"
       - name: Successor raw store codec controls
         run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
       - name: Successor raw store independent model controls
@@ -724,6 +730,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_offline_rebuild_successor_corpus_test.py -v
       - name: Independent successor offline rebuild observations
         run: python -I -B tools/gen-state-root-vectors/check_offline_rebuild_successor_corpus.py --source-revision "${{ github.sha }}"
+      - name: Public Chain lifecycle source controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_public_chain_lifecycle_successor_test.py -v
+      - name: Public Chain lifecycle recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_public_chain_lifecycle_successor_test.py -v
+      - name: Independent recorded public Chain lifecycle
+        run: python -I -B tools/gen-state-root-vectors/check_public_chain_lifecycle_successor.py --source-revision "${{ github.sha }}"
       - name: Successor raw store codec controls
         run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
       - name: Successor raw store independent model controls
