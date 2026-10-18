@@ -38,6 +38,19 @@ an exit code in place of real EOF. Failure retains its actual result. Completing
 the selected workload without a failure is `NOT_REPRODUCED`, not a repair or a
 root-cause finding. This workflow does not change the ordinary CI workflow.
 
+The first diagnostic generation, [39091079408](https://github.com/edgepillar/zenon-spv/actions/runs/39091079408),
+remains failed. All twelve selected Go test groups emitted PASS, but `go test`
+then exited 1 because Windows refused removal of its implicit test executable.
+The resource phase was **NOT_RUN**. This is not a passing command or a resource
+reproduction. The specific lock holder is unknown. The revised Windows harness
+compiles one explicit control image, records its digest, runs it once, and records
+its actual exit separately from bounded removal of that exact owned image.
+Access denial is retained until removal succeeds or the five-second cleanup
+limit fails with the workspace held. This does not increase the observer's
+one-second pipe wait or alter any test assertion. A subsequent source-bound
+generation is the first execution of the selected resource phase, not a retry
+or replacement of an observed resource sample.
+
 For local controls, select an approved managed task's scratch parent and an
 explicit compiler. The runner requires 10 GiB free plus 1 GiB expected allocation,
 creates private temporary build/module caches, streams each command once with

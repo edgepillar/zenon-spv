@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -22,6 +23,52 @@ import prepare as P
 
 CONTROLS = "^Test(ObserverEOFDiagnostic.*|Observation(StreamEOF|EOFCompletionGate|OutputCompletion|ProcessBoundaries)|Concurrent(File)?ObservationProcessCancellation|ProcessFileCapturePreservesCompletion|FileCaptureWriteFailureStopsAndJoinsLiveChild)$"
 WORKLOAD = "^TestCompiledBlockObserverResources$/^K4096_T16_C4$"
+
+
+def image_pin(path):
+    path = P.unlinked_path(path)
+    before = path.lstat()
+    P.require(stat.S_ISREG(before.st_mode) and before.st_nlink == 1 and before.st_size <= 128 << 20)
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for raw in iter(lambda: stream.read(65536), b""):
+            digest.update(raw)
+    after = path.lstat()
+    identity = lambda s: (s.st_dev, s.st_ino, s.st_mode, s.st_nlink, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+    P.require(identity(before) == identity(after))
+    return identity(before), {"sha256": digest.hexdigest(), "bytes": before.st_size}
+
+
+def remove_control_image(path, selected, timeout=5):
+    """Windows-only bounded removal of this exact new diagnostic test image.
+
+    Keep an access-denied result until a later successful removal. Never claim
+    which process or scanner held the image, or relax the observer pipe timer.
+    """
+    P.require(sys.platform == "win32")
+    identity, pin = selected
+    started, attempts = time.monotonic_ns(), 0
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            P.require(image_pin(path) == (identity, pin))
+        except (OSError, ValueError):
+            raise RuntimeError("diagnostic image identity changed; preserve workspace") from None
+        attempts += 1
+        try:
+            path.unlink()
+            return {"selected_image": pin, "removal_attempts": attempts, "removed": True,
+                    "elapsed_ns": time.monotonic_ns() - started, "timeout_seconds": timeout,
+                    "lock_holder": "UNKNOWN", "observer_deadline_or_pipe_wait_changed": False}
+        except PermissionError:
+            if time.monotonic() >= deadline:
+                print("observer-eof-control-image-removal " + json.dumps({"selected_image": pin,
+                      "removal_attempts": attempts, "removed": False, "elapsed_ns": time.monotonic_ns() - started,
+                      "timeout_seconds": timeout, "lock_holder": "UNKNOWN"}, sort_keys=True), flush=True)
+                raise RuntimeError("diagnostic control image remains held; preserve workspace")
+            time.sleep(0.02)
+        except OSError:
+            raise RuntimeError("diagnostic control image removal is uncertain; preserve workspace") from None
 
 
 def capture(argv, cwd, env, timeout, out_limit=4 << 20, err_limit=1 << 20):
@@ -123,15 +170,32 @@ def main():
             ("compiler", [args.go, "version"], 30),
             ("overlay-preparation-controls", [sys.executable, "-I", "-B", str(P.HERE / "prepare_test.py"), "-v"], 60),
             ("bounded-capture-controls", [sys.executable, "-I", "-B", str(P.HERE / "run_test.py"), "-v"], 60),
-            ("instrumented-EOF-controls", [args.go, "test", "-p", "1", "-overlay", env["SPV_OBSERVER_EOF_OVERLAY"],
-                                         "-v", "-count=1", "-timeout", "3m", "-run", CONTROLS, "./tools/observe-block"], 240),
         ]
+        control_image = work / "observer-eof-controls.exe"
+        if sys.platform == "win32":
+            # Go's implicit test image removal failed in the retained first
+            # Windows generation. Compile once and supervise that exact image;
+            # keep build, test exit and owned-image removal as separate facts.
+            commands.extend([
+                ("instrumented-EOF-controls-build", [args.go, "test", "-p", "1", "-overlay", env["SPV_OBSERVER_EOF_OVERLAY"],
+                                                     "-c", "-o", str(control_image), "./tools/observe-block"], 240),
+                ("instrumented-EOF-controls", [str(control_image), "-test.v", "-test.count=1", "-test.timeout=3m", "-test.run=" + CONTROLS], 240),
+            ])
+        else:
+            commands.append(("instrumented-EOF-controls", [args.go, "test", "-p", "1", "-overlay", env["SPV_OBSERVER_EOF_OVERLAY"],
+                                             "-v", "-count=1", "-timeout", "3m", "-run", CONTROLS, "./tools/observe-block"], 240))
         if not args.controls_only:
             commands.append(("instrumented-Windows-resource-generation", [args.go, "test", "-p", "1", "-overlay",
                              env["SPV_OBSERVER_EOF_OVERLAY"], "-v", "-count=1", "-timeout", "10m", "-run",
                              WORKLOAD, "./internal/conformance"], 660))
         for label, argv, timeout in commands:
             print("observer-eof-command-selection " + json.dumps({"label": label, "attempt": 1, "timeout_seconds": timeout}), flush=True)
+            try:
+                selected_image = image_pin(control_image) if label == "instrumented-EOF-controls" and sys.platform == "win32" else None
+            except (OSError, ValueError):
+                raise RuntimeError("diagnostic image cannot be selected; preserve workspace") from None
+            if selected_image is not None:
+                print("observer-eof-control-image-selection " + json.dumps(selected_image[1], sort_keys=True), flush=True)
             receipt = capture(argv, root, env, timeout)
             if receipt["reason"] is not None or not receipt["output_complete"]:
                 raise RuntimeError("incomplete diagnostic command; preserve its workspace")
@@ -139,6 +203,9 @@ def main():
                 print("observer-eof-generation-result " + json.dumps({"status": "FAILED_RETAIN_ACTUAL_OUTPUT", "failed_phase": label,
                       "ordinary_qualification": False, "retry_performed": False}), flush=True)
                 return 1
+            if selected_image is not None:
+                removal = remove_control_image(control_image, selected_image)
+                print("observer-eof-control-image-removal " + json.dumps(removal, sort_keys=True), flush=True)
         P.require(all(P.sha(P.regular(root / name)) == digest for name, digest in P.PINS.items()))
         print("observer-eof-generation-result " + json.dumps({"status": "CONTROLS_PASSED" if args.controls_only else "NOT_REPRODUCED",
               "ordinary_qualification": False, "retry_performed": False, "source_bytes_unchanged": True}), flush=True)
