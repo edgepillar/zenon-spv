@@ -104,7 +104,12 @@ The first hosted Windows attempt refused the native `.go.txt` source pins.
 Those containers were outside the existing LF checkout rules. A real isolated
 Git regression uses `core.autocrlf=true` to reproduce CRLF conversion and source
 refusal, then verifies that the explicit `.go.txt` LF rule preserves the original
-SHA-256 pins. It uses no commit or network. The source verifier is unchanged;
+SHA-256 pins. A second Windows attempt passed those source pins but exposed CRLF
+conversion of `.gitattributes` itself in the regression fixture's rule check.
+The attributes file now has its own LF rule, and the same real Git regression
+checks the exported attributes bytes before and after both rules are applied.
+Both failed hosted attempts are retained. The regression uses no commit or
+network. The source verifier is unchanged;
 it does not normalize evidence bytes or accept a different digest. Exact-source
 hosted qualification of the corrected revision is still required.
 
