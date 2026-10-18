@@ -1,0 +1,75 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// This file is added only by the explicit diagnostic overlay.
+package main
+
+import (
+	"context"
+	"errors"
+	"io"
+	"os"
+	"os/exec"
+)
+
+// BEGIN TYPES
+type pipeStreamDiagnostic struct {
+	Started      bool   `json:"copy_started"`
+	Completed    bool   `json:"copy_completed"`
+	RealEOF      bool   `json:"real_EOF"`
+	ReadCalls    int64  `json:"read_calls"`
+	TerminalRead string `json:"terminal_read"`
+	CopyError    string `json:"copy_error"`
+	ElapsedNS    int64  `json:"copy_elapsed_ns"`
+}
+
+type pipeDiagnostic struct {
+	RawRunError       string               `json:"raw_run_error"`
+	RawWaitDelayExact  bool                 `json:"raw_wait_delay_exact"`
+	JoinedError       string               `json:"joined_error"`
+	Stdout            pipeStreamDiagnostic `json:"stdout"`
+	Stderr            pipeStreamDiagnostic `json:"stderr"`
+	StdoutLimit       bool                 `json:"stdout_limit"`
+	StderrLimit       bool                 `json:"stderr_limit"`
+	DestinationFailed bool                 `json:"destination_failed"`
+	ParentCancelled   bool                 `json:"parent_cancelled"`
+	ContextError      string               `json:"context_error"`
+}
+// END TYPES
+
+// Never format an error, executable path, argument or raw child byte.
+func diagnosticError(err error) string {
+	switch {
+	case err == nil:
+		return "none"
+	case err == io.EOF:
+		return "eof"
+	case err == exec.ErrWaitDelay:
+		return "wait_delay_exact"
+	case errors.Is(err, exec.ErrWaitDelay):
+		return "wait_delay_wrapped"
+	case errors.Is(err, os.ErrClosed):
+		return "file_closed"
+	case errors.Is(err, context.DeadlineExceeded):
+		return "deadline"
+	case errors.Is(err, context.Canceled):
+		return "cancelled"
+	case errors.Is(err, io.ErrShortWrite):
+		return "short_write"
+	default:
+		var exit *exec.ExitError
+		if errors.As(err, &exit) {
+			return "exit_error"
+		}
+		return "other"
+	}
+}
+
+// Only read these fields after Cmd.Run has joined both stream-copy goroutines.
+func joinedDiagnostic(raw, joined error, out, diagnostics *boundedOutput, parent, ctx context.Context) *pipeDiagnostic {
+	return &pipeDiagnostic{
+		RawRunError: diagnosticError(raw), RawWaitDelayExact: raw == exec.ErrWaitDelay,
+		JoinedError: diagnosticError(joined), Stdout: out.trace, Stderr: diagnostics.trace,
+		StdoutLimit: out.exceeded, StderrLimit: diagnostics.exceeded,
+		DestinationFailed: out.writeFailed, ParentCancelled: parent.Err() != nil,
+		ContextError: diagnosticError(ctx.Err()),
+	}
+}
