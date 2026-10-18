@@ -74,7 +74,7 @@ python3 -I -B tools/gen-state-root-vectors/check_cache_identifier_rollback_test.
 python3 -I -B tools/gen-state-root-vectors/check_cache_identifier_rollback.py
 ```
 
-The 27 portable controls and reader reconstruct both complete build trees. They
+The 28 portable controls and reader reconstruct both complete build trees. They
 reconstruct the two small cache metadata images independently from protobuf,
 goleveldb batch bytes, namespace prefixes and ordered SHA-256 framing. One
 independent 256-level fold checks the preselected canonical proof. The reader
@@ -99,6 +99,14 @@ cleanup removed only the symlink and two empty directories. The revised test
 checks the link predicate through a filesystem mock. Existing parent controls
 still test real symlinks in hosted CI. This does not change any compiled node
 source or reclassify the interrupted run as a pass.
+
+The first hosted Windows attempt refused the native `.go.txt` source pins.
+Those containers were outside the existing LF checkout rules. A real isolated
+Git regression uses `core.autocrlf=true` to reproduce CRLF conversion and source
+refusal, then verifies that the explicit `.go.txt` LF rule preserves the original
+SHA-256 pins. It uses no commit or network. The source verifier is unchanged;
+it does not normalize evidence bytes or accept a different digest. Exact-source
+hosted qualification of the corrected revision is still required.
 
 Whole-module-graph verification remains **NOT_QUALIFIED** after the earlier
 missing unused proxy input; it was not retried or converted into a pass. The 25
