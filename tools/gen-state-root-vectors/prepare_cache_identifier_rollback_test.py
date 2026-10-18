@@ -4,7 +4,9 @@
 import copy
 import importlib.util
 import json
+import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -76,6 +78,65 @@ class CacheIdentifierPreparationTests(unittest.TestCase):
             with mock.patch.object(G.P, "read_regular", side_effect=read):
                 with self.assertRaises(ValueError):
                     G.extra_sources()
+
+    def test_autocrlf_checkout_preserves_pinned_native_control_bytes(self):
+        # Use an isolated Git index and real checkout conversion, without a
+        # commit, network, global configuration or reference node execution.
+        attributes = (HERE.parents[1] / ".gitattributes").read_bytes()
+        rule = b"*.go.txt text eol=lf\n"
+        self.assertEqual(attributes.count(rule), 1)
+        original_extras = G.extra_sources()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            repository = root / "fixture"
+            repository.mkdir()
+            template = root / "empty-template"
+            template.mkdir()
+            environment = os.environ.copy()
+            for name in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
+                         "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_CONFIG_COUNT"):
+                environment.pop(name, None)
+            environment.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
+                               GIT_CONFIG_SYSTEM=os.devnull, GIT_TERMINAL_PROMPT="0")
+            def git(*arguments):
+                result = subprocess.run(["git", "-c", "core.autocrlf=true", "-c", "core.safecrlf=false",
+                                         "-c", "gc.auto=0", "-c", "maintenance.auto=false", *arguments],
+                                        cwd=repository, env=environment, capture_output=True, timeout=30)
+                self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
+            git("init", "--quiet", "--template=" + template.as_posix())
+            attr = repository / ".gitattributes"
+            attr.write_bytes(attributes.replace(rule, b""))
+            paths = []
+            for name in G.CONTROL_SOURCES:
+                relative = "tools/gen-state-root-vectors/" + name
+                path = repository / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                raw = (HERE / name).read_bytes()
+                self.assertNotIn(b"\r", raw)
+                path.write_bytes(raw)
+                paths.append(relative)
+            git("add", "--", ".gitattributes", *paths)
+            before = root / "before"
+            before.mkdir()
+            git("checkout-index", "--prefix=" + before.as_posix() + "/", "--", *paths)
+            for name, pin in G.CONTROL_SOURCES.items():
+                raw = (before / "tools/gen-state-root-vectors" / name).read_bytes()
+                self.assertIn(b"\r\n", raw)
+                self.assertNotEqual(G.P.sha(raw), pin["sha256"])
+            with mock.patch.object(G, "HERE", before / "tools/gen-state-root-vectors"):
+                with self.assertRaises(ValueError):
+                    G.extra_sources()
+            attr.write_bytes(attributes)
+            git("add", "--", ".gitattributes")
+            after = root / "after"
+            after.mkdir()
+            git("checkout-index", "--prefix=" + after.as_posix() + "/", "--", *paths)
+            with mock.patch.object(G, "HERE", after / "tools/gen-state-root-vectors"):
+                self.assertEqual(G.extra_sources(), original_extras)
+            for name, pin in G.CONTROL_SOURCES.items():
+                raw = (after / "tools/gen-state-root-vectors" / name).read_bytes()
+                self.assertNotIn(b"\r", raw)
+                self.assertEqual(G.P.sha(raw), pin["sha256"])
 
     def test_finite_ordinary_plan_and_refusal_scope(self):
         plan = G.plan(Path("/selected-owned-cache"), "/selected/go")

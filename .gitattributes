@@ -1,5 +1,6 @@
 # Keep pilot source, checker and fixture fingerprints identical across checkouts.
 *.go text eol=lf
+*.go.txt text eol=lf
 *.json text eol=lf
 *.py text eol=lf
 go.mod text eol=lf

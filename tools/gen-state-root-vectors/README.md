@@ -2678,7 +2678,7 @@ reproduces public startup with different ledger and cache hashes after a
 height-only rollback. A separate experimental fix validates the full retained
 identifier path before writing. Eight recorded real-manager cases compare the
 parent and candidate; 12 race-enabled native test roots produced 22 passing
-results. The 27 portable controls and independent reader check those recordings,
+results. The 28 portable controls and independent reader check those recordings,
 both complete source trees and two independently reconstructed metadata images.
 
 ```sh
