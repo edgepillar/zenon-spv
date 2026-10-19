@@ -2767,3 +2767,20 @@ attempts stay explicit; completed parent cases are reused. Hosted checks start n
 reference backend. Whole-window I/O atomicity, full patch retention, representative
 resources, accepted-header binding and production values remain unqualified.
 The consumer and production state-value path stay refused.
+
+### Serial source selection reuse
+
+The [source selection note](../../docs/qualification-source-selection-reuse.md)
+records a local comparison of the forward-replay test class. All 21 original
+methods remain; source bytes and a fresh complete selection are checked at both
+ends, and the no-backend control uses the real builder. Eight additional
+controls check drift, cleanup and the class boundary.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/check_cache_forward_replay_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_cache_forward_source_reuse_test.py -v
+```
+
+The comparison preserves complete checker reports. Reuse is confined to the
+serial test class and creates no persistent cache. Local timing observations
+do not qualify hosted CI speedup or production budgets.
