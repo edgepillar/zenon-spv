@@ -863,6 +863,19 @@ full replay I/O atomicity, ledger patch retention, representative resources,
 accepted-header/root authentication or production values. Consumers stay
 `REFUSED`; the node/profile and release gates remain open.
 
+The [required replay-patch experiment](cache-replay-patches.md) separately
+records two public `Init` panics when the genesis patch is absent but the
+momentum bodies are intact. An experimental required-patch preflight returns
+an error before its first cache write. The candidate retains all 46 prior
+race-enabled results and adds 12; five real-manager cases cover intact replay,
+required and optional missing patches, explicit restoration and clean reopen.
+Portable CI reads the ten recorded parent/candidate cases and independently
+decodes the complete shared genesis metadata and empty-successor metadata.
+Full augmented genesis patch and complete database digests remain recorded
+observations in that reader. Static availability checks do not establish
+whole-window I/O atomicity, patch-content validity, representative resource
+budgets or accepted-header/root authentication. The consumer stays `REFUSED`.
+
 The separate [terminal state-tree Stop comparison](state-tree-terminal-stop.md)
 adds controlled lifecycle evidence on the current-node identity proposal. It
 compares stopped-instance reopening, stop-intent readiness, an already admitted
