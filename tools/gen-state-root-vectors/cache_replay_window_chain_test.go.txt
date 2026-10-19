@@ -1,0 +1,218 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Prepared only in the selected experimental node's chain package.
+package chain
+
+import (
+	"bytes"
+	"errors"
+	"math"
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/zenon-network/go-zenon/chain/cache/storage"
+	"github.com/zenon-network/go-zenon/chain/nom"
+	"github.com/zenon-network/go-zenon/chain/store"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+type candidateWindowCache struct {
+	current    db.DB
+	adds, pops int
+	persist    bool
+}
+
+func (m *candidateWindowCache) DB() db.DB { return m.current }
+func (m *candidateWindowCache) Add(id types.HashHeight, _ db.Patch) error {
+	m.adds++
+	if m.persist {
+		return m.current.Put([]byte{0}, id.Serialize())
+	}
+	return nil
+}
+func (m *candidateWindowCache) Pop() error  { m.pops++; return nil }
+func (m *candidateWindowCache) Stop() error { return nil }
+
+type candidateWindowMomentums struct {
+	store.Momentum
+	rows       map[uint64]*nom.Momentum
+	lookup     func(uint64, int) (*nom.Momentum, error)
+	calls      map[uint64]int
+	lookups    []uint64
+	prefetches int
+	prefetch   func(*nom.Momentum) (*nom.DetailedMomentum, error)
+}
+
+func (m *candidateWindowMomentums) GetMomentumByHeight(height uint64) (*nom.Momentum, error) {
+	m.lookups = append(m.lookups, height)
+	if m.calls == nil {
+		m.calls = make(map[uint64]int)
+	}
+	m.calls[height]++
+	if m.lookup != nil {
+		return m.lookup(height, m.calls[height])
+	}
+	return m.rows[height], nil
+}
+func (m *candidateWindowMomentums) PrefetchMomentum(value *nom.Momentum) (*nom.DetailedMomentum, error) {
+	m.prefetches++
+	if m.prefetch != nil {
+		return m.prefetch(value)
+	}
+	return &nom.DetailedMomentum{Momentum: value}, nil
+}
+
+func TestCandidateChainCacheReplayWindow(t *testing.T) {
+	headers := make(map[uint64]*nom.Momentum)
+	var previous types.Hash
+	for height := uint64(1); height <= 4; height++ {
+		value := &nom.Momentum{Hash: types.NewHash([]byte{byte(height)}), PreviousHash: previous, Height: height}
+		headers[height] = value
+		previous = value.Hash
+	}
+	lookupFailure := errors.New("selected replay-window lookup error")
+	prefetchFailure := errors.New("selected replay-window prefetch error")
+	cases := []struct {
+		name                      string
+		mutate                    func(*candidateWindowMomentums, *candidateWindowCache)
+		want                      error
+		missing                   bool
+		lookups                   []uint64
+		patches, prefetches, adds int
+		frontier                  uint64
+	}{
+		{"valid-window", nil, nil, false, []uint64{1, 2, 3, 4, 2, 3, 4}, 3, 3, 3, 4},
+		{"missing-first-before-write", func(m *candidateWindowMomentums, _ *candidateWindowCache) { delete(m.rows, 2) }, nil, true, []uint64{1, 2}, 0, 0, 0, 1},
+		{"missing-later-before-write", func(m *candidateWindowMomentums, _ *candidateWindowCache) { delete(m.rows, 3) }, nil, true, []uint64{1, 2, 3}, 0, 0, 0, 1},
+		{"wrong-height-before-write", func(m *candidateWindowMomentums, _ *candidateWindowCache) {
+			copy := *m.rows[2]
+			copy.Height = 3
+			m.rows[2] = &copy
+		}, storage.ErrCacheIdentityMismatch, false, []uint64{1, 2}, 0, 0, 0, 1},
+		{"wrong-parent-before-write", func(m *candidateWindowMomentums, _ *candidateWindowCache) {
+			copy := *m.rows[3]
+			copy.PreviousHash[0] ^= 1
+			m.rows[3] = &copy
+		}, storage.ErrCacheIdentityMismatch, false, []uint64{1, 2, 3}, 0, 0, 0, 1},
+		{"wrong-target-before-write", func(m *candidateWindowMomentums, _ *candidateWindowCache) {
+			copy := *m.rows[4]
+			copy.Hash[0] ^= 1
+			m.rows[4] = &copy
+		}, storage.ErrCacheIdentityMismatch, false, []uint64{1, 2, 3, 4}, 0, 0, 0, 1},
+		{"window-read-error-preserved", func(m *candidateWindowMomentums, _ *candidateWindowCache) {
+			m.lookup = func(height uint64, _ int) (*nom.Momentum, error) {
+				if height == 3 {
+					return nil, lookupFailure
+				}
+				return m.rows[height], nil
+			}
+		}, lookupFailure, false, []uint64{1, 2, 3}, 0, 0, 0, 1},
+		{"second-pass-missing-keeps-prefix", func(m *candidateWindowMomentums, _ *candidateWindowCache) {
+			m.lookup = func(height uint64, count int) (*nom.Momentum, error) {
+				if height == 3 && count == 2 {
+					return nil, nil
+				}
+				return m.rows[height], nil
+			}
+		}, nil, true, []uint64{1, 2, 3, 4, 2, 3}, 1, 1, 1, 2},
+		{"second-pass-error-keeps-prefix", func(m *candidateWindowMomentums, _ *candidateWindowCache) {
+			m.lookup = func(height uint64, count int) (*nom.Momentum, error) {
+				if height == 3 && count == 2 {
+					return nil, lookupFailure
+				}
+				return m.rows[height], nil
+			}
+		}, lookupFailure, false, []uint64{1, 2, 3, 4, 2, 3}, 1, 1, 1, 2},
+		{"nil-prefetch-refused", func(m *candidateWindowMomentums, _ *candidateWindowCache) {
+			m.prefetch = func(*nom.Momentum) (*nom.DetailedMomentum, error) { return nil, nil }
+		}, storage.ErrCacheIdentityMismatch, false, []uint64{1, 2, 3, 4, 2}, 1, 1, 0, 1},
+		{"mismatched-prefetch-refused", func(m *candidateWindowMomentums, _ *candidateWindowCache) {
+			m.prefetch = func(*nom.Momentum) (*nom.DetailedMomentum, error) {
+				return &nom.DetailedMomentum{Momentum: m.rows[3]}, nil
+			}
+		}, storage.ErrCacheIdentityMismatch, false, []uint64{1, 2, 3, 4, 2}, 1, 1, 0, 1},
+		{"prefetch-error-preserved", func(m *candidateWindowMomentums, _ *candidateWindowCache) {
+			m.prefetch = func(*nom.Momentum) (*nom.DetailedMomentum, error) { return nil, prefetchFailure }
+		}, prefetchFailure, false, []uint64{1, 2, 3, 4, 2}, 1, 1, 0, 1},
+		{"acknowledged-wrong-identifier-refused", func(_ *candidateWindowMomentums, c *candidateWindowCache) { c.persist = false },
+			storage.ErrCacheIdentityMismatch, false, []uint64{1, 2, 3, 4, 2}, 1, 1, 1, 1},
+	}
+	for _, selected := range cases {
+		t.Run(selected.name, func(t *testing.T) {
+			current := db.NewMemDB()
+			identifier := headers[1].Identifier()
+			if err := current.Put([]byte{0}, identifier.Serialize()); err != nil {
+				t.Fatal(err)
+			}
+			frontier := db.NewMemDB()
+			if err := db.SetFrontier(frontier, headers[4].Identifier(), nil); err != nil {
+				t.Fatal(err)
+			}
+			manager := &candidateWindowCache{current: current, persist: true}
+			ledger := &candidateReplayLedger{current: frontier}
+			momentums := &candidateWindowMomentums{rows: make(map[uint64]*nom.Momentum)}
+			for height, value := range headers {
+				copy := *value
+				momentums.rows[height] = &copy
+			}
+			if selected.mutate != nil {
+				selected.mutate(momentums, manager)
+			}
+			before := candidateReplayImage(t, current)
+			cache := NewChainCache(manager)
+			err := cache.Init(ledger, momentums)
+			if selected.missing {
+				if err == nil || !strings.HasPrefix(err.Error(), "cache replay momentum at height ") || !strings.HasSuffix(err.Error(), " is missing") {
+					t.Fatalf("wrong missing-entry result: %v", err)
+				}
+			} else if !errors.Is(err, selected.want) {
+				t.Fatalf("wrong result: %v", err)
+			}
+			if !reflect.DeepEqual(momentums.lookups, selected.lookups) {
+				t.Fatalf("wrong lookup sequence: %v", momentums.lookups)
+			}
+			if ledger.patches != selected.patches || momentums.prefetches != selected.prefetches || manager.adds != selected.adds || manager.pops != 0 {
+				t.Fatal("unexpected patch, prefetch or mutation boundary")
+			}
+			if cache.GetFrontierCacheStore().Identifier() != headers[selected.frontier].Identifier() {
+				t.Fatal("wrong acknowledged frontier")
+			}
+			if selected.frontier == 1 && !bytes.Equal(before, candidateReplayImage(t, current)) {
+				t.Fatal("refusal changed the logical cache")
+			}
+		})
+	}
+	t.Run("invalid-nonpositive-window-refused", func(t *testing.T) {
+		momentums := &candidateWindowMomentums{}
+		cache := NewChainCache(&candidateWindowCache{current: db.NewMemDB(), persist: true})
+		err := cache.validateReplayWindow(momentums, headers[4].Identifier(), headers[4].Identifier())
+		if !errors.Is(err, storage.ErrCacheIdentityMismatch) || len(momentums.lookups) != 0 {
+			t.Fatal("invalid window crossed a lookup boundary")
+		}
+	})
+	t.Run("final-uint64-height-does-not-wrap", func(t *testing.T) {
+		from := types.HashHeight{Hash: types.NewHash([]byte("selected penultimate height")), Height: math.MaxUint64 - 1}
+		final := &nom.Momentum{Hash: types.NewHash([]byte("selected final height")), PreviousHash: from.Hash, Height: math.MaxUint64}
+		prior := &nom.Momentum{Hash: from.Hash, Height: from.Height}
+		current := db.NewMemDB()
+		if err := current.Put([]byte{0}, from.Serialize()); err != nil {
+			t.Fatal(err)
+		}
+		frontier := db.NewMemDB()
+		if err := db.SetFrontier(frontier, final.Identifier(), nil); err != nil {
+			t.Fatal(err)
+		}
+		manager := &candidateWindowCache{current: current, persist: true}
+		ledger := &candidateReplayLedger{current: frontier}
+		momentums := &candidateWindowMomentums{rows: map[uint64]*nom.Momentum{from.Height: prior, final.Height: final}}
+		cache := NewChainCache(manager)
+		if err := cache.Init(ledger, momentums); err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(momentums.lookups, []uint64{from.Height, final.Height, final.Height}) ||
+			cache.GetFrontierCacheStore().Identifier() != final.Identifier() || ledger.patches != 1 || momentums.prefetches != 1 || manager.adds != 1 {
+			t.Fatal("terminal height wrapped or crossed unexpected boundaries")
+		}
+	})
+}

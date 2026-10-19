@@ -1,0 +1,137 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Prepared only in the selected experimental node's chain package.
+package chain
+
+import (
+	"bytes"
+	"errors"
+	"reflect"
+	"testing"
+
+	"github.com/zenon-network/go-zenon/chain/cache/storage"
+	"github.com/zenon-network/go-zenon/chain/nom"
+	"github.com/zenon-network/go-zenon/chain/store"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+type candidateReplayCache struct {
+	current    db.DB
+	adds, pops int
+}
+
+func (m *candidateReplayCache) DB() db.DB                            { return m.current }
+func (m *candidateReplayCache) Add(types.HashHeight, db.Patch) error { m.adds++; return nil }
+func (m *candidateReplayCache) Pop() error                           { m.pops++; return nil }
+func (m *candidateReplayCache) Stop() error                          { return nil }
+
+type candidateReplayLedger struct {
+	db.Manager
+	current db.DB
+	patches int
+}
+
+func (m *candidateReplayLedger) Frontier() db.DB { return m.current }
+func (m *candidateReplayLedger) GetPatch(types.HashHeight) db.Patch {
+	m.patches++
+	return db.NewPatch()
+}
+
+type candidateReplayMomentums struct {
+	store.Momentum
+	byHeight        map[uint64]*nom.Momentum
+	lookupFailure   error
+	lookups         []uint64
+	prefetches      int
+	prefetchFailure error
+}
+
+func (m *candidateReplayMomentums) GetMomentumByHeight(height uint64) (*nom.Momentum, error) {
+	m.lookups = append(m.lookups, height)
+	if m.lookupFailure != nil {
+		return nil, m.lookupFailure
+	}
+	return m.byHeight[height], nil
+}
+func (m *candidateReplayMomentums) PrefetchMomentum(*nom.Momentum) (*nom.DetailedMomentum, error) {
+	m.prefetches++
+	return nil, m.prefetchFailure
+}
+
+func candidateReplayImage(t *testing.T, current db.DB) []byte {
+	t.Helper()
+	patch, err := current.Changes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return append([]byte(nil), patch.Dump()...)
+}
+
+func TestCandidateChainCacheForwardReplayPreflight(t *testing.T) {
+	first := &nom.Momentum{Hash: types.NewHash([]byte("selected first")), Height: 1}
+	second := &nom.Momentum{Hash: types.NewHash([]byte("selected second")), PreviousHash: first.Hash, Height: 2}
+	foreign := first.Identifier()
+	foreign.Hash[0] ^= 1
+	wrongHeight := *first
+	wrongHeight.Height = 2
+	lookupFailure := errors.New("selected predecessor read failure")
+	prefetchFailure := errors.New("selected forward prefetch boundary")
+	cases := []struct {
+		name          string
+		cache         types.HashHeight
+		parent        *nom.Momentum
+		lookupFailure error
+		want          error
+		lookups       []uint64
+		forward       bool
+	}{
+		{"foreign-nonzero-base", foreign, first, nil, storage.ErrCacheIdentityMismatch, []uint64{1}, false},
+		{"matching-hash-wrong-height", first.Identifier(), &wrongHeight, nil, storage.ErrCacheIdentityMismatch, []uint64{1}, false},
+		{"nil-selected-predecessor", first.Identifier(), nil, nil, storage.ErrCacheIdentityMismatch, []uint64{1}, false},
+		{"predecessor-read-error-preserved", first.Identifier(), first, lookupFailure, lookupFailure, []uint64{1}, false},
+		{"nonzero-hash-at-zero-height", types.HashHeight{Hash: first.Hash}, first, nil, storage.ErrCacheIdentityMismatch, nil, false},
+		{"canonical-base-reaches-forward-read", first.Identifier(), first, nil, prefetchFailure, []uint64{1, 2, 2}, true},
+		{"zero-base-skips-height-zero-lookup", types.ZeroHashHeight, first, nil, prefetchFailure, []uint64{1, 2, 1}, true},
+	}
+	for _, selected := range cases {
+		t.Run(selected.name, func(t *testing.T) {
+			current := db.NewMemDB()
+			if selected.cache != types.ZeroHashHeight {
+				if err := current.Put([]byte{0}, selected.cache.Serialize()); err != nil {
+					t.Fatal(err)
+				}
+			}
+			frontier := db.NewMemDB()
+			if err := db.SetFrontier(frontier, second.Identifier(), nil); err != nil {
+				t.Fatal(err)
+			}
+			cache := &candidateReplayCache{current: current}
+			ledger := &candidateReplayLedger{current: frontier}
+			momentums := &candidateReplayMomentums{
+				byHeight:      map[uint64]*nom.Momentum{1: selected.parent, 2: second},
+				lookupFailure: selected.lookupFailure, prefetchFailure: prefetchFailure,
+			}
+			before := candidateReplayImage(t, current)
+			c := NewChainCache(cache)
+			err := c.Init(ledger, momentums)
+			if !errors.Is(err, selected.want) {
+				t.Fatalf("wrong preflight outcome: %v", err)
+			}
+			if !reflect.DeepEqual(momentums.lookups, selected.lookups) {
+				t.Fatalf("wrong ordered lookups: %v", momentums.lookups)
+			}
+			wantedForward := 0
+			if selected.forward {
+				wantedForward = 1
+			}
+			if ledger.patches != wantedForward || momentums.prefetches != wantedForward ||
+				cache.adds != 0 || cache.pops != 0 {
+				t.Fatal("preflight crossed an unexpected read or write boundary")
+			}
+			if !bytes.Equal(before, candidateReplayImage(t, current)) ||
+				c.GetFrontierCacheStore().Identifier() != selected.cache {
+				t.Fatal("a refused or interrupted preflight changed the cache")
+			}
+		})
+	}
+}

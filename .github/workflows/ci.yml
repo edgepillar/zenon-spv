@@ -221,6 +221,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_cache_forward_replay_test.py -v
       - name: Independent recorded cache forward replay
         run: python -I -B tools/gen-state-root-vectors/check_cache_forward_replay.py --source-revision "${{ github.sha }}"
+      - name: Cache replay window source controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_cache_replay_window_test.py -v
+      - name: Cache replay window recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_cache_replay_window_test.py -v
+      - name: Independent recorded cache replay window
+        run: python -I -B tools/gen-state-root-vectors/check_cache_replay_window.py --source-revision "${{ github.sha }}"
       - name: Successor raw store codec controls
         run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
       - name: Successor raw store independent model controls
@@ -772,6 +778,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_cache_forward_replay_test.py -v
       - name: Independent recorded cache forward replay
         run: python -I -B tools/gen-state-root-vectors/check_cache_forward_replay.py --source-revision "${{ github.sha }}"
+      - name: Cache replay window source controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_cache_replay_window_test.py -v
+      - name: Cache replay window recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_cache_replay_window_test.py -v
+      - name: Independent recorded cache replay window
+        run: python -I -B tools/gen-state-root-vectors/check_cache_replay_window.py --source-revision "${{ github.sha }}"
       - name: Successor raw store codec controls
         run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
       - name: Successor raw store independent model controls

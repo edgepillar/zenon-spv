@@ -852,6 +852,17 @@ simultaneous pipeline memory, real archives, accepted header/profile/activation,
 retained-hash provenance and independent release review remain unqualified.
 Anchor, schedule and context pins remain explicit; consumers remain `REFUSED`.
 
+The separate [cache replay-window experiment](cache-replay-window.md) observes
+missing intermediate ledger entries through real public `Chain.Init` and `Stop`
+calls. Its experimental preflight rejects known gaps before the first cache
+write; valid replay and explicit fixture restoration still reopen successfully.
+Fourteen race-enabled component roots produced 46 passing results. The portable
+reader checks recorded identifiers, exact removed protobuf bytes, logical-store
+equivalence and the witness without executing a backend. This does not qualify
+full replay I/O atomicity, ledger patch retention, representative resources,
+accepted-header/root authentication or production values. Consumers stay
+`REFUSED`; the node/profile and release gates remain open.
+
 The separate [terminal state-tree Stop comparison](state-tree-terminal-stop.md)
 adds controlled lifecycle evidence on the current-node identity proposal. It
 compares stopped-instance reopening, stop-intent readiness, an already admitted
