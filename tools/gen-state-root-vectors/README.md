@@ -2713,3 +2713,29 @@ fold the selected canonical witness. No backend, compiler or network runs in
 the reader. Full node recovery, live reorg, activation, accepted-header binding,
 independent review and authenticated distribution remain open. State-value
 acceptance and the consumer remain refused.
+
+### Native cache replay window
+
+The [complete replay-window experiment](../../docs/cache-replay-window.md)
+records two missing intermediate ledger entries with real disk managers. The
+parent produces four recovered public `Init` panics, including two observations
+of an acknowledged partial cache prefix. A separate experimental preflight
+refuses the known gaps before its first cache write. Intact replay, exact
+fixture restoration and clean reopen still produce the selected component
+witness and matching complete logical cache images.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/prepare_cache_replay_window_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_cache_replay_window_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_cache_replay_window.py
+```
+
+Fourteen race-enabled native roots produced 46 passing results with no skips.
+The 30 portable controls and reader check 196 recorded events and 28 queries,
+independently reconstruct three v1 hash frames and two removed protobuf records,
+and fold the canonical witness. The parent task's later candidate-control build
+failure is preserved; the successful candidate uses corrected test source and
+does not rerun the completed parent cases. Hosted checks start no backend and
+do not authenticate the private receipts. Full recovery I/O atomicity, patch
+retention, representative resources, accepted-header binding and production
+values remain unqualified. State-value acceptance and the consumer stay refused.
