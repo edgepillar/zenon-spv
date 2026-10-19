@@ -2739,3 +2739,31 @@ does not rerun the completed parent cases. Hosted checks start no backend and
 do not authenticate the private receipts. Full recovery I/O atomicity, patch
 retention, representative resources, accepted-header binding and production
 values remain unqualified. State-value acceptance and the consumer stay refused.
+
+### Native cache replay-patch availability
+
+The [required-patch experiment](../../docs/cache-replay-patches.md) records a
+missing genesis patch causing two recovered public `Init` panics despite
+complete momentum bodies. Its separate experimental preflight checks required
+patches before the first cache write and again during application. Empty-content
+and out-of-range historical patches remain optional. The final candidate has
+58 passing race-enabled native results, 15 roots and no skips; five real-manager
+cases preserve normal startup, exact restoration and clean reopen.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/prepare_cache_replay_patches_test.py -v
+python3 -I -B tools/gen-state-root-vectors/cache_replay_patch_bytes_test.py -v
+python3 -I -B tools/gen-state-root-vectors/cache_replay_patch_records_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_cache_replay_patches_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_cache_replay_patches.py
+```
+
+The 48 portable controls and reader check 260 events and 36 queries. One shared
+genesis metadata fixture supplies all 14,094 account headers for independent v1
+hash reconstruction; the empty successor's metadata is reconstructed separately.
+Full augmented genesis patch and complete database digests remain recorded
+observations in the public reader. Original failed fixture, cleanup and test-build
+attempts stay explicit; completed parent cases are reused. Hosted checks start no
+reference backend. Whole-window I/O atomicity, full patch retention, representative
+resources, accepted-header binding and production values remain unqualified.
+The consumer and production state-value path stay refused.
