@@ -219,6 +219,8 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/prepare_cache_forward_replay_test.py -v
       - name: Cache forward replay recorded controls
         run: python -I -B tools/gen-state-root-vectors/check_cache_forward_replay_test.py -v
+      - name: Cache forward replay source reuse controls
+        run: python -I -B tools/gen-state-root-vectors/check_cache_forward_source_reuse_test.py -v
       - name: Independent recorded cache forward replay
         run: python -I -B tools/gen-state-root-vectors/check_cache_forward_replay.py --source-revision "${{ github.sha }}"
       - name: Cache replay window source controls
@@ -786,6 +788,8 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/prepare_cache_forward_replay_test.py -v
       - name: Cache forward replay recorded controls
         run: python -I -B tools/gen-state-root-vectors/check_cache_forward_replay_test.py -v
+      - name: Cache forward replay source reuse controls
+        run: python -I -B tools/gen-state-root-vectors/check_cache_forward_source_reuse_test.py -v
       - name: Independent recorded cache forward replay
         run: python -I -B tools/gen-state-root-vectors/check_cache_forward_replay.py --source-revision "${{ github.sha }}"
       - name: Cache replay window source controls
