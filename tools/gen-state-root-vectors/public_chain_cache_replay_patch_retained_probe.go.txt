@@ -1,0 +1,349 @@
+//go:build candidate_public_cache_replay_patch
+
+// SPDX-License-Identifier: GPL-3.0-only
+// Observe public startup with separately owned native cache frontier fixtures.
+package main
+
+import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"flag"
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"runtime/debug"
+	"strings"
+
+	"github.com/inconshreveable/log15"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/opt"
+	"github.com/zenon-network/go-zenon/chain"
+	"github.com/zenon-network/go-zenon/chain/cache/storage"
+	"github.com/zenon-network/go-zenon/chain/genesis"
+	"github.com/zenon-network/go-zenon/chain/nom"
+	"github.com/zenon-network/go-zenon/common"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+const canonicalRoot = "864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d"
+const selectedKey = "0300000000000000000000000000000000000000000304066318c6318c6318c6"
+const sourceDumpSHA = "a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75"
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+func require(ok bool) {
+	if !ok {
+		panic("selected public cache forward-replay contract refused")
+	}
+}
+func errorClass(err error) string {
+	switch {
+	case err == nil:
+		return "none"
+	case strings.HasPrefix(err.Error(), "cache replay momentum at height ") && strings.HasSuffix(err.Error(), " is missing"):
+		return "missing-replay-momentum"
+	case errors.Is(err, chain.ErrStateTreeNotReady):
+		return "not-ready"
+	case err.Error() == "The cache's state is incorrect. You can fix the problem by removing the cache database manually.":
+		return "cache-frontier-identity-mismatch"
+	default:
+		return "other"
+	}
+}
+
+// Inspect logical KV bytes only after all writers have closed. Physical LevelDB
+// layout and actual power-loss durability are outside this digest's scope.
+func inspectCache(root string) map[string]any {
+	handle, err := leveldb.OpenFile(filepath.Join(root, "cache"), &opt.Options{ErrorIfMissing: true, ReadOnly: true,
+		BlockCacheCapacity: 1 << 20, OpenFilesCacheCapacity: 16})
+	must(err)
+	defer func() { must(handle.Close()) }()
+	raw, err := handle.Get([]byte{85, 0}, nil)
+	frontier := &types.HashHeight{}
+	if err == leveldb.ErrNotFound {
+		require(len(raw) == 0)
+	} else {
+		must(err)
+		require(len(raw) > 1 && len(raw) <= 128 && raw[0] == 0)
+		frontier, err = types.DeserializeHashHeight(raw[1:])
+		must(err)
+	}
+	digest := sha256.New()
+	var count, keyBytes, valueBytes uint64
+	var previous []byte
+	iter := handle.NewIterator(nil, nil)
+	for iter.Next() {
+		key, value := iter.Key(), iter.Value()
+		require(len(key) > 0 && len(key) <= 256 && len(value) <= 16<<20 && count < 1000000 &&
+			(previous == nil || bytes.Compare(previous, key) < 0))
+		must(binary.Write(digest, binary.BigEndian, uint64(len(key))))
+		_, err = digest.Write(key)
+		must(err)
+		must(binary.Write(digest, binary.BigEndian, uint64(len(value))))
+		_, err = digest.Write(value)
+		must(err)
+		count++
+		keyBytes += uint64(len(key))
+		valueBytes += uint64(len(value))
+		previous = append(previous[:0], key...)
+	}
+	err = iter.Error()
+	iter.Release()
+	must(err)
+	return map[string]any{"frontier": *frontier, "records": count, "key_bytes": keyBytes, "value_bytes": valueBytes,
+		"frontier_raw_value": hex.EncodeToString(raw), "frontier_present": len(raw) > 0,
+		"framing":          "ordered u64be key length, key bytes, u64be value length, value bytes",
+		"raw_store_sha256": hex.EncodeToString(digest.Sum(nil))}
+}
+
+func capturedCall(operation func() error) (err error, panicked bool, panicType string, functions []string) {
+	defer func() {
+		if value := recover(); value != nil {
+			panicked = true
+			panicType = fmt.Sprintf("%T", value)
+			stack := debug.Stack()
+			fmt.Fprintln(os.Stderr, "PRIVATE_RECOVERED_REPLAY_PATCH_PANIC")
+			_, _ = os.Stderr.Write(stack)
+			pcs := make([]uintptr, 64)
+			count := runtime.Callers(2, pcs)
+			frames := runtime.CallersFrames(pcs[:count])
+			for {
+				frame, more := frames.Next()
+				if strings.HasPrefix(frame.Function, "github.com/zenon-network/go-zenon/") {
+					functions = append(functions, frame.Function)
+				}
+				if !more {
+					break
+				}
+			}
+		}
+	}()
+	err = operation()
+	return
+}
+
+func inspectLedger(path string) map[string]any {
+	handle, err := leveldb.OpenFile(path, &opt.Options{ErrorIfMissing: true, ReadOnly: true,
+		BlockCacheCapacity: 1 << 20, OpenFilesCacheCapacity: 16})
+	must(err)
+	defer func() { must(handle.Close()) }()
+	frontier := db.GetFrontierIdentifier(db.NewLevelDBWrapper(handle).Subset([]byte{85}))
+	digest := sha256.New()
+	var count, keyBytes, valueBytes uint64
+	var previous []byte
+	iter := handle.NewIterator(nil, nil)
+	for iter.Next() {
+		key, value := iter.Key(), iter.Value()
+		require(len(key) > 0 && len(key) <= 256 && len(value) <= 16<<20 && count < 1000000 &&
+			(previous == nil || bytes.Compare(previous, key) < 0))
+		must(binary.Write(digest, binary.BigEndian, uint64(len(key))))
+		_, err = digest.Write(key)
+		must(err)
+		must(binary.Write(digest, binary.BigEndian, uint64(len(value))))
+		_, err = digest.Write(value)
+		must(err)
+		count++
+		keyBytes += uint64(len(key))
+		valueBytes += uint64(len(value))
+		previous = append(previous[:0], key...)
+	}
+	err = iter.Error()
+	iter.Release()
+	must(err)
+	return map[string]any{"frontier": frontier, "records": count, "key_bytes": keyBytes, "value_bytes": valueBytes,
+		"framing":          "ordered u64be key length, key bytes, u64be value length, value bytes",
+		"raw_store_sha256": hex.EncodeToString(digest.Sum(nil))}
+}
+
+func main() {
+	mode := flag.String("case", "", "one selected bounded replay-patch case")
+	root := flag.String("root", "", "new owned empty case directory")
+	flag.Parse()
+	require(flag.NArg() == 0 && *root != "" &&
+		(*mode == "intact-empty-cache" || *mode == "missing-genesis-patch-empty-cache" ||
+			*mode == "missing-genesis-patch-current-cache" || *mode == "missing-genesis-patch-behind-cache" ||
+			*mode == "missing-empty-successor-patch-empty-cache"))
+	entries, err := os.ReadDir(*root)
+	must(err)
+	require(len(entries) == 0)
+	output := os.Stdout
+	os.Stdout = os.Stderr
+	log15.Root().SetHandler(log15.DiscardHandler())
+	common.ChainLogger.SetHandler(log15.DiscardHandler())
+	encoder := json.NewEncoder(output)
+	emit := func(stage string, fields map[string]any) {
+		fields["case"], fields["stage"] = *mode, stage
+		must(encoder.Encode(fields))
+	}
+	key, err := hex.DecodeString(selectedKey)
+	must(err)
+	g, err := genesis.MakeEmbeddedGenesisConfig()
+	must(err)
+	genesisMomentum := g.GetGenesisMomentum()
+	dump := g.GetGenesisTransaction().Changes.Dump()
+	dumpSHA := sha256.Sum256(dump)
+	a1 := genesisMomentum.Identifier()
+	require(a1.Hash.String() == "9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0" &&
+		genesisMomentum.ComputeHash() == genesisMomentum.Hash &&
+		genesisMomentum.Height == 1 && genesisMomentum.Version == 1 && genesisMomentum.ChainIdentifier == 1 &&
+		genesisMomentum.StateRoot == types.ZeroHash && len(genesisMomentum.PublicKey) == 0 &&
+		len(genesisMomentum.Signature) == 0 && len(dump) == 10849399 &&
+		hex.EncodeToString(dumpSHA[:]) == sourceDumpSHA && len(genesisMomentum.Content) > 0)
+	var momentums []*nom.Momentum
+	previous := genesisMomentum
+	for index := 0; index < 3; index++ {
+		patch := db.NewPatch()
+		next := &nom.Momentum{Version: 1, ChainIdentifier: 1, PreviousHash: previous.Hash,
+			Height: previous.Height + 1, TimestampUnix: previous.TimestampUnix + 10,
+			ChangesHash: types.NewHash(patch.Dump())}
+		next.Hash = next.ComputeHash()
+		momentums = append(momentums, next)
+		previous = next
+	}
+	require(momentums[0].Hash.String() == "fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0")
+	target := momentums[len(momentums)-1].Identifier()
+	emit("source-genesis-and-unsigned-replay-window", map[string]any{
+		"genesis_identifier": a1, "genesis_timestamp": genesisMomentum.TimestampUnix,
+		"genesis_patch_bytes": len(dump), "genesis_patch_sha256": sourceDumpSHA,
+		"genesis_account_block_count": len(genesisMomentum.Content),
+		"momentums":                   momentums, "target": target, "network_started": false,
+		"consensus_validation_selected": false, "wallet_signing_or_broadcast": false})
+	ledgerPath := filepath.Join(*root, "ledger")
+	treePath := filepath.Join(*root, "canonical-tree")
+	makeChain := func(cacheRoot string) (chain.Chain, db.Manager) {
+		manager := db.NewLevelDBManager(ledgerPath)
+		return chain.NewChain(manager, storage.NewCacheDBManager(cacheRoot), g, treePath, false), manager
+	}
+	cacheRoot := filepath.Join(*root, "canonical-cache")
+	prime, ledger := makeChain(cacheRoot)
+	must(prime.Init())
+	initialRoot, err := prime.StateRoot(a1)
+	must(err)
+	require(initialRoot.String() == canonicalRoot && prime.StateTreeReady() &&
+		prime.GetFrontierCacheStore().Identifier() == a1)
+	for _, next := range momentums {
+		// Direct component insertion of unsigned local fixture data. Chain.Start,
+		// network consensus, RPC, wallets and signing are not selected.
+		locker := prime.AcquireInsert("bounded unsigned local replay window fixture")
+		must(prime.AddMomentumTransaction(locker, &nom.MomentumTransaction{Momentum: next, Changes: db.NewPatch()}))
+		detailed, err := prime.GetFrontierMomentumStore().PrefetchMomentum(next)
+		must(err)
+		changes := ledger.GetPatch(next.Identifier())
+		require(changes != nil)
+		if *mode == "missing-genesis-patch-current-cache" {
+			must(prime.UpdateCache(locker, detailed, changes))
+		}
+		must(prime.UpdateStateTree(locker, detailed, changes))
+		locker.Unlock()
+	}
+	rootBeforeStop, err := prime.StateRoot(target)
+	must(err)
+	primedCache := a1
+	if *mode == "missing-genesis-patch-current-cache" {
+		primedCache = target
+	}
+	require(rootBeforeStop.String() == canonicalRoot && prime.StateTreeReady() &&
+		prime.GetFrontierMomentumStore().Identifier() == target &&
+		prime.GetFrontierCacheStore().Identifier() == primedCache)
+	must(prime.Stop())
+	emit("canonical-ledger-and-tree-primed", map[string]any{"identifier": target,
+		"root": rootBeforeStop.String(), "cache_identifier": primedCache, "ready_after_stop": prime.StateTreeReady()})
+	if *mode == "intact-empty-cache" || *mode == "missing-genesis-patch-empty-cache" ||
+		*mode == "missing-empty-successor-patch-empty-cache" {
+		cacheRoot = filepath.Join(*root, "controlled-empty-cache")
+		manager := storage.NewCacheDBManager(cacheRoot)
+		must(manager.Stop())
+	}
+	canonicalLedger := inspectLedger(ledgerPath)
+	require(canonicalLedger["frontier"] == target)
+	emit("ledger-before-controlled-fault", canonicalLedger)
+	emit("cache-before-controlled-fault", inspectCache(cacheRoot))
+	var missingHeight uint64
+	switch *mode {
+	case "missing-genesis-patch-empty-cache", "missing-genesis-patch-current-cache", "missing-genesis-patch-behind-cache":
+		missingHeight = 1
+	case "missing-empty-successor-patch-empty-cache":
+		missingHeight = 2
+	}
+	var removedKey, removedValue []byte
+	if missingHeight != 0 {
+		// Modify only one patch row in a fresh, closed fixture. Momentum bodies,
+		// frontier, rollback rows and the separate canonical tree remain present.
+		removedKey = common.JoinBytes([]byte{102}, common.Uint64ToBytes(missingHeight))
+		handle, err := leveldb.OpenFile(ledgerPath, &opt.Options{ErrorIfMissing: true})
+		must(err)
+		removedValue, err = handle.Get(removedKey, nil)
+		must(err)
+		require(len(removedValue) <= 16<<20)
+		if missingHeight == 1 {
+			require(bytes.Equal(removedValue, dump))
+		} else {
+			require(missingHeight == 2 && len(momentums[0].Content) == 0 && bytes.Equal(removedValue, db.NewPatch().Dump()))
+		}
+		removedValue = append([]byte(nil), removedValue...)
+		must(handle.Delete(removedKey, &opt.WriteOptions{Sync: true}))
+		must(handle.Close())
+		valueSHA := sha256.Sum256(removedValue)
+		emit("controlled-ledger-entry-removed", map[string]any{"height": missingHeight,
+			"raw_key": hex.EncodeToString(removedKey), "raw_value_bytes": len(removedValue),
+			"raw_value_sha256": hex.EncodeToString(valueSHA[:]), "runtime_repair_selected": false})
+		after := inspectLedger(ledgerPath)
+		require(after["frontier"] == target && after["records"].(uint64)+1 == canonicalLedger["records"].(uint64))
+		emit("ledger-after-controlled-fault", after)
+	}
+	attempt := func(number int) {
+		current, _ := makeChain(cacheRoot)
+		require(current.GetFrontierMomentumStore().Identifier() == target)
+		initErr, initPanic, initPanicType, initFunctions := capturedCall(current.Init)
+		emit("public-init-observed", map[string]any{"attempt": number, "error": errorClass(initErr),
+			"panicked": initPanic, "panic_type": initPanicType, "panic_functions": initFunctions,
+			"ready": current.StateTreeReady()})
+		stateRoot, rootErr := current.StateRoot(target)
+		value, proof, proofErr := current.GetProof(target, key)
+		emit("public-state-query", map[string]any{"attempt": number, "identifier": target,
+			"root": stateRoot.String(), "root_error": errorClass(rootErr),
+			"value": hex.EncodeToString(value), "proof": hex.EncodeToString(proof), "proof_error": errorClass(proofErr)})
+		stopErr, stopPanic, stopPanicType, stopFunctions := capturedCall(current.Stop)
+		emit("public-stop-observed", map[string]any{"attempt": number, "error": errorClass(stopErr),
+			"panicked": stopPanic, "panic_type": stopPanicType, "panic_functions": stopFunctions,
+			"ready": current.StateTreeReady()})
+		require(stopErr == nil && !stopPanic)
+		cacheImage := inspectCache(cacheRoot)
+		cacheImage["attempt"] = number
+		emit("cache-after-public-stop", cacheImage)
+		ledgerImage := inspectLedger(ledgerPath)
+		ledgerImage["attempt"] = number
+		emit("ledger-after-public-stop", ledgerImage)
+	}
+	attempt(0)
+	attempt(1)
+	if missingHeight != 0 {
+		// Explicit fixture control, after closed-manager observations. This is
+		// not automatic runtime repair and is retained as a separate action.
+		handle, err := leveldb.OpenFile(ledgerPath, &opt.Options{ErrorIfMissing: true})
+		must(err)
+		_, err = handle.Get(removedKey, nil)
+		require(err == leveldb.ErrNotFound)
+		must(handle.Put(removedKey, removedValue, &opt.WriteOptions{Sync: true}))
+		must(handle.Close())
+		restored := inspectLedger(ledgerPath)
+		require(restored["frontier"] == canonicalLedger["frontier"] &&
+			restored["raw_store_sha256"] == canonicalLedger["raw_store_sha256"] &&
+			restored["records"] == canonicalLedger["records"])
+		emit("explicit-fixture-ledger-entry-restored", map[string]any{"height": missingHeight,
+			"raw_key": hex.EncodeToString(removedKey), "runtime_repair_selected": false})
+		emit("ledger-after-explicit-fixture-restore", restored)
+		attempt(2)
+		attempt(3)
+	}
+	fmt.Fprintln(os.Stderr, "PUBLIC_CACHE_REPLAY_PATCH_PROCESS_COMPLETE")
+}

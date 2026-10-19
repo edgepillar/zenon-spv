@@ -1,0 +1,127 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Prepared only in the selected experimental node's chain package.
+package chain
+
+import (
+	"bytes"
+	"errors"
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/zenon-network/go-zenon/chain/nom"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+type candidatePatchLedger struct {
+	*candidateReplayLedger
+	missingHeight uint64
+	missingCall   int
+	reads         map[uint64]int
+	lookups       []uint64
+}
+
+func (m *candidatePatchLedger) GetPatch(id types.HashHeight) db.Patch {
+	m.lookups = append(m.lookups, id.Height)
+	m.reads[id.Height]++
+	if m.missingCall < 0 {
+		return nil
+	}
+	if id.Height == m.missingHeight && (m.missingCall == 0 || m.reads[id.Height] == m.missingCall) {
+		return nil
+	}
+	return db.NewPatch()
+}
+
+func TestCandidateChainCacheReplayPatches(t *testing.T) {
+	lookupFailure := errors.New("selected required-patch header read failure")
+	cases := []struct {
+		name          string
+		required      []uint64
+		missingHeight uint64
+		missingCall   int
+		current       uint64
+		readFailure   bool
+		wantMissing   bool
+		patches       []uint64
+		adds          int
+		frontier      uint64
+	}{
+		{"missing-first-required-before-write", []uint64{2, 3, 4}, 2, 0, 1, false, true, []uint64{2}, 0, 1},
+		{"missing-later-required-before-write", []uint64{2, 3, 4}, 3, 0, 1, false, true, []uint64{2, 3}, 0, 1},
+		{"missing-final-required-before-write", []uint64{2, 3, 4}, 4, 0, 1, false, true, []uint64{2, 3, 4}, 0, 1},
+		{"second-pass-first-required-missing", []uint64{2, 3, 4}, 2, 2, 1, false, true, []uint64{2, 3, 4, 2}, 0, 1},
+		{"second-pass-later-required-keeps-prefix", []uint64{2, 3, 4}, 3, 2, 1, false, true, []uint64{2, 3, 4, 2, 3}, 1, 2},
+		{"all-required-patches-present", []uint64{2, 3, 4}, 0, 0, 1, false, false, []uint64{2, 3, 4, 2, 3, 4}, 3, 4},
+		{"empty-content-all-nil-patches", nil, 0, -1, 1, false, false, []uint64{2, 3, 4}, 3, 4},
+		{"empty-first-patch-not-required", []uint64{3, 4}, 2, 0, 1, false, false, []uint64{3, 4, 2, 3, 4}, 3, 4},
+		{"historical-base-patch-not-required", []uint64{1}, 1, 0, 1, false, false, []uint64{2, 3, 4}, 3, 4},
+		{"current-cache-patch-not-required", []uint64{1, 2, 3, 4}, 4, 0, 4, false, false, nil, 0, 4},
+		{"header-read-error-preserved-before-write", []uint64{2, 3, 4}, 0, 0, 1, true, false, []uint64{2}, 0, 1},
+	}
+	for _, selected := range cases {
+		t.Run(selected.name, func(t *testing.T) {
+			headers := make(map[uint64]*nom.Momentum)
+			var previous types.Hash
+			for height := uint64(1); height <= 4; height++ {
+				value := &nom.Momentum{Hash: types.NewHash([]byte{byte(height)}), PreviousHash: previous, Height: height}
+				headers[height] = value
+				previous = value.Hash
+			}
+			for _, height := range selected.required {
+				// This records the header requirement only. The prefetch test double
+				// deliberately has no account execution; the public-chain probe uses
+				// real genesis account blocks and real managers separately.
+				headers[height].Content = nom.MomentumContent{&types.AccountHeader{}}
+			}
+			current := db.NewMemDB()
+			identifier := headers[selected.current].Identifier()
+			if err := current.Put([]byte{0}, identifier.Serialize()); err != nil {
+				t.Fatal(err)
+			}
+			frontier := db.NewMemDB()
+			if err := db.SetFrontier(frontier, headers[4].Identifier(), nil); err != nil {
+				t.Fatal(err)
+			}
+			ledger := &candidatePatchLedger{candidateReplayLedger: &candidateReplayLedger{current: frontier},
+				missingHeight: selected.missingHeight, missingCall: selected.missingCall, reads: make(map[uint64]int)}
+			momentums := &candidateWindowMomentums{rows: headers}
+			if selected.readFailure {
+				momentums.lookup = func(height uint64, _ int) (*nom.Momentum, error) {
+					if height == 3 {
+						return nil, lookupFailure
+					}
+					return headers[height], nil
+				}
+			}
+			manager := &candidateWindowCache{current: current, persist: true}
+			before := candidateReplayImage(t, current)
+			cache := NewChainCache(manager)
+			err := cache.Init(ledger, momentums)
+			if selected.wantMissing {
+				if err == nil || !strings.HasPrefix(err.Error(), "cache replay patch for momentum ") || !strings.HasSuffix(err.Error(), " is missing") {
+					t.Fatalf("wrong missing-patch result: %v", err)
+				}
+			} else if selected.readFailure {
+				if !errors.Is(err, lookupFailure) {
+					t.Fatalf("source error was replaced: %v", err)
+				}
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(ledger.lookups, selected.patches) {
+				t.Fatalf("wrong required-patch read boundaries: %v", ledger.lookups)
+			}
+			if manager.adds != selected.adds || manager.pops != 0 || momentums.prefetches != selected.adds {
+				t.Fatal("unexpected mutation or prefetch boundary")
+			}
+			if cache.GetFrontierCacheStore().Identifier() != headers[selected.frontier].Identifier() {
+				t.Fatal("wrong cache frontier")
+			}
+			if selected.adds == 0 && !bytes.Equal(before, candidateReplayImage(t, current)) {
+				t.Fatal("preflight refusal changed the complete logical cache")
+			}
+		})
+	}
+}
