@@ -1,0 +1,1885 @@
+{
+  "chain_cases": [
+    {
+      "case": "intact-empty-cache",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 340,
+          "sha256": "e9edd7e763dc81a39cc023e742d67dbdd1b87cec5258dd747ff08c3a14e7bf2a"
+        },
+        "stdout": {
+          "bytes": 8769,
+          "sha256": "ef149e114cd54d90624fed495a6b5c7cdb5c7e7a08695eeae6db1740f5cfbc5f"
+        }
+      },
+      "recorded_stdout": {
+        "bytes": 8769,
+        "sha256": "ef149e114cd54d90624fed495a6b5c7cdb5c7e7a08695eeae6db1740f5cfbc5f"
+      }
+    },
+    {
+      "case": "missing-genesis-patch-empty-cache",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 340,
+          "sha256": "e9edd7e763dc81a39cc023e742d67dbdd1b87cec5258dd747ff08c3a14e7bf2a"
+        },
+        "stdout": {
+          "bytes": 14109,
+          "sha256": "b574fc3d2022dd0ce3194d7bf80f60e37486626697d14372fb4e07be27fcb9b9"
+        }
+      },
+      "recorded_stdout": {
+        "bytes": 14109,
+        "sha256": "b574fc3d2022dd0ce3194d7bf80f60e37486626697d14372fb4e07be27fcb9b9"
+      }
+    },
+    {
+      "case": "missing-genesis-patch-current-cache",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 538,
+          "sha256": "38bf0e7640111a0a4aa1b0697d1b2b887d07167c69b5759eecb6b6062c3deba2"
+        },
+        "stdout": {
+          "bytes": 16813,
+          "sha256": "54aeeb7d40a7e00d87c6e290caffe6e20b630d8e350a072f6e7af3e347bf06bd"
+        }
+      },
+      "recorded_stdout": {
+        "bytes": 16813,
+        "sha256": "54aeeb7d40a7e00d87c6e290caffe6e20b630d8e350a072f6e7af3e347bf06bd"
+      }
+    },
+    {
+      "case": "missing-genesis-patch-behind-cache",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 538,
+          "sha256": "38bf0e7640111a0a4aa1b0697d1b2b887d07167c69b5759eecb6b6062c3deba2"
+        },
+        "stdout": {
+          "bytes": 16783,
+          "sha256": "1e22ac61ea260d93f6e0eca1d08e3107100b543682991246f3880ddc614dfb44"
+        }
+      },
+      "recorded_stdout": {
+        "bytes": 16783,
+        "sha256": "1e22ac61ea260d93f6e0eca1d08e3107100b543682991246f3880ddc614dfb44"
+      }
+    },
+    {
+      "case": "missing-empty-successor-patch-empty-cache",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 538,
+          "sha256": "38bf0e7640111a0a4aa1b0697d1b2b887d07167c69b5759eecb6b6062c3deba2"
+        },
+        "stdout": {
+          "bytes": 16882,
+          "sha256": "7911788982c6b65b882bbbfcac1ebb0a07c0358cd38ea82371a3c85abc021949"
+        }
+      },
+      "recorded_stdout": {
+        "bytes": 16882,
+        "sha256": "7911788982c6b65b882bbbfcac1ebb0a07c0358cd38ea82371a3c85abc021949"
+      }
+    }
+  ],
+  "consumer_result": "REFUSED",
+  "execution": {
+    "candidate_component_binary": {
+      "bytes": 13056290,
+      "sha256": "c1c8eba643a8994e7945923572f49af64d9c9bde1e1e51a52db68c5084720a77"
+    },
+    "candidate_component_build": {
+      "actual_exit": 0,
+      "output_complete": true,
+      "reason": null,
+      "state": "COMPLETE",
+      "stderr": {
+        "bytes": 1069,
+        "sha256": "bfbb3cea1955b13d05d42684bd6699b3293c41d66816343d5986535d5227eabd"
+      },
+      "stdout": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "candidate_component_outcome": "SUCCESS",
+    "compiler": "go1.25.14",
+    "integrated_candidate_outcome": "SUCCESS",
+    "integrated_ordinary_binary": {
+      "bytes": 19889250,
+      "sha256": "0df2aa896467cafcb469cb376cf724a07eff232b7651a42e298c3a0769c240b9"
+    },
+    "integrated_ordinary_build": {
+      "actual_exit": 0,
+      "output_complete": true,
+      "reason": null,
+      "state": "COMPLETE",
+      "stderr": {
+        "bytes": 353,
+        "sha256": "f81573c08a398e087f9da729b0b6d6be76f14760c0969b5fc14904290a028d88"
+      },
+      "stdout": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "linked_modules": 25,
+    "native_parent_reexecuted_for_parser_repair": false,
+    "new_dependency_transports": 0,
+    "original_DB_observation": {
+      "aggregate_process_tree_peak_qualified": false,
+      "darwin_time_maximum_resident_set_size_bytes": 2113699840,
+      "exact_random_stress_vector_reproducible": false,
+      "representative_production_budget_qualified": false,
+      "stress_put_operations_declared_by_source": 3000000,
+      "stress_random_seed_captured": false,
+      "stress_worker_counts": [
+        20,
+        10
+      ],
+      "supervised_wall_seconds": 45.20912945800001
+    },
+    "original_DB_outcome": "SUCCESS",
+    "owned_scratch_cleanup": "CLEANED_FOR_EACH_SELECTED_COMPLETED_TASK",
+    "parent_caller_failure_reason": "Completed observations followed a diagnostic trace suffix; the first line-only parser rejected four rows.",
+    "parent_caller_outcome": "FAILURE",
+    "parent_component_binary": {
+      "bytes": 13038450,
+      "sha256": "09185c35db9ae44ca4d663284f4211fe85577749611c1845f6a1ed1c8bd056dc"
+    },
+    "parent_native_exit": 0,
+    "parent_raw_capture_rewritten": false,
+    "parent_reader_reconciliation": "The original complete stdout was checked without rerunning its native test; the failed caller outcome is preserved.",
+    "physical_reclaim_claimed": false,
+    "reference_platform": "darwin/arm64",
+    "unit_commands": {
+      "candidate_component": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 38,
+          "sha256": "44c3f98d0871e5f1254a1752cd3c52e051071f5ad47272ff240c811d095842a9"
+        },
+        "stdout": {
+          "bytes": 298331,
+          "sha256": "dd702073b41e254fc43cf6f1ecbaf20087cd95d2f39a24bedd96cc0bea5bce0a"
+        }
+      },
+      "integrated_candidate": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 1069,
+          "sha256": "59cdf982ed394d4070660bddd880e1ced0be1d106c7d982f4392657944b40cc7"
+        },
+        "stdout": {
+          "bytes": 1390856,
+          "sha256": "d603d8360d6b4277855c8d9f38e2a50a7b9a59dd771d703438f0ea0debf4a6eb"
+        }
+      },
+      "original_DB": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 1766,
+          "sha256": "c3de794aa2b36031e4846f3361a6cccf2a41227f111beff972854c977979f278"
+        },
+        "stdout": {
+          "bytes": 22285,
+          "sha256": "3ba99726319f8f4ded6074c00be3715d7517a80c57d19a4209607c9d4d9e5292"
+        }
+      },
+      "parent_component": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 38,
+          "sha256": "44c3f98d0871e5f1254a1752cd3c52e051071f5ad47272ff240c811d095842a9"
+        },
+        "stdout": {
+          "bytes": 296093,
+          "sha256": "6e47a7f7cdbfc466bb77e354972d838c1239b15df01980d0d87aceb254cfa742"
+        }
+      }
+    },
+    "verified_dependency_inputs": 75,
+    "whole_module_graph_verification": "NOT_QUALIFIED"
+  },
+  "format_version": 1,
+  "kind": "recorded-native-patch-snapshot-lifetime",
+  "observations": {
+    "candidate_component": [
+      {
+        "accepted_header_binding": false,
+        "case": "present",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "cd21f49faa601bc57f7a5e586e8c10ef0b9f707b2fa7018d0387f9e51c529241",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "cd21f49faa601bc57f7a5e586e8c10ef0b9f707b2fa7018d0387f9e51c529241",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 64,
+        "returned_nil": 0,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "present",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "cd21f49faa601bc57f7a5e586e8c10ef0b9f707b2fa7018d0387f9e51c529241",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "cd21f49faa601bc57f7a5e586e8c10ef0b9f707b2fa7018d0387f9e51c529241",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 64,
+        "returned_nil": 0,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "absent",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "logical_database_before": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "absent",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "logical_database_before": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "invalid_dump",
+        "consumer_result": "REFUSED",
+        "decode_panics": 64,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "e17f9a1cb8581fbf84dcf45e7af35dd85c4c2d31d51d48cb03fe4e31a598fd49",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "e17f9a1cb8581fbf84dcf45e7af35dd85c4c2d31d51d48cb03fe4e31a598fd49",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "ff"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "invalid_dump",
+        "consumer_result": "REFUSED",
+        "decode_panics": 64,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "e17f9a1cb8581fbf84dcf45e7af35dd85c4c2d31d51d48cb03fe4e31a598fd49",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "e17f9a1cb8581fbf84dcf45e7af35dd85c4c2d31d51d48cb03fe4e31a598fd49",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "ff"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "present",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "90b249323766f6083e8759bb3f363bb27b97f5d86f412f9b18525fd70859e2e4",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "90b249323766f6083e8759bb3f363bb27b97f5d86f412f9b18525fd70859e2e4",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 64,
+        "returned_nil": 0,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "present",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "90b249323766f6083e8759bb3f363bb27b97f5d86f412f9b18525fd70859e2e4",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "90b249323766f6083e8759bb3f363bb27b97f5d86f412f9b18525fd70859e2e4",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 64,
+        "returned_nil": 0,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "absent",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "logical_database_before": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "absent",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "logical_database_before": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "invalid_dump",
+        "consumer_result": "REFUSED",
+        "decode_panics": 64,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "84eeaa24a4d1e80ae1aad5f13ecc39066e912475d7ab4868aecf53cba227b79b",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "84eeaa24a4d1e80ae1aad5f13ecc39066e912475d7ab4868aecf53cba227b79b",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "ff"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "invalid_dump",
+        "consumer_result": "REFUSED",
+        "decode_panics": 64,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "84eeaa24a4d1e80ae1aad5f13ecc39066e912475d7ab4868aecf53cba227b79b",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "84eeaa24a4d1e80ae1aad5f13ecc39066e912475d7ab4868aecf53cba227b79b",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "ff"
+      }
+    ],
+    "integrated_candidate": [
+      {
+        "accepted_header_binding": false,
+        "case": "present",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "cd21f49faa601bc57f7a5e586e8c10ef0b9f707b2fa7018d0387f9e51c529241",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "cd21f49faa601bc57f7a5e586e8c10ef0b9f707b2fa7018d0387f9e51c529241",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 64,
+        "returned_nil": 0,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "present",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "cd21f49faa601bc57f7a5e586e8c10ef0b9f707b2fa7018d0387f9e51c529241",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "cd21f49faa601bc57f7a5e586e8c10ef0b9f707b2fa7018d0387f9e51c529241",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 64,
+        "returned_nil": 0,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "absent",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "logical_database_before": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "absent",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "logical_database_before": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "invalid_dump",
+        "consumer_result": "REFUSED",
+        "decode_panics": 64,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "e17f9a1cb8581fbf84dcf45e7af35dd85c4c2d31d51d48cb03fe4e31a598fd49",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "e17f9a1cb8581fbf84dcf45e7af35dd85c4c2d31d51d48cb03fe4e31a598fd49",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "ff"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "invalid_dump",
+        "consumer_result": "REFUSED",
+        "decode_panics": 64,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "e17f9a1cb8581fbf84dcf45e7af35dd85c4c2d31d51d48cb03fe4e31a598fd49",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "e17f9a1cb8581fbf84dcf45e7af35dd85c4c2d31d51d48cb03fe4e31a598fd49",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "ff"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "present",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "90b249323766f6083e8759bb3f363bb27b97f5d86f412f9b18525fd70859e2e4",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "90b249323766f6083e8759bb3f363bb27b97f5d86f412f9b18525fd70859e2e4",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 64,
+        "returned_nil": 0,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "present",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "90b249323766f6083e8759bb3f363bb27b97f5d86f412f9b18525fd70859e2e4",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "90b249323766f6083e8759bb3f363bb27b97f5d86f412f9b18525fd70859e2e4",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 64,
+        "returned_nil": 0,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "absent",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "logical_database_before": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "absent",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "logical_database_before": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "invalid_dump",
+        "consumer_result": "REFUSED",
+        "decode_panics": 64,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "84eeaa24a4d1e80ae1aad5f13ecc39066e912475d7ab4868aecf53cba227b79b",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "84eeaa24a4d1e80ae1aad5f13ecc39066e912475d7ab4868aecf53cba227b79b",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "ff"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "invalid_dump",
+        "consumer_result": "REFUSED",
+        "decode_panics": 64,
+        "explicit_gc_rounds": 0,
+        "explicit_release_source_expected": true,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "84eeaa24a4d1e80ae1aad5f13ecc39066e912475d7ab4868aecf53cba227b79b",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "84eeaa24a4d1e80ae1aad5f13ecc39066e912475d7ab4868aecf53cba227b79b",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 0,
+        "snapshots_before": 0,
+        "stored_value_hex": "ff"
+      }
+    ],
+    "parent_component": [
+      {
+        "accepted_header_binding": false,
+        "case": "present",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 1,
+        "explicit_release_source_expected": false,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "cd21f49faa601bc57f7a5e586e8c10ef0b9f707b2fa7018d0387f9e51c529241",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "cd21f49faa601bc57f7a5e586e8c10ef0b9f707b2fa7018d0387f9e51c529241",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 64,
+        "returned_nil": 0,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 64,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "present",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 1,
+        "explicit_release_source_expected": false,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "cd21f49faa601bc57f7a5e586e8c10ef0b9f707b2fa7018d0387f9e51c529241",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "cd21f49faa601bc57f7a5e586e8c10ef0b9f707b2fa7018d0387f9e51c529241",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 64,
+        "returned_nil": 0,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 64,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "absent",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 1,
+        "explicit_release_source_expected": false,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "logical_database_before": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 64,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "absent",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 1,
+        "explicit_release_source_expected": false,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "logical_database_before": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 64,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "invalid_dump",
+        "consumer_result": "REFUSED",
+        "decode_panics": 64,
+        "explicit_gc_rounds": 1,
+        "explicit_release_source_expected": false,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "e17f9a1cb8581fbf84dcf45e7af35dd85c4c2d31d51d48cb03fe4e31a598fd49",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "e17f9a1cb8581fbf84dcf45e7af35dd85c4c2d31d51d48cb03fe4e31a598fd49",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 64,
+        "snapshots_before": 0,
+        "stored_value_hex": "ff"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "invalid_dump",
+        "consumer_result": "REFUSED",
+        "decode_panics": 64,
+        "explicit_gc_rounds": 1,
+        "explicit_release_source_expected": false,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "e17f9a1cb8581fbf84dcf45e7af35dd85c4c2d31d51d48cb03fe4e31a598fd49",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "e17f9a1cb8581fbf84dcf45e7af35dd85c4c2d31d51d48cb03fe4e31a598fd49",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "public_get_patch",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 64,
+        "snapshots_before": 0,
+        "stored_value_hex": "ff"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "present",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 1,
+        "explicit_release_source_expected": false,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "90b249323766f6083e8759bb3f363bb27b97f5d86f412f9b18525fd70859e2e4",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "90b249323766f6083e8759bb3f363bb27b97f5d86f412f9b18525fd70859e2e4",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 64,
+        "returned_nil": 0,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 64,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "present",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 1,
+        "explicit_release_source_expected": false,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "90b249323766f6083e8759bb3f363bb27b97f5d86f412f9b18525fd70859e2e4",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "90b249323766f6083e8759bb3f363bb27b97f5d86f412f9b18525fd70859e2e4",
+          "records": 1,
+          "value_bytes": 17
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 64,
+        "returned_nil": 0,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 64,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "absent",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 1,
+        "explicit_release_source_expected": false,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "logical_database_before": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 64,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "absent",
+        "consumer_result": "REFUSED",
+        "decode_panics": 0,
+        "explicit_gc_rounds": 1,
+        "explicit_release_source_expected": false,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "logical_database_before": {
+          "key_bytes": 0,
+          "ordered_length_framed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "records": 0,
+          "value_bytes": 0
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 64,
+        "snapshots_before": 0,
+        "stored_value_hex": "0105616c706861036f6e65000462657461"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "invalid_dump",
+        "consumer_result": "REFUSED",
+        "decode_panics": 64,
+        "explicit_gc_rounds": 1,
+        "explicit_release_source_expected": false,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": -1,
+        "gc_policy": "disabled",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "84eeaa24a4d1e80ae1aad5f13ecc39066e912475d7ab4868aecf53cba227b79b",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "84eeaa24a4d1e80ae1aad5f13ecc39066e912475d7ab4868aecf53cba227b79b",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 64,
+        "snapshots_before": 0,
+        "stored_value_hex": "ff"
+      },
+      {
+        "accepted_header_binding": false,
+        "case": "invalid_dump",
+        "consumer_result": "REFUSED",
+        "decode_panics": 64,
+        "explicit_gc_rounds": 1,
+        "explicit_release_source_expected": false,
+        "format_version": 1,
+        "full_node_or_network_executed": false,
+        "gc_percent": 100,
+        "gc_policy": "inherited",
+        "kind": "native-patch-read-snapshot-lifetime",
+        "logical_database_after": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "84eeaa24a4d1e80ae1aad5f13ecc39066e912475d7ab4868aecf53cba227b79b",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "logical_database_before": {
+          "key_bytes": 9,
+          "ordered_length_framed_sha256": "84eeaa24a4d1e80ae1aad5f13ecc39066e912475d7ab4868aecf53cba227b79b",
+          "records": 1,
+          "value_bytes": 1
+        },
+        "patch_dump_hex": "0105616c706861036f6e65000462657461",
+        "permanent_leak_claimed": false,
+        "reader": "internal_get_rollback",
+        "reads": 64,
+        "representative_load_or_hardware_budget_qualified": false,
+        "returned_expected_patch": 0,
+        "returned_nil": 64,
+        "snapshots_after_explicit_gc": 0,
+        "snapshots_after_reads": 59,
+        "snapshots_before": 0,
+        "stored_value_hex": "ff"
+      }
+    ]
+  },
+  "scope": {
+    "accepted_header_binding": false,
+    "all_previous_58_native_pass_names_retained": true,
+    "checker_executes_reference_backend": false,
+    "exact_original_random_stress_vector_reproducible": false,
+    "five_previous_Chain_Init_Stop_stdout_payloads_reused_by_digest": true,
+    "full_node_service_executed": false,
+    "hosted_checks_replay_recorded_bytes": true,
+    "independent_patch_dump_and_ordered_database_frames": true,
+    "network_or_consensus_executed": false,
+    "node_client_profile_agreed": false,
+    "permanent_leak_claimed": false,
+    "private_execution_receipts_authenticated": false,
+    "production_qualified": false,
+    "recorded_finalizer_controls_return_to_zero": true,
+    "recorded_returned_patch_survives_rewrite_GC_and_Stop": true,
+    "reported_maximum_RSS_is_aggregate_process_tree_peak": false,
+    "representative_resource_budget_qualified": false,
+    "returned_version_DB_snapshot_ownership_changed": false,
+    "runtime_state_value_acceptance": false,
+    "snapshot_acquisition_error_diagnostic_intentionally_changed": true,
+    "two_short_lived_read_snapshot_helpers": true
+  },
+  "source": {
+    "component_candidate_build_tree": "6c658c226b189724286e8f78fab9e9de8f327310",
+    "component_candidate_runtime_tree": "664df2f156262f056fb77f51deda10fe1e90e94d",
+    "component_parent_build_tree": "90df13e378af5662f1d885a1b41b666d3629fb02",
+    "component_parent_runtime_tree": "d0f5dfb09e737a806cfc743bb6ba9ddd101ebcd6",
+    "component_source_blobs": 468,
+    "integrated_candidate_build_tree": "3102dcb18c0b2e7f069be060420be67544f89b13",
+    "integrated_candidate_runtime_tree": "890520349329851e2d39bd134d5643baf59531b6",
+    "integrated_parent_build_tree": "09b42a6c73d98e9d79e419f78e0405d4d12bed22",
+    "integrated_parent_runtime_tree": "0cf17322154e55ce77a4e51c834af5219d8161f3",
+    "integrated_source_blobs": 474,
+    "module_sha256": "ac08476abe3df0bc67f1c5c6868f04889b864310f16a37b0d51a6598b9017a45",
+    "original_source_blobs": 467,
+    "original_tree": "d0f5dfb09e737a806cfc743bb6ba9ddd101ebcd6",
+    "parent_probe": {
+      "bytes": 6941,
+      "sha256": "11795fd16ed9727ca659a92a5bc983c0ce83e04426ebaa66037a44f913d82eec"
+    },
+    "patch_sha256": "d2fe705cc3db7270f5853ebfda753e75c44715e823a1d0ce6503bd6855f7b950",
+    "prior_recorded_corpus": {
+      "bytes": 190971,
+      "sha256": "d734c30f6d1f027238c18f0cbfcab053b4f13513395552a1dd5e4b063a894d66"
+    },
+    "probe": {
+      "bytes": 10368,
+      "sha256": "64a36654bf1efd97c1f648140d1c38c1ccf85fb49c08222efdfdb449dbafe18b"
+    },
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+    "source_manifest_sha256": "80104c7c6b5086a6b851c9c5e82920c5bd196c4252781acf88fc9c4b74d6cc84",
+    "sum_sha256": "e536610c08abc9f4b979ce39cd5ae7323c3df14a189d186d911ee1d1184b8537"
+  },
+  "unit_runs": {
+    "candidate_component": {
+      "build_tree": "6c658c226b189724286e8f78fab9e9de8f327310",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 38,
+          "sha256": "44c3f98d0871e5f1254a1752cd3c52e051071f5ad47272ff240c811d095842a9"
+        },
+        "stdout": {
+          "bytes": 298331,
+          "sha256": "dd702073b41e254fc43cf6f1ecbaf20087cd95d2f39a24bedd96cc0bea5bce0a"
+        }
+      },
+      "explicit_skips": [],
+      "failed_tests": [],
+      "package_pass_names": [
+        "github.com/zenon-network/go-zenon/common/db"
+      ],
+      "race_detector": true,
+      "root_tests": [
+        "TestCandidatePatchSnapshotLifetime",
+        "TestCandidateSnapshotAcquisitionError",
+        "TestCandidateSnapshotReturnedPatchLifetime"
+      ],
+      "test_pass_names": [
+        "TestCandidatePatchSnapshotLifetime",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_absent_disabled",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_absent_inherited",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_invalid_dump_disabled",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_invalid_dump_inherited",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_present_disabled",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_present_inherited",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_absent_disabled",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_absent_inherited",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_invalid_dump_disabled",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_invalid_dump_inherited",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_present_disabled",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_present_inherited",
+        "TestCandidateSnapshotAcquisitionError",
+        "TestCandidateSnapshotReturnedPatchLifetime"
+      ]
+    },
+    "integrated_candidate": {
+      "build_tree": "3102dcb18c0b2e7f069be060420be67544f89b13",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 1069,
+          "sha256": "59cdf982ed394d4070660bddd880e1ced0be1d106c7d982f4392657944b40cc7"
+        },
+        "stdout": {
+          "bytes": 1390856,
+          "sha256": "d603d8360d6b4277855c8d9f38e2a50a7b9a59dd771d703438f0ea0debf4a6eb"
+        }
+      },
+      "explicit_skips": [],
+      "failed_tests": [],
+      "package_pass_names": [
+        "github.com/zenon-network/go-zenon/chain",
+        "github.com/zenon-network/go-zenon/chain/cache/storage",
+        "github.com/zenon-network/go-zenon/common/db"
+      ],
+      "race_detector": true,
+      "root_tests": [
+        "TestCandidateCacheRollbackAndReopen",
+        "TestCandidateCacheRollbackCorruptHistory",
+        "TestCandidateCacheRollbackMissingEarlierPatch",
+        "TestCandidateCacheRollbackStop",
+        "TestCandidateCacheRollbackToEmpty",
+        "TestCandidateCacheRollbackWindow",
+        "TestCandidateCacheRollbackWriteFailure",
+        "TestCandidateCacheRollbackWrongRetainedHash",
+        "TestCandidateChainCacheExactTarget",
+        "TestCandidateChainCacheForwardReplayPreflight",
+        "TestCandidateChainCacheIncompleteOptionalRollback",
+        "TestCandidateChainCacheLegacyRollbackRefused",
+        "TestCandidateChainCacheReplayPatches",
+        "TestCandidateChainCacheReplayWindow",
+        "TestCandidateChainCacheRollbackError",
+        "TestCandidatePatchSnapshotLifetime",
+        "TestCandidateSnapshotAcquisitionError",
+        "TestCandidateSnapshotReturnedPatchLifetime"
+      ],
+      "test_pass_names": [
+        "TestCandidateCacheRollbackAndReopen",
+        "TestCandidateCacheRollbackCorruptHistory",
+        "TestCandidateCacheRollbackCorruptHistory/invalid-batch",
+        "TestCandidateCacheRollbackCorruptHistory/invalid-current-protobuf",
+        "TestCandidateCacheRollbackCorruptHistory/invalid-protobuf",
+        "TestCandidateCacheRollbackCorruptHistory/missing-frontier",
+        "TestCandidateCacheRollbackCorruptHistory/non-unit-height",
+        "TestCandidateCacheRollbackCorruptHistory/wrong-presence",
+        "TestCandidateCacheRollbackMissingEarlierPatch",
+        "TestCandidateCacheRollbackStop",
+        "TestCandidateCacheRollbackToEmpty",
+        "TestCandidateCacheRollbackWindow",
+        "TestCandidateCacheRollbackWriteFailure",
+        "TestCandidateCacheRollbackWriteFailure/1",
+        "TestCandidateCacheRollbackWriteFailure/2",
+        "TestCandidateCacheRollbackWrongRetainedHash",
+        "TestCandidateCacheRollbackWrongRetainedHash/1",
+        "TestCandidateCacheRollbackWrongRetainedHash/3",
+        "TestCandidateChainCacheExactTarget",
+        "TestCandidateChainCacheForwardReplayPreflight",
+        "TestCandidateChainCacheForwardReplayPreflight/canonical-base-reaches-forward-read",
+        "TestCandidateChainCacheForwardReplayPreflight/foreign-nonzero-base",
+        "TestCandidateChainCacheForwardReplayPreflight/matching-hash-wrong-height",
+        "TestCandidateChainCacheForwardReplayPreflight/nil-selected-predecessor",
+        "TestCandidateChainCacheForwardReplayPreflight/nonzero-hash-at-zero-height",
+        "TestCandidateChainCacheForwardReplayPreflight/predecessor-read-error-preserved",
+        "TestCandidateChainCacheForwardReplayPreflight/zero-base-skips-height-zero-lookup",
+        "TestCandidateChainCacheIncompleteOptionalRollback",
+        "TestCandidateChainCacheLegacyRollbackRefused",
+        "TestCandidateChainCacheReplayPatches",
+        "TestCandidateChainCacheReplayPatches/all-required-patches-present",
+        "TestCandidateChainCacheReplayPatches/current-cache-patch-not-required",
+        "TestCandidateChainCacheReplayPatches/empty-content-all-nil-patches",
+        "TestCandidateChainCacheReplayPatches/empty-first-patch-not-required",
+        "TestCandidateChainCacheReplayPatches/header-read-error-preserved-before-write",
+        "TestCandidateChainCacheReplayPatches/historical-base-patch-not-required",
+        "TestCandidateChainCacheReplayPatches/missing-final-required-before-write",
+        "TestCandidateChainCacheReplayPatches/missing-first-required-before-write",
+        "TestCandidateChainCacheReplayPatches/missing-later-required-before-write",
+        "TestCandidateChainCacheReplayPatches/second-pass-first-required-missing",
+        "TestCandidateChainCacheReplayPatches/second-pass-later-required-keeps-prefix",
+        "TestCandidateChainCacheReplayWindow",
+        "TestCandidateChainCacheReplayWindow/acknowledged-wrong-identifier-refused",
+        "TestCandidateChainCacheReplayWindow/final-uint64-height-does-not-wrap",
+        "TestCandidateChainCacheReplayWindow/invalid-nonpositive-window-refused",
+        "TestCandidateChainCacheReplayWindow/mismatched-prefetch-refused",
+        "TestCandidateChainCacheReplayWindow/missing-first-before-write",
+        "TestCandidateChainCacheReplayWindow/missing-later-before-write",
+        "TestCandidateChainCacheReplayWindow/nil-prefetch-refused",
+        "TestCandidateChainCacheReplayWindow/prefetch-error-preserved",
+        "TestCandidateChainCacheReplayWindow/second-pass-error-keeps-prefix",
+        "TestCandidateChainCacheReplayWindow/second-pass-missing-keeps-prefix",
+        "TestCandidateChainCacheReplayWindow/valid-window",
+        "TestCandidateChainCacheReplayWindow/window-read-error-preserved",
+        "TestCandidateChainCacheReplayWindow/wrong-height-before-write",
+        "TestCandidateChainCacheReplayWindow/wrong-parent-before-write",
+        "TestCandidateChainCacheReplayWindow/wrong-target-before-write",
+        "TestCandidateChainCacheRollbackError",
+        "TestCandidatePatchSnapshotLifetime",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_absent_disabled",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_absent_inherited",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_invalid_dump_disabled",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_invalid_dump_inherited",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_present_disabled",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_present_inherited",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_absent_disabled",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_absent_inherited",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_invalid_dump_disabled",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_invalid_dump_inherited",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_present_disabled",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_present_inherited",
+        "TestCandidateSnapshotAcquisitionError",
+        "TestCandidateSnapshotReturnedPatchLifetime"
+      ]
+    },
+    "original_DB": {
+      "build_tree": "3102dcb18c0b2e7f069be060420be67544f89b13",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 1766,
+          "sha256": "c3de794aa2b36031e4846f3361a6cccf2a41227f111beff972854c977979f278"
+        },
+        "stdout": {
+          "bytes": 22285,
+          "sha256": "3ba99726319f8f4ded6074c00be3715d7517a80c57d19a4209607c9d4d9e5292"
+        }
+      },
+      "explicit_skips": [],
+      "failed_tests": [],
+      "package_pass_names": [
+        "github.com/zenon-network/go-zenon/common/db"
+      ],
+      "race_detector": true,
+      "root_tests": [
+        "TestChanges",
+        "TestFrontierWriteKeysAreCopies",
+        "TestLevelDBManagerAddRejectsNonFrontierPrevious",
+        "TestLevelDBManagerAddWriteFailureIsAtomic",
+        "TestLevelDBManagerHistoricalViewHidesLaterKeys",
+        "TestLevelDBManagerPopInvalidatesRollbackCaches",
+        "TestLevelDBManagerPopWriteFailureIsAtomic",
+        "TestLevelDBManagerStopAfterFailedClose",
+        "TestManagerStopIsIdempotent",
+        "TestMemDBManagerAddRechecksFrontierAtCommit",
+        "TestMemDBManagerCloneDivergesIndependently",
+        "TestMemDBManagerStopConcurrentWithAdd",
+        "TestMemDBManagerStopDuringAdd",
+        "TestMergedIterators",
+        "TestNewPatchFromDump_Malformed",
+        "TestNewPatchFromDump_Valid",
+        "TestPatchDumpBaselineIsIndependentOfLaterMutation",
+        "TestRemoveKeys",
+        "TestRollbackPatch",
+        "TestStressMemDB",
+        "TestVersionedDBConcurrentUse",
+        "TestVersionedDBVersions"
+      ],
+      "test_pass_names": [
+        "TestChanges",
+        "TestFrontierWriteKeysAreCopies",
+        "TestLevelDBManagerAddRejectsNonFrontierPrevious",
+        "TestLevelDBManagerAddWriteFailureIsAtomic",
+        "TestLevelDBManagerHistoricalViewHidesLaterKeys",
+        "TestLevelDBManagerPopInvalidatesRollbackCaches",
+        "TestLevelDBManagerPopInvalidatesRollbackCaches/identifier_beyond_the_near_cache_window",
+        "TestLevelDBManagerPopInvalidatesRollbackCaches/identifier_within_the_near_cache_window",
+        "TestLevelDBManagerPopInvalidatesRollbackCaches/view_read_between_the_pops_and_the_adds",
+        "TestLevelDBManagerPopWriteFailureIsAtomic",
+        "TestLevelDBManagerStopAfterFailedClose",
+        "TestManagerStopIsIdempotent",
+        "TestManagerStopIsIdempotent/leveldb",
+        "TestManagerStopIsIdempotent/memdb",
+        "TestMemDBManagerAddRechecksFrontierAtCommit",
+        "TestMemDBManagerCloneDivergesIndependently",
+        "TestMemDBManagerStopConcurrentWithAdd",
+        "TestMemDBManagerStopDuringAdd",
+        "TestMergedIterators",
+        "TestNewPatchFromDump_Malformed",
+        "TestNewPatchFromDump_Valid",
+        "TestPatchDumpBaselineIsIndependentOfLaterMutation",
+        "TestRemoveKeys",
+        "TestRollbackPatch",
+        "TestStressMemDB",
+        "TestVersionedDBConcurrentUse",
+        "TestVersionedDBVersions"
+      ]
+    },
+    "parent_component": {
+      "build_tree": "90df13e378af5662f1d885a1b41b666d3629fb02",
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 38,
+          "sha256": "44c3f98d0871e5f1254a1752cd3c52e051071f5ad47272ff240c811d095842a9"
+        },
+        "stdout": {
+          "bytes": 296093,
+          "sha256": "6e47a7f7cdbfc466bb77e354972d838c1239b15df01980d0d87aceb254cfa742"
+        }
+      },
+      "explicit_skips": [],
+      "failed_tests": [],
+      "package_pass_names": [
+        "github.com/zenon-network/go-zenon/common/db"
+      ],
+      "race_detector": true,
+      "root_tests": [
+        "TestCandidatePatchSnapshotLifetime"
+      ],
+      "test_pass_names": [
+        "TestCandidatePatchSnapshotLifetime",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_absent_disabled",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_absent_inherited",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_invalid_dump_disabled",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_invalid_dump_inherited",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_present_disabled",
+        "TestCandidatePatchSnapshotLifetime/internal_get_rollback_present_inherited",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_absent_disabled",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_absent_inherited",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_invalid_dump_disabled",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_invalid_dump_inherited",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_present_disabled",
+        "TestCandidatePatchSnapshotLifetime/public_get_patch_present_inherited"
+      ]
+    }
+  }
+}

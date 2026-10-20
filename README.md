@@ -30,6 +30,11 @@ records a full-identifier preflight fix and real-manager recovery controls on
 one selected node source. It leaves the verifier's guarantees and state-value
 refusal unchanged.
 
+The separate [patch-snapshot lifetime experiment](docs/patch-snapshot-lifetime.md)
+checks explicit release in two short-lived patch readers, unchanged recovery
+behavior and recorded DB regressions. It makes no permanent-leak or production
+resource-budget claim.
+
 ## What it does NOT do
 
 | Capability | Status |

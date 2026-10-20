@@ -107,6 +107,14 @@ then checks refusal before writing and valid empty/behind-cache replay. Its
 changed runtime reruns the prior rollback component controls. These finite
 experiments leave M2 agreement and full node qualification open.
 
+The [patch-snapshot lifetime experiment](patch-snapshot-lifetime.md) separately
+checks explicit release in two short-lived readers, returned-patch lifetime and
+acquisition errors. Its integrated candidate retains the earlier 58 native pass
+names and adds 15; a separate 22-root original DB regression produces 27 pass
+names. Portable checks read recorded observations, including six controlled
+GC-disabled cases per generation. These are ownership controls, not evidence of
+a permanent leak or representative production memory requirements.
+
 For M3, obtain the expected root from the owned accepted v3 header/context.
 Derive the selected address/token key locally and carry exact presence,
 absence and value semantics through transport, saved state and the consumer.
