@@ -876,6 +876,15 @@ observations in that reader. Static availability checks do not establish
 whole-window I/O atomicity, patch-content validity, representative resource
 budgets or accepted-header/root authentication. The consumer stays `REFUSED`.
 
+The [patch-snapshot lifetime comparison](patch-snapshot-lifetime.md) adds explicit
+release to the selected short-lived patch/rollback readers. The recorded
+candidate preserves returned patch bytes, the previous five public startup
+cases and all earlier 58 native pass names; 15 snapshot controls and 27 separate
+original DB pass names add finite regression coverage. Dependency finalizers
+remain part of the parent behavior, so delayed reclamation is not labeled a
+permanent leak. This experiment leaves returned database-view ownership,
+representative resources and every state-value acceptance gate unchanged.
+
 The separate [terminal state-tree Stop comparison](state-tree-terminal-stop.md)
 adds controlled lifecycle evidence on the current-node identity proposal. It
 compares stopped-instance reopening, stop-intent readiness, an already admitted
