@@ -1,0 +1,165 @@
+//go:build candidate_public_startup_record_identity
+
+// SPDX-License-Identifier: GPL-3.0-only
+package chain_test
+
+import (
+	"bytes"
+	"errors"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/inconshreveable/log15"
+	"github.com/zenon-network/go-zenon/chain"
+	"github.com/zenon-network/go-zenon/chain/cache/storage"
+	"github.com/zenon-network/go-zenon/chain/genesis"
+	"github.com/zenon-network/go-zenon/chain/nom"
+	"github.com/zenon-network/go-zenon/common"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+type startupFixtureManager struct {
+	db.Manager
+	frontier db.DB
+	adds     int
+	stops    int
+}
+
+func (m *startupFixtureManager) Frontier() db.DB  { return m.frontier }
+func (m *startupFixtureManager) Location() string { return "controlled-startup-fixture" }
+func (m *startupFixtureManager) Add(db.Transaction) error {
+	m.adds++
+	return errors.New("unexpected insert")
+}
+func (m *startupFixtureManager) Stop() error { m.stops++; return nil }
+
+type startupFixtureCache struct {
+	storage.CacheManager
+	view db.DB
+	adds int
+}
+
+func (m *startupFixtureCache) DB() db.DB { return m.view }
+func (m *startupFixtureCache) Add(types.HashHeight, db.Patch) error {
+	m.adds++
+	return errors.New("unexpected cache write")
+}
+func (m *startupFixtureCache) Stop() error { return nil }
+
+type startupReadError struct {
+	db.DB
+	err error
+}
+
+func (v *startupReadError) Get(key []byte) ([]byte, error) {
+	if bytes.Equal(key, append([]byte{2}, []byte{0, 0, 0, 0, 0, 0, 0, 1}...)) {
+		return nil, v.err
+	}
+	return v.DB.Get(key)
+}
+func quietStartupFixture(t *testing.T) {
+	root, chainLog := log15.Root().GetHandler(), common.ChainLogger.GetHandler()
+	log15.Root().SetHandler(log15.DiscardHandler())
+	common.ChainLogger.SetHandler(log15.DiscardHandler())
+	t.Cleanup(func() { log15.Root().SetHandler(root); common.ChainLogger.SetHandler(chainLog) })
+}
+func TestCandidatePublicChainStartupEmptyRealManagers(t *testing.T) {
+	quietStartupFixture(t)
+	g, err := genesis.MakeEmbeddedGenesisConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	ledger := db.NewLevelDBManager(filepath.Join(dir, "ledger"))
+	cache := storage.NewCacheDBManager(dir)
+	c := chain.NewChain(ledger, cache, g, filepath.Join(dir, "tree"), false)
+	t.Cleanup(func() {
+		if err := c.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+	if err := c.Init(); err != nil {
+		t.Fatal(err)
+	}
+	id := g.GetGenesisMomentum().Identifier()
+	if got := c.GetFrontierMomentumStore().Identifier(); got != id {
+		t.Fatalf("unexpected genesis identifier %v", got)
+	}
+	root, err := c.StateRoot(id)
+	if err != nil || !c.StateTreeReady() || root.String() != "864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d" {
+		t.Fatalf("unexpected source projection readiness or root: %v %v", root, err)
+	}
+	if err := c.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	if c.StateTreeReady() {
+		t.Fatal("tree remained ready after Stop")
+	}
+}
+func TestCandidatePublicChainStartupPreservesGenesisLookupError(t *testing.T) {
+	quietStartupFixture(t)
+	g, err := genesis.MakeEmbeddedGenesisConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := g.GetGenesisMomentum()
+	second := &nom.Momentum{Version: 1, ChainIdentifier: 1, PreviousHash: first.Hash, Height: 2, TimestampUnix: first.TimestampUnix + 10, ChangesHash: types.NewHash(nil)}
+	second.Hash = second.ComputeHash()
+	view := db.NewMemDB()
+	for _, m := range []*nom.Momentum{first, second} {
+		raw, e := m.Serialize()
+		if e != nil {
+			t.Fatal(e)
+		}
+		if e = db.SetFrontier(view, m.Identifier(), raw); e != nil {
+			t.Fatal(e)
+		}
+	}
+	sentinel := errors.New("controlled genesis lookup failure")
+	ledger := &startupFixtureManager{frontier: &startupReadError{DB: view, err: sentinel}}
+	cache := &startupFixtureCache{view: db.NewMemDB()}
+	c := chain.NewChain(ledger, cache, g, filepath.Join(t.TempDir(), "tree"), false)
+	defer c.Stop()
+	if got := c.Init(); !errors.Is(got, sentinel) {
+		t.Fatalf("lookup error lost: %v", got)
+	}
+	if ledger.adds != 0 || cache.adds != 0 || c.StateTreeReady() {
+		t.Fatal("failed preflight changed downstream readiness or wrote through a manager")
+	}
+}
+func TestCandidatePublicChainStartupClosedCacheDoesNotInsertGenesis(t *testing.T) {
+	quietStartupFixture(t)
+	g, err := genesis.MakeEmbeddedGenesisConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ledger := &startupFixtureManager{frontier: db.NewMemDB()}
+	cache := &startupFixtureCache{}
+	c := chain.NewChain(ledger, cache, g, filepath.Join(t.TempDir(), "tree"), false)
+	defer c.Stop()
+	if err := c.Init(); err == nil || !strings.HasPrefix(err.Error(), "can't initialize chain: cache-unavailable") {
+		t.Fatalf("unexpected stopped-cache result: %v", err)
+	}
+	if ledger.adds != 0 || cache.adds != 0 || c.StateTreeReady() {
+		t.Fatal("stopped cache allowed a genesis write or readiness")
+	}
+}
+func TestCandidatePublicChainStartupStoppedInstanceRefusesInit(t *testing.T) {
+	ledger := &startupFixtureManager{}
+	cache := &startupFixtureCache{}
+	c := chain.NewChain(ledger, cache, nil, "", false)
+	if err := c.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Init(); err == nil || err.Error() != "chain instance is stopped" {
+		t.Fatalf("unexpected terminal instance result: %v", err)
+	}
+	if err := c.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	if ledger.stops != 1 || ledger.adds != 0 || cache.adds != 0 || c.StateTreeReady() {
+		t.Fatal("terminal instance restarted or stopped managers twice")
+	}
+}
