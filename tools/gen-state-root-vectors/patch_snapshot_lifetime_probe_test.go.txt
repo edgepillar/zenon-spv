@@ -1,0 +1,337 @@
+//go:build candidate_patch_snapshot_lifetime
+
+package db
+
+import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"runtime/debug"
+	"strconv"
+	"testing"
+	"time"
+
+	"github.com/zenon-network/go-zenon/common"
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+type candidateSnapshotImage struct {
+	Records    int    `json:"records"`
+	KeyBytes   int    `json:"key_bytes"`
+	ValueBytes int    `json:"value_bytes"`
+	SHA256     string `json:"ordered_length_framed_sha256"`
+}
+
+func candidateSnapshotCount(t *testing.T, m *ldbManager) int {
+	t.Helper()
+	raw, err := m.ldb.GetProperty("leveldb.alivesnaps")
+	if err != nil {
+		t.Fatal(err)
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil || value < 0 {
+		t.Fatalf("invalid snapshot counter %q: %v", raw, err)
+	}
+	return value
+}
+
+func candidateSnapshotDatabaseImage(t *testing.T, m *ldbManager) candidateSnapshotImage {
+	t.Helper()
+	h := sha256.New()
+	var length [8]byte
+	result := candidateSnapshotImage{}
+	it := m.ldb.NewIterator(nil, nil)
+	defer it.Release()
+	for it.Next() {
+		key, value := it.Key(), it.Value()
+		binary.BigEndian.PutUint64(length[:], uint64(len(key)))
+		h.Write(length[:])
+		h.Write(key)
+		binary.BigEndian.PutUint64(length[:], uint64(len(value)))
+		h.Write(length[:])
+		h.Write(value)
+		result.Records++
+		result.KeyBytes += len(key)
+		result.ValueBytes += len(value)
+	}
+	if err := it.Error(); err != nil {
+		t.Fatal(err)
+	}
+	result.SHA256 = hex.EncodeToString(h.Sum(nil))
+	return result
+}
+
+func candidateSnapshotRead(m *ldbManager, reader string, id types.HashHeight) (value Patch, panicked bool) {
+	defer func() {
+		if recover() != nil {
+			value, panicked = nil, true
+		}
+	}()
+	if reader == "public_get_patch" {
+		return m.GetPatch(id), false
+	}
+	return m.getRollback(id.Height), false
+}
+
+func TestCandidatePatchSnapshotLifetime(t *testing.T) {
+	root := os.Getenv("SPV_SNAPSHOT_CASE_ROOT")
+	if root == "" {
+		t.Fatal("an explicit owned case root is required")
+	}
+	released := os.Getenv("SPV_EXPECT_PATCH_SNAPSHOT_RELEASE")
+	if released != "false" && released != "true" {
+		t.Fatal("an explicit experimental source expectation is required")
+	}
+	expectRelease := released == "true"
+	defaultGC := debug.SetGCPercent(-1)
+	debug.SetGCPercent(defaultGC)
+	const reads = 64
+	for _, reader := range []string{"public_get_patch", "internal_get_rollback"} {
+		for _, state := range []string{"present", "absent", "invalid_dump"} {
+			for _, gcPolicy := range []string{"disabled", "inherited"} {
+				name := reader + "_" + state + "_" + gcPolicy
+				t.Run(name, func(t *testing.T) {
+					caseRoot := filepath.Join(root, name)
+					if err := os.Mkdir(caseRoot, 0700); err != nil {
+						t.Fatal(err)
+					}
+					m := NewLevelDBManager(caseRoot).(*ldbManager)
+					defer func() {
+						if err := m.Stop(); err != nil {
+							t.Error(err)
+						}
+					}()
+					id := types.HashHeight{Height: 42}
+					prefix := patchByte
+					if reader == "internal_get_rollback" {
+						prefix = rollbackByte
+					}
+					patch := NewPatch()
+					patch.Put([]byte("alpha"), []byte("one"))
+					patch.Delete([]byte("beta"))
+					wanted := patch.Dump()
+					stored := wanted
+					if state == "invalid_dump" {
+						stored = []byte{255}
+					}
+					if state != "absent" {
+						if err := m.ldb.Put(common.JoinBytes(prefix, common.Uint64ToBytes(id.Height)), stored, nil); err != nil {
+							t.Fatal(err)
+						}
+					}
+					before := candidateSnapshotDatabaseImage(t, m)
+					if n := candidateSnapshotCount(t, m); n != 0 {
+						t.Fatalf("nonempty snapshot baseline: %d", n)
+					}
+					gcPercent := defaultGC
+					if gcPolicy == "disabled" {
+						gcPercent = -1
+					}
+					oldGC := debug.SetGCPercent(gcPercent)
+					defer debug.SetGCPercent(oldGC)
+					panics, nils, matched := 0, 0, 0
+					for i := 0; i < reads; i++ {
+						value, panicked := candidateSnapshotRead(m, reader, id)
+						if panicked {
+							panics++
+						}
+						if value == nil {
+							nils++
+						} else if bytes.Equal(value.Dump(), wanted) {
+							matched++
+						} else {
+							t.Fatal("returned patch bytes changed")
+						}
+					}
+					afterReads := candidateSnapshotCount(t, m)
+					after := candidateSnapshotDatabaseImage(t, m)
+					if before != after {
+						t.Fatal("reads changed the logical database")
+					}
+					if expectRelease && afterReads != 0 {
+						t.Fatalf("explicit-release source retained %d snapshots", afterReads)
+					}
+					if !expectRelease && gcPolicy == "disabled" && afterReads != reads {
+						t.Fatalf("parent diagnostic expected %d snapshots, got %d", reads, afterReads)
+					}
+					if afterReads < 0 || afterReads > reads {
+						t.Fatal("snapshot counter outside the selected read count")
+					}
+					switch state {
+					case "present":
+						if matched != reads || panics != 0 || nils != 0 {
+							t.Fatal("present patch behavior changed")
+						}
+					case "absent":
+						if matched != 0 || panics != 0 || nils != reads {
+							t.Fatal("absent patch behavior changed")
+						}
+					case "invalid_dump":
+						if matched != 0 || panics != reads || nils != reads {
+							t.Fatal("invalid patch behavior changed")
+						}
+					}
+					rounds := 0
+					deadline := time.Now().Add(2 * time.Second)
+					for candidateSnapshotCount(t, m) != 0 && time.Now().Before(deadline) {
+						runtime.GC()
+						runtime.Gosched()
+						time.Sleep(time.Millisecond)
+						rounds++
+					}
+					afterGC := candidateSnapshotCount(t, m)
+					if afterGC != 0 {
+						t.Fatalf("bounded finalizer control retained %d snapshots", afterGC)
+					}
+					row := map[string]interface{}{
+						"format_version": 1,
+						"kind": "native-patch-read-snapshot-lifetime",
+						"reader": reader,
+						"case": state,
+						"gc_policy": gcPolicy,
+						"gc_percent": gcPercent,
+						"reads": reads,
+						"snapshots_before": 0,
+						"snapshots_after_reads": afterReads,
+						"snapshots_after_explicit_gc": afterGC,
+						"explicit_gc_rounds": rounds,
+						"decode_panics": panics,
+						"returned_nil": nils,
+						"returned_expected_patch": matched,
+						"patch_dump_hex": hex.EncodeToString(wanted),
+						"stored_value_hex": hex.EncodeToString(stored),
+						"logical_database_before": before,
+						"logical_database_after": after,
+						"explicit_release_source_expected": expectRelease,
+						"permanent_leak_claimed": false,
+						"representative_load_or_hardware_budget_qualified": false,
+						"full_node_or_network_executed": false,
+						"accepted_header_binding": false,
+						"consumer_result": "REFUSED",
+					}
+					raw, err := json.Marshal(row)
+					if err != nil {
+						t.Fatal(err)
+					}
+					fmt.Println("PATCH_SNAPSHOT_LIFETIME_OBSERVATION " + string(raw))
+					if err := m.Stop(); err != nil {
+						t.Fatal(err)
+					}
+					if reader == "public_get_patch" && m.GetPatch(id) != nil {
+						t.Fatal("stopped manager returned a patch")
+					}
+				})
+			}
+		}
+	}
+	fmt.Fprintln(os.Stderr, "PATCH_SNAPSHOT_LIFETIME_TEST_COMPLETE")
+}
+
+
+// This additional candidate-only control keeps decoded patch values alive after
+// their read snapshots, database rewrites, collection, and manager Stop.
+func TestCandidateSnapshotReturnedPatchLifetime(t *testing.T) {
+	if os.Getenv("SPV_EXPECT_PATCH_SNAPSHOT_RELEASE") != "true" {
+		t.Fatal("the explicit-release candidate must be selected")
+	}
+	root := os.Getenv("SPV_SNAPSHOT_CASE_ROOT")
+	if root == "" {
+		t.Fatal("an explicit owned case root is required")
+	}
+	caseRoot := filepath.Join(root, "returned_patch_after_stop")
+	if err := os.Mkdir(caseRoot, 0700); err != nil {
+		t.Fatal(err)
+	}
+	m := NewLevelDBManager(caseRoot).(*ldbManager)
+	defer func() {
+		if err := m.Stop(); err != nil {
+			t.Error(err)
+		}
+	}()
+	id := types.HashHeight{Height: 42}
+	wanted := NewPatch()
+	wanted.Put([]byte("alpha"), []byte("one"))
+	wanted.Delete([]byte("beta"))
+	wantedBytes := append([]byte(nil), wanted.Dump()...)
+	for _, prefix := range [][]byte{patchByte, rollbackByte} {
+		if err := m.ldb.Put(common.JoinBytes(prefix, common.Uint64ToBytes(id.Height)), wantedBytes, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	returned := []Patch{m.GetPatch(id), m.getRollback(id.Height)}
+	if count := candidateSnapshotCount(t, m); count != 0 {
+		t.Fatalf("reads retained %d snapshots", count)
+	}
+	replacement := NewPatch()
+	replacement.Put([]byte("replacement"), []byte("different bytes"))
+	for _, prefix := range [][]byte{patchByte, rollbackByte} {
+		if err := m.ldb.Put(common.JoinBytes(prefix, common.Uint64ToBytes(id.Height)), replacement.Dump(), nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	runtime.GC()
+	if err := m.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	runtime.GC()
+	for _, value := range returned {
+		if value == nil || !bytes.Equal(value.Dump(), wantedBytes) {
+			t.Fatal("returned patch changed after rewrite, collection, or Stop")
+		}
+		copied := NewPatch()
+		if err := value.Replay(copied); err != nil || !bytes.Equal(copied.Dump(), wantedBytes) {
+			t.Fatal("returned patch replay changed after Stop")
+		}
+	}
+}
+
+
+// Closing the owned test handle directly selects the acquisition-error branch.
+// The manager still owns its mutex and receives its normal Stop cleanup.
+func TestCandidateSnapshotAcquisitionError(t *testing.T) {
+	if os.Getenv("SPV_EXPECT_PATCH_SNAPSHOT_RELEASE") != "true" {
+		t.Fatal("the explicit-release candidate must be selected")
+	}
+	root := os.Getenv("SPV_SNAPSHOT_CASE_ROOT")
+	if root == "" {
+		t.Fatal("an explicit owned case root is required")
+	}
+	caseRoot := filepath.Join(root, "closed_underlying_handle")
+	if err := os.Mkdir(caseRoot, 0700); err != nil {
+		t.Fatal(err)
+	}
+	m := NewLevelDBManager(caseRoot).(*ldbManager)
+	if err := m.ldb.Close(); err != nil {
+		t.Fatal(err)
+	}
+	snapshot, acquisitionError := m.ldb.GetSnapshot()
+	if snapshot != nil || acquisitionError == nil {
+		t.Fatal("closed handle did not select the acquisition error")
+	}
+	defer func() {
+		if err := m.Stop(); err != nil && err != acquisitionError {
+			t.Error(err)
+		}
+	}()
+	for _, reader := range []string{"public_get_patch", "internal_get_rollback"} {
+		var recovered interface{}
+		func() {
+			defer func() { recovered = recover() }()
+			if reader == "public_get_patch" {
+				m.GetPatch(types.HashHeight{Height: 42})
+			} else {
+				m.getRollback(42)
+			}
+		}()
+		if recovered != acquisitionError {
+			t.Fatalf("%s did not retain the acquisition error", reader)
+		}
+	}
+	fmt.Println("\nSNAPSHOT_ACQUISITION_ERROR_CONTROL_COMPLETE")
+}
