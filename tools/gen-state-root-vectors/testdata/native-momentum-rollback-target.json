@@ -1,0 +1,303 @@
+{
+  "cases": [
+    {
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 42,
+          "sha256": "cab9a475d7ea4969634ed2cd356d8471f68ea631f1d8a7928796d48343f3278a"
+        },
+        "stdout": {
+          "bytes": 8792,
+          "sha256": "4111c2a79af36bcde5ed1fc109cb141f852779f11041c7d4680968e7d03c6a5a"
+        }
+      },
+      "stdout_utf8": "{\"image\":{\"identifier\":{\"hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"height\":0},\"records\":1,\"key_bytes\":1,\"value_bytes\":0,\"sha256\":\"8fd5b7964d1a60df8896003ca9855236dd87307adbc43ec7e1b29e22cc6e77db\"},\"nil_deletion_marker_omitted\":true,\"present_empty_retained\":true,\"stage\":\"logical-presence-control\"}\n{\"cache_or_state_tree_selected\":false,\"chain_init_or_start_selected\":false,\"consumer_result\":\"REFUSED\",\"genesis_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"genesis_patch_bytes\":10849399,\"genesis_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"network_started\":false,\"stage\":\"source-selection\",\"unsigned_second_momentum\":{\"version\":1,\"chainIdentifier\":1,\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"previousHash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2,\"timestamp\":1637755210,\"data\":null,\"content\":null,\"changesHash\":\"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a\",\"publicKey\":null,\"signature\":null,\"nextFusionPrice\":0,\"nextWorkPrice\":0,\"stateRoot\":\"0000000000000000000000000000000000000000000000000000000000000000\"},\"wallet_signing_or_broadcast\":false}\n{\"image\":{\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"records\":103824,\"key_bytes\":3449869,\"value_bytes\":8004463,\"sha256\":\"1c1168a46cb671751f1bc38ed79354e43cf3a7df30127a12851a9b66f05de815\"},\"stage\":\"source-genesis-committed\"}\n{\"image\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"stage\":\"unsigned-second-momentum-committed\"}\n{\"after\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"before\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"case\":\"nil-locker\",\"delete_callbacks\":0,\"insert_callbacks\":0,\"result\":{\"error_class\":\"nil-locker\",\"panic\":false,\"panic_type\":\"\",\"panic_text\":\"\",\"canonical_state_uncertain\":false},\"stage\":\"rollback-target-observation\",\"target\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2}}\n{\"after\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"before\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"case\":\"missing-height-zero\",\"delete_callbacks\":0,\"insert_callbacks\":0,\"result\":{\"error_class\":\"panic\",\"panic\":true,\"panic_type\":\"runtime.errorString\",\"panic_text\":\"runtime error: invalid memory address or nil pointer dereference\",\"canonical_state_uncertain\":false},\"stage\":\"rollback-target-observation\",\"target\":{\"hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"height\":0}}\n{\"after\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"before\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"case\":\"missing-above-frontier\",\"delete_callbacks\":0,\"insert_callbacks\":0,\"result\":{\"error_class\":\"panic\",\"panic\":true,\"panic_type\":\"runtime.errorString\",\"panic_text\":\"runtime error: invalid memory address or nil pointer dereference\",\"canonical_state_uncertain\":false},\"stage\":\"rollback-target-observation\",\"target\":{\"hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"height\":3}}\n{\"after\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"before\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"case\":\"missing-maximum-height\",\"delete_callbacks\":0,\"insert_callbacks\":0,\"result\":{\"error_class\":\"panic\",\"panic\":true,\"panic_type\":\"runtime.errorString\",\"panic_text\":\"runtime error: invalid memory address or nil pointer dereference\",\"canonical_state_uncertain\":false},\"stage\":\"rollback-target-observation\",\"target\":{\"hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"height\":18446744073709551615}}\n{\"after\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"before\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"case\":\"wrong-hash-at-frontier\",\"delete_callbacks\":0,\"insert_callbacks\":0,\"result\":{\"error_class\":\"target-identifier-mismatch\",\"panic\":false,\"panic_type\":\"\",\"panic_text\":\"\",\"canonical_state_uncertain\":false},\"stage\":\"rollback-target-observation\",\"target\":{\"hash\":\"fae4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2}}\n{\"after\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"before\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"case\":\"matching-frontier-noop\",\"delete_callbacks\":0,\"insert_callbacks\":0,\"result\":{\"error_class\":\"none\",\"panic\":false,\"panic_type\":\"\",\"panic_text\":\"\",\"canonical_state_uncertain\":false},\"stage\":\"rollback-target-observation\",\"target\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2}}\n{\"after\":{\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"records\":103824,\"key_bytes\":3449869,\"value_bytes\":8004463,\"sha256\":\"1c1168a46cb671751f1bc38ed79354e43cf3a7df30127a12851a9b66f05de815\"},\"before\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"deleted_identifiers\":[{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2}],\"insert_callbacks\":0,\"result\":{\"error_class\":\"none\",\"panic\":false,\"panic_type\":\"\",\"panic_text\":\"\",\"canonical_state_uncertain\":false},\"stage\":\"valid-one-step-rollback\",\"target\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1}}\n{\"after\":{\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"records\":103824,\"key_bytes\":3449869,\"value_bytes\":8004463,\"sha256\":\"1c1168a46cb671751f1bc38ed79354e43cf3a7df30127a12851a9b66f05de815\"},\"delete_callbacks\":1,\"insert_callbacks\":0,\"result\":{\"error_class\":\"panic\",\"panic\":true,\"panic_type\":\"runtime.errorString\",\"panic_text\":\"runtime error: invalid memory address or nil pointer dereference\",\"canonical_state_uncertain\":false},\"stage\":\"removed-height-target-observation\",\"target\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2}}\n{\"image\":{\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"records\":103824,\"key_bytes\":3449869,\"value_bytes\":8004463,\"sha256\":\"1c1168a46cb671751f1bc38ed79354e43cf3a7df30127a12851a9b66f05de815\"},\"removed_height_absent\":true,\"stage\":\"closed-manager-reopen\"}\n",
+      "variant": "parent"
+    },
+    {
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 42,
+          "sha256": "cab9a475d7ea4969634ed2cd356d8471f68ea631f1d8a7928796d48343f3278a"
+        },
+        "stdout": {
+          "bytes": 8500,
+          "sha256": "abdc4dad13ded97c1ad6af8b0117d89c41e12e1c0ab2116aced37dda7e6a3c32"
+        }
+      },
+      "stdout_utf8": "{\"image\":{\"identifier\":{\"hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"height\":0},\"records\":1,\"key_bytes\":1,\"value_bytes\":0,\"sha256\":\"8fd5b7964d1a60df8896003ca9855236dd87307adbc43ec7e1b29e22cc6e77db\"},\"nil_deletion_marker_omitted\":true,\"present_empty_retained\":true,\"stage\":\"logical-presence-control\"}\n{\"cache_or_state_tree_selected\":false,\"chain_init_or_start_selected\":false,\"consumer_result\":\"REFUSED\",\"genesis_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"genesis_patch_bytes\":10849399,\"genesis_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"network_started\":false,\"stage\":\"source-selection\",\"unsigned_second_momentum\":{\"version\":1,\"chainIdentifier\":1,\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"previousHash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2,\"timestamp\":1637755210,\"data\":null,\"content\":null,\"changesHash\":\"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a\",\"publicKey\":null,\"signature\":null,\"nextFusionPrice\":0,\"nextWorkPrice\":0,\"stateRoot\":\"0000000000000000000000000000000000000000000000000000000000000000\"},\"wallet_signing_or_broadcast\":false}\n{\"image\":{\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"records\":103824,\"key_bytes\":3449869,\"value_bytes\":8004463,\"sha256\":\"1c1168a46cb671751f1bc38ed79354e43cf3a7df30127a12851a9b66f05de815\"},\"stage\":\"source-genesis-committed\"}\n{\"image\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"stage\":\"unsigned-second-momentum-committed\"}\n{\"after\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"before\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"case\":\"nil-locker\",\"delete_callbacks\":0,\"insert_callbacks\":0,\"result\":{\"error_class\":\"nil-locker\",\"panic\":false,\"panic_type\":\"\",\"panic_text\":\"\",\"canonical_state_uncertain\":false},\"stage\":\"rollback-target-observation\",\"target\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2}}\n{\"after\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"before\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"case\":\"missing-height-zero\",\"delete_callbacks\":0,\"insert_callbacks\":0,\"result\":{\"error_class\":\"missing-target\",\"panic\":false,\"panic_type\":\"\",\"panic_text\":\"\",\"canonical_state_uncertain\":false},\"stage\":\"rollback-target-observation\",\"target\":{\"hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"height\":0}}\n{\"after\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"before\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"case\":\"missing-above-frontier\",\"delete_callbacks\":0,\"insert_callbacks\":0,\"result\":{\"error_class\":\"missing-target\",\"panic\":false,\"panic_type\":\"\",\"panic_text\":\"\",\"canonical_state_uncertain\":false},\"stage\":\"rollback-target-observation\",\"target\":{\"hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"height\":3}}\n{\"after\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"before\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"case\":\"missing-maximum-height\",\"delete_callbacks\":0,\"insert_callbacks\":0,\"result\":{\"error_class\":\"missing-target\",\"panic\":false,\"panic_type\":\"\",\"panic_text\":\"\",\"canonical_state_uncertain\":false},\"stage\":\"rollback-target-observation\",\"target\":{\"hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"height\":18446744073709551615}}\n{\"after\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"before\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"case\":\"wrong-hash-at-frontier\",\"delete_callbacks\":0,\"insert_callbacks\":0,\"result\":{\"error_class\":\"target-identifier-mismatch\",\"panic\":false,\"panic_type\":\"\",\"panic_text\":\"\",\"canonical_state_uncertain\":false},\"stage\":\"rollback-target-observation\",\"target\":{\"hash\":\"fae4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2}}\n{\"after\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"before\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"case\":\"matching-frontier-noop\",\"delete_callbacks\":0,\"insert_callbacks\":0,\"result\":{\"error_class\":\"none\",\"panic\":false,\"panic_type\":\"\",\"panic_text\":\"\",\"canonical_state_uncertain\":false},\"stage\":\"rollback-target-observation\",\"target\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2}}\n{\"after\":{\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"records\":103824,\"key_bytes\":3449869,\"value_bytes\":8004463,\"sha256\":\"1c1168a46cb671751f1bc38ed79354e43cf3a7df30127a12851a9b66f05de815\"},\"before\":{\"identifier\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2},\"records\":103826,\"key_bytes\":3449911,\"value_bytes\":8004591,\"sha256\":\"647c402cf28644ce2d39767b3fa3826ce011107d19196671fc1c34c5d38211ab\"},\"deleted_identifiers\":[{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2}],\"insert_callbacks\":0,\"result\":{\"error_class\":\"none\",\"panic\":false,\"panic_type\":\"\",\"panic_text\":\"\",\"canonical_state_uncertain\":false},\"stage\":\"valid-one-step-rollback\",\"target\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1}}\n{\"after\":{\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"records\":103824,\"key_bytes\":3449869,\"value_bytes\":8004463,\"sha256\":\"1c1168a46cb671751f1bc38ed79354e43cf3a7df30127a12851a9b66f05de815\"},\"delete_callbacks\":1,\"insert_callbacks\":0,\"result\":{\"error_class\":\"missing-target\",\"panic\":false,\"panic_type\":\"\",\"panic_text\":\"\",\"canonical_state_uncertain\":false},\"stage\":\"removed-height-target-observation\",\"target\":{\"hash\":\"fbe4d2002715d5993894e36fe23eefab052ffe697861465b1be8c07d786beed0\",\"height\":2}}\n{\"image\":{\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"records\":103824,\"key_bytes\":3449869,\"value_bytes\":8004463,\"sha256\":\"1c1168a46cb671751f1bc38ed79354e43cf3a7df30127a12851a9b66f05de815\"},\"removed_height_absent\":true,\"stage\":\"closed-manager-reopen\"}\n",
+      "variant": "candidate"
+    }
+  ],
+  "consumer_result": "REFUSED",
+  "execution": {
+    "binaries": {
+      "candidate": {
+        "buildinfo": {
+          "bytes": 4457,
+          "sha256": "910b15e7870881312b59e39bf4835c932f8088e8973174c395ab5c25533359f2"
+        },
+        "native_output": {
+          "bytes": 8500,
+          "sha256": "abdc4dad13ded97c1ad6af8b0117d89c41e12e1c0ab2116aced37dda7e6a3c32"
+        },
+        "ordinary_build": true,
+        "payload": {
+          "bytes": 19564178,
+          "sha256": "874f9943dd05d8ff05f9999ce38b93cf4a8dfef04a999da79b96b89fe4be1532"
+        }
+      },
+      "parent": {
+        "buildinfo": {
+          "bytes": 4457,
+          "sha256": "910b15e7870881312b59e39bf4835c932f8088e8973174c395ab5c25533359f2"
+        },
+        "native_output": {
+          "bytes": 8792,
+          "sha256": "4111c2a79af36bcde5ed1fc109cb141f852779f11041c7d4680968e7d03c6a5a"
+        },
+        "ordinary_build": true,
+        "payload": {
+          "bytes": 19564178,
+          "sha256": "56a18a942729fae03cad0f067ff899423adacf9e695328d7e41ad65ded2f21a8"
+        }
+      }
+    },
+    "commands": {
+      "candidate_build": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "candidate_buildinfo": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 4457,
+          "sha256": "910b15e7870881312b59e39bf4835c932f8088e8973174c395ab5c25533359f2"
+        }
+      },
+      "candidate_run": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 42,
+          "sha256": "cab9a475d7ea4969634ed2cd356d8471f68ea631f1d8a7928796d48343f3278a"
+        },
+        "stdout": {
+          "bytes": 8500,
+          "sha256": "abdc4dad13ded97c1ad6af8b0117d89c41e12e1c0ab2116aced37dda7e6a3c32"
+        }
+      },
+      "parent_build": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 1422,
+          "sha256": "5691b8f2b3dd438d680e7237dd04ea105f62882808e75bd89f35e0970c333af5"
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "parent_buildinfo": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 4457,
+          "sha256": "910b15e7870881312b59e39bf4835c932f8088e8973174c395ab5c25533359f2"
+        }
+      },
+      "parent_run": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 42,
+          "sha256": "cab9a475d7ea4969634ed2cd356d8471f68ea631f1d8a7928796d48343f3278a"
+        },
+        "stdout": {
+          "bytes": 8792,
+          "sha256": "4111c2a79af36bcde5ed1fc109cb141f852779f11041c7d4680968e7d03c6a5a"
+        }
+      }
+    },
+    "compiler": "go1.25.14",
+    "initial_observer_attempt": {
+      "candidate_executed": false,
+      "command": {
+        "actual_exit": 2,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 286,
+          "sha256": "8474ae9e0661a2789e677e102fee78985c0dca199a5aac0b291e4c96ee1609e6"
+        },
+        "stdout": {
+          "bytes": 6663,
+          "sha256": "01a061f33e2139a33aad7a88c5b4804bb0b82a3f1e91854712c1516c431c8ea1"
+        }
+      },
+      "complete_failure_bytes_retained_privately": true,
+      "observed_missing_target_API_panics": 3,
+      "old_task_relabelled": false,
+      "original_probe": {
+        "bytes": 8585,
+        "sha256": "b6a6ad31255f2ea96651ed490e4eb4644da36831a6717c9a791ef1ee3415ca93"
+      },
+      "outcome": "FAILURE",
+      "reason": "Observer incorrectly counted nil deletion markers as present logical rows. Its assertion failed before emitting the valid rollback post-image.",
+      "valid_rollback_post_image_emitted": false
+    },
+    "linked_modules_per_binary": 25,
+    "native_ledger_processes": 2,
+    "new_archive_downloads": 0,
+    "new_external_transports": 0,
+    "ordinary_builds": 2,
+    "reference_platform": "darwin/arm64",
+    "source_bound_mod_definitions_available": 550,
+    "unit_command": {
+      "actual_exit": 0,
+      "output_complete": true,
+      "reason": null,
+      "state": "COMPLETE",
+      "stderr": {
+        "bytes": 1069,
+        "sha256": "6b25bbbca155ef6d5d63957d839808fff4e88036d8d1a7878225206b283375ac"
+      },
+      "stdout": {
+        "bytes": 18988,
+        "sha256": "fb1e74bbd4d6a195b9caf4d5bd9f6671846c7a4c07630e2c5bd64b291efda7a2"
+      }
+    },
+    "whole_module_archive_graph_verification": "NOT_QUALIFIED"
+  },
+  "format_version": 1,
+  "kind": "recorded-native-momentum-rollback-target",
+  "scope": {
+    "Chain_Init_or_Start_executed": false,
+    "accepted_header_binding": false,
+    "cache_or_state_tree_executed": false,
+    "checker_executes_reference_backend": false,
+    "complete_genesis_KV_image_independently_rederived_by_checker": false,
+    "full_node_service_or_network_executed": false,
+    "hosted_checks_replay_recorded_bytes": true,
+    "independent_small_logical_frame_and_v1_momentum_hash": true,
+    "logical_images_omit_nil_tombstones_and_retain_present_empty": true,
+    "node_client_profile_agreed": false,
+    "private_execution_receipts_authenticated": false,
+    "production_qualified": false,
+    "real_disk_MomentumPool_and_manager_executed": true,
+    "recovered_API_panics_reported_separately_from_process_exit": true,
+    "representative_resource_budget_qualified": false,
+    "runtime_state_value_acceptance": false,
+    "selected_native_unit_tests_recorded": true,
+    "signature_or_consensus_validated_second_momentum": false,
+    "source_embedded_unsigned_genesis_and_local_second_momentum": true,
+    "whole_module_archive_graph_qualified": false,
+    "whole_window_atomicity_or_power_loss_qualified": false
+  },
+  "source": {
+    "candidate_probe_build_tree": "3d84ab1bdcfc9ae823c71086a1ef37f67be199e1",
+    "candidate_runtime_tree": "cac9fa0446b0372ca37e9b15b0be2276f6d33cdf",
+    "candidate_unit_build_tree": "35f941e588e8cd784bac5d1c62a2000eee38dc5f",
+    "module_sha256": "ac08476abe3df0bc67f1c5c6868f04889b864310f16a37b0d51a6598b9017a45",
+    "original_source_blobs": 467,
+    "original_tree": "d0f5dfb09e737a806cfc743bb6ba9ddd101ebcd6",
+    "parent_probe_build_tree": "f37671741ec343600b5eb336fd830b3625ee7ce5",
+    "parent_runtime_tree": "890520349329851e2d39bd134d5643baf59531b6",
+    "patch_sha256": "b580f394535f6d14108443da548e3171ffeeb6980fe9acf10dd33b305545f9fa",
+    "probe": {
+      "bytes": 9703,
+      "sha256": "d997d8c95ac72d422431f0f0bb43404062a9cabe306ff3b52c1a42bf85d5271b"
+    },
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+    "source_blobs_per_build": 468,
+    "source_manifest_sha256": "80104c7c6b5086a6b851c9c5e82920c5bd196c4252781acf88fc9c4b74d6cc84",
+    "sum_sha256": "e536610c08abc9f4b979ce39cd5ae7323c3df14a189d186d911ee1d1184b8537",
+    "unit_source": {
+      "bytes": 3823,
+      "sha256": "54b3e2512e63559e49097beba5d18a5816a5c793a1020a59b46f97af069fb26e"
+    }
+  },
+  "unit_run": {
+    "build_tree": "35f941e588e8cd784bac5d1c62a2000eee38dc5f",
+    "command": {
+      "actual_exit": 0,
+      "output_complete": true,
+      "reason": null,
+      "state": "COMPLETE",
+      "stderr": {
+        "bytes": 1069,
+        "sha256": "6b25bbbca155ef6d5d63957d839808fff4e88036d8d1a7878225206b283375ac"
+      },
+      "stdout": {
+        "bytes": 18988,
+        "sha256": "fb1e74bbd4d6a195b9caf4d5bd9f6671846c7a4c07630e2c5bd64b291efda7a2"
+      }
+    },
+    "explicit_skips": [],
+    "failed_tests": [],
+    "package_pass_names": [
+      "github.com/zenon-network/go-zenon/chain"
+    ],
+    "race_detector": false,
+    "root_tests": [
+      "TestCandidateMomentumRollbackTargetChecksCompleteIdentifier",
+      "TestCandidateMomentumRollbackTargetPreflight",
+      "TestCandidateMomentumRollbackTargetPreservesLookupError",
+      "TestRollbackToFailureAfterPopIsUnrecoverable",
+      "TestRollbackToFirstPopFailureLeavesCanonicalStateCertain"
+    ],
+    "test_pass_names": [
+      "TestCandidateMomentumRollbackTargetChecksCompleteIdentifier",
+      "TestCandidateMomentumRollbackTargetPreflight",
+      "TestCandidateMomentumRollbackTargetPreflight/above",
+      "TestCandidateMomentumRollbackTargetPreflight/matching-frontier",
+      "TestCandidateMomentumRollbackTargetPreflight/maximum",
+      "TestCandidateMomentumRollbackTargetPreflight/nil-locker",
+      "TestCandidateMomentumRollbackTargetPreflight/wrong-hash",
+      "TestCandidateMomentumRollbackTargetPreflight/zero",
+      "TestCandidateMomentumRollbackTargetPreservesLookupError",
+      "TestRollbackToFailureAfterPopIsUnrecoverable",
+      "TestRollbackToFirstPopFailureLeavesCanonicalStateCertain"
+    ]
+  }
+}

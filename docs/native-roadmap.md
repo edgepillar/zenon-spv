@@ -115,6 +115,14 @@ names. Portable checks read recorded observations, including six controlled
 GC-disabled cases per generation. These are ownership controls, not evidence of
 a permanent leak or representative production memory requirements.
 
+The [ledger rollback-target experiment](momentum-rollback-target.md) checks a nil
+height lookup before mutation and compares the complete target identifier. Two
+ordinary real-ledger probes record four parent API panics and zero candidate
+panics, preserving valid rollback and manager reopen. Eleven focused native unit
+results preserve lookup errors and existing partial-pop classifications. These
+controls do not execute `Chain.Init`, a cache, state tree or network, and leave M2
+agreement and full node qualification open.
+
 For M3, obtain the expected root from the owned accepted v3 header/context.
 Derive the selected address/token key locally and carry exact presence,
 absence and value semantics through transport, saved state and the consumer.

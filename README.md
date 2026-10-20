@@ -35,6 +35,11 @@ checks explicit release in two short-lived patch readers, unchanged recovery
 behavior and recorded DB regressions. It makes no permanent-leak or production
 resource-budget claim.
 
+The [ledger rollback-target experiment](docs/momentum-rollback-target.md) records
+four missing-target API panics in its parent and explicit errors in its candidate,
+with valid rollback and manager reopen preserved. It leaves state-value acceptance
+refused and does not start the network or full node.
+
 ## What it does NOT do
 
 | Capability | Status |
