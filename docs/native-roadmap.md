@@ -194,3 +194,12 @@ See the [archived section](native-research-history.md#recorded-account-pow-byte-
 ### Qualification cost: selected target hex validation
 
 See the [archived section](native-research-history.md#qualification-cost-selected-target-hex-validation).
+
+### Qualification cost: repeated complete fixture graphs
+
+Measured hosted step durations and a local reader profile select the
+[bounded graph reuse extension](conformance-graph-reuse.md). The workspace and
+projected-driver readers keep their complete existing controls and recorded
+byte comparisons while sharing source-pinned pure results within each serial
+process. No disk cache, new node workload or runtime acceptance is introduced.
+Keep exact-head CI, artifact reconciliation and the separate M0–M5 gates.
