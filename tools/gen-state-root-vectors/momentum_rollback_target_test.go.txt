@@ -1,0 +1,102 @@
+//go:build candidate_momentum_rollback_target
+
+// SPDX-License-Identifier: GPL-3.0-only
+package chain
+
+import (
+	"bytes"
+	"errors"
+	"strings"
+	"sync"
+	"testing"
+
+	"github.com/zenon-network/go-zenon/chain/momentum"
+	"github.com/zenon-network/go-zenon/chain/nom"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+func TestCandidateMomentumRollbackTargetPreflight(t *testing.T) {
+	cases := []struct {
+		name      string
+		target    types.HashHeight
+		nilLocker bool
+		prefix    string
+	}{
+		{"zero", types.ZeroHashHeight, false, "can't rollback momentums. No momentum at height "},
+		{"above", testHashHeight(3), false, "can't rollback momentums. No momentum at height "},
+		{"maximum", types.HashHeight{Height: ^uint64(0)}, false, "can't rollback momentums. No momentum at height "},
+		{"wrong-hash", types.HashHeight{Hash: testHashHeight(1).Hash, Height: 2}, false, "can't rollback momentums. Expected "},
+		{"nil-locker", testHashHeight(2), true, "insertLocker can't be nil"},
+		{"matching-frontier", testHashHeight(2), false, ""},
+	}
+	for _, selected := range cases {
+		t.Run(selected.name, func(t *testing.T) {
+			manager := &fakeMomentumManagerDB{frontiers: newMomentumFrontiers(2)}
+			pool, listener := newTestMomentumPool(manager)
+			before := append([]byte(nil), db.DumpDB(manager.Frontier()).Dump()...)
+			var locker sync.Locker = &sync.Mutex{}
+			if selected.nilLocker {
+				locker = nil
+			}
+			err := pool.RollbackTo(locker, selected.target)
+			if selected.prefix == "" {
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				if err == nil || !strings.HasPrefix(err.Error(), selected.prefix) {
+					t.Fatalf("unexpected error: %v", err)
+				}
+			}
+			var uncertain *ErrCanonicalStateUncertain
+			if errors.As(err, &uncertain) || manager.popCalls != 0 || listener.inserts != 0 || listener.deletes != 0 ||
+				!bytes.Equal(before, db.DumpDB(manager.Frontier()).Dump()) {
+				t.Fatal("target preflight changed state, callbacks, or recovery classification")
+			}
+		})
+	}
+}
+
+func TestCandidateMomentumRollbackTargetChecksCompleteIdentifier(t *testing.T) {
+	target := testHashHeight(1)
+	view := db.NewMemDB()
+	wrong := &nom.Momentum{Hash: target.Hash, Height: 2}
+	raw, err := wrong.Serialize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = db.SetFrontier(view, target, raw); err != nil {
+		t.Fatal(err)
+	}
+	popErr := errors.New("preflight must refuse before pop")
+	manager := &fakeMomentumManagerDB{frontierDB: view, popErr: popErr}
+	pool, listener := newTestMomentumPool(manager)
+	before := append([]byte(nil), db.DumpDB(view).Dump()...)
+	err = pool.RollbackTo(&sync.Mutex{}, target)
+	if err == nil || !strings.HasPrefix(err.Error(), "can't rollback momentums. Expected ") || errors.Is(err, popErr) ||
+		manager.popCalls != 0 || listener.inserts != 0 || listener.deletes != 0 ||
+		!bytes.Equal(before, db.DumpDB(view).Dump()) {
+		t.Fatal("same hash with a wrong returned height crossed target preflight")
+	}
+}
+
+func TestCandidateMomentumRollbackTargetPreservesLookupError(t *testing.T) {
+	target := testHashHeight(1)
+	view := db.NewMemDB()
+	corruptEntryAtHeight(view, target)
+	_, want := momentum.NewStore(nil, view).GetMomentumByHeight(target.Height)
+	if want == nil {
+		t.Fatal("corrupt fixture did not fail decoding")
+	}
+	manager := &fakeMomentumManagerDB{frontierDB: view}
+	pool, listener := newTestMomentumPool(manager)
+	before := append([]byte(nil), db.DumpDB(view).Dump()...)
+	err := pool.RollbackTo(&sync.Mutex{}, target)
+	var uncertain *ErrCanonicalStateUncertain
+	if err == nil || err.Error() != want.Error() || errors.As(err, &uncertain) ||
+		manager.popCalls != 0 || listener.inserts != 0 || listener.deletes != 0 ||
+		!bytes.Equal(before, db.DumpDB(view).Dump()) {
+		t.Fatal("lookup failure was replaced, reclassified, or followed by mutation")
+	}
+}
