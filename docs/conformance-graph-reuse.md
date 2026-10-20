@@ -18,9 +18,9 @@ existing test programs. Their respectively selected graph instance counts are
 four, twelve and twelve; the projected driver test program selects sixteen
 instances because it also imports the earlier driver's controls. Exact source
 pins and ordered instance inventories are required for every selection.
-All original producer, checker, corpus and sample files remain unchanged.
-The current runner and helper have their
-own execution pins; recorded producer source inputs retain their original
+All recorded producer, reader, corpus, sample and runner files remain unchanged.
+The unchanged runner preserves its historical source bindings. The extended
+helper and the current execution recipe have their own pins; recorded producer source inputs retain their original
 meaning. Original commands without the option remain available.
 
 ## Input, ownership and lifetime
@@ -107,10 +107,10 @@ times, including task supervision, were:
 
 | Complete program | Without reuse | With reuse | Samples per mode |
 | --- | ---: | ---: | ---: |
-| Workspace reader | 20.13 s | 15.77 s | 2, median; forward then reverse order |
-| Workspace controls | 21.40 s | 16.87 s | 1 |
-| Projected-driver reader | 19.55 s | 15.42 s | 1 |
-| Projected-driver controls | 22.95 s | 18.56 s | 1 |
+| Workspace reader | 19.60 s | 14.56 s | 2, median; forward then reverse order |
+| Workspace controls | 22.26 s | 16.65 s | 1 |
+| Projected-driver reader | 20.62 s | 15.90 s | 1 |
+| Projected-driver controls | 23.72 s | 18.16 s | 1 |
 
 These finite local observations are not a representative hardware benchmark,
 process-memory measurement or whole-CI speedup. The other three pairs ran
