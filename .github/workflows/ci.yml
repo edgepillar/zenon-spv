@@ -251,6 +251,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_momentum_rollback_target_test.py -v
       - name: Independent recorded momentum rollback targets
         run: python -I -B tools/gen-state-root-vectors/check_momentum_rollback_target.py --source-revision "${{ github.sha }}"
+      - name: Public Chain startup record source controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_public_chain_startup_record_test.py -v
+      - name: Public Chain startup record recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_public_chain_startup_record_test.py -v
+      - name: Independent recorded public Chain startup records
+        run: python -I -B tools/gen-state-root-vectors/check_public_chain_startup_record.py --source-revision "${{ github.sha }}"
       - name: Successor raw store codec controls
         run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
       - name: Successor raw store independent model controls
@@ -832,6 +838,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_momentum_rollback_target_test.py -v
       - name: Independent recorded momentum rollback targets
         run: python -I -B tools/gen-state-root-vectors/check_momentum_rollback_target.py --source-revision "${{ github.sha }}"
+      - name: Public Chain startup record source controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_public_chain_startup_record_test.py -v
+      - name: Public Chain startup record recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_public_chain_startup_record_test.py -v
+      - name: Independent recorded public Chain startup records
+        run: python -I -B tools/gen-state-root-vectors/check_public_chain_startup_record.py --source-revision "${{ github.sha }}"
       - name: Successor raw store codec controls
         run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
       - name: Successor raw store independent model controls

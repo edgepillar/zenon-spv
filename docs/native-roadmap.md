@@ -123,6 +123,15 @@ results preserve lookup errors and existing partial-pop classifications. These
 controls do not execute `Chain.Init`, a cache, state tree or network, and leave M2
 agreement and full node qualification open.
 
+The [public startup-record experiment](public-chain-startup-records.md) checks
+the stored genesis and frontier before downstream initialization, including
+their complete identifiers and computed body hashes. Two ordinary real-manager
+processes record four parent API panics and five inconsistent successful starts;
+the candidate refuses those cases and preserves healthy reopen. Seventeen
+focused native test passes preserve initial genesis insertion, lookup errors,
+terminal lifecycle and prior rollback controls. These selected unsigned fixtures
+leave profile agreement, concurrent lifecycle and full node recovery open.
+
 For M3, obtain the expected root from the owned accepted v3 header/context.
 Derive the selected address/token key locally and carry exact presence,
 absence and value semantics through transport, saved state and the consumer.

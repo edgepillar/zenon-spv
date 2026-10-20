@@ -40,6 +40,12 @@ four missing-target API panics in its parent and explicit errors in its candidat
 with valid rollback and manager reopen preserved. It leaves state-value acceptance
 refused and does not start the network or full node.
 
+The [public startup-record experiment](docs/public-chain-startup-records.md)
+checks stored genesis/frontier records before downstream initialization. Its
+real-manager comparison records four parent API panics and five inconsistent
+successful starts, followed by candidate refusals and preserved healthy reopen.
+The fixture, source and execution limits remain explicit.
+
 ## What it does NOT do
 
 | Capability | Status |
