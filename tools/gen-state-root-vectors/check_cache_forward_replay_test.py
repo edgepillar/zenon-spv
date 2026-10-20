@@ -26,6 +26,25 @@ class CacheForwardRecordingTests(unittest.TestCase):
     def setUpClass(cls):
         cls.raw = (HERE / "testdata" / C.CORPUS).read_bytes()
         cls.record = C.document(cls.raw)
+        # Only this serial corpus-mutation class reuses the complete source
+        # selection. Full source bytes and an uncached selection are checked
+        # at both ends; the no-backend control also runs the uncached builder.
+        cls._uncached_expected_source = staticmethod(C.expected_source)
+        cls._selected_source = C.expected_source()
+        paths = {HERE / name for name in C.INPUTS} | {Path(C.__file__), Path(__file__)}
+        cls._source_hashes = {path: C.P.sha(C.P.read_regular(path, 1 << 20)) for path in paths}
+        cls._source_patch = mock.patch.object(C, "expected_source",
+                                              side_effect=lambda: copy.deepcopy(cls._selected_source))
+        cls._source_patch.start()
+        cls.addClassCleanup(cls._source_patch.stop)
+
+    @classmethod
+    def tearDownClass(cls):
+        for path, digest in cls._source_hashes.items():
+            if C.P.sha(C.P.read_regular(path, 1 << 20)) != digest:
+                raise AssertionError("Source input changed during the serial test class")
+        if cls._uncached_expected_source() != cls._selected_source:
+            raise AssertionError("Complete source selection changed during the test class")
 
     def changed(self):
         return copy.deepcopy(self.record)
@@ -233,7 +252,8 @@ class CacheForwardRecordingTests(unittest.TestCase):
         self.assertTrue(C.H.CONTROL_TARGET.endswith("_test.go"))
 
     def test_reader_cannot_launch_backend_or_network(self):
-        with mock.patch.object(subprocess, "run", side_effect=AssertionError("unexpected backend")), \
+        with mock.patch.object(C, "expected_source", side_effect=self._uncached_expected_source), \
+             mock.patch.object(subprocess, "run", side_effect=AssertionError("unexpected backend")), \
              mock.patch.object(subprocess, "Popen", side_effect=AssertionError("unexpected backend")), \
              mock.patch.object(socket, "socket", side_effect=AssertionError("unexpected network")), \
              contextlib.redirect_stdout(io.StringIO()) as stream:
