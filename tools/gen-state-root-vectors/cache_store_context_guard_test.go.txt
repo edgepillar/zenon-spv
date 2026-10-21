@@ -1,0 +1,211 @@
+//go:build candidate_cache_store_identifier_context
+
+// SPDX-License-Identifier: GPL-3.0-only
+package chain
+
+import (
+	"errors"
+	"testing"
+
+	"github.com/zenon-network/go-zenon/chain/cache/storage"
+	"github.com/zenon-network/go-zenon/chain/nom"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+type contextLookupLedger struct {
+	db.Manager
+	current db.DB
+}
+
+func (m *contextLookupLedger) Frontier() db.DB { return m.current }
+
+type contextLookupCache struct {
+	storage.CacheManager
+	current db.DB
+	reads   int
+}
+
+func (m *contextLookupCache) DB() db.DB { m.reads++; return m.current }
+
+type contextLookupRow struct {
+	db.DB
+	payload []byte
+	failure error
+	reads   int
+}
+
+func (d *contextLookupRow) Get([]byte) ([]byte, error) { d.reads++; return d.payload, d.failure }
+
+func contextIdentifierBytes(identifier types.HashHeight) []byte { return identifier.Serialize() }
+
+func contextMomentum(height uint64, salt byte) *nom.Momentum {
+	m := &nom.Momentum{Version: 1, ChainIdentifier: 1, Height: height, TimestampUnix: 1637755200 + height, Data: []byte{salt}}
+	m.Hash = m.ComputeHash()
+	return m
+}
+func contextLedger(t *testing.T, list ...*nom.Momentum) db.DB {
+	t.Helper()
+	out := db.NewMemDB()
+	for _, m := range list {
+		raw, err := m.Serialize()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := db.SetFrontier(out, m.Identifier(), raw); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return out
+}
+func contextSubject(t *testing.T, list ...*nom.Momentum) (*chain, *contextLookupLedger, *contextLookupCache) {
+	t.Helper()
+	ledger := &contextLookupLedger{current: contextLedger(t, list...)}
+	data := db.NewMemDB()
+	if len(list) > 0 {
+		if err := data.Put([]byte{0}, contextIdentifierBytes(list[len(list)-1].Identifier())); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cached := &contextLookupCache{current: data}
+	c := &chain{chainManager: ledger, chainCache: NewChainCache(cached)}
+	return c, ledger, cached
+}
+func contextUnavailable(t *testing.T, c *chain, id types.HashHeight, cached *contextLookupCache) {
+	t.Helper()
+	before := cached.reads
+	if got := c.GetCacheStore(id); got != nil {
+		t.Fatal("unavailable complete identifier produced a cache view")
+	}
+	if cached.reads != before {
+		t.Fatal("cache was consulted before complete ledger identifier admission")
+	}
+}
+
+func TestCacheContext_HistoricalAndCurrent(t *testing.T) {
+	first, second := contextMomentum(1, 1), contextMomentum(2, 2)
+	c, _, _ := contextSubject(t, first, second)
+	for _, m := range []*nom.Momentum{first, second} {
+		got := c.GetCacheStore(m.Identifier())
+		if got == nil || got.Identifier() != m.Identifier() {
+			t.Fatal("canonical cache view changed")
+		}
+	}
+}
+func TestCacheContext_ForeignHashBytes(t *testing.T) {
+	first, second := contextMomentum(1, 1), contextMomentum(2, 2)
+	c, _, cached := contextSubject(t, first, second)
+	for _, m := range []*nom.Momentum{first, second} {
+		for _, position := range []int{0, len(m.Hash) - 1} {
+			id := m.Identifier()
+			id.Hash[position] ^= 0x80
+			contextUnavailable(t, c, id, cached)
+		}
+	}
+}
+func TestCacheContext_HeightAndHashBothRequired(t *testing.T) {
+	first, second := contextMomentum(1, 1), contextMomentum(2, 2)
+	c, _, cached := contextSubject(t, first, second)
+	id := first.Identifier()
+	id.Height = second.Height
+	contextUnavailable(t, c, id, cached)
+	id = second.Identifier()
+	id.Height = first.Height
+	contextUnavailable(t, c, id, cached)
+}
+func TestCacheContext_UnknownHeights(t *testing.T) {
+	first := contextMomentum(1, 1)
+	c, _, cached := contextSubject(t, first)
+	for _, height := range []uint64{0, 2, ^uint64(0)} {
+		id := first.Identifier()
+		id.Height = height
+		contextUnavailable(t, c, id, cached)
+	}
+}
+func TestCacheContext_ReorgChangesSelectedBranch(t *testing.T) {
+	first, old, replacement := contextMomentum(1, 1), contextMomentum(2, 2), contextMomentum(2, 3)
+	c, ledger, cached := contextSubject(t, first, old)
+	if c.GetCacheStore(old.Identifier()) == nil {
+		t.Fatal("original view missing")
+	}
+	ledger.current = contextLedger(t, first, replacement)
+	if err := cached.current.Put([]byte{0}, contextIdentifierBytes(replacement.Identifier())); err != nil {
+		t.Fatal(err)
+	}
+	contextUnavailable(t, c, old.Identifier(), cached)
+	for _, m := range []*nom.Momentum{first, replacement} {
+		got := c.GetCacheStore(m.Identifier())
+		if got == nil || got.Identifier() != m.Identifier() {
+			t.Fatal("replacement view changed")
+		}
+	}
+}
+func TestCacheContext_RollbackRemovesFutureView(t *testing.T) {
+	first, second := contextMomentum(1, 1), contextMomentum(2, 2)
+	c, ledger, cached := contextSubject(t, first, second)
+	ledger.current = contextLedger(t, first)
+	contextUnavailable(t, c, second.Identifier(), cached)
+	if c.GetCacheStore(first.Identifier()) == nil {
+		t.Fatal("retained view missing")
+	}
+}
+func TestCacheContext_NilLedgerSnapshot(t *testing.T) {
+	first := contextMomentum(1, 1)
+	c, ledger, cached := contextSubject(t, first)
+	ledger.current = nil
+	contextUnavailable(t, c, first.Identifier(), cached)
+}
+func TestCacheContext_LookupErrorPrecedesCache(t *testing.T) {
+	first := contextMomentum(1, 1)
+	c, ledger, cached := contextSubject(t, first)
+	row := &contextLookupRow{failure: errors.New("controlled ledger read failure")}
+	ledger.current = row
+	contextUnavailable(t, c, first.Identifier(), cached)
+	if row.reads != 1 {
+		t.Fatal("selected lookup was not executed once")
+	}
+}
+func TestCacheContext_MalformedLedgerRowPrecedesCache(t *testing.T) {
+	first := contextMomentum(1, 1)
+	c, ledger, cached := contextSubject(t, first)
+	row := &contextLookupRow{payload: []byte{0xff}}
+	ledger.current = row
+	contextUnavailable(t, c, first.Identifier(), cached)
+	if row.reads != 1 {
+		t.Fatal("selected malformed row was not read once")
+	}
+}
+func TestCacheContext_ReturnedHeightMismatch(t *testing.T) {
+	first := contextMomentum(1, 1)
+	c, ledger, cached := contextSubject(t, first)
+	changed := *first
+	changed.Height = 2
+	raw, err := changed.Serialize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ledger.current = &contextLookupRow{payload: raw}
+	contextUnavailable(t, c, first.Identifier(), cached)
+}
+func TestCacheContext_NilDependencies(t *testing.T) {
+	id := contextMomentum(1, 1).Identifier()
+	var absent *chain
+	for _, c := range []*chain{absent, {}, {chainCache: NewChainCache(nil)}, {chainManager: &contextLookupLedger{}}} {
+		if c.GetCacheStore(id) != nil {
+			t.Fatal("unavailable dependency produced a view")
+		}
+	}
+}
+func TestCacheContext_BehindCacheKeepsExistingRefusal(t *testing.T) {
+	first, second := contextMomentum(1, 1), contextMomentum(2, 2)
+	c, _, cached := contextSubject(t, first, second)
+	if err := cached.current.Put([]byte{0}, contextIdentifierBytes(first.Identifier())); err != nil {
+		t.Fatal(err)
+	}
+	if c.GetCacheStore(second.Identifier()) != nil {
+		t.Fatal("cache-ahead view was invented")
+	}
+	if c.GetCacheStore(first.Identifier()) == nil {
+		t.Fatal("covered historical view missing")
+	}
+}
