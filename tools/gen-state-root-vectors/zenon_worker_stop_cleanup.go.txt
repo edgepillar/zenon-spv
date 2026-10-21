@@ -1,0 +1,46 @@
+//go:build candidate_zenon_worker_stop
+
+// SPDX-License-Identifier: GPL-3.0-only
+// Explicit caller teardown after the selected public Stop panic has been observed.
+package zenon
+
+import "fmt"
+
+type CandidateWorkerStopCleanupResult struct {
+	Component string `json:"component"`
+	Error     string `json:"error"`
+	Panic     string `json:"panic"`
+}
+
+func candidateWorkerCleanupCall(name string, call func() error) (out CandidateWorkerStopCleanupResult) {
+	out.Component = name
+	defer func() {
+		if value := recover(); value != nil {
+			out.Panic = fmt.Sprint(value)
+		}
+	}()
+	if err := call(); err != nil {
+		out.Error = err.Error()
+	}
+	return
+}
+func CandidateCleanupAfterWorkerStopPanic(value Zenon) []CandidateWorkerStopCleanupResult {
+	z, ok := value.(*zenon)
+	if !ok {
+		panic("selected concrete core manager required")
+	}
+	// Protocol Stop and pillar unregistration ran before the selected worker
+	// panic. Do not repeat them. No producer, peer server or wallet was started.
+	calls := []struct {
+		name string
+		call func() error
+	}{
+		{"subscribe", z.subscribe.Stop}, {"event-printer", z.evPrinter.Stop},
+		{"consensus", z.consensus.Stop}, {"chain", z.chain.Stop}, {"consensus-database", z.levelDb.Close},
+	}
+	result := make([]CandidateWorkerStopCleanupResult, 0, len(calls))
+	for _, row := range calls {
+		result = append(result, candidateWorkerCleanupCall(row.name, row.call))
+	}
+	return result
+}
