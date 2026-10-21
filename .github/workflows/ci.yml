@@ -269,6 +269,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_cache_store_context_test.py -v
       - name: Independent recorded public cache context
         run: python -I -B tools/gen-state-root-vectors/check_cache_store_context.py --source-revision "${{ github.sha }}"
+      - name: Cache read error source controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_cache_read_errors_test.py -v
+      - name: Cache read error recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_cache_read_errors_test.py -v
+      - name: Independent recorded cache read errors
+        run: python -I -B tools/gen-state-root-vectors/check_cache_read_errors.py --source-revision "${{ github.sha }}"
       - name: Successor raw store codec controls
         run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
       - name: Successor raw store independent model controls
@@ -868,6 +874,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_cache_store_context_test.py -v
       - name: Independent recorded public cache context
         run: python -I -B tools/gen-state-root-vectors/check_cache_store_context.py --source-revision "${{ github.sha }}"
+      - name: Cache read error source controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_cache_read_errors_test.py -v
+      - name: Cache read error recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_cache_read_errors_test.py -v
+      - name: Independent recorded cache read errors
+        run: python -I -B tools/gen-state-root-vectors/check_cache_read_errors.py --source-revision "${{ github.sha }}"
       - name: Successor raw store codec controls
         run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
       - name: Successor raw store independent model controls

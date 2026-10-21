@@ -1,0 +1,305 @@
+{
+  "format_version": 1,
+  "kind": "recorded-cache-initial-read-error-comparison",
+  "recorded_native": {
+    "Go_unit_invocations": 1,
+    "Go_unit_packages": 3,
+    "go_version": "go1.25.14",
+    "native_unit_pass_results": 50,
+    "native_unit_passes": [
+      {
+        "name": "TestCacheContext_BehindCacheKeepsExistingRefusal",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_ForeignHashBytes",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_HeightAndHashBothRequired",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_HistoricalAndCurrent",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_LookupErrorPrecedesCache",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_MalformedLedgerRowPrecedesCache",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_NilDependencies",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_NilLedgerSnapshot",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_ReorgChangesSelectedBranch",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_ReturnedHeightMismatch",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_RollbackRemovesFutureView",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_UnknownHeights",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetChecksCompleteIdentifier",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreflight",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreflight/above",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreflight/matching-frontier",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreflight/maximum",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreflight/nil-locker",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreflight/wrong-hash",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreflight/zero",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreservesLookupError",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidatePublicChainStartupClosedCacheDoesNotInsertGenesis",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidatePublicChainStartupEmptyRealManagers",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidatePublicChainStartupPreservesGenesisLookupError",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidatePublicChainStartupStoppedInstanceRefusesInit",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestChainStopReportsEveryManagerError",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestChainStopStopsEveryManagerAfterCacheError",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestRollbackToFailureAfterPopIsUnrecoverable",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestRollbackToFirstPopFailureLeavesCanonicalStateCertain",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheReadError_BackwardExhaustionStillAbsent",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_BackwardFailurePreservesOriginalError",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_ChainPlasmaPropagatesError",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_GenesisSporkShortcutUnchanged",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_HealthyCurrentValuePreserved",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_HealthyEmptyStillAbsent",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_HistoricalBackwardSelectionPreserved",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_LastFailureIsNotAbsence",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_RealClosedManagerViews",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_RealClosedManagerViews/chain-plasma",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_RealClosedManagerViews/spork",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_RealClosedManagerViews/stake",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_SporkLookupPropagatesError",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_StakeAmountPropagatesError",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_UnsupportedMergedReverseReadIsNotZero",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestExtractor",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestAddWriteFailureIsAtomic",
+        "package": "github.com/zenon-network/go-zenon/chain/cache/storage"
+      },
+      {
+        "name": "TestCacheDBManagerStopAfterFailedClose",
+        "package": "github.com/zenon-network/go-zenon/chain/cache/storage"
+      },
+      {
+        "name": "TestCacheDBManagerStopIsIdempotent",
+        "package": "github.com/zenon-network/go-zenon/chain/cache/storage"
+      },
+      {
+        "name": "TestPop",
+        "package": "github.com/zenon-network/go-zenon/chain/cache/storage"
+      },
+      {
+        "name": "TestPopWriteFailureIsAtomic",
+        "package": "github.com/zenon-network/go-zenon/chain/cache/storage"
+      }
+    ],
+    "native_unit_root_count": 41,
+    "native_units_include_selected_public_chain_manager_regressions": true,
+    "new_cache_unit_pass_results": 15,
+    "new_cache_unit_roots": 12,
+    "ordinary_builds": 2,
+    "ordinary_probe_executes_cache_manager_and_extractor_only": true,
+    "ordinary_processes": 4,
+    "platform": "darwin/arm64",
+    "preserved_chain_pass_results": 29,
+    "preserved_existing_cache_storage_roots": 6
+  },
+  "scope": {
+    "accepted_header_binding": false,
+    "account_block_execution": false,
+    "cache_value_authentication": false,
+    "concurrent_lifecycle_qualified": false,
+    "full_node_recovery_qualified": false,
+    "network_activation_authenticated": false,
+    "ordinary_ledger_or_state_tree_execution": false,
+    "ordinary_public_Chain_execution": false,
+    "private_capture_or_distribution_authenticated": false,
+    "production_qualified": false,
+    "profile_agreement": false,
+    "runtime_state_value_acceptance": false,
+    "verified_momentum_headers": false
+  },
+  "source": {
+    "candidate_build_tree": "e849d5a5bf223a7c43fbb40030a817c2250ae89c",
+    "candidate_runtime_tree": "c5e413c43794b3ba32763484670db2b100295a15",
+    "candidate_source_files": 472,
+    "fixture": {
+      "bytes": 1588,
+      "sha256": "96513b59a64bbd8b734238fc6c768fe49fd72dcb1437096a220346cc0a6371cc"
+    },
+    "independent_model": {
+      "bytes": 9992,
+      "sha256": "ebd70aaf2dcece65dc94cad8df4a379151b4fffacff0fd61cf42efdd7e14e921"
+    },
+    "parent_build_tree": "9a6312076a5e7e5abfb900635abe9bc3a62d7251",
+    "parent_runtime_tree": "69b0844bccc68273b2b367cda7706d933d45358f",
+    "parent_source_files": 471,
+    "probe": {
+      "bytes": 8801,
+      "sha256": "b73ebf18b474b3f71bbda9e119ae98b5df3b4af6bd1499e66a8eb905ee4fe185"
+    },
+    "repository": "digitalSloth/go-zenon",
+    "revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+    "unit_source": {
+      "bytes": 7236,
+      "sha256": "578744e1bf7fcf657180becd23ca46ff0227a5944cda8fa7812bb96f3e74b383"
+    }
+  },
+  "variants": {
+    "baseline": {
+      "binary": {
+        "bytes": 13711250,
+        "sha256": "7b20e4b5a4cc6353cec4edbb6573d2598543712c29e5c4d692a182efec7ac303"
+      },
+      "streams": [
+        {
+          "bytes": 4064,
+          "case": "initialize-extract-query-close",
+          "jsonl": "{\"account_patch_extractor_selected\":true,\"cache_manager_selected\":true,\"case\":\"initialize-extract-query-close\",\"consumer_result\":\"REFUSED\",\"fixture_sha256\":\"96513b59a64bbd8b734238fc6c768fe49fd72dcb1437096a220346cc0a6371cc\",\"full_node_or_consensus_executed\":false,\"ledger_or_state_tree_selected\":false,\"public_Chain_selected\":false,\"stage\":\"selection\",\"wallet_signing_or_network\":false}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"empty\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"plasma\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"empty\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"stake\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":false,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"empty\",\"error\":\"none\",\"integer\":null,\"method\":\"spork\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"cache_patch_dump\":\"011e030000111111111111111111111111111111111111110000000000000002200000000000000000000000000000000000000000000000000000000000000023011e030100111111111111111111111111111111111111110000000000000002200000000000000000000000000000000000000000000000000000000000000011\",\"case\":\"initialize-extract-query-close\",\"input_patch_dump\":\"011603001111111111111111111111111111111111111105200000000000000000000000000000000000000000000000000000000000000011012b0301b3b6e5adcb4c1ff61be98c6318c6318c6318c604020011111111111111111111111111111111111111200000000000000000000000000000000000000000000000000000000000000023\",\"network_valid_momentum_or_account_execution\":false,\"nominal_momentum_hash\":\"4444444444444444444444444444444444444444444444444444444444444444\",\"nominal_momentum_height\":2,\"nonempty_account_block_rows\":1,\"stage\":\"extracted\"}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"17\",\"method\":\"plasma\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"35\",\"method\":\"stake\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":false,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":null,\"method\":\"spork\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"plasma\",\"selection\":\"absent\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"stake\",\"selection\":\"absent\",\"stage\":\"query\"}\n{\"borrowed_views_retained\":true,\"case\":\"initialize-extract-query-close\",\"first_stop\":\"none\",\"manager_DB_nil\":true,\"second_stop\":\"none\",\"stage\":\"manager-stopped\"}\n{\"case\":\"initialize-extract-query-close\",\"error\":\"leveldb-closed\",\"last\":false,\"released\":true,\"stage\":\"closed-iterator\"}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"closed\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"plasma\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"closed\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"stake\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":false,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"closed\",\"error\":\"none\",\"integer\":null,\"method\":\"spork\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"case\":\"initialize-extract-query-close\",\"records\":4,\"rows\":[{\"key\":\"5500\",\"value\":\"000a220a2044444444444444444444444444444444444444444444444444444444444444441002\"},{\"key\":\"55030000111111111111111111111111111111111111110000000000000002\",\"value\":\"000000000000000000000000000000000000000000000000000000000000000023\"},{\"key\":\"55030100111111111111111111111111111111111111110000000000000002\",\"value\":\"000000000000000000000000000000000000000000000000000000000000000011\"},{\"key\":\"770000000000000002\",\"value\":\"001e030000111111111111111111111111111111111111110000000000000002001e030100111111111111111111111111111111111111110000000000000002000100\"}],\"sha256\":\"7b6cfee7dd05b8cd1192f13458e4871b47a07e851394537c52de5609bc85050f\",\"stage\":\"closed-store\"}\n",
+          "sha256": "fc5eb3fb9f1937ce0593aa924674b36f0c02e8e76d8e6ff4b64cd6e05d76c4ba"
+        },
+        {
+          "bytes": 3334,
+          "case": "reopen-query-close",
+          "jsonl": "{\"account_patch_extractor_selected\":true,\"cache_manager_selected\":true,\"case\":\"reopen-query-close\",\"consumer_result\":\"REFUSED\",\"fixture_sha256\":\"96513b59a64bbd8b734238fc6c768fe49fd72dcb1437096a220346cc0a6371cc\",\"full_node_or_consensus_executed\":false,\"ledger_or_state_tree_selected\":false,\"public_Chain_selected\":false,\"stage\":\"selection\",\"wallet_signing_or_network\":false}\n{\"case\":\"reopen-query-close\",\"records\":4,\"rows\":[{\"key\":\"5500\",\"value\":\"000a220a2044444444444444444444444444444444444444444444444444444444444444441002\"},{\"key\":\"55030000111111111111111111111111111111111111110000000000000002\",\"value\":\"000000000000000000000000000000000000000000000000000000000000000023\"},{\"key\":\"55030100111111111111111111111111111111111111110000000000000002\",\"value\":\"000000000000000000000000000000000000000000000000000000000000000011\"},{\"key\":\"770000000000000002\",\"value\":\"001e030000111111111111111111111111111111111111110000000000000002001e030100111111111111111111111111111111111111110000000000000002000100\"}],\"sha256\":\"7b6cfee7dd05b8cd1192f13458e4871b47a07e851394537c52de5609bc85050f\",\"stage\":\"closed-store-before-reopen\"}\n{\"boolean\":null,\"case\":\"reopen-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"17\",\"method\":\"plasma\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"reopen-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"35\",\"method\":\"stake\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":false,\"case\":\"reopen-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":null,\"method\":\"spork\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"reopen-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"plasma\",\"selection\":\"absent\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"reopen-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"stake\",\"selection\":\"absent\",\"stage\":\"query\"}\n{\"borrowed_views_retained\":true,\"case\":\"reopen-query-close\",\"first_stop\":\"none\",\"manager_DB_nil\":true,\"second_stop\":\"none\",\"stage\":\"manager-stopped\"}\n{\"case\":\"reopen-query-close\",\"error\":\"leveldb-closed\",\"last\":false,\"released\":true,\"stage\":\"closed-iterator\"}\n{\"boolean\":null,\"case\":\"reopen-query-close\",\"checkpoint\":\"closed\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"plasma\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"reopen-query-close\",\"checkpoint\":\"closed\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"stake\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":false,\"case\":\"reopen-query-close\",\"checkpoint\":\"closed\",\"error\":\"none\",\"integer\":null,\"method\":\"spork\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"case\":\"reopen-query-close\",\"records\":4,\"rows\":[{\"key\":\"5500\",\"value\":\"000a220a2044444444444444444444444444444444444444444444444444444444444444441002\"},{\"key\":\"55030000111111111111111111111111111111111111110000000000000002\",\"value\":\"000000000000000000000000000000000000000000000000000000000000000023\"},{\"key\":\"55030100111111111111111111111111111111111111110000000000000002\",\"value\":\"000000000000000000000000000000000000000000000000000000000000000011\"},{\"key\":\"770000000000000002\",\"value\":\"001e030000111111111111111111111111111111111111110000000000000002001e030100111111111111111111111111111111111111110000000000000002000100\"}],\"sha256\":\"7b6cfee7dd05b8cd1192f13458e4871b47a07e851394537c52de5609bc85050f\",\"stage\":\"closed-store\"}\n",
+          "sha256": "204f58a6712d1ce35c8900587184492a40bd24b7235b4eff8d8ba6dd78fb1af1"
+        }
+      ]
+    },
+    "candidate": {
+      "binary": {
+        "bytes": 13711250,
+        "sha256": "b633c4c8aa36295aab3265382fab1f3d2e207ddf3d3403293d8ca3d58ab2c295"
+      },
+      "streams": [
+        {
+          "bytes": 4096,
+          "case": "initialize-extract-query-close",
+          "jsonl": "{\"account_patch_extractor_selected\":true,\"cache_manager_selected\":true,\"case\":\"initialize-extract-query-close\",\"consumer_result\":\"REFUSED\",\"fixture_sha256\":\"96513b59a64bbd8b734238fc6c768fe49fd72dcb1437096a220346cc0a6371cc\",\"full_node_or_consensus_executed\":false,\"ledger_or_state_tree_selected\":false,\"public_Chain_selected\":false,\"stage\":\"selection\",\"wallet_signing_or_network\":false}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"empty\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"plasma\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"empty\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"stake\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":false,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"empty\",\"error\":\"none\",\"integer\":null,\"method\":\"spork\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"cache_patch_dump\":\"011e030000111111111111111111111111111111111111110000000000000002200000000000000000000000000000000000000000000000000000000000000023011e030100111111111111111111111111111111111111110000000000000002200000000000000000000000000000000000000000000000000000000000000011\",\"case\":\"initialize-extract-query-close\",\"input_patch_dump\":\"011603001111111111111111111111111111111111111105200000000000000000000000000000000000000000000000000000000000000011012b0301b3b6e5adcb4c1ff61be98c6318c6318c6318c604020011111111111111111111111111111111111111200000000000000000000000000000000000000000000000000000000000000023\",\"network_valid_momentum_or_account_execution\":false,\"nominal_momentum_hash\":\"4444444444444444444444444444444444444444444444444444444444444444\",\"nominal_momentum_height\":2,\"nonempty_account_block_rows\":1,\"stage\":\"extracted\"}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"17\",\"method\":\"plasma\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"35\",\"method\":\"stake\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":false,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":null,\"method\":\"spork\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"plasma\",\"selection\":\"absent\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"stake\",\"selection\":\"absent\",\"stage\":\"query\"}\n{\"borrowed_views_retained\":true,\"case\":\"initialize-extract-query-close\",\"first_stop\":\"none\",\"manager_DB_nil\":true,\"second_stop\":\"none\",\"stage\":\"manager-stopped\"}\n{\"case\":\"initialize-extract-query-close\",\"error\":\"leveldb-closed\",\"last\":false,\"released\":true,\"stage\":\"closed-iterator\"}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"closed\",\"error\":\"leveldb-closed\",\"integer\":null,\"method\":\"plasma\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"closed\",\"error\":\"leveldb-closed\",\"integer\":null,\"method\":\"stake\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":false,\"case\":\"initialize-extract-query-close\",\"checkpoint\":\"closed\",\"error\":\"leveldb-closed\",\"integer\":null,\"method\":\"spork\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"case\":\"initialize-extract-query-close\",\"records\":4,\"rows\":[{\"key\":\"5500\",\"value\":\"000a220a2044444444444444444444444444444444444444444444444444444444444444441002\"},{\"key\":\"55030000111111111111111111111111111111111111110000000000000002\",\"value\":\"000000000000000000000000000000000000000000000000000000000000000023\"},{\"key\":\"55030100111111111111111111111111111111111111110000000000000002\",\"value\":\"000000000000000000000000000000000000000000000000000000000000000011\"},{\"key\":\"770000000000000002\",\"value\":\"001e030000111111111111111111111111111111111111110000000000000002001e030100111111111111111111111111111111111111110000000000000002000100\"}],\"sha256\":\"7b6cfee7dd05b8cd1192f13458e4871b47a07e851394537c52de5609bc85050f\",\"stage\":\"closed-store\"}\n",
+          "sha256": "bc167eeb37c2b12ceaf2ee1142fae92c6e75b00ebce10cfa9273378b37403f9c"
+        },
+        {
+          "bytes": 3366,
+          "case": "reopen-query-close",
+          "jsonl": "{\"account_patch_extractor_selected\":true,\"cache_manager_selected\":true,\"case\":\"reopen-query-close\",\"consumer_result\":\"REFUSED\",\"fixture_sha256\":\"96513b59a64bbd8b734238fc6c768fe49fd72dcb1437096a220346cc0a6371cc\",\"full_node_or_consensus_executed\":false,\"ledger_or_state_tree_selected\":false,\"public_Chain_selected\":false,\"stage\":\"selection\",\"wallet_signing_or_network\":false}\n{\"case\":\"reopen-query-close\",\"records\":4,\"rows\":[{\"key\":\"5500\",\"value\":\"000a220a2044444444444444444444444444444444444444444444444444444444444444441002\"},{\"key\":\"55030000111111111111111111111111111111111111110000000000000002\",\"value\":\"000000000000000000000000000000000000000000000000000000000000000023\"},{\"key\":\"55030100111111111111111111111111111111111111110000000000000002\",\"value\":\"000000000000000000000000000000000000000000000000000000000000000011\"},{\"key\":\"770000000000000002\",\"value\":\"001e030000111111111111111111111111111111111111110000000000000002001e030100111111111111111111111111111111111111110000000000000002000100\"}],\"sha256\":\"7b6cfee7dd05b8cd1192f13458e4871b47a07e851394537c52de5609bc85050f\",\"stage\":\"closed-store-before-reopen\"}\n{\"boolean\":null,\"case\":\"reopen-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"17\",\"method\":\"plasma\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"reopen-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"35\",\"method\":\"stake\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":false,\"case\":\"reopen-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":null,\"method\":\"spork\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"reopen-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"plasma\",\"selection\":\"absent\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"reopen-query-close\",\"checkpoint\":\"populated\",\"error\":\"none\",\"integer\":\"0\",\"method\":\"stake\",\"selection\":\"absent\",\"stage\":\"query\"}\n{\"borrowed_views_retained\":true,\"case\":\"reopen-query-close\",\"first_stop\":\"none\",\"manager_DB_nil\":true,\"second_stop\":\"none\",\"stage\":\"manager-stopped\"}\n{\"case\":\"reopen-query-close\",\"error\":\"leveldb-closed\",\"last\":false,\"released\":true,\"stage\":\"closed-iterator\"}\n{\"boolean\":null,\"case\":\"reopen-query-close\",\"checkpoint\":\"closed\",\"error\":\"leveldb-closed\",\"integer\":null,\"method\":\"plasma\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":null,\"case\":\"reopen-query-close\",\"checkpoint\":\"closed\",\"error\":\"leveldb-closed\",\"integer\":null,\"method\":\"stake\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"boolean\":false,\"case\":\"reopen-query-close\",\"checkpoint\":\"closed\",\"error\":\"leveldb-closed\",\"integer\":null,\"method\":\"spork\",\"selection\":\"subject\",\"stage\":\"query\"}\n{\"case\":\"reopen-query-close\",\"records\":4,\"rows\":[{\"key\":\"5500\",\"value\":\"000a220a2044444444444444444444444444444444444444444444444444444444444444441002\"},{\"key\":\"55030000111111111111111111111111111111111111110000000000000002\",\"value\":\"000000000000000000000000000000000000000000000000000000000000000023\"},{\"key\":\"55030100111111111111111111111111111111111111110000000000000002\",\"value\":\"000000000000000000000000000000000000000000000000000000000000000011\"},{\"key\":\"770000000000000002\",\"value\":\"001e030000111111111111111111111111111111111111110000000000000002001e030100111111111111111111111111111111111111110000000000000002000100\"}],\"sha256\":\"7b6cfee7dd05b8cd1192f13458e4871b47a07e851394537c52de5609bc85050f\",\"stage\":\"closed-store\"}\n",
+          "sha256": "ca27c4e332a3d3bb2f97d6a10e635e05bc42b705b47c0bcf28c5a79ee42d36aa"
+        }
+      ]
+    }
+  }
+}
