@@ -140,6 +140,15 @@ are unsigned empty-content local fixtures; cache account-block extraction,
 network-valid history, profile agreement and full node qualification remain
 open. State-value acceptance stays refused.
 
+The [public cache-store context comparison](cache-store-context.md) separately
+checks identifier admission for height-indexed cache views. Two baseline processes
+returned four foreign-hash views while the state-root API refused those same
+identifiers; the experimental public Chain successor returned none. All 17 prior
+native lifecycle/rollback passes and 12 new context controls remain recorded.
+The zero-valued source-genesis cache fixture leaves populated extraction,
+cache-value correctness, concurrent history changes and full-node qualification
+open. Plasma and fused cache data remain outside the partial SMT proof domain.
+
 For M3, obtain the expected root from the owned accepted v3 header/context.
 Derive the selected address/token key locally and carry exact presence,
 absence and value semantics through transport, saved state and the consumer.

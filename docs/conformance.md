@@ -40,6 +40,14 @@ foreign identifiers through rollback and reopen. Portable checks replay all
 57 recorded events; they execute no backend and leave network, profile,
 accepted-header state proofs and production qualification open.
 
+The [public cache-store context comparison](cache-store-context.md) additionally
+records four foreign-hash cache views on the baseline and none on the candidate,
+while preserving the state-root refusals and closed logical images. Twenty-nine
+native pass results retain the prior lifecycle/rollback controls and add complete
+identifier selection cases. Portable checks replay all 34 ordinary events;
+cache-value correctness, concurrent history changes and full-node qualification
+remain open.
+
 The current native-client scope is defined in the
 [`verification contract`](verification-contract.md). The
 [node-derived momentum corpus](../internal/testdata/conformance/README.md)

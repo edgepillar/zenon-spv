@@ -1,0 +1,121 @@
+{
+  "format_version": 1,
+  "kind": "recorded-public-cache-store-context-comparison",
+  "recorded_native": {
+    "Go_unit_invocations": 1,
+    "go_version": "go1.25.14",
+    "native_unit_pass_names": [
+      "TestCacheContext_BehindCacheKeepsExistingRefusal",
+      "TestCacheContext_ForeignHashBytes",
+      "TestCacheContext_HeightAndHashBothRequired",
+      "TestCacheContext_HistoricalAndCurrent",
+      "TestCacheContext_LookupErrorPrecedesCache",
+      "TestCacheContext_MalformedLedgerRowPrecedesCache",
+      "TestCacheContext_NilDependencies",
+      "TestCacheContext_NilLedgerSnapshot",
+      "TestCacheContext_ReorgChangesSelectedBranch",
+      "TestCacheContext_ReturnedHeightMismatch",
+      "TestCacheContext_RollbackRemovesFutureView",
+      "TestCacheContext_UnknownHeights",
+      "TestCandidateMomentumRollbackTargetChecksCompleteIdentifier",
+      "TestCandidateMomentumRollbackTargetPreflight",
+      "TestCandidateMomentumRollbackTargetPreflight/above",
+      "TestCandidateMomentumRollbackTargetPreflight/matching-frontier",
+      "TestCandidateMomentumRollbackTargetPreflight/maximum",
+      "TestCandidateMomentumRollbackTargetPreflight/nil-locker",
+      "TestCandidateMomentumRollbackTargetPreflight/wrong-hash",
+      "TestCandidateMomentumRollbackTargetPreflight/zero",
+      "TestCandidateMomentumRollbackTargetPreservesLookupError",
+      "TestCandidatePublicChainStartupClosedCacheDoesNotInsertGenesis",
+      "TestCandidatePublicChainStartupEmptyRealManagers",
+      "TestCandidatePublicChainStartupPreservesGenesisLookupError",
+      "TestCandidatePublicChainStartupStoppedInstanceRefusesInit",
+      "TestChainStopReportsEveryManagerError",
+      "TestChainStopStopsEveryManagerAfterCacheError",
+      "TestRollbackToFailureAfterPopIsUnrecoverable",
+      "TestRollbackToFirstPopFailureLeavesCanonicalStateCertain"
+    ],
+    "native_unit_pass_results": 29,
+    "native_unit_root_count": 23,
+    "new_context_unit_roots": 12,
+    "ordinary_builds": 2,
+    "ordinary_processes": 4,
+    "platform": "darwin/arm64",
+    "prior_native_unit_pass_results": 17
+  },
+  "scope": {
+    "accepted_header_binding": false,
+    "cache_value_correctness_qualified": false,
+    "concurrent_history_changes_qualified": false,
+    "full_node_or_network_validity_qualified": false,
+    "new_account_blocks_added": false,
+    "private_execution_or_distribution_authenticated": false,
+    "production_qualified": false,
+    "runtime_state_value_acceptance": false,
+    "stored_row_body_hash_authenticated": false
+  },
+  "source": {
+    "candidate_build_tree": "ca6bcf586b3f8ce6a68f1872c4407925c9aa1fa8",
+    "candidate_runtime_tree": "69b0844bccc68273b2b367cda7706d933d45358f",
+    "candidate_source_files": 471,
+    "fixture": {
+      "bytes": 13485,
+      "sha256": "220bb05cd50a6e3b174022950f66530c28c0c8f93529ac1194bfa5c15b323b3f"
+    },
+    "parent_build_tree": "c3843a58aff7f3520cc5a6582482907d7408593c",
+    "parent_runtime_tree": "d56bf37a23ddf0ec0f8af2eca62be01bb6c54dbc",
+    "parent_source_files": 468,
+    "probe": {
+      "bytes": 11215,
+      "sha256": "4923ccdcdb32f58486d699ed842793ad76862c66eed771f1bd717faadac0c709"
+    },
+    "repository": "digitalSloth/go-zenon",
+    "revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+    "unit_source": {
+      "bytes": 6896,
+      "sha256": "0a7cb66cf90d64d2c470441fafdd90636f6cc84f8802026a4d8e10bc3777065a"
+    }
+  },
+  "variants": {
+    "baseline": {
+      "binary": {
+        "bytes": 19815442,
+        "sha256": "a264ccd82460b77c3530495d0b1c8ec5ce43c8d82e7f632f61c9791129dd200f"
+      },
+      "streams": [
+        {
+          "bytes": 3856,
+          "case": "initialize-and-query",
+          "jsonl": "{\"cache_value_correctness_or_state_proof_acceptance_qualified\":false,\"case\":\"initialize-and-query\",\"consensus_validation_executed\":false,\"consumer_result\":\"REFUSED\",\"fixture_sha256\":\"220bb05cd50a6e3b174022950f66530c28c0c8f93529ac1194bfa5c15b323b3f\",\"network_or_full_node_started\":false,\"new_account_blocks_added\":false,\"public_read_only_cache_context_selected\":true,\"stage\":\"selection\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"initialize-and-query\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"patch_bytes\":10849399,\"patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"fresh-source-genesis\"}\n{\"cache\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"initialize-and-query\",\"ledger\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"query_address_hex\":\"0000000000000000000000000000000000000000\",\"stage\":\"ready\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"initialize-and-query\",\"chain_plasma\":\"0\",\"chain_plasma_error\":\"none\",\"contract_mismatch\":false,\"expected_available\":true,\"fused_amount\":\"0\",\"fused_error\":\"none\",\"name\":\"canonical-origin\",\"reported_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"requested_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"returned\":true,\"stage\":\"cache-context-query\",\"state_root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"state_root_error\":\"none\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"initialize-and-query\",\"chain_plasma\":\"0\",\"chain_plasma_error\":\"none\",\"contract_mismatch\":true,\"expected_available\":false,\"fused_amount\":\"0\",\"fused_error\":\"none\",\"name\":\"same-height-first-byte-flip\",\"reported_identifier\":{\"hash\":\"1e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"requested_identifier\":{\"hash\":\"1e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"returned\":true,\"stage\":\"cache-context-query\",\"state_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"state_root_error\":\"identity-mismatch\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"initialize-and-query\",\"chain_plasma\":\"0\",\"chain_plasma_error\":\"none\",\"contract_mismatch\":true,\"expected_available\":false,\"fused_amount\":\"0\",\"fused_error\":\"none\",\"name\":\"same-height-last-byte-flip\",\"reported_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8ee30\",\"height\":1},\"requested_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8ee30\",\"height\":1},\"returned\":true,\"stage\":\"cache-context-query\",\"state_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"state_root_error\":\"identity-mismatch\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"initialize-and-query\",\"contract_mismatch\":false,\"expected_available\":false,\"name\":\"unavailable-next-height\",\"requested_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"returned\":false,\"stage\":\"cache-context-query\",\"state_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"state_root_error\":\"missing-version\"}\n{\"case\":\"initialize-and-query\",\"images\":{\"cache\":{\"records\":2,\"key_bytes\":11,\"value_bytes\":42,\"zero_length_values\":0,\"sha256\":\"33c14df4764554b5dab40e2112c659a3a3a3fa9cfda5b61fe3c77a298939d941\"},\"ledger\":{\"records\":103826,\"key_bytes\":3553711,\"value_bytes\":23545732,\"zero_length_values\":0,\"sha256\":\"d15b6233581cafbc280a922a918ad1ebb34b707c996186a35e7536a06266e378\"},\"tree\":{\"records\":77030,\"key_bytes\":2541878,\"value_bytes\":4254290,\"zero_length_values\":0,\"sha256\":\"4fce74d75dc9a096f83c06eb0dbf9d8ef569358a48092d8a5309d6eb0d4ec47f\"}},\"stage\":\"closed-stores\"}\n",
+          "sha256": "11a2b433623023a18cd12ba280f199256f4d15fed4d10230a67a1e27b3f60021"
+        },
+        {
+          "bytes": 4390,
+          "case": "reopen-and-query",
+          "jsonl": "{\"cache_value_correctness_or_state_proof_acceptance_qualified\":false,\"case\":\"reopen-and-query\",\"consensus_validation_executed\":false,\"consumer_result\":\"REFUSED\",\"fixture_sha256\":\"220bb05cd50a6e3b174022950f66530c28c0c8f93529ac1194bfa5c15b323b3f\",\"network_or_full_node_started\":false,\"new_account_blocks_added\":false,\"public_read_only_cache_context_selected\":true,\"stage\":\"selection\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"reopen-and-query\",\"images\":{\"cache\":{\"records\":2,\"key_bytes\":11,\"value_bytes\":42,\"zero_length_values\":0,\"sha256\":\"33c14df4764554b5dab40e2112c659a3a3a3fa9cfda5b61fe3c77a298939d941\"},\"ledger\":{\"records\":103826,\"key_bytes\":3553711,\"value_bytes\":23545732,\"zero_length_values\":0,\"sha256\":\"d15b6233581cafbc280a922a918ad1ebb34b707c996186a35e7536a06266e378\"},\"tree\":{\"records\":77030,\"key_bytes\":2541878,\"value_bytes\":4254290,\"zero_length_values\":0,\"sha256\":\"4fce74d75dc9a096f83c06eb0dbf9d8ef569358a48092d8a5309d6eb0d4ec47f\"}},\"stage\":\"closed-stores-before-reopen\"}\n{\"case\":\"reopen-and-query\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"patch_bytes\":10849399,\"patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"fresh-source-genesis\"}\n{\"cache\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"reopen-and-query\",\"ledger\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"query_address_hex\":\"0000000000000000000000000000000000000000\",\"stage\":\"ready\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"reopen-and-query\",\"chain_plasma\":\"0\",\"chain_plasma_error\":\"none\",\"contract_mismatch\":false,\"expected_available\":true,\"fused_amount\":\"0\",\"fused_error\":\"none\",\"name\":\"canonical-origin\",\"reported_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"requested_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"returned\":true,\"stage\":\"cache-context-query\",\"state_root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"state_root_error\":\"none\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"reopen-and-query\",\"chain_plasma\":\"0\",\"chain_plasma_error\":\"none\",\"contract_mismatch\":true,\"expected_available\":false,\"fused_amount\":\"0\",\"fused_error\":\"none\",\"name\":\"same-height-first-byte-flip\",\"reported_identifier\":{\"hash\":\"1e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"requested_identifier\":{\"hash\":\"1e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"returned\":true,\"stage\":\"cache-context-query\",\"state_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"state_root_error\":\"identity-mismatch\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"reopen-and-query\",\"chain_plasma\":\"0\",\"chain_plasma_error\":\"none\",\"contract_mismatch\":true,\"expected_available\":false,\"fused_amount\":\"0\",\"fused_error\":\"none\",\"name\":\"same-height-last-byte-flip\",\"reported_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8ee30\",\"height\":1},\"requested_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8ee30\",\"height\":1},\"returned\":true,\"stage\":\"cache-context-query\",\"state_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"state_root_error\":\"identity-mismatch\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"reopen-and-query\",\"contract_mismatch\":false,\"expected_available\":false,\"name\":\"unavailable-next-height\",\"requested_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"returned\":false,\"stage\":\"cache-context-query\",\"state_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"state_root_error\":\"missing-version\"}\n{\"case\":\"reopen-and-query\",\"images\":{\"cache\":{\"records\":2,\"key_bytes\":11,\"value_bytes\":42,\"zero_length_values\":0,\"sha256\":\"33c14df4764554b5dab40e2112c659a3a3a3fa9cfda5b61fe3c77a298939d941\"},\"ledger\":{\"records\":103826,\"key_bytes\":3553711,\"value_bytes\":23545732,\"zero_length_values\":0,\"sha256\":\"d15b6233581cafbc280a922a918ad1ebb34b707c996186a35e7536a06266e378\"},\"tree\":{\"records\":77030,\"key_bytes\":2541878,\"value_bytes\":4254290,\"zero_length_values\":0,\"sha256\":\"4fce74d75dc9a096f83c06eb0dbf9d8ef569358a48092d8a5309d6eb0d4ec47f\"}},\"stage\":\"closed-stores\"}\n",
+          "sha256": "6936b00a097d9ada7a06c34a831718169812b8dcf6e15e63d725d3f6b38362e5"
+        }
+      ]
+    },
+    "candidate": {
+      "binary": {
+        "bytes": 19815522,
+        "sha256": "fe9811cae50dbadcdfcf0d54811b83376a7ec4143bb9b0ebc555f9acaec0eda8"
+      },
+      "streams": [
+        {
+          "bytes": 3468,
+          "case": "initialize-and-query",
+          "jsonl": "{\"cache_value_correctness_or_state_proof_acceptance_qualified\":false,\"case\":\"initialize-and-query\",\"consensus_validation_executed\":false,\"consumer_result\":\"REFUSED\",\"fixture_sha256\":\"220bb05cd50a6e3b174022950f66530c28c0c8f93529ac1194bfa5c15b323b3f\",\"network_or_full_node_started\":false,\"new_account_blocks_added\":false,\"public_read_only_cache_context_selected\":true,\"stage\":\"selection\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"initialize-and-query\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"patch_bytes\":10849399,\"patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"fresh-source-genesis\"}\n{\"cache\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"initialize-and-query\",\"ledger\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"query_address_hex\":\"0000000000000000000000000000000000000000\",\"stage\":\"ready\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"initialize-and-query\",\"chain_plasma\":\"0\",\"chain_plasma_error\":\"none\",\"contract_mismatch\":false,\"expected_available\":true,\"fused_amount\":\"0\",\"fused_error\":\"none\",\"name\":\"canonical-origin\",\"reported_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"requested_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"returned\":true,\"stage\":\"cache-context-query\",\"state_root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"state_root_error\":\"none\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"initialize-and-query\",\"contract_mismatch\":false,\"expected_available\":false,\"name\":\"same-height-first-byte-flip\",\"requested_identifier\":{\"hash\":\"1e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"returned\":false,\"stage\":\"cache-context-query\",\"state_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"state_root_error\":\"identity-mismatch\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"initialize-and-query\",\"contract_mismatch\":false,\"expected_available\":false,\"name\":\"same-height-last-byte-flip\",\"requested_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8ee30\",\"height\":1},\"returned\":false,\"stage\":\"cache-context-query\",\"state_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"state_root_error\":\"identity-mismatch\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"initialize-and-query\",\"contract_mismatch\":false,\"expected_available\":false,\"name\":\"unavailable-next-height\",\"requested_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"returned\":false,\"stage\":\"cache-context-query\",\"state_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"state_root_error\":\"missing-version\"}\n{\"case\":\"initialize-and-query\",\"images\":{\"cache\":{\"records\":2,\"key_bytes\":11,\"value_bytes\":42,\"zero_length_values\":0,\"sha256\":\"33c14df4764554b5dab40e2112c659a3a3a3fa9cfda5b61fe3c77a298939d941\"},\"ledger\":{\"records\":103826,\"key_bytes\":3553711,\"value_bytes\":23545732,\"zero_length_values\":0,\"sha256\":\"d15b6233581cafbc280a922a918ad1ebb34b707c996186a35e7536a06266e378\"},\"tree\":{\"records\":77030,\"key_bytes\":2541878,\"value_bytes\":4254290,\"zero_length_values\":0,\"sha256\":\"4fce74d75dc9a096f83c06eb0dbf9d8ef569358a48092d8a5309d6eb0d4ec47f\"}},\"stage\":\"closed-stores\"}\n",
+          "sha256": "0cfc7be1505e94a88688fc311af26046460a61f318203fc02709cec370d41c59"
+        },
+        {
+          "bytes": 4002,
+          "case": "reopen-and-query",
+          "jsonl": "{\"cache_value_correctness_or_state_proof_acceptance_qualified\":false,\"case\":\"reopen-and-query\",\"consensus_validation_executed\":false,\"consumer_result\":\"REFUSED\",\"fixture_sha256\":\"220bb05cd50a6e3b174022950f66530c28c0c8f93529ac1194bfa5c15b323b3f\",\"network_or_full_node_started\":false,\"new_account_blocks_added\":false,\"public_read_only_cache_context_selected\":true,\"stage\":\"selection\",\"wallet_signing_or_broadcast\":false}\n{\"case\":\"reopen-and-query\",\"images\":{\"cache\":{\"records\":2,\"key_bytes\":11,\"value_bytes\":42,\"zero_length_values\":0,\"sha256\":\"33c14df4764554b5dab40e2112c659a3a3a3fa9cfda5b61fe3c77a298939d941\"},\"ledger\":{\"records\":103826,\"key_bytes\":3553711,\"value_bytes\":23545732,\"zero_length_values\":0,\"sha256\":\"d15b6233581cafbc280a922a918ad1ebb34b707c996186a35e7536a06266e378\"},\"tree\":{\"records\":77030,\"key_bytes\":2541878,\"value_bytes\":4254290,\"zero_length_values\":0,\"sha256\":\"4fce74d75dc9a096f83c06eb0dbf9d8ef569358a48092d8a5309d6eb0d4ec47f\"}},\"stage\":\"closed-stores-before-reopen\"}\n{\"case\":\"reopen-and-query\",\"identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"patch_bytes\":10849399,\"patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"stage\":\"fresh-source-genesis\"}\n{\"cache\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"case\":\"reopen-and-query\",\"ledger\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"query_address_hex\":\"0000000000000000000000000000000000000000\",\"stage\":\"ready\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"reopen-and-query\",\"chain_plasma\":\"0\",\"chain_plasma_error\":\"none\",\"contract_mismatch\":false,\"expected_available\":true,\"fused_amount\":\"0\",\"fused_error\":\"none\",\"name\":\"canonical-origin\",\"reported_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"requested_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"returned\":true,\"stage\":\"cache-context-query\",\"state_root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"state_root_error\":\"none\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"reopen-and-query\",\"contract_mismatch\":false,\"expected_available\":false,\"name\":\"same-height-first-byte-flip\",\"requested_identifier\":{\"hash\":\"1e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"returned\":false,\"stage\":\"cache-context-query\",\"state_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"state_root_error\":\"identity-mismatch\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"reopen-and-query\",\"contract_mismatch\":false,\"expected_available\":false,\"name\":\"same-height-last-byte-flip\",\"requested_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8ee30\",\"height\":1},\"returned\":false,\"stage\":\"cache-context-query\",\"state_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"state_root_error\":\"identity-mismatch\"}\n{\"cache_values_used_as_state_proof\":false,\"case\":\"reopen-and-query\",\"contract_mismatch\":false,\"expected_available\":false,\"name\":\"unavailable-next-height\",\"requested_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":2},\"returned\":false,\"stage\":\"cache-context-query\",\"state_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"state_root_error\":\"missing-version\"}\n{\"case\":\"reopen-and-query\",\"images\":{\"cache\":{\"records\":2,\"key_bytes\":11,\"value_bytes\":42,\"zero_length_values\":0,\"sha256\":\"33c14df4764554b5dab40e2112c659a3a3a3fa9cfda5b61fe3c77a298939d941\"},\"ledger\":{\"records\":103826,\"key_bytes\":3553711,\"value_bytes\":23545732,\"zero_length_values\":0,\"sha256\":\"d15b6233581cafbc280a922a918ad1ebb34b707c996186a35e7536a06266e378\"},\"tree\":{\"records\":77030,\"key_bytes\":2541878,\"value_bytes\":4254290,\"zero_length_values\":0,\"sha256\":\"4fce74d75dc9a096f83c06eb0dbf9d8ef569358a48092d8a5309d6eb0d4ec47f\"}},\"stage\":\"closed-stores\"}\n",
+          "sha256": "c8c517733c2c476398d95ba205299aada84700cd435a32b23285ca1c407e4340"
+        }
+      ]
+    }
+  }
+}
