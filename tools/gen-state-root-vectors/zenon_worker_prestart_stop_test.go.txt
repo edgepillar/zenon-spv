@@ -1,0 +1,137 @@
+//go:build candidate_zenon_worker_stop
+
+// SPDX-License-Identifier: GPL-3.0-only
+package pillar
+
+import (
+	"testing"
+	"time"
+)
+
+func candidateStopped(t *testing.T, w *worker, want bool) {
+	t.Helper()
+	if got := w.shouldStop(); got != want {
+		t.Fatalf("worker stopped=%v, want %v", got, want)
+	}
+}
+func TestCandidateWorkerPreStart_NewWorkerIsOpen(t *testing.T) {
+	w := newWorker(nil, nil, nil)
+	candidateStopped(t, w, false)
+	if w.closed == nil {
+		t.Fatal("constructor must own its shutdown channel")
+	}
+}
+func TestCandidateWorkerPreStart_StopBeforeInit(t *testing.T) {
+	w := newWorker(nil, nil, nil)
+	if err := w.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	candidateStopped(t, w, true)
+}
+func TestCandidateWorkerPreStart_InitThenStop(t *testing.T) {
+	w := newWorker(nil, nil, nil)
+	if err := w.Init(); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	candidateStopped(t, w, true)
+}
+func TestCandidateWorkerPreStart_StartThenStop(t *testing.T) {
+	w := newWorker(nil, nil, nil)
+	if err := w.Start(); err != nil {
+		t.Fatal(err)
+	}
+	candidateStopped(t, w, false)
+	if err := w.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	candidateStopped(t, w, true)
+}
+func TestCandidateWorkerPreStart_InitStartStop(t *testing.T) {
+	w := newWorker(nil, nil, nil)
+	if err := w.Init(); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Start(); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	candidateStopped(t, w, true)
+}
+func TestCandidateWorkerPreStart_StartReplacesChannel(t *testing.T) {
+	w := newWorker(nil, nil, nil)
+	before := w.closed
+	if err := w.Start(); err != nil {
+		t.Fatal(err)
+	}
+	if before == nil || w.closed == before {
+		t.Fatal("Start must keep its existing fresh-generation behavior")
+	}
+	candidateStopped(t, w, false)
+	if err := w.Stop(); err != nil {
+		t.Fatal(err)
+	}
+}
+func TestCandidateWorkerPreStart_RestartAfterNormalStop(t *testing.T) {
+	w := newWorker(nil, nil, nil)
+	if err := w.Start(); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	old := w.closed
+	if err := w.Start(); err != nil {
+		t.Fatal(err)
+	}
+	if old == w.closed {
+		t.Fatal("restart reused a closed channel")
+	}
+	candidateStopped(t, w, false)
+	if err := w.Stop(); err != nil {
+		t.Fatal(err)
+	}
+}
+func TestCandidateWorkerPreStart_StartAfterPreStartStop(t *testing.T) {
+	w := newWorker(nil, nil, nil)
+	if err := w.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	candidateStopped(t, w, true)
+	if err := w.Start(); err != nil {
+		t.Fatal(err)
+	}
+	candidateStopped(t, w, false)
+	if err := w.Stop(); err != nil {
+		t.Fatal(err)
+	}
+}
+func TestCandidateWorkerPreStart_StopWaitsForChildren(t *testing.T) {
+	w := newWorker(nil, nil, nil)
+	w.children.Add(1)
+	done := make(chan error, 1)
+	go func() { done <- w.Stop() }()
+	select {
+	case <-w.closed:
+	case <-time.After(5 * time.Second):
+		t.Fatal("shutdown channel was not closed")
+	}
+	select {
+	case <-done:
+		t.Fatal("Stop returned before the registered child finished")
+	default:
+	}
+	w.children.Done()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Stop did not wait for completion")
+	}
+}
