@@ -1,0 +1,1106 @@
+{
+  "format_version": 1,
+  "interrupted_attempt": {
+    "actual_exit": null,
+    "completed_builds_or_baseline_cases_repeated": 0,
+    "fresh_candidate_resume_cases": 3,
+    "missing_exit_inferred": false,
+    "original_metadata_and_scratch_preserved": true,
+    "output_complete": false,
+    "qualification": "UNKNOWN"
+  },
+  "kind": "recorded-core-Zenon-prestart-worker-stop",
+  "recorded_native": {
+    "CGO_ENABLED": 1,
+    "commands": {
+      "downloaded_cache_verify": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 21,
+          "sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd"
+        }
+      },
+      "selected_native_units": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 1738,
+          "sha256": "21923c8a233c56de7b001d826e1ffb5ff0a9d7e0e4cd8b6ce1afd519cb673f84"
+        },
+        "stdout": {
+          "bytes": 72155,
+          "sha256": "f871b7928888789ec982df778c45f973c95fab94c451a51fa1d682f423b0d3e3"
+        }
+      }
+    },
+    "downloaded_unit_cache_archives_verified": 30,
+    "go_version": "go1.25.14",
+    "keyless_core_Start_Stop_controls": 2,
+    "native_unit_invocations": 1,
+    "native_unit_packages": 4,
+    "native_unit_pass_results": 59,
+    "native_unit_passes": [
+      {
+        "name": "TestCacheContext_BehindCacheKeepsExistingRefusal",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_ForeignHashBytes",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_HeightAndHashBothRequired",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_HistoricalAndCurrent",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_LookupErrorPrecedesCache",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_MalformedLedgerRowPrecedesCache",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_NilDependencies",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_NilLedgerSnapshot",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_ReorgChangesSelectedBranch",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_ReturnedHeightMismatch",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_RollbackRemovesFutureView",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheContext_UnknownHeights",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetChecksCompleteIdentifier",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreflight",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreflight/above",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreflight/matching-frontier",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreflight/maximum",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreflight/nil-locker",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreflight/wrong-hash",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreflight/zero",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidateMomentumRollbackTargetPreservesLookupError",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidatePublicChainStartupClosedCacheDoesNotInsertGenesis",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidatePublicChainStartupEmptyRealManagers",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidatePublicChainStartupPreservesGenesisLookupError",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCandidatePublicChainStartupStoppedInstanceRefusesInit",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestChainStopReportsEveryManagerError",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestChainStopStopsEveryManagerAfterCacheError",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestRollbackToFailureAfterPopIsUnrecoverable",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestRollbackToFirstPopFailureLeavesCanonicalStateCertain",
+        "package": "github.com/zenon-network/go-zenon/chain"
+      },
+      {
+        "name": "TestCacheReadError_BackwardExhaustionStillAbsent",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_BackwardFailurePreservesOriginalError",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_ChainPlasmaPropagatesError",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_GenesisSporkShortcutUnchanged",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_HealthyCurrentValuePreserved",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_HealthyEmptyStillAbsent",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_HistoricalBackwardSelectionPreserved",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_LastFailureIsNotAbsence",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_RealClosedManagerViews",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_RealClosedManagerViews/chain-plasma",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_RealClosedManagerViews/spork",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_RealClosedManagerViews/stake",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_SporkLookupPropagatesError",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_StakeAmountPropagatesError",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestCacheReadError_UnsupportedMergedReverseReadIsNotZero",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestExtractor",
+        "package": "github.com/zenon-network/go-zenon/chain/cache"
+      },
+      {
+        "name": "TestAddWriteFailureIsAtomic",
+        "package": "github.com/zenon-network/go-zenon/chain/cache/storage"
+      },
+      {
+        "name": "TestCacheDBManagerStopAfterFailedClose",
+        "package": "github.com/zenon-network/go-zenon/chain/cache/storage"
+      },
+      {
+        "name": "TestCacheDBManagerStopIsIdempotent",
+        "package": "github.com/zenon-network/go-zenon/chain/cache/storage"
+      },
+      {
+        "name": "TestPop",
+        "package": "github.com/zenon-network/go-zenon/chain/cache/storage"
+      },
+      {
+        "name": "TestPopWriteFailureIsAtomic",
+        "package": "github.com/zenon-network/go-zenon/chain/cache/storage"
+      },
+      {
+        "name": "TestCandidateWorkerPreStart_InitStartStop",
+        "package": "github.com/zenon-network/go-zenon/pillar"
+      },
+      {
+        "name": "TestCandidateWorkerPreStart_InitThenStop",
+        "package": "github.com/zenon-network/go-zenon/pillar"
+      },
+      {
+        "name": "TestCandidateWorkerPreStart_NewWorkerIsOpen",
+        "package": "github.com/zenon-network/go-zenon/pillar"
+      },
+      {
+        "name": "TestCandidateWorkerPreStart_RestartAfterNormalStop",
+        "package": "github.com/zenon-network/go-zenon/pillar"
+      },
+      {
+        "name": "TestCandidateWorkerPreStart_StartAfterPreStartStop",
+        "package": "github.com/zenon-network/go-zenon/pillar"
+      },
+      {
+        "name": "TestCandidateWorkerPreStart_StartReplacesChannel",
+        "package": "github.com/zenon-network/go-zenon/pillar"
+      },
+      {
+        "name": "TestCandidateWorkerPreStart_StartThenStop",
+        "package": "github.com/zenon-network/go-zenon/pillar"
+      },
+      {
+        "name": "TestCandidateWorkerPreStart_StopBeforeInit",
+        "package": "github.com/zenon-network/go-zenon/pillar"
+      },
+      {
+        "name": "TestCandidateWorkerPreStart_StopWaitsForChildren",
+        "package": "github.com/zenon-network/go-zenon/pillar"
+      }
+    ],
+    "native_unit_root_tests": 50,
+    "native_unit_skips": 0,
+    "new_external_dependency_transports": 0,
+    "new_worker_root_tests": 9,
+    "ordinary_builds": 2,
+    "platform": "darwin/arm64",
+    "qualified_ordinary_processes": 6,
+    "retained_prior_root_tests": 41,
+    "whole_module_payload_graph_qualified": false
+  },
+  "scope": {
+    "RPC_listener_started": false,
+    "accepted_header_binding": false,
+    "consensus_validity_qualified": false,
+    "external_peer_configured": false,
+    "full_node_recovery_qualified": false,
+    "internal_services_started_in_reopen_controls": true,
+    "keyless_core_managers_executed": true,
+    "network_activation_authenticated": false,
+    "node_wrapper_created": false,
+    "peer_server_created": false,
+    "private_capture_or_distribution_authenticated": false,
+    "producing_key_configured": false,
+    "production_state_value_accepted": false,
+    "profile_agreement": false,
+    "repeated_Stop_or_concurrent_lifecycle_qualified": false,
+    "wallet_manager_created": false
+  },
+  "source": {
+    "build_trees": {
+      "baseline": "a460d088e6072dd1655cebaa877a108e6e68ac44",
+      "candidate": "d76ff3928998b096c172ff6871c69d0a56cad3b7"
+    },
+    "candidate_runtime_tree": "2887e4d8ee4c8c148f94c119719853c7f4a4df74",
+    "go_mod_sha256": "ac08476abe3df0bc67f1c5c6868f04889b864310f16a37b0d51a6598b9017a45",
+    "go_sum_sha256": "e536610c08abc9f4b979ce39cd5ae7323c3df14a189d186d911ee1d1184b8537",
+    "model": {
+      "bytes": 4282,
+      "sha256": "89ff7e2f682554069ee611972457639457370d6d86521d0e284ff309ce5a0993"
+    },
+    "parent_runtime_tree": "c5e413c43794b3ba32763484670db2b100295a15",
+    "prepared_source_files_per_variant": 475,
+    "repository": "digitalSloth/go-zenon",
+    "revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+    "selection": {
+      "bytes": 375,
+      "sha256": "2ba2ac5f86cf8870a08566ce9de7f93d65ac3774d788adf6ca4146ae214f041f"
+    },
+    "sources": {
+      "zenon_worker_prestart_stop_test.go.txt": {
+        "bytes": 3161,
+        "sha256": "e2495f9960523f305476a4e3e9bf7c9f06b6d42ad619881b51017f04e8f4de6f"
+      },
+      "zenon_worker_stop_cleanup.go.txt": {
+        "bytes": 1403,
+        "sha256": "2005a9efa1df1bbbaba6a69b88a74c31fd1fc1f10bc0afe1f535e33cb71f4458"
+      },
+      "zenon_worker_stop_probe.go": {
+        "bytes": 6243,
+        "sha256": "73e30974380e7bc165ecf2c3577a19ce689362f81543760826f888c6a284e0d9"
+      }
+    }
+  },
+  "variants": {
+    "baseline": {
+      "binary": {
+        "bytes": 22625010,
+        "sha256": "d0f1e5dc5b24f9f7b0a25e6b4e73ad27c7c779a252704887f84373d62a6c5168"
+      },
+      "build": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 1738,
+          "sha256": "853fd1da398a1a75b9ed7646af75946e9868e71240c5aeb4559750e03ccc5a72"
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "capture": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 22625010,
+          "sha256": "d0f1e5dc5b24f9f7b0a25e6b4e73ad27c7c779a252704887f84373d62a6c5168"
+        }
+      },
+      "linked_module_inputs": [
+        {
+          "archive": {
+            "bytes": 55809,
+            "sha256": "9ac43a686d06fdebd719f7af3866c87eb069302272dfb131007adf471c308b65"
+          },
+          "h1": "h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=",
+          "path": "filippo.io/edwards25519",
+          "version": "v1.1.0"
+        },
+        {
+          "archive": {
+            "bytes": 89780,
+            "sha256": "0baca2ccee8e811c62b4389d01c95d6fde207008a121a7ded61074d048655658"
+          },
+          "h1": "h1:fzn1qaOt32TuLjFlkzYSsBC35Q3KUjT1SwPxiMSCF5k=",
+          "path": "github.com/btcsuite/btcd/btcec/v2",
+          "version": "v2.2.0"
+        },
+        {
+          "archive": {
+            "bytes": 154819,
+            "sha256": "28ec77eb2c680a6933524b7261210a7bf4988164c6064fedc0d33f3a3f982be7"
+          },
+          "h1": "h1:xfbtw8lwpp0G6NwSHb+UE67ryTFHJAiNuipusjXSohQ=",
+          "path": "github.com/btcsuite/btcd/btcutil",
+          "version": "v1.1.3"
+        },
+        {
+          "archive": {
+            "bytes": 11324,
+            "sha256": "b074247d190ceb1322508a8b0791f4cdb195ada94b45ffa79799a5f84a721be1"
+          },
+          "h1": "h1:q0rUy8C/TYNBQS1+CGKw68tLOFYSNEs0TFnxxnS9+4U=",
+          "path": "github.com/btcsuite/btcd/chaincfg/chainhash",
+          "version": "v1.0.1"
+        },
+        {
+          "archive": {
+            "bytes": 21258,
+            "sha256": "fcbd32794e0ff1a412bd9ed6a9ac6d43f2ff8fd5f15e5c839df06b8283241c0a"
+          },
+          "h1": "h1:sk9/l/KqpunDwP7pSjUg0keiOOLEnOBHzykLrsPppp4=",
+          "path": "github.com/deckarep/golang-set",
+          "version": "v1.8.0"
+        },
+        {
+          "archive": {
+            "bytes": 9272,
+            "sha256": "e4343d55494a93eb7bb7b59be9359fb8007fd36652b27a725db024f61605d515"
+          },
+          "h1": "h1:7PltbUIQB7u/FfZ39+DGa/ShuMyJ5ilcvdfma9wOH6Y=",
+          "path": "github.com/decred/dcrd/crypto/blake256",
+          "version": "v1.0.1"
+        },
+        {
+          "archive": {
+            "bytes": 697152,
+            "sha256": "9b3594cedab7e820108cd9f2f7f17a9edf60345baf91f7e1bd298413dba44c63"
+          },
+          "h1": "h1:8UrgZ3GkP4i/CLijOJx79Yu+etlyjdBU4sfcs2WYQMs=",
+          "path": "github.com/decred/dcrd/dcrec/secp256k1/v4",
+          "version": "v4.2.0"
+        },
+        {
+          "archive": {
+            "bytes": 14294602,
+            "sha256": "d8c98a3e38fc4f7efebde4e3b5e8a2c50d73143c421695d0cd7b30889c396ca2"
+          },
+          "h1": "h1:HbEgsDo1YTGIf4KB/NNpn+XH+PiNJXUZ9ksRxiqWyMc=",
+          "path": "github.com/ethereum/go-ethereum",
+          "version": "v1.10.22"
+        },
+        {
+          "archive": {
+            "bytes": 10631,
+            "sha256": "944a204de02272c5718a6819f1f4f6d433a0ef50ca9e737154fceae742694477"
+          },
+          "h1": "h1:ntEHSVwIt7PNXNpgPmVfMrNhLtgjlmnZha2kOpuRiDw=",
+          "path": "github.com/go-stack/stack",
+          "version": "v1.8.1"
+        },
+        {
+          "archive": {
+            "bytes": 16178,
+            "sha256": "7847b09c355215616db6309597757ff6be2cf44781d800cdad1628f141dc82ee"
+          },
+          "h1": "h1:zN2lZNZRflqFyxVaTIU61KNKQ9C0055u9CAfpmqUvo4=",
+          "path": "github.com/golang-collections/collections",
+          "version": "v0.0.0-20130729185459-604e922904d3"
+        },
+        {
+          "archive": {
+            "bytes": 79582,
+            "sha256": "ea4545ca44ee990554094df6de440386a440a5bd99106e048939409d63beb423"
+          },
+          "h1": "h1:yAGX7huGHXlcLOEtBnF4w7FQwA26wojNCwOYAEhLjQM=",
+          "path": "github.com/golang/snappy",
+          "version": "v0.0.4"
+        },
+        {
+          "archive": {
+            "bytes": 79063,
+            "sha256": "e0183e81bbc710dbbcb9b2b206a89614dd3540ddfbbd59b52861edf953eda753"
+          },
+          "h1": "h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/QY=",
+          "path": "github.com/gorilla/websocket",
+          "version": "v1.5.1"
+        },
+        {
+          "archive": {
+            "bytes": 22535,
+            "sha256": "548f72792c61d5319fb77237ed1687cfa31b7ed06b5916c7fc0520a55ee45848"
+          },
+          "h1": "h1:dg1dEPuWpEqDnvIw251EVy4zlP8gWbsGj4BsUKCRpYs=",
+          "path": "github.com/hashicorp/golang-lru",
+          "version": "v0.5.5-0.20210104140557-80c98217689d"
+        },
+        {
+          "archive": {
+            "bytes": 110666,
+            "sha256": "df663b90b9b3bf16e1cfa810a6c3dd904993e8c1155dbf65566ce0361f163dce"
+          },
+          "h1": "h1:UvLUlWDNpoUdYzb2TCn+MuTWtcjXKSza2n6CBdQ0xXc=",
+          "path": "github.com/huin/goupnp",
+          "version": "v1.3.0"
+        },
+        {
+          "archive": {
+            "bytes": 36425,
+            "sha256": "7bcdfcf1b3d69569e6c77942a0bacb8b60a152cf010ba27cae994350b6577ae0"
+          },
+          "h1": "h1:n1DqxAo4oWPMvH1+v+DLYlMCecgumhhgnxAPdqDIFHI=",
+          "path": "github.com/inconshreveable/log15",
+          "version": "v0.0.0-20201112154412-8562bdadbbac"
+        },
+        {
+          "archive": {
+            "bytes": 6553,
+            "sha256": "f778f0f492597d7158e2d6abbac3850bdf8a669c296790eba85c95152872ddfb"
+          },
+          "h1": "h1:KzKSgb7qkJvOUTqYl9/Hg/me3pWgBmERKrTGD7BdWus=",
+          "path": "github.com/jackpal/go-nat-pmp",
+          "version": "v1.0.2"
+        },
+        {
+          "archive": {
+            "bytes": 13979,
+            "sha256": "c4637499409a4081fbbd7ea0640aa0af30c0e06a70aa1b207780b0251650d8cd"
+          },
+          "h1": "h1:jF+Du6AlPIjs2BiUiQlKOX0rt3SujHxPnksPKZbaA40=",
+          "path": "github.com/mattn/go-colorable",
+          "version": "v0.1.12"
+        },
+        {
+          "archive": {
+            "bytes": 8936,
+            "sha256": "f2d5f89ca451577e17464b9bb596dc0d0ecececb5eaa63622c41b57cd0b7b8cc"
+          },
+          "h1": "h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=",
+          "path": "github.com/mattn/go-isatty",
+          "version": "v0.0.20"
+        },
+        {
+          "archive": {
+            "bytes": 17866,
+            "sha256": "d4c36b8bcd0616290a3913215e0f53b931bd6e00670596f2960df1b44af2bd07"
+          },
+          "h1": "h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=",
+          "path": "github.com/pkg/errors",
+          "version": "v0.9.1"
+        },
+        {
+          "archive": {
+            "bytes": 271605,
+            "sha256": "2079d749fb3bd347e9fd10418826ebf0d48ff5c171455060ef7d9bf842ccb8d9"
+          },
+          "h1": "h1:+1+c1VGhc88SSonWP6foOcLhvnKlUeu/erjjvaPEYiI=",
+          "path": "github.com/shirou/gopsutil",
+          "version": "v3.21.11+incompatible"
+        },
+        {
+          "archive": {
+            "bytes": 210348,
+            "sha256": "27a3ccd9769cc0df353edf9f2baec88a6fac82c766e317b1c697d06c1654052c"
+          },
+          "h1": "h1:epCh84lMvA70Z7CTTCmYQn2CKbY8j86K7/FAIr141uY=",
+          "path": "github.com/syndtr/goleveldb",
+          "version": "v1.0.1-0.20210819022825-2ae1ddf74ef7"
+        },
+        {
+          "archive": {
+            "bytes": 94228,
+            "sha256": "0eac91ee205589007df1dbc413a34e34521f4b60e2fe5ff07f7653e76e9d2821"
+          },
+          "h1": "h1:IJ1AZGZRWbY8T5Vfk04D9WOA5WSejdflXxP03OUqALw=",
+          "path": "github.com/tklauser/go-sysconf",
+          "version": "v0.3.10"
+        },
+        {
+          "archive": {
+            "bytes": 82219,
+            "sha256": "418226d3b0e8c7b1c869beb473d0d61445d9d9d3259e6fecb19aa94dc8898a3e"
+          },
+          "h1": "h1:5eUemwrMargf3BSLRRCalXT93Ns6pQJIjYQN2nyfOP8=",
+          "path": "github.com/tyler-smith/go-bip39",
+          "version": "v1.1.0"
+        },
+        {
+          "archive": {
+            "bytes": 1792511,
+            "sha256": "7cbc5fbc206b07db3c691ad59bc1b31f2c32a1dae2b04c9a7772f93a696381bf"
+          },
+          "h1": "h1:ihbySMvVjLAeSH1IbfcRTkD/iNscyz8rGzjF/E5hV6U=",
+          "path": "golang.org/x/crypto",
+          "version": "v0.31.0"
+        },
+        {
+          "archive": {
+            "bytes": 1891278,
+            "sha256": "7fd8464681c3011736f2c75beb20f88fff553a17f4f574325bce5ca5dc1fcf83"
+          },
+          "h1": "h1:d/OCCoBEUq33pjydKrGQhw7IlUPI2Oylr+8qLx49kac=",
+          "path": "golang.org/x/net",
+          "version": "v0.25.0"
+        },
+        {
+          "archive": {
+            "bytes": 26934,
+            "sha256": "94ea75ea625ecb8d81ab473a2d7e03433e63083768cd27d48a03f8c1c9da3d8d"
+          },
+          "h1": "h1:3NQrjDixjgGwUOCaF8w2+VYHv0Ve/vGYSbdkTa98gmQ=",
+          "path": "golang.org/x/sync",
+          "version": "v0.10.0"
+        },
+        {
+          "archive": {
+            "bytes": 1983555,
+            "sha256": "0ed47a83fe7d7a7e743e815172bc10c1ac0ed0d31ebb095e75717428e09aa895"
+          },
+          "h1": "h1:Fksou7UEQUWlKvIdsqzJmUmCX3cZuD2+P3XyyzwMhlA=",
+          "path": "golang.org/x/sys",
+          "version": "v0.28.0"
+        },
+        {
+          "archive": {
+            "bytes": 1627267,
+            "sha256": "c2c117cf29abee8697dabdc69662accf66171bea0efa2749988867ae8ef2362d"
+          },
+          "h1": "h1:pPC6BG5ex8PDFnkbrGU3EixyhKcQ2aDuBS36lqK/C7I=",
+          "path": "google.golang.org/protobuf",
+          "version": "v1.32.0"
+        },
+        {
+          "archive": {
+            "bytes": 82496,
+            "sha256": "07aae15601f54a5806705d218e313794118d54d9dda7addc1bf4bda4332dfc16"
+          },
+          "h1": "h1:DMTcQRFbEH62YPRWwOI647s2e5mHda3oBPMHfrLs2bw=",
+          "path": "gopkg.in/karalabe/cookiejar.v2",
+          "version": "v2.0.0-20150724131613-8dcd6a7f4951"
+        },
+        {
+          "archive": {
+            "bytes": 17854,
+            "sha256": "8c268e36660d6ce36af808d74b9be80207c05463679703e93d857e954c637aaa"
+          },
+          "h1": "h1:1Lc07Kr7qY4U2YPouBjpCLxpiyxIVoxqXgkXLknAOE8=",
+          "path": "gopkg.in/natefinch/lumberjack.v2",
+          "version": "v2.0.0"
+        }
+      ],
+      "module_information": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 3566,
+          "sha256": "1c869047b77e42a8de45c70d961b71dc0fa6dbd594ad2c3fea2514c3674861cd"
+        }
+      },
+      "streams": [
+        {
+          "case": "construct-stop",
+          "command": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 40,
+              "sha256": "ef61886fac342adbf6b4e9374029a2e7c7d8a5b0e868f5cb5c4c500225d7f4d6"
+            },
+            "stdout": {
+              "bytes": 1688,
+              "sha256": "cb045bf3f14d37dfbbe77612838c950a9b1428d5430cb14fb905c481faabed5f"
+            }
+          },
+          "jsonl": "{\"RPC_listener_started\":false,\"after_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"before_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"caller_teardown_after_observation\":[{\"component\":\"subscribe\",\"error\":\"\",\"panic\":\"\"},{\"component\":\"event-printer\",\"error\":\"\",\"panic\":\"\"},{\"component\":\"consensus\",\"error\":\"\",\"panic\":\"\"},{\"component\":\"chain\",\"error\":\"\",\"panic\":\"\"},{\"component\":\"consensus-database\",\"error\":\"\",\"panic\":\"\"}],\"case\":\"construct-stop\",\"consumer_result\":\"REFUSED\",\"core_started\":false,\"external_peer_configured\":false,\"final_tree_ready\":false,\"genesis_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"genesis_patch_bytes\":10849399,\"genesis_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"header_authentication_executed\":false,\"initialized\":false,\"node_wrapper_created\":false,\"p2p_server_created\":false,\"producing_key_configured\":false,\"production_state_value_accepted\":false,\"schema\":\"zenon-core-worker-stop-observation-v1\",\"selection_sha256\":\"2ba2ac5f86cf8870a08566ce9de7f93d65ac3774d788adf6ca4146ae214f041f\",\"stop\":{\"error\":\"\",\"panic\":\"close of nil channel\"},\"wallet_manager_created\":false}\n"
+        },
+        {
+          "case": "init-stop",
+          "command": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 139,
+              "sha256": "f10279f541fb1f8ebc8f70dbc5875e9c394eab98fdaef1826bef58c419929c77"
+            },
+            "stdout": {
+              "bytes": 4134,
+              "sha256": "4e8193239197797dca9ea547390b3db6238ec794e5cbac1f5cef0187ddd7eccc"
+            }
+          },
+          "jsonl": "{\"RPC_listener_started\":false,\"after_stop\":{\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\",\"present\":true,\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"root_error\":\"none\",\"proof_error\":\"none\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"identity-mismatch\"},\"before_stop\":{\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\",\"present\":true,\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"root_error\":\"none\",\"proof_error\":\"none\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"identity-mismatch\"},\"caller_teardown_after_observation\":[{\"component\":\"subscribe\",\"error\":\"\",\"panic\":\"\"},{\"component\":\"event-printer\",\"error\":\"\",\"panic\":\"\"},{\"component\":\"consensus\",\"error\":\"\",\"panic\":\"\"},{\"component\":\"chain\",\"error\":\"\",\"panic\":\"\"},{\"component\":\"consensus-database\",\"error\":\"\",\"panic\":\"\"}],\"case\":\"init-stop\",\"consumer_result\":\"REFUSED\",\"core_started\":false,\"external_peer_configured\":false,\"final_tree_ready\":false,\"genesis_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"genesis_patch_bytes\":10849399,\"genesis_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"header_authentication_executed\":false,\"initialized\":true,\"node_wrapper_created\":false,\"p2p_server_created\":false,\"producing_key_configured\":false,\"production_state_value_accepted\":false,\"schema\":\"zenon-core-worker-stop-observation-v1\",\"selection_sha256\":\"2ba2ac5f86cf8870a08566ce9de7f93d65ac3774d788adf6ca4146ae214f041f\",\"stop\":{\"error\":\"\",\"panic\":\"close of nil channel\"},\"wallet_manager_created\":false}\n"
+        },
+        {
+          "case": "reopen-start-stop",
+          "command": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 139,
+              "sha256": "f10279f541fb1f8ebc8f70dbc5875e9c394eab98fdaef1826bef58c419929c77"
+            },
+            "stdout": {
+              "bytes": 2647,
+              "sha256": "a31732bc94b5b8fcd32a5ec2d1bfca3afc8e11d74210195d9f335d77300c4c04"
+            }
+          },
+          "jsonl": "{\"RPC_listener_started\":false,\"after_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"before_stop\":{\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\",\"present\":true,\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"root_error\":\"none\",\"proof_error\":\"none\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"identity-mismatch\"},\"caller_teardown_after_observation\":[],\"case\":\"reopen-start-stop\",\"consumer_result\":\"REFUSED\",\"core_started\":true,\"external_peer_configured\":false,\"final_tree_ready\":false,\"genesis_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"genesis_patch_bytes\":10849399,\"genesis_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"header_authentication_executed\":false,\"initialized\":true,\"node_wrapper_created\":false,\"p2p_server_created\":false,\"producing_key_configured\":false,\"production_state_value_accepted\":false,\"schema\":\"zenon-core-worker-stop-observation-v1\",\"selection_sha256\":\"2ba2ac5f86cf8870a08566ce9de7f93d65ac3774d788adf6ca4146ae214f041f\",\"stop\":{\"error\":\"\",\"panic\":\"\"},\"wallet_manager_created\":false}\n"
+        }
+      ]
+    },
+    "candidate": {
+      "binary": {
+        "bytes": 22625090,
+        "sha256": "f557869364ca89a7a63105d9a22b65f6859c847eb5c31f79c7fc7dfdab239b2c"
+      },
+      "build": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "capture": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 22625090,
+          "sha256": "f557869364ca89a7a63105d9a22b65f6859c847eb5c31f79c7fc7dfdab239b2c"
+        }
+      },
+      "linked_module_inputs": [
+        {
+          "archive": {
+            "bytes": 55809,
+            "sha256": "9ac43a686d06fdebd719f7af3866c87eb069302272dfb131007adf471c308b65"
+          },
+          "h1": "h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=",
+          "path": "filippo.io/edwards25519",
+          "version": "v1.1.0"
+        },
+        {
+          "archive": {
+            "bytes": 89780,
+            "sha256": "0baca2ccee8e811c62b4389d01c95d6fde207008a121a7ded61074d048655658"
+          },
+          "h1": "h1:fzn1qaOt32TuLjFlkzYSsBC35Q3KUjT1SwPxiMSCF5k=",
+          "path": "github.com/btcsuite/btcd/btcec/v2",
+          "version": "v2.2.0"
+        },
+        {
+          "archive": {
+            "bytes": 154819,
+            "sha256": "28ec77eb2c680a6933524b7261210a7bf4988164c6064fedc0d33f3a3f982be7"
+          },
+          "h1": "h1:xfbtw8lwpp0G6NwSHb+UE67ryTFHJAiNuipusjXSohQ=",
+          "path": "github.com/btcsuite/btcd/btcutil",
+          "version": "v1.1.3"
+        },
+        {
+          "archive": {
+            "bytes": 11324,
+            "sha256": "b074247d190ceb1322508a8b0791f4cdb195ada94b45ffa79799a5f84a721be1"
+          },
+          "h1": "h1:q0rUy8C/TYNBQS1+CGKw68tLOFYSNEs0TFnxxnS9+4U=",
+          "path": "github.com/btcsuite/btcd/chaincfg/chainhash",
+          "version": "v1.0.1"
+        },
+        {
+          "archive": {
+            "bytes": 21258,
+            "sha256": "fcbd32794e0ff1a412bd9ed6a9ac6d43f2ff8fd5f15e5c839df06b8283241c0a"
+          },
+          "h1": "h1:sk9/l/KqpunDwP7pSjUg0keiOOLEnOBHzykLrsPppp4=",
+          "path": "github.com/deckarep/golang-set",
+          "version": "v1.8.0"
+        },
+        {
+          "archive": {
+            "bytes": 9272,
+            "sha256": "e4343d55494a93eb7bb7b59be9359fb8007fd36652b27a725db024f61605d515"
+          },
+          "h1": "h1:7PltbUIQB7u/FfZ39+DGa/ShuMyJ5ilcvdfma9wOH6Y=",
+          "path": "github.com/decred/dcrd/crypto/blake256",
+          "version": "v1.0.1"
+        },
+        {
+          "archive": {
+            "bytes": 697152,
+            "sha256": "9b3594cedab7e820108cd9f2f7f17a9edf60345baf91f7e1bd298413dba44c63"
+          },
+          "h1": "h1:8UrgZ3GkP4i/CLijOJx79Yu+etlyjdBU4sfcs2WYQMs=",
+          "path": "github.com/decred/dcrd/dcrec/secp256k1/v4",
+          "version": "v4.2.0"
+        },
+        {
+          "archive": {
+            "bytes": 14294602,
+            "sha256": "d8c98a3e38fc4f7efebde4e3b5e8a2c50d73143c421695d0cd7b30889c396ca2"
+          },
+          "h1": "h1:HbEgsDo1YTGIf4KB/NNpn+XH+PiNJXUZ9ksRxiqWyMc=",
+          "path": "github.com/ethereum/go-ethereum",
+          "version": "v1.10.22"
+        },
+        {
+          "archive": {
+            "bytes": 10631,
+            "sha256": "944a204de02272c5718a6819f1f4f6d433a0ef50ca9e737154fceae742694477"
+          },
+          "h1": "h1:ntEHSVwIt7PNXNpgPmVfMrNhLtgjlmnZha2kOpuRiDw=",
+          "path": "github.com/go-stack/stack",
+          "version": "v1.8.1"
+        },
+        {
+          "archive": {
+            "bytes": 16178,
+            "sha256": "7847b09c355215616db6309597757ff6be2cf44781d800cdad1628f141dc82ee"
+          },
+          "h1": "h1:zN2lZNZRflqFyxVaTIU61KNKQ9C0055u9CAfpmqUvo4=",
+          "path": "github.com/golang-collections/collections",
+          "version": "v0.0.0-20130729185459-604e922904d3"
+        },
+        {
+          "archive": {
+            "bytes": 79582,
+            "sha256": "ea4545ca44ee990554094df6de440386a440a5bd99106e048939409d63beb423"
+          },
+          "h1": "h1:yAGX7huGHXlcLOEtBnF4w7FQwA26wojNCwOYAEhLjQM=",
+          "path": "github.com/golang/snappy",
+          "version": "v0.0.4"
+        },
+        {
+          "archive": {
+            "bytes": 79063,
+            "sha256": "e0183e81bbc710dbbcb9b2b206a89614dd3540ddfbbd59b52861edf953eda753"
+          },
+          "h1": "h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/QY=",
+          "path": "github.com/gorilla/websocket",
+          "version": "v1.5.1"
+        },
+        {
+          "archive": {
+            "bytes": 22535,
+            "sha256": "548f72792c61d5319fb77237ed1687cfa31b7ed06b5916c7fc0520a55ee45848"
+          },
+          "h1": "h1:dg1dEPuWpEqDnvIw251EVy4zlP8gWbsGj4BsUKCRpYs=",
+          "path": "github.com/hashicorp/golang-lru",
+          "version": "v0.5.5-0.20210104140557-80c98217689d"
+        },
+        {
+          "archive": {
+            "bytes": 110666,
+            "sha256": "df663b90b9b3bf16e1cfa810a6c3dd904993e8c1155dbf65566ce0361f163dce"
+          },
+          "h1": "h1:UvLUlWDNpoUdYzb2TCn+MuTWtcjXKSza2n6CBdQ0xXc=",
+          "path": "github.com/huin/goupnp",
+          "version": "v1.3.0"
+        },
+        {
+          "archive": {
+            "bytes": 36425,
+            "sha256": "7bcdfcf1b3d69569e6c77942a0bacb8b60a152cf010ba27cae994350b6577ae0"
+          },
+          "h1": "h1:n1DqxAo4oWPMvH1+v+DLYlMCecgumhhgnxAPdqDIFHI=",
+          "path": "github.com/inconshreveable/log15",
+          "version": "v0.0.0-20201112154412-8562bdadbbac"
+        },
+        {
+          "archive": {
+            "bytes": 6553,
+            "sha256": "f778f0f492597d7158e2d6abbac3850bdf8a669c296790eba85c95152872ddfb"
+          },
+          "h1": "h1:KzKSgb7qkJvOUTqYl9/Hg/me3pWgBmERKrTGD7BdWus=",
+          "path": "github.com/jackpal/go-nat-pmp",
+          "version": "v1.0.2"
+        },
+        {
+          "archive": {
+            "bytes": 13979,
+            "sha256": "c4637499409a4081fbbd7ea0640aa0af30c0e06a70aa1b207780b0251650d8cd"
+          },
+          "h1": "h1:jF+Du6AlPIjs2BiUiQlKOX0rt3SujHxPnksPKZbaA40=",
+          "path": "github.com/mattn/go-colorable",
+          "version": "v0.1.12"
+        },
+        {
+          "archive": {
+            "bytes": 8936,
+            "sha256": "f2d5f89ca451577e17464b9bb596dc0d0ecececb5eaa63622c41b57cd0b7b8cc"
+          },
+          "h1": "h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=",
+          "path": "github.com/mattn/go-isatty",
+          "version": "v0.0.20"
+        },
+        {
+          "archive": {
+            "bytes": 17866,
+            "sha256": "d4c36b8bcd0616290a3913215e0f53b931bd6e00670596f2960df1b44af2bd07"
+          },
+          "h1": "h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=",
+          "path": "github.com/pkg/errors",
+          "version": "v0.9.1"
+        },
+        {
+          "archive": {
+            "bytes": 271605,
+            "sha256": "2079d749fb3bd347e9fd10418826ebf0d48ff5c171455060ef7d9bf842ccb8d9"
+          },
+          "h1": "h1:+1+c1VGhc88SSonWP6foOcLhvnKlUeu/erjjvaPEYiI=",
+          "path": "github.com/shirou/gopsutil",
+          "version": "v3.21.11+incompatible"
+        },
+        {
+          "archive": {
+            "bytes": 210348,
+            "sha256": "27a3ccd9769cc0df353edf9f2baec88a6fac82c766e317b1c697d06c1654052c"
+          },
+          "h1": "h1:epCh84lMvA70Z7CTTCmYQn2CKbY8j86K7/FAIr141uY=",
+          "path": "github.com/syndtr/goleveldb",
+          "version": "v1.0.1-0.20210819022825-2ae1ddf74ef7"
+        },
+        {
+          "archive": {
+            "bytes": 94228,
+            "sha256": "0eac91ee205589007df1dbc413a34e34521f4b60e2fe5ff07f7653e76e9d2821"
+          },
+          "h1": "h1:IJ1AZGZRWbY8T5Vfk04D9WOA5WSejdflXxP03OUqALw=",
+          "path": "github.com/tklauser/go-sysconf",
+          "version": "v0.3.10"
+        },
+        {
+          "archive": {
+            "bytes": 82219,
+            "sha256": "418226d3b0e8c7b1c869beb473d0d61445d9d9d3259e6fecb19aa94dc8898a3e"
+          },
+          "h1": "h1:5eUemwrMargf3BSLRRCalXT93Ns6pQJIjYQN2nyfOP8=",
+          "path": "github.com/tyler-smith/go-bip39",
+          "version": "v1.1.0"
+        },
+        {
+          "archive": {
+            "bytes": 1792511,
+            "sha256": "7cbc5fbc206b07db3c691ad59bc1b31f2c32a1dae2b04c9a7772f93a696381bf"
+          },
+          "h1": "h1:ihbySMvVjLAeSH1IbfcRTkD/iNscyz8rGzjF/E5hV6U=",
+          "path": "golang.org/x/crypto",
+          "version": "v0.31.0"
+        },
+        {
+          "archive": {
+            "bytes": 1891278,
+            "sha256": "7fd8464681c3011736f2c75beb20f88fff553a17f4f574325bce5ca5dc1fcf83"
+          },
+          "h1": "h1:d/OCCoBEUq33pjydKrGQhw7IlUPI2Oylr+8qLx49kac=",
+          "path": "golang.org/x/net",
+          "version": "v0.25.0"
+        },
+        {
+          "archive": {
+            "bytes": 26934,
+            "sha256": "94ea75ea625ecb8d81ab473a2d7e03433e63083768cd27d48a03f8c1c9da3d8d"
+          },
+          "h1": "h1:3NQrjDixjgGwUOCaF8w2+VYHv0Ve/vGYSbdkTa98gmQ=",
+          "path": "golang.org/x/sync",
+          "version": "v0.10.0"
+        },
+        {
+          "archive": {
+            "bytes": 1983555,
+            "sha256": "0ed47a83fe7d7a7e743e815172bc10c1ac0ed0d31ebb095e75717428e09aa895"
+          },
+          "h1": "h1:Fksou7UEQUWlKvIdsqzJmUmCX3cZuD2+P3XyyzwMhlA=",
+          "path": "golang.org/x/sys",
+          "version": "v0.28.0"
+        },
+        {
+          "archive": {
+            "bytes": 1627267,
+            "sha256": "c2c117cf29abee8697dabdc69662accf66171bea0efa2749988867ae8ef2362d"
+          },
+          "h1": "h1:pPC6BG5ex8PDFnkbrGU3EixyhKcQ2aDuBS36lqK/C7I=",
+          "path": "google.golang.org/protobuf",
+          "version": "v1.32.0"
+        },
+        {
+          "archive": {
+            "bytes": 82496,
+            "sha256": "07aae15601f54a5806705d218e313794118d54d9dda7addc1bf4bda4332dfc16"
+          },
+          "h1": "h1:DMTcQRFbEH62YPRWwOI647s2e5mHda3oBPMHfrLs2bw=",
+          "path": "gopkg.in/karalabe/cookiejar.v2",
+          "version": "v2.0.0-20150724131613-8dcd6a7f4951"
+        },
+        {
+          "archive": {
+            "bytes": 17854,
+            "sha256": "8c268e36660d6ce36af808d74b9be80207c05463679703e93d857e954c637aaa"
+          },
+          "h1": "h1:1Lc07Kr7qY4U2YPouBjpCLxpiyxIVoxqXgkXLknAOE8=",
+          "path": "gopkg.in/natefinch/lumberjack.v2",
+          "version": "v2.0.0"
+        }
+      ],
+      "module_information": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 3567,
+          "sha256": "ce245dc9bd5147419e086c0a1dbe9e6835380286a03df03635751a4a3a15e949"
+        }
+      },
+      "streams": [
+        {
+          "case": "construct-stop",
+          "command": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 40,
+              "sha256": "ef61886fac342adbf6b4e9374029a2e7c7d8a5b0e868f5cb5c4c500225d7f4d6"
+            },
+            "stdout": {
+              "bytes": 1420,
+              "sha256": "b34d8d640858254b800b8a830faf20fb10ae9a85ccfe4b8521d4d4c7ff282c5b"
+            }
+          },
+          "jsonl": "{\"RPC_listener_started\":false,\"after_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"before_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"caller_teardown_after_observation\":[],\"case\":\"construct-stop\",\"consumer_result\":\"REFUSED\",\"core_started\":false,\"external_peer_configured\":false,\"final_tree_ready\":false,\"genesis_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"genesis_patch_bytes\":10849399,\"genesis_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"header_authentication_executed\":false,\"initialized\":false,\"node_wrapper_created\":false,\"p2p_server_created\":false,\"producing_key_configured\":false,\"production_state_value_accepted\":false,\"schema\":\"zenon-core-worker-stop-observation-v1\",\"selection_sha256\":\"2ba2ac5f86cf8870a08566ce9de7f93d65ac3774d788adf6ca4146ae214f041f\",\"stop\":{\"error\":\"\",\"panic\":\"\"},\"wallet_manager_created\":false}\n"
+        },
+        {
+          "case": "init-stop",
+          "command": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 139,
+              "sha256": "f10279f541fb1f8ebc8f70dbc5875e9c394eab98fdaef1826bef58c419929c77"
+            },
+            "stdout": {
+              "bytes": 2640,
+              "sha256": "062b602fe2cb00b991668feb90fe747d9291991f3515605f6a10d67010768cf4"
+            }
+          },
+          "jsonl": "{\"RPC_listener_started\":false,\"after_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"before_stop\":{\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\",\"present\":true,\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"root_error\":\"none\",\"proof_error\":\"none\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"identity-mismatch\"},\"caller_teardown_after_observation\":[],\"case\":\"init-stop\",\"consumer_result\":\"REFUSED\",\"core_started\":false,\"external_peer_configured\":false,\"final_tree_ready\":false,\"genesis_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"genesis_patch_bytes\":10849399,\"genesis_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"header_authentication_executed\":false,\"initialized\":true,\"node_wrapper_created\":false,\"p2p_server_created\":false,\"producing_key_configured\":false,\"production_state_value_accepted\":false,\"schema\":\"zenon-core-worker-stop-observation-v1\",\"selection_sha256\":\"2ba2ac5f86cf8870a08566ce9de7f93d65ac3774d788adf6ca4146ae214f041f\",\"stop\":{\"error\":\"\",\"panic\":\"\"},\"wallet_manager_created\":false}\n"
+        },
+        {
+          "case": "reopen-start-stop",
+          "command": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 139,
+              "sha256": "f10279f541fb1f8ebc8f70dbc5875e9c394eab98fdaef1826bef58c419929c77"
+            },
+            "stdout": {
+              "bytes": 2647,
+              "sha256": "a31732bc94b5b8fcd32a5ec2d1bfca3afc8e11d74210195d9f335d77300c4c04"
+            }
+          },
+          "jsonl": "{\"RPC_listener_started\":false,\"after_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"before_stop\":{\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\",\"present\":true,\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"root_error\":\"none\",\"proof_error\":\"none\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"identity-mismatch\"},\"caller_teardown_after_observation\":[],\"case\":\"reopen-start-stop\",\"consumer_result\":\"REFUSED\",\"core_started\":true,\"external_peer_configured\":false,\"final_tree_ready\":false,\"genesis_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"genesis_patch_bytes\":10849399,\"genesis_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"header_authentication_executed\":false,\"initialized\":true,\"node_wrapper_created\":false,\"p2p_server_created\":false,\"producing_key_configured\":false,\"production_state_value_accepted\":false,\"schema\":\"zenon-core-worker-stop-observation-v1\",\"selection_sha256\":\"2ba2ac5f86cf8870a08566ce9de7f93d65ac3774d788adf6ca4146ae214f041f\",\"stop\":{\"error\":\"\",\"panic\":\"\"},\"wallet_manager_created\":false}\n"
+        }
+      ]
+    }
+  }
+}
