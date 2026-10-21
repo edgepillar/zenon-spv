@@ -2784,3 +2784,26 @@ python3 -I -B tools/gen-state-root-vectors/check_cache_forward_source_reuse_test
 The comparison preserves complete checker reports. Reuse is confined to the
 serial test class and creates no persistent cache. Local timing observations
 do not qualify hosted CI speedup or production budgets.
+
+### Keyless core-manager Stop before Start
+
+The [core-manager comparison](../../docs/zenon-worker-prestart-stop.md) extends
+the experimental cache-read successor through real `Zenon` managers. The
+constructor-channel change removes two selected pre-start Stop panics while
+preserving the normal keyless start/stop and fresh-process reopen controls.
+Six retained ordinary-process outputs and the independent genesis witness
+bind twelve root/value/proof observations. Fifty native root tests produce
+59 passes with zero skips; all 41 preceding roots remain selected.
+
+```sh
+python3 -I -B tools/gen-state-root-vectors/prepare_zenon_worker_stop_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_zenon_worker_stop_test.py -v
+python3 -I -B tools/gen-state-root-vectors/check_zenon_worker_stop.py
+```
+
+The source-only preparer emits two fresh case roots and one reopen recipe; it
+does not launch a backend. Portable CI checks replay the retained bytes. The
+two native keyless start controls execute internal services without a wallet,
+node wrapper, peer server, RPC listener or producing key. An interrupted extra
+attempt stays UNKNOWN. Repeated Stop, concurrent lifecycle, consensus validity,
+full-node recovery, activation and production state values remain unqualified.

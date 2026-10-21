@@ -275,6 +275,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_cache_read_errors_test.py -v
       - name: Independent recorded cache read errors
         run: python -I -B tools/gen-state-root-vectors/check_cache_read_errors.py --source-revision "${{ github.sha }}"
+      - name: Core manager Stop source controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_zenon_worker_stop_test.py -v
+      - name: Core manager Stop recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_zenon_worker_stop_test.py -v
+      - name: Independent recorded core manager Stop
+        run: python -I -B tools/gen-state-root-vectors/check_zenon_worker_stop.py --source-revision "${{ github.sha }}"
       - name: Successor raw store codec controls
         run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
       - name: Successor raw store independent model controls
@@ -880,6 +886,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_cache_read_errors_test.py -v
       - name: Independent recorded cache read errors
         run: python -I -B tools/gen-state-root-vectors/check_cache_read_errors.py --source-revision "${{ github.sha }}"
+      - name: Core manager Stop source controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_zenon_worker_stop_test.py -v
+      - name: Core manager Stop recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_zenon_worker_stop_test.py -v
+      - name: Independent recorded core manager Stop
+        run: python -I -B tools/gen-state-root-vectors/check_zenon_worker_stop.py --source-revision "${{ github.sha }}"
       - name: Successor raw store codec controls
         run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
       - name: Successor raw store independent model controls
