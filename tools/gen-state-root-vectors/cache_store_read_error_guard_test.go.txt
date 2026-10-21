@@ -1,0 +1,196 @@
+//go:build candidate_cache_read_error
+
+// SPDX-License-Identifier: GPL-3.0-only
+package cache
+
+import (
+	"bytes"
+	"errors"
+	"math/big"
+	"testing"
+
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/zenon-network/go-zenon/chain/cache/storage"
+	"github.com/zenon-network/go-zenon/common"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+type readErrorIterator struct {
+	keys, values                           [][]byte
+	last                                   bool
+	previous                               bool
+	err                                    error
+	index, lastCalls, errorCalls, releases int
+}
+
+func (it *readErrorIterator) Next() bool { panic("forward traversal was not selected") }
+func (it *readErrorIterator) Last() bool { it.lastCalls++; it.index = 0; return it.last }
+func (it *readErrorIterator) Prev() bool {
+	if it.previous && it.index+1 < len(it.keys) {
+		it.index++
+		return true
+	}
+	return false
+}
+func (it *readErrorIterator) Key() []byte   { return it.keys[it.index] }
+func (it *readErrorIterator) Value() []byte { return it.values[it.index] }
+func (it *readErrorIterator) Error() error  { it.errorCalls++; return it.err }
+func (it *readErrorIterator) Release()      { it.releases++ }
+
+type readErrorDB struct {
+	db.DB
+	iterator *readErrorIterator
+}
+
+func (backing *readErrorDB) NewIterator(prefix []byte) db.StorageIterator { return backing.iterator }
+func readErrorStore(iterator *readErrorIterator) *cacheStore {
+	return &cacheStore{identifier: types.HashHeight{Height: 2}, db: &readErrorDB{DB: db.NewMemDB(), iterator: iterator}, changes: db.NewMemDB()}
+}
+func readErrorKey(height uint64) []byte {
+	return common.JoinBytes([]byte{3, 1}, make([]byte, 20), common.Uint64ToBytes(height))
+}
+func requireOneRelease(t *testing.T, iterator *readErrorIterator) {
+	t.Helper()
+	if iterator.releases != 1 {
+		t.Fatalf("iterator release count %d", iterator.releases)
+	}
+}
+
+func TestCacheReadError_LastFailureIsNotAbsence(t *testing.T) {
+	selected := errors.New("selected initial iterator error")
+	iterator := &readErrorIterator{err: selected}
+	value, err := readErrorStore(iterator).findValue([]byte{3, 1})
+	if value != nil || err != selected {
+		t.Fatalf("value %x, error %v", value, err)
+	}
+	if iterator.lastCalls != 1 || iterator.errorCalls != 1 {
+		t.Fatalf("fault was not checked exactly once")
+	}
+	requireOneRelease(t, iterator)
+}
+func TestCacheReadError_HealthyEmptyStillAbsent(t *testing.T) {
+	iterator := &readErrorIterator{}
+	value, err := readErrorStore(iterator).findValue([]byte{3, 1})
+	if err != nil || value == nil || len(value) != 0 {
+		t.Fatalf("value %x, error %v", value, err)
+	}
+	requireOneRelease(t, iterator)
+}
+func TestCacheReadError_HealthyCurrentValuePreserved(t *testing.T) {
+	iterator := &readErrorIterator{last: true, keys: [][]byte{readErrorKey(2)}, values: [][]byte{{17}}}
+	value, err := readErrorStore(iterator).findValue([]byte{3, 1})
+	if err != nil || !bytes.Equal(value, []byte{17}) {
+		t.Fatalf("value %x, error %v", value, err)
+	}
+	requireOneRelease(t, iterator)
+}
+func TestCacheReadError_HistoricalBackwardSelectionPreserved(t *testing.T) {
+	iterator := &readErrorIterator{last: true, previous: true, keys: [][]byte{readErrorKey(3), readErrorKey(2)}, values: [][]byte{{19}, {17}}}
+	value, err := readErrorStore(iterator).findValue([]byte{3, 1})
+	if err != nil || !bytes.Equal(value, []byte{17}) {
+		t.Fatalf("value %x, error %v", value, err)
+	}
+	requireOneRelease(t, iterator)
+}
+func TestCacheReadError_BackwardFailurePreservesOriginalError(t *testing.T) {
+	selected := errors.New("selected previous iterator error")
+	iterator := &readErrorIterator{last: true, keys: [][]byte{readErrorKey(3)}, values: [][]byte{{19}}, err: selected}
+	value, err := readErrorStore(iterator).findValue([]byte{3, 1})
+	if value != nil || err != selected {
+		t.Fatalf("value %x, error %v", value, err)
+	}
+	requireOneRelease(t, iterator)
+}
+func TestCacheReadError_BackwardExhaustionStillAbsent(t *testing.T) {
+	iterator := &readErrorIterator{last: true, keys: [][]byte{readErrorKey(3)}, values: [][]byte{{19}}}
+	value, err := readErrorStore(iterator).findValue([]byte{3, 1})
+	if err != nil || value == nil || len(value) != 0 {
+		t.Fatalf("value %x, error %v", value, err)
+	}
+	requireOneRelease(t, iterator)
+}
+func TestCacheReadError_ChainPlasmaPropagatesError(t *testing.T) {
+	selected := errors.New("selected plasma iterator error")
+	iterator := &readErrorIterator{err: selected}
+	value, err := readErrorStore(iterator).GetChainPlasma(types.ZeroAddress)
+	if value != nil || err != selected {
+		t.Fatalf("value %v, error %v", value, err)
+	}
+	requireOneRelease(t, iterator)
+}
+func TestCacheReadError_StakeAmountPropagatesError(t *testing.T) {
+	selected := errors.New("selected stake iterator error")
+	iterator := &readErrorIterator{err: selected}
+	value, err := readErrorStore(iterator).GetStakeBeneficialAmount(types.ZeroAddress)
+	if value != nil || err != selected {
+		t.Fatalf("value %v, error %v", value, err)
+	}
+	requireOneRelease(t, iterator)
+}
+func TestCacheReadError_SporkLookupPropagatesError(t *testing.T) {
+	selected := errors.New("selected spork iterator error")
+	iterator := &readErrorIterator{err: selected}
+	value, err := readErrorStore(iterator).IsSporkActive(&types.ImplementedSpork{})
+	if value || err != selected {
+		t.Fatalf("value %v, error %v", value, err)
+	}
+	requireOneRelease(t, iterator)
+}
+func TestCacheReadError_GenesisSporkShortcutUnchanged(t *testing.T) {
+	store := &cacheStore{identifier: types.HashHeight{Height: 1}}
+	value, err := store.IsSporkActive(&types.ImplementedSpork{})
+	if value || err != nil {
+		t.Fatalf("value %v, error %v", value, err)
+	}
+}
+func TestCacheReadError_UnsupportedMergedReverseReadIsNotZero(t *testing.T) {
+	backing := db.NewMemDB().Snapshot()
+	iterator := backing.NewIterator(nil)
+	last, selected := iterator.Last(), iterator.Error()
+	iterator.Release()
+	if last || selected == nil {
+		t.Fatalf("reverse precondition %v %v", last, selected)
+	}
+	store := &cacheStore{identifier: types.HashHeight{Height: 2}, db: backing, changes: db.NewMemDB()}
+	value, err := store.GetChainPlasma(types.ZeroAddress)
+	if value != nil || err == nil {
+		t.Fatalf("value %v, error %v", value, err)
+	}
+}
+func TestCacheReadError_RealClosedManagerViews(t *testing.T) {
+	manager := storage.NewCacheDBManager(t.TempDir())
+	t.Cleanup(func() {
+		if err := manager.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+	view := NewCacheStore(types.ZeroHashHeight, manager)
+	if view == nil {
+		t.Fatal("missing initial view")
+	}
+	if err := manager.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	for _, kind := range []string{"chain-plasma", "stake", "spork"} {
+		t.Run(kind, func(t *testing.T) {
+			if kind == "spork" {
+				value, err := view.IsSporkActive(&types.ImplementedSpork{})
+				if value || !errors.Is(err, leveldb.ErrClosed) {
+					t.Fatalf("value %v, error %v", value, err)
+				}
+			} else {
+				var value *big.Int
+				var err error
+				if kind == "chain-plasma" {
+					value, err = view.GetChainPlasma(types.ZeroAddress)
+				} else {
+					value, err = view.GetStakeBeneficialAmount(types.ZeroAddress)
+				}
+				if value != nil || !errors.Is(err, leveldb.ErrClosed) {
+					t.Fatalf("value %v, error %v", value, err)
+				}
+			}
+		})
+	}
+}

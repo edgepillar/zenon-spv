@@ -48,6 +48,14 @@ identifier selection cases. Portable checks replay all 34 ordinary events;
 cache-value correctness, concurrent history changes and full-node qualification
 remain open.
 
+The [cache read-error comparison](cache-read-errors.md) separately records
+six closed-view calls losing their real database error on the baseline and
+none on the successor. An independent byte model binds all 58 events, 38
+queries and four complete raw records. A separate native unit invocation
+retains 41 roots and 50 pass results, including the preceding chain/cache
+controls. Portable checks execute no backend; cache values remain outside
+accepted state-proof guarantees.
+
 The current native-client scope is defined in the
 [`verification contract`](verification-contract.md). The
 [node-derived momentum corpus](../internal/testdata/conformance/README.md)
