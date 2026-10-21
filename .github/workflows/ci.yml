@@ -263,6 +263,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_public_chain_reorg_reopen_test.py -v
       - name: Independent recorded public Chain reorg and reopen
         run: python -I -B tools/gen-state-root-vectors/check_public_chain_reorg_reopen.py --source-revision "${{ github.sha }}"
+      - name: Public cache context source controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_cache_store_context_test.py -v
+      - name: Public cache context recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_cache_store_context_test.py -v
+      - name: Independent recorded public cache context
+        run: python -I -B tools/gen-state-root-vectors/check_cache_store_context.py --source-revision "${{ github.sha }}"
       - name: Successor raw store codec controls
         run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
       - name: Successor raw store independent model controls
@@ -856,6 +862,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_public_chain_reorg_reopen_test.py -v
       - name: Independent recorded public Chain reorg and reopen
         run: python -I -B tools/gen-state-root-vectors/check_public_chain_reorg_reopen.py --source-revision "${{ github.sha }}"
+      - name: Public cache context source controls
+        run: python -I -B tools/gen-state-root-vectors/prepare_cache_store_context_test.py -v
+      - name: Public cache context recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_cache_store_context_test.py -v
+      - name: Independent recorded public cache context
+        run: python -I -B tools/gen-state-root-vectors/check_cache_store_context.py --source-revision "${{ github.sha }}"
       - name: Successor raw store codec controls
         run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
       - name: Successor raw store independent model controls
