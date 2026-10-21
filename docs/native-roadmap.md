@@ -149,6 +149,16 @@ The zero-valued source-genesis cache fixture leaves populated extraction,
 cache-value correctness, concurrent history changes and full-node qualification
 open. Plasma and fused cache data remain outside the partial SMT proof domain.
 
+The [cache iterator read-error comparison](cache-read-errors.md) additionally
+checks populated extraction, healthy absence and views retained after normal
+manager Stop. Six baseline reads hid a real iterator error; the experimental
+successor propagates that error. Four raw records remain byte-bound through
+reopen and across variants. A separate 41-root/50-result native invocation
+retains the previous chain/cache controls. The ordinary probes select only
+a cache manager and extractor; nominal identifiers, these cache values and
+selected unit regressions do not qualify consensus, the full node or state
+proof acceptance.
+
 For M3, obtain the expected root from the owned accepted v3 header/context.
 Derive the selected address/token key locally and carry exact presence,
 absence and value semantics through transport, saved state and the consumer.
