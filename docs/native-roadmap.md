@@ -132,6 +132,14 @@ focused native test passes preserve initial genesis insertion, lookup errors,
 terminal lifecycle and prior rollback controls. These selected unsigned fixtures
 leave profile agreement, concurrent lifecycle and full node recovery open.
 
+The [public Chain reorg/reopen comparison](public-chain-reorg-reopen.md) adds
+distinct balance roots, the selected callers' real insert-lock maintenance
+order, rollback and fresh-process reopen. One ordinary binary records 15 exact
+root/proof matches and 16 missing/foreign-version refusals. The four new momenta
+are unsigned empty-content local fixtures; cache account-block extraction,
+network-valid history, profile agreement and full node qualification remain
+open. State-value acceptance stays refused.
+
 For M3, obtain the expected root from the owned accepted v3 header/context.
 Derive the selected address/token key locally and carry exact presence,
 absence and value semantics through transport, saved state and the consumer.
