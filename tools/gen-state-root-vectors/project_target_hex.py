@@ -105,16 +105,25 @@ def batched_encoding(target, total):
             or any(type(code) is not int or value is not None or code not in HEX_CODEPOINTS
                    for code, value in DELETE_HEX.items())):
         return None
-    fields = []
-    for key, value in target.items():
-        for text in (key, value):
-            if type(text) is not str:
-                return None
-            if len(text) % 2 or not text.isascii():
-                return True
-            fields.append(text)
-    # Length/limit hooks may have replaced values after the earlier map count.
-    # Admit the actual collected builtin fields, never that potentially stale sum.
+    fields = tuple(target) + tuple(target.values())
+    if any(type(text) is not str for text in fields):
+        fields = []
+        for key, value in target.items():
+            for text in (key, value):
+                if type(text) is not str:
+                    return None
+                if len(text) % 2 or not text.isascii():
+                    return True
+                fields.append(text)
+        # Length/limit hooks may have replaced values after the earlier map count.
+        # Admit the actual collected builtin fields, never that potentially stale sum.
+        if sum(map(len, fields)) > MAX_BATCH_HEX_BYTES:
+            return None
+        return bool(''.join(fields).translate(DELETE_HEX))
+    if any(len(text) % 2 for text in fields):
+        return True
+    if not all(map(str.isascii, fields)):
+        return True
     if sum(map(len, fields)) > MAX_BATCH_HEX_BYTES:
         return None
     return bool(''.join(fields).translate(DELETE_HEX))
