@@ -39,9 +39,18 @@ hook during batch admission. Original error types, lookup order and short-circui
 behavior remain required. The exclusive serial caller and stable-checkout
 requirements of the selected recipe are unchanged.
 
-The field list borrows at most 8,192 string references. ASCII aggregation adds at
-most 1 MiB of string payload; a translation result can add up to another 1 MiB,
-plus Python object/list overhead. These are additional temporary allocations,
+For an exact dictionary, the optimizer collects builtin keys and values in a
+tuple, then checks all field types, individual parity and ASCII flags before
+joining. Grouping keys before values is permitted only for exact builtin
+strings, whose checks have no custom hooks. If a field has another type, the
+unchanged interleaved admission loop runs before the prior pointwise fallback.
+This preserves custom hooks and short-circuit behavior.
+
+The collected tuple borrows at most 8,192 string references; its construction
+temporarily retains the separate key and value tuples as well. The fallback
+uses the prior field list. ASCII aggregation adds at most 1 MiB of string
+payload; a translation result can add up to another 1 MiB, plus Python
+tuple/list and object overhead. These are additional temporary allocations,
 not a whole-process memory limit. No map identity cache, incremental counter,
 observed-result key, cross-process cache or disk cache is introduced. There is
 no new download, ZIP, extracted tree or persistent benchmark workspace.
@@ -50,6 +59,7 @@ no new download, ZIP, extracted tree or persistent benchmark workspace.
 
 ```sh
 python -I -B tools/gen-state-root-vectors/project_target_hex_batch_test.py -v
+python -I -B tools/gen-state-root-vectors/project_target_hex_builtin_fields_test.py -v
 python -I -B tools/gen-state-root-vectors/project_target_hex_test.py -v
 python -I -B tools/gen-state-root-vectors/run_target_hex.py \
   --program check_patch_file_resources.py --mode translated \
@@ -65,6 +75,15 @@ prior translation-table behavior. Two further controls cover post-count growth
 from a limit lookup and a self-replacing length hook, including unchanged callback
 traces and refusal results. The original seam controls and all 22 complete
 selected checker/control programs remain required in CI.
+
+Ten additional builtin-field controls compare all 512 Latin-1 key/value
+classifications, map and byte boundaries, post-count limits, subclass and
+mutation-hook traces, and the complete 15-case opened-file resource document
+with the unchanged pointwise reference. A wide-Unicode control allocates its
+input before tracing and checks refusal before a wide aggregate can be built.
+Its 1 MiB Python traced allocation threshold applies to that one validation
+fixture; it is not a process RSS limit or a production resource budget. All 29
+existing seam controls and all 16 batch controls remain unchanged.
 
 For timing comparisons, use the same complete command in two isolated, fixed
 checkouts: baseline `64589e3fac7e2a285f1f44a22c63c48f8a07a255` and the reviewed

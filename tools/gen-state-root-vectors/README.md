@@ -2428,8 +2428,15 @@ Allocation admission checks the actual collected string lengths again before
 joining; side effects in reference-compatible length/limit hooks cannot make an
 earlier count authorize an oversized aggregate.
 
+Exact builtin fields use bounded tuple collection before parity/ASCII checks
+and the existing translation. Other field types retain the original interleaved
+admission and fallback. The additional controls compare classifications and hook
+traces, the complete resource document and a wide-Unicode refusal allocation;
+the fixture's Python allocation threshold is separate from process RSS.
+
 ```sh
 python -I -B tools/gen-state-root-vectors/project_target_hex_batch_test.py -v
+python -I -B tools/gen-state-root-vectors/project_target_hex_builtin_fields_test.py -v
 ```
 
 ### Recorded source-default retention
