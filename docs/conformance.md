@@ -33,6 +33,13 @@ pairs preserve all 45 controls, all 12 complete corpus cases and every recorded
 sample and ownership-control outcome. Their current hex recipes leave original
 source pins, full maps, callbacks, byte counts and error ordering unchanged.
 
+The [public Chain reorg/reopen comparison](public-chain-reorg-reopen.md) records
+one ordinary real-manager binary and two sequential processes. Independent
+patch/header/proof bytes distinguish stored zero, absence and same-height
+foreign identifiers through rollback and reopen. Portable checks replay all
+57 recorded events; they execute no backend and leave network, profile,
+accepted-header state proofs and production qualification open.
+
 The current native-client scope is defined in the
 [`verification contract`](verification-contract.md). The
 [node-derived momentum corpus](../internal/testdata/conformance/README.md)
