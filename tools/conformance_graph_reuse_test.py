@@ -455,5 +455,105 @@ class GraphReuseControls(unittest.TestCase):
         self.assertNotIn('cached_inputs', report)
 
 
+class ExpandedGraphReuseControls(unittest.TestCase):
+    SELECTIONS = {
+        'check_temp_workspace.py': 12,
+        'check_temp_workspace_test.py': 12,
+        'check_projected_driver.py': 12,
+        'check_projected_driver_test.py': 16,
+    }
+
+    def test_all_expanded_slots_share_one_independently_computed_graph(self):
+        expected = GRAPH.REFERENCE.graph(state())
+        for selected, count in self.SELECTIONS.items():
+            with self.subTest(program=selected):
+                selected_program = program(selected)
+                with GRAPH.selected_graphs(selected_program, selected) as scope:
+                    self.assertEqual(len(scope.seams), count)
+                    for _, module, _, _ in scope.seams:
+                        self.assertEqual(module.graph(state()), expected)
+                report = scope.report()
+                self.assertEqual((report['graph_requests'], report['original_graph_calls'],
+                                  report['cache_hits']), (count, 1, count - 1))
+                self.assertTrue(report['selected_functions_restored'])
+                self.assertTrue(report['cache_cleared'])
+
+    def test_changed_full_byte_maps_recompute_across_expanded_instances(self):
+        for selected, count in self.SELECTIONS.items():
+            with self.subTest(program=selected):
+                selected_program = program(selected)
+                value = state()
+                with GRAPH.selected_graphs(selected_program, selected) as scope:
+                    for new_value in (bytes([11]) * 32, bytes([12]) * 32):
+                        value[next(iter(value))] = new_value
+                        expected = GRAPH.REFERENCE.graph(value)
+                        for _, module, _, _ in scope.seams:
+                            actual = module.graph(value)
+                            self.assertEqual(actual, expected)
+                            actual[2].clear()
+                            actual[3].clear()
+                report = scope.report()
+                self.assertEqual((report['graph_requests'], report['original_graph_calls'],
+                                  report['cache_hits']), (2 * count, 2, 2 * count - 2))
+
+    def test_exception_restores_every_expanded_slot_and_clears_cache(self):
+        for selected in self.SELECTIONS:
+            with self.subTest(program=selected):
+                selected_program = program(selected)
+                with self.assertRaisesRegex(RuntimeError, 'selected caller failed'):
+                    with GRAPH.selected_graphs(selected_program, selected) as scope:
+                        for _, module, _, _ in scope.seams:
+                            module.graph(state())
+                        raise RuntimeError('selected caller failed')
+                self.assertTrue(scope.closed)
+                self.assertFalse(scope._cache)
+                self.assertTrue(scope.report()['selected_functions_restored'])
+
+    def test_extra_owned_graph_instance_is_refused_before_replacement(self):
+        for selected in self.SELECTIONS:
+            with self.subTest(program=selected):
+                selected_program = program(selected)
+                seams, _ = GRAPH.selected_seams(selected_program, selected)
+                selected_program.EXTRA = program().RET
+                extra_original = selected_program.EXTRA.graph
+                with self.assertRaises(ValueError):
+                    with GRAPH.selected_graphs(selected_program, selected):
+                        self.fail('An unselected graph instance entered the context')
+                self.assertTrue(all(module.graph is original for _, module, original, _ in seams))
+                self.assertIs(selected_program.EXTRA.graph, extra_original)
+
+    def test_changed_expanded_slot_is_refused_without_adopting_it(self):
+        for selected in self.SELECTIONS:
+            with self.subTest(program=selected):
+                selected_program = program(selected)
+                seams, _ = GRAPH.selected_seams(selected_program, selected)
+                _, module, original, _ = seams[-1]
+                replacement = lambda value: GRAPH.REFERENCE.graph(value)
+                try:
+                    module.graph = replacement
+                    with self.assertRaises(ValueError):
+                        with GRAPH.selected_graphs(selected_program, selected):
+                            self.fail('A replaced graph instance entered the context')
+                    self.assertIs(module.graph, replacement)
+                    self.assertTrue(all(owner.graph is function
+                                        for _, owner, function, _ in seams[:-1]))
+                finally:
+                    module.graph = original
+
+    def test_each_additional_source_pin_is_checked(self):
+        original = GRAPH.SOURCE_PINS
+        try:
+            for name in ('check_oracle_projection.py', 'check_projected_driver.py',
+                         'check_projected_driver_test.py', 'check_temp_workspace.py',
+                         'check_temp_workspace_test.py', 'observe_temp_workspace.py',
+                         'project_driver_oracles.py', 'project_sparse_oracle.py'):
+                with self.subTest(source=name):
+                    GRAPH.SOURCE_PINS = dict(original, **{name: '00' * 32})
+                    with self.assertRaises(ValueError):
+                        GRAPH.verify_sources()
+        finally:
+            GRAPH.SOURCE_PINS = original
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
