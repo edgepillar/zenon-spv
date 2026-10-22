@@ -2,17 +2,18 @@
 # SPDX-License-Identifier: GPL-3.0-only
 """Controls for explicit child recipes; mocked records are isolated unit inputs."""
 import ast
-from contextlib import contextmanager
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 import copy
 import hashlib
 import importlib.util
+import io
 import json
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import threading
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 import unittest
 from unittest import mock
 
@@ -20,6 +21,7 @@ HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location("child_hex_control_subject", HERE / "selected_child_hex.py")
 C = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(C)
+RUN = C.load("selected_file_control_driver_subject", "run_file_controls.py")
 REVISION = "ab" * 20
 
 
@@ -45,7 +47,7 @@ def semantic_fingerprint(node):
 def control_module():
     program = ModuleType("controlled_test_local_dispatch")
     program.__file__ = str(HERE / C.CONTROL)
-    program.CLI_RUN = subprocess.run
+    program.subprocess = subprocess
     return program
 
 
@@ -84,14 +86,6 @@ class SelectedChildControls(unittest.TestCase):
         tree = ast.parse((HERE / C.CONTROL).read_bytes())
         cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "FileResourceControls")
 
-        class OriginalCalls(ast.NodeTransformer):
-            def visit_Name(self, node):
-                if node.id == "CLI_RUN":
-                    return ast.copy_location(ast.Attribute(value=ast.Name(id="subprocess", ctx=ast.Load()),
-                                                           attr="run", ctx=node.ctx), node)
-                return node
-
-        cls = OriginalCalls().visit(cls)
         self.assertEqual(semantic_fingerprint(cls),
                          "6b2b6acc4b6cbd13a035f951fd3fa2956552544b3cc51fd0fcb6d0cbaa62e424")
         self.assertEqual(len([n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name.startswith("test_")]), 23)
@@ -118,15 +112,25 @@ class SelectedChildControls(unittest.TestCase):
         self.assertEqual(C.sha((HERE / C.TARGET).read_bytes()), C.TARGET_SHA256)
         self.assertEqual(C.sha((HERE / C.CONTROL).read_bytes()), C.CONTROL_SHA256)
         real = C.load("unchanged_direct_cli_controls", C.CONTROL)
-        self.assertIs(real.CLI_RUN, subprocess.run)
+        self.assertIs(real.subprocess, subprocess)
+        self.assertEqual(C.sha((HERE / "run_target_hex.py").read_bytes()),
+                         "3bf4f6078adba2520bcbf9b750961e9d09569d7a50235447f1812a625c7c5231")
+
+    def test_all_189_recorded_source_inputs_remain_byte_identical(self):
+        document = json.loads((HERE / "testdata/successor-offline-rebuild.json").read_bytes())
+        expected = document["source"]["source_inputs"]
+        self.assertEqual(len(expected), 189)
+        self.assertEqual({name: C.sha((HERE / name).read_bytes()) for name in expected}, expected)
 
     def test_test_local_selection_restores_and_does_not_patch_subprocess(self):
         program = control_module()
         original = subprocess.run
         with C.selected_children(program, C.CONTROL, "translated", REVISION) as owner:
-            self.assertIs(program.CLI_RUN, owner.replacement)
+            self.assertIs(program.subprocess, owner.facade)
+            self.assertIs(program.subprocess.run, owner.replacement)
             self.assertIs(subprocess.run, original)
-        self.assertIs(program.CLI_RUN, original)
+        self.assertIs(program.subprocess, subprocess)
+        self.assertIs(subprocess.run, original)
         self.assertTrue(owner.closed)
 
     def test_exception_and_nested_selection_preserve_outer_owner(self):
@@ -136,16 +140,16 @@ class SelectedChildControls(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     with C.selected_children(program, C.CONTROL, "translated", REVISION):
                         self.fail("nested selection entered")
-                self.assertIs(program.CLI_RUN, owner.replacement)
+                self.assertIs(program.subprocess, owner.facade)
                 raise RuntimeError("controlled failure")
-        self.assertIs(program.CLI_RUN, subprocess.run)
+        self.assertIs(program.subprocess, subprocess)
 
     def test_replaced_dispatch_refuses_after_restoring_original(self):
         program = control_module()
         with self.assertRaises(ValueError):
             with C.selected_children(program, C.CONTROL, "translated", REVISION):
-                program.CLI_RUN = lambda *a, **k: None
-        self.assertIs(program.CLI_RUN, subprocess.run)
+                program.subprocess = None
+        self.assertIs(program.subprocess, subprocess)
 
     def test_unknown_program_mode_revision_and_owner_refuse_before_install(self):
         program = control_module()
@@ -154,7 +158,7 @@ class SelectedChildControls(unittest.TestCase):
             with self.assertRaises(ValueError):
                 with C.selected_children(program, selected, mode, revision):
                     self.fail("unselected scope entered")
-            self.assertIs(program.CLI_RUN, subprocess.run)
+            self.assertIs(program.subprocess, subprocess)
         program.__file__ = str(HERE / "other.py")
         with self.assertRaises(ValueError):
             C.SelectedChildren(program, "translated", REVISION)
@@ -165,7 +169,7 @@ class SelectedChildControls(unittest.TestCase):
             with mock.patch.object(C, name, "00" * 32):
                 with self.assertRaises(ValueError):
                     C.SelectedChildren(program, "translated", REVISION)
-            self.assertIs(program.CLI_RUN, subprocess.run)
+            self.assertIs(program.subprocess, subprocess)
 
     def test_cross_thread_invocation_refuses_without_a_child_launch(self):
         program = control_module()
@@ -319,6 +323,27 @@ class SelectedChildControls(unittest.TestCase):
             self.assertEqual(recipe["stdout_sha256"], C.sha(original.stdout))
             self.assertEqual(json.loads(result.stdout)["recorded_fresh_child_samples"], 180)
             self.assertFalse(recipe["reference_backend_executed"])
+
+    def test_new_driver_refuses_failed_skipped_filtered_or_untyped_suites(self):
+        for successful, skipped, count in ((False, [], 23), (True, ["omitted"], 23),
+                                           (True, [], 22), (True, [], True), (True, [], 23)):
+            program = RUN.HEX.load("controlled_new_driver_program", C.CONTROL)
+            outcome = SimpleNamespace(wasSuccessful=lambda: successful, skipped=skipped, testsRun=count)
+            captured = io.StringIO()
+            with mock.patch.object(RUN.HEX, "load", return_value=program), \
+                    mock.patch.object(RUN.unittest, "TextTestRunner") as runner, redirect_stdout(captured):
+                runner.return_value.run.return_value = outcome
+                with self.assertRaises(ValueError):
+                    RUN.main(["--mode", "translated", "--source-revision", REVISION])
+            self.assertEqual(captured.getvalue(), "")
+            self.assertIs(program.subprocess, subprocess)
+
+    def test_new_driver_has_no_program_filter_or_partial_suite_option(self):
+        for extra in (("--case", "one"), ("--program", "other.py"), ("--mode", "fast")):
+            with redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as error:
+                    RUN.main(["--mode", "translated", "--source-revision", REVISION, *extra])
+            self.assertEqual(error.exception.code, 2)
 
 
 if __name__ == "__main__":
