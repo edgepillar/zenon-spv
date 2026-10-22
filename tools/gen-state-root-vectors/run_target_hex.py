@@ -29,6 +29,8 @@ def main(argv=None):
     parser.add_argument('--source-revision', required=True)
     parser.add_argument('--reuse-graphs', action='store_true',
                         help='reuse bounded complete pure graph results for the selected driver checker only')
+    parser.add_argument('--reuse-child-hex', action='store_true',
+                        help='select three fresh file-checker CLIs with their own explicit hex recipes')
     args = parser.parse_args(argv)
     HEX.require(re.fullmatch(r'[0-9a-f]{40}', args.source_revision) is not None)
     runner_pin = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
@@ -41,10 +43,16 @@ def main(argv=None):
         graph.require(args.program in graph.SEAMS)
         graph.verify_sources()
     program = HEX.load('selected_target_hex_program', args.program)
+    children = None
+    if args.reuse_child_hex:
+        HEX.require(args.program == 'check_patch_file_resources_test.py')
+        children = HEX.load('explicit_selected_child_hex', 'selected_child_hex.py')
     tests_run = None
     control_names = []
     graph_scope = graph.selected_graphs(program, args.program) if graph is not None else nullcontext(None)
-    with graph_scope as reused, HEX.selected_oracles(program, args.program, args.mode) as bindings:
+    child_scope = (children.selected_children(program, args.program, args.mode, args.source_revision)
+                   if children is not None else nullcontext(None))
+    with child_scope as selected_children, graph_scope as reused, HEX.selected_oracles(program, args.program, args.mode) as bindings:
         if args.program.endswith('_test.py'):
             suite = unittest.defaultTestLoader.loadTestsFromModule(program)
             def names(tests):
@@ -65,6 +73,8 @@ def main(argv=None):
             program.main(arguments)
     HEX.require(hashlib.sha256(Path(__file__).read_bytes()).hexdigest() == runner_pin)
     bindings['current_execution_inputs']['run_target_hex.py'] = runner_pin
+    if selected_children is not None:
+        print(json.dumps(selected_children.report(), sort_keys=True, separators=(',', ':')))
     if reused is not None:
         graph_report = {
             'format_version': 1, 'kind': 'bounded-conformance-graph-reuse-execution',
