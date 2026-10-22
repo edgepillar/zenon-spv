@@ -11,6 +11,9 @@ import tempfile
 import unittest
 
 HERE = Path(__file__).resolve().parent
+# The default remains the direct original CLI. The optional execution runner
+# selects and restores this test-local dispatch without patching subprocess.
+CLI_RUN = subprocess.run
 spec = importlib.util.spec_from_file_location('file_resources_check', HERE / 'check_patch_file_resources.py')
 CHECK = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(CHECK)
@@ -46,12 +49,12 @@ class FileResourceControls(unittest.TestCase):
 
     def test_actual_CLI_success_and_invalid_revision_refusal(self):
         command = [sys.executable, '-I', '-B', str(HERE / 'check_patch_file_resources.py')]
-        result = subprocess.run(command + ['--source-revision', 'ab' * 20], capture_output=True)
+        result = CLI_RUN(command + ['--source-revision', 'ab' * 20], capture_output=True)
         self.assertEqual(result.returncode, 0)
         self.assertEqual(result.stderr, b'')
         self.assertEqual(json.loads(result.stdout)['recorded_fresh_child_samples'], 180)
         self.assertFalse(json.loads(result.stdout)['resource_measurements_executed_in_checker'])
-        result = subprocess.run(command + ['--source-revision', 'invalid'], capture_output=True)
+        result = CLI_RUN(command + ['--source-revision', 'invalid'], capture_output=True)
         self.assertEqual(result.returncode, 1)
         self.assertEqual(result.stdout, b'')
         self.assertEqual(result.stderr.strip(), b'Candidate file resource evidence failed; production acceptance remains disabled.')
@@ -62,7 +65,7 @@ class FileResourceControls(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / 'tampered.json'
             path.write_text(json.dumps(document))
-            result = subprocess.run([sys.executable, '-I', '-B', str(HERE / 'check_patch_file_resources.py'),
+            result = CLI_RUN([sys.executable, '-I', '-B', str(HERE / 'check_patch_file_resources.py'),
                                      '--corpus', str(path)], capture_output=True)
         self.assertEqual(result.returncode, 1)
         self.assertEqual(result.stdout, b'')
