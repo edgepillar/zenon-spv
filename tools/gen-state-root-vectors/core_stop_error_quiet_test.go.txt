@@ -1,0 +1,17 @@
+//go:build candidate_core_stop_errors
+
+// SPDX-License-Identifier: GPL-3.0-only
+// Bound verbose source-genesis logs only in the selected native test binary.
+package zenon
+
+import (
+	"github.com/inconshreveable/log15"
+	"github.com/zenon-network/go-zenon/common"
+)
+
+func init() {
+	// These handlers affect diagnostic logging, not return values, assertions,
+	// error propagation, database operations, or the ordinary comparison binary.
+	log15.Root().SetHandler(log15.DiscardHandler())
+	common.ChainLogger.SetHandler(log15.DiscardHandler())
+}
