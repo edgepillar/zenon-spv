@@ -23,6 +23,25 @@ spec.loader.exec_module(C)
 REVISION = "ab" * 20
 
 
+def semantic_ast(node):
+    """Keep parsed semantics; normalize only the version-added empty type list."""
+    if isinstance(node, ast.AST):
+        return {"node": type(node).__name__, "fields": {
+            name: semantic_ast(value) for name, value in ast.iter_fields(node)
+            if not (name == "type_params" and type(value) is list and not value)}}
+    if type(node) is list:
+        return [semantic_ast(value) for value in node]
+    if type(node) is bytes:
+        return {"literal_bytes_hex": node.hex()}
+    if node is None or type(node) in (str, int, float, bool):
+        return node
+    raise ValueError("Unselected AST field")
+
+
+def semantic_fingerprint(node):
+    return C.sha(json.dumps(semantic_ast(node), sort_keys=True, separators=(",", ":"), allow_nan=False).encode())
+
+
 def control_module():
     program = ModuleType("controlled_test_local_dispatch")
     program.__file__ = str(HERE / C.CONTROL)
@@ -73,9 +92,27 @@ class SelectedChildControls(unittest.TestCase):
                 return node
 
         cls = OriginalCalls().visit(cls)
-        self.assertEqual(C.sha(ast.dump(cls, include_attributes=False).encode()),
-                         "58464359c5654b5724a8e988a750acdd62ae9408f0efe1370123211d96638300")
+        self.assertEqual(semantic_fingerprint(cls),
+                         "6b2b6acc4b6cbd13a035f951fd3fa2956552544b3cc51fd0fcb6d0cbaa62e424")
         self.assertEqual(len([n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name.startswith("test_")]), 23)
+
+    def test_empty_version_added_type_parameters_do_not_change_semantics(self):
+        before = ast.parse("class C:\n    pass\n").body[0]
+        before._fields = tuple(name for name in before._fields if name != "type_params")
+        after = copy.deepcopy(before)
+        after._fields = (*before._fields, "type_params")
+        after.type_params = []
+        self.assertEqual(semantic_fingerprint(before), semantic_fingerprint(after))
+        after.type_params = [ast.Name(id="T", ctx=ast.Load())]
+        self.assertNotEqual(semantic_fingerprint(before), semantic_fingerprint(after))
+
+    def test_assertions_literals_and_order_remain_fingerprint_inputs(self):
+        baseline = semantic_fingerprint(ast.parse("assert True\n"))
+        for source in ("assert False\n", "assert 1\n", "assert b'True'\n", "assert True, 'changed'\n"):
+            self.assertNotEqual(baseline, semantic_fingerprint(ast.parse(source)))
+        first = ast.parse("assert True\nassert False\n")
+        second = ast.parse("assert False\nassert True\n")
+        self.assertNotEqual(semantic_fingerprint(first), semantic_fingerprint(second))
 
     def test_recorded_checker_and_selected_control_source_bytes_are_pinned(self):
         self.assertEqual(C.sha((HERE / C.TARGET).read_bytes()), C.TARGET_SHA256)
