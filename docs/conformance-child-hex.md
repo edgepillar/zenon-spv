@@ -50,13 +50,20 @@ hook and does not automatically modify later imports or subprocesses. The new
 child recipe describes three separate explicit selections. Neither report
 authenticates execution origin or establishes a production resource budget.
 
-Eighteen focused controls require the source/AST bindings, explicit dispatch
+Twenty focused controls require the source/AST bindings, explicit dispatch
 ownership, failure and nested restoration, thread ownership, exact command
 selection, complete report shape, actual exit/stream equality, bounded exclusive
 report files and independent returned records. Fresh ordinary CLI comparisons
 also require exact success and failure console parity with the direct original
 checker. Synthetic mocked records remain unit inputs, not native execution
 evidence. Hosted platform checks require their own exact-source qualification.
+
+The AST fingerprint encodes parsed node types, named fields, constants, bytes
+and ordered children directly. It normalizes only the empty `type_params` list
+added in newer Python grammars; nonempty type parameters, changed assertions,
+literal types and method order remain inputs. It does not depend on the
+version-specific debugging presentation of `ast.dump`. See the
+[Python AST grammar](https://docs.python.org/3.13/library/ast.html).
 
 Temporary reports belong to that fresh invocation and are removed after the
 joined child is checked. Protected qualification logs and recipes use the
@@ -76,9 +83,10 @@ fresh children with actual exits `0, 1, 1` and their unfiltered console bytes.
 | Direct original CLI children | 39.30 s | 39.96 s |
 | Explicit selected CLI children | 6.49 s | 6.49 s |
 
-The separate new 18-control suite took 21.65 seconds in that local run. It
-includes a fresh direct original success comparison, so its cost must also be
-included when assessing CI. The table measures the selected complete program,
+The separate 20-control suite took 21.27 seconds with Python 3.9 and 16.74
+seconds with Python 3.12 in two local passes. It includes a fresh direct
+original success comparison, so its cost must also be included when assessing CI.
+The table measures the selected complete program,
 including imports and joined children, and excludes task-storage supervision.
 It does not establish a whole-CI speedup, a memory peak or a production budget.
 The local revision argument was a synthetic test label; retained source inputs
