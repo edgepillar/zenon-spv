@@ -273,3 +273,14 @@ projected-driver readers keep their complete existing controls and recorded
 byte comparisons while sharing source-pinned pure results within each serial
 process. No disk cache, new node workload or runtime acceptance is introduced.
 Keep exact-head CI, artifact reconciliation and the separate M0–M5 gates.
+
+### Qualification cost: fresh file-checker processes
+
+Measured child waits and a separate original-checker profile select the
+[explicit child hex execution](conformance-child-hex.md). All 23 existing control
+methods remain required. A separate driver selects three fresh CLIs with the
+pinned original entrypoint and source/exit/console recipes. The original control
+and runner files stay byte-identical and the direct path remains available.
+No global import hook, disk cache, new node workload or runtime
+acceptance is introduced. Preserve exact-source CI, artifact reconciliation and
+the independent M0–M5 gates.
