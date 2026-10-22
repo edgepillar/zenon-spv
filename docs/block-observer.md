@@ -358,6 +358,23 @@ counts. A child that did not start has null status and zero stream counts.
 No paths, target identities, fingerprints, binary pins or raw errors are echoed.
 Count zero is a failed match, never evidence that an account or block is absent.
 
+On Linux and macOS, both Ctrl+C (`SIGINT`) and `SIGTERM` enter the existing
+cancellation path. The observer cancels and joins its direct child, closes the
+staged report and removes its private run files before returning exit 2 with
+category `cancelled`. A consumer's complete `matched` output cannot override
+that cancellation. Check the actual outer exit and complete summary as usual.
+This cleanup requires the process to run its cancellation path; abrupt process
+termination or power loss can still leave private files. Any state saved by an
+earlier explicit watch remains saved.
+
+`TestCompiledObserverSignalCancellation` runs the ordinary observer with
+controlled verifier and consumer children. Four native Linux/macOS cases
+check signal delivery during each phase, actual child completion, OS release
+of a child lifetime lock, private staging removal and unchanged input files.
+The Windows invocation explicitly skips this native signal-delivery test.
+These are process-lifecycle checks; the controlled children do not verify
+headers, run the strict consumer or establish network acceptance.
+
 Exit 0 means complete matching, 2 means refusal/process/limit failure, 64 means
 invalid invocation, and 70 means local setup, cleanup or output failure.
 Each bounded stream copy records a real read EOF without bypassing capped
