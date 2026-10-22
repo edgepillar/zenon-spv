@@ -11,86 +11,101 @@ took 57.48 seconds under profiling. Its pointwise hex predicate visited
 750,872,654 characters. Profiling changes cost; these samples do not measure
 ordinary CLI latency, memory peaks or a whole-CI improvement.
 
-## Explicit selection and unchanged checks
+## Separate driver and unchanged historical sources
 
-`run_target_hex.py --reuse-child-hex` selects a test-local CLI dispatch only for
-`check_patch_file_resources_test.py`. Each child is still a fresh interpreter.
-It imports the pinned original checker, selects the existing independently
-checked hex predicate in that process, and executes the original CLI entrypoint
-guard. The checker, its original error handler, recorded corpus, samples and
-producer source bindings are unchanged.
+`run_file_controls.py` is an explicit execution choice for the complete
+`check_patch_file_resources_test.py` suite. Each selected child is a fresh
+interpreter. It imports the pinned original checker, selects the existing
+independently checked hex predicate, and executes the original CLI entrypoint
+guard. The checker, error handler, recorded corpus, samples and producer bindings
+are unchanged.
 
-All 23 existing control methods, their assertions and their order remain
-required. The only changes inside those methods route the same three calls
-through the explicit dispatch. An AST fingerprint checks the entire original
-control class after restoring those three call names. Without the new option,
-the dispatch remains the original direct `subprocess.run`.
+The offline-rebuild corpus binds 189 research input files, including the original
+control file and `run_target_hex.py`. All 189 remain byte-identical. The new
+driver and test-local module facade have their own execution pins; no historical
+source record or manifest is rebound.
+
+All 23 original control methods, their assertions and order remain required.
+A semantic AST fingerprint checks the entire original control class. Only that
+already imported test module's `subprocess` binding selects a private facade;
+the global stdlib module and later imports remain unchanged. The default direct
+original path still uses the original `subprocess.run`.
 
 The selection changes no prospective-map copies, entry/byte limits, refusal
 order or recorded resource values. It uses the existing bounded builtin-string
-translation implementation; it introduces no new result cache, disk cache,
-incremental counter, backend, Go build or reference execution.
+translation implementation. It creates no result cache, disk cache, incremental
+counter, backend, Go build or reference execution.
 
 ## Console, source and completion binding
 
-The child writes a separate bounded canonical recipe to a new report file in
-the caller's owned temporary directory. It never appends that recipe to the
-original console. Native text encoding and newline handling occur before the
-captured bytes are emitted unchanged, including Windows CRLF behavior.
+Each child writes a bounded canonical recipe to a new report file in the
+caller's owned temporary directory. It never appends a recipe to the original
+console. Native text encoding and newline handling occur before the captured
+bytes are emitted unchanged, including Windows CRLF behavior.
 
 The parent checks complete source bindings from a separate import, selected
 mode/revision, helper source, restored function ownership and the actual child's
-exit and complete captured stdout/stderr bytes. Expected negative exits remain
-negative; a declared exit cannot substitute for the actual subprocess result.
-The complete parent recipe requires three children with exits `0, 1, 1`, the
-original 23 passing controls and restored dispatch ownership.
+exit and complete stdout/stderr. Expected negative exits remain negative; a
+declared exit cannot substitute for the actual subprocess result. A complete
+execution recipe requires three children with exits `0, 1, 1`, all 23 passing
+controls and restored test-module ownership.
 
-The original parent hex recipe keeps its own scope: it still installs no import
-hook and does not automatically modify later imports or subprocesses. The new
-child recipe describes three separate explicit selections. Neither report
-authenticates execution origin or establishes a production resource budget.
+The original parent hex recipe keeps its own scope: it installs no import hook
+and does not automatically modify later imports or subprocesses. The new child
+recipe describes three separate explicit selections. The parent execution
+recipe pins `run_file_controls.py` as the actual driver. It does not claim that
+`run_target_hex.py` executed. Neither report authenticates execution origin or
+establishes a production resource budget.
 
-Twenty focused controls require the source/AST bindings, explicit dispatch
-ownership, failure and nested restoration, thread ownership, exact command
-selection, complete report shape, actual exit/stream equality, bounded exclusive
-report files and independent returned records. Fresh ordinary CLI comparisons
-also require exact success and failure console parity with the direct original
-checker. Synthetic mocked records remain unit inputs, not native execution
-evidence. Hosted platform checks require their own exact-source qualification.
+The focused controls require source/AST bindings, explicit facade ownership,
+failure and nested restoration, thread ownership, exact command selection,
+complete report shape, actual exit/stream equality, bounded exclusive report
+files, independent returned records and preservation of all 189 historical
+source inputs. They also refuse filtered, skipped, incomplete or untyped suites.
+Fresh ordinary CLI comparisons require exact success and failure console parity
+with the direct original checker. Synthetic mocked records remain unit inputs.
+Hosted checks need their own exact-source qualification.
 
 The AST fingerprint encodes parsed node types, named fields, constants, bytes
 and ordered children directly. It normalizes only the empty `type_params` list
-added in newer Python grammars; nonempty type parameters, changed assertions,
+added in newer Python grammars; nonempty parameters, changed assertions,
 literal types and method order remain inputs. It does not depend on the
 version-specific debugging presentation of `ast.dump`. See the
 [Python AST grammar](https://docs.python.org/3.13/library/ast.html).
 
-Temporary reports belong to that fresh invocation and are removed after the
+Temporary reports belong to the fresh invocation and are removed after its
 joined child is checked. Protected qualification logs and recipes use the
 approved task-storage workflow. Historical evidence, worktrees and unpublished
 storage-tool changes are outside this work.
 
-## Local complete-program comparison
+## Complete-program comparison
 
-One uninstrumented local comparison preselected baseline, selected, selected,
-baseline order. Each invocation used a fresh parent interpreter and completed
-all 23 existing methods. Every complete parent hex-recipe object and ordered
-method list was identical. Each selected invocation additionally bound three
-fresh children with actual exits `0, 1, 1` and their unfiltered console bytes.
+Compare the complete direct-original and explicitly selected paths in fresh
+processes, preserving all 23 method identities and results. Their source and
+semantic bindings must match after excluding only the independently checked
+execution-driver provenance. The different driver file and its SHA-256 remain
+explicit; neither execution is relabelled as the other.
 
-| Complete 23-control program | First observation | Second observation |
+One local uninstrumented sequence used baseline, selected, selected, baseline
+order. All four invocations completed the original 23 methods. The projected
+parent recipes matched exactly, with only the separately verified current
+driver source entry excluded from that comparison.
+
+| Complete original 23-control program | First observation | Second observation |
 | --- | ---: | ---: |
-| Direct original CLI children | 39.30 s | 39.96 s |
-| Explicit selected CLI children | 6.49 s | 6.49 s |
+| Original direct CLI children | 38.89 s | 39.80 s |
+| Separate driver with explicit child selections | 6.53 s | 6.39 s |
 
-The separate 20-control suite took 21.27 seconds with Python 3.9 and 16.74
-seconds with Python 3.12 in two local passes. It includes a fresh direct
-original success comparison, so its cost must also be included when assessing CI.
-The table measures the selected complete program,
-including imports and joined children, and excludes task-storage supervision.
-It does not establish a whole-CI speedup, a memory peak or a production budget.
-The local revision argument was a synthetic test label; retained source inputs
-identify the precommit programs separately from hosted exact-source execution.
+The focused 23-control suite separately took 21.86 seconds with Python 3.9 and
+17.25 seconds with Python 3.12 on the same local host. These are individual
+observations, not an interpreter or whole-CI performance comparison. The prior
+7 offline-rebuild, 29 hex and 16 batch controls also passed unchanged.
+
+The separate focused suite includes a fresh direct-original success comparison,
+so its cost must also be included when assessing CI. Program timings include
+imports and joined children and exclude task-storage supervision. Finite local
+observations do not establish a whole-CI speedup, memory peak or production
+budget. Local test revision labels are distinct from hosted source qualification.
 
 ## Reproduce
 
@@ -100,7 +115,7 @@ Both complete execution paths remain available:
 ```sh
 python -I -B tools/gen-state-root-vectors/selected_child_hex_test.py -v
 python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_file_resources_test.py --mode translated --source-revision "$SOURCE_REVISION"
-python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_file_resources_test.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-child-hex
+python -I -B tools/gen-state-root-vectors/run_file_controls.py --mode translated --source-revision "$SOURCE_REVISION"
 ```
 
 This is qualification maintenance. Native inclusion trust inputs, the frozen

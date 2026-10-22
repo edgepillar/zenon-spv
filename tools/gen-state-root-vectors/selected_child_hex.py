@@ -28,7 +28,7 @@ TOOL = Path(__file__).resolve()
 TARGET = "check_patch_file_resources.py"
 CONTROL = "check_patch_file_resources_test.py"
 TARGET_SHA256 = "10cfa1e7af12ed8047e86a43e1713ad8c5b24bd02861d19ff6f546868a04f8cc"
-CONTROL_SHA256 = "c1a4e70959e8be8501a6be0ee178a442cf361f08b92abeafc9f42a1d1c0ee867"
+CONTROL_SHA256 = "a3d4f3cf1c1d2ede29ba0a55045c1fe83b3d824a05d8678c12c7aa12efa7a84a"
 MAX_REPORT_BYTES = 256 << 10
 KINDS = ("valid-revision", "invalid-revision", "tampered-corpus")
 REPORT_FIELDS = frozenset(("format_version", "kind", "execution_revision", "program", "mode",
@@ -162,9 +162,14 @@ class SelectedChildren:
         require(sha((HERE / TARGET).read_bytes()) == TARGET_SHA256)
         require(type(mode) is str and mode in ("reference", "translated")
                 and type(revision) is str and re.fullmatch("[0-9a-f]{40}", revision) is not None)
-        require(getattr(program, "CLI_RUN", None) is subprocess.run)
+        require(getattr(program, "subprocess", None) is subprocess)
         self.program, self.mode, self.revision = program, mode, revision
-        self.original, self.replacement = program.CLI_RUN, self.invoke
+        self.original, self.replacement = program.subprocess, self.invoke
+        # A private module facade changes only this already imported test
+        # module's binding. The recorded file and global stdlib stay unchanged.
+        self.facade = ModuleType("explicit_selected_child_subprocess")
+        vars(self.facade).update(vars(subprocess))
+        self.facade.run = self.replacement
         self.tool_pin = sha(TOOL.read_bytes())
         self.thread, self.records, self.closed = threading.get_ident(), [], False
         # Derive the expected complete recipe from a separate private import.
@@ -176,7 +181,8 @@ class SelectedChildren:
 
     def invoke(self, argv, **kwargs):
         require(not self.closed and threading.get_ident() == self.thread)
-        require(self.program.CLI_RUN is self.replacement and len(self.records) < 3)
+        require(self.program.subprocess is self.facade and self.facade.run is self.replacement
+                and len(self.records) < 3)
         require(type(argv) is list and all(type(value) is str for value in argv))
         require(kwargs == {"capture_output": True})
         require(argv[:4] == [sys.executable, "-I", "-B", str(HERE / TARGET)])
@@ -235,12 +241,12 @@ class SelectedChildren:
 def selected_children(program, selected, mode, revision):
     require(selected == CONTROL)
     owner = SelectedChildren(program, mode, revision)
-    program.CLI_RUN = owner.replacement
+    program.subprocess = owner.facade
     try:
         yield owner
     finally:
-        intact = program.CLI_RUN is owner.replacement
-        program.CLI_RUN = owner.original
+        intact = program.subprocess is owner.facade and owner.facade.run is owner.replacement
+        program.subprocess = owner.original
         owner.closed = True
         require(intact and sha(TOOL.read_bytes()) == owner.tool_pin
                 and sha((HERE / CONTROL).read_bytes()) == CONTROL_SHA256)
