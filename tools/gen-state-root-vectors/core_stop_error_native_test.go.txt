@@ -1,0 +1,89 @@
+//go:build candidate_core_stop_errors
+
+// SPDX-License-Identifier: GPL-3.0-only
+package zenon
+
+import (
+	"errors"
+	"testing"
+
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/zenon-network/go-zenon/chain/genesis"
+)
+
+func candidateCoreStopOwned(t *testing.T) Zenon {
+	t.Helper()
+	g, err := genesis.MakeEmbeddedGenesisConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	z, err := NewZenon(&Config{MinPeers: 1, MinConnectedPeers: 1,
+		DataDir: t.TempDir(), GenesisConfig: g, StateTreeArchive: false})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if z.Config().ProducingKeyPair != nil || z.Producer().GetCoinBase() != nil {
+		t.Fatal("experiment must remain keyless")
+	}
+	return z
+}
+func candidateCoreStopLeaves(err error) []error {
+	if err == nil {
+		return nil
+	}
+	if joined, ok := err.(interface{ Unwrap() []error }); ok {
+		var result []error
+		for _, child := range joined.Unwrap() {
+			result = append(result, candidateCoreStopLeaves(child)...)
+		}
+		return result
+	}
+	return []error{err}
+}
+func TestCandidateCoreStopError_HealthyConstructorStop(t *testing.T) {
+	z := candidateCoreStopOwned(t)
+	if err := z.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	if CandidateCoreStopConsensusStatus(z) != "closed" {
+		t.Fatal("healthy Stop left its consensus database open")
+	}
+}
+func TestCandidateCoreStopError_CacheFailureStillClosesConsensus(t *testing.T) {
+	z := candidateCoreStopOwned(t)
+	if err := CandidateCoreStopCloseCacheHandle(z); err != nil {
+		t.Fatal(err)
+	}
+	if CandidateCoreStopConsensusStatus(z) != "open" {
+		t.Fatal("control database was not open before Stop")
+	}
+	err := z.Stop()
+	if !errors.Is(err, leveldb.ErrClosed) || len(candidateCoreStopLeaves(err)) != 1 {
+		t.Fatalf("real cache close error was not retained: %v", err)
+	}
+	if CandidateCoreStopConsensusStatus(z) != "closed" {
+		t.Fatal("cache close error prevented consensus database cleanup")
+	}
+}
+func TestCandidateCoreStopError_BothCloseErrorsAreRetained(t *testing.T) {
+	z := candidateCoreStopOwned(t)
+	if err := CandidateCoreStopCloseCacheHandle(z); err != nil {
+		t.Fatal(err)
+	}
+	if err := CandidateCoreStopCloseConsensusHandle(z); err != nil {
+		t.Fatal(err)
+	}
+	err := z.Stop()
+	leaves := candidateCoreStopLeaves(err)
+	if !errors.Is(err, leveldb.ErrClosed) || len(leaves) != 2 {
+		t.Fatalf("Stop must retain both genuine close errors: %v", err)
+	}
+	for _, leaf := range leaves {
+		if leaf != leveldb.ErrClosed {
+			t.Fatalf("unexpected error leaf: %v", leaf)
+		}
+	}
+	if CandidateCoreStopConsensusStatus(z) != "closed" {
+		t.Fatal("consensus handle status changed")
+	}
+}

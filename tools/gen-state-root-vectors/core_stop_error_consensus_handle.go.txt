@@ -1,0 +1,35 @@
+//go:build candidate_core_stop_errors
+
+// SPDX-License-Identifier: GPL-3.0-only
+package zenon
+
+import (
+	"errors"
+
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/zenon-network/go-zenon/chain"
+)
+
+func candidateCoreStopConcrete(value Zenon) *zenon {
+	z, ok := value.(*zenon)
+	if !ok {
+		panic("selected concrete core manager required")
+	}
+	return z
+}
+func CandidateCoreStopCloseCacheHandle(value Zenon) error {
+	return chain.CandidateCoreStopCloseCacheHandle(candidateCoreStopConcrete(value).chain)
+}
+func CandidateCoreStopCloseConsensusHandle(value Zenon) error {
+	return candidateCoreStopConcrete(value).levelDb.Close()
+}
+func CandidateCoreStopConsensusStatus(value Zenon) string {
+	_, err := candidateCoreStopConcrete(value).levelDb.Has([]byte("candidate-stop-read-only-check"), nil)
+	if err == nil {
+		return "open"
+	}
+	if errors.Is(err, leveldb.ErrClosed) {
+		return "closed"
+	}
+	return "other:" + err.Error()
+}
