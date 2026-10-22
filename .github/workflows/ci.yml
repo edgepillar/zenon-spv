@@ -107,6 +107,8 @@ jobs:
           go test -v -count=1 -run '^TestCompiledAdvancingBlockObserver$' ./internal/conformance
       - name: Advancing observer persistence controls
         run: go test -v -count=1 -run '^TestCompiledAdvancingObserverPersistence$' ./internal/conformance
+      - name: Observer signal cancellation controls
+        run: go test -v -count=1 -run '^TestCompiledObserverSignalCancellation$' ./internal/conformance
       - name: Independent consumer controls
         run: python -I -B tools/check-query-consumer_test.py
       - name: Independent node consumer controls
@@ -724,6 +726,8 @@ jobs:
           go test -v -count=1 -run '^TestCompiledAdvancingBlockObserver$' ./internal/conformance
       - name: Advancing observer persistence controls
         run: go test -v -count=1 -run '^TestCompiledAdvancingObserverPersistence$' ./internal/conformance
+      - name: Observer signal cancellation controls
+        run: go test -v -count=1 -run '^TestCompiledObserverSignalCancellation$' ./internal/conformance
       - name: Independent consumer controls
         run: python -I -B tools/check-query-consumer_test.py
       - name: Independent node consumer controls

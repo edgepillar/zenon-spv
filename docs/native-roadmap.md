@@ -46,6 +46,11 @@ checks exact targets, context/tip, required guarantees and allowed trust.
 The [outer reader](observer-report-consumer.md) additionally checks the actual
 observer completion through its protected report channel.
 
+The ordinary observer also routes Linux/macOS interrupt and termination
+signals through cancellation, joined child completion and private staging
+cleanup. Controlled verifier/consumer processes exercise those boundaries;
+they leave the real consumer, network and trust-input acceptance gates open.
+
 Before collecting another candidate, the consumer owner and operator select:
 
 - The concrete read-only use, exact real account address/height/hash targets,
