@@ -25,6 +25,13 @@ control file and `run_target_hex.py`. All 189 remain byte-identical. The new
 driver and test-local module facade have their own execution pins; no historical
 source record or manifest is rebound.
 
+The helper resolves the fresh directory returned by `TemporaryDirectory` before
+constructing its report filename. This supports platforms whose default temporary
+root has symlink ancestors. Explicit CLI report paths still pass the original
+strict component checks, exclusive creation, size bound and readback identity
+checks. The report controls also check refusal of the unresolved alias when the
+platform supplies one.
+
 All 23 original control methods, their assertions and order remain required.
 A semantic AST fingerprint checks the entire original control class. Only that
 already imported test module's `subprocess` binding selects a private facade;

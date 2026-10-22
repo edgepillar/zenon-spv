@@ -197,7 +197,9 @@ class SelectedChildren:
             kind = "tampered-corpus"
         require(kind == KINDS[len(self.records)])
         with tempfile.TemporaryDirectory(prefix="selected-child-hex-") as temporary:
-            path = Path(temporary) / "execution.json"
+            # Resolve only the fresh directory we just created. The CLI still
+            # validates every component of the supplied report path strictly.
+            path = Path(temporary).resolve(strict=True) / "execution.json"
             command = [sys.executable, "-I", "-B", str(TOOL), "--mode", self.mode,
                        "--execution-revision", self.revision, "--report", str(path), "--", *arguments]
             result = subprocess.run(command, capture_output=True, timeout=60)
