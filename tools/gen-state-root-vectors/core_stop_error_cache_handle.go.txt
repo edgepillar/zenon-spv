@@ -1,0 +1,21 @@
+//go:build candidate_core_stop_errors
+
+// SPDX-License-Identifier: GPL-3.0-only
+// Close only the selected concrete cache handle in an owned finite experiment.
+package storage
+
+func CandidateCoreStopCloseCacheHandle(value CacheManager) error {
+	m, ok := value.(*cacheManager)
+	if !ok {
+		panic("selected concrete cache manager required")
+	}
+	m.changes.Lock()
+	defer m.changes.Unlock()
+	if m.stopped || m.ldb == nil {
+		panic("unselected cache lifecycle")
+	}
+	// Leave the manager's lifecycle flags intact so its real Stop observes the
+	// underlying handle's genuine ErrClosed result. This is a controlled fault,
+	// not a disk, power-loss, concurrent-operation or network failure.
+	return m.ldb.Close()
+}
