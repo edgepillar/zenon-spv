@@ -1,0 +1,14 @@
+//go:build candidate_core_stop_errors
+
+// SPDX-License-Identifier: GPL-3.0-only
+package chain
+
+import cache "github.com/zenon-network/go-zenon/chain/cache/storage"
+
+func CandidateCoreStopCloseCacheHandle(value Chain) error {
+	c, ok := value.(*chain)
+	if !ok {
+		panic("selected concrete chain required")
+	}
+	return cache.CandidateCoreStopCloseCacheHandle(c.cacheManager)
+}

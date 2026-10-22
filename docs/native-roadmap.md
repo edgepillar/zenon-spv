@@ -169,6 +169,16 @@ attempt remains UNKNOWN. No wallet or peer server is started, and these finite
 results do not qualify repeated Stop, concurrent lifecycle, consensus validity
 or a full node. M2 agreement and state-value acceptance remain open/refused.
 
+The [core-manager close-error comparison](core-stop-error-cleanup.md) checks the
+next cleanup boundary with real owned handles. A cache close error left the
+baseline's final consensus database open; the successor finishes cleanup and
+retains both genuine errors in the two-handle control. Six ordinary processes,
+53 native roots and 62 passes bind the selected behavior. The ordinary node
+entry point compiled and was not executed. An output-capped test attempt stays
+failed; a test-only diagnostic handler bounded the resumed output without
+repeating successful comparison processes. These results do not close the
+agreement, accepted-header, realistic-workload or independent-review gates.
+
 For M3, obtain the expected root from the owned accepted v3 header/context.
 Derive the selected address/token key locally and carry exact presence,
 absence and value semantics through transport, saved state and the consumer.

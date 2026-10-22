@@ -1,5 +1,13 @@
 # Conformance
 
+The [core-manager close-error experiment](core-stop-error-cleanup.md) records six
+ordinary owned-manager processes and a 53-root/62-result native suite. The
+successor closes the final database after a real cache close error and retains
+both errors when both handles were preclosed. Portable CI checks the source,
+recorded streams and independent model; it does not rerun the Darwin reference
+backend. Node entry-point compilation is recorded separately from execution.
+State-value acceptance remains refused.
+
 The SPV's conformance is governed by `zenon-spv-vault/spec/spv-implementation-guide.md` §8 and §10.
 
 For the trust-model framing that wraps these guarantees, see
