@@ -293,6 +293,10 @@ jobs:
         run: python -I -B -m unittest discover -s tools/gen-state-root-vectors -p "*public_chain_proof_workload_test.py" -v
       - name: Independent recorded public Chain proof workload
         run: python -I -B tools/gen-state-root-vectors/check_public_chain_proof_workload.py --source-revision "${{ github.sha }}"
+      - name: Public Chain read and Stop controls
+        run: python -I -B -m unittest discover -s tools/gen-state-root-vectors -p "*public_chain_proof_stop_test.py" -v
+      - name: Independent recorded public Chain read and Stop
+        run: python -I -B tools/gen-state-root-vectors/check_public_chain_proof_stop.py --source-revision "${{ github.sha }}"
       - name: Successor raw store codec controls
         run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
       - name: Successor raw store independent model controls
@@ -916,6 +920,10 @@ jobs:
         run: python -I -B -m unittest discover -s tools/gen-state-root-vectors -p "*public_chain_proof_workload_test.py" -v
       - name: Independent recorded public Chain proof workload
         run: python -I -B tools/gen-state-root-vectors/check_public_chain_proof_workload.py --source-revision "${{ github.sha }}"
+      - name: Public Chain read and Stop controls
+        run: python -I -B -m unittest discover -s tools/gen-state-root-vectors -p "*public_chain_proof_stop_test.py" -v
+      - name: Independent recorded public Chain read and Stop
+        run: python -I -B tools/gen-state-root-vectors/check_public_chain_proof_stop.py --source-revision "${{ github.sha }}"
       - name: Successor raw store codec controls
         run: python -I -B tools/gen-state-root-vectors/raw_kv_roundtrip_codec_test.py -v
       - name: Successor raw store independent model controls

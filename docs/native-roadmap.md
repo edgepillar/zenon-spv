@@ -204,6 +204,15 @@ collector is preserved while its completed first case is reused without another
 build or case retry. Full VM, import/churn/retention concurrency, activation and
 the accepted-header state-value gates remain open.
 
+The [public Chain read/Stop observations](public-chain-proof-stop.md) extend that
+work to a finite concurrent batch against real managers. The race recording has
+one successful caller interval overlapping Stop. The ordinary recording has none
+and remains `INCONCLUSIVE`; combined overlap qualification remains false. The
+portable reader checks the retained corrected-process outputs and preserves that distinction. A
+producer framing correction retains the first failure and leaves the independent
+witness catalog and candidate runtime unchanged. No internal database interleaving,
+production resource budget, full M4 workload or accepted-header proof is established.
+
 ## Separate consensus research
 
 Specify authenticated election inputs, slot authorization, producer transitions,
