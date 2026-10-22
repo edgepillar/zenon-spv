@@ -367,8 +367,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_file_test.py
       - name: Recorded file handoff and complete owned map bindings (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/check_patch_file.py --source-revision "${{ github.sha }}"
+      - name: Explicit child hex execution controls
+        run: python -I -B tools/gen-state-root-vectors/selected_child_hex_test.py -v
       - name: Whole opened file handoff resource evidence controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_file_resources_test.py --mode translated --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_file_controls.py --mode translated --source-revision "${{ github.sha }}"
       - name: Recorded whole file handoff samples (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_file_resources.py --mode translated --source-revision "${{ github.sha }}"
       - name: Complete file to NodeTree handoff evidence controls
@@ -994,8 +996,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_file_test.py
       - name: Recorded file handoff and complete owned map bindings (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/check_patch_file.py --source-revision "${{ github.sha }}"
+      - name: Explicit child hex execution controls
+        run: python -I -B tools/gen-state-root-vectors/selected_child_hex_test.py -v
       - name: Whole opened file handoff resource evidence controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_file_resources_test.py --mode translated --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_file_controls.py --mode translated --source-revision "${{ github.sha }}"
       - name: Recorded whole file handoff samples (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_file_resources.py --mode translated --source-revision "${{ github.sha }}"
       - name: Complete file to NodeTree handoff evidence controls
