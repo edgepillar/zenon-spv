@@ -265,7 +265,11 @@ class SelectedChildControls(unittest.TestCase):
 
     def test_new_report_is_exclusive_canonical_and_bounded(self):
         with tempfile.TemporaryDirectory() as temporary:
-            path = Path(temporary) / "report.json"
+            logical = Path(temporary) / "report.json"
+            path = Path(temporary).resolve(strict=True) / "report.json"
+            if any(ancestor.is_symlink() for ancestor in logical.parents):
+                with self.assertRaises(ValueError):
+                    C.report_destination(logical)
             C.write_report(C.report_destination(path), {"kind": "isolated-unit-control"})
             self.assertEqual(C.read_report(path), {"kind": "isolated-unit-control"})
             before = path.read_bytes()
@@ -280,7 +284,7 @@ class SelectedChildControls(unittest.TestCase):
 
     def test_existing_report_refuses_before_import_or_computation(self):
         with tempfile.TemporaryDirectory() as temporary:
-            path = Path(temporary) / "retained.json"
+            path = Path(temporary).resolve(strict=True) / "retained.json"
             path.write_bytes(b"retained original bytes")
             with mock.patch.object(C, "load") as load:
                 with self.assertRaises(ValueError):
@@ -291,7 +295,7 @@ class SelectedChildControls(unittest.TestCase):
 
     def test_actual_fresh_child_preserves_original_failure_console_and_guard(self):
         with tempfile.TemporaryDirectory() as temporary:
-            path = Path(temporary) / "execution.json"
+            path = Path(temporary).resolve(strict=True) / "execution.json"
             result = subprocess.run([sys.executable, "-I", "-B", str(C.TOOL), "--mode", "translated",
                                      "--execution-revision", REVISION, "--report", str(path),
                                      "--", "--source-revision", "invalid"], capture_output=True, timeout=60)
@@ -309,7 +313,7 @@ class SelectedChildControls(unittest.TestCase):
 
     def test_actual_fresh_child_success_is_byte_identical_to_direct_original(self):
         with tempfile.TemporaryDirectory() as temporary:
-            path = Path(temporary) / "execution.json"
+            path = Path(temporary).resolve(strict=True) / "execution.json"
             original = subprocess.run([sys.executable, "-I", "-B", str(HERE / C.TARGET),
                                        "--source-revision", REVISION], capture_output=True, timeout=180)
             result = subprocess.run([sys.executable, "-I", "-B", str(C.TOOL), "--mode", "translated",
