@@ -195,6 +195,15 @@ and recomputed SMT roots are distinct objects. A partial root cannot authenticat
 excluded state. Keep actual node execution, current replay checks, allocation,
 process memory, disk and whole-pipeline latency scopes separate.
 
+The [public Chain proof workload](public-chain-proof-workload.md) adds real disk
+ledger/cache/tree requests on source-genesis data. One ordinary binary serves
+four preselected processes, including fresh-process reopen; 128 independent
+witnesses bind all 16,384 timed request pairs. Single observations with 1, 4 and
+16 workers do not qualify a concurrency speedup or production budget. A failed
+collector is preserved while its completed first case is reused without another
+build or case retry. Full VM, import/churn/retention concurrency, activation and
+the accepted-header state-value gates remain open.
+
 ## Separate consensus research
 
 Specify authenticated election inputs, slot authorization, producer transitions,
