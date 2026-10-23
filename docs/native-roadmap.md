@@ -299,6 +299,10 @@ Measured hosted step durations and a local reader profile select the
 projected-driver readers keep their complete existing controls and recorded
 byte comparisons while sharing source-pinned pure results within each serial
 process. No disk cache, new node workload or runtime acceptance is introduced.
+The import-scale, child-lifecycle and sparse-projection selections additionally
+retain all 90 original controls. Selected local comparisons preserve every
+original report object while trading about 44–54 MiB of child RSS for less
+repeated hashing; representative workload and whole-CI gains remain unqualified.
 Keep exact-head CI, artifact reconciliation and the separate M0–M5 gates.
 
 ### Qualification cost: fresh file-checker processes
