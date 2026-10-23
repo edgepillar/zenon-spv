@@ -191,6 +191,12 @@ The codec returns untrusted data and keeps the native version gate, saved
 context and state-value refusal unchanged. It is M3 format preparation;
 profile agreement and an actually accepted header remain required.
 
+The [native candidate sparse proof comparison](candidate-smt-proof.md) adds
+bounded proof reconstruction and local address/token key derivation. It preserves
+the original 41 node outcomes, explicit zero/absence and encoding differences.
+Its caller-selected root is still unauthenticated; this primitive does not
+construct accepted state or complete M3.
+
 For M3, obtain the expected root from the owned accepted v3 header/context.
 Derive the selected address/token key locally and carry exact presence,
 absence and value semantics through transport, saved state and the consumer.
