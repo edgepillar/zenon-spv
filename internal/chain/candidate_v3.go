@@ -60,7 +60,7 @@ func (c CandidateV3Header) Preimage() ([CandidateV3HeaderPreimageSize]byte, erro
 	buf = append(buf, h.ChangesHash[:]...)
 	buf = appendUint64(buf, h.NextFusionPrice)
 	buf = appendUint64(buf, h.NextWorkPrice)
-	buf = append(buf, c.StateRoot[:]...)
+	copy(preimage[len(buf):], c.StateRoot[:])
 	return preimage, nil
 }
 

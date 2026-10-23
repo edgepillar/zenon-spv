@@ -60,6 +60,13 @@ Run the focused native controls with:
 go test -race -count=1 -json -run '^TestCandidateV3Header' ./internal/chain
 ```
 
+Before publishing Go changes, also run the repository's five enabled linters
+with the CI version, golangci-lint v2.6.2:
+
+```sh
+golangci-lint run --config .golangci.yml --timeout=5m
+```
+
 Eight top-level tests and 141 named subtests compare the recorded preimages
 and hashes, exercise complete-field and representation failures, enforce the
 byte limit and check failure atomicity. Dummy key/signature bytes exercise
