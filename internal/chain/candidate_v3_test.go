@@ -47,7 +47,11 @@ func candidateV3References(t *testing.T) []candidateV3Reference {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			t.Errorf("close recorded node fixture: %v", err)
+		}
+	}()
 	raw, err := io.ReadAll(io.LimitReader(f, 152438))
 	if err != nil {
 		t.Fatal(err)
