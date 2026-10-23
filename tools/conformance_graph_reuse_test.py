@@ -555,5 +555,74 @@ class ExpandedGraphReuseControls(unittest.TestCase):
             GRAPH.SOURCE_PINS = original
 
 
+class SelectedOracleGraphReuseControls(ExpandedGraphReuseControls):
+    """Run the established ownership checks against every additional selection."""
+    SELECTIONS = {
+        'check_tree_import_scale.py': 4,
+        'check_tree_import_scale_test.py': 4,
+        'check_tree_import_lifecycle.py': 4,
+        'check_tree_import_lifecycle_test.py': 4,
+        'check_oracle_projection.py': 8,
+        'check_oracle_projection_test.py': 8,
+    }
+
+    def test_every_added_checker_control_source_pin_is_required(self):
+        original = GRAPH.SOURCE_PINS
+        try:
+            for name in ('check_tree_import_scale_test.py',
+                         'check_tree_import_lifecycle_test.py',
+                         'check_oracle_projection_test.py'):
+                with self.subTest(source=name):
+                    GRAPH.SOURCE_PINS = dict(original, **{name: '00' * 32})
+                    with self.assertRaises(ValueError):
+                        GRAPH.verify_sources()
+        finally:
+            GRAPH.SOURCE_PINS = original
+
+    def test_selection_requires_the_declared_program_file(self):
+        names = tuple(self.SELECTIONS)
+        for index, selected in enumerate(names):
+            with self.subTest(program=selected):
+                selected_program = program(selected)
+                seams, _ = GRAPH.selected_seams(selected_program, selected)
+                other = names[(index + 1) % len(names)]
+                with self.assertRaises(ValueError):
+                    with GRAPH.selected_graphs(selected_program, other):
+                        self.fail('A different program file entered the context')
+                self.assertTrue(all(module.graph is original
+                                    for _, module, original, _ in seams))
+
+    def test_later_checker_imports_keep_their_original_functions(self):
+        for selected in self.SELECTIONS:
+            with self.subTest(program=selected):
+                selected_program = program(selected)
+                with GRAPH.selected_graphs(selected_program, selected) as scope:
+                    later = program(selected)
+                    seams, _ = GRAPH.selected_seams(later, selected)
+                    for _, module, original, _ in seams:
+                        self.assertTrue(GRAPH.same_function(
+                            original, GRAPH.REFERENCE.graph, module))
+                    seams[-1][1].graph(state())
+                    self.assertEqual(scope.requests, 0)
+                self.assertTrue(scope.report()['selected_functions_restored'])
+
+    def test_entry_bounds_keep_complete_results_for_each_checker(self):
+        for selected in self.SELECTIONS:
+            with self.subTest(program=selected):
+                selected_program = program(selected)
+                with GRAPH.selected_graphs(selected_program, selected,
+                                           max_entries=1) as scope:
+                    module = scope.seams[-1][1]
+                    for value in (state(0), state(1), state(0)):
+                        self.assertEqual(module.graph(value),
+                                         GRAPH.REFERENCE.graph(value))
+                report = scope.report()
+                self.assertEqual((report['original_graph_calls'],
+                                  report['cache_hits'], report['evictions']),
+                                 (3, 0, 2))
+                self.assertEqual(report['peak_entries'], 1)
+                self.assertTrue(report['cache_cleared'])
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

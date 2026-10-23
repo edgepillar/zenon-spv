@@ -18,10 +18,16 @@ existing test programs. Their respectively selected graph instance counts are
 four, twelve and twelve; the projected driver test program selects sixteen
 instances because it also imports the earlier driver's controls. Exact source
 pins and ordered instance inventories are required for every selection.
-All recorded producer, reader, corpus, sample and runner files remain unchanged.
-The unchanged runner preserves its historical source bindings. The extended
-helper and the current execution recipe have their own pins; recorded producer source inputs retain their original
-meaning. Original commands without the option remain available.
+The additional import-scale, child-lifecycle and sparse-projection selections
+below retain the same explicit execution boundary.
+Recorded producers, selected checker/test programs, corpora and sample files
+retain their original bytes.
+The helper and execution entry points have their own source pins. The legacy
+`run_target_hex.py` retains its exact recorded bytes, including its original
+help text. The separate `run_oracle_graphs.py` entry point selects only the six
+additional import, lifecycle and projection programs, delegates to that unchanged
+runner and appends its own source-bound completion record. Historical producer
+source inputs keep their original meaning. Original commands remain available.
 
 ## Input, ownership and lifetime
 
@@ -117,6 +123,59 @@ process-memory measurement or whole-CI speedup. The other three pairs ran
 without-reuse first. Each invocation used a fresh Python process; no persistent
 cache, new download, archive, node experiment or Go build was created.
 
+## Import, lifecycle and projection selections
+
+Hosted run `39997042666` selected three further pairs of expensive portable
+checks. The macOS Intel import and child-lifecycle control steps took 70 and
+71 seconds respectively; these are individual hosted observations, not a
+hardware benchmark. The import-scale and child-lifecycle checker each select
+four already loaded graph instances. The sparse-projection checker selects
+eight. Each original test program selects the same number as its checker.
+Their 28 import, 34 lifecycle and 28 projection controls remain unchanged.
+
+Only the source/instance allowlists are extended. The graph function, complete
+byte-map keys, cache implementation, bounds, fallback and restoration functions
+retain their exact bodies. Three additional test-source pins are required.
+Ten additional controls run the established selection checks against every new
+program and cover wrong program identity, later imports, new source pins and
+entry-bound eviction. All 39 preceding graph-reuse controls remain required;
+the complete helper suite now has 49 named tests. A separate 14-control entry
+point suite covers the unchanged legacy source identity, explicit selection,
+bounded reads, preserved delegated output and failure completion boundaries.
+
+Twelve fresh Python 3.9.6 processes on Darwin ARM64 used the separate entry
+point to compare all six complete programs with and without reuse. Every original JSON report object and all 90
+original control identities matched. The first five programs made 54 graph
+requests: 33 original computations and 21 hits. Projection controls made 73:
+51 original computations and 22 hits. Peak logical retained content was
+30,858,784 bytes for the first five and 30,870,394 bytes for projection controls.
+No eviction occurred in these default-bound samples.
+
+| Complete program | Original wall | Bounded wall | Original peak RSS | Bounded peak RSS |
+| --- | ---: | ---: | ---: | ---: |
+| Import checker | 18.38 s | 13.43 s | 388.59 MiB | 432.56 MiB |
+| Import controls | 18.96 s | 13.83 s | 379.36 MiB | 433.08 MiB |
+| Lifecycle checker | 18.34 s | 13.30 s | 385.11 MiB | 434.02 MiB |
+| Lifecycle controls | 19.87 s | 14.63 s | 387.67 MiB | 432.72 MiB |
+| Projection checker | 17.94 s | 13.34 s | 385.64 MiB | 434.17 MiB |
+| Projection controls | 18.36 s | 13.90 s | 390.55 MiB | 439.55 MiB |
+
+Each program has one sample per mode. The order alternated between programs;
+it was not counterbalanced within each program. BSD `time -l -p` measured the
+child's real elapsed time and waited-child rusage peak, in Darwin bytes, through
+exit. These figures exclude task-manager work before and after the child.
+They do not measure the manager, whole-system memory, representative workload,
+production budgets or a whole-CI speedup. Retaining complete immutable graphs
+trades approximately 44–54 MiB of observed child RSS for less repeated hashing.
+The 64 MiB logical cache bound does not bound Python object overhead or RSS.
+
+These were local working-source observations with explicit execution hashes;
+the revision argument identifies their qualified base, not an unchanged working
+tree. They are separate from subsequent exact-commit hosted qualification.
+No native node, new capture, dependency download, Go build, disk cache or archive
+was created. CI still runs every original control on Linux, macOS and Windows;
+the source, report, scenario and artifact checks remain required.
+
 ## Reproduce
 
 Use an owned bounded workspace and cached dependencies. These portable commands
@@ -124,6 +183,7 @@ execute no reference node, Go build, LevelDB workload or new lifecycle observer.
 
 ```sh
 python -I -B tools/conformance_graph_reuse_test.py -v
+python -I -B tools/gen-state-root-vectors/run_oracle_graphs_test.py -v
 python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources_test.py --mode translated --source-revision "$SOURCE_REVISION"
 python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources_test.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
 python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
@@ -131,4 +191,10 @@ python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp
 python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
 python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver_test.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
 python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
+python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale_test.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
+python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
+python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle_test.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
+python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
+python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection_test.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
+python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
 ```
