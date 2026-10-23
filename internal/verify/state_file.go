@@ -68,6 +68,18 @@ func saveHeaderState(path string, state HeaderState, openDir func(string) (*os.F
 	if err := state.validateRetainedState(); err != nil {
 		return fmt.Errorf("save state: %w", err)
 	}
+	return writeValidatedHeaderState(path, state, openDir)
+}
+
+// writeValidatedHeaderState requires a fully validated state that cannot change
+// while encoding. The public mutable-state saver validates before calling it;
+// VerifiedState supplies privately owned immutable data checked at construction,
+// trusted resume and successful extension. No validation result is cached for a
+// caller-owned HeaderState or a file that may have changed.
+func writeValidatedHeaderState(path string, state HeaderState, openDir func(string) (*os.File, error)) error {
+	if path == "" {
+		return errors.New("verify: SaveHeaderState: empty path")
+	}
 	dir := filepath.Dir(path)
 	if dir == "" {
 		dir = "."
