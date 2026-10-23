@@ -131,6 +131,8 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/project_target_hex_batch_test.py -v
       - name: Bounded graph oracle reuse controls
         run: python -I -B tools/conformance_graph_reuse_test.py -v
+      - name: Selected complete oracle driver controls
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs_test.py -v
       - name: Workspace observation envelope controls
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Independent temporary input and database observations
@@ -406,21 +408,21 @@ jobs:
       - name: Independent recorded larger NodeTree retention
         run: python -I -B tools/gen-state-root-vectors/check_tree_scale.py
       - name: Larger file NodeTree import controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_scale_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Independent recorded larger file NodeTree import
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_scale.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Complete reference child lifecycle controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_lifecycle_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Independent recorded reference child lifecycle
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_lifecycle.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Separate driver and build resource controls
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Independent recorded driver and build resources
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Selected sparse oracle projection controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_oracle_projection_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Independent recorded selected sparse oracle comparison
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_oracle_projection.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Complete driver projection controls
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Independent recorded complete driver projection comparison
@@ -772,6 +774,8 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/project_target_hex_batch_test.py -v
       - name: Bounded graph oracle reuse controls
         run: python -I -B tools/conformance_graph_reuse_test.py -v
+      - name: Selected complete oracle driver controls
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs_test.py -v
       - name: Workspace observation envelope controls
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Independent temporary input and database observations
@@ -1047,21 +1051,21 @@ jobs:
       - name: Independent recorded larger NodeTree retention
         run: python -I -B tools/gen-state-root-vectors/check_tree_scale.py
       - name: Larger file NodeTree import controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_scale_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Independent recorded larger file NodeTree import
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_scale.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Complete reference child lifecycle controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_lifecycle_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Independent recorded reference child lifecycle
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_lifecycle.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Separate driver and build resource controls
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Independent recorded driver and build resources
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Selected sparse oracle projection controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_oracle_projection_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Independent recorded selected sparse oracle comparison
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_oracle_projection.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Complete driver projection controls
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Independent recorded complete driver projection comparison

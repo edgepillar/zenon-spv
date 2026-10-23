@@ -22,9 +22,12 @@ The additional import-scale, child-lifecycle and sparse-projection selections
 below retain the same explicit execution boundary.
 Recorded producers, selected checker/test programs, corpora and sample files
 retain their original bytes.
-The helper and current runner have their own execution pins; recorded producer
-source inputs retain their original meaning. The runner's help describes the
-expanded selection. Original commands without the option remain available.
+The helper and execution entry points have their own source pins. The legacy
+`run_target_hex.py` retains its exact recorded bytes, including its original
+help text. The separate `run_oracle_graphs.py` entry point selects only the six
+additional import, lifecycle and projection programs, delegates to that unchanged
+runner and appends its own source-bound completion record. Historical producer
+source inputs keep their original meaning. Original commands remain available.
 
 ## Input, ownership and lifetime
 
@@ -136,10 +139,12 @@ retain their exact bodies. Three additional test-source pins are required.
 Ten additional controls run the established selection checks against every new
 program and cover wrong program identity, later imports, new source pins and
 entry-bound eviction. All 39 preceding graph-reuse controls remain required;
-the complete helper suite now has 49 named tests.
+the complete helper suite now has 49 named tests. A separate 14-control entry
+point suite covers the unchanged legacy source identity, explicit selection,
+bounded reads, preserved delegated output and failure completion boundaries.
 
-Twelve fresh Python 3.9.6 processes on Darwin ARM64 compared all six complete
-programs with and without reuse. Every original JSON report object and all 90
+Twelve fresh Python 3.9.6 processes on Darwin ARM64 used the separate entry
+point to compare all six complete programs with and without reuse. Every original JSON report object and all 90
 original control identities matched. The first five programs made 54 graph
 requests: 33 original computations and 21 hits. Projection controls made 73:
 51 original computations and 22 hits. Peak logical retained content was
@@ -148,12 +153,12 @@ No eviction occurred in these default-bound samples.
 
 | Complete program | Original wall | Bounded wall | Original peak RSS | Bounded peak RSS |
 | --- | ---: | ---: | ---: | ---: |
-| Import checker | 18.33 s | 13.26 s | 389.16 MiB | 433.03 MiB |
-| Import controls | 18.25 s | 13.60 s | 379.52 MiB | 433.08 MiB |
-| Lifecycle checker | 18.09 s | 13.39 s | 385.38 MiB | 433.59 MiB |
-| Lifecycle controls | 19.73 s | 14.81 s | 387.50 MiB | 433.25 MiB |
-| Projection checker | 18.00 s | 13.53 s | 385.66 MiB | 434.09 MiB |
-| Projection controls | 18.63 s | 13.72 s | 391.31 MiB | 439.23 MiB |
+| Import checker | 18.38 s | 13.43 s | 388.59 MiB | 432.56 MiB |
+| Import controls | 18.96 s | 13.83 s | 379.36 MiB | 433.08 MiB |
+| Lifecycle checker | 18.34 s | 13.30 s | 385.11 MiB | 434.02 MiB |
+| Lifecycle controls | 19.87 s | 14.63 s | 387.67 MiB | 432.72 MiB |
+| Projection checker | 17.94 s | 13.34 s | 385.64 MiB | 434.17 MiB |
+| Projection controls | 18.36 s | 13.90 s | 390.55 MiB | 439.55 MiB |
 
 Each program has one sample per mode. The order alternated between programs;
 it was not counterbalanced within each program. BSD `time -l -p` measured the
@@ -178,6 +183,7 @@ execute no reference node, Go build, LevelDB workload or new lifecycle observer.
 
 ```sh
 python -I -B tools/conformance_graph_reuse_test.py -v
+python -I -B tools/gen-state-root-vectors/run_oracle_graphs_test.py -v
 python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources_test.py --mode translated --source-revision "$SOURCE_REVISION"
 python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources_test.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
 python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
@@ -185,10 +191,10 @@ python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp
 python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
 python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver_test.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
 python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
-python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_scale_test.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
-python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_scale.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
-python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_lifecycle_test.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
-python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_import_lifecycle.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
-python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_oracle_projection_test.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
-python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_oracle_projection.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
+python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale_test.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
+python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
+python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle_test.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
+python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
+python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection_test.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
+python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection.py --mode translated --source-revision "$SOURCE_REVISION" --reuse-graphs
 ```

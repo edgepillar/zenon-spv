@@ -28,7 +28,7 @@ def main(argv=None):
     parser.add_argument('--mode', choices=HEX.MODES, required=True)
     parser.add_argument('--source-revision', required=True)
     parser.add_argument('--reuse-graphs', action='store_true',
-                        help='reuse bounded complete pure graph results for explicitly selected checker instances')
+                        help='reuse bounded complete pure graph results for the selected driver checker only')
     args = parser.parse_args(argv)
     HEX.require(re.fullmatch(r'[0-9a-f]{40}', args.source_revision) is not None)
     runner_pin = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
