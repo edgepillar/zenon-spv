@@ -1,0 +1,893 @@
+{
+  "format_version": 1,
+  "kind": "recorded-owned-core-repeated-Stop",
+  "native": {
+    "CGO_ENABLED": 1,
+    "cache_verification": {
+      "baseline": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 21,
+          "sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd"
+        }
+      },
+      "candidate": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 21,
+          "sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd"
+        }
+      }
+    },
+    "go_version": "go1.25.14",
+    "new_external_dependency_transports": 0,
+    "ordinary_builds": 2,
+    "ordinary_processes": 6,
+    "platform": "darwin/arm64",
+    "race": {
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 9602,
+          "sha256": "8e1101d86675c62ba72eb0d0afd837f9b20a719af0b57ff08dd7050b7be88e6d"
+        }
+      },
+      "jsonl": "{\"Time\":\"2026-10-23T20:16:18.866481+03:00\",\"Action\":\"start\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\"}\n{\"Time\":\"2026-10-23T20:16:19.589576+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Constructor\"}\n{\"Time\":\"2026-10-23T20:16:19.590535+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Constructor\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_Constructor\\n\"}\n{\"Time\":\"2026-10-23T20:16:33.201384+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Constructor\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_Constructor (13.61s)\\n\"}\n{\"Time\":\"2026-10-23T20:16:33.201443+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Constructor\",\"Elapsed\":13.61}\n{\"Time\":\"2026-10-23T20:16:33.205336+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Initialized\"}\n{\"Time\":\"2026-10-23T20:16:33.205359+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Initialized\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_Initialized\\n\"}\n{\"Time\":\"2026-10-23T20:17:23.692801+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Initialized\",\"Output\":\"Initialized NoM. Height: 1, Hash: 9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\\n\"}\n{\"Time\":\"2026-10-23T20:17:23.743662+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Initialized\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_Initialized (50.54s)\\n\"}\n{\"Time\":\"2026-10-23T20:17:23.743705+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Initialized\",\"Elapsed\":50.54}\n{\"Time\":\"2026-10-23T20:17:23.743783+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity\"}\n{\"Time\":\"2026-10-23T20:17:23.743793+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity\\n\"}\n{\"Time\":\"2026-10-23T20:17:23.74385+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/1\"}\n{\"Time\":\"2026-10-23T20:17:23.743856+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/1\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/1\\n\"}\n{\"Time\":\"2026-10-23T20:18:13.761754+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/1\",\"Output\":\"Initialized NoM. Height: 1, Hash: 9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\\n\"}\n{\"Time\":\"2026-10-23T20:18:13.806629+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/1\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/1 (50.06s)\\n\"}\n{\"Time\":\"2026-10-23T20:18:13.806653+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/1\",\"Elapsed\":50.06}\n{\"Time\":\"2026-10-23T20:18:13.80679+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/2\"}\n{\"Time\":\"2026-10-23T20:18:13.806805+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/2\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/2\\n\"}\n{\"Time\":\"2026-10-23T20:19:03.391246+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/2\",\"Output\":\"Initialized NoM. Height: 1, Hash: 9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\\n\"}\n{\"Time\":\"2026-10-23T20:19:03.43528+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/2\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/2 (49.63s)\\n\"}\n{\"Time\":\"2026-10-23T20:19:03.435389+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/2\",\"Elapsed\":49.63}\n{\"Time\":\"2026-10-23T20:19:03.435399+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity (99.69s)\\n\"}\n{\"Time\":\"2026-10-23T20:19:03.435402+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity\",\"Elapsed\":99.69}\n{\"Time\":\"2026-10-23T20:19:03.435443+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers\"}\n{\"Time\":\"2026-10-23T20:19:03.435473+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_ConcurrentCallers\\n\"}\n{\"Time\":\"2026-10-23T20:19:03.435512+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/0\"}\n{\"Time\":\"2026-10-23T20:19:03.435542+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/0\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_ConcurrentCallers/0\\n\"}\n{\"Time\":\"2026-10-23T20:19:52.230035+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/0\",\"Output\":\"Initialized NoM. Height: 1, Hash: 9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\\n\"}\n{\"Time\":\"2026-10-23T20:19:52.278563+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/0\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_ConcurrentCallers/0 (48.84s)\\n\"}\n{\"Time\":\"2026-10-23T20:19:52.278602+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/0\",\"Elapsed\":48.84}\n{\"Time\":\"2026-10-23T20:19:52.278692+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/2\"}\n{\"Time\":\"2026-10-23T20:19:52.278713+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/2\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_ConcurrentCallers/2\\n\"}\n{\"Time\":\"2026-10-23T20:20:41.584738+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/2\",\"Output\":\"Initialized NoM. Height: 1, Hash: 9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\\n\"}\n{\"Time\":\"2026-10-23T20:20:41.633405+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/2\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_ConcurrentCallers/2 (49.35s)\\n\"}\n{\"Time\":\"2026-10-23T20:20:41.633441+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/2\",\"Elapsed\":49.35}\n{\"Time\":\"2026-10-23T20:20:41.633496+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_ConcurrentCallers (98.20s)\\n\"}\n{\"Time\":\"2026-10-23T20:20:41.633517+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers\",\"Elapsed\":98.2}\n{\"Time\":\"2026-10-23T20:20:41.633607+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_PanicRefusesRetry\"}\n{\"Time\":\"2026-10-23T20:20:41.633617+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_PanicRefusesRetry\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_PanicRefusesRetry\\n\"}\n{\"Time\":\"2026-10-23T20:20:54.151555+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_PanicRefusesRetry\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_PanicRefusesRetry (12.52s)\\n\"}\n{\"Time\":\"2026-10-23T20:20:54.151578+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_PanicRefusesRetry\",\"Elapsed\":12.52}\n{\"Time\":\"2026-10-23T20:20:54.151738+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Output\":\"PASS\\n\"}\n{\"Time\":\"2026-10-23T20:20:55.183458+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Output\":\"ok  \\tgithub.com/zenon-network/go-zenon/zenon\\t276.312s\\n\"}\n{\"Time\":\"2026-10-23T20:20:55.18348+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Elapsed\":276.316}\n"
+    },
+    "regressions": {
+      "command": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 84385,
+          "sha256": "1dc8fd294d76b582e37ec141fa8c7242e1689ccf18aa496f9b3f48b6228354cf"
+        }
+      },
+      "jsonl": "{\"Time\":\"2026-10-23T20:14:39.887527+03:00\",\"Action\":\"start\",\"Package\":\"github.com/zenon-network/go-zenon/chain\"}\n{\"Time\":\"2026-10-23T20:14:40.072008+03:00\",\"Action\":\"start\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\"}\n{\"Time\":\"2026-10-23T20:14:40.304972+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_HistoricalAndCurrent\"}\n{\"Time\":\"2026-10-23T20:14:40.305808+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_HistoricalAndCurrent\",\"Output\":\"=== RUN   TestCacheContext_HistoricalAndCurrent\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305836+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_HistoricalAndCurrent\",\"Output\":\"--- PASS: TestCacheContext_HistoricalAndCurrent (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305843+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_HistoricalAndCurrent\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.305848+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_ForeignHashBytes\"}\n{\"Time\":\"2026-10-23T20:14:40.305849+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_ForeignHashBytes\",\"Output\":\"=== RUN   TestCacheContext_ForeignHashBytes\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305851+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_ForeignHashBytes\",\"Output\":\"--- PASS: TestCacheContext_ForeignHashBytes (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305853+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_ForeignHashBytes\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.305854+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_HeightAndHashBothRequired\"}\n{\"Time\":\"2026-10-23T20:14:40.305855+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_HeightAndHashBothRequired\",\"Output\":\"=== RUN   TestCacheContext_HeightAndHashBothRequired\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305856+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_HeightAndHashBothRequired\",\"Output\":\"--- PASS: TestCacheContext_HeightAndHashBothRequired (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305857+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_HeightAndHashBothRequired\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.305864+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_UnknownHeights\"}\n{\"Time\":\"2026-10-23T20:14:40.305865+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_UnknownHeights\",\"Output\":\"=== RUN   TestCacheContext_UnknownHeights\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305867+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_UnknownHeights\",\"Output\":\"--- PASS: TestCacheContext_UnknownHeights (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305868+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_UnknownHeights\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.305884+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_ReorgChangesSelectedBranch\"}\n{\"Time\":\"2026-10-23T20:14:40.305885+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_ReorgChangesSelectedBranch\",\"Output\":\"=== RUN   TestCacheContext_ReorgChangesSelectedBranch\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305886+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_ReorgChangesSelectedBranch\",\"Output\":\"--- PASS: TestCacheContext_ReorgChangesSelectedBranch (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305889+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_ReorgChangesSelectedBranch\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.305893+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_RollbackRemovesFutureView\"}\n{\"Time\":\"2026-10-23T20:14:40.305894+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_RollbackRemovesFutureView\",\"Output\":\"=== RUN   TestCacheContext_RollbackRemovesFutureView\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305897+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_RollbackRemovesFutureView\",\"Output\":\"--- PASS: TestCacheContext_RollbackRemovesFutureView (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305898+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_RollbackRemovesFutureView\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.305899+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_NilLedgerSnapshot\"}\n{\"Time\":\"2026-10-23T20:14:40.3059+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_NilLedgerSnapshot\",\"Output\":\"=== RUN   TestCacheContext_NilLedgerSnapshot\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305901+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_NilLedgerSnapshot\",\"Output\":\"--- PASS: TestCacheContext_NilLedgerSnapshot (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305902+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_NilLedgerSnapshot\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.305903+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_LookupErrorPrecedesCache\"}\n{\"Time\":\"2026-10-23T20:14:40.305905+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_LookupErrorPrecedesCache\",\"Output\":\"=== RUN   TestCacheContext_LookupErrorPrecedesCache\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305915+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_LookupErrorPrecedesCache\",\"Output\":\"--- PASS: TestCacheContext_LookupErrorPrecedesCache (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305916+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_LookupErrorPrecedesCache\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.305917+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_MalformedLedgerRowPrecedesCache\"}\n{\"Time\":\"2026-10-23T20:14:40.305919+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_MalformedLedgerRowPrecedesCache\",\"Output\":\"=== RUN   TestCacheContext_MalformedLedgerRowPrecedesCache\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305923+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_MalformedLedgerRowPrecedesCache\",\"Output\":\"--- PASS: TestCacheContext_MalformedLedgerRowPrecedesCache (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305924+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_MalformedLedgerRowPrecedesCache\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.305932+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_ReturnedHeightMismatch\"}\n{\"Time\":\"2026-10-23T20:14:40.305933+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_ReturnedHeightMismatch\",\"Output\":\"=== RUN   TestCacheContext_ReturnedHeightMismatch\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305947+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_ReturnedHeightMismatch\",\"Output\":\"--- PASS: TestCacheContext_ReturnedHeightMismatch (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.305951+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_ReturnedHeightMismatch\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.305956+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_NilDependencies\"}\n{\"Time\":\"2026-10-23T20:14:40.305958+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_NilDependencies\",\"Output\":\"=== RUN   TestCacheContext_NilDependencies\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.30596+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_NilDependencies\",\"Output\":\"--- PASS: TestCacheContext_NilDependencies (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_NilDependencies\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.306002+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_BehindCacheKeepsExistingRefusal\"}\n{\"Time\":\"2026-10-23T20:14:40.306003+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_BehindCacheKeepsExistingRefusal\",\"Output\":\"=== RUN   TestCacheContext_BehindCacheKeepsExistingRefusal\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306051+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_BehindCacheKeepsExistingRefusal\",\"Output\":\"--- PASS: TestCacheContext_BehindCacheKeepsExistingRefusal (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306078+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCacheContext_BehindCacheKeepsExistingRefusal\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.306081+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight\"}\n{\"Time\":\"2026-10-23T20:14:40.306083+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight\",\"Output\":\"=== RUN   TestCandidateMomentumRollbackTargetPreflight\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306085+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/zero\"}\n{\"Time\":\"2026-10-23T20:14:40.306086+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/zero\",\"Output\":\"=== RUN   TestCandidateMomentumRollbackTargetPreflight/zero\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.30629+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/zero\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"rollbacking momentums\\\" module=chain submodule=test-momentum-pool to-identifier=\\\"{Hash:0000000000000000000000000000000000000000000000000000000000000000 Height:0}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306321+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/zero\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"preparing to rollback momentums\\\" module=chain submodule=test-momentum-pool identifier=\\\"{Hash:0000000000000000000000000000000000000000000000000000000000000000 Height:0}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306354+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/zero\",\"Output\":\"--- PASS: TestCandidateMomentumRollbackTargetPreflight/zero (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306364+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/zero\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.30637+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/above\"}\n{\"Time\":\"2026-10-23T20:14:40.306371+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/above\",\"Output\":\"=== RUN   TestCandidateMomentumRollbackTargetPreflight/above\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306372+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/above\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"rollbacking momentums\\\" module=chain submodule=test-momentum-pool to-identifier=\\\"{Hash:6168e462f883aceacb1d43ef89160eaa6fda8a421c85f89a8c37fe80be5069da Height:3}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306374+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/above\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"preparing to rollback momentums\\\" module=chain submodule=test-momentum-pool identifier=\\\"{Hash:6168e462f883aceacb1d43ef89160eaa6fda8a421c85f89a8c37fe80be5069da Height:3}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306377+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/above\",\"Output\":\"--- PASS: TestCandidateMomentumRollbackTargetPreflight/above (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.30638+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/above\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.306381+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/maximum\"}\n{\"Time\":\"2026-10-23T20:14:40.306385+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/maximum\",\"Output\":\"=== RUN   TestCandidateMomentumRollbackTargetPreflight/maximum\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306425+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/maximum\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"rollbacking momentums\\\" module=chain submodule=test-momentum-pool to-identifier=\\\"{Hash:0000000000000000000000000000000000000000000000000000000000000000 Height:18446744073709551615}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.30643+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/maximum\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"preparing to rollback momentums\\\" module=chain submodule=test-momentum-pool identifier=\\\"{Hash:0000000000000000000000000000000000000000000000000000000000000000 Height:18446744073709551615}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306437+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/maximum\",\"Output\":\"--- PASS: TestCandidateMomentumRollbackTargetPreflight/maximum (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306445+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/maximum\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.306447+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/wrong-hash\"}\n{\"Time\":\"2026-10-23T20:14:40.306448+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/wrong-hash\",\"Output\":\"=== RUN   TestCandidateMomentumRollbackTargetPreflight/wrong-hash\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306491+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/wrong-hash\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"rollbacking momentums\\\" module=chain submodule=test-momentum-pool to-identifier=\\\"{Hash:6c70d57af53dbf4d95253503dd5abe8c49e953236fd23851108b92bbec8ac907 Height:2}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306494+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/wrong-hash\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"preparing to rollback momentums\\\" module=chain submodule=test-momentum-pool identifier=\\\"{Hash:6c70d57af53dbf4d95253503dd5abe8c49e953236fd23851108b92bbec8ac907 Height:2}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306497+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/wrong-hash\",\"Output\":\"--- PASS: TestCandidateMomentumRollbackTargetPreflight/wrong-hash (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306499+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/wrong-hash\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.306501+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/nil-locker\"}\n{\"Time\":\"2026-10-23T20:14:40.306502+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/nil-locker\",\"Output\":\"=== RUN   TestCandidateMomentumRollbackTargetPreflight/nil-locker\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306541+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/nil-locker\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"rollbacking momentums\\\" module=chain submodule=test-momentum-pool to-identifier=\\\"{Hash:f90387edb7755d089bd5108390b7088582ce7fe0a4c568c05e3069e98b0a92a3 Height:2}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.30655+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/nil-locker\",\"Output\":\"--- PASS: TestCandidateMomentumRollbackTargetPreflight/nil-locker (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306553+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/nil-locker\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.306572+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/matching-frontier\"}\n{\"Time\":\"2026-10-23T20:14:40.306574+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/matching-frontier\",\"Output\":\"=== RUN   TestCandidateMomentumRollbackTargetPreflight/matching-frontier\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306577+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/matching-frontier\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"rollbacking momentums\\\" module=chain submodule=test-momentum-pool to-identifier=\\\"{Hash:f90387edb7755d089bd5108390b7088582ce7fe0a4c568c05e3069e98b0a92a3 Height:2}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.30658+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/matching-frontier\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"preparing to rollback momentums\\\" module=chain submodule=test-momentum-pool identifier=\\\"{Hash:f90387edb7755d089bd5108390b7088582ce7fe0a4c568c05e3069e98b0a92a3 Height:2}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306599+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/matching-frontier\",\"Output\":\"--- PASS: TestCandidateMomentumRollbackTargetPreflight/matching-frontier (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306604+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight/matching-frontier\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.306613+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight\",\"Output\":\"--- PASS: TestCandidateMomentumRollbackTargetPreflight (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306615+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreflight\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.306619+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetChecksCompleteIdentifier\"}\n{\"Time\":\"2026-10-23T20:14:40.306619+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetChecksCompleteIdentifier\",\"Output\":\"=== RUN   TestCandidateMomentumRollbackTargetChecksCompleteIdentifier\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306657+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetChecksCompleteIdentifier\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"rollbacking momentums\\\" module=chain submodule=test-momentum-pool to-identifier=\\\"{Hash:6c70d57af53dbf4d95253503dd5abe8c49e953236fd23851108b92bbec8ac907 Height:1}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.30666+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetChecksCompleteIdentifier\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"preparing to rollback momentums\\\" module=chain submodule=test-momentum-pool identifier=\\\"{Hash:6c70d57af53dbf4d95253503dd5abe8c49e953236fd23851108b92bbec8ac907 Height:1}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306662+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetChecksCompleteIdentifier\",\"Output\":\"--- PASS: TestCandidateMomentumRollbackTargetChecksCompleteIdentifier (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306664+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetChecksCompleteIdentifier\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.306671+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreservesLookupError\"}\n{\"Time\":\"2026-10-23T20:14:40.306672+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreservesLookupError\",\"Output\":\"=== RUN   TestCandidateMomentumRollbackTargetPreservesLookupError\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306702+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreservesLookupError\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"rollbacking momentums\\\" module=chain submodule=test-momentum-pool to-identifier=\\\"{Hash:6c70d57af53dbf4d95253503dd5abe8c49e953236fd23851108b92bbec8ac907 Height:1}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306731+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreservesLookupError\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"preparing to rollback momentums\\\" module=chain submodule=test-momentum-pool identifier=\\\"{Hash:6c70d57af53dbf4d95253503dd5abe8c49e953236fd23851108b92bbec8ac907 Height:1}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306743+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreservesLookupError\",\"Output\":\"--- PASS: TestCandidateMomentumRollbackTargetPreservesLookupError (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306745+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidateMomentumRollbackTargetPreservesLookupError\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.30675+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestChainStopStopsEveryManagerAfterCacheError\"}\n{\"Time\":\"2026-10-23T20:14:40.306758+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestChainStopStopsEveryManagerAfterCacheError\",\"Output\":\"=== RUN   TestChainStopStopsEveryManagerAfterCacheError\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306761+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestChainStopStopsEveryManagerAfterCacheError\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"stopping ...\\\" module=chain\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.30678+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestChainStopStopsEveryManagerAfterCacheError\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=stopped module=chain\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306782+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestChainStopStopsEveryManagerAfterCacheError\",\"Output\":\"--- PASS: TestChainStopStopsEveryManagerAfterCacheError (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306805+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestChainStopStopsEveryManagerAfterCacheError\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.306812+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestChainStopReportsEveryManagerError\"}\n{\"Time\":\"2026-10-23T20:14:40.306814+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestChainStopReportsEveryManagerError\",\"Output\":\"=== RUN   TestChainStopReportsEveryManagerError\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306816+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestChainStopReportsEveryManagerError\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"stopping ...\\\" module=chain\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306819+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestChainStopReportsEveryManagerError\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=stopped module=chain\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306821+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestChainStopReportsEveryManagerError\",\"Output\":\"--- PASS: TestChainStopReportsEveryManagerError (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306822+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestChainStopReportsEveryManagerError\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.306825+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestRollbackToFailureAfterPopIsUnrecoverable\"}\n{\"Time\":\"2026-10-23T20:14:40.306826+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestRollbackToFailureAfterPopIsUnrecoverable\",\"Output\":\"=== RUN   TestRollbackToFailureAfterPopIsUnrecoverable\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306921+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestRollbackToFailureAfterPopIsUnrecoverable\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"rollbacking momentums\\\" module=chain submodule=test-momentum-pool to-identifier=\\\"{Hash:6c70d57af53dbf4d95253503dd5abe8c49e953236fd23851108b92bbec8ac907 Height:1}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306925+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestRollbackToFailureAfterPopIsUnrecoverable\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"preparing to rollback momentums\\\" module=chain submodule=test-momentum-pool identifier=\\\"{Hash:6c70d57af53dbf4d95253503dd5abe8c49e953236fd23851108b92bbec8ac907 Height:1}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306926+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestRollbackToFailureAfterPopIsUnrecoverable\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=rollbacking module=chain submodule=test-momentum-pool momentum-identifier=\\\"{Hash:6168e462f883aceacb1d43ef89160eaa6fda8a421c85f89a8c37fe80be5069da Height:3}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306927+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestRollbackToFailureAfterPopIsUnrecoverable\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=rollbacking module=chain submodule=test-momentum-pool momentum-identifier=\\\"{Hash:f90387edb7755d089bd5108390b7088582ce7fe0a4c568c05e3069e98b0a92a3 Height:2}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306928+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestRollbackToFailureAfterPopIsUnrecoverable\",\"Output\":\"--- PASS: TestRollbackToFailureAfterPopIsUnrecoverable (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.306955+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestRollbackToFailureAfterPopIsUnrecoverable\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.306961+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestRollbackToFirstPopFailureLeavesCanonicalStateCertain\"}\n{\"Time\":\"2026-10-23T20:14:40.306963+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestRollbackToFirstPopFailureLeavesCanonicalStateCertain\",\"Output\":\"=== RUN   TestRollbackToFirstPopFailureLeavesCanonicalStateCertain\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.307046+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestRollbackToFirstPopFailureLeavesCanonicalStateCertain\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"rollbacking momentums\\\" module=chain submodule=test-momentum-pool to-identifier=\\\"{Hash:6c70d57af53dbf4d95253503dd5abe8c49e953236fd23851108b92bbec8ac907 Height:1}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.30705+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestRollbackToFirstPopFailureLeavesCanonicalStateCertain\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=\\\"preparing to rollback momentums\\\" module=chain submodule=test-momentum-pool identifier=\\\"{Hash:6c70d57af53dbf4d95253503dd5abe8c49e953236fd23851108b92bbec8ac907 Height:1}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.307061+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestRollbackToFirstPopFailureLeavesCanonicalStateCertain\",\"Output\":\"t=2026-10-23T20:14:40+0300 lvl=info msg=rollbacking module=chain submodule=test-momentum-pool momentum-identifier=\\\"{Hash:f90387edb7755d089bd5108390b7088582ce7fe0a4c568c05e3069e98b0a92a3 Height:2}\\\"\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.307072+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestRollbackToFirstPopFailureLeavesCanonicalStateCertain\",\"Output\":\"--- PASS: TestRollbackToFirstPopFailureLeavesCanonicalStateCertain (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.307097+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestRollbackToFirstPopFailureLeavesCanonicalStateCertain\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.307101+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupEmptyRealManagers\"}\n{\"Time\":\"2026-10-23T20:14:40.307103+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupEmptyRealManagers\",\"Output\":\"=== RUN   TestCandidatePublicChainStartupEmptyRealManagers\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.311812+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_LastFailureIsNotAbsence\"}\n{\"Time\":\"2026-10-23T20:14:40.311843+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_LastFailureIsNotAbsence\",\"Output\":\"=== RUN   TestCacheReadError_LastFailureIsNotAbsence\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.311866+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_LastFailureIsNotAbsence\",\"Output\":\"--- PASS: TestCacheReadError_LastFailureIsNotAbsence (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.311869+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_LastFailureIsNotAbsence\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.311875+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_HealthyEmptyStillAbsent\"}\n{\"Time\":\"2026-10-23T20:14:40.311876+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_HealthyEmptyStillAbsent\",\"Output\":\"=== RUN   TestCacheReadError_HealthyEmptyStillAbsent\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.311911+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_HealthyEmptyStillAbsent\",\"Output\":\"--- PASS: TestCacheReadError_HealthyEmptyStillAbsent (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.311914+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_HealthyEmptyStillAbsent\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.311933+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_HealthyCurrentValuePreserved\"}\n{\"Time\":\"2026-10-23T20:14:40.311935+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_HealthyCurrentValuePreserved\",\"Output\":\"=== RUN   TestCacheReadError_HealthyCurrentValuePreserved\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.311965+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_HealthyCurrentValuePreserved\",\"Output\":\"--- PASS: TestCacheReadError_HealthyCurrentValuePreserved (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.311969+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_HealthyCurrentValuePreserved\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.311973+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_HistoricalBackwardSelectionPreserved\"}\n{\"Time\":\"2026-10-23T20:14:40.311974+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_HistoricalBackwardSelectionPreserved\",\"Output\":\"=== RUN   TestCacheReadError_HistoricalBackwardSelectionPreserved\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.312+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_HistoricalBackwardSelectionPreserved\",\"Output\":\"--- PASS: TestCacheReadError_HistoricalBackwardSelectionPreserved (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.312025+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_HistoricalBackwardSelectionPreserved\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.312036+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_BackwardFailurePreservesOriginalError\"}\n{\"Time\":\"2026-10-23T20:14:40.312038+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_BackwardFailurePreservesOriginalError\",\"Output\":\"=== RUN   TestCacheReadError_BackwardFailurePreservesOriginalError\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.312044+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_BackwardFailurePreservesOriginalError\",\"Output\":\"--- PASS: TestCacheReadError_BackwardFailurePreservesOriginalError (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.312062+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_BackwardFailurePreservesOriginalError\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.312066+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_BackwardExhaustionStillAbsent\"}\n{\"Time\":\"2026-10-23T20:14:40.312067+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_BackwardExhaustionStillAbsent\",\"Output\":\"=== RUN   TestCacheReadError_BackwardExhaustionStillAbsent\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.312093+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_BackwardExhaustionStillAbsent\",\"Output\":\"--- PASS: TestCacheReadError_BackwardExhaustionStillAbsent (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.312096+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_BackwardExhaustionStillAbsent\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.312098+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_ChainPlasmaPropagatesError\"}\n{\"Time\":\"2026-10-23T20:14:40.312103+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_ChainPlasmaPropagatesError\",\"Output\":\"=== RUN   TestCacheReadError_ChainPlasmaPropagatesError\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.312133+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_ChainPlasmaPropagatesError\",\"Output\":\"--- PASS: TestCacheReadError_ChainPlasmaPropagatesError (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.312146+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_ChainPlasmaPropagatesError\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.312147+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_StakeAmountPropagatesError\"}\n{\"Time\":\"2026-10-23T20:14:40.312149+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_StakeAmountPropagatesError\",\"Output\":\"=== RUN   TestCacheReadError_StakeAmountPropagatesError\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.312178+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_StakeAmountPropagatesError\",\"Output\":\"--- PASS: TestCacheReadError_StakeAmountPropagatesError (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.312191+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_StakeAmountPropagatesError\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.3122+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_SporkLookupPropagatesError\"}\n{\"Time\":\"2026-10-23T20:14:40.312202+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_SporkLookupPropagatesError\",\"Output\":\"=== RUN   TestCacheReadError_SporkLookupPropagatesError\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.312216+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_SporkLookupPropagatesError\",\"Output\":\"--- PASS: TestCacheReadError_SporkLookupPropagatesError (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.312219+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_SporkLookupPropagatesError\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.312222+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_GenesisSporkShortcutUnchanged\"}\n{\"Time\":\"2026-10-23T20:14:40.312223+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_GenesisSporkShortcutUnchanged\",\"Output\":\"=== RUN   TestCacheReadError_GenesisSporkShortcutUnchanged\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.312225+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_GenesisSporkShortcutUnchanged\",\"Output\":\"--- PASS: TestCacheReadError_GenesisSporkShortcutUnchanged (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.312227+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_GenesisSporkShortcutUnchanged\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.312229+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_UnsupportedMergedReverseReadIsNotZero\"}\n{\"Time\":\"2026-10-23T20:14:40.31223+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_UnsupportedMergedReverseReadIsNotZero\",\"Output\":\"=== RUN   TestCacheReadError_UnsupportedMergedReverseReadIsNotZero\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.3123+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_UnsupportedMergedReverseReadIsNotZero\",\"Output\":\"--- PASS: TestCacheReadError_UnsupportedMergedReverseReadIsNotZero (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.312304+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_UnsupportedMergedReverseReadIsNotZero\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.312306+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews\"}\n{\"Time\":\"2026-10-23T20:14:40.312308+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews\",\"Output\":\"=== RUN   TestCacheReadError_RealClosedManagerViews\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.360975+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews/chain-plasma\"}\n{\"Time\":\"2026-10-23T20:14:40.360991+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews/chain-plasma\",\"Output\":\"=== RUN   TestCacheReadError_RealClosedManagerViews/chain-plasma\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.360996+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews/chain-plasma\",\"Output\":\"--- PASS: TestCacheReadError_RealClosedManagerViews/chain-plasma (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.361009+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews/chain-plasma\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.361012+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews/stake\"}\n{\"Time\":\"2026-10-23T20:14:40.361014+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews/stake\",\"Output\":\"=== RUN   TestCacheReadError_RealClosedManagerViews/stake\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.361016+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews/stake\",\"Output\":\"--- PASS: TestCacheReadError_RealClosedManagerViews/stake (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.361017+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews/stake\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.361018+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews/spork\"}\n{\"Time\":\"2026-10-23T20:14:40.361019+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews/spork\",\"Output\":\"=== RUN   TestCacheReadError_RealClosedManagerViews/spork\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.361021+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews/spork\",\"Output\":\"--- PASS: TestCacheReadError_RealClosedManagerViews/spork (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.361022+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews/spork\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:40.362859+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews\",\"Output\":\"--- PASS: TestCacheReadError_RealClosedManagerViews (0.05s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.362897+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestCacheReadError_RealClosedManagerViews\",\"Elapsed\":0.05}\n{\"Time\":\"2026-10-23T20:14:40.364065+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestExtractor\"}\n{\"Time\":\"2026-10-23T20:14:40.364071+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestExtractor\",\"Output\":\"=== RUN   TestExtractor\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.433773+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestExtractor\",\"Output\":\"--- PASS: TestExtractor (0.07s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.433797+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Test\":\"TestExtractor\",\"Elapsed\":0.07}\n{\"Time\":\"2026-10-23T20:14:40.433989+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Output\":\"PASS\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.434513+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Output\":\"ok  \\tgithub.com/zenon-network/go-zenon/chain/cache\\t0.362s\\n\"}\n{\"Time\":\"2026-10-23T20:14:40.434561+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache\",\"Elapsed\":0.363}\n{\"Time\":\"2026-10-23T20:14:40.907657+03:00\",\"Action\":\"start\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\"}\n{\"Time\":\"2026-10-23T20:14:41.125146+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestAddWriteFailureIsAtomic\"}\n{\"Time\":\"2026-10-23T20:14:41.125182+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestAddWriteFailureIsAtomic\",\"Output\":\"=== RUN   TestAddWriteFailureIsAtomic\\n\"}\n{\"Time\":\"2026-10-23T20:14:41.172139+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestAddWriteFailureIsAtomic\",\"Output\":\"--- PASS: TestAddWriteFailureIsAtomic (0.05s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:41.172161+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestAddWriteFailureIsAtomic\",\"Elapsed\":0.05}\n{\"Time\":\"2026-10-23T20:14:41.172175+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestPopWriteFailureIsAtomic\"}\n{\"Time\":\"2026-10-23T20:14:41.172184+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestPopWriteFailureIsAtomic\",\"Output\":\"=== RUN   TestPopWriteFailureIsAtomic\\n\"}\n{\"Time\":\"2026-10-23T20:14:41.218893+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestPopWriteFailureIsAtomic\",\"Output\":\"--- PASS: TestPopWriteFailureIsAtomic (0.05s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:41.218979+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestPopWriteFailureIsAtomic\",\"Elapsed\":0.05}\n{\"Time\":\"2026-10-23T20:14:41.218994+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestPop\"}\n{\"Time\":\"2026-10-23T20:14:41.218997+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestPop\",\"Output\":\"=== RUN   TestPop\\n\"}\n{\"Time\":\"2026-10-23T20:14:41.293691+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestPop\",\"Output\":\"--- PASS: TestPop (0.07s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:41.29372+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestPop\",\"Elapsed\":0.07}\n{\"Time\":\"2026-10-23T20:14:41.293728+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestCacheDBManagerStopIsIdempotent\"}\n{\"Time\":\"2026-10-23T20:14:41.293737+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestCacheDBManagerStopIsIdempotent\",\"Output\":\"=== RUN   TestCacheDBManagerStopIsIdempotent\\n\"}\n{\"Time\":\"2026-10-23T20:14:41.376142+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestCacheDBManagerStopIsIdempotent\",\"Output\":\"--- PASS: TestCacheDBManagerStopIsIdempotent (0.08s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:41.376162+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestCacheDBManagerStopIsIdempotent\",\"Elapsed\":0.08}\n{\"Time\":\"2026-10-23T20:14:41.37619+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestCacheDBManagerStopAfterFailedClose\"}\n{\"Time\":\"2026-10-23T20:14:41.376196+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestCacheDBManagerStopAfterFailedClose\",\"Output\":\"=== RUN   TestCacheDBManagerStopAfterFailedClose\\n\"}\n{\"Time\":\"2026-10-23T20:14:41.410334+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestCacheDBManagerStopAfterFailedClose\",\"Output\":\"--- PASS: TestCacheDBManagerStopAfterFailedClose (0.03s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:41.410401+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Test\":\"TestCacheDBManagerStopAfterFailedClose\",\"Elapsed\":0.03}\n{\"Time\":\"2026-10-23T20:14:41.41041+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Output\":\"PASS\\n\"}\n{\"Time\":\"2026-10-23T20:14:41.410941+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Output\":\"ok  \\tgithub.com/zenon-network/go-zenon/chain/cache/storage\\t0.503s\\n\"}\n{\"Time\":\"2026-10-23T20:14:41.410957+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain/cache/storage\",\"Elapsed\":0.503}\n{\"Time\":\"2026-10-23T20:14:42.59436+03:00\",\"Action\":\"start\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\"}\n{\"Time\":\"2026-10-23T20:14:42.838077+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_NewWorkerIsOpen\"}\n{\"Time\":\"2026-10-23T20:14:42.838113+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_NewWorkerIsOpen\",\"Output\":\"=== RUN   TestCandidateWorkerPreStart_NewWorkerIsOpen\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838132+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_NewWorkerIsOpen\",\"Output\":\"--- PASS: TestCandidateWorkerPreStart_NewWorkerIsOpen (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838138+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_NewWorkerIsOpen\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:42.838144+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StopBeforeInit\"}\n{\"Time\":\"2026-10-23T20:14:42.838145+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StopBeforeInit\",\"Output\":\"=== RUN   TestCandidateWorkerPreStart_StopBeforeInit\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838295+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StopBeforeInit\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838306+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StopBeforeInit\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"end stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838308+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StopBeforeInit\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=stopped module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.83831+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StopBeforeInit\",\"Output\":\"--- PASS: TestCandidateWorkerPreStart_StopBeforeInit (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838317+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StopBeforeInit\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:42.83836+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_InitThenStop\"}\n{\"Time\":\"2026-10-23T20:14:42.838381+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_InitThenStop\",\"Output\":\"=== RUN   TestCandidateWorkerPreStart_InitThenStop\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838386+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_InitThenStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838388+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_InitThenStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"end stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838389+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_InitThenStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=stopped module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838393+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_InitThenStop\",\"Output\":\"--- PASS: TestCandidateWorkerPreStart_InitThenStop (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838395+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_InitThenStop\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:42.8384+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartThenStop\"}\n{\"Time\":\"2026-10-23T20:14:42.838401+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartThenStop\",\"Output\":\"=== RUN   TestCandidateWorkerPreStart_StartThenStop\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838438+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartThenStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"start contract worker\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.83844+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartThenStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838441+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartThenStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"end stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838455+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartThenStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=stopped module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838457+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartThenStop\",\"Output\":\"--- PASS: TestCandidateWorkerPreStart_StartThenStop (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838469+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartThenStop\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:42.838471+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_InitStartStop\"}\n{\"Time\":\"2026-10-23T20:14:42.838472+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_InitStartStop\",\"Output\":\"=== RUN   TestCandidateWorkerPreStart_InitStartStop\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838473+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_InitStartStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"start contract worker\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838475+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_InitStartStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838476+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_InitStartStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"end stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838477+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_InitStartStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=stopped module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838479+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_InitStartStop\",\"Output\":\"--- PASS: TestCandidateWorkerPreStart_InitStartStop (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838498+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_InitStartStop\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:42.838502+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartReplacesChannel\"}\n{\"Time\":\"2026-10-23T20:14:42.838503+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartReplacesChannel\",\"Output\":\"=== RUN   TestCandidateWorkerPreStart_StartReplacesChannel\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.83853+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartReplacesChannel\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"start contract worker\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838538+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartReplacesChannel\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.83854+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartReplacesChannel\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"end stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838555+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartReplacesChannel\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=stopped module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838559+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartReplacesChannel\",\"Output\":\"--- PASS: TestCandidateWorkerPreStart_StartReplacesChannel (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838561+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartReplacesChannel\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:42.838577+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_RestartAfterNormalStop\"}\n{\"Time\":\"2026-10-23T20:14:42.838582+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_RestartAfterNormalStop\",\"Output\":\"=== RUN   TestCandidateWorkerPreStart_RestartAfterNormalStop\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838585+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_RestartAfterNormalStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"start contract worker\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838591+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_RestartAfterNormalStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838593+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_RestartAfterNormalStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"end stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838599+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_RestartAfterNormalStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=stopped module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838601+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_RestartAfterNormalStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"start contract worker\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838604+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_RestartAfterNormalStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838606+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_RestartAfterNormalStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"end stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838607+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_RestartAfterNormalStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=stopped module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838618+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_RestartAfterNormalStop\",\"Output\":\"--- PASS: TestCandidateWorkerPreStart_RestartAfterNormalStop (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.83862+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_RestartAfterNormalStop\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:42.838622+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartAfterPreStartStop\"}\n{\"Time\":\"2026-10-23T20:14:42.838623+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartAfterPreStartStop\",\"Output\":\"=== RUN   TestCandidateWorkerPreStart_StartAfterPreStartStop\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838624+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartAfterPreStartStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838625+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartAfterPreStartStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"end stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838626+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartAfterPreStartStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=stopped module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838627+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartAfterPreStartStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"start contract worker\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838642+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartAfterPreStartStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838643+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartAfterPreStartStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"end stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838644+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartAfterPreStartStop\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=stopped module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838647+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartAfterPreStartStop\",\"Output\":\"--- PASS: TestCandidateWorkerPreStart_StartAfterPreStartStop (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838648+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StartAfterPreStartStop\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:42.83865+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StopWaitsForChildren\"}\n{\"Time\":\"2026-10-23T20:14:42.838659+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StopWaitsForChildren\",\"Output\":\"=== RUN   TestCandidateWorkerPreStart_StopWaitsForChildren\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838675+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StopWaitsForChildren\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838677+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StopWaitsForChildren\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=\\\"end stop all task\\\" module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838678+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StopWaitsForChildren\",\"Output\":\"t=2026-10-23T20:14:42+0300 lvl=info msg=stopped module=pillar submodule=worker\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838686+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StopWaitsForChildren\",\"Output\":\"--- PASS: TestCandidateWorkerPreStart_StopWaitsForChildren (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.838688+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Test\":\"TestCandidateWorkerPreStart_StopWaitsForChildren\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:42.838727+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Output\":\"PASS\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.839171+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Output\":\"ok  \\tgithub.com/zenon-network/go-zenon/pillar\\t0.245s\\n\"}\n{\"Time\":\"2026-10-23T20:14:42.83919+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/pillar\",\"Elapsed\":0.245}\n{\"Time\":\"2026-10-23T20:14:43.950025+03:00\",\"Action\":\"start\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\"}\n{\"Time\":\"2026-10-23T20:14:44.278342+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Constructor\"}\n{\"Time\":\"2026-10-23T20:14:44.278378+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Constructor\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_Constructor\\n\"}\n{\"Time\":\"2026-10-23T20:14:45.32567+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupEmptyRealManagers\",\"Output\":\"Initialized NoM. Height: 1, Hash: 9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\\n\"}\n{\"Time\":\"2026-10-23T20:14:45.335692+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupEmptyRealManagers\",\"Output\":\"--- PASS: TestCandidatePublicChainStartupEmptyRealManagers (5.03s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:45.335729+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupEmptyRealManagers\",\"Elapsed\":5.03}\n{\"Time\":\"2026-10-23T20:14:45.335743+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupPreservesGenesisLookupError\"}\n{\"Time\":\"2026-10-23T20:14:45.335746+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupPreservesGenesisLookupError\",\"Output\":\"=== RUN   TestCandidatePublicChainStartupPreservesGenesisLookupError\\n\"}\n{\"Time\":\"2026-10-23T20:14:46.754251+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Constructor\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_Constructor (2.48s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:46.754272+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Constructor\",\"Elapsed\":2.48}\n{\"Time\":\"2026-10-23T20:14:46.754293+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Initialized\"}\n{\"Time\":\"2026-10-23T20:14:46.754299+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Initialized\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_Initialized\\n\"}\n{\"Time\":\"2026-10-23T20:14:47.586827+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupPreservesGenesisLookupError\",\"Output\":\"--- PASS: TestCandidatePublicChainStartupPreservesGenesisLookupError (2.25s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:47.58685+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupPreservesGenesisLookupError\",\"Elapsed\":2.25}\n{\"Time\":\"2026-10-23T20:14:47.586857+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupClosedCacheDoesNotInsertGenesis\"}\n{\"Time\":\"2026-10-23T20:14:47.586859+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupClosedCacheDoesNotInsertGenesis\",\"Output\":\"=== RUN   TestCandidatePublicChainStartupClosedCacheDoesNotInsertGenesis\\n\"}\n{\"Time\":\"2026-10-23T20:14:49.809932+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupClosedCacheDoesNotInsertGenesis\",\"Output\":\"--- PASS: TestCandidatePublicChainStartupClosedCacheDoesNotInsertGenesis (2.22s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:49.809953+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupClosedCacheDoesNotInsertGenesis\",\"Elapsed\":2.22}\n{\"Time\":\"2026-10-23T20:14:49.80996+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupStoppedInstanceRefusesInit\"}\n{\"Time\":\"2026-10-23T20:14:49.809972+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupStoppedInstanceRefusesInit\",\"Output\":\"=== RUN   TestCandidatePublicChainStartupStoppedInstanceRefusesInit\\n\"}\n{\"Time\":\"2026-10-23T20:14:49.809974+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupStoppedInstanceRefusesInit\",\"Output\":\"t=2026-10-23T20:14:49+0300 lvl=info msg=\\\"stopping ...\\\" module=chain\\n\"}\n{\"Time\":\"2026-10-23T20:14:49.809975+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupStoppedInstanceRefusesInit\",\"Output\":\"t=2026-10-23T20:14:49+0300 lvl=info msg=stopped module=chain\\n\"}\n{\"Time\":\"2026-10-23T20:14:49.809978+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupStoppedInstanceRefusesInit\",\"Output\":\"--- PASS: TestCandidatePublicChainStartupStoppedInstanceRefusesInit (0.00s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:49.80998+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Test\":\"TestCandidatePublicChainStartupStoppedInstanceRefusesInit\",\"Elapsed\":0}\n{\"Time\":\"2026-10-23T20:14:49.810033+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Output\":\"PASS\\n\"}\n{\"Time\":\"2026-10-23T20:14:49.818717+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Output\":\"ok  \\tgithub.com/zenon-network/go-zenon/chain\\t9.928s\\n\"}\n{\"Time\":\"2026-10-23T20:14:49.81874+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/chain\",\"Elapsed\":9.931000000000001}\n{\"Time\":\"2026-10-23T20:14:51.697192+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Initialized\",\"Output\":\"Initialized NoM. Height: 1, Hash: 9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\\n\"}\n{\"Time\":\"2026-10-23T20:14:51.703679+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Initialized\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_Initialized (4.95s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:51.703702+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_Initialized\",\"Elapsed\":4.95}\n{\"Time\":\"2026-10-23T20:14:51.70371+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity\"}\n{\"Time\":\"2026-10-23T20:14:51.70372+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity\\n\"}\n{\"Time\":\"2026-10-23T20:14:51.703724+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/1\"}\n{\"Time\":\"2026-10-23T20:14:51.703725+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/1\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/1\\n\"}\n{\"Time\":\"2026-10-23T20:14:56.425745+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/1\",\"Output\":\"Initialized NoM. Height: 1, Hash: 9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\\n\"}\n{\"Time\":\"2026-10-23T20:14:56.432266+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/1\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/1 (4.73s)\\n\"}\n{\"Time\":\"2026-10-23T20:14:56.432287+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/1\",\"Elapsed\":4.73}\n{\"Time\":\"2026-10-23T20:14:56.432308+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/2\"}\n{\"Time\":\"2026-10-23T20:14:56.43231+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/2\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/2\\n\"}\n{\"Time\":\"2026-10-23T20:15:01.219021+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/2\",\"Output\":\"Initialized NoM. Height: 1, Hash: 9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\\n\"}\n{\"Time\":\"2026-10-23T20:15:01.225115+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/2\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/2 (4.79s)\\n\"}\n{\"Time\":\"2026-10-23T20:15:01.225135+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity/2\",\"Elapsed\":4.79}\n{\"Time\":\"2026-10-23T20:15:01.22514+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity (9.52s)\\n\"}\n{\"Time\":\"2026-10-23T20:15:01.225142+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity\",\"Elapsed\":9.52}\n{\"Time\":\"2026-10-23T20:15:01.225145+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers\"}\n{\"Time\":\"2026-10-23T20:15:01.225147+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_ConcurrentCallers\\n\"}\n{\"Time\":\"2026-10-23T20:15:01.225149+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/0\"}\n{\"Time\":\"2026-10-23T20:15:01.22515+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/0\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_ConcurrentCallers/0\\n\"}\n{\"Time\":\"2026-10-23T20:15:05.842038+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/0\",\"Output\":\"Initialized NoM. Height: 1, Hash: 9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\\n\"}\n{\"Time\":\"2026-10-23T20:15:05.848157+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/0\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_ConcurrentCallers/0 (4.62s)\\n\"}\n{\"Time\":\"2026-10-23T20:15:05.848196+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/0\",\"Elapsed\":4.62}\n{\"Time\":\"2026-10-23T20:15:05.84823+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/2\"}\n{\"Time\":\"2026-10-23T20:15:05.848233+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/2\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_ConcurrentCallers/2\\n\"}\n{\"Time\":\"2026-10-23T20:15:10.62301+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/2\",\"Output\":\"Initialized NoM. Height: 1, Hash: 9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\\n\"}\n{\"Time\":\"2026-10-23T20:15:10.628872+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/2\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_ConcurrentCallers/2 (4.78s)\\n\"}\n{\"Time\":\"2026-10-23T20:15:10.628898+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers/2\",\"Elapsed\":4.78}\n{\"Time\":\"2026-10-23T20:15:10.628903+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_ConcurrentCallers (9.40s)\\n\"}\n{\"Time\":\"2026-10-23T20:15:10.62893+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_ConcurrentCallers\",\"Elapsed\":9.4}\n{\"Time\":\"2026-10-23T20:15:10.628942+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_PanicRefusesRetry\"}\n{\"Time\":\"2026-10-23T20:15:10.628944+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_PanicRefusesRetry\",\"Output\":\"=== RUN   TestCandidateCoreRepeatStop_PanicRefusesRetry\\n\"}\n{\"Time\":\"2026-10-23T20:15:12.914418+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_PanicRefusesRetry\",\"Output\":\"--- PASS: TestCandidateCoreRepeatStop_PanicRefusesRetry (2.29s)\\n\"}\n{\"Time\":\"2026-10-23T20:15:12.914437+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreRepeatStop_PanicRefusesRetry\",\"Elapsed\":2.29}\n{\"Time\":\"2026-10-23T20:15:12.914445+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreStopError_HealthyConstructorStop\"}\n{\"Time\":\"2026-10-23T20:15:12.914461+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreStopError_HealthyConstructorStop\",\"Output\":\"=== RUN   TestCandidateCoreStopError_HealthyConstructorStop\\n\"}\n{\"Time\":\"2026-10-23T20:15:15.263632+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreStopError_HealthyConstructorStop\",\"Output\":\"--- PASS: TestCandidateCoreStopError_HealthyConstructorStop (2.35s)\\n\"}\n{\"Time\":\"2026-10-23T20:15:15.263652+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreStopError_HealthyConstructorStop\",\"Elapsed\":2.35}\n{\"Time\":\"2026-10-23T20:15:15.263658+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreStopError_CacheFailureStillClosesConsensus\"}\n{\"Time\":\"2026-10-23T20:15:15.263659+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreStopError_CacheFailureStillClosesConsensus\",\"Output\":\"=== RUN   TestCandidateCoreStopError_CacheFailureStillClosesConsensus\\n\"}\n{\"Time\":\"2026-10-23T20:15:17.562602+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreStopError_CacheFailureStillClosesConsensus\",\"Output\":\"--- PASS: TestCandidateCoreStopError_CacheFailureStillClosesConsensus (2.30s)\\n\"}\n{\"Time\":\"2026-10-23T20:15:17.562628+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreStopError_CacheFailureStillClosesConsensus\",\"Elapsed\":2.3}\n{\"Time\":\"2026-10-23T20:15:17.562635+03:00\",\"Action\":\"run\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreStopError_BothCloseErrorsAreRetained\"}\n{\"Time\":\"2026-10-23T20:15:17.562645+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreStopError_BothCloseErrorsAreRetained\",\"Output\":\"=== RUN   TestCandidateCoreStopError_BothCloseErrorsAreRetained\\n\"}\n{\"Time\":\"2026-10-23T20:15:19.923774+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreStopError_BothCloseErrorsAreRetained\",\"Output\":\"--- PASS: TestCandidateCoreStopError_BothCloseErrorsAreRetained (2.36s)\\n\"}\n{\"Time\":\"2026-10-23T20:15:19.923796+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Test\":\"TestCandidateCoreStopError_BothCloseErrorsAreRetained\",\"Elapsed\":2.36}\n{\"Time\":\"2026-10-23T20:15:19.923802+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Output\":\"PASS\\n\"}\n{\"Time\":\"2026-10-23T20:15:19.932875+03:00\",\"Action\":\"output\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Output\":\"ok  \\tgithub.com/zenon-network/go-zenon/zenon\\t35.983s\\n\"}\n{\"Time\":\"2026-10-23T20:15:19.932899+03:00\",\"Action\":\"pass\",\"Package\":\"github.com/zenon-network/go-zenon/zenon\",\"Elapsed\":35.983}\n"
+    },
+    "whole_module_payload_graph_qualified": false
+  },
+  "scope": {
+    "RPC_listener_started": false,
+    "accepted_header_binding": false,
+    "comparison_core_Start_executed": false,
+    "concurrent_Init_Start_Stop_qualified": false,
+    "controlled_concurrent_Stop_callers_per_case": 8,
+    "controlled_concurrent_Stop_cases": 2,
+    "controlled_partial_protocol_Stop_executed": true,
+    "distribution_authenticated": false,
+    "external_peer_configured": false,
+    "full_node_or_network_qualified": false,
+    "hardware_or_power_failure_qualified": false,
+    "keyless_real_core_managers_executed": true,
+    "network_activation_authenticated": false,
+    "node_wrapper_created": false,
+    "peer_server_created": false,
+    "producing_key_configured": false,
+    "production_state_value_accepted": false,
+    "profile_agreement": false,
+    "selected_sequential_repeated_Stop_cases_passed": true,
+    "wallet_manager_created": false
+  },
+  "source": {
+    "build_trees": {
+      "baseline": "1cc7576633b1d4d1cf6d5521f6c83b73b67c4b26",
+      "candidate": "0d58b9c95014ea7868e7ad85df63e1a24f24dffd"
+    },
+    "extra_sources": {
+      "core_repeat_stop_native_test.go.txt": {
+        "bytes": 4332,
+        "sha256": "30d6bb8059dffddc912265f69eb5c73b534426fec6bd01ba3b4523f29be79fff"
+      },
+      "core_repeat_stop_probe.go": {
+        "bytes": 7722,
+        "sha256": "98859bdcdbf7d47c5c43b12968e77f77de497a662a87f46dc9e306a60542de58"
+      }
+    },
+    "go_mod_sha256": "ac08476abe3df0bc67f1c5c6868f04889b864310f16a37b0d51a6598b9017a45",
+    "go_sum_sha256": "e536610c08abc9f4b979ce39cd5ae7323c3df14a189d186d911ee1d1184b8537",
+    "model": {
+      "bytes": 2972,
+      "sha256": "63b2c850486d094a7a771beb12c3fb6561f773ac4604b543ee133d874e6eae07"
+    },
+    "patch": {
+      "bytes": 8005,
+      "sha256": "2e2c83f62f30cab0d16b445103839f92fe3f918935b6f0fe434be58a692e499c"
+    },
+    "repository": "digitalSloth/go-zenon",
+    "revision": "9c71ae82fc983e16f914ae085d4034030c8ebe3b",
+    "runtime_trees": {
+      "baseline": "053c87e5bc4addd1bb70a467cb34facd439e66bc",
+      "candidate": "0581880cedda66b02cbc40bd54babd19c29340ce"
+    },
+    "selection": {
+      "bytes": 375,
+      "sha256": "2ba2ac5f86cf8870a08566ce9de7f93d65ac3774d788adf6ca4146ae214f041f"
+    },
+    "source_files": {
+      "baseline": 480,
+      "candidate": 482
+    }
+  },
+  "variants": {
+    "baseline": {
+      "binary": {
+        "bytes": 22624978,
+        "sha256": "082be38d00b23c5ca1729cdc31fc4158c6f7d765dc4589c9650f84936b7ed9ac"
+      },
+      "build": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 1738,
+          "sha256": "ac7254db017e4da4bab612bb4a029ffb91340f4d7f1d62b5040ad651e81ac24f"
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "capture": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 22624978,
+          "sha256": "082be38d00b23c5ca1729cdc31fc4158c6f7d765dc4589c9650f84936b7ed9ac"
+        }
+      },
+      "linked_module_inputs": [
+        {
+          "archive": {
+            "bytes": 55809,
+            "sha256": "9ac43a686d06fdebd719f7af3866c87eb069302272dfb131007adf471c308b65"
+          },
+          "h1": "h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=",
+          "path": "filippo.io/edwards25519",
+          "version": "v1.1.0"
+        },
+        {
+          "archive": {
+            "bytes": 89780,
+            "sha256": "0baca2ccee8e811c62b4389d01c95d6fde207008a121a7ded61074d048655658"
+          },
+          "h1": "h1:fzn1qaOt32TuLjFlkzYSsBC35Q3KUjT1SwPxiMSCF5k=",
+          "path": "github.com/btcsuite/btcd/btcec/v2",
+          "version": "v2.2.0"
+        },
+        {
+          "archive": {
+            "bytes": 154819,
+            "sha256": "28ec77eb2c680a6933524b7261210a7bf4988164c6064fedc0d33f3a3f982be7"
+          },
+          "h1": "h1:xfbtw8lwpp0G6NwSHb+UE67ryTFHJAiNuipusjXSohQ=",
+          "path": "github.com/btcsuite/btcd/btcutil",
+          "version": "v1.1.3"
+        },
+        {
+          "archive": {
+            "bytes": 11324,
+            "sha256": "b074247d190ceb1322508a8b0791f4cdb195ada94b45ffa79799a5f84a721be1"
+          },
+          "h1": "h1:q0rUy8C/TYNBQS1+CGKw68tLOFYSNEs0TFnxxnS9+4U=",
+          "path": "github.com/btcsuite/btcd/chaincfg/chainhash",
+          "version": "v1.0.1"
+        },
+        {
+          "archive": {
+            "bytes": 21258,
+            "sha256": "fcbd32794e0ff1a412bd9ed6a9ac6d43f2ff8fd5f15e5c839df06b8283241c0a"
+          },
+          "h1": "h1:sk9/l/KqpunDwP7pSjUg0keiOOLEnOBHzykLrsPppp4=",
+          "path": "github.com/deckarep/golang-set",
+          "version": "v1.8.0"
+        },
+        {
+          "archive": {
+            "bytes": 9272,
+            "sha256": "e4343d55494a93eb7bb7b59be9359fb8007fd36652b27a725db024f61605d515"
+          },
+          "h1": "h1:7PltbUIQB7u/FfZ39+DGa/ShuMyJ5ilcvdfma9wOH6Y=",
+          "path": "github.com/decred/dcrd/crypto/blake256",
+          "version": "v1.0.1"
+        },
+        {
+          "archive": {
+            "bytes": 697152,
+            "sha256": "9b3594cedab7e820108cd9f2f7f17a9edf60345baf91f7e1bd298413dba44c63"
+          },
+          "h1": "h1:8UrgZ3GkP4i/CLijOJx79Yu+etlyjdBU4sfcs2WYQMs=",
+          "path": "github.com/decred/dcrd/dcrec/secp256k1/v4",
+          "version": "v4.2.0"
+        },
+        {
+          "archive": {
+            "bytes": 14294602,
+            "sha256": "d8c98a3e38fc4f7efebde4e3b5e8a2c50d73143c421695d0cd7b30889c396ca2"
+          },
+          "h1": "h1:HbEgsDo1YTGIf4KB/NNpn+XH+PiNJXUZ9ksRxiqWyMc=",
+          "path": "github.com/ethereum/go-ethereum",
+          "version": "v1.10.22"
+        },
+        {
+          "archive": {
+            "bytes": 10631,
+            "sha256": "944a204de02272c5718a6819f1f4f6d433a0ef50ca9e737154fceae742694477"
+          },
+          "h1": "h1:ntEHSVwIt7PNXNpgPmVfMrNhLtgjlmnZha2kOpuRiDw=",
+          "path": "github.com/go-stack/stack",
+          "version": "v1.8.1"
+        },
+        {
+          "archive": {
+            "bytes": 16178,
+            "sha256": "7847b09c355215616db6309597757ff6be2cf44781d800cdad1628f141dc82ee"
+          },
+          "h1": "h1:zN2lZNZRflqFyxVaTIU61KNKQ9C0055u9CAfpmqUvo4=",
+          "path": "github.com/golang-collections/collections",
+          "version": "v0.0.0-20130729185459-604e922904d3"
+        },
+        {
+          "archive": {
+            "bytes": 79582,
+            "sha256": "ea4545ca44ee990554094df6de440386a440a5bd99106e048939409d63beb423"
+          },
+          "h1": "h1:yAGX7huGHXlcLOEtBnF4w7FQwA26wojNCwOYAEhLjQM=",
+          "path": "github.com/golang/snappy",
+          "version": "v0.0.4"
+        },
+        {
+          "archive": {
+            "bytes": 79063,
+            "sha256": "e0183e81bbc710dbbcb9b2b206a89614dd3540ddfbbd59b52861edf953eda753"
+          },
+          "h1": "h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/QY=",
+          "path": "github.com/gorilla/websocket",
+          "version": "v1.5.1"
+        },
+        {
+          "archive": {
+            "bytes": 22535,
+            "sha256": "548f72792c61d5319fb77237ed1687cfa31b7ed06b5916c7fc0520a55ee45848"
+          },
+          "h1": "h1:dg1dEPuWpEqDnvIw251EVy4zlP8gWbsGj4BsUKCRpYs=",
+          "path": "github.com/hashicorp/golang-lru",
+          "version": "v0.5.5-0.20210104140557-80c98217689d"
+        },
+        {
+          "archive": {
+            "bytes": 110666,
+            "sha256": "df663b90b9b3bf16e1cfa810a6c3dd904993e8c1155dbf65566ce0361f163dce"
+          },
+          "h1": "h1:UvLUlWDNpoUdYzb2TCn+MuTWtcjXKSza2n6CBdQ0xXc=",
+          "path": "github.com/huin/goupnp",
+          "version": "v1.3.0"
+        },
+        {
+          "archive": {
+            "bytes": 36425,
+            "sha256": "7bcdfcf1b3d69569e6c77942a0bacb8b60a152cf010ba27cae994350b6577ae0"
+          },
+          "h1": "h1:n1DqxAo4oWPMvH1+v+DLYlMCecgumhhgnxAPdqDIFHI=",
+          "path": "github.com/inconshreveable/log15",
+          "version": "v0.0.0-20201112154412-8562bdadbbac"
+        },
+        {
+          "archive": {
+            "bytes": 6553,
+            "sha256": "f778f0f492597d7158e2d6abbac3850bdf8a669c296790eba85c95152872ddfb"
+          },
+          "h1": "h1:KzKSgb7qkJvOUTqYl9/Hg/me3pWgBmERKrTGD7BdWus=",
+          "path": "github.com/jackpal/go-nat-pmp",
+          "version": "v1.0.2"
+        },
+        {
+          "archive": {
+            "bytes": 13979,
+            "sha256": "c4637499409a4081fbbd7ea0640aa0af30c0e06a70aa1b207780b0251650d8cd"
+          },
+          "h1": "h1:jF+Du6AlPIjs2BiUiQlKOX0rt3SujHxPnksPKZbaA40=",
+          "path": "github.com/mattn/go-colorable",
+          "version": "v0.1.12"
+        },
+        {
+          "archive": {
+            "bytes": 8936,
+            "sha256": "f2d5f89ca451577e17464b9bb596dc0d0ecececb5eaa63622c41b57cd0b7b8cc"
+          },
+          "h1": "h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=",
+          "path": "github.com/mattn/go-isatty",
+          "version": "v0.0.20"
+        },
+        {
+          "archive": {
+            "bytes": 17866,
+            "sha256": "d4c36b8bcd0616290a3913215e0f53b931bd6e00670596f2960df1b44af2bd07"
+          },
+          "h1": "h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=",
+          "path": "github.com/pkg/errors",
+          "version": "v0.9.1"
+        },
+        {
+          "archive": {
+            "bytes": 271605,
+            "sha256": "2079d749fb3bd347e9fd10418826ebf0d48ff5c171455060ef7d9bf842ccb8d9"
+          },
+          "h1": "h1:+1+c1VGhc88SSonWP6foOcLhvnKlUeu/erjjvaPEYiI=",
+          "path": "github.com/shirou/gopsutil",
+          "version": "v3.21.11+incompatible"
+        },
+        {
+          "archive": {
+            "bytes": 210348,
+            "sha256": "27a3ccd9769cc0df353edf9f2baec88a6fac82c766e317b1c697d06c1654052c"
+          },
+          "h1": "h1:epCh84lMvA70Z7CTTCmYQn2CKbY8j86K7/FAIr141uY=",
+          "path": "github.com/syndtr/goleveldb",
+          "version": "v1.0.1-0.20210819022825-2ae1ddf74ef7"
+        },
+        {
+          "archive": {
+            "bytes": 94228,
+            "sha256": "0eac91ee205589007df1dbc413a34e34521f4b60e2fe5ff07f7653e76e9d2821"
+          },
+          "h1": "h1:IJ1AZGZRWbY8T5Vfk04D9WOA5WSejdflXxP03OUqALw=",
+          "path": "github.com/tklauser/go-sysconf",
+          "version": "v0.3.10"
+        },
+        {
+          "archive": {
+            "bytes": 82219,
+            "sha256": "418226d3b0e8c7b1c869beb473d0d61445d9d9d3259e6fecb19aa94dc8898a3e"
+          },
+          "h1": "h1:5eUemwrMargf3BSLRRCalXT93Ns6pQJIjYQN2nyfOP8=",
+          "path": "github.com/tyler-smith/go-bip39",
+          "version": "v1.1.0"
+        },
+        {
+          "archive": {
+            "bytes": 1792511,
+            "sha256": "7cbc5fbc206b07db3c691ad59bc1b31f2c32a1dae2b04c9a7772f93a696381bf"
+          },
+          "h1": "h1:ihbySMvVjLAeSH1IbfcRTkD/iNscyz8rGzjF/E5hV6U=",
+          "path": "golang.org/x/crypto",
+          "version": "v0.31.0"
+        },
+        {
+          "archive": {
+            "bytes": 1891278,
+            "sha256": "7fd8464681c3011736f2c75beb20f88fff553a17f4f574325bce5ca5dc1fcf83"
+          },
+          "h1": "h1:d/OCCoBEUq33pjydKrGQhw7IlUPI2Oylr+8qLx49kac=",
+          "path": "golang.org/x/net",
+          "version": "v0.25.0"
+        },
+        {
+          "archive": {
+            "bytes": 26934,
+            "sha256": "94ea75ea625ecb8d81ab473a2d7e03433e63083768cd27d48a03f8c1c9da3d8d"
+          },
+          "h1": "h1:3NQrjDixjgGwUOCaF8w2+VYHv0Ve/vGYSbdkTa98gmQ=",
+          "path": "golang.org/x/sync",
+          "version": "v0.10.0"
+        },
+        {
+          "archive": {
+            "bytes": 1983555,
+            "sha256": "0ed47a83fe7d7a7e743e815172bc10c1ac0ed0d31ebb095e75717428e09aa895"
+          },
+          "h1": "h1:Fksou7UEQUWlKvIdsqzJmUmCX3cZuD2+P3XyyzwMhlA=",
+          "path": "golang.org/x/sys",
+          "version": "v0.28.0"
+        },
+        {
+          "archive": {
+            "bytes": 1627267,
+            "sha256": "c2c117cf29abee8697dabdc69662accf66171bea0efa2749988867ae8ef2362d"
+          },
+          "h1": "h1:pPC6BG5ex8PDFnkbrGU3EixyhKcQ2aDuBS36lqK/C7I=",
+          "path": "google.golang.org/protobuf",
+          "version": "v1.32.0"
+        },
+        {
+          "archive": {
+            "bytes": 82496,
+            "sha256": "07aae15601f54a5806705d218e313794118d54d9dda7addc1bf4bda4332dfc16"
+          },
+          "h1": "h1:DMTcQRFbEH62YPRWwOI647s2e5mHda3oBPMHfrLs2bw=",
+          "path": "gopkg.in/karalabe/cookiejar.v2",
+          "version": "v2.0.0-20150724131613-8dcd6a7f4951"
+        },
+        {
+          "archive": {
+            "bytes": 17854,
+            "sha256": "8c268e36660d6ce36af808d74b9be80207c05463679703e93d857e954c637aaa"
+          },
+          "h1": "h1:1Lc07Kr7qY4U2YPouBjpCLxpiyxIVoxqXgkXLknAOE8=",
+          "path": "gopkg.in/natefinch/lumberjack.v2",
+          "version": "v2.0.0"
+        }
+      ],
+      "module_information": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 3567,
+          "sha256": "d47c1c501735da158a3d76fbc8bbd78843caa2debef9b201952afc47764fa418"
+        }
+      },
+      "streams": [
+        {
+          "case": "healthy",
+          "command": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 139,
+              "sha256": "109958122c73beb3355fbc30fde5fdb70620a05549845aea15ec688252612ffa"
+            },
+            "stdout": {
+              "bytes": 4088,
+              "sha256": "0424ef7a88c634b6387381a6258e53becb071d9bd9be7b00f0dea86f7b852252"
+            }
+          },
+          "jsonl": "{\"RPC_listener_started\":false,\"after_repeated_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"after_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"before_stop\":{\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\",\"present\":true,\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"root_error\":\"none\",\"proof_error\":\"none\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"identity-mismatch\"},\"caller_teardown_after_observation\":[],\"case\":\"healthy\",\"consensus_after_fault\":\"open\",\"consensus_after_stop\":\"closed\",\"consensus_before_fault\":\"open\",\"consensus_reopened_after_teardown\":true,\"consumer_result\":\"REFUSED\",\"controlled_closed_handles\":[],\"core_started\":false,\"external_peer_configured\":false,\"final_consensus_status\":\"closed\",\"final_tree_ready\":false,\"genesis_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"genesis_patch_bytes\":10849399,\"genesis_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"header_authentication_executed\":false,\"initialized\":true,\"node_wrapper_created\":false,\"p2p_server_created\":false,\"producing_key_configured\":false,\"production_state_value_accepted\":false,\"repeated_stop\":{\"error\":\"\",\"panic\":\"close of closed channel\",\"panic_stack\":\"goroutine 1 [running]:\\nruntime/debug.Stack()\\n\\truntime/debug/stack.go:26 +0x64\\nmain.stop.func1()\\n\\tgithub.com/zenon-network/go-zenon/cmd/candidate-core-stop-errors/main.go:94 +0x6c\\npanic({0x104e9f220?, 0x104f5c900?})\\n\\truntime/panic.go:783 +0x120\\ngithub.com/zenon-network/go-zenon/protocol.(*ProtocolManager).Stop(0x140000befa0)\\n\\tgithub.com/zenon-network/go-zenon/protocol/handler.go:158 +0x5c\\ngithub.com/zenon-network/go-zenon/zenon.(*zenon).Stop(0x140007d5380)\\n\\tgithub.com/zenon-network/go-zenon/zenon/zenon.go:99 +0x2c\\nmain.stop({0x104f696c8?, 0x140007d5380?})\\n\\tgithub.com/zenon-network/go-zenon/cmd/candidate-core-stop-errors/main.go:97 +0x80\\nmain.main()\\n\\tgithub.com/zenon-network/go-zenon/cmd/candidate-core-stop-errors/main.go:188 +0xbac\\n\",\"closed_error\":false,\"leaf_classes\":[]},\"schema\":\"zenon-core-repeat-stop-observation-v1\",\"selection_sha256\":\"2ba2ac5f86cf8870a08566ce9de7f93d65ac3774d788adf6ca4146ae214f041f\",\"stop\":{\"error\":\"\",\"panic\":\"\",\"panic_stack\":\"\",\"closed_error\":false,\"leaf_classes\":[]},\"wallet_manager_created\":false}\n"
+        },
+        {
+          "case": "cache-closed",
+          "command": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 139,
+              "sha256": "109958122c73beb3355fbc30fde5fdb70620a05549845aea15ec688252612ffa"
+            },
+            "stdout": {
+              "bytes": 4137,
+              "sha256": "4f79f01a1f8fd32242c9d21031644bcf51c0f9f704885f6862b7de0e07ca28ff"
+            }
+          },
+          "jsonl": "{\"RPC_listener_started\":false,\"after_repeated_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"after_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"before_stop\":{\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\",\"present\":true,\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"root_error\":\"none\",\"proof_error\":\"none\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"identity-mismatch\"},\"caller_teardown_after_observation\":[],\"case\":\"cache-closed\",\"consensus_after_fault\":\"open\",\"consensus_after_stop\":\"closed\",\"consensus_before_fault\":\"open\",\"consensus_reopened_after_teardown\":true,\"consumer_result\":\"REFUSED\",\"controlled_closed_handles\":[\"cache-handle\"],\"core_started\":false,\"external_peer_configured\":false,\"final_consensus_status\":\"closed\",\"final_tree_ready\":false,\"genesis_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"genesis_patch_bytes\":10849399,\"genesis_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"header_authentication_executed\":false,\"initialized\":true,\"node_wrapper_created\":false,\"p2p_server_created\":false,\"producing_key_configured\":false,\"production_state_value_accepted\":false,\"repeated_stop\":{\"error\":\"\",\"panic\":\"close of closed channel\",\"panic_stack\":\"goroutine 1 [running]:\\nruntime/debug.Stack()\\n\\truntime/debug/stack.go:26 +0x64\\nmain.stop.func1()\\n\\tgithub.com/zenon-network/go-zenon/cmd/candidate-core-stop-errors/main.go:94 +0x6c\\npanic({0x1015f7220?, 0x1016b4900?})\\n\\truntime/panic.go:783 +0x120\\ngithub.com/zenon-network/go-zenon/protocol.(*ProtocolManager).Stop(0x140002f83c0)\\n\\tgithub.com/zenon-network/go-zenon/protocol/handler.go:158 +0x5c\\ngithub.com/zenon-network/go-zenon/zenon.(*zenon).Stop(0x140009c7380)\\n\\tgithub.com/zenon-network/go-zenon/zenon/zenon.go:99 +0x2c\\nmain.stop({0x1016c16c8?, 0x140009c7380?})\\n\\tgithub.com/zenon-network/go-zenon/cmd/candidate-core-stop-errors/main.go:97 +0x80\\nmain.main()\\n\\tgithub.com/zenon-network/go-zenon/cmd/candidate-core-stop-errors/main.go:188 +0xbac\\n\",\"closed_error\":false,\"leaf_classes\":[]},\"schema\":\"zenon-core-repeat-stop-observation-v1\",\"selection_sha256\":\"2ba2ac5f86cf8870a08566ce9de7f93d65ac3774d788adf6ca4146ae214f041f\",\"stop\":{\"error\":\"leveldb: closed\",\"panic\":\"\",\"panic_stack\":\"\",\"closed_error\":true,\"leaf_classes\":[\"leveldb-closed\"]},\"wallet_manager_created\":false}\n"
+        },
+        {
+          "case": "both-closed",
+          "command": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 139,
+              "sha256": "109958122c73beb3355fbc30fde5fdb70620a05549845aea15ec688252612ffa"
+            },
+            "stdout": {
+              "bytes": 4191,
+              "sha256": "f1f008adfab68633c0f33c6e2a4c8d1b2e307e5d817e42071f97a786c4062afa"
+            }
+          },
+          "jsonl": "{\"RPC_listener_started\":false,\"after_repeated_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"after_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"before_stop\":{\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\",\"present\":true,\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"root_error\":\"none\",\"proof_error\":\"none\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"identity-mismatch\"},\"caller_teardown_after_observation\":[],\"case\":\"both-closed\",\"consensus_after_fault\":\"closed\",\"consensus_after_stop\":\"closed\",\"consensus_before_fault\":\"open\",\"consensus_reopened_after_teardown\":true,\"consumer_result\":\"REFUSED\",\"controlled_closed_handles\":[\"cache-handle\",\"consensus-handle\"],\"core_started\":false,\"external_peer_configured\":false,\"final_consensus_status\":\"closed\",\"final_tree_ready\":false,\"genesis_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"genesis_patch_bytes\":10849399,\"genesis_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"header_authentication_executed\":false,\"initialized\":true,\"node_wrapper_created\":false,\"p2p_server_created\":false,\"producing_key_configured\":false,\"production_state_value_accepted\":false,\"repeated_stop\":{\"error\":\"\",\"panic\":\"close of closed channel\",\"panic_stack\":\"goroutine 1 [running]:\\nruntime/debug.Stack()\\n\\truntime/debug/stack.go:26 +0x64\\nmain.stop.func1()\\n\\tgithub.com/zenon-network/go-zenon/cmd/candidate-core-stop-errors/main.go:94 +0x6c\\npanic({0x100f9f220?, 0x10105c900?})\\n\\truntime/panic.go:783 +0x120\\ngithub.com/zenon-network/go-zenon/protocol.(*ProtocolManager).Stop(0x140002ed0e0)\\n\\tgithub.com/zenon-network/go-zenon/protocol/handler.go:158 +0x5c\\ngithub.com/zenon-network/go-zenon/zenon.(*zenon).Stop(0x1400087d380)\\n\\tgithub.com/zenon-network/go-zenon/zenon/zenon.go:99 +0x2c\\nmain.stop({0x1010696c8?, 0x1400087d380?})\\n\\tgithub.com/zenon-network/go-zenon/cmd/candidate-core-stop-errors/main.go:97 +0x80\\nmain.main()\\n\\tgithub.com/zenon-network/go-zenon/cmd/candidate-core-stop-errors/main.go:188 +0xbac\\n\",\"closed_error\":false,\"leaf_classes\":[]},\"schema\":\"zenon-core-repeat-stop-observation-v1\",\"selection_sha256\":\"2ba2ac5f86cf8870a08566ce9de7f93d65ac3774d788adf6ca4146ae214f041f\",\"stop\":{\"error\":\"leveldb: closed\\nleveldb: closed\",\"panic\":\"\",\"panic_stack\":\"\",\"closed_error\":true,\"leaf_classes\":[\"leveldb-closed\",\"leveldb-closed\"]},\"wallet_manager_created\":false}\n"
+        }
+      ]
+    },
+    "candidate": {
+      "binary": {
+        "bytes": 22625202,
+        "sha256": "cc0a138ede969c302ac6c0c4883316b5d6caf93c7f5ec58900ea60ca9a534668"
+      },
+      "build": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 1738,
+          "sha256": "949dcacb7c811f14b892b29e25e099031f6d17f9905168f50f8eb9d48a63486c"
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "capture": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 22625202,
+          "sha256": "cc0a138ede969c302ac6c0c4883316b5d6caf93c7f5ec58900ea60ca9a534668"
+        }
+      },
+      "linked_module_inputs": [
+        {
+          "archive": {
+            "bytes": 55809,
+            "sha256": "9ac43a686d06fdebd719f7af3866c87eb069302272dfb131007adf471c308b65"
+          },
+          "h1": "h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=",
+          "path": "filippo.io/edwards25519",
+          "version": "v1.1.0"
+        },
+        {
+          "archive": {
+            "bytes": 89780,
+            "sha256": "0baca2ccee8e811c62b4389d01c95d6fde207008a121a7ded61074d048655658"
+          },
+          "h1": "h1:fzn1qaOt32TuLjFlkzYSsBC35Q3KUjT1SwPxiMSCF5k=",
+          "path": "github.com/btcsuite/btcd/btcec/v2",
+          "version": "v2.2.0"
+        },
+        {
+          "archive": {
+            "bytes": 154819,
+            "sha256": "28ec77eb2c680a6933524b7261210a7bf4988164c6064fedc0d33f3a3f982be7"
+          },
+          "h1": "h1:xfbtw8lwpp0G6NwSHb+UE67ryTFHJAiNuipusjXSohQ=",
+          "path": "github.com/btcsuite/btcd/btcutil",
+          "version": "v1.1.3"
+        },
+        {
+          "archive": {
+            "bytes": 11324,
+            "sha256": "b074247d190ceb1322508a8b0791f4cdb195ada94b45ffa79799a5f84a721be1"
+          },
+          "h1": "h1:q0rUy8C/TYNBQS1+CGKw68tLOFYSNEs0TFnxxnS9+4U=",
+          "path": "github.com/btcsuite/btcd/chaincfg/chainhash",
+          "version": "v1.0.1"
+        },
+        {
+          "archive": {
+            "bytes": 21258,
+            "sha256": "fcbd32794e0ff1a412bd9ed6a9ac6d43f2ff8fd5f15e5c839df06b8283241c0a"
+          },
+          "h1": "h1:sk9/l/KqpunDwP7pSjUg0keiOOLEnOBHzykLrsPppp4=",
+          "path": "github.com/deckarep/golang-set",
+          "version": "v1.8.0"
+        },
+        {
+          "archive": {
+            "bytes": 9272,
+            "sha256": "e4343d55494a93eb7bb7b59be9359fb8007fd36652b27a725db024f61605d515"
+          },
+          "h1": "h1:7PltbUIQB7u/FfZ39+DGa/ShuMyJ5ilcvdfma9wOH6Y=",
+          "path": "github.com/decred/dcrd/crypto/blake256",
+          "version": "v1.0.1"
+        },
+        {
+          "archive": {
+            "bytes": 697152,
+            "sha256": "9b3594cedab7e820108cd9f2f7f17a9edf60345baf91f7e1bd298413dba44c63"
+          },
+          "h1": "h1:8UrgZ3GkP4i/CLijOJx79Yu+etlyjdBU4sfcs2WYQMs=",
+          "path": "github.com/decred/dcrd/dcrec/secp256k1/v4",
+          "version": "v4.2.0"
+        },
+        {
+          "archive": {
+            "bytes": 14294602,
+            "sha256": "d8c98a3e38fc4f7efebde4e3b5e8a2c50d73143c421695d0cd7b30889c396ca2"
+          },
+          "h1": "h1:HbEgsDo1YTGIf4KB/NNpn+XH+PiNJXUZ9ksRxiqWyMc=",
+          "path": "github.com/ethereum/go-ethereum",
+          "version": "v1.10.22"
+        },
+        {
+          "archive": {
+            "bytes": 10631,
+            "sha256": "944a204de02272c5718a6819f1f4f6d433a0ef50ca9e737154fceae742694477"
+          },
+          "h1": "h1:ntEHSVwIt7PNXNpgPmVfMrNhLtgjlmnZha2kOpuRiDw=",
+          "path": "github.com/go-stack/stack",
+          "version": "v1.8.1"
+        },
+        {
+          "archive": {
+            "bytes": 16178,
+            "sha256": "7847b09c355215616db6309597757ff6be2cf44781d800cdad1628f141dc82ee"
+          },
+          "h1": "h1:zN2lZNZRflqFyxVaTIU61KNKQ9C0055u9CAfpmqUvo4=",
+          "path": "github.com/golang-collections/collections",
+          "version": "v0.0.0-20130729185459-604e922904d3"
+        },
+        {
+          "archive": {
+            "bytes": 79582,
+            "sha256": "ea4545ca44ee990554094df6de440386a440a5bd99106e048939409d63beb423"
+          },
+          "h1": "h1:yAGX7huGHXlcLOEtBnF4w7FQwA26wojNCwOYAEhLjQM=",
+          "path": "github.com/golang/snappy",
+          "version": "v0.0.4"
+        },
+        {
+          "archive": {
+            "bytes": 79063,
+            "sha256": "e0183e81bbc710dbbcb9b2b206a89614dd3540ddfbbd59b52861edf953eda753"
+          },
+          "h1": "h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/QY=",
+          "path": "github.com/gorilla/websocket",
+          "version": "v1.5.1"
+        },
+        {
+          "archive": {
+            "bytes": 22535,
+            "sha256": "548f72792c61d5319fb77237ed1687cfa31b7ed06b5916c7fc0520a55ee45848"
+          },
+          "h1": "h1:dg1dEPuWpEqDnvIw251EVy4zlP8gWbsGj4BsUKCRpYs=",
+          "path": "github.com/hashicorp/golang-lru",
+          "version": "v0.5.5-0.20210104140557-80c98217689d"
+        },
+        {
+          "archive": {
+            "bytes": 110666,
+            "sha256": "df663b90b9b3bf16e1cfa810a6c3dd904993e8c1155dbf65566ce0361f163dce"
+          },
+          "h1": "h1:UvLUlWDNpoUdYzb2TCn+MuTWtcjXKSza2n6CBdQ0xXc=",
+          "path": "github.com/huin/goupnp",
+          "version": "v1.3.0"
+        },
+        {
+          "archive": {
+            "bytes": 36425,
+            "sha256": "7bcdfcf1b3d69569e6c77942a0bacb8b60a152cf010ba27cae994350b6577ae0"
+          },
+          "h1": "h1:n1DqxAo4oWPMvH1+v+DLYlMCecgumhhgnxAPdqDIFHI=",
+          "path": "github.com/inconshreveable/log15",
+          "version": "v0.0.0-20201112154412-8562bdadbbac"
+        },
+        {
+          "archive": {
+            "bytes": 6553,
+            "sha256": "f778f0f492597d7158e2d6abbac3850bdf8a669c296790eba85c95152872ddfb"
+          },
+          "h1": "h1:KzKSgb7qkJvOUTqYl9/Hg/me3pWgBmERKrTGD7BdWus=",
+          "path": "github.com/jackpal/go-nat-pmp",
+          "version": "v1.0.2"
+        },
+        {
+          "archive": {
+            "bytes": 13979,
+            "sha256": "c4637499409a4081fbbd7ea0640aa0af30c0e06a70aa1b207780b0251650d8cd"
+          },
+          "h1": "h1:jF+Du6AlPIjs2BiUiQlKOX0rt3SujHxPnksPKZbaA40=",
+          "path": "github.com/mattn/go-colorable",
+          "version": "v0.1.12"
+        },
+        {
+          "archive": {
+            "bytes": 8936,
+            "sha256": "f2d5f89ca451577e17464b9bb596dc0d0ecececb5eaa63622c41b57cd0b7b8cc"
+          },
+          "h1": "h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=",
+          "path": "github.com/mattn/go-isatty",
+          "version": "v0.0.20"
+        },
+        {
+          "archive": {
+            "bytes": 17866,
+            "sha256": "d4c36b8bcd0616290a3913215e0f53b931bd6e00670596f2960df1b44af2bd07"
+          },
+          "h1": "h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=",
+          "path": "github.com/pkg/errors",
+          "version": "v0.9.1"
+        },
+        {
+          "archive": {
+            "bytes": 271605,
+            "sha256": "2079d749fb3bd347e9fd10418826ebf0d48ff5c171455060ef7d9bf842ccb8d9"
+          },
+          "h1": "h1:+1+c1VGhc88SSonWP6foOcLhvnKlUeu/erjjvaPEYiI=",
+          "path": "github.com/shirou/gopsutil",
+          "version": "v3.21.11+incompatible"
+        },
+        {
+          "archive": {
+            "bytes": 210348,
+            "sha256": "27a3ccd9769cc0df353edf9f2baec88a6fac82c766e317b1c697d06c1654052c"
+          },
+          "h1": "h1:epCh84lMvA70Z7CTTCmYQn2CKbY8j86K7/FAIr141uY=",
+          "path": "github.com/syndtr/goleveldb",
+          "version": "v1.0.1-0.20210819022825-2ae1ddf74ef7"
+        },
+        {
+          "archive": {
+            "bytes": 94228,
+            "sha256": "0eac91ee205589007df1dbc413a34e34521f4b60e2fe5ff07f7653e76e9d2821"
+          },
+          "h1": "h1:IJ1AZGZRWbY8T5Vfk04D9WOA5WSejdflXxP03OUqALw=",
+          "path": "github.com/tklauser/go-sysconf",
+          "version": "v0.3.10"
+        },
+        {
+          "archive": {
+            "bytes": 82219,
+            "sha256": "418226d3b0e8c7b1c869beb473d0d61445d9d9d3259e6fecb19aa94dc8898a3e"
+          },
+          "h1": "h1:5eUemwrMargf3BSLRRCalXT93Ns6pQJIjYQN2nyfOP8=",
+          "path": "github.com/tyler-smith/go-bip39",
+          "version": "v1.1.0"
+        },
+        {
+          "archive": {
+            "bytes": 1792511,
+            "sha256": "7cbc5fbc206b07db3c691ad59bc1b31f2c32a1dae2b04c9a7772f93a696381bf"
+          },
+          "h1": "h1:ihbySMvVjLAeSH1IbfcRTkD/iNscyz8rGzjF/E5hV6U=",
+          "path": "golang.org/x/crypto",
+          "version": "v0.31.0"
+        },
+        {
+          "archive": {
+            "bytes": 1891278,
+            "sha256": "7fd8464681c3011736f2c75beb20f88fff553a17f4f574325bce5ca5dc1fcf83"
+          },
+          "h1": "h1:d/OCCoBEUq33pjydKrGQhw7IlUPI2Oylr+8qLx49kac=",
+          "path": "golang.org/x/net",
+          "version": "v0.25.0"
+        },
+        {
+          "archive": {
+            "bytes": 26934,
+            "sha256": "94ea75ea625ecb8d81ab473a2d7e03433e63083768cd27d48a03f8c1c9da3d8d"
+          },
+          "h1": "h1:3NQrjDixjgGwUOCaF8w2+VYHv0Ve/vGYSbdkTa98gmQ=",
+          "path": "golang.org/x/sync",
+          "version": "v0.10.0"
+        },
+        {
+          "archive": {
+            "bytes": 1983555,
+            "sha256": "0ed47a83fe7d7a7e743e815172bc10c1ac0ed0d31ebb095e75717428e09aa895"
+          },
+          "h1": "h1:Fksou7UEQUWlKvIdsqzJmUmCX3cZuD2+P3XyyzwMhlA=",
+          "path": "golang.org/x/sys",
+          "version": "v0.28.0"
+        },
+        {
+          "archive": {
+            "bytes": 1627267,
+            "sha256": "c2c117cf29abee8697dabdc69662accf66171bea0efa2749988867ae8ef2362d"
+          },
+          "h1": "h1:pPC6BG5ex8PDFnkbrGU3EixyhKcQ2aDuBS36lqK/C7I=",
+          "path": "google.golang.org/protobuf",
+          "version": "v1.32.0"
+        },
+        {
+          "archive": {
+            "bytes": 82496,
+            "sha256": "07aae15601f54a5806705d218e313794118d54d9dda7addc1bf4bda4332dfc16"
+          },
+          "h1": "h1:DMTcQRFbEH62YPRWwOI647s2e5mHda3oBPMHfrLs2bw=",
+          "path": "gopkg.in/karalabe/cookiejar.v2",
+          "version": "v2.0.0-20150724131613-8dcd6a7f4951"
+        },
+        {
+          "archive": {
+            "bytes": 17854,
+            "sha256": "8c268e36660d6ce36af808d74b9be80207c05463679703e93d857e954c637aaa"
+          },
+          "h1": "h1:1Lc07Kr7qY4U2YPouBjpCLxpiyxIVoxqXgkXLknAOE8=",
+          "path": "gopkg.in/natefinch/lumberjack.v2",
+          "version": "v2.0.0"
+        }
+      ],
+      "module_information": {
+        "actual_exit": 0,
+        "output_complete": true,
+        "reason": null,
+        "state": "COMPLETE",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stdout": {
+          "bytes": 3567,
+          "sha256": "c32f05eb5d96f83089655f4d65d61ade67f6f510ef738b8b17b7652fa607506c"
+        }
+      },
+      "streams": [
+        {
+          "case": "healthy",
+          "command": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 139,
+              "sha256": "109958122c73beb3355fbc30fde5fdb70620a05549845aea15ec688252612ffa"
+            },
+            "stdout": {
+              "bytes": 3302,
+              "sha256": "ab23c2c2cf47bf6958e0ab25d8753af41a89b66d00bd07254ca4993f79c6af1c"
+            }
+          },
+          "jsonl": "{\"RPC_listener_started\":false,\"after_repeated_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"after_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"before_stop\":{\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\",\"present\":true,\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"root_error\":\"none\",\"proof_error\":\"none\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"identity-mismatch\"},\"caller_teardown_after_observation\":[],\"case\":\"healthy\",\"consensus_after_fault\":\"open\",\"consensus_after_stop\":\"closed\",\"consensus_before_fault\":\"open\",\"consensus_reopened_after_teardown\":true,\"consumer_result\":\"REFUSED\",\"controlled_closed_handles\":[],\"core_started\":false,\"external_peer_configured\":false,\"final_consensus_status\":\"closed\",\"final_tree_ready\":false,\"genesis_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"genesis_patch_bytes\":10849399,\"genesis_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"header_authentication_executed\":false,\"initialized\":true,\"node_wrapper_created\":false,\"p2p_server_created\":false,\"producing_key_configured\":false,\"production_state_value_accepted\":false,\"repeated_stop\":{\"error\":\"\",\"panic\":\"\",\"panic_stack\":\"\",\"closed_error\":false,\"leaf_classes\":[]},\"schema\":\"zenon-core-repeat-stop-observation-v1\",\"selection_sha256\":\"2ba2ac5f86cf8870a08566ce9de7f93d65ac3774d788adf6ca4146ae214f041f\",\"stop\":{\"error\":\"\",\"panic\":\"\",\"panic_stack\":\"\",\"closed_error\":false,\"leaf_classes\":[]},\"wallet_manager_created\":false}\n"
+        },
+        {
+          "case": "cache-closed",
+          "command": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 139,
+              "sha256": "109958122c73beb3355fbc30fde5fdb70620a05549845aea15ec688252612ffa"
+            },
+            "stdout": {
+              "bytes": 3381,
+              "sha256": "9fe8bfc8e1086723182317eb2e17747b71234ea8253d4b38e79a105500758660"
+            }
+          },
+          "jsonl": "{\"RPC_listener_started\":false,\"after_repeated_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"after_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"before_stop\":{\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\",\"present\":true,\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"root_error\":\"none\",\"proof_error\":\"none\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"identity-mismatch\"},\"caller_teardown_after_observation\":[],\"case\":\"cache-closed\",\"consensus_after_fault\":\"open\",\"consensus_after_stop\":\"closed\",\"consensus_before_fault\":\"open\",\"consensus_reopened_after_teardown\":true,\"consumer_result\":\"REFUSED\",\"controlled_closed_handles\":[\"cache-handle\"],\"core_started\":false,\"external_peer_configured\":false,\"final_consensus_status\":\"closed\",\"final_tree_ready\":false,\"genesis_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"genesis_patch_bytes\":10849399,\"genesis_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"header_authentication_executed\":false,\"initialized\":true,\"node_wrapper_created\":false,\"p2p_server_created\":false,\"producing_key_configured\":false,\"production_state_value_accepted\":false,\"repeated_stop\":{\"error\":\"leveldb: closed\",\"panic\":\"\",\"panic_stack\":\"\",\"closed_error\":true,\"leaf_classes\":[\"leveldb-closed\"]},\"schema\":\"zenon-core-repeat-stop-observation-v1\",\"selection_sha256\":\"2ba2ac5f86cf8870a08566ce9de7f93d65ac3774d788adf6ca4146ae214f041f\",\"stop\":{\"error\":\"leveldb: closed\",\"panic\":\"\",\"panic_stack\":\"\",\"closed_error\":true,\"leaf_classes\":[\"leveldb-closed\"]},\"wallet_manager_created\":false}\n"
+        },
+        {
+          "case": "both-closed",
+          "command": {
+            "actual_exit": 0,
+            "output_complete": true,
+            "reason": null,
+            "state": "COMPLETE",
+            "stderr": {
+              "bytes": 139,
+              "sha256": "109958122c73beb3355fbc30fde5fdb70620a05549845aea15ec688252612ffa"
+            },
+            "stdout": {
+              "bytes": 3469,
+              "sha256": "7c6a4fcdf391a9999a10d054b8c73fb8891882d7f866dfc1b1db538c851c1bee"
+            }
+          },
+          "jsonl": "{\"RPC_listener_started\":false,\"after_repeated_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"after_stop\":{\"ready\":false,\"root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"value\":\"\",\"present\":false,\"proof\":\"\",\"root_error\":\"not-ready\",\"proof_error\":\"not-ready\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"not-ready\"},\"before_stop\":{\"ready\":true,\"root\":\"864dbad1c3ef38e2c867950390364878c58238183d01b8bf97ef73e2efa4383d\",\"value\":\"00000000000000000000000000000000000000000000000000000000000186a0\",\"present\":true,\"proof\":\"0125723d10f143fd7b5c5a1660e6685bec35c386a7ec337f755c1c526ba035d52ca0c416fdc70742c3c5f4c81de1f8b4feb4738ab7de5cba1e31a906822797deda0000000000000000000000000000000000000000000000000000000000003fff000ee584a7cc88d2fb8d70c2326a71f30f318528734c6c6367c9fb2345ce19af8b6daa8d536219c49d78ae6ce31f76d838000fde1687b7b031c28db00b232285277b1d71e5c1e8cdffacff746f9574071444268099602f108b056cc98b65c71e8bf87151b0d7811e9689e2ce6890e78959a40a512f3f27d096a4213571fd664a30c68bfb4d025e8d0daec5ca7f6c2d6a63588b7fa87a8c981b05186bb14857fc39daf46fd974d9107dd5bc63498e81272210440ce80a799d7e06b2ce61b5666731012f6c045cc0af02be8e9b3cebf91f6cdbec4d3a14703aa7a33353e5616b123d1ff6846ef5eded6e5fcc3415f995e38e7fa5b488bc996d55706ef085106f8a5b04d415d7241929a5f58247f364abee0893a027bf540a85753ef3ca4d2facdf64c02a0848464297f4540e7fe206ea99f88151117dae1bc98d63923317e3a8d707f80bb6be07995359ae522c7a73ec4eb02b777e10fbda62a3571a260447bcd148ea1c89d8e468ec1e1e43de1282e1309d454bbe3b063a43adeb936f4b4d60232f40b61484ac4d758173bc1a6b0daed00327748ae5e76a34be80c51f3fe19b9c725018253d1c7bd4c4b8f1c18f45bbb39cb47b0f392c3027d9b22ec6fb2ff68c61470000002000000000000000000000000000000000000000000000000000000000000186a0\",\"root_error\":\"none\",\"proof_error\":\"none\",\"foreign_root\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"foreign_error\":\"identity-mismatch\"},\"caller_teardown_after_observation\":[],\"case\":\"both-closed\",\"consensus_after_fault\":\"closed\",\"consensus_after_stop\":\"closed\",\"consensus_before_fault\":\"open\",\"consensus_reopened_after_teardown\":true,\"consumer_result\":\"REFUSED\",\"controlled_closed_handles\":[\"cache-handle\",\"consensus-handle\"],\"core_started\":false,\"external_peer_configured\":false,\"final_consensus_status\":\"closed\",\"final_tree_ready\":false,\"genesis_identifier\":{\"hash\":\"9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0\",\"height\":1},\"genesis_patch_bytes\":10849399,\"genesis_patch_sha256\":\"a222aac55304b1a489d395235c61af4182ac08b887d24d0c3f654aa402f35e75\",\"header_authentication_executed\":false,\"initialized\":true,\"node_wrapper_created\":false,\"p2p_server_created\":false,\"producing_key_configured\":false,\"production_state_value_accepted\":false,\"repeated_stop\":{\"error\":\"leveldb: closed\\nleveldb: closed\",\"panic\":\"\",\"panic_stack\":\"\",\"closed_error\":true,\"leaf_classes\":[\"leveldb-closed\",\"leveldb-closed\"]},\"schema\":\"zenon-core-repeat-stop-observation-v1\",\"selection_sha256\":\"2ba2ac5f86cf8870a08566ce9de7f93d65ac3774d788adf6ca4146ae214f041f\",\"stop\":{\"error\":\"leveldb: closed\\nleveldb: closed\",\"panic\":\"\",\"panic_stack\":\"\",\"closed_error\":true,\"leaf_classes\":[\"leveldb-closed\",\"leveldb-closed\"]},\"wallet_manager_created\":false}\n"
+        }
+      ]
+    }
+  }
+}

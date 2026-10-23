@@ -190,6 +190,14 @@ failed; a test-only diagnostic handler bounded the resumed output without
 repeating successful comparison processes. These results do not close the
 agreement, accepted-header, realistic-workload or independent-review gates.
 
+The [repeated core Stop comparison](core-repeated-stop.md) adds the next
+bounded manager-lifecycle correction: repeated Stop callers retain the first
+completed result, while a panicked first Stop leaves later callers refused.
+Six ordinary processes, 58 native roots/71 passes and five Go race roots/nine
+passes preserve the prior error and source-genesis queries. This selected
+Stop-only concurrency does not qualify concurrent Init/Start/Stop, full-node
+restart, M2 profile agreement or accepted state values.
+
 The [native candidate v3 codec](candidate-v3-header-codec.md) adds bounded
 projected-header decoding and the selected 208-byte hash layout. Its tests
 compare all six recorded v3 preimages/hashes and preserve four v1/v2 cases.

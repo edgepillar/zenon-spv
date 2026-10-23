@@ -297,6 +297,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_core_stop_errors_test.py -v
       - name: Independent recorded core Stop errors
         run: python -I -B tools/gen-state-root-vectors/check_core_stop_errors.py --source-revision "${{ github.sha }}"
+      - name: Core repeated Stop source and recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_core_repeat_stop_test.py -v
+      - name: Independent recorded repeated core Stop
+        run: python -I -B tools/gen-state-root-vectors/check_core_repeat_stop.py --source-revision "${{ github.sha }}"
       - name: Public Chain proof workload controls
         run: python -I -B -m unittest discover -s tools/gen-state-root-vectors -p "*public_chain_proof_workload_test.py" -v
       - name: Independent recorded public Chain proof workload
@@ -934,6 +938,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_core_stop_errors_test.py -v
       - name: Independent recorded core Stop errors
         run: python -I -B tools/gen-state-root-vectors/check_core_stop_errors.py --source-revision "${{ github.sha }}"
+      - name: Core repeated Stop source and recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_core_repeat_stop_test.py -v
+      - name: Independent recorded repeated core Stop
+        run: python -I -B tools/gen-state-root-vectors/check_core_repeat_stop.py --source-revision "${{ github.sha }}"
       - name: Public Chain proof workload controls
         run: python -I -B -m unittest discover -s tools/gen-state-root-vectors -p "*public_chain_proof_workload_test.py" -v
       - name: Independent recorded public Chain proof workload
