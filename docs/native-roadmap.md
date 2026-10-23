@@ -184,6 +184,13 @@ failed; a test-only diagnostic handler bounded the resumed output without
 repeating successful comparison processes. These results do not close the
 agreement, accepted-header, realistic-workload or independent-review gates.
 
+The [native candidate v3 codec](candidate-v3-header-codec.md) adds bounded
+projected-header decoding and the selected 208-byte hash layout. Its tests
+compare all six recorded v3 preimages/hashes and preserve four v1/v2 cases.
+The codec returns untrusted data and keeps the native version gate, saved
+context and state-value refusal unchanged. It is M3 format preparation;
+profile agreement and an actually accepted header remain required.
+
 For M3, obtain the expected root from the owned accepted v3 header/context.
 Derive the selected address/token key locally and carry exact presence,
 absence and value semantics through transport, saved state and the consumer.
