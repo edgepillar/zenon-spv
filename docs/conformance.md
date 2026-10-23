@@ -1,5 +1,12 @@
 # Conformance
 
+The [repeated core Stop comparison](core-repeated-stop.md) records three
+preceding protocol-channel panics and three successor repeats that preserve the
+first completed result. Its 58-root/71-result native suite and five-root/nine-result
+Go race check cover selected Stop callers and controlled incomplete shutdown.
+Portable CI rechecks the retained evidence; it does not rerun the Darwin backend
+or qualify concurrent Init/Start/Stop. State-value acceptance remains refused.
+
 The [core-manager close-error experiment](core-stop-error-cleanup.md) records six
 ordinary owned-manager processes and a 53-root/62-result native suite. The
 successor closes the final database after a real cache close error and retains
