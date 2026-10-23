@@ -27,6 +27,7 @@ SOURCE_PINS = {
     'check.py': 'e12669998c97086abcd6da1d6e70fb3c99e6db5fd8dd9a1be6eb063d343a13e1',
     'check_bulk_guards.py': '1ef972ae64630bbb3b7d0b19c3b1634b0eb5abc1d9e64a635276bcdbb974333c',
     'check_oracle_projection.py': '4a2b7d71d45876897f24d95e59d2e0c67406556290138f17e35788b6c5ff5897',
+    'check_oracle_projection_test.py': 'fb9b1bba051308c212bbb25d5abcb8001cd74e931552f8251d8050f5ed710089',
     'check_patch_decode.py': '8d34e52bf28e7e52c04fe67d6b19ebc4aba8aa84ab587620902e796275068f58',
     'check_patch_file.py': 'd59448135288680ebbd5a3d02dfdb15e12ff3b14c267474ac77d9b286b6bd873',
     'check_patch_import.py': 'e5047c98a124e7a07d4aeffe651df0af8fb84ce26fee1ce230efca8a3d1d61f4',
@@ -42,7 +43,9 @@ SOURCE_PINS = {
     'check_tree_driver_resources.py': '65b1399276cb68c86e7645c9c7490aee06711ce6d265d8c0528e98c9458dde97',
     'check_tree_driver_resources_test.py': '7db9a54834f9748818f5ee99b35d7bc65955533752051b7e1ac214fb2fd65862',
     'check_tree_import_lifecycle.py': '070ccb634d25d44640727bdc4bc81caf8c1b9032fa2304f1f20cb3d8d5be2b5c',
+    'check_tree_import_lifecycle_test.py': 'ccf14176d0a569c0340021660bc8c9e421ec971a0b55b9a263e242c908573706',
     'check_tree_import_scale.py': '81cd5dd12d59d6f5de4970bd362e12b4df40f28e4a258287f0b9822515e9db8e',
+    'check_tree_import_scale_test.py': '37a10e2c7072c6fcb9d08999ca3133c09402a8d08a50c917b13c238002c97b31',
     'check_tree_scale.py': '558787e3c10a3cff6ea31a1062d2bb7c27c12cc55fc5d390c177783848c278e5',
     'observe_driver_resources.py': '2228beb965b9aa7ecae2fd011041c6c1bc426ba6ecc06898539b05aa33b1799d',
     'observe_temp_workspace.py': '53378dfd5dcfa1b531f59275cac7245ac6f37e1bd8c4fa5bd868870510a12c39',
@@ -50,6 +53,32 @@ SOURCE_PINS = {
     'project_sparse_oracle.py': '2bb63506fc985126c153a3bd8b45c3512f4573d7118540a3f1f225f0761da6fb',
 }
 SEAMS = {
+    'check_tree_import_scale.py': (
+        'program.RET', 'program.FILE.DEC.RET',
+        'program.TAIL.GUARD.RET', 'program.TAIL.RESOURCE.DEC.RET'),
+    'check_tree_import_scale_test.py': (
+        'program.CHECK.RET', 'program.CHECK.FILE.DEC.RET',
+        'program.CHECK.TAIL.GUARD.RET', 'program.CHECK.TAIL.RESOURCE.DEC.RET'),
+    'check_tree_import_lifecycle.py': (
+        'program.RET', 'program.SCALE.FILE.DEC.RET',
+        'program.SCALE.TAIL.GUARD.RET', 'program.SCALE.TAIL.RESOURCE.DEC.RET'),
+    'check_tree_import_lifecycle_test.py': (
+        'program.CHECK.RET', 'program.CHECK.SCALE.FILE.DEC.RET',
+        'program.CHECK.SCALE.TAIL.GUARD.RET', 'program.CHECK.SCALE.TAIL.RESOURCE.DEC.RET'),
+    'check_oracle_projection.py': (
+        'program.RET', 'program.DRIVER.RET',
+        'program.IMPORT.FILE.DEC.RET', 'program.IMPORT.TAIL.GUARD.RET',
+        'program.IMPORT.TAIL.RESOURCE.DEC.RET',
+        'program.DRIVER.LIFE.SCALE.FILE.DEC.RET',
+        'program.DRIVER.LIFE.SCALE.TAIL.GUARD.RET',
+        'program.DRIVER.LIFE.SCALE.TAIL.RESOURCE.DEC.RET'),
+    'check_oracle_projection_test.py': (
+        'program.CHECK.RET', 'program.CHECK.DRIVER.RET',
+        'program.CHECK.IMPORT.FILE.DEC.RET', 'program.CHECK.IMPORT.TAIL.GUARD.RET',
+        'program.CHECK.IMPORT.TAIL.RESOURCE.DEC.RET',
+        'program.CHECK.DRIVER.LIFE.SCALE.FILE.DEC.RET',
+        'program.CHECK.DRIVER.LIFE.SCALE.TAIL.GUARD.RET',
+        'program.CHECK.DRIVER.LIFE.SCALE.TAIL.RESOURCE.DEC.RET'),
     'check_tree_driver_resources.py': (
         'program.RET', 'program.LIFE.SCALE.FILE.DEC.RET',
         'program.LIFE.SCALE.TAIL.GUARD.RET', 'program.LIFE.SCALE.TAIL.RESOURCE.DEC.RET'),
