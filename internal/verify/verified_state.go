@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
 	"github.com/0x3639/zenon-spv/internal/proof"
@@ -175,7 +176,9 @@ func (s VerifiedState) Save(path string) error {
 	if s.data == nil {
 		return ErrUninitializedState
 	}
-	return SaveHeaderState(path, s.data.state)
+	// Construction, resume and extension already checked this immutable window.
+	// Share the same bounded atomic writer without repeating its cryptography.
+	return writeValidatedHeaderState(path, s.data.state, os.Open)
 }
 
 func uninitializedStateResult() Result {

@@ -36,6 +36,10 @@ jobs:
         run: go test -json -count=1 -run '^TestCandidateV3Header' ./internal/chain
       - name: Candidate sparse proof controls
         run: go test -json -count=1 -run '^TestCandidateSMT' ./internal/proof
+      - name: Owned state persistence controls
+        run: go test -race -json -count=1 -run '^TestVerifiedStateSave' ./internal/verify
+      - name: Owned state persistence observations
+        run: go test -json -run '^$' -bench '^BenchmarkOwnedStatePersistence/' -benchtime=1x -benchmem -cpu=1 -count=3 ./internal/verify
       - name: Retained model header equality controls
         run: go test -v -count=1 -run '^TestSequenceHeaderEqualityMatchesReflection$' ./internal/verify
       - name: Retained model header comparison observations
@@ -669,6 +673,10 @@ jobs:
         run: go test -json -count=1 -run '^TestCandidateV3Header' ./internal/chain
       - name: Candidate sparse proof controls
         run: go test -json -count=1 -run '^TestCandidateSMT' ./internal/proof
+      - name: Owned state persistence controls
+        run: go test -json -count=1 -run '^TestVerifiedStateSave' ./internal/verify
+      - name: Owned state persistence observations
+        run: go test -json -run '^$' -bench '^BenchmarkOwnedStatePersistence/' -benchtime=1x -benchmem -cpu=1 -count=3 ./internal/verify
       - name: Retained model header equality controls
         run: go test -v -count=1 -run '^TestSequenceHeaderEqualityMatchesReflection$' ./internal/verify
       - name: Retained model header comparison observations

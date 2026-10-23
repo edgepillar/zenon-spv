@@ -51,6 +51,12 @@ signals through cancellation, joined child completion and private staging
 cleanup. Controlled verifier/consumer processes exercise those boundaries;
 they leave the real consumer, network and trust-input acceptance gates open.
 
+The [owned-state persistence comparison](owned-state-persistence.md) reuses the
+immutable handle's established window validation when saving. Mutable inputs and
+loaded files retain their full checks; the bounded atomic writer and serialized
+bytes stay the same. Its local cost observations leave the consumer, network,
+independent-review and distribution gates open.
+
 Before collecting another candidate, the consumer owner and operator select:
 
 - The concrete read-only use, exact real account address/height/hash targets,
