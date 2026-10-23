@@ -1,0 +1,149 @@
+//go:build candidate_core_stop_errors
+
+// SPDX-License-Identifier: GPL-3.0-only
+package zenon
+
+import (
+	"errors"
+	"fmt"
+	"sync"
+	"testing"
+
+	"github.com/syndtr/goleveldb/leveldb"
+)
+
+func candidateRepeatStopOwned(t *testing.T, initialize bool) Zenon {
+	t.Helper()
+	z := candidateCoreStopOwned(t)
+	t.Cleanup(func() {
+		if err := z.Stop(); err != nil && !errors.Is(err, leveldb.ErrClosed) {
+			t.Errorf("final Stop: %v", err)
+		}
+	})
+	if initialize {
+		if err := z.Init(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return z
+}
+func candidateRepeatStopFaults(t *testing.T, z Zenon, count int) {
+	t.Helper()
+	if count > 0 {
+		if err := CandidateCoreStopCloseCacheHandle(z); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if count > 1 {
+		if err := CandidateCoreStopCloseConsensusHandle(z); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+func candidateRepeatStopCheck(t *testing.T, z Zenon, err error, leaves int) {
+	t.Helper()
+	if len(candidateCoreStopLeaves(err)) != leaves ||
+		errors.Is(err, leveldb.ErrClosed) != (leaves > 0) {
+		t.Fatalf("unexpected retained close result: %v", err)
+	}
+	if z.Chain().StateTreeReady() || CandidateCoreStopConsensusStatus(z) != "closed" {
+		t.Fatal("complete Stop must leave the state tree unavailable and consensus closed")
+	}
+}
+func TestCandidateCoreRepeatStop_Constructor(t *testing.T) {
+	z := candidateRepeatStopOwned(t, false)
+	first := z.Stop()
+	candidateRepeatStopCheck(t, z, first, 0)
+	for i := 0; i < 3; i++ {
+		if again := z.Stop(); again != first {
+			t.Fatalf("constructor repeat changed the completed result: %v", again)
+		}
+	}
+}
+func TestCandidateCoreRepeatStop_Initialized(t *testing.T) {
+	z := candidateRepeatStopOwned(t, true)
+	if !z.Chain().StateTreeReady() {
+		t.Fatal("initialized state-tree control was not ready")
+	}
+	first := z.Stop()
+	candidateRepeatStopCheck(t, z, first, 0)
+	if again := z.Stop(); again != first {
+		t.Fatalf("initialized repeat changed the completed result: %v", again)
+	}
+}
+func TestCandidateCoreRepeatStop_CloseErrorsRetainIdentity(t *testing.T) {
+	for _, count := range []int{1, 2} {
+		t.Run(fmt.Sprint(count), func(t *testing.T) {
+			z := candidateRepeatStopOwned(t, true)
+			candidateRepeatStopFaults(t, z, count)
+			first := z.Stop()
+			candidateRepeatStopCheck(t, z, first, count)
+			for i := 0; i < 3; i++ {
+				if again := z.Stop(); again != first {
+					t.Fatalf("repeat lost the original complete error object: %v", again)
+				}
+			}
+		})
+	}
+}
+func TestCandidateCoreRepeatStop_ConcurrentCallers(t *testing.T) {
+	for _, count := range []int{0, 2} {
+		t.Run(fmt.Sprint(count), func(t *testing.T) {
+			z := candidateRepeatStopOwned(t, true)
+			candidateRepeatStopFaults(t, z, count)
+			const callers = 8
+			ready := sync.WaitGroup{}
+			ready.Add(callers)
+			start := make(chan struct{})
+			results := make(chan error, callers)
+			for i := 0; i < callers; i++ {
+				go func() {
+					ready.Done()
+					<-start
+					results <- z.Stop()
+				}()
+			}
+			ready.Wait()
+			close(start)
+			first := <-results
+			for i := 1; i < callers; i++ {
+				if other := <-results; other != first {
+					t.Fatalf("concurrent caller changed the completed result: %v", other)
+				}
+			}
+			candidateRepeatStopCheck(t, z, first, count)
+		})
+	}
+}
+func TestCandidateCoreRepeatStop_PanicRefusesRetry(t *testing.T) {
+	z := candidateCoreStopOwned(t).(*zenon)
+	// Close only this private instance's real protocol channel first. This is a
+	// controlled partial-stop case, not a network or hardware failure.
+	z.protocol.Stop()
+	defer func() {
+		err := errors.Join(z.pillar.Stop(), z.subscribe.Stop(), z.evPrinter.Stop(),
+			z.consensus.Stop(), z.chain.Stop(), z.levelDb.Close())
+		if err != nil {
+			t.Errorf("explicit partial-stop teardown: %v", err)
+		}
+	}()
+	var recovered any
+	func() {
+		defer func() { recovered = recover() }()
+		_ = z.Stop()
+	}()
+	if fmt.Sprint(recovered) != "close of closed channel" {
+		t.Fatalf("control did not reach the real protocol close: %v", recovered)
+	}
+	if CandidateCoreStopConsensusStatus(z) != "open" {
+		t.Fatal("partial-stop control unexpectedly closed consensus")
+	}
+	for i := 0; i < 3; i++ {
+		if err := z.Stop(); !errors.Is(err, ErrStopIncomplete) {
+			t.Fatalf("a panicked Stop must not become success or retry managers: %v", err)
+		}
+	}
+	if CandidateCoreStopConsensusStatus(z) != "open" {
+		t.Fatal("refused retry re-entered the partial manager teardown")
+	}
+}
