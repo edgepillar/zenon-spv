@@ -532,6 +532,19 @@ jobs:
         # Isolate full-package orchestration. Selected resource workload
         # concurrency, rounds and observer completion bounds remain unchanged.
         run: go test -p 1 -race -count=1 -coverprofile=coverage.out ./...
+      - name: Verify root module cache
+        id: root_module_cache
+        shell: bash
+        env:
+          GOTOOLCHAIN: local
+          GOWORK: 'off'
+          GOENV: 'off'
+          GOFLAGS: ''
+          GOPROXY: 'off'
+          GOSUMDB: 'off'
+        run: |
+          go mod verify
+          git diff --exit-code -- go.mod go.sum
       - name: Offline pilot report
         id: pilot
         run: go run ./tools/offline-pilot --race --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
@@ -1193,6 +1206,19 @@ jobs:
       - name: Native test
         # Keep every package while preserving concurrency within its tests.
         run: go test -p 1 -count=1 -timeout=5m ./...
+      - name: Verify root module cache
+        id: root_module_cache
+        shell: bash
+        env:
+          GOTOOLCHAIN: local
+          GOWORK: 'off'
+          GOENV: 'off'
+          GOFLAGS: ''
+          GOPROXY: 'off'
+          GOSUMDB: 'off'
+        run: |
+          go mod verify
+          git diff --exit-code -- go.mod go.sum
       - name: Offline pilot report
         id: pilot
         shell: bash

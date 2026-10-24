@@ -19,9 +19,13 @@ independent human review or authenticated distribution.
 The frozen handoff manifest has SHA-256
 `a2d38fea7a8672f8fe626f50aea9885d1a5087bdd210abf75d26fa4fc82b588d`.
 Its private evidence and unsigned hash do not authenticate their own origin.
-Later documentation changes are tracked separately. A later executable
-candidate needs its own source, binary, report, scenario and skip reconciliation;
-historical observations keep their original revisions.
+Later changes include executable code and tests, as well as documentation and
+research. The [frozen-to-baseline change ledger](review-candidate-changes.md)
+enumerates the complete root-module Go/module delta through the separately
+qualified `879fbce33dd77f483f7aba18994fb037f248e842` baseline. That baseline's
+CI and artifact qualification do not transfer independent review to a changed
+executable. Every later candidate needs its own source, binary, report, scenario
+and skip reconciliation; historical observations keep their original revisions.
 
 The [source scenario companion](scenario-inventory.md) supports that review
 without changing the frozen executable candidate. It checks the retained offline
@@ -43,6 +47,24 @@ authenticated distribution remain distinct requirements.
 M1 can proceed alongside M2. A second operator is not a prerequisite for an
 explicitly operator-trusted development experiment. Independent network
 qualification has additional selection, corroboration and provenance gates.
+
+The next state-root input is the [R1 inventory and measurement intake](state-root-r1-intake.md).
+Collect a consistent, source-bound raw-ledger inventory and declared workload
+before choosing commitment-domain, activation or hardware budgets. Existing
+primitive and source-genesis cases are reusable controls, not representative
+network measurements. Snapshot transport/import preparation can proceed with
+explicit trust and completeness limits before root activation. Reuse the
+existing v3 codec and sparse-proof primitives when M2 permits the M3 flow;
+another recorded experiment family does not replace the missing agreement or
+representative data.
+
+CI now verifies the downloaded root-module cache after its builds/tests, with
+network lookup and toolchain switching disabled, and rejects `go.mod`/`go.sum`
+drift. This checks the main build list's cached content under
+[Go's verification semantics](https://go.dev/ref/mod#go-mod-verify). It does not
+qualify the six separate research module caches, dependency provenance or a
+reproducible/authenticated release. The ordinary build, source binding, artifact
+and independent acceptance checks remain necessary.
 
 ## Start the real consumer pilot
 
