@@ -197,6 +197,11 @@ or authenticated test execution.
 
 The checker streams opaque binary hashes; it does not validate executable
 semantics or authenticate test execution or the overall scenario selection.
+For a separately selected clean source checkout, the
+[scenario inventory companion](scenario-inventory.md) additionally compares the
+retained report's complete root-scenario selection and declared command records
+with the source-owned registry. It reads the existing report and source inputs;
+it creates no second candidate ZIP and does not replace the payload validator.
 Archive input is at most 256 MiB, manifest input 256 KiB and report input 4 MiB,
 with bounded JSON depth, strings, collections and nodes. Metadata reads request
 the declared entry size plus one after the nonempty and category-limit checks.
