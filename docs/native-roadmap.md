@@ -23,6 +23,12 @@ Later documentation changes are tracked separately. A later executable
 candidate needs its own source, binary, report, scenario and skip reconciliation;
 historical observations keep their original revisions.
 
+The [source scenario companion](scenario-inventory.md) supports that review
+without changing the frozen executable candidate. It checks the retained offline
+report against the literal registry in a separately selected clean source
+checkout. Payload validation, actual execution, independent human acceptance and
+authenticated distribution remain distinct requirements.
+
 ## Current delivery order
 
 | Milestone | Owner and current state | Required exit |
