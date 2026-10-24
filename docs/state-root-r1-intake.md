@@ -7,6 +7,13 @@ R1 is the representative inventory needed by M2/M4 in the
 bounded proof primitive remain the starting point. This procedure does not
 choose a protocol profile, implement a new exporter or enable state values.
 
+The [bounded effective ledger inventory tool](../tools/ledger-inventory/README.md)
+can inspect a separately selected ordered put stream without keeping a key map
+or copying the export. It checks selection pins, reports prefix/size counts and
+reports explicit UNKNOWN/refusal boundaries. It does not establish the stream's
+ledger domain, consistency, snapshot completeness or representativeness; the
+real node/export and acceptance inputs below remain necessary.
+
 ## Declare the sample before collection
 
 The node/operator and consumer owners must select and record:
