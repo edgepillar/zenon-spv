@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest import mock
 
@@ -331,10 +332,35 @@ class ScenarioInventoryControls(unittest.TestCase):
                 self.assertNotIn("private", output.getvalue())
             self.assertTrue(all(stream.closed for stream in observed))
 
+    def test_distinct_stat_clock_origins_are_kept_separate(self):
+        # Windows stat() and fstat() can expose different ctime semantics.
+        # Model that distinction without changing the file or its identity.
+        original = os.fstat
+        fields = ("st_dev", "st_ino", "st_mode", "st_nlink", "st_size", "st_mtime_ns", "st_ctime_ns")
+        def descriptor_stat(descriptor):
+            info = original(descriptor)
+            values = {name: getattr(info, name) for name in fields}
+            values["st_ctime_ns"] += 1_000_000_000
+            return SimpleNamespace(**values)
+        expected = self.source.read_bytes()
+        with mock.patch.object(M.os, "fstat", side_effect=descriptor_stat):
+            self.assertEqual(M.read_regular(self.source, M.SCENARIO_SOURCE_LIMIT, "scenario_source_read"), expected)
+
     def test_identity_drift_before_close_is_refused(self):
-        with mock.patch.object(P, "file_identity", side_effect=lambda value: object()):
-            with self.assertRaises(M.Rejected):
-                self.verify()
+        descriptor = P.file_identity(self.source.lstat())
+        pathname = descriptor[:-1] + (descriptor[-1] + 1,)
+        # Cross-API identity fields must agree. Both complete snapshots,
+        # including their distinct change clocks, must then remain stable.
+        for snapshot in (1, 2, 3):
+            for field in range(6 if snapshot == 1 else 7):
+                values = [descriptor, pathname, descriptor, pathname]
+                changed = list(values[snapshot])
+                changed[field] += 1
+                values[snapshot] = tuple(changed)
+                with self.subTest(snapshot=snapshot, field=field), mock.patch.object(
+                        P, "file_identity", side_effect=values):
+                    with self.assertRaises(M.Rejected):
+                        M.read_regular(self.source, M.SCENARIO_SOURCE_LIMIT, "scenario_source_read")
 
     def test_cli_success_and_argument_errors_do_not_leak_paths(self):
         output = io.StringIO()
