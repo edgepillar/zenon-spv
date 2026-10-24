@@ -69,9 +69,15 @@ def read_regular(path, limit, category):
         with p.regular_file(Path(path), limit, category) as (stream, size):
             require(0 < size <= limit, category)
             before = p.file_identity(os.fstat(stream.fileno()))
+            pathname = p.file_identity(Path(path).lstat())
+            # The pinned identity tuple ends with ctime. On Windows, stat()
+            # and fstat() can expose different meanings for that field.
+            # Bind the other identity fields across APIs and retain both full
+            # snapshots so changes within either API still reject the read.
+            require(before[:-1] == pathname[:-1], category)
             raw = b"".join(p.chunks(stream, size, category))
             require(p.file_identity(os.fstat(stream.fileno())) == before
-                    and p.file_identity(Path(path).lstat()) == before, category)
+                    and p.file_identity(Path(path).lstat()) == pathname, category)
         return raw
     except p.checker.Rejected:
         raise Rejected(category) from None

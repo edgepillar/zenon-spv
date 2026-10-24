@@ -64,6 +64,13 @@ real EOF and successful close. Report parsing reuses the pinned candidate
 validator's JSON bounds and field/resource/skip rules. These are read and parser
 bounds, not a whole-process memory budget or filesystem ownership authentication.
 
+Descriptor and pathname checks each retain their own before/after identity
+tuple. Device, inode, mode, link count, size and modification time also agree
+across both snapshots. Change time is compared within each API because
+[Windows Python can report different change-time meanings](https://github.com/python/cpython/issues/157671)
+for a pathname and its open descriptor. This does not discard change detection
+within either snapshot.
+
 The source parser accepts the selected positional literal registry, nil or
 literal command lists, comments and ordinary whitespace. It checks the complete
 declaration shape and constants/corpus tail. Computed entries, duplicate IDs or
