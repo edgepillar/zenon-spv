@@ -122,5 +122,6 @@ jobs:
         with:
           name: ledger-transport-${{ matrix.platform }}
           path: ${{ runner.temp }}/r1-ledger-transport/
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
