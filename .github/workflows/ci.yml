@@ -303,6 +303,18 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_core_repeat_stop_test.py -v
       - name: Independent recorded repeated core Stop
         run: python -I -B tools/gen-state-root-vectors/check_core_repeat_stop.py --source-revision "${{ github.sha }}"
+      - name: Core Init and Stop source and recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_core_init_stop_test.py -v
+      - name: Independent recorded core Init and Stop
+        run: python -I -B tools/gen-state-root-vectors/check_core_init_stop.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/core-init-stop.json"
+      - name: Upload core Init and Stop recorded evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: core-init-stop-${{ runner.os }}
+          path: ${{ runner.temp }}/core-init-stop.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Public Chain proof workload controls
         run: python -I -B -m unittest discover -s tools/gen-state-root-vectors -p "*public_chain_proof_workload_test.py" -v
       - name: Independent recorded public Chain proof workload
@@ -914,6 +926,18 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_core_repeat_stop_test.py -v
       - name: Independent recorded repeated core Stop
         run: python -I -B tools/gen-state-root-vectors/check_core_repeat_stop.py --source-revision "${{ github.sha }}"
+      - name: Core Init and Stop source and recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_core_init_stop_test.py -v
+      - name: Independent recorded core Init and Stop
+        run: python -I -B tools/gen-state-root-vectors/check_core_init_stop.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/core-init-stop.json"
+      - name: Upload core Init and Stop recorded evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: core-init-stop-${{ runner.os }}
+          path: ${{ runner.temp }}/core-init-stop.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Public Chain proof workload controls
         run: python -I -B -m unittest discover -s tools/gen-state-root-vectors -p "*public_chain_proof_workload_test.py" -v
       - name: Independent recorded public Chain proof workload
