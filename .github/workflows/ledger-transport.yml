@@ -10,6 +10,7 @@ on:
       - 'docs/state-root-r1-intake.md'
       - 'docs/native-roadmap.md'
       - 'LICENSE'
+      - 'tools/gen-state-root-vectors/LICENSE'
   pull_request:
     branches: [main]
     paths:
@@ -19,6 +20,7 @@ on:
       - 'docs/state-root-r1-intake.md'
       - 'docs/native-roadmap.md'
       - 'LICENSE'
+      - 'tools/gen-state-root-vectors/LICENSE'
 
 permissions:
   contents: read
@@ -85,7 +87,8 @@ jobs:
           paths = ['.github/workflows/ledger-transport.yml', 'tools/ledger-transport/transport.py',
                    'tools/ledger-transport/transport_test.py', 'tools/ledger-transport/README.md',
                    'tools/ledger-inventory/inventory.py', 'docs/state-root-r1-intake.md',
-                   'docs/native-roadmap.md', 'LICENSE']
+                   'docs/native-roadmap.md', 'LICENSE', 'tools/ledger-transport/THIRD_PARTY_NOTICES',
+                   'tools/gen-state-root-vectors/LICENSE']
           source = {name: pin(root / name, 1 << 20) for name in paths}
           tree = ast.parse((root / 'tools/ledger-transport/transport_test.py').read_text())
           selected = sorted(node.name for cls in tree.body if isinstance(cls, ast.ClassDef) and cls.name == 'TransportTests'
