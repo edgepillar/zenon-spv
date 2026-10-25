@@ -22,6 +22,14 @@ receipts by reference. Producer counts remain observations to recount, not
 independent expectations of network state. No completion result authenticates
 provenance, snapshot completeness or representative-data acceptance.
 
+The separate [bounded stream transport tool](../tools/ledger-transport/README.md)
+can describe that retained stream with ordered chunk hashes and check a selected
+manifest plus transfer in one pass. It creates no chunk or reconstructed payload
+files. Manifest, whole-stream and full Momentum pins remain separately selected;
+transport integrity does not establish record syntax, data provenance, snapshot
+completeness, a reconstructed StateRoot or owner acceptance. Feed the same raw
+object without its manifest prefix to the independent inventory afterwards.
+
 The [bounded effective ledger inventory tool](../tools/ledger-inventory/README.md)
 can inspect a separately selected ordered put stream without keeping a key map
 or copying the export. It checks selection pins, reports prefix/size counts and
