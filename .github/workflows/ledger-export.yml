@@ -70,11 +70,14 @@ jobs:
         run: go list -m -mod=readonly all
       - name: Build one ordinary exporter
         run: go build -mod=readonly -p=2 -trimpath -buildvcs=false -o "$R1_EXPORT_ARTIFACT/ledger-export.exe" .
+      - name: Check bounded export completion consumer
+        run: python -I -B consume_completion_test.py -v
       - name: Check ordinary binary and independent inventory
         run: |
           export SPV_LEDGER_EXPORT_TEST_BINARY="$R1_EXPORT_ARTIFACT/ledger-export.exe"
           export SPV_LEDGER_INVENTORY_PYTHON="$(python -I -B -c 'import sys; print(sys.executable)')"
           export SPV_LEDGER_INVENTORY_SCRIPT="$GITHUB_WORKSPACE/tools/ledger-inventory/inventory.py"
+          export SPV_LEDGER_EXPORT_COMPLETION_SCRIPT="$GITHUB_WORKSPACE/tools/ledger-export/consume_completion.py"
           go test -mod=readonly -p=2 -json -count=1 -timeout=90s ./...
       - name: Vet
         run: go vet -mod=readonly -p=2 ./...

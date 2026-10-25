@@ -301,7 +301,8 @@ func ordinaryBinary(t *testing.T) string {
 
 func compiledInventory(t *testing.T, binary string) {
 	// Input state and expected ordered records are independently selected here.
-	// No candidate receipt selects its own expected records or digest.
+	// The completion helper's observations must match these literal expectations
+	// before its pins are used by the independent inventory process.
 	balanceA := append(unhex(t, "03"+strings.Repeat("33", 20)+"03"), bytes.Repeat([]byte{0x44}, 10)...)
 	balanceB := append(unhex(t, "03"+strings.Repeat("33", 20)+"03"), bytes.Repeat([]byte{0x55}, 10)...)
 	storage := unhex(t, "03"+strings.Repeat("33", 20)+"046b")
@@ -336,7 +337,61 @@ func compiledInventory(t *testing.T, binary string) {
 	if script == "" {
 		script = filepath.Join("..", "ledger-inventory", "inventory.py")
 	}
-	consumer := exec.CommandContext(ctx, python, "-I", "-B", script, "--expect-bytes", strconv.Itoa(len(expected)), "--expect-records", "4", "--expect-sha256", hex.EncodeToString(expectedSHA[:]), "--provenance-sha256", selected().Provenance)
+	completionScript := os.Getenv("SPV_LEDGER_EXPORT_COMPLETION_SCRIPT")
+	if completionScript == "" {
+		completionScript = "consume_completion.py"
+	}
+	helperSource, err := os.ReadFile(completionScript)
+	if err != nil {
+		t.Fatal(err)
+	}
+	capturedSHA := sha256.Sum256(out.Bytes())
+	var completed map[string]any
+	var completionSHA [32]byte
+	controls := []struct{ exit, capture, digest, reason string }{
+		{strconv.Itoa(cmd.ProcessState.ExitCode()), "complete", hex.EncodeToString(capturedSHA[:]), ""},
+		{"130", "complete", hex.EncodeToString(capturedSHA[:]), "process_failure"},
+		{"0", "incomplete", hex.EncodeToString(capturedSHA[:]), "capture_incomplete"},
+		{"0", "complete", strings.Repeat("00", 32), "capture_mismatch"},
+	}
+	for _, control := range controls {
+		// ProcessState and completed stdout/stderr copies are the outer channel.
+		// A success-looking producer receipt must not replace that channel.
+		helper := exec.CommandContext(ctx, python, "-I", "-B", completionScript,
+			"--layout", layout, "--expect-height", "3000", "--expect-hash", selected().Hash,
+			"--provenance-sha256", selected().Provenance, "--producer-exit", control.exit,
+			"--capture-status", control.capture, "--capture-bytes", strconv.Itoa(out.Len()),
+			"--capture-sha256", control.digest)
+		helper.Stdin = bytes.NewReader(meta.Bytes())
+		raw, helperErr := helper.CombinedOutput()
+		matched := receipt(t, raw)
+		if control.reason != "" {
+			if helper.ProcessState == nil || helper.ProcessState.ExitCode() != 2 || helperErr == nil || matched["status"] != "UNKNOWN" || matched["reason"] != control.reason || matched["inventory_selection"] != nil || matched["capture_matched"] != false {
+				t.Fatal("completion refusal")
+			}
+			continue
+		}
+		if helperErr != nil || matched["status"] != "SELECTED_EXPORT_COMPLETION_MATCHED" || matched["capture_matched"] != true {
+			t.Fatal("completed capture did not reconcile")
+		}
+		completed, completionSHA = matched, sha256.Sum256(raw)
+	}
+	pins := completed["inventory_selection"].(map[string]any)
+	if len(pins) != 5 || pins["record_space"] != "effective-raw-ledger" || pins["records"] != float64(4) || pins["bytes"] != float64(len(expected)) || pins["sha256"] != hex.EncodeToString(expectedSHA[:]) || pins["provenance_sha256"] != selected().Provenance {
+		t.Fatal("completion changed independently selected fixture pins")
+	}
+	caps := completed["inventory_limits"].(map[string]any)
+	if len(caps) != 4 || caps["bytes"] != float64(defaults.OutputBytes) || caps["records"] != float64(defaults.Records) || caps["key_bytes"] != float64(defaults.KeyBytes) || caps["value_bytes"] != float64(defaults.ValueBytes) {
+		t.Fatal("completion changed selected inventory caps")
+	}
+	consumer := exec.CommandContext(ctx, python, "-I", "-B", script,
+		"--expect-bytes", strconv.Itoa(int(pins["bytes"].(float64))),
+		"--expect-records", strconv.Itoa(int(pins["records"].(float64))),
+		"--expect-sha256", pins["sha256"].(string), "--provenance-sha256", pins["provenance_sha256"].(string),
+		"--max-bytes", strconv.Itoa(int(caps["bytes"].(float64))),
+		"--max-records", strconv.Itoa(int(caps["records"].(float64))),
+		"--max-key-bytes", strconv.Itoa(int(caps["key_bytes"].(float64))),
+		"--max-value-bytes", strconv.Itoa(int(caps["value_bytes"].(float64))))
 	consumer.Stdin = bytes.NewReader(out.Bytes())
 	raw, err := consumer.CombinedOutput()
 	if err != nil {
@@ -372,6 +427,7 @@ func compiledInventory(t *testing.T, binary string) {
 		t.Fatal("ordinary CLI modified input bytes")
 	}
 	t.Logf("ordinary_binary_sha256=%x selected_put_stream_sha256=%x records=4 raw_fixture_keys=%d inventory_processes=1 acceptance_enabled=false", binarySHA, expectedSHA, len(rows))
+	t.Logf("completion_helper_sha256=%x completion_receipt_sha256=%x helper_processes=4 outer_refusals=3 retained_stream_reused=true acceptance_enabled=false", sha256.Sum256(helperSource), completionSHA)
 }
 
 func TestCompiledCLI(t *testing.T) {
