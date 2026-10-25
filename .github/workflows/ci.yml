@@ -689,6 +689,12 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.13'
+      - name: Native test
+        # Fail before the longer evidence controls, keeping every package and
+        # the complete 100,000-member repeated-wire grid. This finite package
+        # watchdog is not a latency acceptance threshold; subprocess deadlines
+        # and evidence budgets remain unchanged.
+        run: go test -p 1 -count=1 -timeout=10m ./...
       - name: Candidate archive checks
         run: python tools/check-candidate-archive_test.py -v
       - name: Direct candidate validation controls
@@ -1207,9 +1213,6 @@ jobs:
           python -I -B tools/check-query-consumer.py --consumer "$consumer_binary" --source-revision "${{ github.sha }}"
       - name: Vet
         run: go vet ./...
-      - name: Native test
-        # Keep every package while preserving concurrency within its tests.
-        run: go test -p 1 -count=1 -timeout=5m ./...
       - name: Verify root module cache
         id: root_module_cache
         shell: bash
