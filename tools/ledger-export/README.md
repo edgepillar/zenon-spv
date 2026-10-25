@@ -77,11 +77,57 @@ incomplete. That is UNKNOWN. Preserve the actual prefix/exit and do not inventor
 it as a completed dataset. External termination or missing output likewise
 remains UNKNOWN. No failure renews selection or trust inputs automatically.
 
-After controller reconciliation, feed the same retained object and its selected
-byte/count/digest pins to the [independent inventory CLI](../ledger-inventory/README.md).
-The producer's own counters are observations, not an independent expectation of
-correct network state. Owner acceptance of provenance, completeness and
-representativeness stays in a separate record.
+### Reconcile completion, then inventory the retained object
+
+The standard-library Python 3.9+ `consume_completion.py` makes the completion
+check explicit. Wait for the managed producer command to finish, then supply
+its **actual** process exit, whole-command capture status and captured stdout
+byte count/SHA-256 from the controller's protected channel. `complete` means
+both stdout and stderr capture completed; never derive it from the producer's
+JSON. Select layout, full momentum identity, provenance digest and all resource
+caps separately from that JSON. Defaults must match the export command; pass
+the same `--max-*` arguments to both tools when overriding them.
+
+```sh
+python3 -I -B consume_completion.py \
+  --layout zenon-9c71-frontier-v1 \
+  --expect-height "$R1_HEIGHT" --expect-hash "$R1_HASH" \
+  --provenance-sha256 "$R1_INTAKE_SHA256" \
+  --producer-exit "$R1_ACTUAL_EXIT" --capture-status "$R1_CAPTURE_STATUS" \
+  --capture-bytes "$R1_CAPTURE_BYTES" --capture-sha256 "$R1_CAPTURE_SHA256" \
+  < "$R1_RETAINED_PRODUCER_RECEIPT"
+```
+
+This consumer reads at most **16 KiB plus one over-limit detection byte** from
+stdin and writes one small JSON result. It opens no database or paths, launches
+no children and reads no put-stream bytes. Failed process, incomplete capture
+or an over-budget stdout refuses before reading the receipt. It also checks
+the exact receipt schema/layout, full selection, equal limits, EOF/closure
+success and bounded counter relationships. Unknown fields, authority claims,
+duplicate keys, noninteger counters and malformed JSON refuse. The byte/count
+checks are consistency checks, not an independent physical-scan measurement.
+
+Require exit **0** and `status: SELECTED_EXPORT_COMPLETION_MATCHED`. `--help`
+exits 0 with UNKNOWN and no inventory selection. Failure normally exits 2;
+invalid options exit 64, input/output errors 70 and interruption 130. Retain
+UNKNOWN attempts and their actual outputs. A missing/truncated producer receipt
+cannot be repaired by inferring counters from another run.
+
+The result supplies `inventory_selection` and `inventory_limits`. Through the
+same protected controller, pass their byte/count/digest/provenance fields and
+four `--max-*` limits to the [independent inventory CLI](../ledger-inventory/README.md),
+feeding the **same retained put-stream object** to its stdin. Preserve the
+controller receipt, producer receipt, completion result and inventory result
+with explicit object references; do not create another dump or archive.
+Require `SELECTED_STREAM_INVENTORIED` as well as a successful inventory exit.
+
+The completion result's record count is a producer observation that the
+inventory must independently recount from bytes. It is not an independently
+selected expectation of correct network state. This consumer does not
+authenticate the caller's outer completion channel or provenance record;
+substituting fabricated exit/digest arguments is outside its guarantee.
+Owner acceptance of ledger origin, snapshot completeness and representativeness
+stays in a separate record. Matching completion alone has not executed inventory.
 
 ## Exact record space and bounds
 
@@ -129,6 +175,7 @@ No synthetic memory control qualifies a representative node workload.
 ## Qualification boundaries
 
 ```sh
+python3 -I -B consume_completion_test.py -v
 go test -mod=readonly -count=1 ./...
 go vet -mod=readonly ./...
 ```
@@ -137,12 +184,20 @@ The controls exercise literal protobuf/put bytes, tombstones versus present-empt
 and zero, budgets, partial writes, changed metadata, errors/panics and release
 paths. Real finite closed LevelDB fixtures test snapshot isolation, read-only
 file preservation, missing locks and mutation refusal. One ordinary compiled
-binary supplies both the downstream Python inventory comparison and the blocked
+binary supplies both the completion-to-Python-inventory comparison and the blocked
 output interrupt case. CI can supply that binary through
 `SPV_LEDGER_EXPORT_TEST_BINARY`; otherwise the package builds one temporary
 binary. The 32 MiB value is a prebuilt in-memory fixture, not a large disk file.
 Its allocation observation covers the encoder and controlled fake lifecycle;
 it excludes fixture construction and is not process RSS.
+
+Completion controls use finite literal wire records and receipts in memory.
+The ordinary binary's selected bytes are compared with independently written
+literal bytes before the helper's selection is passed to inventory. Reused
+producer metadata with failed actual exit, incomplete capture or changed capture
+digest must refuse. `SPV_LEDGER_EXPORT_COMPLETION_SCRIPT` can select the source
+script in an owned qualification workspace, alongside the existing Python and
+inventory-script overrides. No fixture database or export is retained twice.
 
 The dedicated `ledger-export` workflow builds one ordinary executable per
 Linux amd64, macOS Intel amd64 and Windows amd64 job. Each job reuses that same

@@ -15,6 +15,13 @@ copy consistent. A completed export still needs the provenance, independent
 selection and representative-data assessment below. No real dataset is supplied
 by the controlled fixtures.
 
+The export tool's bounded completion consumer reconciles separately captured
+actual exit, completeness and stdout pins before supplying inventory selection
+fields. Feed the same retained stream to inventory and preserve all four
+receipts by reference. Producer counts remain observations to recount, not
+independent expectations of network state. No completion result authenticates
+provenance, snapshot completeness or representative-data acceptance.
+
 The [bounded effective ledger inventory tool](../tools/ledger-inventory/README.md)
 can inspect a separately selected ordered put stream without keeping a key map
 or copying the export. It checks selection pins, reports prefix/size counts and
