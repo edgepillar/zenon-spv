@@ -5,7 +5,15 @@ R1 is the representative inventory needed by M2/M4 in the
 [native roadmap](native-roadmap.md). The existing
 [candidate commitment contract](state-root-candidate-contract.md), v3 codec and
 bounded proof primitive remain the starting point. This procedure does not
-choose a protocol profile, implement a new exporter or enable state values.
+choose a protocol profile or enable state values.
+
+The separate [read-only frontier exporter](../tools/ledger-export/README.md)
+can prepare that stream from an owner-selected consistent immutable LevelDB
+copy using the explicitly selected node storage layout and full momentum
+height/hash. Its write-free storage adapter does not launch a node or make the
+copy consistent. A completed export still needs the provenance, independent
+selection and representative-data assessment below. No real dataset is supplied
+by the controlled fixtures.
 
 The [bounded effective ledger inventory tool](../tools/ledger-inventory/README.md)
 can inspect a separately selected ordered put stream without keeping a key map
