@@ -1,0 +1,143 @@
+name: ledger-export
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/ledger-export/**'
+      - 'tools/ledger-inventory/inventory.py'
+      - '.github/workflows/ledger-export.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/ledger-export/**'
+      - 'tools/ledger-inventory/inventory.py'
+      - '.github/workflows/ledger-export.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  exporter:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            platform: linux-amd64
+          - runner: macos-15-intel
+            platform: darwin-amd64
+          - runner: windows-latest
+            platform: windows-amd64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    env:
+      GOTOOLCHAIN: local
+      GOENV: 'off'
+      GOWORK: 'off'
+      GOFLAGS: '-mod=readonly'
+      CGO_ENABLED: '0'
+      GOMAXPROCS: '2'
+      PYTHONDONTWRITEBYTECODE: '1'
+    defaults:
+      run:
+        shell: bash
+        working-directory: tools/ledger-export
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.25.14'
+          cache-dependency-path: tools/ledger-export/go.sum
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Isolate tool telemetry and select one output directory
+        run: |
+          python -I -B - <<'PY'
+          import os
+          from pathlib import Path
+          telemetry = Path(os.environ['RUNNER_TEMP']) / 'r1-go-telemetry'
+          telemetry.mkdir()
+          (telemetry / 'mode').write_text('off', encoding='ascii')
+          artifact = Path(os.environ['RUNNER_TEMP']) / 'r1-ledger-export'
+          artifact.mkdir()
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as stream:
+              stream.write('TEST_TELEMETRY_DIR=' + str(telemetry) + '\n')
+              stream.write('R1_EXPORT_ARTIFACT=' + str(artifact) + '\n')
+          PY
+      - name: Load module graph metadata without dependency test archives
+        run: go list -m -mod=readonly all
+      - name: Build one ordinary exporter
+        run: go build -mod=readonly -p=2 -trimpath -buildvcs=false -o "$R1_EXPORT_ARTIFACT/ledger-export.exe" .
+      - name: Check ordinary binary and independent inventory
+        run: |
+          export SPV_LEDGER_EXPORT_TEST_BINARY="$R1_EXPORT_ARTIFACT/ledger-export.exe"
+          export SPV_LEDGER_INVENTORY_PYTHON="$(python -I -B -c 'import sys; print(sys.executable)')"
+          export SPV_LEDGER_INVENTORY_SCRIPT="$GITHUB_WORKSPACE/tools/ledger-inventory/inventory.py"
+          go test -mod=readonly -p=2 -json -count=1 -timeout=90s ./...
+      - name: Vet
+        run: go vet -mod=readonly -p=2 ./...
+      - name: Verify cached modules offline and reject source drift
+        run: |
+          GOPROXY=off GOSUMDB=off go mod verify
+          git diff --exit-code -- go.mod go.sum
+      - name: Bind binary, source and actual workflow identity
+        env:
+          R1_PLATFORM: ${{ matrix.platform }}
+          R1_FEATURE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python -I -B - <<'PY'
+          import hashlib, json, os, re, shutil, subprocess
+          from pathlib import Path
+          root = Path(os.environ['GITHUB_WORKSPACE'])
+          artifact = Path(os.environ['R1_EXPORT_ARTIFACT'])
+          def command(*args):
+              return subprocess.check_output(args, cwd=root).decode().strip()
+          def pin(path, maximum):
+              assert path.is_file() and not path.is_symlink()
+              raw = path.read_bytes()
+              assert 0 < len(raw) <= maximum
+              return {'sha256': hashlib.sha256(raw).hexdigest(), 'bytes': len(raw)}
+          checkout = command('git', 'rev-parse', 'HEAD')
+          assert checkout == os.environ['GITHUB_SHA']
+          feature = os.environ['R1_FEATURE_REVISION']
+          assert re.fullmatch('[0-9a-f]{40}', feature)
+          assert all(re.fullmatch('[1-9][0-9]*', os.environ[key]) for key in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT'))
+          paths = command('git', 'ls-files', '--', 'tools/ledger-export', 'tools/ledger-inventory/inventory.py', '.github/workflows/ledger-export.yml').splitlines()
+          assert 4 <= len(paths) <= 64 and len(set(paths)) == len(paths)
+          source = {path: pin(root / path, 1 << 20) for path in paths}
+          environment = json.loads(command('go', 'env', '-json', 'GOOS', 'GOARCH', 'GOVERSION'))
+          assert environment['GOOS'] + '-' + environment['GOARCH'] == os.environ['R1_PLATFORM']
+          binary = artifact / 'ledger-export.exe'
+          binary_pin = pin(binary, 16 << 20)
+          # The first line contains a runner path; only retain module/settings rows.
+          module_info = command('go', 'version', '-m', str(binary)).splitlines()[1:]
+          assert module_info and all(line.startswith('\t') for line in module_info)
+          for name in ('LICENSE', 'THIRD_PARTY_NOTICES'):
+              shutil.copyfile(root / 'tools/ledger-export' / name, artifact / name)
+          report = {
+              'format': 'zenon-ledger-export-ci/v1', 'status': 'CONTROLLED_EXPORTER_QUALIFIED',
+              'repository': os.environ['GITHUB_REPOSITORY'], 'workflow': os.environ['GITHUB_WORKFLOW'],
+              'event': os.environ['GITHUB_EVENT_NAME'], 'run_id': int(os.environ['GITHUB_RUN_ID']),
+              'run_attempt': int(os.environ['GITHUB_RUN_ATTEMPT']), 'source_revision': checkout,
+              'source_tree': command('git', 'rev-parse', 'HEAD^{tree}'), 'feature_revision': feature,
+              'platform': os.environ['R1_PLATFORM'], 'go': environment, 'source_files': source,
+              'binary': {'name': binary.name, **binary_pin}, 'binary_module_info': module_info,
+              'licenses': {name: pin(artifact / name, 64 << 10) for name in ('LICENSE', 'THIRD_PARTY_NOTICES')},
+              'scope': {'real_R1_dataset_collected': False, 'representative_dataset_accepted': False,
+                        'snapshot_completeness_authenticated': False, 'profile_agreed': False,
+                        'header_authentication_executed': False, 'network_activation_authenticated': False,
+                        'state_value_acceptance_enabled': False, 'reviewed_distribution': False}}
+          raw = (json.dumps(report, sort_keys=True, indent=2) + '\n').encode()
+          assert len(raw) <= 64 << 10
+          with (artifact / 'manifest.json').open('xb') as stream:
+              stream.write(raw)
+          PY
+      - name: Upload one binary with manifest and license notices
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ledger-export-${{ matrix.platform }}
+          path: ${{ runner.temp }}/r1-ledger-export/
+          if-no-files-found: error
+          retention-days: 14
