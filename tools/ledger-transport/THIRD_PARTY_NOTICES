@@ -1,0 +1,17 @@
+R1 transport qualification source package
+
+The repository-level LICENSE contains the MIT terms for the project material
+covered by that notice. Preserve the individual source files' SPDX notices.
+
+tools/ledger-transport/transport.py
+tools/ledger-transport/transport_test.py
+tools/ledger-inventory/inventory.py
+
+These Python source files declare GPL-3.0-only. The complete GNU General Public
+License version 3 text is included at tools/gen-state-root-vectors/LICENSE in
+the same package and source revision. This notice does not change those source
+licenses or the repository-level MIT notice.
+
+The existing inventory source is included as the separate process companion
+used by the qualification tests. The transport tool itself uses only the
+Python standard library. No node source, database or payload is included.
