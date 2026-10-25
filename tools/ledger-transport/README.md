@@ -137,7 +137,10 @@ real network/dataset acceptance.
 
 The dedicated CI matrix runs the same controls on Linux amd64, macOS Intel amd64
 and Windows amd64. Its small artifacts contain the portable scripts, README,
-license, actual test report and source/run/platform manifest. No database,
+license notices, actual test report and source/run/platform manifest. The
+Python sources retain their GPL-3.0-only SPDX declarations; the package includes
+the complete [GPL text](../gen-state-root-vectors/LICENSE), the repository MIT
+notice and [component notices](THIRD_PARTY_NOTICES). No database,
 payload chunks or Go binary is built or archived by this workflow. Mechanical
 artifact checks and green CI remain separate from independent review,
 authenticated distribution and the roadmap's real-data/profile gates.

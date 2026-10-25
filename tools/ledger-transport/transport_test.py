@@ -352,6 +352,26 @@ class TransportTests(unittest.TestCase):
             self.assertEqual(failed.returncode, 2)
             self.assertEqual(json.loads(failed.stdout)["status"], "UNKNOWN")
 
+    def test_qualification_license_material(self):
+        root = HERE.parent.parent
+        sources = [HERE / "transport.py", HERE / "transport_test.py",
+                   HERE.parent / "ledger-inventory" / "inventory.py"]
+        for source in sources:
+            self.assertIn(b"# SPDX-License-Identifier: GPL-3.0-only\n", source.read_bytes())
+        license_text = (HERE.parent / "gen-state-root-vectors" / "LICENSE").read_bytes()
+        self.assertIn(b"GNU GENERAL PUBLIC LICENSE", license_text)
+        self.assertIn(b"Version 3, 29 June 2007", license_text)
+        self.assertIn(b"END OF TERMS AND CONDITIONS", license_text)
+        self.assertTrue((root / "LICENSE").read_bytes().startswith(b"MIT License"))
+        notices = (HERE / "THIRD_PARTY_NOTICES").read_text()
+        for name in ("transport.py", "transport_test.py", "inventory.py",
+                     "tools/gen-state-root-vectors/LICENSE", "GPL-3.0-only"):
+            self.assertIn(name, notices)
+        workflow = (root / ".github/workflows/ledger-transport.yml").read_text()
+        self.assertIn("'tools/ledger-transport/THIRD_PARTY_NOTICES'", workflow)
+        self.assertIn("'tools/gen-state-root-vectors/LICENSE'", workflow)
+        self.assertIn("include-hidden-files: true", workflow)
+
 
 class RecordingResult(unittest.TextTestResult):
     def __init__(self, *args, **kwargs):
