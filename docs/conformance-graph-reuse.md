@@ -176,6 +176,12 @@ No native node, new capture, dependency download, Go build, disk cache or archiv
 was created. CI still runs every original control on Linux, macOS and Windows;
 the source, report, scenario and artifact checks remain required.
 
+The [separate recorded-oracle CI lane](ci-recorded-oracles.md) runs the unchanged
+complete checkers and controls alongside native jobs on separate hosted runners.
+This scheduling change preserves their source, inputs, arguments and control
+inventories. Its hosted timing and artifact qualification remain separate from
+the local cache observations above.
+
 ## Reproduce
 
 Use an owned bounded workspace and cached dependencies. These portable commands

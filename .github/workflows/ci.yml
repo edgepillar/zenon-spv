@@ -137,10 +137,6 @@ jobs:
         run: python -I -B tools/conformance_graph_reuse_test.py -v
       - name: Selected complete oracle driver controls
         run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs_test.py -v
-      - name: Workspace observation envelope controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent temporary input and database observations
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Candidate state-root byte controls
         run: python -I -B tools/gen-state-root-vectors/check_test.py
       - name: Independent candidate state-root bytes
@@ -373,64 +369,6 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_plan_encodings_test.py
       - name: Patch output encoding allocation comparison
         run: python -I -B tools/gen-state-root-vectors/measure_patch_plan_encodings.py --source-revision "${{ github.sha }}"
-      - name: Whole owned patch import resource checker controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_resources_test.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Recorded whole owned import sample bindings (offline; no reference execution)
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_resources.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Owned patch callback reuse comparison controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_import_comparison_test.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Recorded fixed prior and candidate import comparison (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_import_comparison.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Opened regular file handoff evidence controls
-        run: python -I -B tools/gen-state-root-vectors/check_patch_file_test.py
-      - name: Recorded file handoff and complete owned map bindings (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/check_patch_file.py --source-revision "${{ github.sha }}"
-      - name: Explicit child hex execution controls
-        run: python -I -B tools/gen-state-root-vectors/selected_child_hex_test.py -v
-      - name: Whole opened file handoff resource evidence controls
-        run: python -I -B tools/gen-state-root-vectors/run_file_controls.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Recorded whole file handoff samples (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_file_resources.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Complete file to NodeTree handoff evidence controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree_test.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Recorded complete file to NodeTree handoff (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree.py --mode translated --source-revision "${{ github.sha }}"
-      - name: File-backed retained NodeTree tail evidence controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree_tail_test.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Recorded file-backed tail, pruning and clean reopen (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree_tail.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Offline typed balance consumer controls
-        run: python -I -B tools/gen-state-root-vectors/check_balance_observations_test.py
-      - name: Independent offline typed balance observations
-        run: python -I -B tools/gen-state-root-vectors/check_balance_observations.py --source-revision "${{ github.sha }}"
-      - name: Offline resource budget comparison controls
-        run: python -I -B tools/gen-state-root-vectors/check_resource_budgets_test.py
-      - name: Independent recorded resource budget comparisons
-        run: python -I -B tools/gen-state-root-vectors/check_resource_budgets.py --source-revision "${{ github.sha }}"
-      - name: Larger finite NodeTree retention controls
-        run: python -I -B tools/gen-state-root-vectors/check_tree_scale_test.py -v
-      - name: Independent recorded larger NodeTree retention
-        run: python -I -B tools/gen-state-root-vectors/check_tree_scale.py
-      - name: Larger file NodeTree import controls
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent recorded larger file NodeTree import
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Complete reference child lifecycle controls
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent recorded reference child lifecycle
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Separate driver and build resource controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent recorded driver and build resources
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Selected sparse oracle projection controls
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent recorded selected sparse oracle comparison
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Complete driver projection controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent recorded complete driver projection comparison
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
@@ -810,10 +748,6 @@ jobs:
         run: python -I -B tools/conformance_graph_reuse_test.py -v
       - name: Selected complete oracle driver controls
         run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs_test.py -v
-      - name: Workspace observation envelope controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent temporary input and database observations
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Candidate state-root byte controls
         run: python -I -B tools/gen-state-root-vectors/check_test.py
       - name: Independent candidate state-root bytes
@@ -1046,64 +980,6 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_patch_plan_encodings_test.py
       - name: Patch output encoding allocation comparison
         run: python -I -B tools/gen-state-root-vectors/measure_patch_plan_encodings.py --source-revision "${{ github.sha }}"
-      - name: Whole owned patch import resource checker controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_resources_test.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Recorded whole owned import sample bindings (offline; no reference execution)
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_resources.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Owned patch callback reuse comparison controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_import_comparison_test.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Recorded fixed prior and candidate import comparison (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_import_comparison.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Opened regular file handoff evidence controls
-        run: python -I -B tools/gen-state-root-vectors/check_patch_file_test.py
-      - name: Recorded file handoff and complete owned map bindings (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/check_patch_file.py --source-revision "${{ github.sha }}"
-      - name: Explicit child hex execution controls
-        run: python -I -B tools/gen-state-root-vectors/selected_child_hex_test.py -v
-      - name: Whole opened file handoff resource evidence controls
-        run: python -I -B tools/gen-state-root-vectors/run_file_controls.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Recorded whole file handoff samples (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_file_resources.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Complete file to NodeTree handoff evidence controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree_test.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Recorded complete file to NodeTree handoff (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree.py --mode translated --source-revision "${{ github.sha }}"
-      - name: File-backed retained NodeTree tail evidence controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree_tail_test.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Recorded file-backed tail, pruning and clean reopen (offline; no Go execution)
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree_tail.py --mode translated --source-revision "${{ github.sha }}"
-      - name: Offline typed balance consumer controls
-        run: python -I -B tools/gen-state-root-vectors/check_balance_observations_test.py
-      - name: Independent offline typed balance observations
-        run: python -I -B tools/gen-state-root-vectors/check_balance_observations.py --source-revision "${{ github.sha }}"
-      - name: Offline resource budget comparison controls
-        run: python -I -B tools/gen-state-root-vectors/check_resource_budgets_test.py
-      - name: Independent recorded resource budget comparisons
-        run: python -I -B tools/gen-state-root-vectors/check_resource_budgets.py --source-revision "${{ github.sha }}"
-      - name: Larger finite NodeTree retention controls
-        run: python -I -B tools/gen-state-root-vectors/check_tree_scale_test.py -v
-      - name: Independent recorded larger NodeTree retention
-        run: python -I -B tools/gen-state-root-vectors/check_tree_scale.py
-      - name: Larger file NodeTree import controls
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent recorded larger file NodeTree import
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Complete reference child lifecycle controls
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent recorded reference child lifecycle
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Separate driver and build resource controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent recorded driver and build resources
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Selected sparse oracle projection controls
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent recorded selected sparse oracle comparison
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Complete driver projection controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent recorded complete driver projection comparison
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Candidate initial and transient patch target controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_targets_test.py
       - name: Independent candidate patch target bounds and ownership
@@ -1327,3 +1203,141 @@ jobs:
         run: go test -run '^$' -bench '^BenchmarkAccountAmountHash$' -benchtime=1000x -benchmem -cpu=1 -count=3 ./internal/conformance
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchtime=1x ./internal/conformance
+
+  recorded-oracles:
+    name: Recorded oracles (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    # These unchanged portable checks use a separate runner, not native benchmark resources.
+    timeout-minutes: ${{ matrix.os == 'macos-15-intel' && 90 || 60 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-amd64
+          - os: macos-15-intel
+            platform: darwin-amd64
+          - os: windows-latest
+            platform: windows-amd64
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Bind recorded oracle source and workflow selection
+        shell: bash
+        env:
+          SPV_FEATURE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+          SPV_PLATFORM: ${{ matrix.platform }}
+        run: |
+          python -I -B - <<'PY'
+          import hashlib,json,os,platform,re,subprocess,sys
+          from pathlib import Path
+          def git(*args):
+              return subprocess.check_output(["git",*args])
+          checkout=git("rev-parse","HEAD").decode().strip()
+          tree=git("rev-parse","HEAD^{tree}").decode().strip()
+          feature=os.environ["SPV_FEATURE_REVISION"]
+          assert checkout==os.environ["GITHUB_SHA"]
+          assert all(re.fullmatch("[0-9a-f]{40}",value) for value in (checkout,tree,feature))
+          workflow=git("show","HEAD:.github/workflows/ci.yml")
+          working=Path(".github/workflows/ci.yml").read_bytes()
+          relation="exact" if working==workflow else "CRLF-only" if working==workflow.replace(b"\n",b"\r\n") and b"\r\n" not in workflow else None
+          assert relation is not None
+          machine=platform.machine().lower()
+          assert machine in ("amd64","x86_64") and sys.version_info[:2]==(3,13)
+          assert os.environ["SPV_PLATFORM"]=={"linux":"linux-amd64","darwin":"darwin-amd64","win32":"windows-amd64"}[sys.platform]
+          manifest={"format":"zenon-recorded-oracle-selection/v1",
+           "repository":os.environ["GITHUB_REPOSITORY"],
+           "feature_revision":feature,"checkout_revision":checkout,"source_tree":tree,
+           "run_id":int(os.environ["GITHUB_RUN_ID"]),"run_attempt":int(os.environ["GITHUB_RUN_ATTEMPT"]),
+           "event":os.environ["GITHUB_EVENT_NAME"],"platform":os.environ["SPV_PLATFORM"],
+           "runner_os":os.environ["RUNNER_OS"],"runner_arch":os.environ["RUNNER_ARCH"],
+           "runtime":{"os":sys.platform,"machine":machine,"python":platform.python_version(),"implementation":platform.python_implementation()},
+           "workflow":{"path":".github/workflows/ci.yml","git_content_sha256":hashlib.sha256(workflow).hexdigest(),"git_content_bytes":len(workflow),
+            "checkout_content_sha256":hashlib.sha256(working).hexdigest(),"checkout_content_bytes":len(working),"checkout_relation":relation},
+           "serial_baseline":{"revision":"59ab5184d2e983f2322ff9e730a86cd19217970b","workflow_sha256":"407cf9a5da9fca75957f570981694ecc7bd17a4f29ae3ce4f697f40a17d4421a"},
+           "selected_command_inventory":{"commands":31,"sha256":"16fbc16ba92476d4e64d5ea5377e7702dcdb032eaa41d2e2073263418cfb60f0","encoding":"sorted-key compact JSON list plus LF; unexpanded workflow expressions"},
+           "scope":{"selection_record_only":True,"test_completion_reported":False,
+            "actual_completion_requires_hosted_job_and_step_records":True,
+            "existing_fresh_Python_CLI_controls_retained":True,"new_Go_builds":False,
+            "new_node_or_snapshot_resource_measurements":False,"execution_provenance_authenticated":False,
+            "whole_CI_performance_qualified":False,"production_acceptance_enabled":False}}
+          raw=(json.dumps(manifest,sort_keys=True,indent=2)+"\n").encode()
+          assert len(raw)<=8192
+          directory=Path(os.environ["RUNNER_TEMP"])/"recorded-oracle-selection"
+          directory.mkdir(mode=0o700)
+          with (directory/"manifest.json").open("xb") as handle:
+              handle.write(raw)
+          print(raw.decode(),end="")
+          PY
+      - name: Workspace observation envelope controls
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Independent temporary input and database observations
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Whole owned patch import resource checker controls
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_resources_test.py --mode translated --source-revision "${{ github.sha }}"
+      - name: Recorded whole owned import sample bindings (offline; no reference execution)
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_resources.py --mode translated --source-revision "${{ github.sha }}"
+      - name: Owned patch callback reuse comparison controls
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_import_comparison_test.py --mode translated --source-revision "${{ github.sha }}"
+      - name: Recorded fixed prior and candidate import comparison (offline; no Go execution)
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_import_comparison.py --mode translated --source-revision "${{ github.sha }}"
+      - name: Opened regular file handoff evidence controls
+        run: python -I -B tools/gen-state-root-vectors/check_patch_file_test.py
+      - name: Recorded file handoff and complete owned map bindings (offline; no Go execution)
+        run: python -I -B tools/gen-state-root-vectors/check_patch_file.py --source-revision "${{ github.sha }}"
+      - name: Explicit child hex execution controls
+        run: python -I -B tools/gen-state-root-vectors/selected_child_hex_test.py -v
+      - name: Whole opened file handoff resource evidence controls
+        run: python -I -B tools/gen-state-root-vectors/run_file_controls.py --mode translated --source-revision "${{ github.sha }}"
+      - name: Recorded whole file handoff samples (offline; no Go execution)
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_file_resources.py --mode translated --source-revision "${{ github.sha }}"
+      - name: Complete file to NodeTree handoff evidence controls
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree_test.py --mode translated --source-revision "${{ github.sha }}"
+      - name: Recorded complete file to NodeTree handoff (offline; no Go execution)
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree.py --mode translated --source-revision "${{ github.sha }}"
+      - name: File-backed retained NodeTree tail evidence controls
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree_tail_test.py --mode translated --source-revision "${{ github.sha }}"
+      - name: Recorded file-backed tail, pruning and clean reopen (offline; no Go execution)
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_tree_tail.py --mode translated --source-revision "${{ github.sha }}"
+      - name: Offline typed balance consumer controls
+        run: python -I -B tools/gen-state-root-vectors/check_balance_observations_test.py
+      - name: Independent offline typed balance observations
+        run: python -I -B tools/gen-state-root-vectors/check_balance_observations.py --source-revision "${{ github.sha }}"
+      - name: Offline resource budget comparison controls
+        run: python -I -B tools/gen-state-root-vectors/check_resource_budgets_test.py
+      - name: Independent recorded resource budget comparisons
+        run: python -I -B tools/gen-state-root-vectors/check_resource_budgets.py --source-revision "${{ github.sha }}"
+      - name: Larger finite NodeTree retention controls
+        run: python -I -B tools/gen-state-root-vectors/check_tree_scale_test.py -v
+      - name: Independent recorded larger NodeTree retention
+        run: python -I -B tools/gen-state-root-vectors/check_tree_scale.py
+      - name: Larger file NodeTree import controls
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Independent recorded larger file NodeTree import
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Complete reference child lifecycle controls
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Independent recorded reference child lifecycle
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Separate driver and build resource controls
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Independent recorded driver and build resources
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Selected sparse oracle projection controls
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Independent recorded selected sparse oracle comparison
+        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Complete driver projection controls
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Independent recorded complete driver projection comparison
+        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Upload only the small oracle selection manifest
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: recorded-oracles-${{ matrix.platform }}
+          path: ${{ runner.temp }}/recorded-oracle-selection/manifest.json
+          if-no-files-found: error
+          retention-days: 14
