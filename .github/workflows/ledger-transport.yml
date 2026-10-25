@@ -1,0 +1,127 @@
+name: ledger-transport
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/ledger-transport/**'
+      - 'tools/ledger-inventory/inventory.py'
+      - '.github/workflows/ledger-transport.yml'
+      - 'docs/state-root-r1-intake.md'
+      - 'docs/native-roadmap.md'
+      - 'LICENSE'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/ledger-transport/**'
+      - 'tools/ledger-inventory/inventory.py'
+      - '.github/workflows/ledger-transport.yml'
+      - 'docs/state-root-r1-intake.md'
+      - 'docs/native-roadmap.md'
+      - 'LICENSE'
+
+permissions:
+  contents: read
+
+jobs:
+  transport:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            platform: linux-amd64
+          - runner: macos-15-intel
+            platform: darwin-amd64
+          - runner: windows-latest
+            platform: windows-amd64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 5
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Select one small artifact directory
+        run: |
+          python -I -B - <<'PY'
+          import os
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP']) / 'r1-ledger-transport'
+          path.mkdir()
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as stream:
+              stream.write('R1_TRANSPORT_ARTIFACT=' + str(path) + '\n')
+          PY
+      - name: Check bounded transport and actual CLI processes
+        run: python -I -B tools/ledger-transport/transport_test.py --report "$R1_TRANSPORT_ARTIFACT/tests.json"
+      - name: Bind portable tool, test report and actual workflow identity
+        env:
+          R1_PLATFORM: ${{ matrix.platform }}
+          R1_FEATURE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python -I -B - <<'PY'
+          import ast, hashlib, json, os, platform, re, shutil, subprocess, sys
+          from pathlib import Path
+          root = Path(os.environ['GITHUB_WORKSPACE'])
+          artifact = Path(os.environ['R1_TRANSPORT_ARTIFACT'])
+          def command(*args):
+              return subprocess.check_output(args, cwd=root).decode().strip()
+          def pin(path, maximum):
+              assert path.is_file() and not path.is_symlink()
+              raw = path.read_bytes()
+              assert 0 < len(raw) <= maximum
+              return {'sha256': hashlib.sha256(raw).hexdigest(), 'bytes': len(raw)}
+          checkout = command('git', 'rev-parse', 'HEAD')
+          assert checkout == os.environ['GITHUB_SHA']
+          feature = os.environ['R1_FEATURE_REVISION']
+          assert re.fullmatch('[0-9a-f]{40}', feature)
+          assert all(re.fullmatch('[1-9][0-9]*', os.environ[key]) for key in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT'))
+          host = {'Linux': 'linux', 'Darwin': 'darwin', 'Windows': 'windows'}[platform.system()]
+          assert platform.machine().lower() in ('x86_64', 'amd64')
+          assert host + '-amd64' == os.environ['R1_PLATFORM']
+          paths = ['.github/workflows/ledger-transport.yml', 'tools/ledger-transport/transport.py',
+                   'tools/ledger-transport/transport_test.py', 'tools/ledger-transport/README.md',
+                   'tools/ledger-inventory/inventory.py', 'docs/state-root-r1-intake.md',
+                   'docs/native-roadmap.md', 'LICENSE']
+          source = {name: pin(root / name, 1 << 20) for name in paths}
+          tree = ast.parse((root / 'tools/ledger-transport/transport_test.py').read_text())
+          selected = sorted(node.name for cls in tree.body if isinstance(cls, ast.ClassDef) and cls.name == 'TransportTests'
+                            for node in cls.body if isinstance(node, ast.FunctionDef) and node.name.startswith('test_'))
+          tests = json.loads((artifact / 'tests.json').read_text())
+          assert selected and tests['passed'] is True and sorted(tests['selected_roots']) == selected
+          assert tests['tests_run'] == len(selected) and tests['failures'] == tests['errors'] == 0
+          assert tests['skips'] == [] and tests['subtests']['failed'] == 0
+          assert sorted(tests['roots'], key=lambda item: item['name']) == [{'name': name, 'status': 'PASS'} for name in selected]
+          files = {'tests.json': pin(artifact / 'tests.json', 128 << 10)}
+          # Preserve relative imports/companion paths without packaging a workspace.
+          for name in paths:
+              (artifact / name).parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(root / name, artifact / name)
+              files[name] = pin(artifact / name, 1 << 20)
+          report = {'format': 'zenon-r1-transport-ci/v1', 'status': 'CONTROLLED_TRANSPORT_QUALIFIED',
+                    'repository': os.environ['GITHUB_REPOSITORY'], 'workflow': os.environ['GITHUB_WORKFLOW'],
+                    'event': os.environ['GITHUB_EVENT_NAME'], 'run_id': int(os.environ['GITHUB_RUN_ID']),
+                    'run_attempt': int(os.environ['GITHUB_RUN_ATTEMPT']), 'source_revision': checkout,
+                    'source_tree': command('git', 'rev-parse', 'HEAD^{tree}'), 'feature_revision': feature,
+                    'platform': os.environ['R1_PLATFORM'], 'python': list(sys.version_info[:3]),
+                    'source_files': source, 'files': files,
+                    'scope': {name: False for name in ('real_R1_dataset_collected', 'representative_dataset_accepted',
+                              'snapshot_completeness_authenticated', 'profile_agreed', 'header_authentication_executed',
+                              'network_activation_authenticated', 'state_value_acceptance_enabled', 'reviewed_distribution')}}
+          raw = (json.dumps(report, sort_keys=True, indent=2) + '\n').encode()
+          assert len(raw) <= 64 << 10
+          with (artifact / 'manifest.json').open('xb') as stream:
+              stream.write(raw)
+          PY
+      - name: Upload only portable source and small reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ledger-transport-${{ matrix.platform }}
+          path: ${{ runner.temp }}/r1-ledger-transport/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14

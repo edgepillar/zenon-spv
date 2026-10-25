@@ -58,6 +58,12 @@ existing v3 codec and sparse-proof primitives when M2 permits the M3 flow;
 another recorded experiment family does not replace the missing agreement or
 representative data.
 
+The [bounded R1 transport tool](../tools/ledger-transport/README.md) prepares the
+snapshot transport track without enabling state values. It hashes fixed chunks
+and the whole selected stream in one pass, retaining only a small manifest and
+result. It writes no chunk files and keeps real-data, consistency, complete-state,
+accepted-header/root, profile/activation and independent-review gates open.
+
 CI now verifies the downloaded root-module cache after its builds/tests, with
 network lookup and toolchain switching disabled, and rejects `go.mod`/`go.sum`
 drift. This checks the main build list's cached content under
