@@ -89,6 +89,11 @@ These are synthetic storage commits, not validated network Momentums or a test
 of derived SMT root retention/recovery. Representative R1, M2 agreement and the
 accepted-header M3 balance flow remain separate exits.
 
+The export path now uses [bounded output buffering](ledger-export-buffering.md)
+to reduce small writes without changing the selected put stream or completion
+gates. Finite encoder allocation/write observations prepare the R1 transport
+track; they do not supply representative data or hardware acceptance.
+
 CI now verifies the downloaded root-module cache after its builds/tests, with
 network lookup and toolchain switching disabled, and rejects `go.mod`/`go.sum`
 drift. This checks the main build list's cached content under

@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -131,6 +132,18 @@ func writeAll(ctx context.Context, writer io.Writer, raw []byte) error {
 	return nil
 }
 
+// Normalize an invalid writer count before bufio uses it to move pending bytes.
+// The outer write/flush checks still refuse every short or failed write.
+type checkedWriter struct{ io.Writer }
+
+func (w checkedWriter) Write(raw []byte) (int, error) {
+	n, err := w.Writer.Write(raw)
+	if n < 0 || n > len(raw) {
+		return 0, io.ErrShortWrite
+	}
+	return n, err
+}
+
 func exportSnapshot(ctx context.Context, view rawSnapshot, writer io.Writer, selected selection, caps limits) (statistics, error) {
 	var result statistics
 	if !caps.valid() {
@@ -153,8 +166,10 @@ func exportSnapshot(ctx context.Context, view rawSnapshot, writer io.Writer, sel
 	}
 	defer iterator.Release()
 	hash := sha256.New()
-	out := io.MultiWriter(writer, hash)
+	out := bufio.NewWriterSize(checkedWriter{io.MultiWriter(writer, hash)}, writeChunk)
 	var previous []byte
+	var header [21]byte
+	var valueLength [10]byte
 	havePrevious := false
 	sawIdentifier := false
 	for iterator.Next() {
@@ -194,10 +209,8 @@ func exportSnapshot(ctx context.Context, view rawSnapshot, writer io.Writer, sel
 			continue
 		}
 		logicalValue := value[1:]
-		var header [21]byte
 		header[0] = 1
 		kn := binary.PutUvarint(header[1:], uint64(len(logicalKey)))
-		var valueLength [10]byte
 		vn := binary.PutUvarint(valueLength[:], uint64(len(logicalValue)))
 		wireBytes := uint64(1+kn+vn) + uint64(len(logicalKey)) + uint64(len(logicalValue))
 		if err := addBounded(&result.Records, 1, caps.Records, "records"); err != nil {
@@ -224,6 +237,18 @@ func exportSnapshot(ctx context.Context, view rawSnapshot, writer io.Writer, sel
 	identity, err = view.Get([]byte{0x55, 0})
 	if err != nil || !bytes.Equal(identity, expected) {
 		return statistics{}, refusal("frontier_identifier")
+	}
+	// No deferred flush: a refused frontier or incomplete iterator must not
+	// release the pending tail. Success also requires this last write and a
+	// cancellation check after it; store closure remains exportStore's gate.
+	if ctx.Err() != nil {
+		return statistics{}, refusal("canceled")
+	}
+	if err := out.Flush(); err != nil {
+		return statistics{}, refusal("output_write")
+	}
+	if ctx.Err() != nil {
+		return statistics{}, refusal("canceled")
 	}
 	result.SHA256 = hex.EncodeToString(hash.Sum(nil))
 	return result, nil
