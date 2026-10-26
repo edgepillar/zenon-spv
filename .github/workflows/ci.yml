@@ -223,8 +223,20 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_public_chain_foreign_startup.py --source-revision "${{ github.sha }}"
       - name: Cache identifier rollback source controls
         run: python -I -B tools/gen-state-root-vectors/prepare_cache_identifier_rollback_test.py -v
+      - name: Bounded Git tree reuse controls
+        run: python -I -B tools/conformance_tree_reuse_test.py -v
+      - name: Complete cache rollback runner controls
+        run: python -I -B tools/gen-state-root-vectors/run_cache_rollback_controls_test.py -v
       - name: Cache identifier rollback recorded controls
-        run: python -I -B tools/gen-state-root-vectors/check_cache_identifier_rollback_test.py -v
+        run: python -I -B tools/gen-state-root-vectors/run_cache_rollback_controls.py --mode bounded --source-revision "${{ github.sha }}" > "${{ runner.temp }}/cache-rollback-tree-reuse.json"
+      - name: Upload cache rollback Git tree reuse completion
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cache-rollback-tree-reuse-${{ runner.os }}
+          path: ${{ runner.temp }}/cache-rollback-tree-reuse.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Independent recorded cache identifier rollback
         run: python -I -B tools/gen-state-root-vectors/check_cache_identifier_rollback.py --source-revision "${{ github.sha }}"
       - name: Cache forward replay source controls
@@ -858,8 +870,20 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_public_chain_foreign_startup.py --source-revision "${{ github.sha }}"
       - name: Cache identifier rollback source controls
         run: python -I -B tools/gen-state-root-vectors/prepare_cache_identifier_rollback_test.py -v
+      - name: Bounded Git tree reuse controls
+        run: python -I -B tools/conformance_tree_reuse_test.py -v
+      - name: Complete cache rollback runner controls
+        run: python -I -B tools/gen-state-root-vectors/run_cache_rollback_controls_test.py -v
       - name: Cache identifier rollback recorded controls
-        run: python -I -B tools/gen-state-root-vectors/check_cache_identifier_rollback_test.py -v
+        run: python -I -B tools/gen-state-root-vectors/run_cache_rollback_controls.py --mode bounded --source-revision "${{ github.sha }}" > "${{ runner.temp }}/cache-rollback-tree-reuse.json"
+      - name: Upload cache rollback Git tree reuse completion
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cache-rollback-tree-reuse-${{ runner.os }}
+          path: ${{ runner.temp }}/cache-rollback-tree-reuse.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Independent recorded cache identifier rollback
         run: python -I -B tools/gen-state-root-vectors/check_cache_identifier_rollback.py --source-revision "${{ github.sha }}"
       - name: Cache forward replay source controls
