@@ -5,6 +5,8 @@ covered by that notice. Preserve the individual source files' SPDX notices.
 
 tools/ledger-transport/transport.py
 tools/ledger-transport/transport_test.py
+tools/ledger-transport/archive_index.py
+tools/ledger-transport/archive_index_test.py
 tools/ledger-inventory/inventory.py
 
 These Python source files declare GPL-3.0-only. The complete GNU General Public

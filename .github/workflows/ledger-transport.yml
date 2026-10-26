@@ -59,6 +59,8 @@ jobs:
           PY
       - name: Check bounded transport and actual CLI processes
         run: python -I -B tools/ledger-transport/transport_test.py --report "$R1_TRANSPORT_ARTIFACT/tests.json"
+      - name: Check bounded archive directory and actual CLI processes
+        run: python -I -B tools/ledger-transport/archive_index_test.py --report "$R1_TRANSPORT_ARTIFACT/archive-index-tests.json"
       - name: Bind portable tool, test report and actual workflow identity
         env:
           R1_PLATFORM: ${{ matrix.platform }}
@@ -86,25 +88,30 @@ jobs:
           assert host + '-amd64' == os.environ['R1_PLATFORM']
           paths = ['.github/workflows/ledger-transport.yml', 'tools/ledger-transport/transport.py',
                    'tools/ledger-transport/transport_test.py', 'tools/ledger-transport/README.md',
+                   'tools/ledger-transport/archive_index.py', 'tools/ledger-transport/archive_index_test.py',
                    'tools/ledger-inventory/inventory.py', 'docs/state-root-r1-intake.md',
                    'docs/native-roadmap.md', 'LICENSE', 'tools/ledger-transport/THIRD_PARTY_NOTICES',
                    'tools/gen-state-root-vectors/LICENSE']
           source = {name: pin(root / name, 1 << 20) for name in paths}
-          tree = ast.parse((root / 'tools/ledger-transport/transport_test.py').read_text())
-          selected = sorted(node.name for cls in tree.body if isinstance(cls, ast.ClassDef) and cls.name == 'TransportTests'
-                            for node in cls.body if isinstance(node, ast.FunctionDef) and node.name.startswith('test_'))
-          tests = json.loads((artifact / 'tests.json').read_text())
-          assert selected and tests['passed'] is True and sorted(tests['selected_roots']) == selected
-          assert tests['tests_run'] == len(selected) and tests['failures'] == tests['errors'] == 0
-          assert tests['skips'] == [] and tests['subtests']['failed'] == 0
-          assert sorted(tests['roots'], key=lambda item: item['name']) == [{'name': name, 'status': 'PASS'} for name in selected]
-          files = {'tests.json': pin(artifact / 'tests.json', 128 << 10)}
+          files = {}
+          for test_source, class_name, report_name in (
+                  ('transport_test.py', 'TransportTests', 'tests.json'),
+                  ('archive_index_test.py', 'ArchiveIndexTests', 'archive-index-tests.json')):
+              tree = ast.parse((root / 'tools/ledger-transport' / test_source).read_text())
+              selected = sorted(node.name for cls in tree.body if isinstance(cls, ast.ClassDef) and cls.name == class_name
+                                for node in cls.body if isinstance(node, ast.FunctionDef) and node.name.startswith('test_'))
+              tests = json.loads((artifact / report_name).read_text())
+              assert selected and tests['passed'] is True and sorted(tests['selected_roots']) == selected
+              assert tests['tests_run'] == len(selected) and tests['failures'] == tests['errors'] == 0
+              assert tests['skips'] == [] and tests['subtests']['failed'] == 0
+              assert sorted(tests['roots'], key=lambda item: item['name']) == [{'name': name, 'status': 'PASS'} for name in selected]
+              files[report_name] = pin(artifact / report_name, 128 << 10)
           # Preserve relative imports/companion paths without packaging a workspace.
           for name in paths:
               (artifact / name).parent.mkdir(parents=True, exist_ok=True)
               shutil.copyfile(root / name, artifact / name)
               files[name] = pin(artifact / name, 1 << 20)
-          report = {'format': 'zenon-r1-transport-ci/v1', 'status': 'CONTROLLED_TRANSPORT_QUALIFIED',
+          report = {'format': 'zenon-r1-transport-ci/v2', 'status': 'CONTROLLED_TRANSPORT_AND_DIRECTORY_QUALIFIED',
                     'repository': os.environ['GITHUB_REPOSITORY'], 'workflow': os.environ['GITHUB_WORKFLOW'],
                     'event': os.environ['GITHUB_EVENT_NAME'], 'run_id': int(os.environ['GITHUB_RUN_ID']),
                     'run_attempt': int(os.environ['GITHUB_RUN_ATTEMPT']), 'source_revision': checkout,
@@ -112,6 +119,7 @@ jobs:
                     'platform': os.environ['R1_PLATFORM'], 'python': list(sys.version_info[:3]),
                     'source_files': source, 'files': files,
                     'scope': {name: False for name in ('real_R1_dataset_collected', 'representative_dataset_accepted',
+                              'whole_archive_sha256_verified', 'member_payloads_opened',
                               'snapshot_completeness_authenticated', 'profile_agreed', 'header_authentication_executed',
                               'network_activation_authenticated', 'state_value_acceptance_enabled', 'reviewed_distribution')}}
           raw = (json.dumps(report, sort_keys=True, indent=2) + '\n').encode()
