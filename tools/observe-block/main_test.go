@@ -309,6 +309,17 @@ func TestObservationOutputCompletion(t *testing.T) {
 					(mode == "inherited stderr") != (result.StderrBytes > 0) {
 					t.Fatal("incomplete output accepted or lost private fixed failure classification")
 				}
+				// Preserve only fixed completion facts in a failed public observation.
+				// A zero child exit alone cannot identify the incomplete stream.
+				encoded, err := json.Marshal(result.observation)
+				var fields map[string]json.RawMessage
+				var completion map[string]bool
+				if err != nil || json.Unmarshal(encoded, &fields) != nil || len(fields) != 5 ||
+					json.Unmarshal(fields["incomplete_output"], &completion) != nil || len(completion) != 3 ||
+					completion["stdout_eof"] != (mode == "inherited stderr") ||
+					completion["stderr_eof"] != (mode == "inherited pipe") || !completion["wait_delay_expired"] {
+					t.Fatal("incomplete observation lost fixed per-stream EOF or actual wait-delay evidence")
+				}
 				record, err := json.Marshal(struct {
 					ID          string `json:"id"`
 					Category    string `json:"category"`

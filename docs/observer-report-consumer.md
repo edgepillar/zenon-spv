@@ -69,6 +69,12 @@ mode. Watch completion is process metadata only; it does not identify a saved
 tip, prove progress or erase state writes when a later child fails. The caller
 must retain the selected invocation and actual saved-state context.
 
+An observer's `output_incomplete` refusal can include three fixed per-stream
+completion flags in the failed child's `incomplete_output` field. Its nonzero
+actual outer exit still refuses before stdin is read. Such failure metadata
+is not allowed in a matched child's exact four-field record and cannot supply
+the missing completion or qualify an earlier attempt.
+
 Success produces:
 
 ```json
