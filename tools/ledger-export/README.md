@@ -77,6 +77,14 @@ incomplete. That is UNKNOWN. Preserve the actual prefix/exit and do not inventor
 it as a completed dataset. External termination or missing output likewise
 remains UNKNOWN. No failure renews selection or trust inputs automatically.
 
+The encoder groups small pieces in one fixed 64 KiB buffer and reuses its
+length-encoding arrays. It flushes the final tail only after the EOF and full
+identifier checks, then checks cancellation again. A failure may leave a shorter
+actual stdout prefix; preserve that prefix as UNKNOWN. No deferred failure-path
+flush or extra output file is used. The
+[buffering comparison](../../docs/ledger-export-buffering.md) records the finite
+write/allocation observations and their limits.
+
 ### Reconcile completion, then inventory the retained object
 
 The standard-library Python 3.9+ `consume_completion.py` makes the completion
@@ -164,7 +172,8 @@ All are provisional measurement caps. Scan bytes mean the sum of iterator key
 and encoded-value lengths, including prefix/marker bytes; they are not measured
 physical disk I/O. Tombstones consume scan budgets. Output bytes mean canonical
 put-wire bytes. No output write request exceeds 64 KiB. The encoder keeps one
-previous key and streams borrowed values without a key/value map.
+previous key and the fixed output buffer, and streams borrowed values without a
+key/value map. The buffer is an additional fixed allocation for tiny exports.
 
 The backend can read/decompress a block or materialize a value before these
 logical checks. Its 4 MiB block-cache setting and 16-entry open-file-cache setting
@@ -182,7 +191,9 @@ go vet -mod=readonly ./...
 
 The controls exercise literal protobuf/put bytes, tombstones versus present-empty
 and zero, budgets, partial writes, changed metadata, errors/panics and release
-paths. Real finite closed LevelDB fixtures test snapshot isolation, read-only
+paths. Buffer controls additionally check exact downstream write counts, full
+and final flush failures, unvalidated tails and cancellation after output.
+Real finite closed LevelDB fixtures test snapshot isolation, read-only
 file preservation, missing locks and mutation refusal. One ordinary compiled
 binary supplies the completion-to-Python-inventory comparison, seven closed
 frontier transitions and the blocked output interrupt case. The transition
