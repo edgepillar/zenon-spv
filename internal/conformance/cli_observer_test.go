@@ -16,11 +16,18 @@ import (
 	"github.com/0x3639/zenon-spv/internal/verify"
 )
 
+type observerIncompleteOutput struct {
+	StdoutEOF        bool `json:"stdout_eof"`
+	StderrEOF        bool `json:"stderr_eof"`
+	WaitDelayExpired bool `json:"wait_delay_expired"`
+}
+
 type observerProcessRecord struct {
-	ExitCode    *int64 `json:"exit_code"`
-	ElapsedNS   int64  `json:"elapsed_ns"`
-	StdoutBytes int64  `json:"stdout_bytes"`
-	StderrBytes int64  `json:"stderr_bytes"`
+	ExitCode         *int64                    `json:"exit_code"`
+	ElapsedNS        int64                     `json:"elapsed_ns"`
+	StdoutBytes      int64                     `json:"stdout_bytes"`
+	StderrBytes      int64                     `json:"stderr_bytes"`
+	IncompleteOutput *observerIncompleteOutput `json:"incomplete_output,omitempty"`
 }
 
 // This is the selected observer application's local integration, using node

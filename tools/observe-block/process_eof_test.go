@@ -127,6 +127,11 @@ func TestObservationEOFCompletionGate(t *testing.T) {
 		if !result.stdoutEOF || !result.stderrEOF || result.ExitCode == nil || bytes.Contains(result.stdout, []byte("PRIVATE")) {
 			t.Fatal("native process did not retain joined, private EOF evidence")
 		}
+		encoded, encodeErr := json.Marshal(result.observation)
+		var fields map[string]json.RawMessage
+		if encodeErr != nil || json.Unmarshal(encoded, &fields) != nil || len(fields) != 4 || fields["incomplete_output"] != nil {
+			t.Fatal("EOF-complete observation changed the four-field child record")
+		}
 		if mode == "success" && (result.code != 0 || result.category != "" || *result.ExitCode != 0 || string(result.stdout) != "ACCEPT\n") {
 			t.Fatal("EOF-complete successful child was refused")
 		}

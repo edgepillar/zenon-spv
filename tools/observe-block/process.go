@@ -111,8 +111,8 @@ func runProcessOutput(parent context.Context, path string, args []string, limit 
 	cmd := exec.CommandContext(ctx, path, args...)
 	cmd.Stdout, cmd.Stderr, cmd.WaitDelay = out, diagnostics, time.Second
 	started := time.Now()
-	err := cmd.Run()
-	err = joinedCopyError(err, out, diagnostics)
+	waitErr := cmd.Run()
+	err := joinedCopyError(waitErr, out, diagnostics)
 	r := processResult{observation: observation{ElapsedNS: time.Since(started).Nanoseconds(), StdoutBytes: out.observed, StderrBytes: diagnostics.observed}, stdout: out.buffer.Bytes(), stdoutEOF: out.readEOF, stderrEOF: diagnostics.readEOF}
 	if cmd.ProcessState != nil {
 		status := int64(cmd.ProcessState.ExitCode())
@@ -135,6 +135,11 @@ func runProcessOutput(parent context.Context, path string, args []string, limit 
 		r.category, r.code = "output_incomplete", 2
 	case err != nil || r.ExitCode == nil || *r.ExitCode != 0:
 		r.category, r.code = "process_failure", 2
+	}
+	if r.category == "output_incomplete" {
+		// Fixed failure facts distinguish a forced wait-delay closure from a
+		// nil Run error without both EOF certificates. They grant no completion.
+		r.IncompleteOutput = &incompleteOutputObservation{out.readEOF, diagnostics.readEOF, waitErr == exec.ErrWaitDelay}
 	}
 	return r
 }

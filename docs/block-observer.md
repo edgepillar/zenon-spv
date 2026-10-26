@@ -354,7 +354,13 @@ one-gateway observations do not complete network or release qualification.
 Local file mode's schema 1 reports `status`, nullable fixed `category`,
 `checked_targets`, total `elapsed_ns`, and separate `verifier`/`consumer` records. Each child record has
 nullable actual `exit_code`, elapsed nanoseconds and observed stdout/stderr byte
-counts. A child that did not start has null status and zero stream counts.
+counts. An `output_incomplete` child also carries the fixed Boolean
+`incomplete_output` fields `stdout_eof`, `stderr_eof` and `wait_delay_expired`.
+The last field records whether `Run` returned the exact wait-delay error before
+the joined EOF check; it distinguishes that outcome from a nil `Run` error
+without both EOF certificates. The fields do not establish why a stream failed
+to complete. Successful child records retain their exact four-field shape.
+A child that did not start has null status and zero stream counts.
 No paths, target identities, fingerprints, binary pins or raw errors are echoed.
 Count zero is a failed match, never evidence that an account or block is absent.
 
@@ -386,7 +392,10 @@ stream limits, write errors and nonzero child exit still refuse the workflow.
 Other process errors retain `process_failure`, including errors that merely
 wrap the timer error. The one-second pipe wait, caps, child deadlines and
 successful report fields are unchanged. This does not establish the EOF state
-or cause of historical failures. Check
+or cause of historical failures. In particular, the first Windows general CI
+attempt for PR #278 retained an `output_incomplete` refusal after child exit 0;
+that older record lacks per-stream EOF facts. The additional failure metadata
+does not repair or qualify that attempt. Check
 the observer's actual process status too: a broken output channel can leave
 partial JSON. Elapsed samples include startup and observed process completion;
 total time also includes preflight, private file preparation and cleanup before
