@@ -31,7 +31,17 @@ jobs:
       - name: Source scenario inventory controls
         run: python -I -B tools/check-scenario-inventory_test.py
       - name: Bounded ledger inventory controls
-        run: python -I -B tools/ledger-inventory/inventory_test.py --source-revision "${{ github.sha }}"
+        id: inventory_controls
+        shell: bash
+        run: python -I -B tools/ledger-inventory/inventory_test.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/ledger-inventory-controls.json"
+      - name: Upload bounded ledger inventory controls
+        if: ${{ !cancelled() && steps.inventory_controls.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ledger-inventory-linux
+          path: ${{ runner.temp }}/ledger-inventory-controls.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Verification context checks
         run: python tools/check-verification-context_test.py
       - name: Context pin option controls
@@ -678,7 +688,17 @@ jobs:
       - name: Source scenario inventory controls
         run: python -I -B tools/check-scenario-inventory_test.py
       - name: Bounded ledger inventory controls
-        run: python -I -B tools/ledger-inventory/inventory_test.py --source-revision "${{ github.sha }}"
+        id: inventory_controls
+        shell: bash
+        run: python -I -B tools/ledger-inventory/inventory_test.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/ledger-inventory-controls.json"
+      - name: Upload bounded ledger inventory controls
+        if: ${{ !cancelled() && steps.inventory_controls.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ledger-inventory-${{ matrix.os }}
+          path: ${{ runner.temp }}/ledger-inventory-controls.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Verification context checks
         run: python tools/check-verification-context_test.py
       - name: Context pin option controls

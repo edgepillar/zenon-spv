@@ -77,6 +77,7 @@ class Reader:
     def __init__(self, stream, size):
         self.stream, self.size, self.position = stream, size, 0
         self.hash = hashlib.sha256()
+        self.buffer, self.offset = b"", 0
 
     def raw_read(self, size):
         require(0 < size <= CHUNK_BYTES, "read_bound")
@@ -87,19 +88,35 @@ class Reader:
         require(type(raw) is bytes and len(raw) <= size, "input_read")
         return raw
 
+    def fill(self):
+        if self.offset == len(self.buffer):
+            # Prefetch only selected bytes. The separate one-byte EOF probe must
+            # still observe trailing input or an actual read error before success.
+            remaining = self.size - self.position
+            require(remaining > 0, "truncated_input")
+            self.buffer = self.raw_read(min(CHUNK_BYTES, remaining))
+            require(bool(self.buffer), "truncated_input")
+            self.offset = 0
+            self.hash.update(self.buffer)
+
     def take(self, size):
         require(0 <= size <= self.size - self.position, "truncated_input")
         raw = bytearray()
         while len(raw) < size:
-            part = self.raw_read(min(CHUNK_BYTES, size - len(raw)))
-            require(bool(part), "truncated_input")
-            self.position += len(part)
-            self.hash.update(part)
-            raw.extend(part)
+            self.fill()
+            count = min(size - len(raw), len(self.buffer) - self.offset)
+            raw.extend(self.buffer[self.offset:self.offset + count])
+            self.position += count
+            self.offset += count
         return bytes(raw)
 
     def byte(self):
-        return self.take(1)[0]
+        require(self.position < self.size, "truncated_input")
+        self.fill()
+        value = self.buffer[self.offset]
+        self.offset += 1
+        self.position += 1
+        return value
 
     def length(self):
         number = 0
@@ -113,15 +130,15 @@ class Reader:
         raise Refused("varint_overflow")
 
     def value(self, size):
-        require(size <= self.size - self.position, "truncated_input")
+        require(0 <= size <= self.size - self.position, "truncated_input")
         if size == 32:
             return self.take(32) == bytes(32)
         while size:
-            part = self.raw_read(min(CHUNK_BYTES, size))
-            require(bool(part), "truncated_input")
-            self.position += len(part)
-            self.hash.update(part)
-            size -= len(part)
+            self.fill()
+            count = min(size, len(self.buffer) - self.offset)
+            self.position += count
+            self.offset += count
+            size -= count
         return False
 
 
