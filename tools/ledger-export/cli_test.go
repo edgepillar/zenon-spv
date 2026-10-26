@@ -488,6 +488,7 @@ func compiledInventory(t *testing.T, binary string) {
 func TestCompiledCLI(t *testing.T) {
 	binary := ordinaryBinary(t)
 	t.Run("independent-inventory", func(t *testing.T) { compiledInventory(t, binary) })
+	t.Run("closed-frontier-transitions", func(t *testing.T) { compiledFrontierTransitions(t, binary) })
 	t.Run("interrupt-blocked-output", func(t *testing.T) {
 		if runtime.GOOS == "windows" {
 			t.Skip("Windows os.Process.Signal cannot inject os.Interrupt; file and ordinary CLI controls still execute")
