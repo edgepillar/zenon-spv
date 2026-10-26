@@ -315,6 +315,18 @@ jobs:
           path: ${{ runner.temp }}/core-init-stop.json
           if-no-files-found: warn
           retention-days: 14
+      - name: Core failed Init source and recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_core_init_failure_test.py -v
+      - name: Independent recorded failed Init cleanup
+        run: python -I -B tools/gen-state-root-vectors/check_core_init_failure.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/core-init-failure.json"
+      - name: Upload core failed Init cleanup recorded evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: core-init-failure-${{ runner.os }}
+          path: ${{ runner.temp }}/core-init-failure.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Public Chain proof workload controls
         run: python -I -B -m unittest discover -s tools/gen-state-root-vectors -p "*public_chain_proof_workload_test.py" -v
       - name: Independent recorded public Chain proof workload
@@ -936,6 +948,18 @@ jobs:
         with:
           name: core-init-stop-${{ runner.os }}
           path: ${{ runner.temp }}/core-init-stop.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Core failed Init source and recorded controls
+        run: python -I -B tools/gen-state-root-vectors/check_core_init_failure_test.py -v
+      - name: Independent recorded failed Init cleanup
+        run: python -I -B tools/gen-state-root-vectors/check_core_init_failure.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/core-init-failure.json"
+      - name: Upload core failed Init cleanup recorded evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: core-init-failure-${{ runner.os }}
+          path: ${{ runner.temp }}/core-init-failure.json
           if-no-files-found: warn
           retention-days: 14
       - name: Public Chain proof workload controls
