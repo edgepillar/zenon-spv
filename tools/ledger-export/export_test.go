@@ -125,6 +125,16 @@ func TestIdentifierUsesNodeProtobuf(t *testing.T) {
 			t.Fatal("protobuf height boundary")
 		}
 	}
+	t.Run("source-genesis-9c71", func(t *testing.T) {
+		// Selected source-genesis identifier, independently matched against the
+		// original node frontier and the retained complete export stream.
+		s := selection{Hash: "9e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb0", Height: 1, Provenance: selected().Provenance}
+		want := unhex(t, "000a220a209e204601d1b7b1427fe12bc82622e610d8a6ad43c40abf020eb66e538bb8eeb01001")
+		got, err := s.physicalIdentifier()
+		if err != nil || !bytes.Equal(got, want) {
+			t.Fatal("source-genesis identifier bytes changed")
+		}
+	})
 }
 
 func TestLiteralStreamKeepsEmptyAndZeroAndOmitsTombstone(t *testing.T) {

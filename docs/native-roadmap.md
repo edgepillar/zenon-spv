@@ -72,6 +72,14 @@ accounting. Directory claims do not verify the whole archive, consistent node
 capture, real ledger inventory or representative measurements. Publisher and
 full-frontier inputs remain separate gates.
 
+The [source-genesis export comparison](source-genesis-ledger-export.md) checks
+one unchanged node's real logical frontier against the ordinary exporter,
+completion consumer, transport and inventory. It matches 103,824 records and
+11,779,928 put-wire bytes without another producer/build/transfer after the
+controller failures. Those failures remain retained. This is finite source-layout
+and workflow compatibility; it supplies no representative R1 dataset or M2–M5
+acceptance.
+
 CI now verifies the downloaded root-module cache after its builds/tests, with
 network lookup and toolchain switching disabled, and rejects `go.mod`/`go.sum`
 drift. This checks the main build list's cached content under
