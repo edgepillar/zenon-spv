@@ -64,6 +64,14 @@ and the whole selected stream in one pass, retaining only a small manifest and
 result. It writes no chunk files and keeps real-data, consistency, complete-state,
 accepted-header/root, profile/activation and independent-review gates open.
 
+Its separate [archive directory preflight](../tools/ledger-transport/README.md#observe-an-archive-directory-before-acquiring-its-payload)
+can observe a selected bounded ZIP/ZIP64 tail without downloading or opening
+member payloads. The [R1 intake](state-root-r1-intake.md#current-public-archive-observation)
+records the current 1 MiB public-source observation and conservative acquisition
+accounting. Directory claims do not verify the whole archive, consistent node
+capture, real ledger inventory or representative measurements. Publisher and
+full-frontier inputs remain separate gates.
+
 CI now verifies the downloaded root-module cache after its builds/tests, with
 network lookup and toolchain switching disabled, and rejects `go.mod`/`go.sum`
 drift. This checks the main build list's cached content under

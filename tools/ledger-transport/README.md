@@ -144,3 +144,81 @@ notice and [component notices](THIRD_PARTY_NOTICES). No database,
 payload chunks or Go binary is built or archived by this workflow. Mechanical
 artifact checks and green CI remain separate from independent review,
 authenticated distribution and the roadmap's real-data/profile gates.
+
+## Observe an archive directory before acquiring its payload
+
+The separate `archive_index.py` is an offline ZIP/ZIP64 directory observer. It
+helps budget R1 source acquisition without downloading or unpacking a multi-GiB
+archive. Stdin is one separately selected **final tail** of an archive. It opens
+no paths, makes no HTTP request, creates no files and never opens a ZIP member.
+The existing raw-stream transport commands and manifest remain unchanged.
+
+Select the archive's length and advertised SHA-256 separately, then retain a
+bounded tail and its actual completion, exact length and SHA-256 through the
+approved manager. An HTTP controller must require the selected range, `206`,
+exact `Content-Range` and length, identity content encoding and a matching strong
+ETag/conditional request. Refuse a full-body response to a range request. ETag
+equality is a transport observation, not snapshot or publisher authentication.
+This tool does not perform or authenticate that HTTP selection. Do not retry a
+completed transfer merely because later metadata promotion fails.
+
+```sh
+python3 -I -B tools/ledger-transport/archive_index.py \
+  --archive-bytes "$ARCHIVE_BYTES" --archive-sha256 "$ADVERTISED_ARCHIVE_SHA256" \
+  --tail-bytes "$TAIL_BYTES" --tail-sha256 "$TAIL_SHA256" < "$TAIL_OBJECT"
+```
+
+Require actual exit 0, complete capture and `SELECTED_DIRECTORY_OBSERVED`.
+The observer checks the tail digest/EOF, a unique end record, adjacent complete
+directory, ZIP64 agreement, entry count, supported stored/deflated encoding,
+single-disk offsets, ordinary member types and unambiguous paths. It returns
+aggregate file/byte counts by the first two path components, including `.ldb`,
+`.log` and `MANIFEST-` counts. Member names are not listed individually; review
+group labels before publishing a report. Noncanonical encodings outside this
+tool's subset refuse; refusal does not establish that an archive is invalid ZIP.
+
+| Limit | Default | Hard cap |
+| --- | ---: | ---: |
+| Selected final tail | 1 MiB | 4 MiB |
+| Members | 10,000 | 16,384 |
+| Declared total unpacked bytes | 32 GiB | 128 GiB |
+| Declared bytes per member | 16 GiB | 64 GiB |
+| Archive logical length | 1 TiB | 1 TiB |
+| Group count / name bytes / result bytes | 64 / 512 / 64 KiB | same |
+| One input read request | 64 KiB | 64 KiB |
+
+The four configurable limits use `--max-tail-bytes`, `--max-members`,
+`--max-unpacked-bytes` and `--max-file-bytes`. Limit syntax is checked before
+reading. The directory must fit in the selected tail; there is no implicit larger
+fetch. Tail bytes, bounded names and group counters determine memory, not the
+archive's logical payload length. Set an outer deadline; these are not measured
+RSS, I/O or OS quota guarantees. The API freezes selection and limits before the
+first read. Diagnostics contain static codes, never input paths.
+
+**Directory sizes are unverified claims.** No local header, member payload, CRC,
+decompressed size or whole-archive SHA-256 is checked. The supplied whole digest
+is recorded as selection only; the tail cannot authenticate its pairing with
+that digest. This result is neither extraction-safety qualification nor a bound
+on actual decompressor allocation. It does not establish that the node stopped,
+database consistency, network/frontier identity or a collected R1 dataset.
+
+For a later approved acquisition, reserve one complete archive, bounded selected
+extraction, any independent working clone and one bounded export, plus the
+production floor and other reservations. Charge a clone's full logical size;
+do not assume shared APFS blocks reduce the budget. Stream the whole archive
+once, verify its selected SHA-256 and completion, then independently enforce
+extraction limits. Never use directory observation as permission to extract,
+open a database or adopt unowned historical data. The read-only frontier exporter
+still requires an independently selected full momentum and a consistent copy.
+
+```sh
+python3 -I -B tools/ledger-transport/archive_index_test.py
+```
+
+Finite literal directories, a standard-library ZIP encoder, logical >4 GiB
+offsets, 10,000 members, malformed ranges/records, alias/type/encoding/size
+refusals, short reads, actual CLI exits and failed output controls create no
+payload files. They are not real dataset measurements. CI runs both test suites
+on the same three platforms and retains only source, licenses and small reports.
+The CI package advances to `zenon-r1-transport-ci/v2` to bind both suites; existing
+v1 packages and raw-stream manifest formats remain unchanged.
