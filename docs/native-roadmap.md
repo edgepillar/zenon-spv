@@ -94,6 +94,12 @@ to reduce small writes without changing the selected put stream or completion
 gates. Finite encoder allocation/write observations prepare the R1 transport
 track; they do not supply representative data or hardware acceptance.
 
+The independent inventory similarly uses [bounded input buffering](ledger-inventory-buffering.md)
+to amortize small reads and hash updates while keeping its selected-byte, field,
+ordering and actual EOF checks. It creates no input copy or large fixture file.
+This is a measurement-pipeline improvement; representative R1 data, M2 agreement
+and accepted-header state proofs remain separate gates.
+
 CI now verifies the downloaded root-module cache after its builds/tests, with
 network lookup and toolchain switching disabled, and rejects `go.mod`/`go.sum`
 drift. This checks the main build list's cached content under

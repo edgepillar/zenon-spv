@@ -94,6 +94,16 @@ in a map or set. JSON output is capped at 128 KiB. These properties do not bound
 total process RSS or certify a real node's workload. Input acquisition, CAS
 verification, inventory and report handling have distinct I/O/CPU scopes.
 
+The reader amortizes small record fields through a fixed **64 KiB** input
+buffer. Each returned buffer is hashed once; parsing and skipped values consume
+that buffer without another underlying read or hash update per field. Prefetch
+never crosses the selected byte count. A malformed record can consume a bounded
+selected prefix before refusal, so the input must remain the separately retained
+immutable stream rather than a shared reader whose failure position matters.
+The final one-byte read still checks actual EOF or a read error before success.
+See the [finite buffering comparison](../../docs/ledger-inventory-buffering.md)
+for the unchanged report and resource observations.
+
 ## Measurements
 
 Each family reports exact record count, total/minimum/maximum key, raw-value and
@@ -144,3 +154,5 @@ amd64. Its JSON record lists every attempted/passed test and the two source
 digests. `--source-revision` adds the controller-selected revision; that field
 alone does not authenticate execution. Native verifier source/binary/report,
 independent review and distribution checks remain separate.
+Each job uploads that one small JSON record from its existing test invocation;
+it does not run a second suite or package a dataset for the inventory artifact.

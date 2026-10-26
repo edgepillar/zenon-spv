@@ -13,6 +13,7 @@ import sys
 import time
 import tracemalloc
 import unittest
+from unittest import mock
 
 sys.dont_write_bytecode = True
 HERE = Path(__file__).resolve().parent
@@ -53,6 +54,18 @@ class ShortReads(io.BytesIO):
         if size < 0 or size > INV.CHUNK_BYTES:
             raise AssertionError("unbounded read requested")
         return super().read(min(size, 3))
+
+
+class CountedReads(io.BytesIO):
+    def __init__(self, raw):
+        super().__init__(raw)
+        self.requests = []
+
+    def read(self, size):
+        if not 0 < size <= INV.CHUNK_BYTES:
+            raise AssertionError("unbounded read requested")
+        self.requests.append(size)
+        return super().read(size)
 
 
 class VirtualValue:
@@ -272,6 +285,123 @@ class LedgerInventoryTests(unittest.TestCase):
         raw = dump([(b"a" * 130, b"v" * 129), (b"b", b"")])
         self.assertEqual(INV.inventory(ShortReads(raw), pin(raw, 2)), INV.inventory(io.BytesIO(raw), pin(raw, 2)))
 
+    def test_small_records_amortize_underlying_reads_and_hash_updates(self):
+        count = 8192
+        raw = dump([(b"\x09" + index.to_bytes(4, "big"), bytes(32))
+                    for index in range(count)])
+        selected, stream = pin(raw, count), CountedReads(raw)
+        real_sha256 = hashlib.sha256
+        hashes = []
+
+        class CountedHash:
+            def __init__(self):
+                self.inner = real_sha256()
+                self.updates = self.bytes = 0
+                hashes.append(self)
+
+            def update(self, part):
+                self.updates += 1
+                self.bytes += len(part)
+                self.inner.update(part)
+
+            def hexdigest(self):
+                return self.inner.hexdigest()
+
+        started = time.perf_counter()
+        with mock.patch.object(INV.hashlib, "sha256", CountedHash):
+            report = INV.inventory(stream, selected)
+        elapsed = time.perf_counter() - started
+        fills = (len(raw) + INV.CHUNK_BYTES - 1) // INV.CHUNK_BYTES
+        self.assertEqual(len(stream.requests), fills + 1)
+        self.assertEqual(stream.requests[-1], 1)
+        self.assertEqual(stream.tell(), len(raw))
+        self.assertEqual(len(hashes), 1)
+        self.assertEqual((hashes[0].updates, hashes[0].bytes), (fills, len(raw)))
+        self.assertEqual(report["selection"], selected)
+        self.assertEqual(report["families"]["other_namespace"]["raw_zero32_values"], count)
+        MEASUREMENTS["buffered_records"] = {
+            "logical_records": count, "logical_put_wire_bytes": len(raw),
+            "read_calls_including_eof": len(stream.requests), "hash_update_calls": fills,
+            "max_read_request_bytes": max(stream.requests), "wall_seconds": elapsed,
+            "scope": "inventory call on a finite in-memory stream; not syscall or RSS accounting",
+            "fixture_files_created": 0, "representative_workload": False}
+
+    def test_prefetch_stops_at_selection_before_one_byte_eof_probe(self):
+        raw = dump([(b"a", b"v")])
+        stream = CountedReads(raw + b"private-trailing-marker")
+        with self.assertRaises(INV.Refused) as raised:
+            INV.inventory(stream, pin(raw, 1))
+        self.assertEqual(str(raised.exception), "trailing_input")
+        self.assertEqual(stream.requests, [len(raw), 1])
+        self.assertEqual(stream.tell(), len(raw) + 1)
+
+    def test_one_byte_reads_preserve_exact_result(self):
+        class OneByte(io.BytesIO):
+            def read(self, size):
+                if not 0 < size <= INV.CHUNK_BYTES:
+                    raise AssertionError("unbounded read requested")
+                return super().read(1)
+        raw = dump([(b"a" * 128, bytes(32)), (b"b", b"v" * 129)])
+        self.assertEqual(INV.inventory(OneByte(raw), pin(raw, 2)),
+                         INV.inventory(io.BytesIO(raw), pin(raw, 2)))
+
+    def test_varint_crosses_a_full_buffer_boundary(self):
+        raw = b"x" * (INV.CHUNK_BYTES - 1) + varint(129)
+        stream = CountedReads(raw)
+        reader = INV.Reader(stream, len(raw))
+        self.assertEqual(reader.take(INV.CHUNK_BYTES - 1), raw[:-2])
+        self.assertEqual(reader.length(), 129)
+        self.assertEqual(reader.position, len(raw))
+        self.assertEqual(reader.hash.hexdigest(), hashlib.sha256(raw).hexdigest())
+        self.assertEqual(stream.requests, [INV.CHUNK_BYTES, 1])
+
+    def test_zero32_and_skipped_values_cross_full_buffer_boundaries(self):
+        prefix = b"x" * (INV.CHUNK_BYTES - 16)
+        value = b"v" * (3 * INV.CHUNK_BYTES + 17)
+        raw = prefix + bytes(32) + value
+        stream = CountedReads(raw)
+        reader = INV.Reader(stream, len(raw))
+        self.assertEqual(reader.take(len(prefix)), prefix)
+        self.assertTrue(reader.value(32))
+        self.assertFalse(reader.value(len(value)))
+        self.assertFalse(reader.value(0))
+        self.assertEqual(reader.position, len(raw))
+        self.assertEqual(reader.hash.hexdigest(), hashlib.sha256(raw).hexdigest())
+        self.assertEqual(len(stream.requests), 5)
+        self.assertFalse(reader.raw_read(1))
+
+    def test_read_errors_at_refill_and_eof_are_not_success(self):
+        raw = dump([(b"a", b"v" * INV.CHUNK_BYTES)])
+        for cutoff in (INV.CHUNK_BYTES, len(raw)):
+            class BrokenAfter(io.BytesIO):
+                def read(self, size):
+                    if self.tell() >= cutoff:
+                        raise OSError("private read failure")
+                    return super().read(min(size, cutoff - self.tell()))
+            with self.subTest(cutoff=cutoff):
+                with self.assertRaises(INV.Refused) as raised:
+                    INV.inventory(BrokenAfter(raw), pin(raw, 1))
+                self.assertEqual(str(raised.exception), "input_read")
+
+    def test_invalid_selection_and_limits_do_not_prefetch(self):
+        class Unread:
+            def read(self, _):
+                raise AssertionError("input must not be read")
+        raw = dump([(b"a", b"v")])
+        for selected, caps in ((dict(pin(raw, 1), sha256="bad"), None),
+                               (pin(raw, 1), dict(INV.DEFAULT_LIMITS, bytes=0)),
+                               (dict(pin(raw, 1), records=2), None)):
+            with self.assertRaises(INV.Refused):
+                INV.inventory(Unread(), selected, caps)
+
+    def test_negative_value_skip_refuses_without_reading(self):
+        stream = CountedReads(b"x")
+        reader = INV.Reader(stream, 1)
+        with self.assertRaises(INV.Refused):
+            reader.value(-1)
+        self.assertEqual(stream.requests, [])
+        self.assertEqual(reader.position, 0)
+
     def test_key_crossing_chunk_boundary_uses_bounded_reads(self):
         raw = dump([(b"k" * 65537, b"")])
         report = INV.inventory(ShortReads(raw), pin(raw, 1), dict(INV.DEFAULT_LIMITS, key_bytes=128 << 10))
@@ -425,7 +555,7 @@ if __name__ == "__main__":
     result = unittest.TextTestRunner(verbosity=1, resultclass=RecordedResult).run(suite)
     success = (result.wasSuccessful() and not result.skipped and not result.expectedFailures
                and result.attempted_names == result.passed_names
-               and set(MEASUREMENTS) == {"generated_value", "generated_records"})
+               and set(MEASUREMENTS) == {"generated_value", "generated_records", "buffered_records"})
     print(json.dumps({"kind": "bounded-ledger-inventory-controls", "status": "PASS" if success else "FAIL",
                       "tests": result.testsRun, "passed_names": result.passed_names,
                       "attempted_names": result.attempted_names, "skipped": len(result.skipped),
