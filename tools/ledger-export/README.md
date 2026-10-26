@@ -193,16 +193,26 @@ it excludes fixture construction and is not process RSS.
 
 Completion controls use finite literal wire records and receipts in memory.
 The ordinary binary's selected bytes are compared with independently written
-literal bytes before the helper's selection is passed to inventory. Reused
+literal bytes, described and verified through the bounded transport CLI, then
+passed to inventory with the helper's selection. A changed selected transport
+manifest digest must refuse. Transport verification feeds the manifest and
+the same bytes through one input reader without a combined payload file. Reused
 producer metadata with failed actual exit, incomplete capture or changed capture
 digest must refuse. `SPV_LEDGER_EXPORT_COMPLETION_SCRIPT` can select the source
-script in an owned qualification workspace, alongside the existing Python and
-inventory-script overrides. No fixture database or export is retained twice.
+script in an owned qualification workspace; `SPV_LEDGER_EXPORT_TRANSPORT_SCRIPT`
+selects the transport script, alongside the existing Python and inventory-script
+overrides. No fixture database or export is retained twice.
+
+The separate [source-genesis comparison](../../docs/source-genesis-ledger-export.md)
+also matches an unchanged node's independently encoded logical frontier to this
+exporter's bytes, transport and inventory. Its finite source-genesis input is a
+storage-layout compatibility control, not a representative R1 dataset.
 
 The dedicated `ledger-export` workflow builds one ordinary executable per
 Linux amd64, macOS Intel amd64 and Windows amd64 job. Each job reuses that same
-binary for the independent inventory comparison, retains actual test/skip
-events in the CI log, and checks its downloaded module cache offline. Each
+binary for completion, transport and the independent inventory comparison,
+retains actual test/skip events in the CI log, and checks its downloaded module
+cache offline. Each
 artifact contains only the binary, a source/run/platform manifest, the MIT
 license and dependency notices. The manifest records observed identity and
 digests; it is not an authenticated release signature. No ledger fixture or
