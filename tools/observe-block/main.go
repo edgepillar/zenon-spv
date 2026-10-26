@@ -42,11 +42,18 @@ type configuration struct {
 	advance                                                                     advanceConfiguration
 }
 
+type incompleteOutputObservation struct {
+	StdoutEOF        bool `json:"stdout_eof"`
+	StderrEOF        bool `json:"stderr_eof"`
+	WaitDelayExpired bool `json:"wait_delay_expired"`
+}
+
 type observation struct {
-	ExitCode    *int64 `json:"exit_code"`
-	ElapsedNS   int64  `json:"elapsed_ns"`
-	StdoutBytes int64  `json:"stdout_bytes"`
-	StderrBytes int64  `json:"stderr_bytes"`
+	ExitCode         *int64                       `json:"exit_code"`
+	ElapsedNS        int64                        `json:"elapsed_ns"`
+	StdoutBytes      int64                        `json:"stdout_bytes"`
+	StderrBytes      int64                        `json:"stderr_bytes"`
+	IncompleteOutput *incompleteOutputObservation `json:"incomplete_output,omitempty"`
 }
 
 type summary struct {

@@ -246,6 +246,16 @@ func TestObserverResourceFailureContext(t *testing.T) {
 	if r := observerResourceFailureContext(7, 0, false, actual, observerResourceSummary{}, true); r.Category != "none" {
 		t.Fatal("absent application category was not distinguished from unknown text")
 	}
+	category := "output_incomplete"
+	completion := observerIncompleteOutput{StdoutEOF: false, StderrEOF: true, WaitDelayExpired: true}
+	report := observerResourceSummary{Category: &category, Verifier: observerProcessRecord{ExitCode: &exit, IncompleteOutput: &completion}}
+	r := observerResourceFailureContext(7, 0, false, actual, report, true)
+	raw, err := json.Marshal(r)
+	if err != nil || r.Verifier.IncompleteOutput == nil || *r.Verifier.IncompleteOutput != completion ||
+		!bytes.Contains(raw, []byte(`"incomplete_output":{"stdout_eof":false,"stderr_eof":true,"wait_delay_expired":true}`)) ||
+		bytes.Contains(raw, []byte(secret)) {
+		t.Fatal("failure ledger lost fixed EOF facts or disclosed private diagnostics")
+	}
 }
 
 // Workers return fixed errors to the joined test goroutine. They never invoke
