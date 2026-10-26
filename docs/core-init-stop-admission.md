@@ -13,8 +13,10 @@ calling Chain.Init and keeps the tree unavailable.
 
 This is an explicit fail-closed experimental contract, not an upstream
 activation decision or a demonstrated live-network failure. The protocol close
-is deliberate and local. Arbitrary manager failures, Init failure recovery,
-Start/Stop concurrency, full-node restart and power loss remain unqualified.
+is deliberate and local. Arbitrary manager failures, Start/Stop concurrency,
+full-node restart and power loss remain unqualified. The separate
+[failed-Init cleanup experiment](core-init-failure-cleanup.md) covers two selected
+real-manager failure conditions on this runtime; it adds no runtime patch.
 
 ## Selected real-manager observations
 
