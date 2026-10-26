@@ -6,12 +6,14 @@ on:
     paths:
       - 'tools/ledger-export/**'
       - 'tools/ledger-inventory/inventory.py'
+      - 'tools/ledger-transport/transport.py'
       - '.github/workflows/ledger-export.yml'
   pull_request:
     branches: [main]
     paths:
       - 'tools/ledger-export/**'
       - 'tools/ledger-inventory/inventory.py'
+      - 'tools/ledger-transport/transport.py'
       - '.github/workflows/ledger-export.yml'
 
 permissions:
@@ -72,12 +74,13 @@ jobs:
         run: go build -mod=readonly -p=2 -trimpath -buildvcs=false -o "$R1_EXPORT_ARTIFACT/ledger-export.exe" .
       - name: Check bounded export completion consumer
         run: python -I -B consume_completion_test.py -v
-      - name: Check ordinary binary and independent inventory
+      - name: Check ordinary binary, transport and independent inventory
         run: |
           export SPV_LEDGER_EXPORT_TEST_BINARY="$R1_EXPORT_ARTIFACT/ledger-export.exe"
           export SPV_LEDGER_INVENTORY_PYTHON="$(python -I -B -c 'import sys; print(sys.executable)')"
           export SPV_LEDGER_INVENTORY_SCRIPT="$GITHUB_WORKSPACE/tools/ledger-inventory/inventory.py"
           export SPV_LEDGER_EXPORT_COMPLETION_SCRIPT="$GITHUB_WORKSPACE/tools/ledger-export/consume_completion.py"
+          export SPV_LEDGER_EXPORT_TRANSPORT_SCRIPT="$GITHUB_WORKSPACE/tools/ledger-transport/transport.py"
           go test -mod=readonly -p=2 -json -count=1 -timeout=90s ./...
       - name: Vet
         run: go vet -mod=readonly -p=2 ./...
@@ -107,7 +110,7 @@ jobs:
           feature = os.environ['R1_FEATURE_REVISION']
           assert re.fullmatch('[0-9a-f]{40}', feature)
           assert all(re.fullmatch('[1-9][0-9]*', os.environ[key]) for key in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT'))
-          paths = command('git', 'ls-files', '--', 'tools/ledger-export', 'tools/ledger-inventory/inventory.py', '.github/workflows/ledger-export.yml').splitlines()
+          paths = command('git', 'ls-files', '--', 'tools/ledger-export', 'tools/ledger-inventory/inventory.py', 'tools/ledger-transport/transport.py', '.github/workflows/ledger-export.yml').splitlines()
           assert 4 <= len(paths) <= 64 and len(set(paths)) == len(paths)
           source = {path: pin(root / path, 1 << 20) for path in paths}
           environment = json.loads(command('go', 'env', '-json', 'GOOS', 'GOARCH', 'GOVERSION'))

@@ -299,6 +299,55 @@ func ordinaryBinary(t *testing.T) string {
 	return path
 }
 
+func compiledTransport(t *testing.T, ctx context.Context, python string, data []byte, dataSHA [32]byte) {
+	t.Helper()
+	script := os.Getenv("SPV_LEDGER_EXPORT_TRANSPORT_SCRIPT")
+	if script == "" {
+		script = filepath.Join("..", "ledger-transport", "transport.py")
+	}
+	source, err := os.ReadFile(script)
+	if err != nil {
+		t.Fatal(err)
+	}
+	selection := []string{"--expect-bytes", strconv.Itoa(len(data)), "--expect-sha256", hex.EncodeToString(dataSHA[:]),
+		"--expect-height", "3000", "--expect-hash", selected().Hash, "--provenance-sha256", selected().Provenance,
+		"--max-chunk-bytes", "32"}
+	describe := exec.CommandContext(ctx, python, append([]string{"-I", "-B", script, "describe"}, selection...)...)
+	describe.Stdin = bytes.NewReader(data)
+	manifest, err := describe.Output()
+	if err != nil || receipt(t, manifest)["format"] != "zenon-r1-transport-manifest/v1" {
+		t.Fatalf("transport description: %v", err)
+	}
+	manifestSHA := sha256.Sum256(manifest)
+	for _, changedDigest := range []bool{false, true} {
+		digest := hex.EncodeToString(manifestSHA[:])
+		if changedDigest {
+			digest = strings.Repeat("00", 32)
+		}
+		args := append([]string{"-I", "-B", script, "verify"}, selection...)
+		args = append(args, "--manifest-bytes", strconv.Itoa(len(manifest)), "--manifest-sha256", digest)
+		verify := exec.CommandContext(ctx, python, args...)
+		verify.Stdin = io.MultiReader(bytes.NewReader(manifest), bytes.NewReader(data))
+		raw, verifyErr := verify.Output()
+		report := receipt(t, raw)
+		if changedDigest {
+			if verifyErr == nil || verify.ProcessState == nil || verify.ProcessState.ExitCode() != 2 || report["status"] != "UNKNOWN" || report["chunks_checked"] != nil {
+				t.Fatal("changed selected manifest digest was not refused")
+			}
+			continue
+		}
+		if verifyErr != nil || report["status"] != "SELECTED_TRANSPORT_MATCHED" || report["stream_eof_observed"] != true || report["chunks_checked"] != float64((len(data)+31)/32) {
+			t.Fatal("same retained stream did not match transport")
+		}
+		for _, value := range report["scope"].(map[string]any) {
+			if enabled, ok := value.(bool); ok && enabled {
+				t.Fatal("transport gained proof authority")
+			}
+		}
+	}
+	t.Logf("transport_script_sha256=%x manifest_sha256=%x actual_processes=3 changed_digest_refusals=1 combined_payload_files=0 acceptance_enabled=false", sha256.Sum256(source), manifestSHA)
+}
+
 func compiledInventory(t *testing.T, binary string) {
 	// Input state and expected ordered records are independently selected here.
 	// The completion helper's observations must match these literal expectations
@@ -384,6 +433,7 @@ func compiledInventory(t *testing.T, binary string) {
 	if len(caps) != 4 || caps["bytes"] != float64(defaults.OutputBytes) || caps["records"] != float64(defaults.Records) || caps["key_bytes"] != float64(defaults.KeyBytes) || caps["value_bytes"] != float64(defaults.ValueBytes) {
 		t.Fatal("completion changed selected inventory caps")
 	}
+	compiledTransport(t, ctx, python, out.Bytes(), expectedSHA)
 	consumer := exec.CommandContext(ctx, python, "-I", "-B", script,
 		"--expect-bytes", strconv.Itoa(int(pins["bytes"].(float64))),
 		"--expect-records", strconv.Itoa(int(pins["records"].(float64))),
@@ -403,6 +453,11 @@ func compiledInventory(t *testing.T, binary string) {
 	}
 	families := inventory["families"].(map[string]any)
 	typed := families["typed_balance"].(map[string]any)
+	for _, name := range []string{"key_bytes", "raw_value_bytes", "put_wire_bytes"} {
+		if typed[name].(map[string]any)["count"] != float64(2) {
+			t.Fatal("typed balance measurement count changed")
+		}
+	}
 	if typed["present_empty_values"] != float64(1) || typed["raw_zero32_values"] != float64(1) || inventory["distinct_typed_balance_addresses"] != float64(1) {
 		t.Fatal("typed empty/zero inventory changed")
 	}
