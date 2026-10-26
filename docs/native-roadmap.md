@@ -80,6 +80,15 @@ controller failures. Those failures remain retained. This is finite source-layou
 and workflow compatibility; it supplies no representative R1 dataset or M2–M5
 acceptance.
 
+The same comparison now follows one owned raw ledger through the original
+storage manager's empty Put, zero32 replacement, Delete and three Pops. All
+seven closed snapshots match independently selected full streams, and the final
+stream restores the original digest. The probe distinguishes iterator
+tombstones from present-empty values with the same view's `Get`/`Has` semantics.
+These are synthetic storage commits, not validated network Momentums or a test
+of derived SMT root retention/recovery. Representative R1, M2 agreement and the
+accepted-header M3 balance flow remain separate exits.
+
 CI now verifies the downloaded root-module cache after its builds/tests, with
 network lookup and toolchain switching disabled, and rejects `go.mod`/`go.sum`
 drift. This checks the main build list's cached content under

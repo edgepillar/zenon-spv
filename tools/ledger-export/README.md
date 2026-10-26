@@ -184,8 +184,13 @@ The controls exercise literal protobuf/put bytes, tombstones versus present-empt
 and zero, budgets, partial writes, changed metadata, errors/panics and release
 paths. Real finite closed LevelDB fixtures test snapshot isolation, read-only
 file preservation, missing locks and mutation refusal. One ordinary compiled
-binary supplies both the completion-to-Python-inventory comparison and the blocked
-output interrupt case. CI can supply that binary through
+binary supplies the completion-to-Python-inventory comparison, seven closed
+frontier transitions and the blocked output interrupt case. The transition
+fixtures distinguish absent/tombstoned, present-empty and raw zero32 values
+through advance and restoration. Each snapshot checks independently written
+literal bytes and counts, same-height foreign-hash refusal before output, and
+unchanged input files. These small physical fixtures do not execute the node's
+Manager or validate network Momentums. CI can supply that binary through
 `SPV_LEDGER_EXPORT_TEST_BINARY`; otherwise the package builds one temporary
 binary. The 32 MiB value is a prebuilt in-memory fixture, not a large disk file.
 Its allocation observation covers the encoder and controlled fake lifecycle;
