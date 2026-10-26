@@ -133,6 +133,133 @@ and [transport procedure](../tools/ledger-transport/README.md) with separately
 retained source/consistency provenance. Preserve one raw stream plus small
 receipts by reference, rather than another database archive or stdout copy.
 
+## Storage-manager advance and rollback
+
+The separate [storage-only probe](../tools/gen-state-root-vectors/source_manager_frontier.go)
+extends this comparison through the selected original `db.Manager.Add` and
+`Pop` implementation. It uses one independent owned copy of only the nine
+retained ledger files. It does not rerun `Chain.Init` or create another genesis,
+cache or state tree. The controller retains the original files and stream as
+inputs; it must not point the probe at a live or historical source database.
+
+The fixed sequence is an initial read, present-empty Put, replacement with
+32 zero bytes, Delete, and three Pops back to the original frontier. One
+synthetic typed balance key is selected before execution:
+`03 || ee[20] || 03 || dd[10]`. The three new identifiers are SHA-256 of
+`zenon-source-manager-control/v1/empty`, `/zero` and `/delete` at heights 2,
+3 and 4. Their stored commit payloads are explicit storage-control strings.
+They are **not validated network Momentums**. The storage manager accepting
+these commits says nothing about consensus, a valid header or an activated
+StateRoot.
+
+Before mutation, the controller predicts each entire ordered put stream by
+merging a small literal metadata/key overlay with the retained baseline stream.
+It keeps no full key map or second expected payload. The expected frontier
+protobuf, hash-to-height index and height-to-payload index are selected from the
+original source layout independently of `Manager.Add`. The probe separately
+hashes actual logical records with the original goleveldb encoder. After each
+writer Stop, a fresh read-only manager reopens and checks the same full
+identifier, selected key state, counts and digest. Only then can the ordinary
+exporter, completion helper, transport and inventory consume that closed copy.
+
+The completed local Darwin ARM64 comparison matched all seven snapshots. The
+four independently selected logical states were:
+
+| State | Records | Put-wire bytes | Extra typed key |
+| --- | ---: | ---: | --- |
+| Original source genesis | 103,824 | 11,779,928 | Absent |
+| Empty Put | 103,827 | 11,780,049 | Present-empty |
+| Zero32 replacement | 103,829 | 11,780,166 | Present, 32 zero bytes |
+| Delete | 103,830 | 11,780,186 | Absent |
+
+Their SHA-256 values, in that order, are:
+
+```text
+d0ffb31dece29d9d8459fbcf5cf542eb395712f5a1f906cd7f5409578f70a6fb
+6f30ae44fa31f481760ba37c89220b2476244b77c969aa2543b5a59baeb96f7b
+741210b8e7598d8a0875d244aa734cd3d98b541c516c59a34f8c532ae496b99f
+cc248864214b3dc1c78af8d25161d05740a9d527c31b7a9d3796b90f9f330db6
+```
+
+The three Pops matched the earlier zero32, present-empty and original hashes
+exactly. The final raw stream reused the original CAS object. Physical
+tombstones omitted from the iterator fold were 0, 0, 0, 1, 2, 4 and 7 across
+the seven snapshots. Typed balance counts were 14,091 or 14,092 as selected;
+contract storage stayed at 5,166. Completion, transport and inventory all
+matched each separately selected closed snapshot.
+
+In this source, `enableDeleteIterator.Next` also enumerates physical tombstones,
+and `Value` returns an empty slice for both a tombstone and a present-empty
+value. Iterator values alone are therefore insufficient to select final logical
+records. The probe reconciles an empty iterator value with `Get` and `Has` on
+the same immutable view, omits only a confirmed absent row and retains a
+confirmed present-empty row. Its regression uses the original memory backend
+and independent literal put bytes. The ordinary exporter independently checks
+the physical existence marker. This does not change the candidate L1 applier's
+separate empty-Put-to-delete rule or settle the protocol's value-width rules.
+
+The first probe counted iterator tombstones as present-empty and failed after
+the Delete. Its failed actual exit, closed files and held workspace remain
+preserved. A regression against that retained old probe fails specifically on
+the deleted-row case; the corrected probe passes all five test events with no
+skips. Nine already completed ordinary-exporter test events, vet and offline
+module verification were reused after checking identical Go/module inputs.
+They were not rerun to repair controller bookkeeping. The final source-control
+task retains its expected red exit 1 as FAILURE; all other 49 commands completed
+with actual exit 0 and complete capture. A separate post-closure qualification
+reconciles these outcomes without changing them.
+
+The corrected task's new generated workspace was removed after terminal process
+and identity checks. The earlier held workspace was not changed. No storage
+manager implementation or historical ownership record was changed for this
+comparison. The private, unsigned local qualification has SHA-256
+`df33caaf42205c97eb0eb771ce6ca024c2de8b82b7c5c8eea3457e56356da11f`;
+it references the complete 80,986-byte native report. These integrity references
+do not authenticate distribution or qualify another native platform. The
+selected node's 467 original files remain unchanged; its whole-module post-build
+verification was not executed. Served dependency `.mod` and source ZIP payloads
+were checked against the source `go.sum` before use; `.info` metadata retains
+its separate captured digest and version checks.
+
+The probe requires an existing physical root containing exactly `ledger/` and
+a regular `SOURCE_MANAGER_CONTROL` file with bytes
+`zenon-source-manager-control/v1\n`. This marker is an explicit control guard,
+not proof of ownership, isolation, consistency or provenance. The outer
+controller must establish those properties, reject links/hard links and protect
+the original inputs. It selects canonical step numbers 0 through 6 and separate
+before/after digests; a help exit is still an UNKNOWN observation.
+
+From the selected unchanged owned node module, build only the probe:
+
+```sh
+go build -mod=readonly -p=2 -trimpath -buildvcs=false \
+  -tags candidate_source_manager_frontier -o "$MANAGER_PROBE" \
+  "$SPV_SOURCE/tools/gen-state-root-vectors/source_manager_frontier.go"
+GOMAXPROCS=2 "$MANAGER_PROBE" --root "$OWNED_CONTROL_ROOT" --step "$STEP" \
+  --expect-input-sha256 "$EXPECTED_BEFORE" \
+  --expect-output-sha256 "$EXPECTED_AFTER"
+```
+
+Run its small original-backend regression from that same owned node module:
+
+```sh
+go test -mod=readonly -p=2 -count=1 -tags candidate_source_manager_frontier \
+  "$SPV_SOURCE/tools/gen-state-root-vectors/source_manager_frontier.go" \
+  "$SPV_SOURCE/tools/gen-state-root-vectors/source_manager_frontier_test.go"
+```
+
+Preserve every actual command, completed or incomplete output, expected stream
+selection and file image. Reuse one CAS object per digest: rollback should
+return to already retained logical streams, rather than require a database ZIP
+or another expected-output file. A failed/interrupted mutation is UNKNOWN;
+do not implicitly retry or qualify it using a success-looking JSON receipt.
+
+The exporter's ordinary CLI regression separately uses seven snapshots of one
+small physical fixture in `TestCompiledCLI/closed-frontier-transitions`, sharing
+the existing compiled executable. Those portable controls are distinct from executing the
+original node manager. Keep each actual platform's native execution and skip
+ledger separate.
+
 ## Remaining gates
 
 This control establishes finite source-layout and workflow compatibility for
@@ -141,3 +268,5 @@ retention/reorg/interruption and activation still need their declared inputs
 and actual measurements. The partial-SMT agreement, accepted v3 header/context,
 excluded-state provenance, independent review and authenticated distribution
 remain separate roadmap exits. Existing runtime state-value refusal is unchanged.
+Raw-ledger storage `Pop` does not qualify derived SMT root identity, retention,
+pruning or full node recovery.
