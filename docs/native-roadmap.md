@@ -232,6 +232,14 @@ passes preserve the prior error and source-genesis queries. This selected
 Stop-only concurrency does not qualify concurrent Init/Start/Stop, full-node
 restart, M2 profile agreement or accepted state values.
 
+The [core Init/Stop admission experiment](core-init-stop-admission.md) separately
+reproduces Init making a tree ready after a controlled incomplete core Stop.
+Its successor refuses that admission and serializes Init with Stop. Four
+ordinary processes, two selected race processes and five existing native roots
+with nine passes bind this changed runtime. The source preparer reproduces both
+484-file build inputs. Start concurrency, arbitrary manager failures, full-node
+qualification, M2 agreement and accepted state values remain open.
+
 The [native candidate v3 codec](candidate-v3-header-codec.md) adds bounded
 projected-header decoding and the selected 208-byte hash layout. Its tests
 compare all six recorded v3 preimages/hashes and preserve four v1/v2 cases.
