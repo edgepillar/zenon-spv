@@ -37,6 +37,46 @@ reports explicit UNKNOWN/refusal boundaries. It does not establish the stream's
 ledger domain, consistency, snapshot completeness or representativeness; the
 real node/export and acceptance inputs below remain necessary.
 
+The separate [archive directory observer](../tools/ledger-transport/README.md#observe-an-archive-directory-before-acquiring-its-payload)
+can check a selected bounded ZIP/ZIP64 tail before allocating a full source
+archive. It opens no member payloads and records directory sizes as unverified
+claims. It neither checks the whole-archive digest nor supplies the immutable
+copy, consistency or full momentum selection needed by the exporter. This step
+is optional when a suitable consistent export is supplied directly.
+
+### Current public archive observation
+
+On 2026-10-26, a separately retained 1 MiB final range of the
+[advertised bootstrap archive](https://hypercore.nyc3.digitaloceanspaces.com/bootstrap/2026-09-01/bootstrap-20260901010001.zip)
+was observed with conditional HTTP range/length checks. Its selected archive
+length was **8,776,709,473 bytes**. The retained tail's SHA-256 is
+`74f13d3f117567ec2283837d98d6d61915047f19783fe0df3a82f9abd798c323`.
+The complete ZIP64 directory declares 8,320 members:
+
+| Group | Ordinary files | `.ldb` files | Declared unpacked bytes |
+| --- | ---: | ---: | ---: |
+| `backup/nom.bak` | 7,095 | 7,088 | 10,720,393,261 |
+| `backup/consensus.bak` | 1,196 | 1,189 | 2,273,364,840 |
+| `backup/network.bak` | 26 | 19 | 37,590,989 |
+
+There are also three directory entries. Each group declares one `.log` and one
+`MANIFEST-` file. These observations agree with the independently reported
+[directory inspection](https://github.com/edgepillar/zenon-spv/issues/270#issuecomment-6406362170).
+No whole archive, member CRC or decompressed data was verified. Nonempty WAL
+names do not establish whether the publisher stopped the node. The capture
+method, network/genesis, full frontier and producer revision remain unqualified;
+this is **not a collected or accepted R1 dataset**.
+
+Use the observation to prepare a conservative allocation, not to authorize a
+database read or trust a recovery. A single complete archive plus only the
+declared ledger extraction and an independently charged working clone totals
+30,217,495,995 logical bytes before export, metadata/failure margin, free-space
+floor and other reservations. A 16 GiB export cap is a provisional upper limit,
+not an estimate of the actual export. Do not extract the other database groups
+unless a separately selected operation needs them, or assume APFS sharing
+reduces logical quota charges. Enforce actual acquisition/extraction limits
+independently of directory claims.
+
 ## Declare the sample before collection
 
 The node/operator and consumer owners must select and record:
