@@ -365,3 +365,14 @@ and runner files stay byte-identical and the direct path remains available.
 No global import hook, disk cache, new node workload or runtime
 acceptance is introduced. Preserve exact-source CI, artifact reconciliation and
 the independent M0–M5 gates.
+
+### Qualification cost: repeated Git source trees
+
+A completed hosted step and full local profile select the separate
+[bounded Git tree reuse scope](conformance-git-tree-reuse.md). It preserves all
+18 original cache rollback controls and their complete reader result while
+keeping source validation fresh. Only pure source-tree reconstructions with
+complete identical inputs are reused within one serial process. Local
+counterbalanced observations report lower child wall time and peak RSS; whole-CI
+and production resource budgets remain unqualified. No recorded source, native
+backend, protocol rule or state-value acceptance changes.
