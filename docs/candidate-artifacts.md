@@ -148,6 +148,8 @@ The reader also supports an experimental single stored `candidate-v1.tar.xz`
 member using the same payload checks. CI still uploads the direct layout above;
 see the [stream format and qualification limits](candidate-stream.md) before
 using that alternative. Original evidence is not converted or replaced.
+For a directly selected XZ file, the explicit `--raw-stream` option avoids
+creating a wrapper ZIP; select the raw file's digest for that operation.
 
 On Windows, use the Python 3 executable available to the operator. `os` is
 `linux`, `darwin` or `windows`; architecture is the selected native Go target.

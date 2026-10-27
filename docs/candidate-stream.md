@@ -50,6 +50,38 @@ outside the selected input directory, and do not create an additional
 stdout-to-ZIP copy. A failed write, flush, validation or postcheck is failure;
 available output is not sufficient evidence of completion.
 
+## Check a directly selected stream
+
+The existing archive checker accepts a raw XZ only when `--raw-stream` is
+explicitly selected. Use the same independently selected revision, input
+fingerprint and platform expectations. Here the selected SHA-256 is the raw XZ
+file's digest, rather than a wrapping ZIP's digest:
+
+```sh
+python3 -I -B tools/check-candidate-archive.py \
+  --archive "$SELECTED_XZ" \
+  --expect-archive-sha256 "$SELECTED_XZ_SHA256" \
+  --expect-revision "$SELECTED_CHECKOUT_REVISION" \
+  --expect-inputs "$SELECTED_INPUTS_SHA256" \
+  --expect-os "$SELECTED_OS" \
+  --expect-architecture "$SELECTED_ARCHITECTURE" \
+  --require-skip-ledger --raw-stream
+```
+
+This bounded read-only path hashes the selected regular file and applies the
+same canonical stream and complete payload checks used inside the single-member
+ZIP. It creates no wrapper archive, extracted files or payload copy. Without
+the flag, the existing ZIP formats remain required; raw mode refuses either ZIP
+layout. Incomplete streams, wrong pins, missing required skip records and output
+delivery failures keep their existing nonzero results. This option does not
+authenticate a digest supplied by the same untrusted source as the payload.
+
+A local comparison of the retained real Linux, macOS and Windows payloads
+matched the direct stream, ZIP-wrapped stream and original ZIP results, including
+the five existing Windows skips. That comparison reused the protected source
+archives, wrote no output payload files and executed no downloaded binaries.
+It qualifies this local read path, not a new hosted candidate or release.
+
 ## Measurement and adoption status
 
 An exploratory local prototype processed the retained Linux, macOS and Windows
@@ -88,7 +120,7 @@ completed macOS assertions were reconciled from that output; only Linux and
 Windows comparisons ran afterward. No overall successful exit is attributed to
 the first command, and its full compressed digest was not emitted before failure.
 
-Local stream controls passed 24 test roots and 63 subcases. The unchanged archive
+Local stream controls passed 28 test roots and 80 subcases. The unchanged archive
 regression passed 48 test roots and 1,018 subcases. These are source-specific local
 results. The unchanged exported-directory regression also passed 13 test roots
 and 35 subcases, including its source and descriptor checks. Stream controls use

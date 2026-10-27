@@ -6,6 +6,7 @@ import copy
 import hashlib
 import importlib.util
 import io
+import json
 import lzma
 from pathlib import Path
 import struct
@@ -125,6 +126,75 @@ class CandidateStreamControls(unittest.TestCase):
             result = checker.check_contents(io.BytesIO(envelope(raw)), original.REVISION,
                                             original.INPUTS, platform, "amd64", require_skip_ledger=True)
             self.assertEqual(result, expected["verification"])
+
+    def test_selected_raw_file_matches_existing_payload_validation(self):
+        for platform in ("linux", "darwin", "windows"):
+            with self.subTest(platform=platform), tempfile.TemporaryDirectory() as directory:
+                raw, expected, _, _ = encode(platform)
+                selected = Path(directory) / "selected.tar.xz"
+                selected.write_bytes(raw)
+                result = checker.check(selected, original.sha(raw), original.REVISION, original.INPUTS,
+                                       platform, "amd64", require_skip_ledger=True, raw_stream=True)
+                self.assertEqual(result, expected["verification"])
+                self.assertEqual(selected.read_bytes(), raw)
+                self.assertEqual(set(Path(directory).iterdir()), {selected})
+
+    def test_raw_file_format_is_selected_explicitly(self):
+        raw, _, _, _ = encode()
+        legacy, _, _, _, _ = fixture()
+        controls = ((raw, False), (legacy, True), (envelope(raw), True))
+        with tempfile.TemporaryDirectory() as directory:
+            selected = Path(directory) / "selected"
+            for data, raw_mode in controls:
+                selected.write_bytes(data)
+                with self.subTest(raw_mode=raw_mode, size=len(data)), self.assertRaises(checker.Rejected):
+                    checker.check(selected, original.sha(data), original.REVISION, original.INPUTS,
+                                  "linux", "amd64", raw_stream=raw_mode)
+
+    def test_raw_cli_preserves_selected_hash_source_skip_and_eof_checks(self):
+        raw, _, _, _ = encode()
+        incomplete, _, _, _ = encode(complete=False)
+        with tempfile.TemporaryDirectory() as directory:
+            selected = Path(directory) / "PRIVATE_selected.tar.xz"
+            def invoke(data, revision=original.REVISION, inputs=original.INPUTS, digest=None):
+                selected.write_bytes(data)
+                output = io.StringIO()
+                code = checker.main(["--archive", str(selected), "--expect-archive-sha256",
+                                     original.sha(data) if digest is None else digest,
+                                     "--expect-revision", revision, "--expect-inputs", inputs,
+                                     "--expect-os", "linux", "--expect-architecture", "amd64",
+                                     "--raw-stream", "--require-skip-ledger"], output)
+                self.assertNotIn("PRIVATE", output.getvalue())
+                self.assertNotIn(directory, output.getvalue())
+                return code, json.loads(output.getvalue())
+            code, result = invoke(raw)
+            self.assertEqual((code, result["status"], result["binaries"]), (0, "verified", 7))
+            code, result = invoke(raw, digest="a" * 64)
+            self.assertEqual((code, result["category"]), (2, "archive_pin"))
+            for data in (raw[:-1], raw + b"x", raw + raw, incomplete, b""):
+                with self.subTest(size=len(data)):
+                    self.assertEqual(invoke(data)[0], 2)
+            for revision, inputs in (("a" * 40, original.INPUTS), (original.REVISION, "a" * 64)):
+                with self.subTest(revision=revision, inputs=inputs):
+                    self.assertEqual(invoke(raw, revision, inputs)[0], 2)
+
+    def test_raw_mode_arguments_refuse_before_opening_and_do_not_echo(self):
+        for value in (None, 0, 1, "true"):
+            with self.subTest(value=value), mock.patch.object(checker, "regular_archive") as opened:
+                with self.assertRaises(checker.Rejected) as failure:
+                    checker.check(Path("PRIVATE"), "a" * 64, original.REVISION, original.INPUTS,
+                                  "linux", "amd64", raw_stream=value)
+                self.assertEqual(failure.exception.category, "arguments")
+                opened.assert_not_called()
+        args = ["--archive", "PRIVATE", "--expect-archive-sha256", "a" * 64,
+                "--expect-revision", original.REVISION, "--expect-inputs", original.INPUTS,
+                "--expect-os", "linux", "--expect-architecture", "amd64"]
+        for extra in (("--raw-stream", "--raw-stream"), ("--raw-stream=true",)):
+            with mock.patch.object(checker, "check") as opened:
+                output = io.StringIO()
+                self.assertEqual(checker.main(args + list(extra), output), 64)
+                self.assertNotIn("PRIVATE", output.getvalue())
+                opened.assert_not_called()
 
     def test_wrong_source_and_complete_skip_requirements_remain_refusals(self):
         raw, _, _, _ = encode()
