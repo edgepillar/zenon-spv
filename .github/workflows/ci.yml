@@ -1450,7 +1450,7 @@ jobs:
            "workflow":{"path":".github/workflows/ci.yml","git_content_sha256":hashlib.sha256(workflow).hexdigest(),"git_content_bytes":len(workflow),
             "checkout_content_sha256":hashlib.sha256(working).hexdigest(),"checkout_content_bytes":len(working),"checkout_relation":relation},
            "serial_baseline":{"revision":"59ab5184d2e983f2322ff9e730a86cd19217970b","workflow_sha256":"407cf9a5da9fca75957f570981694ecc7bd17a4f29ae3ce4f697f40a17d4421a"},
-           "selected_command_inventory":{"commands":32,"sha256":"60f485ae21bfc88c968ddb251accefe716c87fa247ce15f4d5a452f53b8bf280","encoding":"sorted-key compact JSON list plus LF; unexpanded workflow expressions"},
+           "selected_command_inventory":{"commands":33,"sha256":"c285ca19653067b71f8132e09ec07e50178eef5ec927c096c368d349d3879b6b","encoding":"sorted-key compact JSON list plus LF; unexpanded workflow expressions"},
            "scope":{"selection_record_only":True,"test_completion_reported":False,
             "actual_completion_requires_hosted_job_and_step_records":True,
             "existing_fresh_Python_CLI_controls_retained":True,"new_Go_builds":False,
@@ -1461,6 +1461,7 @@ jobs:
           directory=Path(os.environ["RUNNER_TEMP"])/"recorded-oracle-selection"
           directory.mkdir(mode=0o700)
           (Path(os.environ["RUNNER_TEMP"])/"retention-leaf-reuse").mkdir(mode=0o700)
+          (Path(os.environ["RUNNER_TEMP"])/"import-resource-child").mkdir(mode=0o700)
           with (directory/"manifest.json").open("xb") as handle:
               handle.write(raw)
           print(raw.decode(),end="")
@@ -1469,14 +1470,34 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Independent temporary input and database observations
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Import resource child recipe controls
+        id: import_child_controls
+        shell: bash
+        run: python -I -B tools/gen-state-root-vectors/import_resource_child_hex_test.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/import-resource-child/controls.json"
       - name: Whole owned patch import resource checker controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_resources_test.py --mode translated --source-revision "${{ github.sha }}"
+        # Complete original suites keep their fresh CLI calls and assertions.
+        id: import_resource_controls
+        shell: bash
+        run: python -I -B tools/gen-state-root-vectors/run_import_resource_controls.py --program check_patch_resources_test.py --mode translated --source-revision "${{ github.sha }}" > "${{ runner.temp }}/import-resource-child/resources.json"
       - name: Recorded whole owned import sample bindings (offline; no reference execution)
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_resources.py --mode translated --source-revision "${{ github.sha }}"
       - name: Owned patch callback reuse comparison controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_import_comparison_test.py --mode translated --source-revision "${{ github.sha }}"
+        id: import_comparison_controls
+        shell: bash
+        run: python -I -B tools/gen-state-root-vectors/run_import_resource_controls.py --program check_patch_import_comparison_test.py --mode translated --source-revision "${{ github.sha }}" > "${{ runner.temp }}/import-resource-child/comparison.json"
       - name: Recorded fixed prior and candidate import comparison (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_import_comparison.py --mode translated --source-revision "${{ github.sha }}"
+      - name: Upload import resource child recipes
+        if: ${{ !cancelled() && steps.import_child_controls.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: import-resource-child-${{ matrix.platform }}
+          path: |
+            ${{ runner.temp }}/import-resource-child/controls.json
+            ${{ runner.temp }}/import-resource-child/resources.json
+            ${{ runner.temp }}/import-resource-child/comparison.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Opened regular file handoff evidence controls
         run: python -I -B tools/gen-state-root-vectors/check_patch_file_test.py
       - name: Recorded file handoff and complete owned map bindings (offline; no Go execution)

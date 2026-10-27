@@ -1,11 +1,13 @@
 # Separate recorded-oracle CI lane
 
-The CI workflow runs 32 recorded-data commands in a separate job on Linux amd64,
+The CI workflow runs 33 recorded-data commands in a separate job on Linux amd64,
 macOS Intel amd64 and Windows amd64. The original 31-command selection keeps
 all its controls and selected programs. Two larger-retention invocations now
 use the explicit [bounded leaf commitment scope](retention-leaf-reuse.md); a new
-control invocation checks that scope. The remaining 29 commands retain their
-exact names and arguments. Commands remain sequential within that job. The
+control invocation checks that scope. Two complete import control suites now
+use [explicit fresh child CLI recipes](import-resource-child-hex.md), with one
+additional recipe-control invocation. The other 30 commands retain their
+names and arguments from the 32-command leaf-scope selection. Commands remain sequential within that job. The
 native verifier jobs run on separate hosted runners alongside this lane.
 See the [GitHub-hosted runner model](https://docs.github.com/en/actions/concepts/runners/github-hosted-runners)
 for its VM isolation and runner-image limits.
@@ -24,11 +26,13 @@ files. They check recorded resources rather than launching a new node, database
 workload or Go build. Some existing controls still launch fresh Python CLIs and
 use their own temporary test files.
 
-The current 32-command inventory has SHA-256
-`60f485ae21bfc88c968ddb251accefe716c87fa247ce15f4d5a452f53b8bf280`.
+The current 33-command inventory has SHA-256
+`c285ca19653067b71f8132e09ec07e50178eef5ec927c096c368d349d3879b6b`.
 Its encoding is the ordered list of name/run objects, with sorted JSON keys,
 compact separators and a final LF. Workflow expressions remain unexpanded in
-that inventory. The original 31-command inventory remains
+that inventory. The preceding 32-command leaf-scope inventory remains
+`60f485ae21bfc88c968ddb251accefe716c87fa247ce15f4d5a452f53b8bf280`.
+The original 31-command inventory remains
 `16fbc16ba92476d4e64d5ea5377e7702dcdb032eaa41d2e2073263418cfb60f0`;
 do not relabel its earlier evidence as the new scope's qualification. The serial baseline is commit
 `59ab5184d2e983f2322ff9e730a86cd19217970b`; its workflow bytes have SHA-256
@@ -43,8 +47,8 @@ authenticate execution. Require the actual hosted job and every selected step
 to complete successfully, and reconcile their source/run/platform identity.
 
 The scheduling change's artifact is that small JSON manifest, retained for 14
-days. The later leaf scope additionally uploads its three small result reports
-per platform. Always-run uploads preserve available reports after a control
+days. The later leaf scope and import child scope each upload three small result
+reports per platform. Always-run uploads preserve available reports after a control
 fails; incomplete output is not completion. No fixture, source
 tree, database, executable or second payload ZIP is copied into it. Native
 candidate artifacts keep their existing identities and qualification scope.
