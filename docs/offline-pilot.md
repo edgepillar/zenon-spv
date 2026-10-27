@@ -57,6 +57,22 @@ inputs for both captures. Build caches and complete pipeline memory remain
 separate from these source and corpus payload bounds. Discovery limits also impose no filesystem-I/O
 deadline or target-device latency budget.
 
+The ordinary source-enumeration CLI control retains six fresh process
+invocations. Its three wide-directory cases grow one parent-owned temporary
+fixture through 193, 32,768 and 32,769 ignored, empty files. This creates 32,769
+distinct files instead of 65,730 across separate fixtures; exclusive creation
+refuses an unexpected existing name. The depth and non-directory cases still
+use separate temporary roots. Every invocation keeps its exact exit, diagnostic
+and absent-export checks, and the report schema and six case names are unchanged.
+The largest wide directory still contains 32,769 entries. This reduces cumulative
+fixture creation/cleanup work, not the peak entry limit or a measured disk budget.
+
+Native macOS and Windows CI run the short archive, stream, direct/exported
+candidate and scenario-source controls before the full native Go test. Every Go
+package, the complete repeated-wire grid and all later evidence controls remain
+selected, with the same deadlines. Earlier rejection of a broken transport or
+source pin does not establish a whole-CI speedup for successful runs.
+
 The default driver deadline is ten minutes (`--timeout`, positive and at most one
 hour); selected test packages use that same timeout.
 The driver deadline stops the direct Go command. Its stdout copy is owned by
