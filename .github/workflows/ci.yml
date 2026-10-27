@@ -10,7 +10,80 @@ permissions:
   contents: read
 
 jobs:
+  change_scope:
+    name: Change scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run_runtime: ${{ steps.scope.outputs.run_runtime }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          # Both PR merge parents or the preceding main commit are sufficient.
+          # Missing history conservatively requires all runtime jobs.
+          fetch-depth: 2
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: CI change scope controls
+        id: scope_controls
+        shell: bash
+        run: python -I -B tools/check-ci-change-scope_test.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/ci-change-scope-controls.json"
+      - name: Select exact checkout change scope
+        id: scope
+        shell: bash
+        env:
+          CI_SCOPE_FEATURE: ${{ github.event.pull_request.head.sha || github.sha }}
+          CI_SCOPE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          python -I -B tools/check-ci-change-scope.py --repository "$GITHUB_REPOSITORY" --event "$GITHUB_EVENT_NAME" --base-revision "$CI_SCOPE_BASE" --feature-revision "$CI_SCOPE_FEATURE" --checkout-revision "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" > "$RUNNER_TEMP/ci-change-scope.json"
+          python -I -B - <<'PY'
+          import json, os
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP']) / 'ci-change-scope.json'
+          with path.open('rb') as stream:
+              raw = stream.read((1 << 20) + 1)
+          assert len(raw) <= 1 << 20
+          value = json.loads(raw)
+          assert (json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False) + '\n').encode() == raw
+          assert value['format'] == 'zenon-ci-change-scope/v1'
+          assert value['selection'] == {'repository': os.environ['GITHUB_REPOSITORY'], 'event': os.environ['GITHUB_EVENT_NAME'],
+              'base_revision': os.environ['CI_SCOPE_BASE'], 'feature_revision': os.environ['CI_SCOPE_FEATURE'],
+              'checkout_revision': os.environ['GITHUB_SHA'], 'run_id': int(os.environ['GITHUB_RUN_ID']),
+              'run_attempt': int(os.environ['GITHUB_RUN_ATTEMPT'])}
+          assert value['selection_only'] is True and value['runtime_qualification_transferred'] is False
+          flag = value['run_runtime']
+          assert type(flag) is bool
+          if not flag:
+              assert value['status'] == 'DOCUMENTATION_ONLY' and value['reason'] == 'regular_markdown_only'
+              assert value['source_binding_complete'] is True and value['documentation_paths']
+              assert set(value['source_pins']) == {'tools/check-ci-change-scope.py', 'tools/check-ci-change-scope_test.py', '.github/workflows/ci.yml'}
+              assert len(value['commands']) == 6
+              for command in value['commands']:
+                  assert type(command['actual_exit']) is int and command['actual_exit'] == 0 and command['capture_complete'] is True
+                  assert command['readers_joined'] is True and command['launch_error'] is False and command['timed_out'] is False
+                  assert set(command['streams']) == {'stdout', 'stderr'}
+                  assert all(stream['eof'] is True and stream['truncated'] is False and stream['read_error'] is False
+                             and stream['captured_bytes'] == stream['observed_bytes'] for stream in command['streams'].values())
+          else:
+              assert value['status'] == 'RUNTIME_REQUIRED'
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write('run_runtime=' + ('true' if flag else 'false') + '\n')
+          PY
+      - name: Upload change scope selection
+        if: ${{ !cancelled() && steps.scope_controls.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-change-scope
+          path: |
+            ${{ runner.temp }}/ci-change-scope.json
+            ${{ runner.temp }}/ci-change-scope-controls.json
+          if-no-files-found: error
+          retention-days: 14
+
   test:
+    needs: change_scope
+    if: ${{ !cancelled() && (needs.change_scope.result != 'success' || needs.change_scope.outputs.run_runtime != 'false') }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -22,6 +95,18 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.13'
+      - name: CI change scope controls
+        id: scope_controls
+        shell: bash
+        run: python -I -B tools/check-ci-change-scope_test.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/ci-change-scope-controls.json"
+      - name: Upload CI change scope controls
+        if: ${{ !cancelled() && steps.scope_controls.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-scope-controls-linux
+          path: ${{ runner.temp }}/ci-change-scope-controls.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Candidate archive checks
         run: python tools/check-candidate-archive_test.py -v
       - name: Direct candidate validation controls
@@ -656,6 +741,8 @@ jobs:
 
   native-platform:
     name: Native platform (${{ matrix.os }})
+    needs: change_scope
+    if: ${{ !cancelled() && (needs.change_scope.result != 'success' || needs.change_scope.outputs.run_runtime != 'false') }}
     runs-on: ${{ matrix.os }}
     # Intel macOS needs more time for the complete independent oracle controls.
     timeout-minutes: ${{ matrix.os == 'macos-15-intel' && 90 || 60 }}
@@ -673,6 +760,18 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.13'
+      - name: CI change scope controls
+        id: scope_controls
+        shell: bash
+        run: python -I -B tools/check-ci-change-scope_test.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/ci-change-scope-controls.json"
+      - name: Upload CI change scope controls
+        if: ${{ !cancelled() && steps.scope_controls.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-scope-controls-${{ matrix.os }}
+          path: ${{ runner.temp }}/ci-change-scope-controls.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Native test
         # Fail before the longer evidence controls, keeping every package and
         # the complete 100,000-member repeated-wire grid. This finite package
@@ -1298,6 +1397,8 @@ jobs:
 
   recorded-oracles:
     name: Recorded oracles (${{ matrix.platform }})
+    needs: change_scope
+    if: ${{ !cancelled() && (needs.change_scope.result != 'success' || needs.change_scope.outputs.run_runtime != 'false') }}
     runs-on: ${{ matrix.os }}
     # These unchanged portable checks use a separate runner, not native benchmark resources.
     timeout-minutes: ${{ matrix.os == 'macos-15-intel' && 90 || 60 }}
