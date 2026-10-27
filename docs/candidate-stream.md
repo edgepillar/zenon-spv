@@ -120,7 +120,7 @@ completed macOS assertions were reconciled from that output; only Linux and
 Windows comparisons ran afterward. No overall successful exit is attributed to
 the first command, and its full compressed digest was not emitted before failure.
 
-Local stream controls passed 28 test roots and 80 subcases. The unchanged archive
+Local stream controls passed 29 test roots and 80 subcases. The unchanged archive
 regression passed 48 test roots and 1,018 subcases. These are source-specific local
 results. The unchanged exported-directory regression also passed 13 test roots
 and 35 subcases, including its source and descriptor checks. Stream controls use
@@ -128,6 +128,12 @@ the existing descriptor reader on real temporary exported files for all three
 payload platform names; the selected source root is mocked in that small control.
 Native platform CI is configured to run the stream controls alongside
 the existing checks; that configuration is not evidence of a hosted execution.
+The scenario companion also retains all 30 original controls and adds one pin
+integrity control, passing 31 roots and 75 subcases locally. The stream suite
+loads that companion as an integration control. Its fixed reader byte count and
+SHA-256 require an explicit reviewed update; changed-size and same-size changed
+helpers remain refused before import. The initial failed companion-pin check
+and the new regression's failing result before rebinding remain retained.
 Workflow adoption still needs exact-head native Linux/macOS/Windows CI with all
 actual artifacts reconciled, plus source-bound exported-writer checks on those
 hosts. The new reader is

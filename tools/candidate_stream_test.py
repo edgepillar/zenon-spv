@@ -120,6 +120,11 @@ class CandidateStreamControls(unittest.TestCase):
                                             platform, "amd64", require_skip_ledger=True)
             self.assertEqual((result["status"], result["binaries"]), ("verified", 7))
 
+    def test_existing_scenario_companion_accepts_selected_reader(self):
+        companion = load("stream_scenario_companion_controls", "check-scenario-inventory.py")
+        companion.dependencies_intact()
+        self.assertTrue(callable(companion.primitives().checker.check_payloads))
+
     def test_new_envelope_uses_the_same_payload_verifier(self):
         for platform in ("linux", "darwin", "windows"):
             raw, expected, _, _ = encode(platform)
