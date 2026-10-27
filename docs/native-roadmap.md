@@ -100,6 +100,12 @@ ordering and actual EOF checks. It creates no input copy or large fixture file.
 This is a measurement-pipeline improvement; representative R1 data, M2 agreement
 and accepted-header state proofs remain separate gates.
 
+The [completed-export inventory helper](../tools/ledger-export/README.md#recount-a-completed-export-with-the-selected-limits)
+passes the matched selection and resource limits directly to the existing
+inventory reader on the same retained stream. It removes the manual transfer of
+four caps while preserving actual completion, independent byte recount and EOF
+checks. It supplies no new node execution, representative dataset or state proof.
+
 CI now verifies the downloaded root-module cache after its builds/tests, with
 network lookup and toolchain switching disabled, and rejects `go.mod`/`go.sum`
 drift. This checks the main build list's cached content under

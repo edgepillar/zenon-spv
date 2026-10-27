@@ -137,6 +137,63 @@ substituting fabricated exit/digest arguments is outside its guarantee.
 Owner acceptance of ledger origin, snapshot completeness and representativeness
 stays in a separate record. Matching completion alone has not executed inventory.
 
+### Recount a completed export with the selected limits
+
+The optional Python 3.9+ `inventory_completed_export.py` joins those two existing
+checks in one foreground process. Supply the bounded producer receipt as JSON,
+the same independently selected completion arguments and all overridden export
+limits. Feed the same retained put-stream object to stdin:
+
+```sh
+python3 -I -B inventory_completed_export.py \
+  --producer-receipt-json "$R1_PRODUCER_RECEIPT_JSON" \
+  --layout zenon-9c71-frontier-v1 \
+  --expect-height "$R1_HEIGHT" --expect-hash "$R1_HASH" \
+  --provenance-sha256 "$R1_INTAKE_SHA256" \
+  --producer-exit "$R1_ACTUAL_EXIT" --capture-status "$R1_CAPTURE_STATUS" \
+  --capture-bytes "$R1_CAPTURE_BYTES" --capture-sha256 "$R1_CAPTURE_SHA256" \
+  < "$R1_RETAINED_PUT_STREAM"
+```
+
+The receipt is limited to 16 KiB. The helper checks completion first, then passes
+the matched selection and all four selected inventory limits directly to the
+independent inventory function. A receipt cannot choose its own resource caps.
+Failed producer exit, incomplete capture, selection/limit mismatch or invalid
+receipt refuses before reading stream bytes. The inventory still recounts the
+records, checks canonical encoding/order and hashes the actual stream through
+EOF. A digest-matched capture alone cannot accept malformed or duplicate keys.
+
+Require actual helper exit **0**, complete helper output and
+`status: SELECTED_EXPORT_INVENTORIED`. The new
+`zenon-completed-frontier-inventory/v1` envelope retains the unchanged completion
+and inventory reports in `producer_completion` and `stream_inventory`.
+`--help` exits 0 with UNKNOWN. Other refusals normally exit 2; invalid options
+exit 64, result I/O errors 70 and interruption 130. UNKNOWN retains a matched
+completion when inventory subsequently fails, with no partial inventory result.
+A successful-looking output prefix after a short write, failed flush or
+termination does not replace the caller's actual completion check.
+
+The helper creates no dataset copy, fixture, archive or output file and launches
+no child. It reuses the inventory's fixed 64 KiB input buffer and report bound;
+its combined result is capped at 148 KiB. These are logical implementation
+bounds, not total process RSS accounting. The Python helper uses the inventory's
+GPL-3.0-only license; the ordinary Go exporter is unchanged.
+
+This convenience does not authenticate the outer capture channel, ledger origin,
+consistency, complete state or representativeness. Its record expectation comes
+from a matched producer observation and must still be recounted; it is not an
+independently selected expectation of correct network state. Header, profile,
+activation and state-value acceptance remain outside this workflow.
+
+A separate local comparison reused the retained source-genesis stream of
+103,824 records and 11,779,928 wire bytes. Both nested reports exactly matched
+the prior completion and inventory results with the selected 64 MiB limits.
+It ran one fresh Python helper process, with no new Go build, node/exporter
+process, download or dataset copy. The original failed task and its successful
+individual command remain distinct preserved records. This extends the finite
+[source-genesis workflow comparison](../../docs/source-genesis-ledger-export.md);
+it supplies no representative R1 dataset or network acceptance.
+
 ## Exact record space and bounds
 
 The selected view is the physical frontier prefix `55`. Physical empty values
@@ -185,6 +242,7 @@ No synthetic memory control qualifies a representative node workload.
 
 ```sh
 python3 -I -B consume_completion_test.py -v
+python3 -I -B inventory_completed_export_test.py -v
 go test -mod=readonly -count=1 ./...
 go vet -mod=readonly ./...
 ```
