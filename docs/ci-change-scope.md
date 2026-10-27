@@ -66,3 +66,28 @@ A later real documentation-only PR and its main push must separately show the
 scope decision, actual skipped job records and small artifact qualification
 before claiming a measured reduction in native execution or archive transport.
 No projected savings are representative node or consumer performance evidence.
+
+The real [documentation PR #284](https://github.com/edgepillar/zenon-spv/pull/284)
+and its actual main push now have separately reconciled scope decisions,
+all six Git stdout hashes, provider-skipped job records and archive digests:
+
+| Selected general run | Executed jobs | General archives | Archive bytes | Observed execution window, seconds |
+| --- | ---: | ---: | ---: | ---: |
+| [Full work-selection implementation](https://github.com/edgepillar/zenon-spv/actions/runs/40484050738) | 7 | 28 | 93,364,188 | 1,623 |
+| [Documentation PR](https://github.com/edgepillar/zenon-spv/actions/runs/40489194703) | 1 | 1 | 2,834 | 12 |
+| [Documentation main](https://github.com/edgepillar/zenon-spv/actions/runs/40491001414) | 1 | 1 | 2,801 | 9 |
+
+The window spans the earliest started to latest completed executed job; it
+excludes queue time. Each documentation run executed only Change scope and had
+three provider-skipped group records with zero steps; these were not six expanded
+matrix job executions. No native executable or Go/oracle job was produced by
+that general workflow. The separately triggered transport workflow still ran on
+all three platforms; all four actual archives per documentation context were
+qualified. Their costs are outside this general-workflow table.
+
+These are different observed work selections, not a controlled performance
+benchmark, production resource budget or measured APFS reclaim. No protected
+evidence was deleted. The documentation route itself confers no native runtime
+qualification. The later runtime-qualified baseline is explicitly pinned to
+`bc0be26d76dd07d297dfdf5b00768d23527e49f5` in the
+[review ledger](review-candidate-changes.md); documentation heads do not advance it.
