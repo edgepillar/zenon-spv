@@ -74,6 +74,8 @@ jobs:
         run: go build -mod=readonly -p=2 -trimpath -buildvcs=false -o "$R1_EXPORT_ARTIFACT/ledger-export.exe" .
       - name: Check bounded export completion consumer
         run: python -I -B consume_completion_test.py -v
+      - name: Check completed export inventory handoff
+        run: python -I -B inventory_completed_export_test.py -v
       - name: Check ordinary binary, transport and independent inventory
         run: |
           export SPV_LEDGER_EXPORT_TEST_BINARY="$R1_EXPORT_ARTIFACT/ledger-export.exe"
