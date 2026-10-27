@@ -109,6 +109,8 @@ jobs:
           retention-days: 14
       - name: Candidate archive checks
         run: python tools/check-candidate-archive_test.py -v
+      - name: Candidate stream transport controls
+        run: python -I -B tools/candidate_stream_test.py -v
       - name: Direct candidate validation controls
         run: python -I -B tools/check-direct-candidate_test.py -v
       - name: Exported candidate checker controls
@@ -780,6 +782,8 @@ jobs:
         run: go test -p 1 -count=1 -timeout=10m ./...
       - name: Candidate archive checks
         run: python tools/check-candidate-archive_test.py -v
+      - name: Candidate stream transport controls
+        run: python -I -B tools/candidate_stream_test.py -v
       - name: Direct candidate validation controls
         run: python -I -B tools/check-direct-candidate_test.py -v
       - name: Exported candidate checker controls

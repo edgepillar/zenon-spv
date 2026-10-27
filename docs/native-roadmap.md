@@ -24,10 +24,11 @@ research. The [frozen-to-baseline change ledger](review-candidate-changes.md)
 retains the historical `879fbce33dd77f483f7aba18994fb037f248e842` observations
 and the completed `d85aff12dd0de8b2d1bd8db46e0e4e727c7e60ff` pipeline. It
 enumerates the complete 14-file root-module Go delta and separate Python/workflow
-changes through qualified `bc0be26d76dd07d297dfdf5b00768d23527e49f5`. Its
-general and transport main CI cover ten jobs and all 34 actual artifacts,
-including the separately source-bound retention scope. The preceding `b6358c1`
-general qualification and its 28 artifacts remain pinned in the ledger. It
+changes through qualified `87677080c335444fb047c54c1b8d683cee436726`. Its
+general and transport main CI cover ten jobs and all 37 actual artifacts,
+including the separately source-bound retention and import-resource scopes.
+The preceding `bc0be26` 34-archive and `b6358c1` 28-archive qualifications remain
+pinned in the ledger. It
 also distinguishes original review revisions from their identity-normalized
 counterparts. A later documentation-only workflow supplies no new native
 execution; retain the latest runtime-qualified revision explicitly. These source

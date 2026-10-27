@@ -23,7 +23,7 @@ TOKEN_LIMIT = 16384
 WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 SCENARIO_PATH = "tools/offline-pilot/manifest.go"
 DEPENDENCIES = {
-    "check-candidate-archive.py": (31418, "1faa1b0b30e3296b43b30d9abe160f8a4aa655f93ea1c87fd910cbf35c24fefc"),
+    "check-candidate-archive.py": (34573, "e844778d4dbb30cba8378fb6bd5f9a4296c34acef0217f65dacc30a56afd1627"),
     "check-exported-candidate.py": (10446, "bb2d20cb30ee31ae004b6d050bf51fa96f95594e0ea31755e928f6a726a708ba"),
 }
 _PRIMITIVES = None

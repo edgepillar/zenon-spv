@@ -401,6 +401,29 @@ class ScenarioInventoryControls(unittest.TestCase):
             raw = (HERE / name).read_bytes()
             self.assertEqual((len(raw), hashlib.sha256(raw).hexdigest()), (size, digest))
 
+    def test_changed_pinned_helpers_are_refused_before_import(self):
+        pinned = self.root / "pinned-dependencies"
+        pinned.mkdir()
+        originals = {name: (HERE / name).read_bytes() for name in M.DEPENDENCIES}
+        for name, raw in originals.items():
+            (pinned / name).write_bytes(raw)
+        with mock.patch.object(M, "HERE", pinned):
+            M.dependencies_intact()
+            for name, raw in originals.items():
+                changes = {"same_size": bytes([raw[0] ^ 1]) + raw[1:],
+                           "shorter": raw[:-1], "longer": raw + b"x"}
+                for change, altered in changes.items():
+                    (pinned / name).write_bytes(altered)
+                    with self.subTest(helper=name, change=change), \
+                            mock.patch.object(M, "_PRIMITIVES", None), \
+                            mock.patch.object(M.importlib.util, "spec_from_file_location") as load:
+                        with self.assertRaises(M.Rejected) as failure:
+                            M.primitives()
+                        self.assertEqual(failure.exception.category, "checker_source")
+                        load.assert_not_called()
+                    (pinned / name).write_bytes(raw)
+            M.dependencies_intact()
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

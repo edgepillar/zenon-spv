@@ -4,6 +4,7 @@
 import argparse
 import contextlib
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -24,6 +25,7 @@ PACKAGES = {"internal/conformance", "internal/chain", "internal/fetch", "interna
             "tools/observe-block", "tools/offline-pilot"}
 BINARY_LIMIT = 128 << 20
 ARCHIVE_LIMIT = 256 << 20
+STREAM_PAYLOAD_NAME = "candidate-v1.tar.xz"
 QUERY_WORKLOADS = {"T1": 1, "T16": 16, "T256": 256}
 RESOURCE_WORKLOADS = {"M1_P1": (1, 1), "M1000_P1": (1000, 1),
                       "M100000_P1": (100000, 1), "M100000_P4": (100000, 4)}
@@ -391,13 +393,18 @@ def query_resources(case, os_name):
     require(seen == set(QUERY_WORKLOADS))
 
 
-def check(path, archive_sha256, revision, inputs_sha256, os_name, architecture, require_skip_ledger=False):
-    require(type(require_skip_ledger) is bool, "arguments")
+def check(path, archive_sha256, revision, inputs_sha256, os_name, architecture,
+          require_skip_ledger=False, raw_stream=False):
+    require(type(require_skip_ledger) is bool and type(raw_stream) is bool, "arguments")
     # These expectations must come from an independently selected source/CI
     # record. Copying them out of this archive establishes no authenticity.
     with regular_archive(path) as source:
         require(file_hash(source) == archive_sha256, "archive_pin")
         source.seek(0)
+        if raw_stream:
+            return check_stream_payload(source, os.fstat(source.fileno()).st_size,
+                                        revision, inputs_sha256, os_name, architecture,
+                                        require_skip_ledger=require_skip_ledger)
         return check_contents(source, revision, inputs_sha256, os_name, architecture,
                               **({"require_skip_ledger": True} if require_skip_ledger else {}))
 
@@ -406,7 +413,17 @@ def check_contents(source, revision, inputs_sha256, os_name, architecture, requi
     require(type(require_skip_ledger) is bool, "arguments")
     suffix = ".exe" if os_name == "windows" else ""
     expected_names = {command + suffix for command in COMMANDS} | {"manifest.json", "offline-pilot.json"}
-    central_zip_metadata(source, expected_names)
+    try:
+        central_zip_metadata(source, expected_names)
+    except Rejected as failure:
+        if failure.category != "layout":
+            raise
+        # Both layouts are preflighted before ZipFile materializes a directory.
+        # A failed nine-member layout never relaxes the one-member contract.
+        source.seek(0)
+        central_zip_metadata(source, {STREAM_PAYLOAD_NAME})
+        return check_stream_contents(source, revision, inputs_sha256, os_name, architecture,
+                                     require_skip_ledger=require_skip_ledger)
     with zipfile.ZipFile(source) as archive:
         infos = archive.infolist()
         require(len(infos) == len(expected_names) and {i.filename for i in infos} == expected_names, "layout")
@@ -418,6 +435,40 @@ def check_contents(source, revision, inputs_sha256, os_name, architecture, requi
         by_name = {info.filename: info for info in infos}
         return check_payloads(archive, by_name, revision, inputs_sha256, os_name, architecture,
                               **({"require_skip_ledger": True} if require_skip_ledger else {}))
+
+
+def check_stream_payload(source, encoded_size, revision, inputs_sha256, os_name, architecture,
+                         require_skip_ledger=False):
+    require(type(require_skip_ledger) is bool, "arguments")
+    spec = importlib.util.spec_from_file_location("candidate_stream_reader", Path(__file__).with_name("candidate_stream.py"))
+    stream = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(stream)
+    require(stream.PAYLOAD_NAME == STREAM_PAYLOAD_NAME, "layout")
+    suffix = ".exe" if os_name == "windows" else ""
+    names = ("manifest.json", "offline-pilot.json") + tuple(name + suffix for name in COMMANDS)
+    limits = {name + suffix: BINARY_LIMIT for name in COMMANDS}
+    limits.update({"manifest.json": 256 << 10, "offline-pilot.json": 4 << 20})
+    try:
+        with stream.open_payload(source, encoded_size, names, limits) as (members, by_name):
+            return check_payloads(members, by_name, revision, inputs_sha256, os_name, architecture,
+                                  require_skip_ledger=require_skip_ledger)
+    except stream.StreamRejected:
+        raise Rejected("layout") from None
+
+
+def check_stream_contents(source, revision, inputs_sha256, os_name, architecture, require_skip_ledger=False):
+    # ZIP transport and a directly selected XZ use the same payload reader.
+    with zipfile.ZipFile(source) as archive:
+        infos = archive.infolist()
+        require(len(infos) == 1 and infos[0].filename == STREAM_PAYLOAD_NAME, "layout")
+        info = infos[0]
+        require(not info.is_dir() and stat.S_IFMT(info.external_attr >> 16) in (0, stat.S_IFREG)
+                and not info.flag_bits & 1 and info.compress_type == zipfile.ZIP_STORED
+                and 0 < info.file_size == info.compress_size <= ARCHIVE_LIMIT, "layout")
+        local_zip_metadata(source, archive, infos)
+        with archive.open(info) as compressed:
+            return check_stream_payload(compressed, info.file_size, revision, inputs_sha256,
+                                        os_name, architecture, require_skip_ledger=require_skip_ledger)
 
 
 def check_payloads(archive, by_name, revision, inputs_sha256, os_name, architecture, require_skip_ledger=False):
@@ -549,6 +600,7 @@ def main(argv=None, output=None):
     for name in ("archive", "expect-archive-sha256", "expect-revision", "expect-inputs", "expect-os", "expect-architecture"):
         parser.add_argument("--" + name, action=Once, required=True)
     parser.add_argument("--require-skip-ledger", action=OnceBoolean, nargs=0, default=None)
+    parser.add_argument("--raw-stream", action=OnceBoolean, nargs=0, default=None)
     code = 0
     try:
         args = parser.parse_args(argv)
@@ -557,7 +609,8 @@ def main(argv=None, output=None):
                 and re.fullmatch(r"[a-z0-9_]{1,24}", args.expect_architecture) is not None, "arguments")
         result = check(Path(args.archive), args.expect_archive_sha256, args.expect_revision, args.expect_inputs,
                        args.expect_os, args.expect_architecture,
-                       **({"require_skip_ledger": True} if args.require_skip_ledger else {}))
+                       **({"require_skip_ledger": True} if args.require_skip_ledger else {}),
+                       **({"raw_stream": True} if args.raw_stream else {}))
     except Rejected as failure:
         result = {"schema_version": 1, "status": "rejected", "category": failure.category,
                   "binaries": 0, "test_status": None, "skipped_subtests": 0}

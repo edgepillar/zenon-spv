@@ -78,9 +78,12 @@ test bindings, changed declarations and extra Go statements are rejected rather
 than silently ignored. It never evaluates Go code. A future source format needs
 an explicit parser review.
 
-The original archive/export validators and historical captures remain byte
-identical. Their full source and payload checks remain required. CI configuration
-runs this companion after full export validation and requires both results before
+The selected archive/export validators have fixed byte-count and SHA-256 pins
+that are checked before reuse. A reviewed validator change needs an explicit
+pin update; changed lengths or same-size changed content remain refused before
+loading the helper. Historical captures retain their original bytes and source
+contexts. Full source and payload checks remain required. CI configuration runs
+this companion after full export validation and requires both results before
 candidate upload; observing the exact run is still necessary.
 
 The portable controls use regular temporary files and opaque byte fixtures.

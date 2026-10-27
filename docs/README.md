@@ -33,6 +33,8 @@ audit history.
   metadata and explicit unknown/modified build handling.
 - [`candidate-artifacts.md`](candidate-artifacts.md) — exact tested native
   executables, report-bound manifests and independent archive/pin checks.
+- [`candidate-stream.md`](candidate-stream.md) — bounded experimental transport,
+  exact payload preservation and explicit qualification limits.
 - [`operator-pilot.md`](operator-pilot.md) — explicit trust/state preparation,
   bounded watch/restart and retained-only consumer workflow.
 - [`query-report-consumer.md`](query-report-consumer.md) — independently selected
