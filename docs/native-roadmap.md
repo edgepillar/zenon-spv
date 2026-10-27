@@ -22,13 +22,17 @@ Its private evidence and unsigned hash do not authenticate their own origin.
 Later changes include executable code and tests, as well as documentation and
 research. The [frozen-to-baseline change ledger](review-candidate-changes.md)
 retains the historical `879fbce33dd77f483f7aba18994fb037f248e842` observations
-and enumerates the complete 14-file root-module Go delta through separately
-qualified `d85aff12dd0de8b2d1bd8db46e0e4e727c7e60ff`. It also distinguishes
-original review revisions from their identity-normalized counterparts. The
-new baseline has its own exact-main CI and 30-artifact reconciliation; it does
-not acquire independent review of the frozen candidate. Every later candidate
-needs its own source, binary, report, scenario and skip reconciliation;
-historical observations keep their original revisions.
+and the completed `d85aff12dd0de8b2d1bd8db46e0e4e727c7e60ff` pipeline. It
+enumerates the complete 14-file root-module Go delta and separate Python/workflow
+changes through qualified `b6358c1943a0c2fbce5046c201f7d2e319b3089f`, whose
+general main CI and all 28 actual artifacts were independently reconciled. It
+also distinguishes original review revisions from their identity-normalized
+counterparts. A later documentation-only workflow supplies no new native
+execution; retain the latest runtime-qualified revision explicitly. These source
+and mechanical CI observations do not transfer independent review to a changed
+revision. Every later executable candidate needs its own source, binary, report,
+scenario and skip reconciliation; historical observations keep their original
+revisions.
 
 The [source scenario companion](scenario-inventory.md) supports that review
 without changing the frozen executable candidate. It checks the retained offline
