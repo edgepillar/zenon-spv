@@ -47,6 +47,22 @@ func TestCompiledPilotSourceEnumeration(t *testing.T) {
 		Stage   string `json:"refusal_stage"`
 		Elapsed int64  `json:"elapsed_ns"`
 	}
+	prepareRoot := func(t *testing.T) string {
+		t.Helper()
+		root := t.TempDir()
+		for _, name := range []string{"cmd", "internal", "tools"} {
+			if os.Mkdir(filepath.Join(root, name), 0700) != nil {
+				t.Fatal("cannot prepare source roots")
+			}
+		}
+		if os.WriteFile(filepath.Join(root, "go.mod"), []byte("module "+modulePath+"\n"), 0600) != nil || os.WriteFile(filepath.Join(root, "go.sum"), nil, 0600) != nil {
+			t.Fatal("cannot prepare module inputs")
+		}
+		return root
+	}
+	// Keep one parent-owned fixture through the three sequential wide cases.
+	// Each fresh CLI process sees the actual directory after its next increment.
+	wideRoot, wideEntries := prepareRoot(t), 0
 	var controls []control
 	for _, selected := range []struct {
 		name    string
@@ -62,22 +78,25 @@ func TestCompiledPilotSourceEnumeration(t *testing.T) {
 		{"non_directory_root", 0, 0, true},
 	} {
 		t.Run(selected.name, func(t *testing.T) {
-			root := t.TempDir()
-			for _, name := range []string{"cmd", "internal", "tools"} {
-				if os.Mkdir(filepath.Join(root, name), 0700) != nil {
-					t.Fatal("cannot prepare source roots")
-				}
-			}
-			if os.WriteFile(filepath.Join(root, "go.mod"), []byte("module "+modulePath+"\n"), 0600) != nil || os.WriteFile(filepath.Join(root, "go.sum"), nil, 0600) != nil {
-				t.Fatal("cannot prepare module inputs")
+			root := wideRoot
+			if selected.depth != 1 {
+				root = prepareRoot(t)
 			}
 			if selected.depth == 1 {
-				for i := range selected.entries {
+				if selected.entries <= wideEntries {
+					t.Fatal("wide source controls must grow the same fixture")
+				}
+				for i := wideEntries; i < selected.entries; i++ {
 					name := filepath.Join(root, "internal", fmt.Sprintf("PRIVATE_IGNORED_%05d.txt", i))
-					if os.WriteFile(name, nil, 0600) != nil {
+					file, err := os.OpenFile(name, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+					if err != nil {
 						t.Fatal("cannot prepare wide source tree")
 					}
+					if file.Close() != nil {
+						t.Fatal("cannot close wide source member")
+					}
 				}
+				wideEntries = selected.entries
 			} else if selected.depth > 1 {
 				dir := filepath.Join(root, "internal")
 				for depth := 2; depth <= selected.depth; depth++ {
@@ -120,6 +139,9 @@ func TestCompiledPilotSourceEnumeration(t *testing.T) {
 	}
 	if len(controls) != 6 {
 		t.Fatal("incomplete ordinary enumeration inventory")
+	}
+	if wideEntries != maxSourceEntries+1 {
+		t.Fatal("incomplete incremental wide source fixture")
 	}
 	record, err := json.Marshal(struct {
 		Version      int       `json:"schema_version"`

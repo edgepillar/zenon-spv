@@ -774,12 +774,6 @@ jobs:
           path: ${{ runner.temp }}/ci-change-scope-controls.json
           if-no-files-found: error
           retention-days: 14
-      - name: Native test
-        # Fail before the longer evidence controls, keeping every package and
-        # the complete 100,000-member repeated-wire grid. This finite package
-        # watchdog is not a latency acceptance threshold; subprocess deadlines
-        # and evidence budgets remain unchanged.
-        run: go test -p 1 -count=1 -timeout=10m ./...
       - name: Candidate archive checks
         run: python tools/check-candidate-archive_test.py -v
       - name: Candidate stream transport controls
@@ -790,6 +784,13 @@ jobs:
         run: python -B tools/check-exported-candidate_test.py
       - name: Source scenario inventory controls
         run: python -I -B tools/check-scenario-inventory_test.py
+      - name: Native test
+        # Check the short Python transport/source contracts first, then fail
+        # before the longer evidence controls, keeping every package and the
+        # complete 100,000-member repeated-wire grid. This finite package
+        # watchdog is not a latency acceptance threshold; subprocess deadlines
+        # and evidence budgets remain unchanged.
+        run: go test -p 1 -count=1 -timeout=10m ./...
       - name: Bounded ledger inventory controls
         id: inventory_controls
         shell: bash
