@@ -1400,7 +1400,7 @@ jobs:
     needs: change_scope
     if: ${{ !cancelled() && (needs.change_scope.result != 'success' || needs.change_scope.outputs.run_runtime != 'false') }}
     runs-on: ${{ matrix.os }}
-    # These unchanged portable checks use a separate runner, not native benchmark resources.
+    # These portable checks use a separate runner, not native benchmark resources.
     timeout-minutes: ${{ matrix.os == 'macos-15-intel' && 90 || 60 }}
     strategy:
       fail-fast: false
@@ -1450,7 +1450,7 @@ jobs:
            "workflow":{"path":".github/workflows/ci.yml","git_content_sha256":hashlib.sha256(workflow).hexdigest(),"git_content_bytes":len(workflow),
             "checkout_content_sha256":hashlib.sha256(working).hexdigest(),"checkout_content_bytes":len(working),"checkout_relation":relation},
            "serial_baseline":{"revision":"59ab5184d2e983f2322ff9e730a86cd19217970b","workflow_sha256":"407cf9a5da9fca75957f570981694ecc7bd17a4f29ae3ce4f697f40a17d4421a"},
-           "selected_command_inventory":{"commands":31,"sha256":"16fbc16ba92476d4e64d5ea5377e7702dcdb032eaa41d2e2073263418cfb60f0","encoding":"sorted-key compact JSON list plus LF; unexpanded workflow expressions"},
+           "selected_command_inventory":{"commands":32,"sha256":"60f485ae21bfc88c968ddb251accefe716c87fa247ce15f4d5a452f53b8bf280","encoding":"sorted-key compact JSON list plus LF; unexpanded workflow expressions"},
            "scope":{"selection_record_only":True,"test_completion_reported":False,
             "actual_completion_requires_hosted_job_and_step_records":True,
             "existing_fresh_Python_CLI_controls_retained":True,"new_Go_builds":False,
@@ -1460,6 +1460,7 @@ jobs:
           assert len(raw)<=8192
           directory=Path(os.environ["RUNNER_TEMP"])/"recorded-oracle-selection"
           directory.mkdir(mode=0o700)
+          (Path(os.environ["RUNNER_TEMP"])/"retention-leaf-reuse").mkdir(mode=0o700)
           with (directory/"manifest.json").open("xb") as handle:
               handle.write(raw)
           print(raw.decode(),end="")
@@ -1502,10 +1503,15 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_resource_budgets_test.py
       - name: Independent recorded resource budget comparisons
         run: python -I -B tools/gen-state-root-vectors/check_resource_budgets.py --source-revision "${{ github.sha }}"
+      - name: Bounded retention leaf reuse controls
+        shell: bash
+        run: python -I -B tools/conformance_leaf_reuse_test.py --source-revision "${{ github.sha }}" > "$RUNNER_TEMP/retention-leaf-reuse/controls.json"
       - name: Larger finite NodeTree retention controls
-        run: python -I -B tools/gen-state-root-vectors/check_tree_scale_test.py -v
+        shell: bash
+        run: python -I -B tools/gen-state-root-vectors/run_retention_leaves.py --program check_tree_scale_test.py --mode reused --source-revision "${{ github.sha }}" > "$RUNNER_TEMP/retention-leaf-reuse/retention-controls.jsonl"
       - name: Independent recorded larger NodeTree retention
-        run: python -I -B tools/gen-state-root-vectors/check_tree_scale.py
+        shell: bash
+        run: python -I -B tools/gen-state-root-vectors/run_retention_leaves.py --program check_tree_scale.py --mode reused --source-revision "${{ github.sha }}" > "$RUNNER_TEMP/retention-leaf-reuse/retention-observations.jsonl"
       - name: Larger file NodeTree import controls
         run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Independent recorded larger file NodeTree import
@@ -1526,6 +1532,14 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Independent recorded complete driver projection comparison
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Upload bounded retention leaf reuse reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: retention-leaf-reuse-${{ matrix.platform }}
+          path: ${{ runner.temp }}/retention-leaf-reuse/
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload only the small oracle selection manifest
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

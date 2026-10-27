@@ -417,3 +417,15 @@ complete identical inputs are reused within one serial process. Local
 counterbalanced observations report lower child wall time and peak RSS; whole-CI
 and production resource budgets remain unqualified. No recorded source, native
 backend, protocol rule or state-value acceptance changes.
+
+### Qualification cost: repeated sparse leaf paths
+
+The [bounded leaf commitment scope](retention-leaf-reuse.md) separately selects
+the complete larger-retention checker and all 24 original controls. It caches
+only a pure depth/path/value leaf commitment, while rebuilding every graph's
+node and edge dictionaries and retaining all root/proof/refcount checks. One
+local full-checker comparison preserves its report and avoids 18.5 million
+repeated parent hashes; its 2 MiB logical payload cap does not qualify total RSS,
+representative node resources or whole-CI speedup. The old checker, producer
+source pins and recordings remain byte-identical. No node execution or runtime
+state-value acceptance is introduced.
