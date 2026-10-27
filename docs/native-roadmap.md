@@ -431,3 +431,14 @@ repeated parent hashes; its 2 MiB logical payload cap does not qualify total RSS
 representative node resources or whole-CI speedup. The old checker, producer
 source pins and recordings remain byte-identical. No node execution or runtime
 state-value acceptance is introduced.
+
+### Qualification cost: fresh import checker CLIs
+
+The [explicit import resource child recipes](import-resource-child-hex.md)
+extend the existing translated hex path to two default fresh CLI calls. All 45
+original parent controls, their source bytes and the separate prior-source
+refusal process remain required. Nineteen additional controls bind complete
+original console fingerprints, source/exit/recipe checks and restored test-local
+dispatch. Single local suite observations fall from about 20 seconds to about
+4–5 seconds; whole-CI, RSS and production budgets remain unqualified. No Go/node
+measurement, representative R1 data or state-value acceptance is introduced.
