@@ -1,10 +1,12 @@
 # Separate recorded-oracle CI lane
 
-The CI workflow runs 31 existing recorded-data commands in a separate job on
-Linux amd64, macOS Intel amd64 and Windows amd64. Each command keeps its exact
-name, arguments, selected program, source revision and existing control suite.
-Commands remain sequential within that job. The native verifier jobs run on
-separate hosted runners alongside this lane.
+The CI workflow runs 32 recorded-data commands in a separate job on Linux amd64,
+macOS Intel amd64 and Windows amd64. The original 31-command selection keeps
+all its controls and selected programs. Two larger-retention invocations now
+use the explicit [bounded leaf commitment scope](retention-leaf-reuse.md); a new
+control invocation checks that scope. The remaining 29 commands retain their
+exact names and arguments. Commands remain sequential within that job. The
+native verifier jobs run on separate hosted runners alongside this lane.
 See the [GitHub-hosted runner model](https://docs.github.com/en/actions/concepts/runners/github-hosted-runners)
 for its VM isolation and runner-image limits.
 
@@ -22,11 +24,13 @@ files. They check recorded resources rather than launching a new node, database
 workload or Go build. Some existing controls still launch fresh Python CLIs and
 use their own temporary test files.
 
-The selected command inventory has SHA-256
-`16fbc16ba92476d4e64d5ea5377e7702dcdb032eaa41d2e2073263418cfb60f0`.
+The current 32-command inventory has SHA-256
+`60f485ae21bfc88c968ddb251accefe716c87fa247ce15f4d5a452f53b8bf280`.
 Its encoding is the ordered list of name/run objects, with sorted JSON keys,
 compact separators and a final LF. Workflow expressions remain unexpanded in
-that inventory. The serial baseline is commit
+that inventory. The original 31-command inventory remains
+`16fbc16ba92476d4e64d5ea5377e7702dcdb032eaa41d2e2073263418cfb60f0`;
+do not relabel its earlier evidence as the new scope's qualification. The serial baseline is commit
 `59ab5184d2e983f2322ff9e730a86cd19217970b`; its workflow bytes have SHA-256
 `407cf9a5da9fca75957f570981694ecc7bd17a4f29ae3ce4f697f40a17d4421a`.
 
@@ -38,8 +42,10 @@ The manifest selects the command inventory; it does not report test success or
 authenticate execution. Require the actual hosted job and every selected step
 to complete successfully, and reconcile their source/run/platform identity.
 
-The only new artifact is that small JSON manifest, retained for 14 days. An
-always-run upload preserves it after a later control fails. No fixture, source
+The scheduling change's artifact is that small JSON manifest, retained for 14
+days. The later leaf scope additionally uploads its three small result reports
+per platform. Always-run uploads preserve available reports after a control
+fails; incomplete output is not completion. No fixture, source
 tree, database, executable or second payload ZIP is copied into it. Native
 candidate artifacts keep their existing identities and qualification scope.
 Use the approved local task-storage manager for bounded artifact transport and
@@ -63,7 +69,8 @@ an observed improvement; do not infer a guaranteed CI speedup from this plan.
 
 Qualification must compare the complete per-platform command inventory with
 the serial baseline, preserve every remaining native step and validate the new
-manifest-producing code. All six jobs must pass for the selected PR and merged
+manifest-producing code. All three native and three recorded jobs, plus the
+separate change-scope job, must pass for a selected full-runtime PR and merged
 source. Reconcile each small lane artifact with the actual jobs, source tree,
 workflow bytes and selected command inventory. Green CI and mechanical artifact
 checks do not qualify real R1 data, agreed state-root rules, accepted state
