@@ -51,7 +51,7 @@ workflows at the new revision; their preceding observations remain pinned above.
 Earlier successful runs and equal source trees were not used as this revision's
 CI proof. The frozen review candidate remains unchanged.
 
-The latest qualified development baseline selected by this ledger is
+The preceding qualified retention baseline is
 [`bc0be26d76dd07d297dfdf5b00768d23527e49f5`](https://github.com/edgepillar/zenon-spv/tree/bc0be26d76dd07d297dfdf5b00768d23527e49f5),
 tree `e7cbe07015a7735997cb578fdee79fee274da4ca`. Its own
 [general main CI](https://github.com/edgepillar/zenon-spv/actions/runs/40499229637)
@@ -73,6 +73,33 @@ used as the new revision's CI proof. A later documentation-only successful head
 keeps this runtime-qualified baseline explicit and does not advance it. The
 frozen human-review candidate and its original packet remain unchanged.
 
+The latest qualified development baseline selected by this ledger is
+[`87677080c335444fb047c54c1b8d683cee436726`](https://github.com/edgepillar/zenon-spv/tree/87677080c335444fb047c54c1b8d683cee436726),
+tree `5093fafa92f2b85555ce6ca0ca8dd49754b1f8ee`. Its own
+[general main CI](https://github.com/edgepillar/zenon-spv/actions/runs/40556083707)
+and [transport main CI](https://github.com/edgepillar/zenon-spv/actions/runs/40556083786)
+passed on their first attempts. Reconciliation covers all 37 actual artifact IDs
+and 93,591,632 archive bytes across ten jobs: 34 general archives, including 21
+native executables and their paired reports, plus three transport packages.
+Source/build metadata, byte lengths, SHA-256 values, architectures, actual steps,
+scenario inventories and the five native Windows skips match. Linux and macOS
+native reports contain zero skips. The new import-resource reports bind 19 new
+controls, all 45 original controls and their selected child recipes on each
+reader platform. The reader extracts no payload files and reruns no tests or
+binaries. The exporter did not run at this revision; its earlier observation
+remains pinned separately to `d85aff12` above.
+
+All 634 selected Go/module/JSON blobs remain equal to `bc0be26`, including the
+14-file root-module delta below. The nine changed paths since that baseline are
+Python, workflow and documentation inputs with their own source and exact-main
+qualification. Equal Go inputs were not used as the new revision's CI proof.
+The canonical local merge has `edgepillar` as both author and committer.
+
+In this ledger, "current" means the explicitly selected qualified `8767708`
+baseline. Later [candidate-stream preparation](candidate-stream.md) has separate
+source and qualification limits; its local observations do not advance this
+baseline. The frozen human-review candidate and its original packet remain fixed.
+
 ## Identity migration and comparison scope
 
 The identity-only history migration preserved the original upstream base,
@@ -92,7 +119,7 @@ revision is still the original `6ecc2310538d511e3b26bea4c658082853266a11`.
 Use an explicit two-revision `git diff` for the intended file comparison.
 A three-dot comparison against the original commit can choose an earlier common
 ancestor after the migration. The
-[normalized ancestry comparison](https://github.com/edgepillar/zenon-spv/compare/710627ae9589beca4a23400cc47fb038eb5495fd...bc0be26d76dd07d297dfdf5b00768d23527e49f5)
+[normalized ancestry comparison](https://github.com/edgepillar/zenon-spv/compare/710627ae9589beca4a23400cc47fb038eb5495fd...87677080c335444fb047c54c1b8d683cee436726)
 is useful for navigation with the tree-equivalence limit above.
 
 ## Complete current root-module Go and module-file delta
@@ -129,8 +156,8 @@ the total current delta is 14 distinct paths.
 Review the complete pair with:
 
 ```sh
-git diff --name-status 6ecc2310538d511e3b26bea4c658082853266a11 bc0be26d76dd07d297dfdf5b00768d23527e49f5
-git diff 6ecc2310538d511e3b26bea4c658082853266a11 bc0be26d76dd07d297dfdf5b00768d23527e49f5 -- internal tools/observe-block go.mod go.sum
+git diff --name-status 6ecc2310538d511e3b26bea4c658082853266a11 87677080c335444fb047c54c1b8d683cee436726
+git diff 6ecc2310538d511e3b26bea4c658082853266a11 87677080c335444fb047c54c1b8d683cee436726 -- internal tools/observe-block go.mod go.sum
 ```
 
 The second command includes other material in those directories. The table's
@@ -139,7 +166,7 @@ necessary for research, corpus, workflow and script changes.
 
 ## Recomputable input fingerprints
 
-The complete frozen-to-current tracked-file delta contains 277 paths. The input
+The complete frozen-to-current tracked-file delta contains 281 paths. The input
 selector below changes at 87 paths. Neither number is the 14-file root-module
 delta. Python helpers, workflow files, shell scripts and other excluded paths
 remain outside the selected-input fingerprint and require their own inspection.
@@ -160,6 +187,7 @@ length framing.
 | `d85aff12dd0de8b2d1bd8db46e0e4e727c7e60ff` | 1,141 | 634 | 34,948,025 | `46367e744b6c687ca3ebe3558df3d745963a322efb32fcbd651bad2098497da9` |
 | `b6358c1943a0c2fbce5046c201f7d2e319b3089f` | 1,144 | 634 | 34,948,025 | `46367e744b6c687ca3ebe3558df3d745963a322efb32fcbd651bad2098497da9` |
 | `bc0be26d76dd07d297dfdf5b00768d23527e49f5` | 1,148 | 634 | 34,948,025 | `46367e744b6c687ca3ebe3558df3d745963a322efb32fcbd651bad2098497da9` |
+| `87677080c335444fb047c54c1b8d683cee436726` | 1,152 | 634 | 34,948,025 | `46367e744b6c687ca3ebe3558df3d745963a322efb32fcbd651bad2098497da9` |
 
 The historical frozen-to-`879fbce` comparison contains 204 tracked-file changes
 and 59 selected-input changes. Those historical counts remain valid for that
@@ -168,6 +196,8 @@ frozen-to-`d85aff12` pair contains 270 tracked-file changes and 87 selected-inpu
 changes; its full pipeline observation remains separately pinned.
 The frozen-to-`b6358c1` pair has 273 tracked-file changes and the same 87
 selected-input changes; those earlier counts also remain specific to that pair.
+The frozen-to-`bc0be26` pair retains its 277 tracked-file changes and the same
+87 selected-input changes.
 
 For the root-module table, include an existing path only if it is a root-module
 `.go` file or a root module file in at least one compared revision. Determine
@@ -194,7 +224,7 @@ source inspection and actual control results.
 | `tools/check-ci-change-scope_test.py` | — | `c3ac70887351b9aa102c6da5d0c451e64c172a64` | Exercises 36 controls, actual short owned processes and the workflow output guard; emits bounded source-bound control reports. |
 | `docs/ci-change-scope.md` | — | `37272dc973321326873e813dcf86e85d8254acda` | Defines work-selection and skipped-job limits without claiming fresh runtime qualification for documentation. |
 
-The following additional paths are selected at the latest qualified baseline
+The following additional paths are selected at the preceding retention baseline
 `bc0be26d76dd07d297dfdf5b00768d23527e49f5`. The preceding column is `b6358c1`;
 the original scope helper and its 36 controls remain byte-identical. The three
 new Python files are outside the Go input selector and require the separately
@@ -207,6 +237,18 @@ checked retention artifacts, not a transferred Go fingerprint.
 | `tools/conformance_leaf_reuse_test.py` | — | `b6d81438b1c9612af84f2b4ec248ad8687f99a46` | Compares complete graph bytes, order, limits, independent results, errors, dependency/thread refusal and cleanup in 17 controls. |
 | `tools/gen-state-root-vectors/run_retention_leaves.py` | — | `6b01cac08dc722f4538ea5ac658067f4fd72ec89` | Runs the complete pinned checker or its 24-root suite, binds the explicit scope and refuses a success record after a failed graph call. |
 | `docs/retention-leaf-reuse.md` | — | `ea8be90804476539d503f903a9c5d9ef0e2a6d3c` | Separates finite oracle cost observations, logical cache payload, process RSS and the outstanding node/acceptance gates. |
+
+The following import-resource paths are selected at qualified `8767708`. The
+preceding column is `bc0be26`; these changes do not alter the 634 Go/module/JSON
+inputs. Their actual platform reports are included in the 37-archive gate above.
+
+| Path | Preceding blob | Selected blob | Review impact |
+| --- | --- | --- | --- |
+| `.github/workflows/ci.yml` | `4678eb24ba4d1185b1ffbf9e4c303a5b9df04fb8` | `605ca54cb057203795d14c81444331371f4a2a0d` | Selects explicit import-resource child recipes and their controls and platform reports, preserving the native stages. |
+| `tools/gen-state-root-vectors/import_resource_child_hex.py` | — | `6f58812273cc3b288a28be944d680d4bfc97329b` | Binds two fresh CLI slots to the existing source, exit and complete-console recipes with original fallback and restored local dispatch. |
+| `tools/gen-state-root-vectors/import_resource_child_hex_test.py` | — | `7823cb1b61721eb7631caaf8d944b2b0f55b53dd` | Retains 19 controls for the selected source and child execution boundaries. |
+| `tools/gen-state-root-vectors/run_import_resource_controls.py` | — | `b368eb3d774f85c2d6decccb565b42f566a2f0d4` | Runs either unchanged original suite and requires every original control and selected call in its complete report. |
+| `docs/import-resource-child-hex.md` | — | `b166aaf78db6c67f139a3b438b653b0ffef4492f` | Separates finite checker-cost observations from node execution, representative R1 data and state-value acceptance. |
 
 A later documentation-only workflow can deliberately produce no new native
 executable. Inspect the actual selection and skipped job/step records and keep
