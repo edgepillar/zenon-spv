@@ -1,9 +1,12 @@
 # Candidate stream transport
 
-This local implementation prepares a smaller transport for the existing native
-candidate evidence. The workflow still uploads the original direct ZIP layout;
-the new format has no hosted CI or distribution qualification yet. Original ZIPs,
-manifests and source-specific reports keep their original bytes and identities.
+This implementation prepares a smaller transport for the existing native
+candidate evidence. Native CI is configured to package the tested exports into
+one source-checked stream and upload it without a second compression layer.
+Qualify the actual selected source, run, platform and downloaded artifact before
+using a candidate. Workflow configuration alone supplies no hosted execution or
+distribution acceptance. Original ZIPs, manifests and source-specific reports
+keep their original bytes and identities.
 
 The candidate reader continues to accept its nine-member stored/deflated ZIP
 format. It additionally recognizes a ZIP containing exactly one ordinary stored
@@ -49,6 +52,51 @@ the only success payload; use a bounded owned capture channel. Keep any output
 outside the selected input directory, and do not create an additional
 stdout-to-ZIP copy. A failed write, flush, validation or postcheck is failure;
 available output is not sufficient evidence of completion.
+
+## Source-checked native CI preparation
+
+After the existing exported-directory, scenario and compiled-consumer checks,
+native CI creates a new sibling transport directory under the job's temporary
+root. Bash fail-on-error and exclusive redirection prevent replacing an earlier
+output or continuing after an incomplete writer. The source-checked writer emits
+only `candidate-v1.tar.xz`; no input directory is recursively repackaged.
+
+`check-source-candidate-stream.py` then derives the expected input fingerprint
+from the selected clean checkout and hashes the completed regular stream file.
+It rewinds the same descriptor, requires complete canonical decoding and applies
+the existing seven-binary/report/corpus/scenario/resource/skip-ledger validator.
+A final checkout check and unchanged path/descriptor identity, size and timestamp
+checks precede its small JSON receipt. Read, decode, checkout, identity or output
+delivery failures produce nonzero exits. No payload is extracted or executed,
+and no wrapper ZIP or second stream file is created by this readback.
+
+For a locally produced stream, run from the selected checkout:
+
+```sh
+python3 -I -B tools/check-source-candidate-stream.py \
+  --archive "$SELECTED_XZ" \
+  --expect-revision "$SELECTED_CHECKOUT_REVISION" \
+  --expect-os "$SELECTED_OS" \
+  --expect-architecture "$SELECTED_ARCHITECTURE" \
+  --require-skip-ledger
+```
+
+The receipt's digest identifies the bytes read. Authenticate a downloaded
+artifact separately using its independently selected repository, CI run/attempt,
+checkout, platform and GitHub archive digest.
+
+Candidate upload requires successful writer/readback completion in addition to
+the existing pilot, exported-directory and scenario gates. The pinned upload
+action uses `archive: true` and `compression-level: 0`, producing the existing
+single stored-member ZIP envelope. Artifact names, the separate pilot-report
+uploads and their 14-day retention remain unchanged. The original nine-member
+ZIP reader remains supported; original evidence is never converted or replaced.
+
+The job keeps its tested executables for the existing consumer checks and adds
+one bounded compressed file. This change targets retained artifact and transport
+bytes; it does not establish a smaller peak CI workspace, total RSS budget or
+whole-CI speedup. Keep actual per-source/platform observations separate from the
+earlier local comparison below.
 
 ## Check a directly selected stream
 
@@ -134,9 +182,9 @@ loads that companion as an integration control. Its fixed reader byte count and
 SHA-256 require an explicit reviewed update; changed-size and same-size changed
 helpers remain refused before import. The initial failed companion-pin check
 and the new regression's failing result before rebinding remain retained.
-Workflow adoption still needs exact-head native Linux/macOS/Windows CI with all
-actual artifacts reconciled, plus source-bound exported-writer checks on those
-hosts. The new reader is
+For the configured workflow, require exact-head native Linux/macOS/Windows CI
+and reconcile every actual artifact, including the source-bound writer/readback
+steps on those hosts. The new reader is
 not state-root snapshot import, accepted-header verification, network activation,
 independent review or authenticated release distribution. Native state-value
 refusal and the existing anchor/profile/schedule/context-pin boundaries remain
