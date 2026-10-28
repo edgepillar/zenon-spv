@@ -105,7 +105,9 @@ concurrency, rounds, grid sizes and subprocess deadlines are preserved. Other
 targeted controls in the workflow remain separate executions. A separate CI
 step downloads and verifies the pinned root-module dependencies before the
 offline driver; module cache verification still runs after testing. The driver
-does not rely on a warm hosted cache or enable implicit network access.
+does not rely on a warm hosted cache or enable implicit network access. Linux
+checks the pinned lint schema, configuration and linters immediately after
+dependency preparation, before the longer Go controls and complete suite.
 
 One bounded event stream feeds both whole-suite accounting and the existing
 selected-case collector. Selected test identities, binary/resource records and
@@ -133,6 +135,21 @@ candidate/report artifacts. Check the actual workflow/job completion as well:
 these unsigned files do not authenticate execution, independent review, network
 acceptance or state values. No whole-pipeline latency or disk budget is inferred
 from eliminating the second selected invocation.
+
+For Go edits confined to `tools/offline-pilot`, use the pinned linter against
+that affected package before publishing:
+
+```sh
+golangci-lint config verify --schema .github/schemas/golangci.v2.6.2.jsonschema.json
+golangci-lint run --concurrency=2 --timeout=5m ./tools/offline-pilot
+```
+
+Use golangci-lint 2.6.2, matching CI. Budget and own the temporary `GOCACHE`,
+`GOLANGCI_LINT_CACHE` and Go build workspace before starting; do not silently
+increase a quota or discard failed output to obtain a pass. A package-scoped
+local lint result does not qualify the whole repository. Broaden local checks
+when other Go packages, module files or lint configuration change. Hosted CI
+retains full root-module lint before the longer tests in every case.
 
 The default driver deadline is ten minutes (`--timeout`, positive and at most one
 hour); in the default selected-only mode, test packages use that same timeout.

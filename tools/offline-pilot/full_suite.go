@@ -96,7 +96,7 @@ func readSuitePackages(r io.Reader) ([]string, error) {
 }
 
 func validSuitePackage(name string) bool {
-	if len(name) > 4096 || !(name == modulePath || strings.HasPrefix(name, modulePath+"/")) {
+	if len(name) > 4096 || name != modulePath && !strings.HasPrefix(name, modulePath+"/") {
 		return false
 	}
 	for _, part := range strings.Split(name, "/") {
@@ -104,9 +104,10 @@ func validSuitePackage(name string) bool {
 			return false
 		}
 		for _, char := range part {
-			if !(char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || strings.ContainsRune("-._", char)) {
-				return false
+			if char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || strings.ContainsRune("-._", char) {
+				continue
 			}
+			return false
 		}
 	}
 	return true

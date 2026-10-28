@@ -115,7 +115,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 			_, _ = fmt.Fprintln(stderr, "offline-pilot: suite receipt setup failed")
 			return 70
 		}
-		defer receiptFile.Close()
+		defer func() { _ = receiptFile.Close() }() // Fallback for early return; the receipt writer checks its close.
 	}
 	env := pilotEnvironment(goTool)
 	if exportDir != "" {
@@ -126,7 +126,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	var processError *string
 	if *fullSuite {
 		var packages []string
-		inventoryOK, processError = runTestProcess(ctx, goTool, []string{"list", "./..."}, env, func(r io.Reader) error {
+		inventoryOK, _ = runTestProcess(ctx, goTool, []string{"list", "./..."}, env, func(r io.Reader) error {
 			var listErr error
 			packages, listErr = readSuitePackages(r)
 			return listErr

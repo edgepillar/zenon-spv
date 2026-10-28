@@ -206,7 +206,7 @@ func TestFullSuiteReceiptIsIndependentAndExclusive(t *testing.T) {
 	outside := filepath.Join(t.TempDir(), "receipt.json")
 	for _, path := range []string{filepath.Join(root, "receipt.json"), filepath.Join(export, "receipt.json"), "relative"} {
 		if file, err := openSuiteReceipt(path, export); err == nil {
-			file.Close()
+			_ = file.Close()
 			t.Fatal("receipt destination inside source/candidate or relative path accepted")
 		}
 	}
@@ -223,7 +223,7 @@ func TestFullSuiteReceiptIsIndependentAndExclusive(t *testing.T) {
 		t.Fatal("failure receipt lost")
 	}
 	if file, err := openSuiteReceipt(outside, export); err == nil {
-		file.Close()
+		_ = file.Close()
 		t.Fatal("existing receipt overwritten")
 	}
 	after, _ := os.ReadFile(outside)
@@ -234,7 +234,9 @@ func TestFullSuiteReceiptIsIndependentAndExclusive(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	closed.Close()
+	if err := closed.Close(); err != nil {
+		t.Fatal("cannot close receipt output fixture")
+	}
 	if writeSuiteReceipt(closed, value) == nil {
 		t.Fatal("closed output reported success")
 	}
