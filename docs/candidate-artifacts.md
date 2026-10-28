@@ -81,8 +81,11 @@ independently checked checkout and successful pipeline before use.
 
 Each successful native CI pilot uploads `tested-candidate-linux`,
 `tested-candidate-macos-15-intel` or `tested-candidate-windows-latest`, alongside
-the existing `offline-pilot-*` report. Artifacts expire after 14 days. A package
-contains exactly nine files, with no source archive, installer or signing key.
+the existing `offline-pilot-*` report. Artifacts expire after 14 days. The tested
+export contains exactly nine files, with no source archive, installer or signing
+key. The workflow packages those same files into one canonical
+`candidate-v1.tar.xz` payload inside a stored ZIP envelope. Original direct
+nine-member ZIPs remain readable and keep their original evidence identities.
 Do not infer a successful full pipeline merely from an upload step.
 
 The current hosted macOS job uses the Intel image and produces `darwin/amd64`
@@ -97,8 +100,11 @@ then opens all nine exported regular files and streams each member once through
 the existing archive checker's shared complete payload validator. No temporary
 candidate ZIP is created. Exact directory layout, metadata, execution records,
 source/platform pins and actual payload hashes must pass. A second checkout check
-refuses source drift during validation. Candidate upload requires this step
-and the pilot to succeed. The checker never executes an exported binary or
+refuses source drift during validation. The source-checked stream writer and
+completed-file readback run after the compiled-consumer checks; candidate upload
+also requires that stream step and the scenario inventory to succeed. The pinned
+upload action stores the already compressed payload without recompressing it.
+The checker never executes an exported binary or
 replaces an exported file. See the [direct validation contract](direct-candidate-validation.md).
 
 The checkout input scan allows at most 32,768 entries, 32 directory levels and
@@ -144,10 +150,11 @@ python3 tools/check-candidate-archive.py \
   --expect-architecture "$SELECTED_ARCHITECTURE"
 ```
 
-The reader also supports an experimental single stored `candidate-v1.tar.xz`
-member using the same payload checks. CI still uploads the direct layout above;
-see the [stream format and qualification limits](candidate-stream.md) before
-using that alternative. Original evidence is not converted or replaced.
+The reader accepts the original direct ZIP layout and the single stored
+`candidate-v1.tar.xz` member configured for new CI uploads, using the same payload
+checks. See the [stream format and qualification limits](candidate-stream.md)
+and verify the actual selected run before use. Original evidence is not converted
+or replaced.
 For a directly selected XZ file, the explicit `--raw-stream` option avoids
 creating a wrapper ZIP; select the raw file's digest for that operation.
 
