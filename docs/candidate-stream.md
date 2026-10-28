@@ -66,7 +66,10 @@ from the selected clean checkout and hashes the completed regular stream file.
 It rewinds the same descriptor, requires complete canonical decoding and applies
 the existing seven-binary/report/corpus/scenario/resource/skip-ledger validator.
 A final checkout check and unchanged path/descriptor identity, size and timestamp
-checks precede its small JSON receipt. Read, decode, checkout, identity or output
+checks precede its small JSON receipt. Path and descriptor observations must name
+the same regular file and size; each observation's full metadata is then compared
+to its own snapshot. This preserves change detection when Windows path and
+descriptor timestamps have different meanings. Read, decode, checkout, identity or output
 delivery failures produce nonzero exits. No payload is extracted or executed,
 and no wrapper ZIP or second stream file is created by this readback.
 

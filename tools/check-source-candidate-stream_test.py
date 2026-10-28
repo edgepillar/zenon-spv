@@ -5,7 +5,9 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
+import stat
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -52,6 +54,90 @@ class SourceCandidateStreamControls(unittest.TestCase):
             with self.assertRaises(helper.checker.Rejected):
                 helper.verify(Path("PRIVATE"), Path("PRIVATE"), REVISION, "linux", "amd64", True)
         opened.assert_not_called()
+
+    def test_stable_path_and_descriptor_metadata_are_compared_separately(self):
+        raw, expected, _, _ = fixture.encode()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "selected"
+            path.write_bytes(raw)
+            lstat = Path.lstat
+            def observed(selected, *args, **kwargs):
+                info = lstat(selected, *args, **kwargs)
+                if selected == path:
+                    values = {name: getattr(info, name) for name in
+                              ("st_dev", "st_ino", "st_mode", "st_nlink", "st_size",
+                               "st_mtime_ns", "st_ctime_ns")}
+                    # CPython 3.13 Windows path and descriptor ctime semantics differ.
+                    values["st_ctime_ns"] += 123456789
+                    return SimpleNamespace(**values)
+                return info
+            with mock.patch.object(helper.exported, "source_pin", return_value=INPUTS), \
+                    mock.patch.object(Path, "lstat", observed):
+                result = helper.verify(path, Path(directory), REVISION, "linux", "amd64", True)
+            self.assertEqual(result["payload"]["sha256"], hashlib.sha256(raw).hexdigest())
+            self.assertEqual(result["verification"], expected["verification"])
+            self.assertEqual(path.read_bytes(), raw)
+
+    def test_changed_path_identity_size_or_type_before_hash_is_refused(self):
+        raw, _, _, _ = fixture.encode()
+        for field in ("st_ino", "st_size", "st_mode"):
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "selected"
+                path.write_bytes(raw)
+                lstat, observations = Path.lstat, 0
+                def observed(selected, *args, **kwargs):
+                    nonlocal observations
+                    info = lstat(selected, *args, **kwargs)
+                    if selected == path:
+                        observations += 1
+                        if observations >= 2:
+                            values = {name: getattr(info, name) for name in
+                                      ("st_dev", "st_ino", "st_mode", "st_nlink", "st_size",
+                                       "st_mtime_ns", "st_ctime_ns")}
+                            values[field] = stat.S_IFDIR | 0o700 if field == "st_mode" else values[field] + 1
+                            return SimpleNamespace(**values)
+                    return info
+                with mock.patch.object(helper.exported, "source_pin", return_value=INPUTS), \
+                        mock.patch.object(Path, "lstat", observed), \
+                        mock.patch.object(helper.checker, "file_hash") as hashed, \
+                        self.assertRaises(helper.checker.Rejected) as failure:
+                    helper.verify(path, Path(directory), REVISION, "linux", "amd64", True)
+                self.assertEqual(failure.exception.category, "archive")
+                hashed.assert_not_called()
+
+    def test_each_path_and_descriptor_identity_field_remains_pinned_after_decode(self):
+        raw, _, _, _ = fixture.encode()
+        fields = ("st_dev", "st_ino", "st_mode", "st_nlink", "st_size", "st_mtime_ns", "st_ctime_ns")
+        for api in ("path", "descriptor"):
+            for field in fields:
+                with self.subTest(api=api, field=field), tempfile.TemporaryDirectory() as directory:
+                    path = Path(directory) / "selected"
+                    path.write_bytes(raw)
+                    lstat, fstat = Path.lstat, os.fstat
+                    decode, changed = helper.checker.check_stream_payload, False
+                    def altered(info):
+                        values = {name: getattr(info, name) for name in fields}
+                        values[field] += 1
+                        return SimpleNamespace(**values)
+                    def path_info(selected, *args, **kwargs):
+                        info = lstat(selected, *args, **kwargs)
+                        return altered(info) if changed and api == "path" and selected == path else info
+                    def descriptor_info(fd):
+                        info = fstat(fd)
+                        return altered(info) if changed and api == "descriptor" else info
+                    def read(*args, **kwargs):
+                        nonlocal changed
+                        result = decode(*args, **kwargs)
+                        changed = True
+                        return result
+                    with mock.patch.object(helper.exported, "source_pin", return_value=INPUTS), \
+                            mock.patch.object(Path, "lstat", path_info), \
+                            mock.patch.object(helper.os, "fstat", descriptor_info), \
+                            mock.patch.object(helper.checker, "check_stream_payload", side_effect=read), \
+                            self.assertRaises(helper.checker.Rejected) as failure:
+                        helper.verify(path, Path(directory), REVISION, "linux", "amd64", True)
+                    self.assertEqual(failure.exception.category, "archive")
+                    self.assertEqual(path.read_bytes(), raw)
 
     def test_changed_checkout_after_decode_prevents_success(self):
         raw, _, _, _ = fixture.encode()

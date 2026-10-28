@@ -5,6 +5,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import stat
 import sys
 
 sys.dont_write_bytecode = True
@@ -20,14 +21,18 @@ def verify(path, root, revision, os_name, architecture, require_skip_ledger=Fals
     inputs = exported.source_pin(root, revision)
     with exported.regular_file(path, checker.ARCHIVE_LIMIT, "archive") as (source, size):
         checker.require(size > 0, "archive")
-        identity = exported.file_identity(os.fstat(source.fileno()))
+        descriptor_info, path_info = os.fstat(source.fileno()), path.lstat()
+        checker.require(stat.S_ISREG(path_info.st_mode) and path_info.st_size == size
+                        and os.path.samestat(descriptor_info, path_info), "archive")
+        # Windows path and descriptor timestamps need not have the same semantics.
+        identities = (exported.file_identity(descriptor_info), exported.file_identity(path_info))
         digest = checker.file_hash(source)
         source.seek(0)
         result = checker.check_stream_payload(source, size, revision, inputs, os_name, architecture,
                                               require_skip_ledger=require_skip_ledger)
         checker.require(exported.source_pin(root, revision) == inputs, "source")
-        checker.require(exported.file_identity(os.fstat(source.fileno())) == identity
-                        and exported.file_identity(path.lstat()) == identity, "archive")
+        checker.require(exported.file_identity(os.fstat(source.fileno())) == identities[0]
+                        and exported.file_identity(path.lstat()) == identities[1], "archive")
     return {"schema_version": 1, "mode": "source_checked_candidate_stream", "status": "verified",
             "source": {"revision": revision, "inputs_sha256": inputs}, "os": os_name,
             "architecture": architecture, "payload": {"bytes": size, "sha256": digest},
