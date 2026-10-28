@@ -73,7 +73,7 @@ used as the new revision's CI proof. A later documentation-only successful head
 keeps this runtime-qualified baseline explicit and does not advance it. The
 frozen human-review candidate and its original packet remain unchanged.
 
-The latest qualified development baseline selected by this ledger is
+The preceding qualified development baseline selected by this ledger is
 [`87677080c335444fb047c54c1b8d683cee436726`](https://github.com/edgepillar/zenon-spv/tree/87677080c335444fb047c54c1b8d683cee436726),
 tree `5093fafa92f2b85555ce6ca0ca8dd49754b1f8ee`. Its own
 [general main CI](https://github.com/edgepillar/zenon-spv/actions/runs/40556083707)
@@ -95,10 +95,38 @@ Python, workflow and documentation inputs with their own source and exact-main
 qualification. Equal Go inputs were not used as the new revision's CI proof.
 The canonical local merge has `edgepillar` as both author and committer.
 
-In this ledger, "current" means the explicitly selected qualified `8767708`
-baseline. Later [candidate-stream preparation](candidate-stream.md) has separate
-source and qualification limits; its local observations do not advance this
-baseline. The frozen human-review candidate and its original packet remain fixed.
+The latest qualified development baseline selected by this ledger is
+[`1b8a33fd351ee5b7c697aac21940323ee1f81c74`](https://github.com/edgepillar/zenon-spv/tree/1b8a33fd351ee5b7c697aac21940323ee1f81c74),
+tree `38d9c0b37554622454452c149d251dad99204978`. Its own
+[general main CI](https://github.com/edgepillar/zenon-spv/actions/runs/40648232108)
+passed on its first attempt. Reconciliation covers all 34 actual artifact IDs
+and 59,318,902 archive bytes across seven general jobs, including
+21 ordinary native executables and their paired reports. Source/build metadata,
+declared lengths and SHA-256 values, architectures and scenario inventories
+match. Five native Windows skips remain explicit; Linux and macOS have zero.
+
+The three native uploads each contain one stored `candidate-v1.tar.xz` member.
+The source-checked writer and completed-stream readback passed on all three
+platforms at this exact main SHA. A bounded independent standard-library TAR
+pass also checks member hashes and architecture headers. The reader extracts no
+payload files and executes no new native tests or binaries. The earlier Windows
+readback failure at `517cd922` remains separate evidence; the correction pins
+path and descriptor metadata to separate unchanged snapshots.
+
+The 634 selected Go/module/JSON inputs differ from the preceding selected
+`8767708` baseline because its source-enumeration test changed. The content total
+is 34,948,765 bytes and the framed digest is
+`2cc96345633910a132df1d72fe0c7d3b05b6917b8469c4c36277b1784fbee8e0`.
+Python/workflow inputs have their own inspection and exact-source checks.
+Neither a matching tree nor the preceding PR's CI was used as this main
+revision's runtime proof. The local merge has `edgepillar` as both author and
+committer. Separate exporter/transport workflows did not run at this revision;
+their earlier observations remain pinned above.
+
+In this ledger, "current" means the explicitly selected qualified `1b8a33f`
+baseline. A later documentation-only successful head does not advance that
+runtime qualification. The frozen human-review candidate and original packet
+remain fixed.
 
 ## Identity migration and comparison scope
 
@@ -119,13 +147,13 @@ revision is still the original `6ecc2310538d511e3b26bea4c658082853266a11`.
 Use an explicit two-revision `git diff` for the intended file comparison.
 A three-dot comparison against the original commit can choose an earlier common
 ancestor after the migration. The
-[normalized ancestry comparison](https://github.com/edgepillar/zenon-spv/compare/710627ae9589beca4a23400cc47fb038eb5495fd...87677080c335444fb047c54c1b8d683cee436726)
+[normalized ancestry comparison](https://github.com/edgepillar/zenon-spv/compare/710627ae9589beca4a23400cc47fb038eb5495fd...1b8a33fd351ee5b7c697aac21940323ee1f81c74)
 is useful for navigation with the tree-equivalence limit above.
 
 ## Complete current root-module Go and module-file delta
 
-The exact frozen-to-current diff contains 14 root-module Go files: six
-application/primitive files and eight test files. Root `go.mod` and `go.sum`
+The exact frozen-to-current diff contains 15 root-module Go files: six
+application/primitive files and nine test files. Root `go.mod` and `go.sum`
 are unchanged. This table excludes nested research modules, corpus JSON,
 scripts, workflow and documentation changes; it is not the complete repository
 diff. Git blob identifiers refer to file bytes, not commits or SHA-256 digests.
@@ -147,17 +175,19 @@ An em dash means the path was absent in the frozen revision.
 | `tools/observe-block/main_test.go` | `6d5b613c10d0f8629f48cc1f036e8abe9fbd7112` | `dcadcc711f6e8660db00748a4a4f87754676d80c` | Validates the fixed failure facts without exposing private child diagnostics. |
 | `tools/observe-block/process.go` | `bd51c37e783b8317ab209196435d756bc88b2aaa` | `b30ec557dbdc268b1b0dd7dd5f2495a942a29202` | Records stdout/stderr EOF and wait-delay expiry only for incomplete output, preserving the original child wait result and existing completion gates. |
 | `tools/observe-block/process_eof_test.go` | `bd74d74c6a52a75b05ca741797c0e6ce65c4055a` | `a52f8583d91d75b8f1632edb3d5488f1fb4dd7d2` | Checks EOF/wait-delay refusal facts and the unchanged successful observation shape. |
+| `tools/offline-pilot/source_directory_cli_test.go` | `a4e535f0c9f4ba4ec7412c04bc0cb093117e6118` | `0feeeae3d75c13c44e207b3605a3fbc494908bfe` | Reuses one parent-owned wide source fixture while fresh CLI processes observe each original bound; retains all six controls and explicit growth checks. |
 
 The historical nine-file table stopped at `879fbce33dd77f483f7aba18994fb037f248e842`.
-Since that baseline, five additional root-module paths changed, and
-`tools/observe-block/main.go` changed again. All six paths are included above;
-the total current delta is 14 distinct paths.
+Since that baseline, six additional root-module paths changed, and
+`tools/observe-block/main.go` changed again. All seven paths are included above;
+the total current delta is 15 distinct paths. The source-enumeration test change
+followed the preceding selected `8767708` baseline.
 
 Review the complete pair with:
 
 ```sh
-git diff --name-status 6ecc2310538d511e3b26bea4c658082853266a11 87677080c335444fb047c54c1b8d683cee436726
-git diff 6ecc2310538d511e3b26bea4c658082853266a11 87677080c335444fb047c54c1b8d683cee436726 -- internal tools/observe-block go.mod go.sum
+git diff --name-status 6ecc2310538d511e3b26bea4c658082853266a11 1b8a33fd351ee5b7c697aac21940323ee1f81c74
+git diff 6ecc2310538d511e3b26bea4c658082853266a11 1b8a33fd351ee5b7c697aac21940323ee1f81c74 -- internal tools/observe-block tools/offline-pilot/source_directory_cli_test.go go.mod go.sum
 ```
 
 The second command includes other material in those directories. The table's
@@ -166,8 +196,8 @@ necessary for research, corpus, workflow and script changes.
 
 ## Recomputable input fingerprints
 
-The complete frozen-to-current tracked-file delta contains 281 paths. The input
-selector below changes at 87 paths. Neither number is the 14-file root-module
+The complete frozen-to-current tracked-file delta contains 291 paths. The input
+selector below changes at 88 paths. Neither number is the 15-file root-module
 delta. Python helpers, workflow files, shell scripts and other excluded paths
 remain outside the selected-input fingerprint and require their own inspection.
 
@@ -188,6 +218,7 @@ length framing.
 | `b6358c1943a0c2fbce5046c201f7d2e319b3089f` | 1,144 | 634 | 34,948,025 | `46367e744b6c687ca3ebe3558df3d745963a322efb32fcbd651bad2098497da9` |
 | `bc0be26d76dd07d297dfdf5b00768d23527e49f5` | 1,148 | 634 | 34,948,025 | `46367e744b6c687ca3ebe3558df3d745963a322efb32fcbd651bad2098497da9` |
 | `87677080c335444fb047c54c1b8d683cee436726` | 1,152 | 634 | 34,948,025 | `46367e744b6c687ca3ebe3558df3d745963a322efb32fcbd651bad2098497da9` |
+| `1b8a33fd351ee5b7c697aac21940323ee1f81c74` | 1,158 | 634 | 34,948,765 | `2cc96345633910a132df1d72fe0c7d3b05b6917b8469c4c36277b1784fbee8e0` |
 
 The historical frozen-to-`879fbce` comparison contains 204 tracked-file changes
 and 59 selected-input changes. Those historical counts remain valid for that
@@ -198,6 +229,9 @@ The frozen-to-`b6358c1` pair has 273 tracked-file changes and the same 87
 selected-input changes; those earlier counts also remain specific to that pair.
 The frozen-to-`bc0be26` pair retains its 277 tracked-file changes and the same
 87 selected-input changes.
+The frozen-to-`8767708` pair retains its 281 tracked-file changes and 87
+selected-input changes. Those preceding counts and fingerprint remain specific
+to that historical pair.
 
 For the root-module table, include an existing path only if it is a root-module
 `.go` file or a root module file in at least one compared revision. Determine
@@ -249,6 +283,25 @@ inputs. Their actual platform reports are included in the 37-archive gate above.
 | `tools/gen-state-root-vectors/import_resource_child_hex_test.py` | — | `7823cb1b61721eb7631caaf8d944b2b0f55b53dd` | Retains 19 controls for the selected source and child execution boundaries. |
 | `tools/gen-state-root-vectors/run_import_resource_controls.py` | — | `b368eb3d774f85c2d6decccb565b42f566a2f0d4` | Runs either unchanged original suite and requires every original control and selected call in its complete report. |
 | `docs/import-resource-child-hex.md` | — | `b166aaf78db6c67f139a3b438b653b0ffef4492f` | Separates finite checker-cost observations from node execution, representative R1 data and state-value acceptance. |
+
+The following source-fixture and transport paths are selected at qualified
+`1b8a33f`. The preceding column is `8767708`; the additional Go test change is in
+the root-module table. These Python/workflow inputs are outside the selected
+Go/module/JSON digest and require their own exact-source checks. The complete
+17-path change from that preceding baseline also includes seven documentation
+paths. Earlier local size observations keep their original source and scope.
+
+| Path | Preceding blob | Selected blob | Review impact |
+| --- | --- | --- | --- |
+| `.github/workflows/ci.yml` | `605ca54cb057203795d14c81444331371f4a2a0d` | `098e0450c7942d6f981747bc9cfa0c94325016e5` | Schedules stream/readback controls, canonical stream preparation and the single stored-member upload, with the existing native checks explicit. |
+| `tools/candidate_stream.py` | — | `48143f9cd8441564df4416efa9ada441260777a5` | Defines bounded canonical TAR/XZ encoding and complete decoding within the existing payload limits. |
+| `tools/candidate_stream_test.py` | — | `6003abccd9e2ec0b536282db8ff799a28c902090` | Checks complete and partial frames, bounds, metadata, and writer/decoder failure behavior. |
+| `tools/check-candidate-archive.py` | `b213d1b0a0652d544916bb77e223683e108fbc3d` | `b2e5cd02c115ee8ad95bf7db0e20dce5275f92e6` | Accepts the checked stream envelope while retaining legacy ZIP support, archive digest and selected payload requirements. |
+| `tools/check-scenario-inventory.py` | `a733a80eafa0ca351a5cf810aece6f9fea498edf` | `c920aa6232338496077668a578be425cf9f3dfaf` | Updates the archive-helper byte pin; a matching Go fingerprint does not replace the dependency check. |
+| `tools/check-scenario-inventory_test.py` | `b920c5017c2988d8de997ef1a930d5c14f8b00c3` | `618bab811dc4f5d613bf8de79b7c3a769c7482c1` | Refuses same-size and length-changing pinned-helper changes before import. |
+| `tools/check-source-candidate-stream.py` | — | `8eb1c6ec87afe46db881dcf189b837bb6d5d819c` | Binds readback to the selected checkout, full decode and separate unchanged path/descriptor snapshots. |
+| `tools/check-source-candidate-stream_test.py` | — | `212ba3d54ff0a103f2cbaaaa05f4a77ef7f90990` | Checks source/delivery refusal, cross-API timestamps, pre-hash identity/type/size changes and all per-API metadata fields. |
+| `tools/pack-candidate-stream.py` | — | `332b52a7cfbb2438e873de6c2f36667f80b4deb7` | Checks the exported directory and selected source before completing the stream. |
 
 A later documentation-only workflow can deliberately produce no new native
 executable. Inspect the actual selection and skipped job/step records and keep
