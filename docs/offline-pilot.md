@@ -73,8 +73,86 @@ package, the complete repeated-wire grid and all later evidence controls remain
 selected, with the same deadlines. Earlier rejection of a broken transport or
 source pin does not establish a whole-CI speedup for successful runs.
 
+## Deriving the report from the complete root suite
+
+CI uses an explicit full-suite mode to avoid executing the fixed selection again
+after the full root-module test. The default command above still executes only
+the fixed selection. To run the full suite and produce the same schema-2 selected
+report and nine-file candidate, use new absolute output destinations:
+
+```sh
+go run ./tools/offline-pilot --full-suite --timeout 30m --package-timeout 10m \
+  --suite-receipt "$EVIDENCE/root-suite.json" \
+  --export-binaries "$EVIDENCE/tested-candidate" > "$EVIDENCE/offline-pilot.json"
+```
+
+The evidence directory must already exist outside the source checkout. The
+receipt must also be outside the candidate directory; existing receipt files are
+never overwritten. Receipt creation errors prevent test execution. Add `--race`
+for instrumented test parents and `--coverage` to write the ignored `coverage.out`
+in the checkout. Child CLIs remain ordinary builds. Coverage and receipt options
+are accepted only in full-suite mode. An explicit positive package timeout must
+not exceed the overall timeout, which remains bounded at one hour.
+
+The driver obtains the root-module package inventory from an actual offline
+`go list ./...` with the same environment, then executes
+`go test -p 1 -json -count=1 -timeout=10m0s ./...`, adding the requested race and
+coverage options. It applies no `-run` selection or test-result cache. Linux CI
+retains race instrumentation and coverage; native macOS/Windows retain ordinary
+test parents. All use the existing 10-minute package watchdog and an explicit
+30-minute overall driver bound. Package orchestration, selected workloads,
+concurrency, rounds, grid sizes and subprocess deadlines are preserved. Other
+targeted controls in the workflow remain separate executions. A separate CI
+step downloads and verifies the pinned root-module dependencies before the
+offline driver; module cache verification still runs after testing. The driver
+does not rely on a warm hosted cache or enable implicit network access. Linux
+checks the pinned lint schema, configuration and linters immediately after
+dependency preparation, before the longer Go controls and complete suite.
+
+One bounded event stream feeds both whole-suite accounting and the existing
+selected-case collector. Selected test identities, binary/resource records and
+the source-owned Windows skip ledger retain their existing validation. Tests
+outside the selection cannot inject records into it. Missing inventory packages,
+duplicate or unfinished executions, malformed or oversized output, failed tests
+outside the selection, actual process failure and source changes prevent success.
+The stream is capped at 32 MiB with a 1 MiB line limit, 1,024 packages and 65,536
+test identities. Package inventory is capped at 1 MiB. Raw diagnostics and dynamic
+test names are not copied into either report or a second stdout archive.
+
+The separate `zenon-root-suite/v1` receipt records source pins, execution options,
+package completion, aggregate test/skip counts and the complete event-stream
+byte count and SHA-256. Its selected-report SHA-256 binds the unchanged report.
+Whole-suite skip counts include tests outside the 59 selected scenarios; they
+do not extend the selected scenario skip ledger's diagnostic coverage. Failed or
+interrupted execution cannot become successful merely because selected cases
+passed. A setup failure can leave an empty receipt; a later failure retains its
+observed incomplete/failed result. The driver does not retry execution.
+
+`tools/check-root-suite.py` checks the separately pinned receipt and report
+against the selected source revision, scenario registry and platform. CI retains
+the receipt and check in the small `root-suite-*` artifact alongside the existing
+candidate/report artifacts. Check the actual workflow/job completion as well:
+these unsigned files do not authenticate execution, independent review, network
+acceptance or state values. No whole-pipeline latency or disk budget is inferred
+from eliminating the second selected invocation.
+
+For Go edits confined to `tools/offline-pilot`, use the pinned linter against
+that affected package before publishing:
+
+```sh
+golangci-lint config verify --schema .github/schemas/golangci.v2.6.2.jsonschema.json
+golangci-lint run --concurrency=2 --timeout=5m ./tools/offline-pilot
+```
+
+Use golangci-lint 2.6.2, matching CI. Budget and own the temporary `GOCACHE`,
+`GOLANGCI_LINT_CACHE` and Go build workspace before starting; do not silently
+increase a quota or discard failed output to obtain a pass. A package-scoped
+local lint result does not qualify the whole repository. Broaden local checks
+when other Go packages, module files or lint configuration change. Hosted CI
+retains full root-module lint before the longer tests in every case.
+
 The default driver deadline is ten minutes (`--timeout`, positive and at most one
-hour); selected test packages use that same timeout.
+hour); in the default selected-only mode, test packages use that same timeout.
 The driver deadline stops the direct Go command. Its stdout copy is owned by
 `os/exec` and consumed concurrently; command waiting joins that copy before
 closing the collector channel. A two-second wait limit also releases inherited
