@@ -9,6 +9,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"slices"
@@ -267,5 +268,51 @@ func TestFullSuiteActualProcessCompletion(t *testing.T) {
 				t.Fatal("passing observed events overrode a failed, timed out or malformed actual execution")
 			}
 		})
+	}
+}
+
+const suiteNameHelperEnvironment = "SPV_SUITE_NATIVE_NAME_HELPER"
+
+func TestFullSuiteNativeNameHelper(t *testing.T) {
+	if os.Getenv(suiteNameHelperEnvironment) != "1" {
+		return
+	}
+	t.Run("single/label", func(t *testing.T) {})
+	t.Run("parallel/label", func(t *testing.T) {
+		t.Parallel()
+		t.Run("deep/slash", func(t *testing.T) {})
+	})
+	t.Run("ordinary", func(t *testing.T) {
+		t.Run("child/label", func(t *testing.T) {})
+	})
+}
+
+func TestFullSuiteActualNativeNames(t *testing.T) {
+	// Slashes inside a single t.Run label are not separately executed parents.
+	// Consume actual Go test2json events, including a paused/continued parent,
+	// rather than assuming every slash in a hand-written fixture is a t.Run.
+	t.Setenv(suiteNameHelperEnvironment, "1")
+	t.Setenv("GORACE", "atexit_sleep_ms=0")
+	goTool, err := exec.LookPath("go")
+	if err != nil {
+		t.Fatal("native event control requires the Go toolchain on PATH")
+	}
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal("cannot identify native helper")
+	}
+	pkg := modulePath + "/tools/offline-pilot"
+	selected := newCollector([]scenario{{ID: "native_names", Package: "tools/offline-pilot", Test: "TestFullSuiteNativeNameHelper"}})
+	c, err := newSuiteCollector(selected, []string{pkg})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	ok, category := runTestProcess(ctx, goTool, []string{"tool", "test2json", "-p", pkg, self,
+		"-test.v=test2json", "-test.run=^TestFullSuiteNativeNameHelper$"}, pilotEnvironment(goTool), c.read)
+	if !ok || category != nil || c.finish(ok) != "passed" || selected.finish(ok) != "passed" ||
+		c.counts != (suiteCounts{RootTests: 1, Subtests: 5, Passed: 6}) {
+		t.Fatal("actual slash-labelled or parallel Go subtests did not complete")
 	}
 }

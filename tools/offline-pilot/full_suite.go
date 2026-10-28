@@ -205,9 +205,19 @@ func (c *suiteCollector) event(e testEvent) error {
 			return errors.New("duplicate or excessive suite test execution")
 		}
 		if strings.Contains(e.Test, "/") {
-			parent := e.Test[:strings.LastIndexByte(e.Test, '/')]
-			if !c.active[e.Package+"\x00"+parent] {
-				return errors.New("suite subtest without active parent")
+			// One t.Run label can itself contain slashes. Only an actually
+			// executed ancestor must be active; synthetic path components are
+			// not additional test executions. Paused parents remain active.
+			parent := e.Test
+			for {
+				separator := strings.LastIndexByte(parent, '/')
+				if separator < 0 {
+					return errors.New("suite subtest without active parent")
+				}
+				parent = parent[:separator]
+				if c.active[e.Package+"\x00"+parent] {
+					break
+				}
 			}
 			c.counts.Subtests++
 		} else {
