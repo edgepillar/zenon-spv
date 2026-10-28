@@ -119,6 +119,19 @@ jobs:
         run: python -B tools/check-exported-candidate_test.py
       - name: Source scenario inventory controls
         run: python -I -B tools/check-scenario-inventory_test.py
+      - name: Root suite receipt controls
+        run: python -I -B tools/check-root-suite_test.py -v
+      - name: Prepare root module dependencies
+        shell: bash
+        env:
+          GOTOOLCHAIN: local
+          GOWORK: 'off'
+          GOENV: 'off'
+          GOFLAGS: ''
+        run: |
+          go mod download
+          go mod verify
+          git diff --exit-code -- go.mod go.sum
       - name: Bounded ledger inventory controls
         id: inventory_controls
         shell: bash
@@ -604,9 +617,10 @@ jobs:
       - name: Vet
         run: go vet ./...
       - name: Test
-        # Isolate full-package orchestration. Selected resource workload
-        # concurrency, rounds and observer completion bounds remain unchanged.
-        run: go test -p 1 -race -count=1 -coverprofile=coverage.out ./...
+        id: root_suite
+        # Execute every root-module package once. Project the unchanged selected
+        # report from that actual stream; preserve race, coverage and -p 1.
+        run: go run ./tools/offline-pilot --full-suite --timeout 30m --package-timeout 10m --race --coverage --suite-receipt "${{ runner.temp }}/root-suite.json" --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
       - name: Verify root module cache
         id: root_module_cache
         shell: bash
@@ -622,7 +636,21 @@ jobs:
           git diff --exit-code -- go.mod go.sum
       - name: Offline pilot report
         id: pilot
-        run: go run ./tools/offline-pilot --race --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
+        shell: bash
+        run: |
+          report_sha256="$(python -I -B -c 'import hashlib,sys; f=open(sys.argv[1],"rb"); b=f.read(4194305); f.close(); assert 0<len(b)<=4194304; print(hashlib.sha256(b).hexdigest())' "$RUNNER_TEMP/offline-pilot.json")"
+          receipt_sha256="$(python -I -B -c 'import hashlib,sys; f=open(sys.argv[1],"rb"); b=f.read(1048577); f.close(); assert 0<len(b)<=1048576; print(hashlib.sha256(b).hexdigest())' "$RUNNER_TEMP/root-suite.json")"
+          python -I -B tools/check-root-suite.py --receipt "$RUNNER_TEMP/root-suite.json" --expect-receipt-sha256 "$receipt_sha256" --report "$RUNNER_TEMP/offline-pilot.json" --expect-report-sha256 "$report_sha256" --source . --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)" --expect-race true --expect-coverage true --expect-package-timeout 10m0s --expect-overall-timeout 30m0s > "$RUNNER_TEMP/root-suite-check.json"
+      - name: Upload root suite receipt
+        if: ${{ !cancelled() && steps.root_suite.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: root-suite-linux
+          path: |
+            ${{ runner.temp }}/root-suite.json
+            ${{ runner.temp }}/root-suite-check.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Verify exported candidate
         id: candidate
         shell: bash
@@ -801,13 +829,25 @@ jobs:
         run: python -B tools/check-exported-candidate_test.py
       - name: Source scenario inventory controls
         run: python -I -B tools/check-scenario-inventory_test.py
+      - name: Root suite receipt controls
+        run: python -I -B tools/check-root-suite_test.py -v
+      - name: Prepare root module dependencies
+        shell: bash
+        env:
+          GOTOOLCHAIN: local
+          GOWORK: 'off'
+          GOENV: 'off'
+          GOFLAGS: ''
+        run: |
+          go mod download
+          go mod verify
+          git diff --exit-code -- go.mod go.sum
       - name: Native test
-        # Check the short Python transport/source contracts first, then fail
-        # before the longer evidence controls, keeping every package and the
-        # complete 100,000-member repeated-wire grid. This finite package
-        # watchdog is not a latency acceptance threshold; subprocess deadlines
-        # and evidence budgets remain unchanged.
-        run: go test -p 1 -count=1 -timeout=10m ./...
+        id: root_suite
+        shell: bash
+        # Keep every package and the complete repeated-wire grid. The explicit
+        # package watchdog remains 10m; the driver bounds the whole suite.
+        run: go run ./tools/offline-pilot --full-suite --timeout 30m --package-timeout 10m --suite-receipt "${{ runner.temp }}/root-suite.json" --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
       - name: Bounded ledger inventory controls
         id: inventory_controls
         shell: bash
@@ -1318,7 +1358,20 @@ jobs:
       - name: Offline pilot report
         id: pilot
         shell: bash
-        run: go run ./tools/offline-pilot --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
+        run: |
+          report_sha256="$(python -I -B -c 'import hashlib,sys; f=open(sys.argv[1],"rb"); b=f.read(4194305); f.close(); assert 0<len(b)<=4194304; print(hashlib.sha256(b).hexdigest())' "$RUNNER_TEMP/offline-pilot.json")"
+          receipt_sha256="$(python -I -B -c 'import hashlib,sys; f=open(sys.argv[1],"rb"); b=f.read(1048577); f.close(); assert 0<len(b)<=1048576; print(hashlib.sha256(b).hexdigest())' "$RUNNER_TEMP/root-suite.json")"
+          python -I -B tools/check-root-suite.py --receipt "$RUNNER_TEMP/root-suite.json" --expect-receipt-sha256 "$receipt_sha256" --report "$RUNNER_TEMP/offline-pilot.json" --expect-report-sha256 "$report_sha256" --source . --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)" --expect-race false --expect-coverage false --expect-package-timeout 10m0s --expect-overall-timeout 30m0s > "$RUNNER_TEMP/root-suite-check.json"
+      - name: Upload root suite receipt
+        if: ${{ !cancelled() && steps.root_suite.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: root-suite-${{ matrix.os }}
+          path: |
+            ${{ runner.temp }}/root-suite.json
+            ${{ runner.temp }}/root-suite-check.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Verify exported candidate
         id: candidate
         shell: bash
