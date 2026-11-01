@@ -1,0 +1,122 @@
+{
+  "format": "zenon-candidate-settlement-batch-entry-keys/v1",
+  "scope": {
+    "node_execution": false,
+    "profile_agreed": false,
+    "source_derived": true,
+    "state_value_acceptance": false
+  },
+  "source": {
+    "files": {
+      "chain/account/keys.go": {
+        "bytes": 345,
+        "git_blob": "2c5cb7f5212d2070ab61ef1a18cbb6aa687b1625",
+        "sha256": "eb85828006632ff5634ebec7b678ea709e1452fb957d784c6b8aaf373d2a5ee0"
+      },
+      "chain/account/store.go": {
+        "bytes": 1030,
+        "git_blob": "371acd8db825c330d38bbe0e3301f312b1725e7b",
+        "sha256": "b195bb0e64ad3fb9cc2c60ca50796dfee4f459448195adcb42dc8fd767f75d42"
+      },
+      "chain/momentum/keys.go": {
+        "bytes": 303,
+        "git_blob": "75aec12c9d976c250ea799f09ebd06850144cc4a",
+        "sha256": "5d2c0d2d440bea5ab6357994847bd61b179da65fd82d702f1a051b22e1024ed2"
+      },
+      "chain/momentum/ledger_store.go": {
+        "bytes": 4062,
+        "git_blob": "dacd5285bdfb00e6e04f8ae52d42686b30c6f118",
+        "sha256": "415b8d118947badcb809f6e5d75a28cc29ef54906bb5883a3bcc5384083af7a1"
+      },
+      "common/crypto/hash.go": {
+        "bytes": 471,
+        "git_blob": "d7b538496f0cf3dd6499e0e4ea76dd4ebb1f290b",
+        "sha256": "7b94f17b28e88591846753ddc54a206fd3f2e267d628108c04a0b815fba967ed"
+      },
+      "common/db/subdb.go": {
+        "bytes": 1623,
+        "git_blob": "964b90be0e59c9afb5527d70a3d6a08e88f1e498",
+        "sha256": "c237a94740ec4779e93b385d6394aad37b02f732e5d7a5b1fbc54f841d1d6331"
+      },
+      "common/trie/momentum_fold.go": {
+        "bytes": 2843,
+        "git_blob": "493cd6363d580f22acb1ab6de216af1fb56e3a83",
+        "sha256": "b3f9712b23c179aaf7bda3f7df98d04fd83b20be77d2eda41f43a6965525a1f3"
+      },
+      "common/types/address.go": {
+        "bytes": 5469,
+        "git_blob": "5cfa8e9ec534cc9c0f1841ebadd54d1945191dc1",
+        "sha256": "b791d480884b04bad7e2e46c784a41927c650918b62e309d13933d7929fd9cb9"
+      },
+      "common/types/hash.go": {
+        "bytes": 1777,
+        "git_blob": "5a687f884f326f9a136535d3c042a3366888c73a",
+        "sha256": "3bdb8eb59490f00f9ceafd3e0362e3cbf6ca447fa0f63afb28c839a3f1b436f6"
+      },
+      "vm/embedded/definition/settlement.go": {
+        "bytes": 72238,
+        "git_blob": "5de2d14bb6bf667d0ffc5a1dcd0a7dcde2c0000f",
+        "sha256": "3c6968d6920a00ceb00b0542c29b8f094a04294b9c92b8be0e2f16018d3af815"
+      }
+    },
+    "repository": "digitalSloth/go-zenon",
+    "revision": "938fca3b7787da86827a5eb63371509b36e14761",
+    "tree": "f3b7947d2267ebdb806f18ff0c02bba5bffae9c4"
+  },
+  "vectors": [
+    {
+      "address": "0000000000000000000000000000000000000000",
+      "application_subkey": "02000000000000000000000000",
+      "batch_id_decimal": "0",
+      "domain_id": 0,
+      "name": "zero_width_boundary",
+      "path": "336e4a806eda6e67d3546e7a109f498c2bcb98393ced3d986b4265c200b471d1",
+      "raw_key": "0300000000000000000000000000000000000000000402000000000000000000000000"
+    },
+    {
+      "address": "01b3b6e5adcb4d0cad7fcef33598c6318c6318c0",
+      "application_subkey": "02000000010000000000000000",
+      "batch_id_decimal": "0",
+      "domain_id": 1,
+      "name": "settlement_domain_1_batch_0",
+      "path": "5ee4358ff3d00f4b24cfda1d9bf5120c02ce1594aea4ada71767b92e86286d6f",
+      "raw_key": "0301b3b6e5adcb4d0cad7fcef33598c6318c6318c00402000000010000000000000000"
+    },
+    {
+      "address": "01b3b6e5adcb4d0cad7fcef33598c6318c6318c0",
+      "application_subkey": "02000000010000000000000001",
+      "batch_id_decimal": "1",
+      "domain_id": 1,
+      "name": "settlement_domain_1_batch_1",
+      "path": "cccead45c5610e10051e01c9062d34d3072488a80d5a0e4f27e9922eb249ce8d",
+      "raw_key": "0301b3b6e5adcb4d0cad7fcef33598c6318c6318c00402000000010000000000000001"
+    },
+    {
+      "address": "01b3b6e5adcb4d0cad7fcef33598c6318c6318c0",
+      "application_subkey": "02010203040102030405060708",
+      "batch_id_decimal": "72623859790382856",
+      "domain_id": 16909060,
+      "name": "byte_order_probe",
+      "path": "470eb424733df7f0d9366a0fe62a9fac488421f20841ee96b2e63052423128a0",
+      "raw_key": "0301b3b6e5adcb4d0cad7fcef33598c6318c6318c00402010203040102030405060708"
+    },
+    {
+      "address": "ffffffffffffffffffffffffffffffffffffffff",
+      "application_subkey": "02ffffffffffffffffffffffff",
+      "batch_id_decimal": "18446744073709551615",
+      "domain_id": 4294967295,
+      "name": "maximum_width_boundary",
+      "path": "da283e89ef33b21c718c025553927a123252c1fb67e1b0c83387e3791a6ca8a3",
+      "raw_key": "03ffffffffffffffffffffffffffffffffffffffff0402ffffffffffffffffffffffff"
+    },
+    {
+      "address": "0102030405060708090a0b0c0d0e0f1011121314",
+      "application_subkey": "0299aabbccfedcba9876543210",
+      "batch_id_decimal": "18364758544493064720",
+      "domain_id": 2578103244,
+      "name": "alternate_address",
+      "path": "99d275e6b2a109c30b28dbd9449d0c5ceb77e404e18820730975aa635c1884ac",
+      "raw_key": "030102030405060708090a0b0c0d0e0f1011121314040299aabbccfedcba9876543210"
+    }
+  ]
+}
