@@ -27,12 +27,14 @@ Later changes include executable code and tests, as well as documentation and
 research. The [frozen-to-baseline change ledger](review-candidate-changes.md)
 retains the historical `879fbce33dd77f483f7aba18994fb037f248e842` observations
 and the completed `d85aff12dd0de8b2d1bd8db46e0e4e727c7e60ff` pipeline. It
-enumerates the complete 14-file root-module Go delta and separate Python/workflow
-changes through qualified `87677080c335444fb047c54c1b8d683cee436726`. Its
-general and transport main CI cover ten jobs and all 37 actual artifacts,
-including the separately source-bound retention and import-resource scopes.
-The preceding `bc0be26` 34-archive and `b6358c1` 28-archive qualifications remain
-pinned in the ledger. It
+enumerates the complete 18-file root-module Go delta and separate Python/workflow
+changes through qualified `da04d4189017da7ddd2f56e82bd856875e272aed`. Its own
+general and transport main CI cover ten jobs and all 40 actual artifacts,
+including the complete root-suite receipts, source-bound candidate streams and
+recorded scopes. The preceding `1b8a33f` seven-job/34-archive, `8767708`
+ten-job/37-archive, `bc0be26` 34-archive and `b6358c1` 28-archive qualifications
+remain pinned in the ledger. These scopes retain their own source identities.
+It
 also distinguishes original review revisions from their identity-normalized
 counterparts. A later documentation-only workflow supplies no new native
 execution; retain the latest runtime-qualified revision explicitly. These source
@@ -78,12 +80,14 @@ does not wait for a complete mainnet inventory, and does not close representativ
 production budgets or node recovery/activation gates.
 
 The latest ledger-selected runtime baseline is
-[`1b8a33fd351ee5b7c697aac21940323ee1f81c74`](https://github.com/edgepillar/zenon-spv/tree/1b8a33fd351ee5b7c697aac21940323ee1f81c74).
-The planning main pin `df1cc52af3ae132a33bf3c41541fcb214eccc0d6` is documentation-only;
-the original frozen review candidate above remains unchanged.
-[PR #292](https://github.com/edgepillar/zenon-spv/pull/292) is separate pending
-qualification work. This documentation change does not advance its execution,
-merge it or transfer old CI/review to a new revision.
+[`da04d4189017da7ddd2f56e82bd856875e272aed`](https://github.com/edgepillar/zenon-spv/tree/da04d4189017da7ddd2f56e82bd856875e272aed).
+Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41341596977)
+and [transport CI](https://github.com/edgepillar/zenon-spv/actions/runs/41341597164)
+passed and all 40 actual archives were reconciled. This follows the canonical
+local merge of [PR #292](https://github.com/edgepillar/zenon-spv/pull/292);
+the original frozen review candidate remains unchanged.
+The planning pins `df1cc52` and `1b8a33f` retain their original historical
+meanings. Later documentation-only heads do not advance runtime qualification.
 
 The [bounded R1 transport tool](../tools/ledger-transport/README.md) prepares the
 snapshot transport track without enabling state values. It hashes fixed chunks

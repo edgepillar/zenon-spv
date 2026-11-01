@@ -39,7 +39,7 @@ of this Zeno delivery. Their scoped release does not wait for D3 or Zeno activat
 | General production v3/state proofs | NO_GO_UNTIL_GATES | Agreed network profile, integrated node behavior, measured workload, exact-network activation, independent review and authenticated distribution remain required. |
 | Zeno Phase1 on mainnet or irreversible settlement | NO_GO | Current Zeno Phase1 is executor-attested and testnet-only. L1 membership does not prove execution correctness, consensus finality, receive or spendability. |
 
-## Source and qualification identities
+## Planning source and qualification identities
 
 These are selected planning pins, not a claim of new execution or maintainer agreement.
 Recheck source/profile changes before running the selected experiment.
@@ -60,12 +60,21 @@ Recheck source/profile changes before running the selected experiment.
 | historical_root_node | `9c71ae82fc983e16f914ae085d4034030c8ebe3b` |
 | historical_corpus_node | `56ce2c384966f2f1940967257a0788d3998a5eef` |
 
-The own-fork main pin is documentation-only. The ledger-selected runtime baseline
-and original frozen human-review candidate retain their own evidence and scope.
-Open [PR #292](https://github.com/edgepillar/zenon-spv/pull/292) is separate
-qualification work; this plan does not merge it or transfer its CI to another source.
-The [review change ledger](review-candidate-changes.md) retains the old-to-new SHA
-mapping. An equal tree or identity-normalized commit does not inherit old CI or review.
+The table preserves the pins used when the 1 November planning input was selected;
+`df1cc52` is documentation-only and `1b8a33f` is the preceding qualified runtime.
+
+At repository adoption, the latest qualified runtime is
+[`da04d4189017da7ddd2f56e82bd856875e272aed`](https://github.com/edgepillar/zenon-spv/tree/da04d4189017da7ddd2f56e82bd856875e272aed),
+from the canonical local merge of [PR #292](https://github.com/edgepillar/zenon-spv/pull/292).
+Its own [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41341596977)
+and [transport CI](https://github.com/edgepillar/zenon-spv/actions/runs/41341597164)
+passed; all ten jobs and 40 actual archives have source-specific qualification.
+This is the root-suite reporting improvement, not completion of D0-D3 or acceptance
+of a state value. The original frozen human-review candidate is unchanged.
+
+The [review change ledger](review-candidate-changes.md) retains the historical
+records and old-to-new SHA mapping. An equal tree, identity-normalized commit or
+later documentation-only head does not inherit old CI or independent review.
 
 ## Authority and required invariants
 

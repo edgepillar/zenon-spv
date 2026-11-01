@@ -4,6 +4,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -43,6 +45,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 	fs.SetOutput(io.Discard)
 	timeout := fs.Duration("timeout", 10*time.Minute, "overall test timeout")
 	race := fs.Bool("race", false, "instrument test parents with the race detector")
+	fullSuite := fs.Bool("full-suite", false, "derive the selected report from one complete root-module test run")
+	packageTimeout := fs.Duration("package-timeout", 0, "explicit per-package deadline for full-suite mode")
+	suiteReceiptPath := fs.String("suite-receipt", "", "new absolute receipt outside the checkout and candidate directory")
+	coverage := fs.Bool("coverage", false, "write coverage.out in full-suite mode")
 	var exportDir string
 	fs.Func("export-binaries", "new absolute directory outside the checkout", func(value string) error {
 		if exportDir != "" || value == "" || len(value) > 4096 || !filepath.IsAbs(value) {
@@ -53,12 +59,14 @@ func run(args []string, stdout, stderr io.Writer) int {
 	})
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
-			return writeReport(stdout, stderr, []byte("Usage: offline-pilot [--race] [--timeout 10m] [--export-binaries ABSOLUTE_NEW_DIRECTORY]\nRun from the repository root with dependencies already cached.\n"), 0)
+			return writeReport(stdout, stderr, []byte("Usage: offline-pilot [--race] [--timeout 10m] [--export-binaries ABSOLUTE_NEW_DIRECTORY]\nFull root module: add --full-suite --package-timeout 10m --suite-receipt ABSOLUTE_NEW_FILE [--coverage].\nRun from the repository root with dependencies already cached.\n"), 0)
 		}
 		_, _ = fmt.Fprintln(stderr, "offline-pilot: invalid arguments; use --help")
 		return 64
 	}
-	if fs.NArg() != 0 || *timeout <= 0 || *timeout > time.Hour {
+	if fs.NArg() != 0 || *timeout <= 0 || *timeout > time.Hour ||
+		(*fullSuite && (*packageTimeout <= 0 || *packageTimeout > *timeout || *suiteReceiptPath == "" || len(*suiteReceiptPath) > 4096 || !filepath.IsAbs(*suiteReceiptPath))) ||
+		(!*fullSuite && (*packageTimeout != 0 || *suiteReceiptPath != "" || *coverage)) {
 		_, _ = fmt.Fprintln(stderr, "offline-pilot: invalid arguments; use --help")
 		return 64
 	}
@@ -100,13 +108,54 @@ func run(args []string, stdout, stderr io.Writer) int {
 			return 70
 		}
 	}
+	var receiptFile *os.File
+	if *fullSuite {
+		receiptFile, err = openSuiteReceipt(*suiteReceiptPath, exportDir)
+		if err != nil {
+			_, _ = fmt.Fprintln(stderr, "offline-pilot: suite receipt setup failed")
+			return 70
+		}
+		defer func() { _ = receiptFile.Close() }() // Fallback for early return; the receipt writer checks its close.
+	}
 	env := pilotEnvironment(goTool)
 	if exportDir != "" {
 		env = append(env, candidateExportEnvironment+"="+exportDir)
 	}
-	processOK, processError := runTestProcess(ctx, goTool, testArguments(scenarios, *race, *timeout), env, collector.read)
+	var suite *suiteCollector
+	var processOK, inventoryOK bool
+	var processError *string
+	if *fullSuite {
+		var packages []string
+		inventoryOK, _ = runTestProcess(ctx, goTool, []string{"list", "./..."}, env, func(r io.Reader) error {
+			var listErr error
+			packages, listErr = readSuitePackages(r)
+			return listErr
+		})
+		if !inventoryOK {
+			processError = errorCategory("suite_inventory")
+		} else {
+			suite, err = newSuiteCollector(collector, packages)
+			if err != nil {
+				processError = errorCategory("suite_inventory")
+			} else {
+				profile := ""
+				if *coverage {
+					profile = "coverage.out"
+				}
+				processOK, processError = runTestProcess(ctx, goTool, fullSuiteArguments(*race, *packageTimeout, profile), env, suite.read)
+			}
+		}
+	} else {
+		processOK, processError = runTestProcess(ctx, goTool, testArguments(scenarios, *race, *timeout), env, collector.read)
+	}
 	report.Error = processError
 	report.Status = collector.finish(processOK)
+	if suite != nil && suite.finish(processOK) != "passed" {
+		report.Status = suite.finish(processOK)
+		if processError == nil {
+			report.Error = errorCategory("suite_incomplete")
+		}
+	}
 	report.Cases = collector.cases
 	report.SkipLedger = collector.skips.snapshot()
 	after, err := captureSource()
@@ -135,6 +184,24 @@ func run(args []string, stdout, stderr io.Writer) int {
 				return 70
 			}
 			raw, code = append(raw, '\n'), 70
+		}
+	}
+	if receiptFile != nil {
+		digest := sha256.Sum256(raw)
+		receipt := suiteReceipt{
+			Format: "zenon-root-suite/v1", Status: report.Status, Error: report.Error, Source: before,
+			InputsUnchanged: report.InputsUnchanged, Race: *race, Coverage: *coverage,
+			PackageTimeout: packageTimeout.String(), OverallTimeout: timeout.String(),
+			InventoryOK: inventoryOK, ProcessOK: processOK, SelectedScenarios: len(scenarios),
+			SelectedReportSHA: hex.EncodeToString(digest[:]), Packages: []suitePackage{},
+		}
+		if suite != nil {
+			receipt.Packages, receipt.StreamSHA256 = suite.snapshot()
+			receipt.Tests, receipt.StreamBytes, receipt.StreamComplete = suite.counts, suite.bytes, suite.complete
+		}
+		if err := writeSuiteReceipt(receiptFile, receipt); err != nil {
+			_, _ = fmt.Fprintln(stderr, "offline-pilot: suite receipt output failed")
+			return 70
 		}
 	}
 	return writeReport(stdout, stderr, raw, code)

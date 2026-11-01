@@ -95,7 +95,7 @@ Python, workflow and documentation inputs with their own source and exact-main
 qualification. Equal Go inputs were not used as the new revision's CI proof.
 The canonical local merge has `edgepillar` as both author and committer.
 
-The latest qualified development baseline selected by this ledger is
+The preceding candidate-stream development baseline was
 [`1b8a33fd351ee5b7c697aac21940323ee1f81c74`](https://github.com/edgepillar/zenon-spv/tree/1b8a33fd351ee5b7c697aac21940323ee1f81c74),
 tree `38d9c0b37554622454452c149d251dad99204978`. Its own
 [general main CI](https://github.com/edgepillar/zenon-spv/actions/runs/40648232108)
@@ -123,10 +123,58 @@ revision's runtime proof. The local merge has `edgepillar` as both author and
 committer. Separate exporter/transport workflows did not run at this revision;
 their earlier observations remain pinned above.
 
-In this ledger, "current" means the explicitly selected qualified `1b8a33f`
-baseline. A later documentation-only successful head does not advance that
-runtime qualification. The frozen human-review candidate and original packet
+In the preceding stream record, "current" meant the explicitly selected qualified
+`1b8a33f` baseline. The following section selects its independently qualified
+root-suite successor. The frozen human-review candidate and original packet
 remain fixed.
+
+## Current complete-root-suite baseline
+
+The latest qualified development baseline selected by this ledger is
+[`da04d4189017da7ddd2f56e82bd856875e272aed`](https://github.com/edgepillar/zenon-spv/tree/da04d4189017da7ddd2f56e82bd856875e272aed),
+tree `d6b5513900b8dce954778160e7501611a6d563ee`. Its author and committer
+are both `edgepillar`. It follows the canonical local merge of
+[PR #292](https://github.com/edgepillar/zenon-spv/pull/292).
+
+Its own [general main CI](https://github.com/edgepillar/zenon-spv/actions/runs/41341596977)
+and [transport main CI](https://github.com/edgepillar/zenon-spv/actions/runs/41341597164)
+passed on attempt 1. Reconciliation covers all ten scheduled jobs, all 40 actual
+archive IDs and 59,515,369 archive bytes: 37 general archives and three transport
+archives. The candidate stream readers checked all 21 ordinary native
+executables, paired reports, source/build metadata, architectures and the 59
+selected scenarios per platform without extracting or executing another candidate.
+Selected native Windows reports retain five skips; Linux and macOS have zero.
+
+The new root-suite receipts separately bind all 16 root-module packages to the
+actual uncached Go execution. Linux and macOS each report 5,002 passing test
+events and zero skips. Windows reports 5,066 passes and 16 skips. These complete
+suite counts and the selected native scenario skips have different scopes.
+
+The pilot driver projects the existing selected report from that same complete
+Go event stream. It rejects an unselected failure, incomplete stream/process,
+source change or ambiguous test lifecycle, including genuine slash-labelled
+`t.Run` names. Separate `root-suite-*` archives bind the small receipt and its
+independent checker; the ordinary selected report and candidate format stay
+compatible. Main's selected-report steps took 0 seconds on Linux and 1 second
+on macOS/Windows at the recorded step granularity. The second selected-test
+invocation is removed structurally; these observations do not establish a
+controlled whole-CI or hardware speedup.
+
+All 636 selected Go/module/JSON inputs were read independently from this exact
+source. Their content total is 34,974,843 bytes and framed digest is
+`91971f2505e3511263feee52fcdfe70b6fd29ef989351ce6926f819c7fff2328`.
+Python/workflow inputs retain separate source and execution checks. The changed
+non-Go controls include `tools/check-root-suite.py`,
+`tools/check-root-suite_test.py` and `.github/workflows/ci.yml`; the Linux
+pinned lint/schema/configuration steps now precede long controls and full tests.
+
+The first source's slash-label refusal, the next source's late lint failure and
+the interrupted local lint-cache attempt retain their original outcomes. They
+are not relabelled as passing runs. The `1b8a33f` and all earlier qualified
+records above remain source-specific. A documentation-only head after this
+baseline supplies no new native execution. The original `6ecc231` review
+selection, independent human acceptance, activation, production state proofs
+and authenticated distribution remain separate gates.
 
 ## Identity migration and comparison scope
 
@@ -147,13 +195,13 @@ revision is still the original `6ecc2310538d511e3b26bea4c658082853266a11`.
 Use an explicit two-revision `git diff` for the intended file comparison.
 A three-dot comparison against the original commit can choose an earlier common
 ancestor after the migration. The
-[normalized ancestry comparison](https://github.com/edgepillar/zenon-spv/compare/710627ae9589beca4a23400cc47fb038eb5495fd...1b8a33fd351ee5b7c697aac21940323ee1f81c74)
+[normalized ancestry comparison](https://github.com/edgepillar/zenon-spv/compare/710627ae9589beca4a23400cc47fb038eb5495fd...da04d4189017da7ddd2f56e82bd856875e272aed)
 is useful for navigation with the tree-equivalence limit above.
 
 ## Complete current root-module Go and module-file delta
 
-The exact frozen-to-current diff contains 15 root-module Go files: six
-application/primitive files and nine test files. Root `go.mod` and `go.sum`
+The exact frozen-to-current diff contains 18 root-module Go files: eight
+implementation/driver files and ten test files. Root `go.mod` and `go.sum`
 are unchanged. This table excludes nested research modules, corpus JSON,
 scripts, workflow and documentation changes; it is not the complete repository
 diff. Git blob identifiers refer to file bytes, not commits or SHA-256 digests.
@@ -175,19 +223,24 @@ An em dash means the path was absent in the frozen revision.
 | `tools/observe-block/main_test.go` | `6d5b613c10d0f8629f48cc1f036e8abe9fbd7112` | `dcadcc711f6e8660db00748a4a4f87754676d80c` | Validates the fixed failure facts without exposing private child diagnostics. |
 | `tools/observe-block/process.go` | `bd51c37e783b8317ab209196435d756bc88b2aaa` | `b30ec557dbdc268b1b0dd7dd5f2495a942a29202` | Records stdout/stderr EOF and wait-delay expiry only for incomplete output, preserving the original child wait result and existing completion gates. |
 | `tools/observe-block/process_eof_test.go` | `bd74d74c6a52a75b05ca741797c0e6ce65c4055a` | `a52f8583d91d75b8f1632edb3d5488f1fb4dd7d2` | Checks EOF/wait-delay refusal facts and the unchanged successful observation shape. |
+| `tools/offline-pilot/full_suite.go` | — | `431fa678fc25c44a7a0a9833ffc52a57384d730b` | Reads one bounded complete Go event stream, preserves all module/test outcomes and projects the selected report with an independent receipt. |
+| `tools/offline-pilot/full_suite_test.go` | — | `600ab1987bd35faea98009be850a3eb9ace282da` | Checks actual process completion, slash-labelled test names, package inventory, selected/unselected failures, stream bounds and receipt ownership. |
+| `tools/offline-pilot/main.go` | `3ba68015004d2b6ad4b19e2c44987f77e444a2bc` | `2e1605502907b2e27609f2f7ff4ed80a093e6d32` | Adds explicit complete-suite selection and receipt options while preserving default selected-only behavior and strict completion. |
 | `tools/offline-pilot/source_directory_cli_test.go` | `a4e535f0c9f4ba4ec7412c04bc0cb093117e6118` | `0feeeae3d75c13c44e207b3605a3fbc494908bfe` | Reuses one parent-owned wide source fixture while fresh CLI processes observe each original bound; retains all six controls and explicit growth checks. |
 
 The historical nine-file table stopped at `879fbce33dd77f483f7aba18994fb037f248e842`.
-Since that baseline, six additional root-module paths changed, and
-`tools/observe-block/main.go` changed again. All seven paths are included above;
-the total current delta is 15 distinct paths. The source-enumeration test change
-followed the preceding selected `8767708` baseline.
+The intervening `1b8a33f` record contained 15 distinct root-module paths,
+including the source-enumeration test change after `8767708`. The current
+root-suite delivery adds three more distinct paths in `tools/offline-pilot`:
+`full_suite.go`, `full_suite_test.go` and the newly changed `main.go`.
+All 18 current paths are listed above; earlier table counts retain their own
+revision pairs.
 
 Review the complete pair with:
 
 ```sh
-git diff --name-status 6ecc2310538d511e3b26bea4c658082853266a11 1b8a33fd351ee5b7c697aac21940323ee1f81c74
-git diff 6ecc2310538d511e3b26bea4c658082853266a11 1b8a33fd351ee5b7c697aac21940323ee1f81c74 -- internal tools/observe-block tools/offline-pilot/source_directory_cli_test.go go.mod go.sum
+git diff --name-status 6ecc2310538d511e3b26bea4c658082853266a11 da04d4189017da7ddd2f56e82bd856875e272aed
+git diff 6ecc2310538d511e3b26bea4c658082853266a11 da04d4189017da7ddd2f56e82bd856875e272aed -- internal tools/observe-block tools/offline-pilot go.mod go.sum
 ```
 
 The second command includes other material in those directories. The table's
@@ -196,8 +249,8 @@ necessary for research, corpus, workflow and script changes.
 
 ## Recomputable input fingerprints
 
-The complete frozen-to-current tracked-file delta contains 291 paths. The input
-selector below changes at 88 paths. Neither number is the 15-file root-module
+The complete frozen-to-current tracked-file delta contains 296 paths. The input
+selector below changes at 91 paths. Neither number is the 18-file root-module
 delta. Python helpers, workflow files, shell scripts and other excluded paths
 remain outside the selected-input fingerprint and require their own inspection.
 
@@ -219,6 +272,7 @@ length framing.
 | `bc0be26d76dd07d297dfdf5b00768d23527e49f5` | 1,148 | 634 | 34,948,025 | `46367e744b6c687ca3ebe3558df3d745963a322efb32fcbd651bad2098497da9` |
 | `87677080c335444fb047c54c1b8d683cee436726` | 1,152 | 634 | 34,948,025 | `46367e744b6c687ca3ebe3558df3d745963a322efb32fcbd651bad2098497da9` |
 | `1b8a33fd351ee5b7c697aac21940323ee1f81c74` | 1,158 | 634 | 34,948,765 | `2cc96345633910a132df1d72fe0c7d3b05b6917b8469c4c36277b1784fbee8e0` |
+| `da04d4189017da7ddd2f56e82bd856875e272aed` | 1,162 | 636 | 34,974,843 | `91971f2505e3511263feee52fcdfe70b6fd29ef989351ce6926f819c7fff2328` |
 
 The historical frozen-to-`879fbce` comparison contains 204 tracked-file changes
 and 59 selected-input changes. Those historical counts remain valid for that
@@ -231,7 +285,8 @@ The frozen-to-`bc0be26` pair retains its 277 tracked-file changes and the same
 87 selected-input changes.
 The frozen-to-`8767708` pair retains its 281 tracked-file changes and 87
 selected-input changes. Those preceding counts and fingerprint remain specific
-to that historical pair.
+to that historical pair. The frozen-to-`1b8a33f` pair retains its 291
+tracked-file changes and 88 selected-input changes.
 
 For the root-module table, include an existing path only if it is a root-module
 `.go` file or a root module file in at least one compared revision. Determine
