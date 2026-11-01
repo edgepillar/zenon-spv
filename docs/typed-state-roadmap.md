@@ -94,6 +94,9 @@ now includes:
   [Settlement BatchEntry key/path helpers](candidate-batch-entry-key.md), six
   independent byte cases and ten negative path substitutions. It does not
   authenticate a header or decode an accepted BatchEntry.
+- The [README](../README.md) keeps its capability table contiguous, lists
+  existing read-only tools and labels the original vault reference as
+  historical. Current source cohorts remain separate from those older pins.
 
 Each PR/main source requires its own scheduled CI/artifact qualification.
 These partial results leave every D0-D6 acceptance exit open and do not change
