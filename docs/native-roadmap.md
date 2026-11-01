@@ -1,9 +1,13 @@
 # Native verifier roadmap
 
-The active plan has two tracks: qualify the existing v1/v2 inclusion application,
-and coordinate one accepted-header balance-proof delivery. The native verifier
+The active plan has two independent consumer tracks: qualify the existing v1/v2
+inclusion application, and deliver one header-bound Zeno devnet `BatchEntry`
+query. The [typed-state delivery plan](typed-state-roadmap.md), selected on
+1 November 2026, defines D0-D6, the acceptance cases and parallel measurement
+work. Balance verification is a later use of the same core. The native verifier
 keeps explicit anchor, profile, producer-schedule and context-pin trust boundaries.
-The [verification contract](verification-contract.md) defines its guarantees.
+The [verification contract](verification-contract.md) defines current guarantees;
+this planning update does not enable runtime v3 or state-value acceptance.
 
 ## Selected review candidate
 
@@ -23,13 +27,13 @@ Later changes include executable code and tests, as well as documentation and
 research. The [frozen-to-baseline change ledger](review-candidate-changes.md)
 retains the historical `879fbce33dd77f483f7aba18994fb037f248e842` observations
 and the completed `d85aff12dd0de8b2d1bd8db46e0e4e727c7e60ff` pipeline. It
-enumerates the complete 15-file root-module Go delta and separate Python/workflow
-changes through qualified `1b8a33fd351ee5b7c697aac21940323ee1f81c74`. Its
-general main CI covers seven jobs and all 34 actual artifacts, including the
-source-bound candidate stream and existing recorded scopes. The preceding
-`8767708` ten-job/37-artifact general and transport qualification, `bc0be26`
-34-archive and `b6358c1` 28-archive qualifications remain pinned in the ledger;
-unchanged workflow path filters do not schedule or requalify transport scopes.
+enumerates the complete 18-file root-module Go delta and separate Python/workflow
+changes through qualified `da04d4189017da7ddd2f56e82bd856875e272aed`. Its own
+general and transport main CI cover ten jobs and all 40 actual artifacts,
+including the complete root-suite receipts, source-bound candidate streams and
+recorded scopes. The preceding `1b8a33f` seven-job/34-archive, `8767708`
+ten-job/37-archive, `bc0be26` 34-archive and `b6358c1` 28-archive qualifications
+remain pinned in the ledger. These scopes retain their own source identities.
 It
 also distinguishes original review revisions from their identity-normalized
 counterparts. A later documentation-only workflow supplies no new native
@@ -47,28 +51,43 @@ authenticated distribution remain distinct requirements.
 
 ## Current delivery order
 
-| Milestone | Owner and current state | Required exit |
-| --- | --- | --- |
-| M0: one review candidate | Maintainer and release reviewer. Mechanical source/binary/report/scenario binding is complete for the selected revision; independent acceptance is open. | Preserve the exact candidate and its failures, complete case inventory, platform limits and change ledger during review. |
-| M1: real v1/v2 consumer | The operator selected the existing CLI for testnet account-block inclusion observation. A bounded operator-trusted development comparison of the frozen candidate is recorded; independent consumer/network acceptance remains open. | The selected real consumer obtains its bounded inclusion result across the declared advancing-history and failure plan. Claim independent qualification only with demonstrated independent selection, corroboration and provenance. |
-| M2: partial-SMT agreement and recovery | Node maintainer, SPV maintainer and protocol reviewer. Candidate specification and finite experimental fixes exist; agreement and full node qualification remain open. | Agree key/value/proof/activation/resource rules and qualify full momentum hash/height binding through recovery, retention and reorg on one selected node revision. |
-| M3: one accepted-v3 balance flow | SPV maintainer and consumer integrator, after M2. Runtime v3 and state-value acceptance remain refused. | Bind an owned accepted header/context to its StateRoot, a locally derived address/token key, bounded proof and strict typed consumer result, while preserving v1/v2 compatibility and default refusal. |
-| M4: representative node/import workload | Node/snapshot maintainer, operator and performance reviewer. Recorded component cases remain scoped evidence. | Meet declared hardware/workload budgets and qualify actual import, retention, reorg, interruption and activation paths, including the trust or derivation of excluded snapshot state. |
-| M5: scoped reviewed distribution | Independent reviewers and release maintainer. Open for native inclusion and state proofs separately. | Resolve the exact candidate's review findings, qualify its consumer/workload and authenticate source, binary, report and update/rollback distribution. A state-proof release also needs M2–M4 and an activation-aware read-only state-proof pilot. |
+The [current D0-D6 plan](typed-state-roadmap.md) is the planning baseline.
+Track delivery in [#293](https://github.com/edgepillar/zenon-spv/issues/293).
+Historical M0-M5 records below and in the research appendix retain their original
+sources and outcomes; the plan includes an explicit milestone mapping.
 
-M1 can proceed alongside M2. A second operator is not a prerequisite for an
-explicitly operator-trusted development experiment. Independent network
-qualification has additional selection, corroboration and provenance gates.
+| Delivery | Current state and required exit |
+| --- | --- |
+| D0: one query/source contract | Planned. Select network, genesis, anchor, producer schedule, Settlement/domain/batch identity, source/profile pins, trust and limits independently of gateway replies. |
+| D1: conformance and devnet profile | Planned, reusing existing primitives. Qualify all 18 vector cases' root/proof/path/applier obligations, canonical encoding, limits and the actual v1-genesis to first-incoming-v3 boundary. |
+| D2: owned accepted-v3 headers | Planned after D1. Connect bounded RPC, hash/signature/producer checks, immutable state, context and persistence under the selected experimental profile; preserve v1/v2 compatibility. |
+| D3: first typed BatchEntry | Planned after D2. Header-derived StateRoot, local typed key, bounded proof, exact ABI and one actual consumer must complete together. A provider root or experimental flag cannot create acceptance authority. |
+| D4: selected L2 reads | After D3 and actual demand. Add one state path, then receipt/outbox paths with separate identity, temporal and availability controls. |
+| D5: functional host integration | After D3. Run the chosen Go/CLI consumer; browser or WASI needs its actual host, not compilation alone. |
+| D6: scoped reviewed distribution | Open, scope-dependent. Native inclusion, experimental devnet preview and production state proofs have separate prerequisites; no fixed release date. |
 
-The next state-root input is the [R1 inventory and measurement intake](state-root-r1-intake.md).
-Collect a consistent, source-bound raw-ledger inventory and declared workload
-before choosing commitment-domain, activation or hardware budgets. Existing
-primitive and source-genesis cases are reusable controls, not representative
-network measurements. Snapshot transport/import preparation can proceed with
-explicit trust and completeness limits before root activation. Reuse the
-existing v3 codec and sparse-proof primitives when M2 permits the M3 flow;
-another recorded experiment family does not replace the missing agreement or
-representative data.
+Native M1 inclusion and its historical/read-only x402 adapter (X1) do not depend
+on D3 or Zeno activation. A second operator is not a prerequisite for an explicitly
+operator-trusted development experiment. Independent consumer/network acceptance
+and production claims keep their additional selection, provenance and review gates.
+
+The [R1 inventory intake](state-root-r1-intake.md) starts now with dataset-owner
+and consistent-capture selection. N1 measures key counts, encoded bytes, churn,
+build/catch-up, retention, proof service and actual import/reopen on declared
+hardware. S1 snapshot transport/import preparation proceeds in parallel; transport
+does not wait for state-root activation. A narrow existing-domain devnet prototype
+does not wait for a complete mainnet inventory, and does not close representative
+production budgets or node recovery/activation gates.
+
+The latest ledger-selected runtime baseline is
+[`da04d4189017da7ddd2f56e82bd856875e272aed`](https://github.com/edgepillar/zenon-spv/tree/da04d4189017da7ddd2f56e82bd856875e272aed).
+Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41341596977)
+and [transport CI](https://github.com/edgepillar/zenon-spv/actions/runs/41341597164)
+passed and all 40 actual archives were reconciled. This follows the canonical
+local merge of [PR #292](https://github.com/edgepillar/zenon-spv/pull/292);
+the original frozen review candidate remains unchanged.
+The planning pins `df1cc52` and `1b8a33f` retain their original historical
+meanings. Later documentation-only heads do not advance runtime qualification.
 
 The [bounded R1 transport tool](../tools/ledger-transport/README.md) prepares the
 snapshot transport track without enabling state values. It hashes fixed chunks
@@ -99,7 +118,7 @@ stream restores the original digest. The probe distinguishes iterator
 tombstones from present-empty values with the same view's `Get`/`Has` semantics.
 These are synthetic storage commits, not validated network Momentums or a test
 of derived SMT root retention/recovery. Representative R1, M2 agreement and the
-accepted-header M3 balance flow remain separate exits.
+accepted-header typed-state delivery remain separate exits.
 
 The export path now uses [bounded output buffering](ledger-export-buffering.md)
 to reduce small writes without changing the selected put stream or completion
@@ -307,10 +326,13 @@ the original 41 node outcomes, explicit zero/absence and encoding differences.
 Its caller-selected root is still unauthenticated; this primitive does not
 construct accepted state or complete M3.
 
-For M3, obtain the expected root from the owned accepted v3 header/context.
-Derive the selected address/token key locally and carry exact presence,
-absence and value semantics through transport, saved state and the consumer.
-Preserve default refusal and v1/v2 behavior until the stated gates pass.
+For the current M3/D2-D3 delivery, obtain StateRoot from the owned accepted v3
+header H/hash/context. Derive the Settlement/domain/batch storage key locally,
+verify the bounded canonical proof and strictly decode the selected `BatchEntry`
+ABI before the actual consumer interprets it. Bind related records to the same
+H/root, retain verified tip T and selected W, and preserve default refusal and
+v1/v2 behavior until the scoped gates pass. A balance reference can reuse this
+core later; historical address/token observations retain their original scope.
 
 For M4, select representative key-family churn, retained/archive data, snapshot
 import and proof-service traffic on declared hardware. Snapshot chunk digests
