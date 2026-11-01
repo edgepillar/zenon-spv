@@ -5,6 +5,12 @@ native candidate proof functions now have a source-pinned comparison against all
 18 cases in `SMT-CONFORMANCE-V1`. This does not enable v3, construct an accepted
 header, select a network profile or return `STATE_VALUE_INCLUSION`.
 
+The [selected original-node execution](selected-original-node-conformance.md)
+is now recorded separately. Its unchanged `common/trie/TestConformance` passed
+all 18 named vectors locally. The native oracle comparisons below remain a
+distinct test scope; the original-node pass does not execute the executor's
+StateDiff applier or close activation/profile/lifecycle gates.
+
 ## Selected input
 
 The normative vector input is
@@ -84,8 +90,9 @@ Still required for the selected integration:
   producer schedule provenance and coverage.
 - The actual first-incoming-v3 transition from v1 genesis, rather than an assumed
   height derived from the spork enforcement setting.
-- The selected node/executor APIs' actual conformance and lifecycle execution;
-  source equivalence and a test-only projection do not close those gates.
+- The remaining selected node/executor APIs and lifecycle execution. The
+  original-node `TestConformance` pass closes only its named trie scope;
+  executor applier and node recovery/activation qualification remain open.
 - Agreed canonical encoding and schema-aware value/proof/cumulative-work limits.
   The candidate's local research caps are not network or BatchEntry ABI limits.
 - The owned v3 RPC/authentication/context/persistence path and actual typed

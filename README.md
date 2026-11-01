@@ -4,14 +4,20 @@ A resource-bounded SPV (Simplified Payment Verifier) for the Zenon Network of Mo
 
 This module is the implementation. The [verification contract](docs/verification-contract.md) defines current guarantees; the sibling [`zenon-spv-vault`](https://github.com/0x3639/zenon-spv-vault) provides design history and upstream context. See the [development roadmap](docs/native-roadmap.md) for the staged product and research tracks.
 
+The [typed-state delivery plan](docs/typed-state-roadmap.md) tracks the first
+Zeno BatchEntry consumer. Its [query contract draft](docs/batch-entry-query-contract.md)
+and [original-node conformance report](docs/selected-original-node-conformance.md)
+record preparation and remaining gates; supported state-value acceptance is
+still refused.
+
 ## Status
 
 The verifier currently ships, in five surfaces:
 
 - **`verify-headers`** — header-chain integrity, signatures, linkage, height monotonicity, policy window (`Policy.W`), embedded mainnet checkpoints.
-- **`verify-commitment`** — account-header inclusion under `MomentumContent.Hash` via flat sorted-content evidence (O(m) bandwidth, the only shape current go-zenon authenticates).
+- **`verify-commitment`** — account-header inclusion under `MomentumContent.Hash` via flat sorted-content evidence (O(m) bandwidth in the supported native inclusion path).
 - **`verify-segment`** — per-block hash recompute, Ed25519 signature, account-chain linkage, F1 `PubKeyToAddress` binding, commitment lookup.
-- **`verify-state-value`** — wire envelope + verifier skeleton for state-value proofs. **Refused by design** for every `StateCommitmentKind` today because current-protocol go-zenon has no consensus-bound authenticated state root. See [`docs/state-commitment-audit.md`](docs/state-commitment-audit.md).
+- **`verify-state-value`** — wire envelope + verifier skeleton for state-value proofs. **Refused by design** for every `StateCommitmentKind` today: supported native v1/v2 profiles have no accepted state-root path in this verifier. The selected experimental Zeno v3 source records a StateRoot, but its owned accepted-header integration remains unsupported. See the [historical native audit](docs/state-commitment-audit.md) and [typed-state plan](docs/typed-state-roadmap.md).
 - **`watch`** — stateful service that ticks against live peers at the chain's natural cadence; saves `HeaderState` before reporting ACCEPT and stops after repeated save failures.
 
 Plus:
@@ -50,7 +56,11 @@ The fixture, source and execution limits remain explicit.
 
 | Capability | Status |
 |---|---|
-| **State-value verification** (balance at height H) | **Refused by design.** No consensus-bound state root exists upstream. Wire envelope + verifier skeleton ready for the day go-zenon ships one. |
+| **State-value verification** (balance or typed state at H) | **Refused by design.** Supported native profiles have no accepted state-root path. Experimental v3 preparation does not enable `STATE_VALUE_INCLUSION`. |
+| **Producer-set authorization by default** | Opt-in via `--schedule <path>` (operator-attested per-momentum schedule). Without it: tier-1 caveat ("not enforced"). |
+| **Chain-derived producer-set transitions** | Deferred; the release-time operator-attested schedule is the bridge available today. |
+| **libp2p / WebRTC peer transport** | Current transport is HTTPS JSON-RPC. |
+| **Sentinel/Sentry attestation as state proof** | Possible future track. If pursued, lands as a distinct mode with its own `Guarantee` value, never under `STATE_VALUE_INCLUSION`. See [`docs/sentry-sentinel-role.md`](docs/sentry-sentinel-role.md). |
 
 The separate [candidate state-root research](tools/gen-state-root-vectors/README.md#separate-retention-and-resource-observations)
 now checks retained compressed NodeTree records and canonical proofs under four
@@ -58,10 +68,6 @@ finite archive/pruned policies, with physical closed-file lengths, child peak
 RSS and elapsed API samples recorded separately. Synthetic local samples leave
 production resource budgets, hash-bound retained-version provenance and state
 proof acceptance unqualified.
-| **Producer-set authorization by default** | Opt-in via `--schedule <path>` (operator-attested per-momentum schedule). Without it: tier-1 caveat ("not enforced"). |
-| **Chain-derived producer-set transitions** | Deferred; the release-time operator-attested schedule is the bridge available today. |
-| **libp2p / WebRTC peer transport** | Current transport is HTTPS JSON-RPC. |
-| **Sentinel/Sentry attestation as state proof** | Possible future track. If pursued, lands as a distinct mode with its own `Guarantee` value, never under `STATE_VALUE_INCLUSION`. See [`docs/sentry-sentinel-role.md`](docs/sentry-sentinel-role.md). |
 
 Every ACCEPT carries a machine-readable trust audit + a human-readable caveat. See the bounded-verification frame at `zenon-spv-vault/spec/architecture/bounded-verification-boundaries.md` for the formal G1–G3 guarantees and NG1–NG6 non-guarantees this verifier inherits.
 
@@ -76,7 +82,7 @@ make lint       # golangci-lint v2.6.2
 make cover      # coverage report
 ```
 
-Requires Go 1.25+. The repo sits outside the parent `~/Github/go.work` workspace; if you have one, prefix Go commands with `GOWORK=off`.
+Requires Go 1.25+. Use `GOWORK=off` to build this repository independently of an ambient Go workspace.
 
 ## Quickstart
 
@@ -312,7 +318,9 @@ tools/
   derive-checkpoints/       # Generate checkpoint commitment evidence
   derive-producer-schedule/ # Derive a per-momentum producer schedule from peer quorum
   verify-mainnet-genesis/   # Cross-check recomputed genesis envelopes against an expected pin
-  stress-fixture/           # Stress-test fixture generator
+  offline-pilot/            # Source-bound synthetic pilot and tested binary report
+  observe-block/            # Read-only proof collection and retained-state observation
+  consume-query-report/     # Consume a query report under explicit local expectations
 docs/                       # Repo-local docs (spec and ADRs live in the vault)
 ```
 
@@ -352,7 +360,7 @@ MIT — see [`LICENSE`](LICENSE).
 ## See also
 
 - Vault: [`zenon-spv-vault`](https://github.com/0x3639/zenon-spv-vault) — spec, notes, ADRs.
-- go-zenon reference: pinned at commit `667a69d9e9a418edf7580b08492ba5dcb9efd63a` (per `zenon-spv-vault/reference/CLAUDE.md`).
+- Historical vault go-zenon reference: `667a69d9e9a418edf7580b08492ba5dcb9efd63a` (per `zenon-spv-vault/reference/CLAUDE.md`). Current selected source cohorts are listed in the [typed-state plan](docs/typed-state-roadmap.md); frozen reviews and older experiments retain their own pins.
 - [`znn-sdk-go`](https://github.com/0x3639/znn-sdk-go)
 
 The separate [complete fixture seed and retained tail comparison](tools/gen-state-root-vectors/README.md#scale-churn-and-complete-fixture-seed-with-retained-tail) adds finite scale/churn experiments with the unchanged NodeTree bulk API. Independent roots, proofs and retained graph records must match sequential pruning; separately preserved local resource samples do not qualify snapshot import, authenticated history or production budgets.

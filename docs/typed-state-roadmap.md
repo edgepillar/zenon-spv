@@ -76,6 +76,32 @@ The [review change ledger](review-candidate-changes.md) retains the historical
 records and old-to-new SHA mapping. An equal tree, identity-normalized commit or
 later documentation-only head does not inherit old CI or independent review.
 
+### Implementation follow-ups: 2 November 2026
+
+The historical planning/adoption pins above remain fixed. Later preparation
+now includes:
+
+- A [source-only BatchEntry query contract](batch-entry-query-contract.md) lists
+  local query identity, header/root authority, schema, bounds, failure behavior
+  and the concrete selections still open for D0. It does not choose an
+  accepted profile.
+- [PR #295](https://github.com/edgepillar/zenon-spv/pull/295) adds the native
+  mathematical comparison with all 18 normative cases. The separately recorded
+  [original-node execution](selected-original-node-conformance.md) now passes
+  those 18 named cases at the selected node revision; executor applier,
+  activation boundary and lifecycle/recovery evidence remain separate.
+- [PR #296](https://github.com/edgepillar/zenon-spv/pull/296) adds pure candidate
+  [Settlement BatchEntry key/path helpers](candidate-batch-entry-key.md), six
+  independent byte cases and ten negative path substitutions. It does not
+  authenticate a header or decode an accepted BatchEntry.
+- The [README](../README.md) keeps its capability table contiguous, lists
+  existing read-only tools and labels the original vault reference as
+  historical. Current source cohorts remain separate from those older pins.
+
+Each PR/main source requires its own scheduled CI/artifact qualification.
+These partial results leave every D0-D6 acceptance exit open and do not change
+the frozen independent-review candidate or production NO-GO gates.
+
 ## Authority and required invariants
 
 - The original owner memo is a dated architectural input; Zeno research/state-root.md is a separate informative file. Neither overrides the selected normative contract or actual source behavior.
@@ -116,6 +142,11 @@ or commitment is assumed. Select actual owners before the corresponding executio
 **Depends on:** explicit scope selection.
 
 Select one read-only Settlement BatchEntry query, one devnet profile and one existing client integration seam. Record exact source/build/profile identities; preserve historical pins, SHA mappings, failures and evidence.
+
+The [query contract draft](batch-entry-query-contract.md) makes the source
+cohort, proposed native CLI seam and missing trust/schema selections reviewable.
+Its status remains SOURCE_ONLY_INCOMPLETE_D0 until actual profile inputs and
+the experiment contract are selected.
 
 Work:
 
