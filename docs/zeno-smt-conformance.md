@@ -8,8 +8,10 @@ header, select a network profile or return `STATE_VALUE_INCLUSION`.
 The [selected original-node execution](selected-original-node-conformance.md)
 is now recorded separately. Its unchanged `common/trie/TestConformance` passed
 all 18 named vectors locally. The native oracle comparisons below remain a
-distinct test scope; the original-node pass does not execute the executor's
-StateDiff applier or close activation/profile/lifecycle gates.
+distinct test scope. The separately recorded
+[original-executor execution](selected-executor-applier-conformance.md) now
+exercises Store.Apply on the supplied mixed and incremental StateDiff operations.
+Neither execution closes activation/profile/lifecycle gates.
 
 ## Selected input
 
@@ -91,8 +93,10 @@ Still required for the selected integration:
 - The actual first-incoming-v3 transition from v1 genesis, rather than an assumed
   height derived from the spork enforcement setting.
 - The remaining selected node/executor APIs and lifecycle execution. The
-  original-node `TestConformance` pass closes only its named trie scope;
-  executor applier and node recovery/activation qualification remain open.
+  original-node `TestConformance` pass closes only its named trie scope. The
+  [executor applier record](selected-executor-applier-conformance.md) separately
+  covers four operation-derived states and 15 proof byte strings; node
+  recovery/activation and the broader execution/consumer gates remain open.
 - Agreed canonical encoding and schema-aware value/proof/cumulative-work limits.
   The candidate's local research caps are not network or BatchEntry ABI limits.
 - The owned v3 RPC/authentication/context/persistence path and actual typed

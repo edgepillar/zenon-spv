@@ -89,7 +89,7 @@ now includes:
   mathematical comparison with all 18 normative cases. The separately recorded
   [original-node execution](selected-original-node-conformance.md) now passes
   those 18 named cases at the selected node revision; executor applier,
-  activation boundary and lifecycle/recovery evidence remain separate.
+  activation boundary and lifecycle/recovery evidence remain separate scopes.
 - [PR #296](https://github.com/edgepillar/zenon-spv/pull/296) adds pure candidate
   [Settlement BatchEntry key/path helpers](candidate-batch-entry-key.md), six
   independent byte cases and ten negative path substitutions. It does not
@@ -99,6 +99,13 @@ now includes:
   Its signed projected headers support independent SPV encoding/signature and
   changed-field controls. This is partial D1 evidence; it does not select the
   actual Zeno network profile or create an owned accepted v3 state.
+- The [original executor applier record](selected-executor-applier-conformance.md)
+  exercises the unchanged selected Store.Apply with CV-APPLY-1 and all three
+  CV-APPLY-2 steps. Four roots and 15 complete proof byte strings match an
+  independent Python reconstruction. Native replay adds different-state-root,
+  double-hashed-path and presence controls; it does not reexecute the executor
+  or accept an L2 transition. The original executor test runs 16 named cases;
+  its CV-PATH-2 coverage declaration is not reported as another executed case.
 - The [README](../README.md) keeps its capability table contiguous, lists
   existing read-only tools and labels the original vault reference as
   historical. Current source cohorts remain separate from those older pins.
