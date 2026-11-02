@@ -27,6 +27,13 @@ lists all offsets in the 208-byte preimage. The final 32 raw bytes are the state
 root, after both uint64 big-endian prices. The projected header carries the
 already computed data and content hashes.
 
+The separate [first-v3 node fixture](first-v3-node-boundary.md) now records a
+signed sequence at `938fca3b7787da86827a5eb63371509b36e14761`: v1 genesis,
+parent enforcement and incoming v2/v3 boundaries, with 13 non-genesis fixture
+signatures. Native SPV tests compare those actual projected node hashes and
+signatures, including changes to the root and other signed fields. They do not
+change the unsigned historical fixture above or activate production v3 support.
+
 ## API and input limits
 
 | Entry point | Behavior |

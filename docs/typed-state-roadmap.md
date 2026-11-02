@@ -94,6 +94,11 @@ now includes:
   [Settlement BatchEntry key/path helpers](candidate-batch-entry-key.md), six
   independent byte cases and ten negative path substitutions. It does not
   authenticate a header or decode an accepted BatchEntry.
+- The [first-v3 node fixture](first-v3-node-boundary.md) records v1 genesis,
+  parent enforcement and the first incoming v3 in an isolated chain-100 test.
+  Its signed projected headers support independent SPV encoding/signature and
+  changed-field controls. This is partial D1 evidence; it does not select the
+  actual Zeno network profile or create an owned accepted v3 state.
 - The [README](../README.md) keeps its capability table contiguous, lists
   existing read-only tools and labels the original vault reference as
   historical. Current source cohorts remain separate from those older pins.

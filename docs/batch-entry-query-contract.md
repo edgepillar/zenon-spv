@@ -36,7 +36,7 @@ they do not authenticate a live network or its activation.
 | Anchor | Height/hash and provenance for the chosen trust start | Open |
 | Header and context | Owned accepted H/hash/context plus selected retained-state/tip binding | Not implemented for supported v3 |
 | Producer schedule | Independently selected authorization, coverage and provenance | Open |
-| First incoming v3 | Actual boundary from v1 genesis and parent-frontier activation behavior | Open; [source analysis](selected-original-node-conformance.md#first-incoming-v3-remains-a-separate-obligation) is not execution |
+| First incoming v3 | Actual boundary from v1 genesis and parent-frontier activation behavior | Open for the selected network; the [isolated node fixture](first-v3-node-boundary.md) does not qualify network activation |
 | Settlement address | Fixed raw 20-byte address from the selected local profile | Source constant mapped; active network selection remains open |
 | Domain | Locally selected uint32 | Source default 1; active query selection remains open |
 | Batch | Locally selected uint64, with bounded exact text parsing at the CLI boundary | Open; the gateway must not select the expected batch |
