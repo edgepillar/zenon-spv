@@ -43,6 +43,27 @@ def timed_fixture():
     return receipt, report
 
 
+def observer_fixture(platform="linux"):
+    receipt, report = timed_fixture()
+    records = []
+    for capacity, concurrency in [(256, 1), (256, 4), (4096, 1), (4096, 4)]:
+        for round_number in range(21):
+            points = []
+            for slot in range(concurrency):
+                points.append({"slot": slot, "actual_exit": 0, "elapsed_ns": round_number * 100 + slot + 1,
+                               "waited_peak_bytes": 4096, "waited_peak_source": "windows_peak_working_set" if platform == "windows" else "process_rusage",
+                               "observer_elapsed_ns": 10, "checked_targets": 16,
+                               "verifier": {"exit_code": 0, "elapsed_ns": 2, "stdout_bytes": 128, "stderr_bytes": 0},
+                               "consumer": {"exit_code": 0, "elapsed_ns": 3, "stdout_bytes": 32, "stderr_bytes": 0}})
+            records.append({"workload": "K%d_T16_C%d" % (capacity, concurrency), "round": round_number,
+                            "retained_headers": capacity, "targets": 16, "concurrency": concurrency,
+                            "state_bytes": 1000, "bundle_bytes": 2000, "expectations_bytes": 3000,
+                            "group_elapsed_ns": round_number + 1, "observations": points})
+    receipt.update(format="zenon-root-suite/v3", observer_resources={
+        "format": "zenon-observer-workflow-resources/v1", "status": "complete", "records": records, "failures": []})
+    return receipt, report
+
+
 class RootSuiteControls(unittest.TestCase):
     def check(self, receipt, report):
         CHECKER.check_receipt(receipt, report, True, True, "10m0s", "30m0s")
@@ -50,6 +71,45 @@ class RootSuiteControls(unittest.TestCase):
     def test_complete_receipt_and_unselected_skip(self):
         self.check(*fixture())
         self.check(*timed_fixture())
+
+    def test_observer_resources_are_complete_and_platform_bound(self):
+        for platform in ("linux", "darwin", "windows"):
+            receipt, report = observer_fixture(platform)
+            CHECKER.check_receipt(receipt, report, True, True, "10m0s", "30m0s", platform)
+            summary = CHECKER.check_observer_resources(receipt["observer_resources"], platform)
+            self.assertEqual((summary["groups"], summary["process_observations"]), (84, 210))
+        with self.assertRaises(CHECKER.Rejected):
+            self.check(*observer_fixture())
+
+    def test_observer_resources_cannot_hide_missing_or_reordered_values(self):
+        for mutate in [lambda r: r["records"].pop(), lambda r: r["records"].reverse(),
+                       lambda r: r["records"][1].update(round=0), lambda r: r.update(status="incomplete"),
+                       lambda r: r["failures"].append({"PRIVATE": 1}),
+                       lambda r: r["records"][0]["observations"][0].update(slot=True),
+                       lambda r: r["records"][1]["observations"][0].update(elapsed_ns=0),
+                       lambda r: r["records"][0].update(workload="PRIVATE_PATH"),
+                       lambda r: r["records"][0].update(state_bytes=(64 << 20) + 1),
+                       lambda r: r["records"][0].update(extra="PRIVATE"),
+                       lambda r: r["records"][21]["observations"].reverse(),
+                       lambda r: r["records"][0]["observations"][0].update(waited_peak_source="windows_peak_working_set"),
+                       lambda r: r["records"][0]["observations"][0]["consumer"].update(stdout_bytes=1025),
+                       lambda r: r["records"][0]["observations"][0]["verifier"].update(exit_code=None),
+                       lambda r: r["records"][0]["observations"][0]["verifier"].update(incomplete_output={})]:
+            receipt, _ = observer_fixture()
+            mutate(receipt["observer_resources"])
+            with self.assertRaises(CHECKER.Rejected):
+                CHECKER.check_observer_resources(receipt["observer_resources"], "linux")
+
+    def test_resource_dedup_preserves_linux_parent_race_distinction(self):
+        workflow = (HERE.parent / ".github/workflows/ci.yml").read_text()
+        linux, matrix = workflow.split("\n  native-platform:\n", 1)
+        matrix = matrix.split("\n  recorded-oracles:\n", 1)[0]
+        command = "-run '^TestCompiledBlockObserverResources$'"
+        self.assertIn(command, linux)
+        self.assertNotIn(command, matrix)
+        self.assertIn("--full-suite", matrix)
+        self.assertIn("--race --coverage", linux)
+        self.assertNotIn("--race", matrix)
 
     def test_actual_json_ingress_preserves_integer_only_metadata(self):
         decoder = CHECKER.companion().primitives().checker

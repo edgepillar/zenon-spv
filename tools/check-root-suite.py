@@ -81,11 +81,68 @@ def check_timings(value, counts, passed_packages):
             and sum(row["status"] == "skip" for row in rows) <= counts["skipped"])
 
 
-def check_receipt(value, report, race, coverage, package_timeout, overall_timeout):
+def check_observer_resources(value, platform):
+    require(platform in ("linux", "darwin", "windows"))
+    require(type(value) is dict and set(value) == {"format", "status", "records", "failures"}
+            and value["format"] == "zenon-observer-workflow-resources/v1"
+            and value["status"] == "complete" and value["failures"] == [])
+    rows = value["records"]
+    require(type(rows) is list and len(rows) == 84)
+    require(len(json.dumps(value, separators=(",", ":"), allow_nan=False).encode()) <= 256 << 10)
+    slot_count = 0
+
+    def positive(number, maximum):
+        return integer(number, maximum) and number > 0
+
+    def child(record, output_limit):
+        require(type(record) is dict and set(record) == {"exit_code", "elapsed_ns", "stdout_bytes", "stderr_bytes"})
+        require(type(record["exit_code"]) is int and record["exit_code"] == 0
+                and positive(record["elapsed_ns"], 86400 * 10**9)
+                and positive(record["stdout_bytes"], output_limit)
+                and type(record["stderr_bytes"]) is int and record["stderr_bytes"] == 0)
+
+    for index, row in enumerate(rows):
+        group, round_number = divmod(index, 21)
+        capacity, concurrency = (256, 1) if group == 0 else (256, 4) if group == 1 else (4096, 1) if group == 2 else (4096, 4)
+        require(type(row) is dict and set(row) == {
+            "workload", "round", "retained_headers", "targets", "concurrency", "state_bytes", "bundle_bytes",
+            "expectations_bytes", "group_elapsed_ns", "observations",
+        })
+        require(row["workload"] == "K%d_T16_C%d" % (capacity, concurrency)
+                and type(row["round"]) is int and row["round"] == round_number
+                and type(row["retained_headers"]) is int and row["retained_headers"] == capacity
+                and type(row["targets"]) is int and row["targets"] == 16
+                and type(row["concurrency"]) is int and row["concurrency"] == concurrency
+                and positive(row["state_bytes"], 64 << 20) and positive(row["bundle_bytes"], 64 << 20)
+                and positive(row["expectations_bytes"], 256 << 10)
+                and positive(row["group_elapsed_ns"], 86400 * 10**9))
+        observations = row["observations"]
+        require(type(observations) is list and len(observations) == concurrency)
+        for slot, point in enumerate(observations):
+            require(type(point) is dict and set(point) == {
+                "slot", "actual_exit", "elapsed_ns", "waited_peak_bytes", "waited_peak_source",
+                "observer_elapsed_ns", "checked_targets", "verifier", "consumer",
+            })
+            require(type(point["slot"]) is int and point["slot"] == slot
+                    and type(point["actual_exit"]) is int and point["actual_exit"] == 0
+                    and positive(point["elapsed_ns"], 86400 * 10**9)
+                    and positive(point["observer_elapsed_ns"], 86400 * 10**9)
+                    and type(point["checked_targets"]) is int and point["checked_targets"] == 16
+                    and positive(point["waited_peak_bytes"], 1 << 50)
+                    and point["waited_peak_source"] == ("windows_peak_working_set" if platform == "windows" else "process_rusage"))
+            child(point["verifier"], 4 << 20)
+            child(point["consumer"], 1024)
+            slot_count += 1
+    require(slot_count == 210)
+    return {"format": value["format"], "status": "consistent", "groups": len(rows), "process_observations": slot_count}
+
+
+def check_receipt(value, report, race, coverage, package_timeout, overall_timeout, platform=None):
     require(type(value) is dict)
-    version2 = value.get("format") == "zenon-root-suite/v2"
-    require(set(value) == RECEIPT_KEYS | ({"timings"} if version2 else set()))
-    require(value["format"] in ("zenon-root-suite/v1", "zenon-root-suite/v2") and value["status"] == report["status"]
+    version2 = value.get("format") in ("zenon-root-suite/v2", "zenon-root-suite/v3")
+    version3 = value.get("format") == "zenon-root-suite/v3"
+    require(set(value) == RECEIPT_KEYS | ({"timings"} if version2 else set()) | ({"observer_resources"} if version3 else set()))
+    require(value["format"] in ("zenon-root-suite/v1", "zenon-root-suite/v2", "zenon-root-suite/v3") and value["status"] == report["status"]
             and value["status"] in ("passed", "passed_with_skips") and value["error"] is None)
     require(value["source"] == report["source"] and value["source_matches_after_run"] is True
             and value["test_parent_race_enabled"] is race
@@ -120,6 +177,9 @@ def check_receipt(value, report, race, coverage, package_timeout, overall_timeou
             and {MODULE + "/" + case["package"] for case in report["cases"]} <= passed)
     if version2:
         check_timings(value["timings"], counts, passed)
+    if version3:
+        require(MODULE + "/internal/conformance" in passed)
+        check_observer_resources(value["observer_resources"], platform)
 
 
 def verify(args):
@@ -135,7 +195,7 @@ def verify(args):
     require(hashlib.sha256(report_raw).hexdigest() == args.expect_report_sha256)
     report = c.metadata(report_raw)
     check_receipt(receipt, report, args.expect_race == "true", args.expect_coverage == "true",
-                  args.expect_package_timeout, args.expect_overall_timeout)
+                  args.expect_package_timeout, args.expect_overall_timeout, args.expect_os)
     require(receipt["selected_report_sha256"] == args.expect_report_sha256)
     result = {
         "format": "zenon-root-suite-check/v1", "status": "consistent", "category": None,
@@ -147,8 +207,10 @@ def verify(args):
         "selected_scenarios": receipt["selected_scenarios"],
         "test_execution_authenticated": False, "network_or_state_value_acceptance": False,
     }
-    if receipt["format"] == "zenon-root-suite/v2":
-        result.update(format="zenon-root-suite-check/v2", receipt_format=receipt["format"], timings=receipt["timings"])
+    if receipt["format"] in ("zenon-root-suite/v2", "zenon-root-suite/v3"):
+        result.update(format=receipt["format"].replace("root-suite/", "root-suite-check/"), receipt_format=receipt["format"], timings=receipt["timings"])
+    if receipt["format"] == "zenon-root-suite/v3":
+        result["observer_resources"] = check_observer_resources(receipt["observer_resources"], args.expect_os)
     return result
 
 
