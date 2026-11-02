@@ -1,0 +1,184 @@
+// SPDX-License-Identifier: MIT
+// Inject into the selected node's chain/nom package as an external test.
+// The Momentum DTO and ledgerMomentumToRpc below must match the exact source
+// fragments in rpc/api/ledger_types.go before execution. This exercises those
+// fragments with original node types; it does not execute the RPC package or a
+// network service. Existing public signatures are read and verified, never made.
+package nom_test
+
+import (
+	"crypto/ed25519"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+	"testing"
+
+	"github.com/zenon-network/go-zenon/chain/nom"
+	"github.com/zenon-network/go-zenon/common"
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+type Momentum struct {
+	*nom.Momentum
+	Producer types.Address `json:"producer"`
+}
+
+func ledgerMomentumToRpc(m *nom.Momentum) (*Momentum, error) {
+	if m == nil {
+		return nil, nil
+	}
+	rm := &Momentum{
+		Momentum: m,
+		Producer: m.Producer(),
+	}
+
+	// Populate null fields with empty ones
+	if rm.Data == nil {
+		rm.Data = make([]byte, 0)
+	}
+	if rm.Content == nil {
+		rm.Content = make(nom.MomentumContent, 0)
+	}
+
+	return rm, nil
+}
+
+func TestSPVCandidateV3RPCSourceFragments(t *testing.T) {
+	raw, err := os.ReadFile(os.Getenv("SPV_PUBLIC_BOUNDARY_INPUT"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(raw)
+	if len(raw) != 21634 || hex.EncodeToString(sum[:]) != "78222ac4bba092fc9f4b6775d158a8e5d013c22b7e7a85948dce6453f26cff12" {
+		t.Fatal("public boundary capture changed")
+	}
+	var input struct {
+		Trace struct {
+			ChainID uint64 `json:"chain_id"`
+			Rows    []struct {
+				Version uint64          `json:"version"`
+				Header  json.RawMessage `json:"header"`
+			} `json:"rows"`
+		} `json:"trace"`
+	}
+	if err := json.Unmarshal(raw, &input); err != nil || input.Trace.ChainID != 100 {
+		t.Fatal("expected the historical chain-100 fixture cohort", err)
+	}
+	if value, err := ledgerMomentumToRpc(nil); err != nil || value != nil {
+		t.Fatal("nil RPC conversion changed", err)
+	}
+
+	type row struct {
+		Name                   string          `json:"name"`
+		ExistingSignatureValid bool            `json:"existing_signature_valid"`
+		Wire                   json.RawMessage `json:"wire"`
+		DataHash               string          `json:"data_hash"`
+		ContentHash            string          `json:"content_hash"`
+		ContentBytes           string          `json:"content_bytes"`
+		Preimage               string          `json:"preimage"`
+	}
+	rows := make([]row, 0, 8)
+	var base *nom.Momentum
+	emit := func(name string, m *nom.Momentum, signed bool) {
+		t.Helper()
+		t.Run(name, func(t *testing.T) {
+			if m.Version != 3 || m.ChainIdentifier != 100 || m.ComputeHash() != m.Hash {
+				t.Fatal("source candidate hash or cohort mismatch")
+			}
+			if ed25519.Verify(m.PublicKey, m.Hash.Bytes(), m.Signature) != signed {
+				t.Fatal("only retained signatures may validate")
+			}
+			converted, err := ledgerMomentumToRpc(m)
+			if err != nil || converted.Data == nil || converted.Content == nil {
+				t.Fatal("RPC conversion did not normalize empty fields", err)
+			}
+			wire, err := json.Marshal(converted)
+			if err != nil {
+				t.Fatal(err)
+			}
+			preimage := common.JoinBytes(
+				common.Uint64ToBytes(m.Version), common.Uint64ToBytes(m.ChainIdentifier),
+				m.PreviousHash.Bytes(), common.Uint64ToBytes(m.Height), common.Uint64ToBytes(m.TimestampUnix),
+				types.NewHash(m.Data).Bytes(), m.Content.Hash().Bytes(), m.ChangesHash.Bytes(),
+				common.Uint64ToBytes(m.NextFusionPrice), common.Uint64ToBytes(m.NextWorkPrice), m.StateRoot.Bytes(),
+			)
+			if len(preimage) != 208 || types.NewHash(preimage) != m.Hash {
+				t.Fatal("source preimage does not match")
+			}
+			rows = append(rows, row{name, signed, wire, types.NewHash(m.Data).String(),
+				m.Content.Hash().String(), hex.EncodeToString(m.Content.Bytes()), hex.EncodeToString(preimage)})
+		})
+	}
+	for _, recorded := range input.Trace.Rows {
+		if recorded.Version != 3 {
+			continue
+		}
+		var m nom.Momentum
+		if err := json.Unmarshal(recorded.Header, &m); err != nil {
+			t.Fatal(err)
+		}
+		if m.Height == 13 {
+			m.Data = []byte{}
+			m.Content = nom.MomentumContent{}
+		}
+		emit(fmt.Sprintf("retained-signed-height-%d", m.Height), &m, true)
+		if base == nil {
+			base = &m
+		}
+	}
+	if base == nil || len(rows) != 3 {
+		t.Fatal("expected three retained public v3 signatures")
+	}
+	unsigned := func() *nom.Momentum {
+		m := *base
+		m.Data = []byte{0, 1, 255, 'R', 'P', 'C'}
+		m.Signature = make([]byte, ed25519.SignatureSize)
+		return &m
+	}
+	m := unsigned()
+	m.Hash = m.ComputeHash()
+	emit("unsigned-binary-data", m, false)
+	a := &types.AccountHeader{Address: types.Address{0, 0x20}}
+	a.Height, a.Hash = 513, types.NewHash([]byte("public-content-a"))
+	b := &types.AccountHeader{Address: types.Address{0, 0x10}}
+	b.Height, b.Hash = 256, types.NewHash([]byte("public-content-b"))
+	var forward types.Hash
+	for i, content := range []nom.MomentumContent{{a, b}, {b, a}} {
+		m := unsigned()
+		m.Content = content
+		m.Hash = m.ComputeHash()
+		if i == 0 {
+			forward = m.Hash
+		} else if m.Hash == forward {
+			t.Fatal("raw content order must bind the hash")
+		}
+		emit(fmt.Sprintf("unsigned-content-order-%d", i), m, false)
+	}
+	m = unsigned()
+	m.Height = ^uint64(0)
+	m.TimestampUnix = ^uint64(0)
+	m.NextFusionPrice = ^uint64(0)
+	m.NextWorkPrice = ^uint64(0)
+	m.Hash = m.ComputeHash()
+	emit("unsigned-uint64-boundaries", m, false)
+	m = unsigned()
+	m.StateRoot = types.Hash{}
+	m.Hash = m.ComputeHash()
+	emit("unsigned-zero-root", m, false)
+	if len(rows) != 8 {
+		t.Fatal("capture case missing")
+	}
+	report := map[string]interface{}{
+		"format":   "selected-node-v3-rpc-source-fragments/v1",
+		"scope":    "EXACT_API_SOURCE_FRAGMENTS_WITH_ORIGINAL_NOM_TYPES_NOT_RPC_SERVICE",
+		"chain_id": 100, "source_genesis_chain_id": 69, "new_signatures_created": 0,
+		"RPC_package_or_service_executed": false, "rows": rows,
+	}
+	encoded, err := json.Marshal(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("SPV_CANDIDATE_V3_RPC_CAPTURE %s", encoded)
+}

@@ -109,6 +109,11 @@ now includes:
 - The [README](../README.md) keeps its capability table contiguous, lists
   existing read-only tools and labels the original vault reference as
   historical. Current source cohorts remain separate from those older pins.
+- The [raw-v3 RPC projection](candidate-v3-rpc.md) captures exact API source
+  fragments with original node types, preserves received content order and
+  compares eight wire cases with independent byte calculations. Its bounded
+  native decoder remains candidate data; D2's owned header/context and live RPC
+  integration exits are open.
 
 Each PR/main source requires its own scheduled CI/artifact qualification.
 These partial results leave every D0-D6 acceptance exit open and do not change
