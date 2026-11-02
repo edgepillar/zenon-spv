@@ -14,6 +14,7 @@ owned `VerifiedState`, authenticate a header or enable v3/state-value acceptance
 | --- | --- |
 | `CheckCandidateSMTInclusion` | Compare an explicit value at an already derived 32-byte path. The path is not hashed a second time. |
 | `CheckCandidateSMTAbsence` | Compare explicit absence at that path; this alone establishes no application-domain coverage. |
+| `ReadCandidateSMTProof` | Verify a proof against the selected root/path and return its stored value or mathematical absence, without a predetermined gateway value. |
 | `CandidateBalanceKey` | Locally derive `03 || address[20] || 03 || token[10]`, exactly 32 bytes. |
 | `CheckCandidateBalanceProof` | Derive that balance path locally and compare the selected presence/value bytes. A raw provider key/path cannot replace the local derivation. |
 
@@ -44,6 +45,13 @@ research work and do not approve a balance range. Count and length are checked
 before slicing, allocation from a value or proof reconstruction. Successful
 returned values are copied once; no sibling map, unbounded proof allocation or
 persistent result cache is created.
+
+The read API preserves every structural, path, leaf, root and byte-cap check.
+Only the predetermined presence/value comparison is omitted. Existing
+inclusion/absence comparison APIs retain their prior rules. The detached read
+result supplies no root authority; the separate
+[experimental BatchEntry binding](experimental-batch-entry-query.md) obtains
+that root from an owned configured header before invoking the primitive.
 
 For a caller selecting a 32-byte value cap, the full 256-sibling present/absent
 boundaries are 8,327/8,291 bytes. The original node also represents a 33-byte

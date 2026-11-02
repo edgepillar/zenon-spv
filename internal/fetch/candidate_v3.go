@@ -99,6 +99,12 @@ func DecodeCandidateV3Momentum(raw []byte) (CandidateV3Momentum, error) {
 }
 
 func decodeCandidateRPCObject(raw []byte, fields map[string]any) error {
+	return decodeCandidateRPCObjectNullable(raw, fields)
+}
+
+// Only explicitly named schema fields may be null. Existing v3 envelopes
+// continue to require every member to be non-null.
+func decodeCandidateRPCObjectNullable(raw []byte, fields map[string]any, nullable ...string) error {
 	d := json.NewDecoder(bytes.NewReader(raw))
 	if start, err := d.Token(); err != nil || start != json.Delim('{') {
 		return ErrCandidateV3Momentum
@@ -115,8 +121,12 @@ func decodeCandidateRPCObject(raw []byte, fields map[string]any) error {
 			return ErrCandidateV3Momentum
 		}
 		seen[key] = true
+		allowNull := false
+		for _, name := range nullable {
+			allowNull = allowNull || name == key
+		}
 		var value json.RawMessage
-		if err := d.Decode(&value); err != nil || bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+		if err := d.Decode(&value); err != nil || (bytes.Equal(bytes.TrimSpace(value), []byte("null")) && !allowNull) {
 			return ErrCandidateV3Momentum
 		}
 		if hash, ok := target.(*chain.Hash); ok {

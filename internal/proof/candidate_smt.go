@@ -57,14 +57,23 @@ type CandidateSMTMatch struct {
 // This pure candidate primitive performs no header, signature, activation,
 // domain or consensus check. It does not enable VerifyStateValue or v3.
 func CheckCandidateSMTInclusion(root, path chain.Hash, value, raw []byte, limits CandidateSMTLimits) (CandidateSMTMatch, error) {
-	return checkCandidateSMT(root, path, value, raw, true, limits)
+	return checkCandidateSMT(root, path, value, raw, true, true, limits)
 }
 
 // CheckCandidateSMTAbsence checks a bounded path-native absence proof. Absence
 // under a partial tree does not establish coverage of an application key domain.
 // In particular, excluded plasma/frontier/mailbox keys can match mathematically.
 func CheckCandidateSMTAbsence(root, path chain.Hash, raw []byte, limits CandidateSMTLimits) (CandidateSMTMatch, error) {
-	return checkCandidateSMT(root, path, nil, raw, false, limits)
+	return checkCandidateSMT(root, path, nil, raw, false, true, limits)
+}
+
+// ReadCandidateSMTProof reconstructs a bounded proof against a caller-selected
+// root/path and returns the detached stored value or a mathematical absence.
+// It does not require a predetermined value from a gateway. Root/path authority,
+// namespace coverage and any application interpretation remain caller duties.
+// Existing inclusion/absence comparison APIs retain their expected-value rules.
+func ReadCandidateSMTProof(root, path chain.Hash, raw []byte, limits CandidateSMTLimits) (CandidateSMTMatch, error) {
+	return checkCandidateSMT(root, path, nil, raw, false, false, limits)
 }
 
 // CandidateBalanceClaim binds a candidate byte comparison to a locally selected
@@ -106,7 +115,7 @@ func CheckCandidateBalanceProof(claim CandidateBalanceClaim, raw []byte, limits 
 	return CheckCandidateSMTAbsence(claim.Root, path, raw, limits)
 }
 
-func checkCandidateSMT(root, path chain.Hash, value, raw []byte, present bool, limits CandidateSMTLimits) (CandidateSMTMatch, error) {
+func checkCandidateSMT(root, path chain.Hash, value, raw []byte, present, compare bool, limits CandidateSMTLimits) (CandidateSMTMatch, error) {
 	if limits.MaxProofBytes < 99 || limits.MaxProofBytes > CandidateSMTMaxProofBytes ||
 		limits.MaxValueBytes <= 0 || limits.MaxValueBytes > CandidateSMTMaxValueBytes ||
 		len(raw) > limits.MaxProofBytes || len(value) > limits.MaxValueBytes {
@@ -156,13 +165,13 @@ func checkCandidateSMT(root, path chain.Hash, value, raw []byte, present bool, l
 	} else if len(raw) != offset || !leaf.IsZero() {
 		return CandidateSMTMatch{}, ErrCandidateSMTEncoding
 	}
-	if inclusion != present {
+	if compare && inclusion != present {
 		return CandidateSMTMatch{}, ErrCandidateSMTEncoding
 	}
 	if encodedPath != path {
 		return CandidateSMTMatch{}, ErrCandidateSMTPath
 	}
-	if present && !bytes.Equal(stored, value) {
+	if compare && present && !bytes.Equal(stored, value) {
 		return CandidateSMTMatch{}, ErrCandidateSMTMismatch
 	}
 	current, cursor, canonical := leaf, 99, true
@@ -189,5 +198,5 @@ func checkCandidateSMT(root, path chain.Hash, value, raw []byte, present bool, l
 	if current != root {
 		return CandidateSMTMatch{}, ErrCandidateSMTMismatch
 	}
-	return CandidateSMTMatch{Present: present, Value: bytes.Clone(stored), Canonical: canonical, SiblingCount: uint16(count)}, nil
+	return CandidateSMTMatch{Present: inclusion, Value: bytes.Clone(stored), Canonical: canonical, SiblingCount: uint16(count)}, nil
 }
