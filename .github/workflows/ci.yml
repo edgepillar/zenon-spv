@@ -161,7 +161,7 @@ jobs:
       - name: Candidate v3 header encoding controls
         run: go test -json -count=1 -run '^TestCandidateV3Header' ./internal/chain
       - name: Candidate sparse proof controls
-        run: go test -json -count=1 -run '^TestCandidateSMT' ./internal/proof
+        run: go test -json -count=1 -run '^(TestCandidateSMT|TestCandidateBatchEntry)' ./internal/proof
       - name: Owned state persistence controls
         run: go test -race -json -count=1 -run '^TestVerifiedStateSave' ./internal/verify
       - name: Owned state persistence observations
@@ -867,7 +867,7 @@ jobs:
       - name: Candidate v3 header encoding controls
         run: go test -json -count=1 -run '^TestCandidateV3Header' ./internal/chain
       - name: Candidate sparse proof controls
-        run: go test -json -count=1 -run '^TestCandidateSMT' ./internal/proof
+        run: go test -json -count=1 -run '^(TestCandidateSMT|TestCandidateBatchEntry)' ./internal/proof
       - name: Owned state persistence controls
         run: go test -json -count=1 -run '^TestVerifiedStateSave' ./internal/verify
       - name: Owned state persistence observations

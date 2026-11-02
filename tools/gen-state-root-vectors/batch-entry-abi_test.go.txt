@@ -1,0 +1,105 @@
+// SPDX-License-Identifier: MIT
+// Isolated ABI packing evidence; no ledger or accepted-state consumer.
+package definition
+
+import (
+	"bytes"
+	"encoding/hex"
+	"encoding/json"
+	"math"
+	"testing"
+
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+func spvABIPack(entry BatchEntry) ([]byte, error) {
+	return ABISettlement.PackVariable(BatchEntryVariableName,
+		entry.ProtocolVersion, entry.FirstInputSeq, entry.LastInputSeq,
+		entry.PreStateRoot, entry.PostStateRoot, entry.InputRoot, entry.ReceiptRoot,
+		entry.EventRoot, entry.OutboxRoot, entry.DaHash, entry.DaMode,
+		entry.ExecutorPillar, entry.SubmittedAtHeight, entry.FinalizeAtHeight,
+		entry.AssetFlowSummary, entry.ProofData, entry.State)
+}
+
+func TestSPVBatchEntryABIEncoding(t *testing.T) {
+	makeEntry := func(seed byte, count int) BatchEntry {
+		hash := func(offset byte) types.Hash {
+			var value types.Hash
+			for i := range value {
+				value[i] = seed + offset + byte(i)
+			}
+			return value
+		}
+		payload := func(offset byte) []byte {
+			value := make([]byte, count)
+			for i := range value {
+				value[i] = seed + offset + byte(i)
+			}
+			return value
+		}
+		return BatchEntry{
+			ProtocolVersion: 1, FirstInputSeq: 1, LastInputSeq: 3,
+			PreStateRoot: hash(1), PostStateRoot: hash(2), InputRoot: hash(3),
+			ReceiptRoot: hash(4), EventRoot: hash(5), OutboxRoot: hash(6), DaHash: hash(7),
+			DaMode: 1, ExecutorPillar: "fixture-pillar", SubmittedAtHeight: 21,
+			FinalizeAtHeight: 24, AssetFlowSummary: payload(8), ProofData: payload(9), State: 1,
+		}
+	}
+	widest := makeEntry(0xf0, 33)
+	widest.ProtocolVersion = math.MaxUint16
+	widest.FirstInputSeq, widest.LastInputSeq = math.MaxUint64-1, math.MaxUint64
+	widest.SubmittedAtHeight, widest.FinalizeAtHeight = math.MaxUint64-1, math.MaxUint64
+	widest.DaMode, widest.State = math.MaxUint8, math.MaxUint8
+	nonUTF8 := makeEntry(0x31, 2)
+	nonUTF8.ExecutorPillar = string([]byte{0xff, 0x00, 0xfe})
+	cases := []struct {
+		name  string
+		entry BatchEntry
+	}{
+		{"empty-dynamic", BatchEntry{}}, {"typical", makeEntry(0x11, 4)},
+		{"word-31", makeEntry(0x21, 31)}, {"word-32", makeEntry(0x21, 32)},
+		{"word-33", makeEntry(0x21, 33)}, {"unsigned-widths", widest},
+		{"non-utf8-packer", nonUTF8},
+	}
+	rows := make([]map[string]interface{}, 0, len(cases))
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			entry := c.entry
+			packed, err := spvABIPack(entry)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var decoded BatchEntry
+			if err := ABISettlement.UnpackVariable(&decoded, BatchEntryVariableName, packed); err != nil {
+				t.Fatal(err)
+			}
+			repacked, err := spvABIPack(decoded)
+			if err != nil || !bytes.Equal(packed, repacked) || decoded.ExecutorPillar != entry.ExecutorPillar {
+				t.Fatal("original ABI packing/unpacking changed the selected structural bytes", err)
+			}
+			rows = append(rows, map[string]interface{}{
+				"name": c.name, "packed_hex": hex.EncodeToString(packed),
+				"fields": map[string]interface{}{
+					"protocolVersion": entry.ProtocolVersion, "firstInputSeq": entry.FirstInputSeq, "lastInputSeq": entry.LastInputSeq,
+					"preStateRoot": entry.PreStateRoot.String(), "postStateRoot": entry.PostStateRoot.String(),
+					"inputRoot": entry.InputRoot.String(), "receiptRoot": entry.ReceiptRoot.String(),
+					"eventRoot": entry.EventRoot.String(), "outboxRoot": entry.OutboxRoot.String(), "daHash": entry.DaHash.String(),
+					"daMode": entry.DaMode, "executorPillarHex": hex.EncodeToString([]byte(entry.ExecutorPillar)),
+					"submittedAtHeight": entry.SubmittedAtHeight, "finalizeAtHeight": entry.FinalizeAtHeight,
+					"assetFlowSummaryHex": hex.EncodeToString(entry.AssetFlowSummary), "proofDataHex": hex.EncodeToString(entry.ProofData),
+					"state": entry.State,
+				},
+			})
+		})
+	}
+	report := map[string]interface{}{
+		"format": "selected-node-batch-entry-ABI-encoding/v1",
+		"scope":  "ISOLATED_ABI_ENCODING_NOT_STATE_ACCEPTANCE",
+		"cases":  rows,
+	}
+	raw, err := json.Marshal(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("SPV_BATCH_ENTRY_ABI_TRACE %s", raw)
+}
