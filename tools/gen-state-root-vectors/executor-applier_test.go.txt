@@ -1,0 +1,185 @@
+// SPDX-License-Identifier: MIT
+// Isolated original-executor StateDiff conformance. No service or live chain.
+package state
+
+import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+	"sort"
+	"testing"
+
+	"github.com/Zeno-L2/zeno-executor/domain"
+	"github.com/zenon-network/go-zenon/common/trie"
+)
+
+type spvDiffEntry struct {
+	Op       string `json:"op"`
+	Key      string `json:"key"`
+	NewValue string `json:"new_value"`
+}
+type spvDiffStep struct {
+	Diff   []spvDiffEntry    `json:"diff"`
+	Result map[string]string `json:"resulting_state"`
+	Root   string            `json:"incremental_root"`
+}
+type spvApplyCase struct {
+	ID         string            `json:"id"`
+	Initial    map[string]string `json:"initial_state"`
+	Operations []spvDiffEntry    `json:"operations"`
+	Result     map[string]string `json:"resulting_state"`
+	Root       string            `json:"expected_root"`
+	AbsentRoot string            `json:"root_absent"`
+	Steps      []spvDiffStep     `json:"diff_steps"`
+}
+
+func TestSPVSelectedExecutorApplier(t *testing.T) {
+	raw, err := os.ReadFile(vectorsFilePath(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(raw)
+	if len(raw) != 41255 || hex.EncodeToString(sum[:]) != "d57aa52a683b2b768de16e6212058af9079125aca54feb2fdf007e9ba8c5568f" {
+		t.Fatal("selected normative vector bytes changed")
+	}
+	var file struct {
+		Vectors []spvApplyCase `json:"vectors"`
+	}
+	if err := json.Unmarshal(raw, &file); err != nil {
+		t.Fatal(err)
+	}
+	if len(file.Vectors) != 18 {
+		t.Fatal("unexpected source vector count")
+	}
+	rows := make([]map[string]interface{}, 0, 4)
+	selected := 0
+	for _, v := range file.Vectors {
+		if v.ID != "CV-APPLY-1" && v.ID != "CV-APPLY-2" {
+			continue
+		}
+		selected++
+		t.Run(v.ID, func(t *testing.T) {
+			store := OpenEmpty()
+			defer func() {
+				if err := store.Close(); err != nil {
+					t.Error(err)
+				}
+			}()
+			known := map[string]bool{}
+			for k := range v.Initial {
+				known[k] = true
+			}
+			for _, op := range v.Operations {
+				known[op.Key] = true
+			}
+			for _, step := range v.Steps {
+				for _, op := range step.Diff {
+					known[op.Key] = true
+				}
+			}
+			keys := make([]string, 0, len(known))
+			for k := range known {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			makeDiff := func(ops []spvDiffEntry) []domain.StateDiffEntry {
+				result := make([]domain.StateDiffEntry, 0, len(ops))
+				for _, op := range ops {
+					if op.Op != "" && op.Op != "apply_statediff_entry" {
+						t.Fatal("unsupported vector operation")
+					}
+					var value []byte
+					if op.NewValue != "EMPTY" {
+						value = mustValue(t, op.NewValue)
+						if value == nil {
+							value = []byte{}
+						}
+					}
+					result = append(result, domain.StateDiffEntry{Path: mustPath(t, op.Key), Value: value})
+				}
+				return result
+			}
+			if len(v.Initial) > 0 {
+				seed := make([]spvDiffEntry, 0, len(v.Initial))
+				for k, value := range v.Initial {
+					seed = append(seed, spvDiffEntry{Key: k, NewValue: value})
+				}
+				if _, err := store.Apply(makeDiff(seed)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			check := func(t *testing.T, step int, diff []spvDiffEntry, result map[string]string, rootHex string) {
+				t.Helper()
+				got, err := store.Apply(makeDiff(diff))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if got != mustHash(t, rootHex) {
+					t.Fatalf("incremental root differs at step %d", step)
+				}
+				paths := make([]trie.Path, 0, len(result))
+				values := make([][]byte, 0, len(result))
+				for k, v := range result {
+					paths = append(paths, mustPath(t, k))
+					values = append(values, mustValue(t, v))
+				}
+				fresh, err := trie.RootOfLeaves(paths, values)
+				if err != nil || fresh != got {
+					t.Fatal("full recompute differs", err)
+				}
+				current, err := store.Root()
+				if err != nil || current != got {
+					t.Fatal("store current root differs", err)
+				}
+				proofs := make([]map[string]interface{}, 0, len(keys))
+				for _, k := range keys {
+					path := mustPath(t, k)
+					present, value, proof, err := store.Prove(path)
+					if err != nil {
+						t.Fatal(err)
+					}
+					encoded, wantPresent := result[k]
+					if present != wantPresent || (present && !bytes.Equal(value, mustValue(t, encoded))) {
+						t.Fatal("presence/value differs", k)
+					}
+					var ok bool
+					if present {
+						ok, err = trie.VerifyProofByPath(got, path, value, proof)
+					} else {
+						ok, err = trie.VerifyAbsenceByPath(got, path, proof)
+					}
+					if err != nil || !ok {
+						t.Fatal("generated path-native proof refused", err)
+					}
+					proofs = append(proofs, map[string]interface{}{"path": k, "present": present, "value": hex.EncodeToString(value), "proof": hex.EncodeToString(proof)})
+				}
+				rows = append(rows, map[string]interface{}{"case": v.ID, "step": step, "diff_entries": len(diff), "root": got.String(), "resulting_state": result, "proofs": proofs})
+			}
+			if v.ID == "CV-APPLY-1" {
+				if len(v.Initial) != 2 || len(v.Operations) != 2 || v.AbsentRoot == v.Root {
+					t.Fatal("selected mixed vector shape differs")
+				}
+				check(t, 1, v.Operations, v.Result, v.Root)
+			} else {
+				if len(v.Steps) != 3 || len(v.Steps[0].Diff) != 1 || len(v.Steps[1].Diff) != 2 || len(v.Steps[2].Diff) != 2 {
+					t.Fatal("selected incremental diff shape differs")
+				}
+				for i, step := range v.Steps {
+					t.Run(fmt.Sprintf("step-%d", i+1), func(t *testing.T) { check(t, i+1, step.Diff, step.Result, step.Root) })
+				}
+			}
+		})
+	}
+	if selected != 2 || len(rows) != 4 {
+		t.Fatal("selected applier coverage incomplete")
+	}
+	trace := map[string]interface{}{"format": "selected-executor-statediff-applier/v1", "scope": "ORIGINAL_EXECUTOR_SYNTHETIC_CONFORMANCE_NOT_LIVE_STATE", "rows": rows, "state_value_acceptance": false}
+	encoded, err := json.Marshal(trace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("SPV_EXECUTOR_APPLIER %s", encoded)
+}
