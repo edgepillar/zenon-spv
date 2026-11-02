@@ -34,25 +34,26 @@ type suiteCounts struct {
 // This receipt supplements schema-2 pilot reports. It records the whole root
 // module execution without copying raw diagnostics or dynamic test names.
 type suiteReceipt struct {
-	Format            string         `json:"format"`
-	Status            string         `json:"status"`
-	Error             *string        `json:"error"`
-	Source            sourceRecord   `json:"source"`
-	InputsUnchanged   bool           `json:"source_matches_after_run"`
-	Race              bool           `json:"test_parent_race_enabled"`
-	Coverage          bool           `json:"coverage_enabled"`
-	PackageTimeout    string         `json:"package_timeout"`
-	OverallTimeout    string         `json:"overall_timeout"`
-	InventoryOK       bool           `json:"package_inventory_succeeded"`
-	ProcessOK         bool           `json:"test_process_succeeded"`
-	StreamComplete    bool           `json:"stream_complete"`
-	StreamBytes       int64          `json:"stream_bytes"`
-	StreamSHA256      string         `json:"stream_sha256"`
-	Packages          []suitePackage `json:"packages"`
-	Tests             suiteCounts    `json:"tests"`
-	SelectedScenarios int            `json:"selected_scenarios"`
-	SelectedReportSHA string         `json:"selected_report_sha256"`
-	Timings           suiteTimings   `json:"timings"`
+	Format            string                 `json:"format"`
+	Status            string                 `json:"status"`
+	Error             *string                `json:"error"`
+	Source            sourceRecord           `json:"source"`
+	InputsUnchanged   bool                   `json:"source_matches_after_run"`
+	Race              bool                   `json:"test_parent_race_enabled"`
+	Coverage          bool                   `json:"coverage_enabled"`
+	PackageTimeout    string                 `json:"package_timeout"`
+	OverallTimeout    string                 `json:"overall_timeout"`
+	InventoryOK       bool                   `json:"package_inventory_succeeded"`
+	ProcessOK         bool                   `json:"test_process_succeeded"`
+	StreamComplete    bool                   `json:"stream_complete"`
+	StreamBytes       int64                  `json:"stream_bytes"`
+	StreamSHA256      string                 `json:"stream_sha256"`
+	Packages          []suitePackage         `json:"packages"`
+	Tests             suiteCounts            `json:"tests"`
+	SelectedScenarios int                    `json:"selected_scenarios"`
+	SelectedReportSHA string                 `json:"selected_report_sha256"`
+	Timings           suiteTimings           `json:"timings"`
+	ObserverResources suiteObserverResources `json:"observer_resources"`
 }
 
 type suiteCollector struct {
@@ -61,6 +62,7 @@ type suiteCollector struct {
 	active   map[string]bool
 	counts   suiteCounts
 	timings  suiteTimings
+	observer observerResourceCollector
 	digest   hash.Hash
 	bytes    int64
 	complete bool
@@ -335,6 +337,9 @@ func (c *suiteCollector) event(e testEvent) error {
 		return errors.New("unexpected suite test action")
 	}
 	root, _, _ := strings.Cut(e.Test, "/")
+	if err := c.observer.event(e); err != nil {
+		return err
+	}
 	if slices.ContainsFunc(c.selected.cases, func(result caseResult) bool {
 		return result.Test == root && modulePath+"/"+result.Package == e.Package
 	}) {
