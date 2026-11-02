@@ -1,0 +1,131 @@
+{
+  "execution": {
+    "actual_exit": 0,
+    "full_module_graph": "NOT_ESTABLISHED",
+    "gate_sha256": "cf6a546bd75114fc8bda379930e07ad417fb24e137036805dc368f2576249911",
+    "go": "go1.25.14",
+    "independent_byte_matches": 8,
+    "named_test_pass_events": 9,
+    "output_complete": true,
+    "output_sha256": "3c852e6ce9aa79a03fa7151d9ccde8af599a95521477061238fc1142fc0f97b6",
+    "platform": "darwin/arm64",
+    "record_sha256": "e9ad251d6c1989993773cf3345c1760050e0737ef5121d7302de69df2fba5dd0",
+    "used_modules_verified": 19
+  },
+  "format": "zenon-recorded-v3-rpc-source-fragments/v1",
+  "harness": {
+    "bytes": 5971,
+    "path": "tools/gen-state-root-vectors/candidate-v3-rpc-capture_test.go.txt",
+    "sha256": "31a6175869011a3002f199635ab9375d99d9a7f9218f188732f2704f15584c71"
+  },
+  "rows": [
+    {
+      "content_bytes": "",
+      "content_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+      "data_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+      "existing_signature_valid": true,
+      "name": "retained-signed-height-12",
+      "preimage": "000000000000000300000000000000642b584eb276428450a3485d18df309d37352110d59cd670b25bc774837b5f5768000000000000000c000000003b9aca6ea7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434aa7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434aa7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a00000000000003e800000000000003e8d99238e890b5c1e28d9272e94a2529518ee7bfd148cb9f13c2ea3473ee6d5d5a",
+      "producer_raw_hex": "000158b48383939b98ae2adb58e4c9f805830d7e",
+      "wire_json": "{\"version\":3,\"chainIdentifier\":100,\"hash\":\"956548e1dbebd1b104c11e8387e79005619d5b5857b7e88f58dcb86bd714a196\",\"previousHash\":\"2b584eb276428450a3485d18df309d37352110d59cd670b25bc774837b5f5768\",\"height\":12,\"timestamp\":1000000110,\"data\":\"\",\"content\":[],\"changesHash\":\"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a\",\"publicKey\":\"OAAT4PzhY8pyoC3QonDP+sGBfJBY7JqXIOhexwQFUJg=\",\"signature\":\"FxpYMbIiSexUnNSGtk3lgTLcM+C2kEQSVDvotybXm4ftVLgoMF0aJxXIGNWOWsBRO9GCrSfjZQHwM60E76GRAw==\",\"nextFusionPrice\":1000,\"nextWorkPrice\":1000,\"stateRoot\":\"d99238e890b5c1e28d9272e94a2529518ee7bfd148cb9f13c2ea3473ee6d5d5a\",\"producer\":\"z1qqq43dyrswfehx9w9td43exflqzcxrt7g6alah\"}"
+    },
+    {
+      "content_bytes": "",
+      "content_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+      "data_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+      "existing_signature_valid": true,
+      "name": "retained-signed-height-13",
+      "preimage": "00000000000000030000000000000064956548e1dbebd1b104c11e8387e79005619d5b5857b7e88f58dcb86bd714a196000000000000000d000000003b9aca78a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434aa7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434aa7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a00000000000003e800000000000003e8d99238e890b5c1e28d9272e94a2529518ee7bfd148cb9f13c2ea3473ee6d5d5a",
+      "producer_raw_hex": "000158b48383939b98ae2adb58e4c9f805830d7e",
+      "wire_json": "{\"version\":3,\"chainIdentifier\":100,\"hash\":\"f4d9bbb5b202e1c0683d604a96addf7e6e448629c7512b20cba9669ab971c1b7\",\"previousHash\":\"956548e1dbebd1b104c11e8387e79005619d5b5857b7e88f58dcb86bd714a196\",\"height\":13,\"timestamp\":1000000120,\"data\":\"\",\"content\":[],\"changesHash\":\"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a\",\"publicKey\":\"OAAT4PzhY8pyoC3QonDP+sGBfJBY7JqXIOhexwQFUJg=\",\"signature\":\"KjHPNsfRMlYcsx+8Id2Fh2LFbW5p7z8KaJoojGiVRqBViy/7aCl0cdgKve8ZV0Ln1Grg68O5pBwS+jxftxNICA==\",\"nextFusionPrice\":1000,\"nextWorkPrice\":1000,\"stateRoot\":\"d99238e890b5c1e28d9272e94a2529518ee7bfd148cb9f13c2ea3473ee6d5d5a\",\"producer\":\"z1qqq43dyrswfehx9w9td43exflqzcxrt7g6alah\"}"
+    },
+    {
+      "content_bytes": "",
+      "content_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+      "data_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+      "existing_signature_valid": true,
+      "name": "retained-signed-height-14",
+      "preimage": "00000000000000030000000000000064f4d9bbb5b202e1c0683d604a96addf7e6e448629c7512b20cba9669ab971c1b7000000000000000e000000003b9aca82a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434aa7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434aa7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a00000000000003e800000000000003e8d99238e890b5c1e28d9272e94a2529518ee7bfd148cb9f13c2ea3473ee6d5d5a",
+      "producer_raw_hex": "00307b83bf59e59a44e7a9469f1e77466d17f4c0",
+      "wire_json": "{\"version\":3,\"chainIdentifier\":100,\"hash\":\"54be1b2189968f2e9d88c7749f07d405789dc66ffee61100ebab4e73771a7333\",\"previousHash\":\"f4d9bbb5b202e1c0683d604a96addf7e6e448629c7512b20cba9669ab971c1b7\",\"height\":14,\"timestamp\":1000000130,\"data\":\"\",\"content\":[],\"changesHash\":\"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a\",\"publicKey\":\"jOzQyT5sEz7/LN/4EE0wKNupK1olhyYw7CugRUau0Io=\",\"signature\":\"6ozvrrntxjKjoJmfW6SUrYoIkYcPyauw1eXJsT64hdPGUXO7EXjMooRyOr4eoqqTrY76/elU1+Ot6v1Fsp60Bg==\",\"nextFusionPrice\":1000,\"nextWorkPrice\":1000,\"stateRoot\":\"d99238e890b5c1e28d9272e94a2529518ee7bfd148cb9f13c2ea3473ee6d5d5a\",\"producer\":\"z1qqc8hqalt8je538849rf78nhgek30axq8h0g69\"}"
+    },
+    {
+      "content_bytes": "",
+      "content_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+      "data_hash": "ae4d0c6fb4fc42a4c945cd3a9b8b0a8508aebca75fc9219a444142eb6f71daca",
+      "existing_signature_valid": false,
+      "name": "unsigned-binary-data",
+      "preimage": "000000000000000300000000000000642b584eb276428450a3485d18df309d37352110d59cd670b25bc774837b5f5768000000000000000c000000003b9aca6eae4d0c6fb4fc42a4c945cd3a9b8b0a8508aebca75fc9219a444142eb6f71dacaa7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434aa7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a00000000000003e800000000000003e8d99238e890b5c1e28d9272e94a2529518ee7bfd148cb9f13c2ea3473ee6d5d5a",
+      "producer_raw_hex": "000158b48383939b98ae2adb58e4c9f805830d7e",
+      "wire_json": "{\"version\":3,\"chainIdentifier\":100,\"hash\":\"d99944e2b8486c031a173eb7fb3993b253138f3439165834da0791bf8a42bb3e\",\"previousHash\":\"2b584eb276428450a3485d18df309d37352110d59cd670b25bc774837b5f5768\",\"height\":12,\"timestamp\":1000000110,\"data\":\"AAH/UlBD\",\"content\":[],\"changesHash\":\"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a\",\"publicKey\":\"OAAT4PzhY8pyoC3QonDP+sGBfJBY7JqXIOhexwQFUJg=\",\"signature\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==\",\"nextFusionPrice\":1000,\"nextWorkPrice\":1000,\"stateRoot\":\"d99238e890b5c1e28d9272e94a2529518ee7bfd148cb9f13c2ea3473ee6d5d5a\",\"producer\":\"z1qqq43dyrswfehx9w9td43exflqzcxrt7g6alah\"}"
+    },
+    {
+      "content_bytes": "00200000000000000000000000000000000000000000000000000201ed51033ba8a0c05d2f3b04cdec1442bcf3cc3a44d320d452fbc60970068315d600100000000000000000000000000000000000000000000000000100e92fdd8952681701e62e53f43f15da7847d064711da29ad816078a98dd0ed356",
+      "content_hash": "f2684029265c6b3036875f84d9fe7e186599767b66d5b526b7d5a2ed8a42ecad",
+      "data_hash": "ae4d0c6fb4fc42a4c945cd3a9b8b0a8508aebca75fc9219a444142eb6f71daca",
+      "existing_signature_valid": false,
+      "name": "unsigned-content-order-0",
+      "preimage": "000000000000000300000000000000642b584eb276428450a3485d18df309d37352110d59cd670b25bc774837b5f5768000000000000000c000000003b9aca6eae4d0c6fb4fc42a4c945cd3a9b8b0a8508aebca75fc9219a444142eb6f71dacaf2684029265c6b3036875f84d9fe7e186599767b66d5b526b7d5a2ed8a42ecada7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a00000000000003e800000000000003e8d99238e890b5c1e28d9272e94a2529518ee7bfd148cb9f13c2ea3473ee6d5d5a",
+      "producer_raw_hex": "000158b48383939b98ae2adb58e4c9f805830d7e",
+      "wire_json": "{\"version\":3,\"chainIdentifier\":100,\"hash\":\"d0774baada20c30e3c7b5b5a3b40bf8ca6f8fd9c207f5b486f76c7b20d3db845\",\"previousHash\":\"2b584eb276428450a3485d18df309d37352110d59cd670b25bc774837b5f5768\",\"height\":12,\"timestamp\":1000000110,\"data\":\"AAH/UlBD\",\"content\":[{\"address\":\"z1qqsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrvvdvf\",\"hash\":\"ed51033ba8a0c05d2f3b04cdec1442bcf3cc3a44d320d452fbc60970068315d6\",\"height\":513},{\"address\":\"z1qqgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqd22cff\",\"hash\":\"e92fdd8952681701e62e53f43f15da7847d064711da29ad816078a98dd0ed356\",\"height\":256}],\"changesHash\":\"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a\",\"publicKey\":\"OAAT4PzhY8pyoC3QonDP+sGBfJBY7JqXIOhexwQFUJg=\",\"signature\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==\",\"nextFusionPrice\":1000,\"nextWorkPrice\":1000,\"stateRoot\":\"d99238e890b5c1e28d9272e94a2529518ee7bfd148cb9f13c2ea3473ee6d5d5a\",\"producer\":\"z1qqq43dyrswfehx9w9td43exflqzcxrt7g6alah\"}"
+    },
+    {
+      "content_bytes": "00100000000000000000000000000000000000000000000000000100e92fdd8952681701e62e53f43f15da7847d064711da29ad816078a98dd0ed35600200000000000000000000000000000000000000000000000000201ed51033ba8a0c05d2f3b04cdec1442bcf3cc3a44d320d452fbc60970068315d6",
+      "content_hash": "ea37d4fa92bd35c513b2c7038659eb30915b4cf1fe4629f9e08f803d94d8303b",
+      "data_hash": "ae4d0c6fb4fc42a4c945cd3a9b8b0a8508aebca75fc9219a444142eb6f71daca",
+      "existing_signature_valid": false,
+      "name": "unsigned-content-order-1",
+      "preimage": "000000000000000300000000000000642b584eb276428450a3485d18df309d37352110d59cd670b25bc774837b5f5768000000000000000c000000003b9aca6eae4d0c6fb4fc42a4c945cd3a9b8b0a8508aebca75fc9219a444142eb6f71dacaea37d4fa92bd35c513b2c7038659eb30915b4cf1fe4629f9e08f803d94d8303ba7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a00000000000003e800000000000003e8d99238e890b5c1e28d9272e94a2529518ee7bfd148cb9f13c2ea3473ee6d5d5a",
+      "producer_raw_hex": "000158b48383939b98ae2adb58e4c9f805830d7e",
+      "wire_json": "{\"version\":3,\"chainIdentifier\":100,\"hash\":\"4c06f5858b255c98a525454712d6e6ecac723a8fe07caf96c64b00545302852a\",\"previousHash\":\"2b584eb276428450a3485d18df309d37352110d59cd670b25bc774837b5f5768\",\"height\":12,\"timestamp\":1000000110,\"data\":\"AAH/UlBD\",\"content\":[{\"address\":\"z1qqgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqd22cff\",\"hash\":\"e92fdd8952681701e62e53f43f15da7847d064711da29ad816078a98dd0ed356\",\"height\":256},{\"address\":\"z1qqsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrvvdvf\",\"hash\":\"ed51033ba8a0c05d2f3b04cdec1442bcf3cc3a44d320d452fbc60970068315d6\",\"height\":513}],\"changesHash\":\"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a\",\"publicKey\":\"OAAT4PzhY8pyoC3QonDP+sGBfJBY7JqXIOhexwQFUJg=\",\"signature\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==\",\"nextFusionPrice\":1000,\"nextWorkPrice\":1000,\"stateRoot\":\"d99238e890b5c1e28d9272e94a2529518ee7bfd148cb9f13c2ea3473ee6d5d5a\",\"producer\":\"z1qqq43dyrswfehx9w9td43exflqzcxrt7g6alah\"}"
+    },
+    {
+      "content_bytes": "",
+      "content_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+      "data_hash": "ae4d0c6fb4fc42a4c945cd3a9b8b0a8508aebca75fc9219a444142eb6f71daca",
+      "existing_signature_valid": false,
+      "name": "unsigned-uint64-boundaries",
+      "preimage": "000000000000000300000000000000642b584eb276428450a3485d18df309d37352110d59cd670b25bc774837b5f5768ffffffffffffffffffffffffffffffffae4d0c6fb4fc42a4c945cd3a9b8b0a8508aebca75fc9219a444142eb6f71dacaa7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434aa7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434affffffffffffffffffffffffffffffffd99238e890b5c1e28d9272e94a2529518ee7bfd148cb9f13c2ea3473ee6d5d5a",
+      "producer_raw_hex": "000158b48383939b98ae2adb58e4c9f805830d7e",
+      "wire_json": "{\"version\":3,\"chainIdentifier\":100,\"hash\":\"8361f430ff4ef6d20213ab4e8be6b06d3568298e8cadbbe4048b21ce4f6d081c\",\"previousHash\":\"2b584eb276428450a3485d18df309d37352110d59cd670b25bc774837b5f5768\",\"height\":18446744073709551615,\"timestamp\":18446744073709551615,\"data\":\"AAH/UlBD\",\"content\":[],\"changesHash\":\"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a\",\"publicKey\":\"OAAT4PzhY8pyoC3QonDP+sGBfJBY7JqXIOhexwQFUJg=\",\"signature\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==\",\"nextFusionPrice\":18446744073709551615,\"nextWorkPrice\":18446744073709551615,\"stateRoot\":\"d99238e890b5c1e28d9272e94a2529518ee7bfd148cb9f13c2ea3473ee6d5d5a\",\"producer\":\"z1qqq43dyrswfehx9w9td43exflqzcxrt7g6alah\"}"
+    },
+    {
+      "content_bytes": "",
+      "content_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+      "data_hash": "ae4d0c6fb4fc42a4c945cd3a9b8b0a8508aebca75fc9219a444142eb6f71daca",
+      "existing_signature_valid": false,
+      "name": "unsigned-zero-root",
+      "preimage": "000000000000000300000000000000642b584eb276428450a3485d18df309d37352110d59cd670b25bc774837b5f5768000000000000000c000000003b9aca6eae4d0c6fb4fc42a4c945cd3a9b8b0a8508aebca75fc9219a444142eb6f71dacaa7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434aa7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a00000000000003e800000000000003e80000000000000000000000000000000000000000000000000000000000000000",
+      "producer_raw_hex": "000158b48383939b98ae2adb58e4c9f805830d7e",
+      "wire_json": "{\"version\":3,\"chainIdentifier\":100,\"hash\":\"61a8b9a32bd568e816d051f5f1ea0d51f3caad0c6e5f0f39578f8f11f8a17fae\",\"previousHash\":\"2b584eb276428450a3485d18df309d37352110d59cd670b25bc774837b5f5768\",\"height\":12,\"timestamp\":1000000110,\"data\":\"AAH/UlBD\",\"content\":[],\"changesHash\":\"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a\",\"publicKey\":\"OAAT4PzhY8pyoC3QonDP+sGBfJBY7JqXIOhexwQFUJg=\",\"signature\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==\",\"nextFusionPrice\":1000,\"nextWorkPrice\":1000,\"stateRoot\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"producer\":\"z1qqq43dyrswfehx9w9td43exflqzcxrt7g6alah\"}"
+    }
+  ],
+  "scope": {
+    "SPV_owned_v3_state": false,
+    "exact_API_fragments_with_original_nom_types": true,
+    "full_RPC_package_or_service_executed": false,
+    "historical_fixture_chain_id": 100,
+    "network_activation_authenticated": false,
+    "new_signatures_created": 0,
+    "runtime_state_value_acceptance": false,
+    "selected_source_genesis_chain_id": 69
+  },
+  "source": {
+    "api_source_sha256": "e35a467637c74577a69f678e8b7524c406f5a33cb5dfe9e56f63ed88233ddf5e",
+    "archive_sha256": "8ca1512eff8c04ee8b6ed0ff9a5da9e3eeba518660b07833f99a6b74e1dcc3a3",
+    "momentum_source_sha256": "25cd3bf3eeab0e0fc5d12a03f7f58a7662ef589d4f85e5f7477a1a754ce1fa51",
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "938fca3b7787da86827a5eb63371509b36e14761",
+    "tree": "f3b7947d2267ebdb806f18ff0c02bba5bffae9c4"
+  },
+  "source_fragments": {
+    "converter": {
+      "bytes": 344,
+      "sha256": "f5531bcfbab770f88bfffbb4978d9a3ee93142a6df272e01882f6b02191ce721"
+    },
+    "dto": {
+      "bytes": 81,
+      "sha256": "74419b7e52af440c16a04f666469e9ba313096f7e2e916c5d29f4d586aafea23"
+    }
+  }
+}

@@ -27,6 +27,10 @@ lists all offsets in the 208-byte preimage. The final 32 raw bytes are the state
 root, after both uint64 big-endian prices. The projected header carries the
 already computed data and content hashes.
 
+The separate [raw-v3 RPC decoder](candidate-v3-rpc.md) derives both hashes from
+the selected node's raw `data` and ordered `content` fields. It returns the same
+untrusted projected type and does not enable a production fetch/acceptance path.
+
 The separate [first-v3 node fixture](first-v3-node-boundary.md) now records a
 signed sequence at `938fca3b7787da86827a5eb63371509b36e14761`: v1 genesis,
 parent enforcement and incoming v2/v3 boundaries, with 13 non-genesis fixture
