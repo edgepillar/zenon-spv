@@ -62,7 +62,7 @@ To reproduce the selected assertion scope in a checkout of the pinned node
 with its dependencies available, run the selection above. A local pass on
 another source, toolchain or platform is a separate attempt.
 
-## First incoming v3 remains a separate obligation
+## First incoming v3 source rules
 
 The selected source gives these distinct rules:
 
@@ -97,11 +97,14 @@ The existing
 [node activation helper](https://github.com/digitalSloth/go-zenon/blob/938fca3b7787da86827a5eb63371509b36e14761/vm/embedded/tests/state_root_test.go#L17-L118)
 advances past the boundary before inspecting a later frontier. Its presence,
 or a tri-state version selector test, does not establish the first incoming
-boundary. This conformance attempt did not execute those activation tests.
+boundary. The trie conformance attempt above did not execute those activation
+tests. A subsequent isolated [first-v3 node fixture](first-v3-node-boundary.md)
+executed the original activation test and added boundary controls. Its complete
+signed header capture now supports independent native SPV hash/signature checks.
 
-The selected profile still needs actual boundary controls from v1 genesis,
-early/late/unknown version refusals, schedule coverage, canonical/schema caps
-and recovery qualification. The [D0-D3 roadmap](typed-state-roadmap.md) also
+The fixture observes v1 genesis and early/late/unknown version refusals, but the
+selected network profile still needs its own actual boundary, schedule coverage,
+canonical/schema caps and recovery qualification. The [D0-D3 roadmap](typed-state-roadmap.md) also
 requires a selected genesis/anchor/profile, owned accepted-v3 header and real
 typed BatchEntry consumer. No activation, consensus finality, accepted state
 value, STF correctness or production readiness follows from this report.

@@ -1,0 +1,260 @@
+// SPDX-License-Identifier: MIT
+// Controlled node-fixture observation, not a network activation profile.
+package tests
+
+import (
+	"encoding/json"
+	"errors"
+	"testing"
+
+	g "github.com/zenon-network/go-zenon/chain/genesis/mock"
+	"github.com/zenon-network/go-zenon/chain/nom"
+	"github.com/zenon-network/go-zenon/common/types"
+	"github.com/zenon-network/go-zenon/rpc/api/embedded"
+	"github.com/zenon-network/go-zenon/verifier"
+	"github.com/zenon-network/go-zenon/vm/embedded/definition"
+	"github.com/zenon-network/go-zenon/zenon/mock"
+)
+
+type spvProjectedHeader struct {
+	Version         uint64 `json:"version"`
+	ChainIdentifier uint64 `json:"chainIdentifier"`
+	Hash            string `json:"hash"`
+	PreviousHash    string `json:"previousHash"`
+	Height          uint64 `json:"height"`
+	Timestamp       uint64 `json:"timestamp"`
+	DataHash        string `json:"dataHash"`
+	ContentHash     string `json:"contentHash"`
+	ChangesHash     string `json:"changesHash"`
+	PublicKey       []byte `json:"publicKey"`
+	Signature       []byte `json:"signature"`
+	NextFusionPrice uint64 `json:"nextFusionPrice"`
+	NextWorkPrice   uint64 `json:"nextWorkPrice"`
+	StateRoot       string `json:"stateRoot"`
+}
+
+func spvProjectHeader(m *nom.Momentum) spvProjectedHeader {
+	return spvProjectedHeader{
+		Version: m.Version, ChainIdentifier: m.ChainIdentifier,
+		Hash: m.Hash.String(), PreviousHash: m.PreviousHash.String(),
+		Height: m.Height, Timestamp: m.TimestampUnix,
+		DataHash: types.NewHash(m.Data).String(), ContentHash: m.Content.Hash().String(),
+		ChangesHash: m.ChangesHash.String(), PublicKey: append([]byte(nil), m.PublicKey...),
+		Signature:       append([]byte(nil), m.Signature...),
+		NextFusionPrice: m.NextFusionPrice, NextWorkPrice: m.NextWorkPrice,
+		StateRoot: m.StateRoot.String(),
+	}
+}
+
+type spvBoundaryRow struct {
+	Header                spvProjectedHeader `json:"header"`
+	Height                uint64             `json:"height"`
+	Version               uint64             `json:"version"`
+	Hash                  string             `json:"hash"`
+	PreviousHash          string             `json:"previous_hash"`
+	StateRoot             string             `json:"state_root"`
+	ParentDynamicActive   bool               `json:"parent_dynamic_active"`
+	ParentStateRootActive bool               `json:"parent_state_root_active"`
+	ParentTreeReady       bool               `json:"parent_tree_ready"`
+	TreeRootMatched       bool               `json:"tree_root_matched"`
+}
+
+func TestSPVFirstIncomingV3HeaderCapture(t *testing.T) {
+	saveSporkState(t)
+	z := mock.NewMockZenon(t)
+	defer z.StopPanic()
+
+	frontier := func() *nom.Momentum {
+		m, err := z.Chain().GetFrontierMomentumStore().GetFrontierMomentum()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return m
+	}
+	genesis := frontier()
+	if genesis.Height != 1 || genesis.Version != 1 || !genesis.StateRoot.IsZero() {
+		t.Fatal("fixture must start at a v1 height-1 genesis with no header state root")
+	}
+	rows := []spvBoundaryRow{{
+		Header: spvProjectHeader(genesis),
+		Height: genesis.Height, Version: genesis.Version, Hash: genesis.Hash.String(),
+		PreviousHash: genesis.PreviousHash.String(), StateRoot: genesis.StateRoot.String(),
+	}}
+	unknown := &types.ImplementedSpork{SporkId: types.Hash{0xa5, 0x9c}}
+	tick := func() {
+		parent := frontier()
+		if parent.Height >= 64 {
+			t.Fatal("bounded fixture height budget exceeded")
+		}
+		store := z.Chain().GetFrontierMomentumStore()
+		dpActive, err := store.IsSporkActive(types.DynamicPlasmaSpork)
+		if err != nil {
+			t.Fatal(err)
+		}
+		srActive, err := store.IsSporkActive(types.StateRootSpork)
+		if err != nil {
+			t.Fatal(err)
+		}
+		unknownActive, err := store.IsSporkActive(unknown)
+		if err != nil || unknownActive {
+			t.Fatal("unknown spork acquired activation authority")
+		}
+		ready := z.Chain().StateTreeReady()
+		if !ready {
+			t.Fatal("fixture state tree is not ready; do not postpone enforcement")
+		}
+		want := uint64(1)
+		if dpActive {
+			want = 2
+		}
+		if srActive {
+			want = 3
+		}
+		z.InsertNewMomentum()
+		m := frontier()
+		if m.Height != parent.Height+1 || m.PreviousHash != parent.Hash || m.Version != want {
+			t.Fatalf("incoming height/version/link differs at parent %d: got %d/%d want %d/%d",
+				parent.Height, m.Height, m.Version, parent.Height+1, want)
+		}
+		if err := verifier.MomentumStatic(m); err != nil {
+			t.Fatalf("fixture momentum hash/signature failed at %d: %v", m.Height, err)
+		}
+		treeMatched := false
+		if m.Version == 3 {
+			root, err := z.Chain().StateRoot(m.Identifier())
+			if err != nil || root != m.StateRoot || m.StateRoot.IsZero() {
+				t.Fatalf("first/current v3 root unavailable or mismatched at %d: %v", m.Height, err)
+			}
+			treeMatched = true
+		} else if !m.StateRoot.IsZero() {
+			t.Fatalf("legacy header gained a state root at %d", m.Height)
+		}
+		rows = append(rows, spvBoundaryRow{
+			Header: spvProjectHeader(m),
+			Height: m.Height, Version: m.Version, Hash: m.Hash.String(),
+			PreviousHash: m.PreviousHash.String(), StateRoot: m.StateRoot.String(),
+			ParentDynamicActive: dpActive, ParentStateRootActive: srActive,
+			ParentTreeReady: ready, TreeRootMatched: treeMatched,
+		})
+	}
+	api := embedded.NewSporkApi(z)
+	find := func(name string) *definition.Spork {
+		list, err := api.GetAll(0, 100)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, item := range list.List {
+			if item.Name == name {
+				return item
+			}
+		}
+		return nil
+	}
+	create := func(name string) *definition.Spork {
+		z.InsertSendBlock(&nom.AccountBlock{
+			Address: g.Spork.Address, ToAddress: types.SporkContract,
+			Data: definition.ABISpork.PackMethodPanic(definition.SporkCreateMethodName, name, name),
+		}, nil, mock.SkipVmChanges)
+		for attempts := 0; attempts < 4; attempts++ {
+			tick()
+			if item := find(name); item != nil {
+				return item
+			}
+		}
+		t.Fatal("fixture spork creation did not finish within budget")
+		return nil
+	}
+	dp := create("spv-dp-boundary")
+	sr := create("spv-state-root-boundary")
+	types.DynamicPlasmaSpork.SporkId = dp.Id
+	types.StateRootSpork.SporkId = sr.Id
+	types.ImplementedSporksMap[dp.Id] = true
+	types.ImplementedSporksMap[sr.Id] = true
+	activate := func(item *definition.Spork) *definition.Spork {
+		z.InsertSendBlock(&nom.AccountBlock{
+			Address: g.Spork.Address, ToAddress: types.SporkContract,
+			Data: definition.ABISpork.PackMethodPanic(definition.SporkActivateMethodName, item.Id),
+		}, nil, mock.SkipVmChanges)
+		for attempts := 0; attempts < 4; attempts++ {
+			tick()
+			current := find(item.Name)
+			if current != nil && current.Activated {
+				return current
+			}
+		}
+		t.Fatal("fixture spork activation did not finish within budget")
+		return nil
+	}
+	dp = activate(dp)
+	sr = activate(sr)
+	if sr.EnforcementHeight < 2 || sr.EnforcementHeight < dp.EnforcementHeight ||
+		sr.EnforcementHeight > 60 || frontier().Height >= sr.EnforcementHeight {
+		t.Fatal("fixture cannot independently observe both sides of the selected enforcement boundary")
+	}
+	firstIncoming := sr.EnforcementHeight + 1
+	for frontier().Height < firstIncoming+2 {
+		tick()
+	}
+	var firstV3 uint64
+	for _, row := range rows {
+		if row.Version == 3 && firstV3 == 0 {
+			firstV3 = row.Height
+		}
+	}
+	if firstV3 != firstIncoming {
+		t.Fatalf("first incoming v3 = %d; expected parent enforcement %d plus one", firstV3, sr.EnforcementHeight)
+	}
+	store := z.Chain().GetFrontierMomentumStore()
+	before, err := store.GetMomentumByHeight(sr.EnforcementHeight)
+	if err != nil || before == nil || before.Version != 2 {
+		t.Fatal("expected the final pre-v3 header at the enforcement field itself")
+	}
+	after, err := store.GetMomentumByHeight(firstIncoming)
+	if err != nil || after == nil || after.Version != 3 {
+		t.Fatal("expected the first v3 at enforcement plus one")
+	}
+	v := verifier.NewMomentumVerifier(z.Chain(), z.Consensus(), nil)
+	cases := []struct {
+		name    string
+		m       *nom.Momentum
+		version uint64
+		want    error
+	}{
+		{"early_v3", before, 3, verifier.ErrMVersionInvalid},
+		{"late_v2", after, 2, verifier.ErrMVersionInvalid},
+		{"late_v1", after, 1, verifier.ErrMVersionInvalid},
+		{"unknown_before", before, 4, verifier.ErrMVersionInvalid},
+		{"unknown_after", after, 4, verifier.ErrMVersionInvalid},
+		{"missing_before", before, 0, verifier.ErrMVersionMissing},
+		{"missing_after", after, 0, verifier.ErrMVersionMissing},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			changed := *c.m
+			changed.Version = c.version
+			err := v.Momentum(&nom.DetailedMomentum{Momentum: &changed})
+			if !errors.Is(err, c.want) {
+				t.Fatalf("actual raw verifier version check = %v, want %v", err, c.want)
+			}
+		})
+	}
+	report := struct {
+		Format               string           `json:"format"`
+		Scope                string           `json:"scope"`
+		ChainID              uint64           `json:"chain_id"`
+		Genesis              string           `json:"genesis_hash"`
+		DynamicEnforcement   uint64           `json:"dynamic_enforcement"`
+		StateRootEnforcement uint64           `json:"state_root_enforcement"`
+		FirstIncomingV3      uint64           `json:"first_incoming_v3"`
+		Rows                 []spvBoundaryRow `json:"rows"`
+	}{
+		"selected-node-fixture-first-v3-header-capture/v1", "ISOLATED_NODE_FIXTURE_NOT_NETWORK_ACTIVATION",
+		z.Chain().ChainIdentifier(), genesis.Hash.String(), dp.EnforcementHeight,
+		sr.EnforcementHeight, firstV3, rows,
+	}
+	encoded, err := json.Marshal(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("SPV_FIRST_V3_HEADER_TRACE %s", encoded)
+}
