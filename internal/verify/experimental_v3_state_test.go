@@ -6,6 +6,7 @@ import (
 	"crypto/ed25519"
 	"encoding/json"
 	"reflect"
+	"runtime"
 	"sync"
 	"testing"
 
@@ -242,4 +243,39 @@ func TestExperimentalV3DetachedConcurrentQueries(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+}
+
+func TestExperimentalV3MalformedTypedBuffersHaveBoundedCopies(t *testing.T) {
+	f := experimentalV3Inputs(t)
+	s := experimentalV3New(t, f)
+	large := make([]byte, 1<<20)
+	for _, name := range []string{"public-key", "signature"} {
+		t.Run(name, func(t *testing.T) {
+			h := f.headers[0]
+			if name == "public-key" {
+				h.Header.PublicKey = large
+			} else {
+				h.Header.Signature = large
+			}
+			input := []chain.CandidateV3Header{h}
+			// Warm one call before measuring cumulative allocations. Inputs are
+			// allocated outside the interval; this is no peak-memory claim.
+			s.Extend(input)
+			var before, after runtime.MemStats
+			runtime.ReadMemStats(&before)
+			const attempts = 4
+			for i := 0; i < attempts; i++ {
+				r, next := s.Extend(input)
+				if r.Outcome != OutcomeReject || r.Reason != ReasonInvalidSignature || next.data != s.data {
+					t.Fatal("malformed typed buffer advanced owned state", r)
+				}
+			}
+			runtime.ReadMemStats(&after)
+			// A generous per-call ceiling catches even one redundant 1 MiB
+			// input copy without requiring an exact allocator/runtime count.
+			if allocated := after.TotalAlloc - before.TotalAlloc; allocated > attempts*(64<<10) {
+				t.Fatalf("malformed typed input allocated %d bytes", allocated)
+			}
+		})
+	}
 }

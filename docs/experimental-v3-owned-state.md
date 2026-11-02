@@ -104,6 +104,9 @@ Extension validates all incoming headers, then copies the retained suffix once;
 it avoids shifting K headers after every input row. Contiguous private heights
 permit constant-time root/header lookup without a mutable index, repeated
 signature work or copying key/signature buffers for root-only reads.
+Typed headers are validated before their key/signature buffers are detached;
+malformed large buffers do not cause a same-sized copy. Callers must not mutate
+input slices concurrently with verification.
 
 ## Persistence and compatibility
 

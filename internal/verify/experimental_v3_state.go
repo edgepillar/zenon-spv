@@ -64,10 +64,12 @@ func (s ExperimentalV3State) Extend(headers []chain.CandidateV3Header) (Result, 
 	}
 	working := append(make([]chain.CandidateV3Header, 0, len(s.data.headers)+len(headers)), s.data.headers...)
 	for i, incoming := range headers {
-		h := cloneExperimentalV3Header(incoming)
-		if r := validateExperimentalV3Header(h, c, i); r.Outcome != OutcomeAccept {
+		// Reject malformed typed key/signature widths before copying their
+		// buffers. Successful validation bounds each detached copy to 96 bytes.
+		if r := validateExperimentalV3Header(incoming, c, i); r.Outcome != OutcomeAccept {
 			return fail(r)
 		}
+		h := cloneExperimentalV3Header(incoming)
 		if h.Header.Height <= previous.Height || h.Header.Height-previous.Height != 1 {
 			return fail(reject(ReasonHeightNonMonotonic, i, "experimental v3 header is not an immediate successor"))
 		}
