@@ -163,6 +163,11 @@ these unsigned files do not authenticate execution, independent review, network
 acceptance or state values. No whole-pipeline latency or disk budget is inferred
 from eliminating the second selected invocation.
 
+On native CI platforms, the receipt check and its upload immediately follow the
+producing test step. Malformed outputs fail before the long remaining controls;
+a valid receipt still requires those controls and the complete workflow/artifact
+gates. The reordered steps add no test invocation or archive.
+
 For Go edits confined to `tools/offline-pilot`, use the pinned linter against
 that affected package before publishing:
 

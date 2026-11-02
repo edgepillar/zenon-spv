@@ -5,6 +5,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import re
 import unittest
 
 HERE = Path(__file__).resolve().parent
@@ -60,6 +61,16 @@ class RootSuiteControls(unittest.TestCase):
         with self.assertRaises(decoder.Rejected) as rejected:
             metadata(json.dumps(receipt).encode())
         self.assertEqual(rejected.exception.category, "metadata")
+
+    def test_native_receipt_is_checked_before_long_remaining_controls(self):
+        workflow = (HERE.parent / ".github/workflows/ci.yml").read_text()
+        native = workflow.split("\n  native-platform:\n", 1)[1].split("\n  recorded-oracles:\n", 1)[0]
+        steps = re.findall(r"^      - name: (.+)$", native, re.M)
+        producer = steps.index("Native test")
+        self.assertEqual(steps[producer + 1:producer + 3], ["Offline pilot report", "Upload root suite receipt"])
+        self.assertLess(steps.index("Upload root suite receipt"), steps.index("Bounded ledger inventory controls"))
+        for name in ("Native test", "Offline pilot report", "Upload root suite receipt"):
+            self.assertEqual(steps.count(name), 1)
 
     def test_timing_coverage_and_strict_version_dispatch(self):
         receipt, report = timed_fixture()

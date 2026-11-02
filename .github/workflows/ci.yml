@@ -848,6 +848,23 @@ jobs:
         # Keep every package and the complete repeated-wire grid. The explicit
         # package watchdog remains 10m; the driver bounds the whole suite.
         run: go run ./tools/offline-pilot --full-suite --timeout 30m --package-timeout 10m --suite-receipt "${{ runner.temp }}/root-suite.json" --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
+      - name: Offline pilot report
+        id: pilot
+        shell: bash
+        run: |
+          report_sha256="$(python -I -B -c 'import hashlib,sys; f=open(sys.argv[1],"rb"); b=f.read(4194305); f.close(); assert 0<len(b)<=4194304; print(hashlib.sha256(b).hexdigest())' "$RUNNER_TEMP/offline-pilot.json")"
+          receipt_sha256="$(python -I -B -c 'import hashlib,sys; f=open(sys.argv[1],"rb"); b=f.read(1048577); f.close(); assert 0<len(b)<=1048576; print(hashlib.sha256(b).hexdigest())' "$RUNNER_TEMP/root-suite.json")"
+          python -I -B tools/check-root-suite.py --receipt "$RUNNER_TEMP/root-suite.json" --expect-receipt-sha256 "$receipt_sha256" --report "$RUNNER_TEMP/offline-pilot.json" --expect-report-sha256 "$report_sha256" --source . --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)" --expect-race false --expect-coverage false --expect-package-timeout 10m0s --expect-overall-timeout 30m0s > "$RUNNER_TEMP/root-suite-check.json"
+      - name: Upload root suite receipt
+        if: ${{ !cancelled() && steps.root_suite.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: root-suite-${{ matrix.os }}
+          path: |
+            ${{ runner.temp }}/root-suite.json
+            ${{ runner.temp }}/root-suite-check.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Bounded ledger inventory controls
         id: inventory_controls
         shell: bash
@@ -1355,23 +1372,6 @@ jobs:
         run: |
           go mod verify
           git diff --exit-code -- go.mod go.sum
-      - name: Offline pilot report
-        id: pilot
-        shell: bash
-        run: |
-          report_sha256="$(python -I -B -c 'import hashlib,sys; f=open(sys.argv[1],"rb"); b=f.read(4194305); f.close(); assert 0<len(b)<=4194304; print(hashlib.sha256(b).hexdigest())' "$RUNNER_TEMP/offline-pilot.json")"
-          receipt_sha256="$(python -I -B -c 'import hashlib,sys; f=open(sys.argv[1],"rb"); b=f.read(1048577); f.close(); assert 0<len(b)<=1048576; print(hashlib.sha256(b).hexdigest())' "$RUNNER_TEMP/root-suite.json")"
-          python -I -B tools/check-root-suite.py --receipt "$RUNNER_TEMP/root-suite.json" --expect-receipt-sha256 "$receipt_sha256" --report "$RUNNER_TEMP/offline-pilot.json" --expect-report-sha256 "$report_sha256" --source . --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)" --expect-race false --expect-coverage false --expect-package-timeout 10m0s --expect-overall-timeout 30m0s > "$RUNNER_TEMP/root-suite-check.json"
-      - name: Upload root suite receipt
-        if: ${{ !cancelled() && steps.root_suite.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: root-suite-${{ matrix.os }}
-          path: |
-            ${{ runner.temp }}/root-suite.json
-            ${{ runner.temp }}/root-suite-check.json
-          if-no-files-found: error
-          retention-days: 14
       - name: Verify exported candidate
         id: candidate
         shell: bash
