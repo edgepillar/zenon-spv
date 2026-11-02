@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/0x3639/zenon-spv/internal/fetch"
 )
@@ -82,7 +84,13 @@ func collectionCLIClient(t *testing.T, rows []json.RawMessage, mode string, meth
 			t.Fatal("explicit endpoint changed or environment used")
 		}
 		client := fetch.NewClient(endpoint)
+		var selectedDeadline time.Time
 		client.HTTP.Transport = collectionCLITransport(func(req *http.Request) (*http.Response, error) {
+			deadline, ok := req.Context().Deadline()
+			if !ok || !selectedDeadline.IsZero() && !deadline.Equal(selectedDeadline) {
+				t.Fatal("selected reads did not share one overall deadline")
+			}
+			selectedDeadline = deadline
 			var call struct {
 				Method string
 				Params []json.RawMessage
@@ -119,7 +127,7 @@ func TestExperimentalCollectionCLIExplicitEndpoint(t *testing.T) {
 	args, rows := collectionCLIArgs(t)
 	var output, diagnostics bytes.Buffer
 	var methods []string
-	code := runExperimentalCollection(args, &output, &diagnostics, collectionCLIClient(t, rows, "", &methods))
+	code := runExperimentalCollection(context.Background(), args, &output, &diagnostics, collectionCLIClient(t, rows, "", &methods))
 	var doc map[string]json.RawMessage
 	if code != 0 || diagnostics.Len() != 0 || json.Unmarshal(output.Bytes(), &doc) != nil || len(doc) != 3 || len(methods) != 2 {
 		t.Fatal("collection did not complete its explicit candidate-only document")
@@ -133,10 +141,11 @@ func TestExperimentalCollectionCLIExplicitEndpoint(t *testing.T) {
 	// Full-width typed selectors remain valid; no JavaScript number path.
 	args = collectionCLIReplace(args, "domain-id", "4294967295")
 	args = collectionCLIReplace(args, "batch-id", "18446744073709551615")
+	args = append(args, "--timeout", "10s")
 	output.Reset()
 	diagnostics.Reset()
 	methods = nil
-	if runExperimentalCollection(args, &output, &diagnostics, collectionCLIClient(t, rows, "", &methods)) != 0 {
+	if runExperimentalCollection(context.Background(), args, &output, &diagnostics, collectionCLIClient(t, rows, "", &methods)) != 0 {
 		t.Fatal("full-width selector truncated")
 	}
 }
@@ -164,14 +173,14 @@ func TestExperimentalCollectionCLIArgumentsBeforeClient(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			var output, diagnostics bytes.Buffer
 			called := false
-			code := runExperimentalCollection(args, &output, &diagnostics, func(string) *fetch.Client { called = true; return nil })
+			code := runExperimentalCollection(context.Background(), args, &output, &diagnostics, func(string) *fetch.Client { called = true; return nil })
 			if code != 64 || called || output.Len() != 0 || strings.Contains(diagnostics.String(), "PRIVATE") {
 				t.Fatal("invalid selector reached client or ordinary output")
 			}
 		})
 	}
 	var output, diagnostics bytes.Buffer
-	if runExperimentalCollection([]string{"--help"}, &output, &diagnostics, nil) != 0 || !strings.Contains(output.String(), "Usage:") || diagnostics.Len() != 0 {
+	if runExperimentalCollection(context.Background(), []string{"--help"}, &output, &diagnostics, nil) != 0 || !strings.Contains(output.String(), "Usage:") || diagnostics.Len() != 0 {
 		t.Fatal("help performed input or network work")
 	}
 }
@@ -184,19 +193,23 @@ func TestExperimentalCollectionCLICompletion(t *testing.T) {
 	args, rows := collectionCLIArgs(t)
 	var output, diagnostics bytes.Buffer
 	var methods []string
-	if code := runExperimentalCollection(args, &output, &diagnostics, collectionCLIClient(t, rows, "failure", &methods)); code != 1 || output.Len() != 0 || strings.Contains(diagnostics.String(), "PRIVATE") {
+	if code := runExperimentalCollection(context.Background(), args, &output, &diagnostics, collectionCLIClient(t, rows, "failure", &methods)); code != 1 || output.Len() != 0 || strings.Contains(diagnostics.String(), "PRIVATE") {
 		t.Fatal("transport failure leaked data or became success")
 	}
 	writer := &collectionShortOutput{}
 	diagnostics.Reset()
 	methods = nil
-	if code := runExperimentalCollection(args, writer, &diagnostics, collectionCLIClient(t, rows, "", &methods)); code != 70 || writer.writes != 1 {
+	if code := runExperimentalCollection(context.Background(), args, writer, &diagnostics, collectionCLIClient(t, rows, "", &methods)); code != 70 || writer.writes != 1 {
 		t.Fatal("short output was retried or accepted")
 	}
 	output.Reset()
 	diagnostics.Reset()
 	methods = nil
-	if code := runExperimentalCollection(append(append([]string{}, args...), "--timeout", "1ns"), &output, &diagnostics, collectionCLIClient(t, rows, "", &methods)); code != 1 || output.Len() != 0 || len(methods) != 0 {
-		t.Fatal("expired collection progressed")
+	// Cancellation is explicit: a 1ns timer callback need not run before the
+	// first read on every native scheduler. No sleep or timer precision claim.
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if code := runExperimentalCollection(ctx, args, &output, &diagnostics, collectionCLIClient(t, rows, "", &methods)); code != 1 || output.Len() != 0 || len(methods) != 0 {
+		t.Fatal("cancelled collection progressed")
 	}
 }

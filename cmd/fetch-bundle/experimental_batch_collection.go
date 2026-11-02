@@ -68,7 +68,7 @@ func collectionHash(value string) (chain.Hash, bool) {
 
 // This explicit mode is dispatched before the native environment/default flow.
 // Collection has no checkpoint export, state writer or acceptance guarantee.
-func runExperimentalCollection(args []string, stdout, stderr io.Writer, clientFor func(string) *fetch.Client) int {
+func runExperimentalCollection(parent context.Context, args []string, stdout, stderr io.Writer, clientFor func(string) *fetch.Client) int {
 	fail := func(code int, category string) int {
 		_, _ = fmt.Fprintln(stderr, "fetch-bundle experimental collection:", category)
 		return code
@@ -124,7 +124,7 @@ func runExperimentalCollection(args []string, stdout, stderr io.Writer, clientFo
 	if selected.Validate() != nil {
 		return fail(64, "invalid arguments")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
+	ctx, cancel := context.WithTimeout(parent, *timeout)
 	defer cancel()
 	client := clientFor(*rpc)
 	data, err := client.FetchCandidateBatchEntryBundle(ctx, selected, *compare)
