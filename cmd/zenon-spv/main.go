@@ -5,6 +5,8 @@
 //	zenon-spv version            [--json]
 //	zenon-spv inspect-config     [--genesis-config ...] [--window ...] [--protocol-profile ...] [--schedule ...] [--json]
 //	zenon-spv inspect-state      --state <path> [--genesis-config ...] [--window ...] [--protocol-profile ...] [--schedule ...] [--json]
+//	zenon-spv inspect-experimental-batch-config --config <path>
+//	zenon-spv query-experimental-batch-entry --config <path> --request <path> --expect-header-context <64-hex> --expect-query-context <64-hex> [--compare-gateway] <bundle.json>
 //	zenon-spv verify-headers     [--window {low|medium|high}] [--genesis-config <path>] [--state <path>] <bundle.json>
 //	zenon-spv verify-commitment  [--window ...] [--genesis-config ...] [--state <path>] <bundle.json>
 //	zenon-spv verify-segment     [--window ...] [--genesis-config ...] [--state <path>] <bundle.json>
@@ -94,6 +96,8 @@ Usage:
   zenon-spv version            [--json]
   zenon-spv inspect-config     [--genesis-config <path>] [--window ...] [--protocol-profile <path>] [--schedule <path>] [--json]
   zenon-spv inspect-state      --state <path> [--genesis-config <path>] [--window ...] [--protocol-profile <path>] [--schedule <path>] [--json]
+  zenon-spv inspect-experimental-batch-config --config <path>
+  zenon-spv query-experimental-batch-entry --config <path> --request <path> --expect-header-context <64-hex> --expect-query-context <64-hex> [--compare-gateway] <bundle.json>
   zenon-spv verify-headers     [--window {low|medium|high}] [--genesis-config <path>] [--state <path>] [--schedule <path>] <bundle.json>
   zenon-spv verify-commitment  [--window ...] [--genesis-config ...] [--state <path>] [--schedule <path>] <bundle.json>
   zenon-spv verify-segment     [--window ...] [--genesis-config ...] [--state <path>] [--schedule <path>] <bundle.json>
@@ -111,6 +115,17 @@ Subcommands:
   inspect-state       Revalidate and describe an existing trusted local state.
                       No RPC requests, writer lock, or state writes. Success
                       means inspection completed, not a proof ACCEPT.
+
+  inspect-experimental-batch-config
+                      Describe explicit non-mainnet header/query configuration
+                      fingerprints in JSON. No headers or typed row are accepted.
+
+  query-experimental-batch-entry
+                      Read a bounded offline provider bundle using separately
+                      selected configuration, request and mandatory context pins.
+                      JSON results have experimental configured-header scope;
+                      production state-value guarantees remain disabled. No RPC,
+                      state writes, wallet, signing or transaction is initiated.
 
   verify-headers      Verify a HeaderBundle JSON file. Exits 0 on ACCEPT,
                       1 on REJECT, 2 on REFUSED.
@@ -235,6 +250,8 @@ func main() {
 		os.Exit(runInspectConfig(os.Args[2:], os.Stdout, os.Stderr))
 	case "inspect-state":
 		os.Exit(runInspectState(os.Args[2:], os.Stdout, os.Stderr))
+	case experimentalConfigCommand, experimentalQueryCommand:
+		os.Exit(runExperimentalBatch(os.Args[1], os.Args[2:], os.Stdout, os.Stderr))
 	case "verify-headers":
 		os.Exit(runVerifyHeaders(os.Args[2:]))
 	case "verify-commitment":

@@ -4,7 +4,9 @@ Status: **IMPLEMENTED_EXPERIMENTAL_BINDING; SELECTED_NETWORK_CONSUMER_OPEN**.
 This internal Go API composes the [owned-v3 state](experimental-v3-owned-state.md)
 with local key derivation, bounded SMT reads and the strict 17-field ABI codec.
 It does not register a production profile or complete D0-D3 acceptance.
-No CLI command, public module, live query or release is introduced here.
+The separate [read-only CLI seam](experimental-batch-entry-cli.md) consumes this
+API with mandatory configuration pins and a separate local request file. A
+public module, matching positive live query and release remain open.
 
 ## Authority and request identity
 
