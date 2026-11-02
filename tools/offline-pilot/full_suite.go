@@ -61,6 +61,7 @@ type suiteCollector struct {
 	packages map[string]string
 	active   map[string]bool
 	counts   suiteCounts
+	failures suiteFailures
 	timings  suiteTimings
 	observer observerResourceCollector
 	digest   hash.Hash
@@ -195,6 +196,98 @@ func publicSuiteRoot(name string) bool {
 		return false
 	}
 	return true
+}
+
+const suiteFailureRootLimit = 20
+const suiteFailureOutputLimit = 16 << 10
+const suiteFailureMarker = "offline-pilot-suite-failures "
+
+type suiteFailedRoot struct {
+	Package string `json:"package"`
+	Test    string `json:"test"`
+}
+
+type suiteFailures struct {
+	Observed int
+	Withheld int
+	Roots    []suiteFailedRoot
+}
+
+func compareSuiteFailedRoot(a, b suiteFailedRoot) int {
+	if order := strings.Compare(a.Package, b.Package); order != 0 {
+		return order
+	}
+	return strings.Compare(a.Test, b.Test)
+}
+
+// Record only validated terminal root events, never output or t.Run labels.
+// The source-pinned Go process remains trusted, as it is for root timings.
+func (c *suiteCollector) recordFailure(e testEvent) {
+	if e.Action != "fail" || e.Test == "" || strings.Contains(e.Test, "/") {
+		return
+	}
+	c.failures.Observed++
+	if len(e.Package) > 256 || !publicSuiteRoot(e.Test) {
+		c.failures.Withheld++
+		return
+	}
+	c.failures.Roots = append(c.failures.Roots, suiteFailedRoot{e.Package, e.Test})
+	slices.SortFunc(c.failures.Roots, compareSuiteFailedRoot)
+	c.failures.Roots = c.failures.Roots[:min(len(c.failures.Roots), suiteFailureRootLimit)]
+}
+
+// Failure diagnostics are a bounded, optional log supplement. They do not
+// change either receipt schema or turn a partial stream into complete evidence.
+func writeSuiteFailures(w io.Writer, enabled bool, c *suiteCollector, status string, processOK bool, reportDigest [sha256.Size]byte) error {
+	if !enabled || status == "passed" || status == "passed_with_skips" {
+		return nil
+	}
+	if status != "failed" && status != "incomplete" {
+		return errors.New("invalid suite diagnostic status")
+	}
+	value := struct {
+		Format            string            `json:"format"`
+		Status            string            `json:"status"`
+		ProcessOK         bool              `json:"test_process_succeeded"`
+		StreamComplete    bool              `json:"stream_complete"`
+		StreamBytes       int64             `json:"stream_bytes"`
+		StreamSHA256      string            `json:"stream_sha256"`
+		SelectedReportSHA string            `json:"selected_report_sha256"`
+		Limit             int               `json:"limit"`
+		Observed          int               `json:"observed_failed_roots"`
+		Withheld          int               `json:"withheld_names"`
+		Omitted           int               `json:"omitted_roots"`
+		Roots             []suiteFailedRoot `json:"roots"`
+	}{Format: "zenon-root-suite-failures/v1", Status: status, ProcessOK: processOK,
+		SelectedReportSHA: hex.EncodeToString(reportDigest[:]), Limit: suiteFailureRootLimit, Roots: []suiteFailedRoot{}}
+	if c != nil {
+		value.StreamComplete, value.StreamBytes = c.complete, c.bytes
+		value.StreamSHA256 = hex.EncodeToString(c.digest.Sum(nil))
+		value.Observed, value.Withheld = c.failures.Observed, c.failures.Withheld
+		value.Roots = c.failures.Roots
+		if value.Roots == nil {
+			value.Roots = []suiteFailedRoot{}
+		}
+		value.Omitted = value.Observed - value.Withheld - len(value.Roots)
+	}
+	raw, err := json.Marshal(value)
+	if err != nil || len(raw)+len(suiteFailureMarker)+1 > suiteFailureOutputLimit {
+		return errors.New("suite failure diagnostics exceeded limits")
+	}
+	raw = append(append([]byte(suiteFailureMarker), raw...), '\n')
+	n, err := w.Write(raw)
+	if err == nil && n != len(raw) {
+		err = io.ErrShortWrite
+	}
+	return err
+}
+
+func writeFullSuiteReport(stdout, stderr io.Writer, raw []byte, code int, c *suiteCollector, enabled, processOK bool, status string) int {
+	if err := writeSuiteFailures(stderr, enabled, c, status, processOK, sha256.Sum256(raw)); err != nil {
+		code = 70
+	}
+	// Preserve the selected report even if the optional diagnostic sink fails.
+	return writeReport(stdout, stderr, raw, code)
 }
 
 func compareSuiteTiming(a, b suiteTiming) int {
@@ -337,6 +430,7 @@ func (c *suiteCollector) event(e testEvent) error {
 		return errors.New("unexpected suite test action")
 	}
 	root, _, _ := strings.Cut(e.Test, "/")
+	c.recordFailure(e)
 	if err := c.observer.event(e); err != nil {
 		return err
 	}
