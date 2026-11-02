@@ -439,6 +439,35 @@ func TestExperimentalBatchCLIRegularInputBoundsAndIdentity(t *testing.T) {
 	}
 }
 
+func TestExperimentalBatchCLIPreopenPathReplacement(t *testing.T) {
+	dir := t.TempDir()
+	path, replacement := filepath.Join(dir, "input.json"), filepath.Join(dir, "replacement.json")
+	// Equal size and bytes leave identity as the only distinguishing property.
+	for _, name := range []string{path, replacement} {
+		if err := os.WriteFile(name, []byte("abc"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var opened *os.File
+	raw, err := readExperimentalCLIFile(path, 3, func(name string) (*os.File, error) {
+		if name != path {
+			t.Fatal("unexpected selected path")
+		}
+		if err := os.Rename(replacement, path); err != nil {
+			t.Fatal(err)
+		}
+		var err error
+		opened, err = openExperimentalCLIFile(name)
+		return opened, err
+	})
+	if !errors.Is(err, errExperimentalCLIInput) || raw != nil || opened == nil {
+		t.Fatal("same-path replacement was not refused after open")
+	}
+	if n, err := opened.Read(make([]byte, 1)); n != 0 || !errors.Is(err, os.ErrClosed) {
+		t.Fatal("replacement descriptor leaked")
+	}
+}
+
 func TestExperimentalBatchCLIDocumentByteBounds(t *testing.T) {
 	for _, kind := range []string{"config", "request", "bundle"} {
 		t.Run(kind, func(t *testing.T) {

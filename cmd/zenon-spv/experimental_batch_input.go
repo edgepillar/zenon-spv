@@ -202,6 +202,11 @@ func readExperimentalCLIFile(path string, limit int64, openFile func(string) (*o
 	if err != nil || !selected.Mode().IsRegular() || selected.Size() > limit {
 		return nil, errExperimentalCLIInput
 	}
+	// Windows FileInfo resolves file IDs lazily through its saved path. Resolve
+	// the selected ID now so a later path replacement cannot redefine it.
+	if !os.SameFile(selected, selected) {
+		return nil, errExperimentalCLIInput
+	}
 	f, err := openFile(path)
 	if err != nil {
 		return nil, errExperimentalCLIInput

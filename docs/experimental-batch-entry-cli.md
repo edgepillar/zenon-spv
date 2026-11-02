@@ -85,7 +85,9 @@ the 4 KiB value ceiling, proof/sibling caps and all three individual/cumulative
 dynamic ABI limits. They are not node protocol limits or representative hardware
 measurements. Complete file caps include whitespace and growth during reading.
 Regular files are required before and after open, with matching identity;
-final symlinks are refused. Linux/macOS open nonblocking and without following
+the selected identity is resolved before opening, including Windows' lazy
+file-ID lookup. A same-path replacement with equal size and bytes is refused.
+Final symlinks are refused. Linux/macOS open nonblocking and without following
 a final symlink. Native FIFO replacement behavior is qualified only on those
 platforms. File checks do not authenticate its provenance or defend a hostile
 same-user writer changing regular bytes in place.
