@@ -119,6 +119,13 @@ now includes:
   persistence. Its public-API workflow replays recorded fixtures; selected-network
   qualification, the actual first-v3 boundary and the live `BatchEntry` query
   remain open. Production v1/v2 and state-value refusal remain unchanged.
+- The [experimental BatchEntry binding](experimental-batch-entry-query.md)
+  adds explicit typed-query context/caps, local domain/batch key derivation,
+  proof-value reads, strict ABI composition and all-stored-field gateway
+  comparison. Recorded public headers qualify refusal/binding controls;
+  positive proof/ABI composition is mathematical only. A matching positive
+  witness under an accepted header, selected-network inputs and an actual
+  consumer remain open. This does not close D2/D3 or add production guarantees.
 
 Each PR/main source requires its own scheduled CI/artifact qualification.
 These partial results leave every D0-D6 acceptance exit open and do not change
