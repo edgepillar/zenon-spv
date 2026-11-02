@@ -133,7 +133,7 @@ func TestFullSuiteTimingsBoundedDeterministicAndPrivate(t *testing.T) {
 		t.Fatal("complete timed stream refused")
 	}
 	got := c.timingSnapshot()
-	if got.Basis != "go_test_elapsed_seconds" || got.Limit != 20 || got.Completed != 54 || got.Measured != 50 || got.Missing != 2 || got.WithheldNames != 2 || len(got.Slowest) != 20 {
+	if got.Basis != "go_test_elapsed_nanoseconds" || got.Limit != 20 || got.Completed != 54 || got.Measured != 50 || got.Missing != 2 || got.WithheldNames != 2 || len(got.Slowest) != 20 {
 		t.Fatal("timing coverage or retained row bound lost")
 	}
 	for i, row := range got.Slowest {
@@ -141,7 +141,7 @@ func TestFullSuiteTimingsBoundedDeterministicAndPrivate(t *testing.T) {
 		if i%2 != 0 {
 			pkg = b
 		}
-		if row.Package != pkg || row.Test != fmt.Sprintf("TestTimed%02d", 23-i/2) || row.Seconds != float64(23-i/2) || row.Status != "pass" {
+		if row.Package != pkg || row.Test != fmt.Sprintf("TestTimed%02d", 23-i/2) || row.Nanoseconds != int64(23-i/2)*int64(time.Second) || row.Status != "pass" {
 			t.Fatal("slowest roots or deterministic tie ordering changed")
 		}
 	}
@@ -170,7 +170,7 @@ func TestFullSuiteTimingFailuresAndMissingValues(t *testing.T) {
 			t.Fatal("completed zero-duration root refused")
 		}
 		got := c.timingSnapshot()
-		if got.Measured != 1 || got.Missing != 0 || got.Slowest[0].Seconds != 0 || got.Slowest[0].Status != status || c.finish(false) != "failed" || status == "fail" && c.finish(true) != "failed" {
+		if got.Measured != 1 || got.Missing != 0 || got.Slowest[0].Nanoseconds != 0 || got.Slowest[0].Status != status || c.finish(false) != "failed" || status == "fail" && c.finish(true) != "failed" {
 			t.Fatal("zero duration, real failure or status was lost")
 		}
 	}
@@ -182,6 +182,30 @@ func TestFullSuiteTimingFailuresAndMissingValues(t *testing.T) {
 	for _, name := range []string{"TestRoot", "FuzzRoot", "Example", "ExampleRoot_case"} {
 		if !publicSuiteRoot(name) {
 			t.Fatal("static Go root identifier refused")
+		}
+	}
+}
+
+func TestFullSuiteTimingIntegerJSON(t *testing.T) {
+	for _, tc := range []struct {
+		seconds     float64
+		nanoseconds int64
+	}{{0, 0}, {1.234, 1234000000}, {0.0000000006, 1}, {suiteElapsedLimit, 86400000000000}} {
+		c := &suiteCollector{}
+		if err := c.recordTiming(testEvent{Action: "pass", Package: modulePath, Test: "TestTimed"}, &tc.seconds); err != nil {
+			t.Fatal("bounded fractional Go elapsed value refused")
+		}
+		raw, err := json.Marshal(c.timingSnapshot())
+		if err != nil {
+			t.Fatal("integer-only timing metadata could not be encoded")
+		}
+		var value struct {
+			Rows []struct {
+				Elapsed json.RawMessage `json:"elapsed_nanoseconds"`
+			} `json:"slowest_roots"`
+		}
+		if json.Unmarshal(raw, &value) != nil || len(value.Rows) != 1 || string(value.Rows[0].Elapsed) != fmt.Sprint(tc.nanoseconds) || bytes.Contains(raw, []byte("elapsed_seconds")) {
+			t.Fatal("Go elapsed seconds were not normalized to canonical integer nanoseconds")
 		}
 	}
 }

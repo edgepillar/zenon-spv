@@ -9,7 +9,6 @@ import argparse
 import hashlib
 import importlib.util
 import json
-import math
 from pathlib import Path
 import re
 import stat
@@ -61,7 +60,7 @@ def check_timings(value, counts, passed_packages):
     require(type(value) is dict and set(value) == {
         "basis", "limit", "completed_roots", "measured_roots", "missing_elapsed", "withheld_names", "slowest_roots",
     })
-    require(value["basis"] == "go_test_elapsed_seconds" and type(value["limit"]) is int and value["limit"] == 20)
+    require(value["basis"] == "go_test_elapsed_nanoseconds" and type(value["limit"]) is int and value["limit"] == 20)
     for key in ("completed_roots", "measured_roots", "missing_elapsed", "withheld_names"):
         require(integer(value[key]))
     require(value["completed_roots"] == counts["root_tests"]
@@ -70,12 +69,12 @@ def check_timings(value, counts, passed_packages):
     require(type(rows) is list and len(rows) == min(value["limit"], value["measured_roots"]))
     identities, ordering = [], []
     for row in rows:
-        require(type(row) is dict and set(row) == {"package", "test", "status", "elapsed_seconds"})
-        name, package, elapsed = row["test"], row["package"], row["elapsed_seconds"]
+        require(type(row) is dict and set(row) == {"package", "test", "status", "elapsed_nanoseconds"})
+        name, package, elapsed = row["test"], row["package"], row["elapsed_nanoseconds"]
         require(type(name) is str and len(name) <= 256
                 and re.fullmatch(r"(?:Test|Fuzz|Example)[A-Za-z0-9_]*", name) is not None
                 and type(package) is str and package in passed_packages and row["status"] in ("pass", "skip")
-                and type(elapsed) in (int, float) and 0 <= elapsed <= 86400 and math.isfinite(elapsed))
+                and integer(elapsed, 86400 * 10**9))
         identities.append((package, name))
         ordering.append((-elapsed, package, name))
     require(len(set(identities)) == len(identities) and ordering == sorted(ordering)

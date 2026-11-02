@@ -163,10 +163,10 @@ const suiteTimingLimit = 20
 const suiteElapsedLimit = 86400 // A diagnostic bound, not an execution deadline.
 
 type suiteTiming struct {
-	Package string  `json:"package"`
-	Test    string  `json:"test"`
-	Status  string  `json:"status"`
-	Seconds float64 `json:"elapsed_seconds"`
+	Package     string `json:"package"`
+	Test        string `json:"test"`
+	Status      string `json:"status"`
+	Nanoseconds int64  `json:"elapsed_nanoseconds"`
 }
 
 type suiteTimings struct {
@@ -196,10 +196,10 @@ func publicSuiteRoot(name string) bool {
 }
 
 func compareSuiteTiming(a, b suiteTiming) int {
-	if a.Seconds > b.Seconds {
+	if a.Nanoseconds > b.Nanoseconds {
 		return -1
 	}
-	if a.Seconds < b.Seconds {
+	if a.Nanoseconds < b.Nanoseconds {
 		return 1
 	}
 	if order := strings.Compare(a.Package, b.Package); order != 0 {
@@ -222,7 +222,10 @@ func (c *suiteCollector) recordTiming(e testEvent, elapsed *float64) error {
 		c.timings.Missing++
 	} else {
 		c.timings.Measured++
-		c.timings.Slowest = append(c.timings.Slowest, suiteTiming{e.Package, e.Test, e.Action, *elapsed})
+		// Preserve the existing integer-only metadata grammar. This unit
+		// conversion adds no precision to Go's observed Elapsed seconds.
+		nanoseconds := int64(math.Round(*elapsed * float64(time.Second)))
+		c.timings.Slowest = append(c.timings.Slowest, suiteTiming{e.Package, e.Test, e.Action, nanoseconds})
 		slices.SortFunc(c.timings.Slowest, compareSuiteTiming)
 		c.timings.Slowest = c.timings.Slowest[:min(len(c.timings.Slowest), suiteTimingLimit)]
 	}
@@ -231,7 +234,7 @@ func (c *suiteCollector) recordTiming(e testEvent, elapsed *float64) error {
 
 func (c *suiteCollector) timingSnapshot() suiteTimings {
 	value := c.timings
-	value.Basis, value.Limit = "go_test_elapsed_seconds", suiteTimingLimit
+	value.Basis, value.Limit = "go_test_elapsed_nanoseconds", suiteTimingLimit
 	value.Slowest = append([]suiteTiming{}, value.Slowest...)
 	return value
 }

@@ -130,7 +130,9 @@ observed incomplete/failed result. The driver does not retry execution.
 
 Version 2 adds passive timing diagnostics from the **same** `go test -json`
 stream. It retains at most the 20 slowest completed root tests, ordered by Go's
-`Elapsed` seconds descending, then package and root name for deterministic ties.
+`Elapsed` durations descending, then package and root name for deterministic ties.
+Go's seconds are rounded to integer nanoseconds to preserve the existing
+integer-only metadata envelope. This conversion adds no timing precision.
 Only bounded ASCII `Test`, `Fuzz` and `Example` identifiers are disclosed;
 subtest labels, raw output, timestamps and private paths are excluded. The
 test process and selected source remain trusted. Completed, measured,
@@ -140,7 +142,7 @@ Nonfinite, negative or greater-than-24-hour root durations reject the stream;
 the 24-hour diagnostic bound does not change execution timeouts.
 
 The independent reader accepts strict historical version-1 receipts without
-inventing timing data, and checks the version-2 limits, counts, finite durations,
+inventing timing data, and checks the version-2 limits, counts, integer durations,
 package membership, root spellings, uniqueness and order. Its successful result
 uses `zenon-root-suite-check/v2` for version 2 and retains the version-1 check
 format for historical inputs. A digest and consistent summary do not independently

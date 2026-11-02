@@ -3,6 +3,7 @@
 import copy
 import importlib.util
 import io
+import json
 from pathlib import Path
 import unittest
 
@@ -30,12 +31,12 @@ def fixture():
 def timed_fixture():
     receipt, report = fixture()
     receipt.update(format="zenon-root-suite/v2", timings={
-        "basis": "go_test_elapsed_seconds", "limit": 20, "completed_roots": 4, "measured_roots": 3,
+        "basis": "go_test_elapsed_nanoseconds", "limit": 20, "completed_roots": 4, "measured_roots": 3,
         "missing_elapsed": 1, "withheld_names": 0,
         "slowest_roots": [
             {"package": CHECKER.MODULE + "/internal/conformance", "test": name,
-             "status": "pass", "elapsed_seconds": seconds}
-            for name, seconds in [("TestSlow", 9), ("TestEqualA", 2), ("TestEqualB", 2)]
+             "status": "pass", "elapsed_nanoseconds": nanoseconds}
+            for name, nanoseconds in [("TestSlow", 9000000000), ("TestEqualA", 2000000000), ("TestEqualB", 2000000000)]
         ],
     })
     return receipt, report
@@ -48,6 +49,17 @@ class RootSuiteControls(unittest.TestCase):
     def test_complete_receipt_and_unselected_skip(self):
         self.check(*fixture())
         self.check(*timed_fixture())
+
+    def test_actual_json_ingress_preserves_integer_only_metadata(self):
+        decoder = CHECKER.companion().primitives().checker
+        metadata = decoder.metadata
+        for receipt, report in [fixture(), timed_fixture()]:
+            self.check(metadata(json.dumps(receipt).encode()), metadata(json.dumps(report).encode()))
+        receipt, _ = timed_fixture()
+        receipt["timings"]["slowest_roots"][0]["elapsed_nanoseconds"] = 1.234
+        with self.assertRaises(decoder.Rejected) as rejected:
+            metadata(json.dumps(receipt).encode())
+        self.assertEqual(rejected.exception.category, "metadata")
 
     def test_timing_coverage_and_strict_version_dispatch(self):
         receipt, report = timed_fixture()
@@ -75,7 +87,7 @@ class RootSuiteControls(unittest.TestCase):
     def test_timing_rows_are_bounded_public_finite_and_unique(self):
         receipt, report = timed_fixture()
         for key, values in {
-            "elapsed_seconds": [-1, True, "PRIVATE", float("nan"), float("inf"), 86401],
+            "elapsed_nanoseconds": [-1, True, "PRIVATE", float("nan"), float("inf"), 86400 * 10**9 + 1, 1.234, 0.0],
             "test": ["PRIVATE", "Test/PRIVATE", "Test-private", "Test_λ", "Test" * 65, None],
             "package": ["PRIVATE_PATH", CHECKER.MODULE + "/cmd/no-tests", None],
             "status": ["fail", "run", "PRIVATE"], "extra": ["PRIVATE"],
@@ -90,7 +102,7 @@ class RootSuiteControls(unittest.TestCase):
         duplicate["timings"]["slowest_roots"][2] = duplicate["timings"]["slowest_roots"][1]
         with self.assertRaises(CHECKER.Rejected):
             self.check(duplicate, report)
-        receipt["timings"]["slowest_roots"][2].update(status="skip", elapsed_seconds=0)
+        receipt["timings"]["slowest_roots"][2].update(status="skip", elapsed_nanoseconds=0)
         self.check(receipt, report)
         receipt["tests"].update(skipped=0, passed=12)
         with self.assertRaises(CHECKER.Rejected):
@@ -101,11 +113,11 @@ class RootSuiteControls(unittest.TestCase):
         receipt["tests"].update(root_tests=30, passed=37)
         receipt["timings"].update(completed_roots=30, measured_roots=30, missing_elapsed=0, slowest_roots=[
             {"package": CHECKER.MODULE + "/internal/conformance", "test": "TestRoot%02d" % i,
-             "status": "pass", "elapsed_seconds": 30 - i} for i in range(20)
+             "status": "pass", "elapsed_nanoseconds": 30 - i} for i in range(20)
         ])
         self.check(receipt, report)
         receipt["timings"]["slowest_roots"].append({"package": CHECKER.MODULE + "/internal/conformance",
-                                                    "test": "TestRoot20", "status": "pass", "elapsed_seconds": 10})
+                                                    "test": "TestRoot20", "status": "pass", "elapsed_nanoseconds": 10})
         with self.assertRaises(CHECKER.Rejected):
             self.check(receipt, report)
 
