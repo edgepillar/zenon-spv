@@ -14,6 +14,11 @@ state writer lock and write no state, configuration or report files. They do
 not initiate wallets, signing, transactions or a live deployment. Production
 `verify-state-value`, native v1/v2 profiles and their guarantee rules are separate.
 
+The separate [`fetch-bundle experimental-batch-entry` collection mode](experimental-batch-entry-collection.md)
+can acquire a bounded provider document using explicit local selectors. Its
+success grants no header or proof authority; these offline commands still
+require independent configuration, request and expected context pins.
+
 This is a functional experimental consumer seam. The recorded workflow covers
 real public header signatures and rejection of an incompatible witness; a
 matching positive accepted-header BatchEntry witness on the selected network
