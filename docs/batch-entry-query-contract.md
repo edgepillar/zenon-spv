@@ -89,7 +89,10 @@ The query profile must bind the exact L1 ABI/schema and relevant domain/runtime
 identity. stfSpecHash alone is insufficient. The three dynamic fields need
 individual and cumulative limits, and the selected ABI codec needs explicit
 offset, length, padding, integer-width, trailing-data and string rules.
-Those acceptance decisions and a strict decoder remain open.
+Those acceptance decisions and an accepting decoder binding remain open. A
+separate [candidate ABI decoder](candidate-batch-entry-codec.md) now supplies
+bounded, detached, untrusted encoding data with explicit local canonical/string
+choices. It does not provide accepted-header or state-value authority.
 
 [Candidate key helpers](candidate-batch-entry-key.md) already derive the full
 35-byte key locally:
