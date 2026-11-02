@@ -7,17 +7,24 @@ This module is the implementation. The [verification contract](docs/verification
 The [typed-state delivery plan](docs/typed-state-roadmap.md) tracks the first
 Zeno BatchEntry consumer. Its [query contract draft](docs/batch-entry-query-contract.md)
 and [original-node conformance report](docs/selected-original-node-conformance.md)
-record preparation and remaining gates; supported state-value acceptance is
-still refused.
+record preparation and remaining gates; production `STATE_VALUE_INCLUSION`
+remains refused.
+
+The [experimental offline BatchEntry CLI](docs/experimental-batch-entry-cli.md)
+can inspect explicit local configuration and query a provider document. The
+[bounded collector](docs/experimental-batch-entry-collection.md) prepares that
+untrusted input; trust settings, the local request and both expected context pins
+require independent selection. A matching positive witness and completed
+consumer run on the selected network remain open acceptance gates.
 
 ## Status
 
-The verifier currently ships, in five surfaces:
+The native verifier's main surfaces are:
 
 - **`verify-headers`** — header-chain integrity, signatures, linkage, height monotonicity, policy window (`Policy.W`), embedded mainnet checkpoints.
 - **`verify-commitment`** — account-header inclusion under `MomentumContent.Hash` via flat sorted-content evidence (O(m) bandwidth in the supported native inclusion path).
 - **`verify-segment`** — per-block hash recompute, Ed25519 signature, account-chain linkage, F1 `PubKeyToAddress` binding, commitment lookup.
-- **`verify-state-value`** — wire envelope + verifier skeleton for state-value proofs. **Refused by design** for every `StateCommitmentKind` today: supported native v1/v2 profiles have no accepted state-root path in this verifier. The selected experimental Zeno v3 source records a StateRoot, but its owned accepted-header integration remains unsupported. See the [historical native audit](docs/state-commitment-audit.md) and [typed-state plan](docs/typed-state-roadmap.md).
+- **`verify-state-value`** — wire envelope + verifier skeleton for state-value proofs. **Refused by design** for every `StateCommitmentKind` today: supported native v1/v2 profiles have no accepted state-root path in this production command. The separate experimental [owned-v3 header path](docs/experimental-v3-owned-state.md) and [typed-query CLI](docs/experimental-batch-entry-cli.md) are implemented under explicit local profiles and context pins; selected-network qualification remains open. See the [historical native audit](docs/state-commitment-audit.md) and [typed-state plan](docs/typed-state-roadmap.md).
 - **`watch`** — stateful service that ticks against live peers at the chain's natural cadence; saves `HeaderState` before reporting ACCEPT and stops after repeated save failures.
 
 Plus:
