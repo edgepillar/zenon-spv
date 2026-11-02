@@ -429,7 +429,9 @@ func TestExperimentalBatchCLIRegularInputBoundsAndIdentity(t *testing.T) {
 	if err == nil || raw != nil {
 		t.Fatal("replaced identity was read")
 	}
-	if _, err := opened.Stat(); !errors.Is(err, os.ErrClosed) {
+	// Windows Stat exposes its native handle error after Close. Read normalizes
+	// a closed descriptor to os.ErrClosed on every supported platform.
+	if n, err := opened.Read(make([]byte, 1)); n != 0 || !errors.Is(err, os.ErrClosed) {
 		t.Fatal("refused input descriptor leaked")
 	}
 	if raw, err := readExperimentalCLIFile(dir, 8, func(string) (*os.File, error) { t.Fatal("directory reached open"); return nil, nil }); err == nil || raw != nil {
