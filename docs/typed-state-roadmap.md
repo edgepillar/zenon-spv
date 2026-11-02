@@ -112,8 +112,13 @@ now includes:
 - The [raw-v3 RPC projection](candidate-v3-rpc.md) captures exact API source
   fragments with original node types, preserves received content order and
   compares eight wire cases with independent byte calculations. Its bounded
-  native decoder remains candidate data; D2's owned header/context and live RPC
-  integration exits are open.
+  native decoder remains candidate data.
+- The [experimental owned-v3 path](experimental-v3-owned-state.md) composes
+  bounded candidate RPC ranges with explicit profile/context pins, finite
+  producer authorization, immutable root-bearing headers and trusted local
+  persistence. Its public-API workflow replays recorded fixtures; selected-network
+  qualification, the actual first-v3 boundary and the live `BatchEntry` query
+  remain open. Production v1/v2 and state-value refusal remain unchanged.
 
 Each PR/main source requires its own scheduled CI/artifact qualification.
 These partial results leave every D0-D6 acceptance exit open and do not change

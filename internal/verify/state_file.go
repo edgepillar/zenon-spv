@@ -80,19 +80,6 @@ func writeValidatedHeaderState(path string, state HeaderState, openDir func(stri
 	if path == "" {
 		return errors.New("verify: SaveHeaderState: empty path")
 	}
-	dir := filepath.Dir(path)
-	if dir == "" {
-		dir = "."
-	}
-	tmp, err := os.CreateTemp(dir, ".spv-state-*")
-	if err != nil {
-		return fmt.Errorf("create temp: %w", err)
-	}
-	tmpPath := tmp.Name()
-	cleanup := func() { _ = os.Remove(tmpPath) }
-
-	enc := json.NewEncoder(&limitedStateWriter{destination: tmp, remaining: MaxStateFileBytes})
-	enc.SetIndent("", "  ")
 	body := persistedState{
 		Version:         stateFileVersion,
 		ProtocolProfile: cloneProtocolProfile(state.ProtocolProfile),
@@ -106,7 +93,30 @@ func writeValidatedHeaderState(path string, state HeaderState, openDir func(stri
 	if state.RetainHeaders != 0 {
 		body.Version = retentionStateFileVersion
 	}
-	if err := enc.Encode(body); err != nil {
+	return writeAtomicStateFile(path, func(w io.Writer) error {
+		enc := json.NewEncoder(&limitedStateWriter{destination: w, remaining: MaxStateFileBytes})
+		enc.SetIndent("", "  ")
+		return enc.Encode(body)
+	}, openDir)
+}
+
+// The caller supplies its schema and byte bound. Owned-state formats share the
+// native temp/sync/rename/parent-sync sequence and its failure semantics.
+func writeAtomicStateFile(path string, encode func(io.Writer) error, openDir func(string) (*os.File, error)) error {
+	if path == "" {
+		return errors.New("state destination is empty")
+	}
+	dir := filepath.Dir(path)
+	if dir == "" {
+		dir = "."
+	}
+	tmp, err := os.CreateTemp(dir, ".spv-state-*")
+	if err != nil {
+		return fmt.Errorf("create temp: %w", err)
+	}
+	tmpPath := tmp.Name()
+	cleanup := func() { _ = os.Remove(tmpPath) }
+	if err := encode(tmp); err != nil {
 		_ = tmp.Close()
 		cleanup()
 		return fmt.Errorf("encode: %w", err)
