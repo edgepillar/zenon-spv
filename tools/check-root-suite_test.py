@@ -27,12 +27,87 @@ def fixture():
     return receipt, report
 
 
+def timed_fixture():
+    receipt, report = fixture()
+    receipt.update(format="zenon-root-suite/v2", timings={
+        "basis": "go_test_elapsed_seconds", "limit": 20, "completed_roots": 4, "measured_roots": 3,
+        "missing_elapsed": 1, "withheld_names": 0,
+        "slowest_roots": [
+            {"package": CHECKER.MODULE + "/internal/conformance", "test": name,
+             "status": "pass", "elapsed_seconds": seconds}
+            for name, seconds in [("TestSlow", 9), ("TestEqualA", 2), ("TestEqualB", 2)]
+        ],
+    })
+    return receipt, report
+
+
 class RootSuiteControls(unittest.TestCase):
     def check(self, receipt, report):
         CHECKER.check_receipt(receipt, report, True, True, "10m0s", "30m0s")
 
     def test_complete_receipt_and_unselected_skip(self):
         self.check(*fixture())
+        self.check(*timed_fixture())
+
+    def test_timing_coverage_and_strict_version_dispatch(self):
+        receipt, report = timed_fixture()
+        for mutate in [lambda r: r.pop("timings"), lambda r: r.update(format="zenon-root-suite/v1"),
+                       lambda r: r["timings"].update(extra="PRIVATE"),
+                       lambda r: r["timings"].update(limit=True), lambda r: r["timings"].update(limit=21),
+                       lambda r: r["timings"].update(basis="PRIVATE"),
+                       lambda r: r["timings"].update(completed_roots=3),
+                       lambda r: r["timings"].update(missing_elapsed=0),
+                       lambda r: r["timings"].update(withheld_names=True),
+                       lambda r: r["timings"].update(measured_roots=65537),
+                       lambda r: r["timings"].update(slowest_roots=None),
+                       lambda r: r["timings"]["slowest_roots"].pop(),
+                       lambda r: r["timings"]["slowest_roots"].reverse(),
+                       lambda r: r["timings"]["slowest_roots"].append(r["timings"]["slowest_roots"][0])]:
+            value = copy.deepcopy(receipt)
+            mutate(value)
+            with self.assertRaises(CHECKER.Rejected):
+                self.check(value, report)
+        receipt["timings"].update(measured_roots=0, missing_elapsed=0, withheld_names=4, slowest_roots=[])
+        self.check(receipt, report)
+        receipt["timings"].update(missing_elapsed=4, withheld_names=0)
+        self.check(receipt, report)
+
+    def test_timing_rows_are_bounded_public_finite_and_unique(self):
+        receipt, report = timed_fixture()
+        for key, values in {
+            "elapsed_seconds": [-1, True, "PRIVATE", float("nan"), float("inf"), 86401],
+            "test": ["PRIVATE", "Test/PRIVATE", "Test-private", "Test_λ", "Test" * 65, None],
+            "package": ["PRIVATE_PATH", CHECKER.MODULE + "/cmd/no-tests", None],
+            "status": ["fail", "run", "PRIVATE"], "extra": ["PRIVATE"],
+        }.items():
+            for value in values:
+                with self.subTest(key=key, value_type=type(value).__name__):
+                    invalid = copy.deepcopy(receipt)
+                    invalid["timings"]["slowest_roots"][0][key] = value
+                    with self.assertRaises(CHECKER.Rejected):
+                        self.check(invalid, report)
+        duplicate = copy.deepcopy(receipt)
+        duplicate["timings"]["slowest_roots"][2] = duplicate["timings"]["slowest_roots"][1]
+        with self.assertRaises(CHECKER.Rejected):
+            self.check(duplicate, report)
+        receipt["timings"]["slowest_roots"][2].update(status="skip", elapsed_seconds=0)
+        self.check(receipt, report)
+        receipt["tests"].update(skipped=0, passed=12)
+        with self.assertRaises(CHECKER.Rejected):
+            self.check(receipt, report)
+
+    def test_only_twenty_rows_are_required_for_larger_suites(self):
+        receipt, report = timed_fixture()
+        receipt["tests"].update(root_tests=30, passed=37)
+        receipt["timings"].update(completed_roots=30, measured_roots=30, missing_elapsed=0, slowest_roots=[
+            {"package": CHECKER.MODULE + "/internal/conformance", "test": "TestRoot%02d" % i,
+             "status": "pass", "elapsed_seconds": 30 - i} for i in range(20)
+        ])
+        self.check(receipt, report)
+        receipt["timings"]["slowest_roots"].append({"package": CHECKER.MODULE + "/internal/conformance",
+                                                    "test": "TestRoot20", "status": "pass", "elapsed_seconds": 10})
+        with self.assertRaises(CHECKER.Rejected):
+            self.check(receipt, report)
 
     def test_completion_source_and_policy_refusals(self):
         for key, values in {

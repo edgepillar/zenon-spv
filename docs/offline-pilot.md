@@ -119,7 +119,7 @@ The stream is capped at 32 MiB with a 1 MiB line limit, 1,024 packages and 65,53
 test identities. Package inventory is capped at 1 MiB. Raw diagnostics and dynamic
 test names are not copied into either report or a second stdout archive.
 
-The separate `zenon-root-suite/v1` receipt records source pins, execution options,
+The separate `zenon-root-suite/v2` receipt records source pins, execution options,
 package completion, aggregate test/skip counts and the complete event-stream
 byte count and SHA-256. Its selected-report SHA-256 binds the unchanged report.
 Whole-suite skip counts include tests outside the 59 selected scenarios; they
@@ -127,6 +127,31 @@ do not extend the selected scenario skip ledger's diagnostic coverage. Failed or
 interrupted execution cannot become successful merely because selected cases
 passed. A setup failure can leave an empty receipt; a later failure retains its
 observed incomplete/failed result. The driver does not retry execution.
+
+Version 2 adds passive timing diagnostics from the **same** `go test -json`
+stream. It retains at most the 20 slowest completed root tests, ordered by Go's
+`Elapsed` seconds descending, then package and root name for deterministic ties.
+Only bounded ASCII `Test`, `Fuzz` and `Example` identifiers are disclosed;
+subtest labels, raw output, timestamps and private paths are excluded. The
+test process and selected source remain trusted. Completed, measured,
+missing-elapsed and withheld-name counts make partial timing coverage explicit;
+an absent duration is not replaced with zero. Zero is a valid observed duration.
+Nonfinite, negative or greater-than-24-hour root durations reject the stream;
+the 24-hour diagnostic bound does not change execution timeouts.
+
+The independent reader accepts strict historical version-1 receipts without
+inventing timing data, and checks the version-2 limits, counts, finite durations,
+package membership, root spellings, uniqueness and order. Its successful result
+uses `zenon-root-suite-check/v2` for version 2 and retains the version-1 check
+format for historical inputs. A digest and consistent summary do not independently
+prove that the producer selected the true slowest roots from the omitted stream.
+
+These are observations for locating expensive tests, not a benchmark or a claim
+of CPU, memory, disk, whole-CI latency or performance savings. Parallel roots can
+overlap; root durations do not sum to job wall time and do not include all setup
+or compilation work. Existing race/coverage flags, package and overall deadlines,
+test selection, failure/skip handling and selected-report schema are unchanged.
+No extra test invocation or raw event-stream archive is created for timing.
 
 `tools/check-root-suite.py` checks the separately pinned receipt and report
 against the selected source revision, scenario registry and platform. CI retains

@@ -189,15 +189,17 @@ func run(args []string, stdout, stderr io.Writer) int {
 	if receiptFile != nil {
 		digest := sha256.Sum256(raw)
 		receipt := suiteReceipt{
-			Format: "zenon-root-suite/v1", Status: report.Status, Error: report.Error, Source: before,
+			Format: "zenon-root-suite/v2", Status: report.Status, Error: report.Error, Source: before,
 			InputsUnchanged: report.InputsUnchanged, Race: *race, Coverage: *coverage,
 			PackageTimeout: packageTimeout.String(), OverallTimeout: timeout.String(),
 			InventoryOK: inventoryOK, ProcessOK: processOK, SelectedScenarios: len(scenarios),
 			SelectedReportSHA: hex.EncodeToString(digest[:]), Packages: []suitePackage{},
+			Timings: (&suiteCollector{}).timingSnapshot(),
 		}
 		if suite != nil {
 			receipt.Packages, receipt.StreamSHA256 = suite.snapshot()
 			receipt.Tests, receipt.StreamBytes, receipt.StreamComplete = suite.counts, suite.bytes, suite.complete
+			receipt.Timings = suite.timingSnapshot()
 		}
 		if err := writeSuiteReceipt(receiptFile, receipt); err != nil {
 			_, _ = fmt.Fprintln(stderr, "offline-pilot: suite receipt output failed")
