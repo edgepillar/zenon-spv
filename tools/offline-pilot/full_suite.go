@@ -8,6 +8,7 @@ import (
 	"errors"
 	"hash"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"slices"
@@ -51,6 +52,7 @@ type suiteReceipt struct {
 	Tests             suiteCounts    `json:"tests"`
 	SelectedScenarios int            `json:"selected_scenarios"`
 	SelectedReportSHA string         `json:"selected_report_sha256"`
+	Timings           suiteTimings   `json:"timings"`
 }
 
 type suiteCollector struct {
@@ -58,6 +60,7 @@ type suiteCollector struct {
 	packages map[string]string
 	active   map[string]bool
 	counts   suiteCounts
+	timings  suiteTimings
 	digest   hash.Hash
 	bytes    int64
 	complete bool
@@ -135,11 +138,17 @@ func (c *suiteCollector) read(r io.Reader) error {
 	scanner := bufio.NewScanner(counted)
 	scanner.Buffer(make([]byte, 4096), 1<<20)
 	for scanner.Scan() {
-		var event testEvent
+		var event struct {
+			testEvent
+			Elapsed *float64
+		}
 		if json.Unmarshal(scanner.Bytes(), &event) != nil {
 			return errors.New("invalid suite event stream")
 		}
-		if err := c.event(event); err != nil {
+		if err := c.event(event.testEvent); err != nil {
+			return err
+		}
+		if err := c.recordTiming(event.testEvent, event.Elapsed); err != nil {
 			return err
 		}
 	}
@@ -148,6 +157,86 @@ func (c *suiteCollector) read(r io.Reader) error {
 	}
 	c.complete = true
 	return nil
+}
+
+const suiteTimingLimit = 20
+const suiteElapsedLimit = 86400 // A diagnostic bound, not an execution deadline.
+
+type suiteTiming struct {
+	Package     string `json:"package"`
+	Test        string `json:"test"`
+	Status      string `json:"status"`
+	Nanoseconds int64  `json:"elapsed_nanoseconds"`
+}
+
+type suiteTimings struct {
+	Basis         string        `json:"basis"`
+	Limit         int           `json:"limit"`
+	Completed     int           `json:"completed_roots"`
+	Measured      int           `json:"measured_roots"`
+	Missing       int           `json:"missing_elapsed"`
+	WithheldNames int           `json:"withheld_names"`
+	Slowest       []suiteTiming `json:"slowest_roots"`
+}
+
+// Only root identifiers produced by Go's test registry may be disclosed. Never
+// retain t.Run labels, output, timestamps, paths or an unbounded list of names.
+// These observations remain dependent on the trusted test process and source.
+func publicSuiteRoot(name string) bool {
+	if len(name) == 0 || len(name) > 256 || !strings.HasPrefix(name, "Test") && !strings.HasPrefix(name, "Fuzz") && !strings.HasPrefix(name, "Example") {
+		return false
+	}
+	for _, char := range name {
+		if char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || char == '_' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func compareSuiteTiming(a, b suiteTiming) int {
+	if a.Nanoseconds > b.Nanoseconds {
+		return -1
+	}
+	if a.Nanoseconds < b.Nanoseconds {
+		return 1
+	}
+	if order := strings.Compare(a.Package, b.Package); order != 0 {
+		return order
+	}
+	return strings.Compare(a.Test, b.Test)
+}
+
+func (c *suiteCollector) recordTiming(e testEvent, elapsed *float64) error {
+	if e.Test == "" || strings.Contains(e.Test, "/") || e.Action != "pass" && e.Action != "fail" && e.Action != "skip" {
+		return nil
+	}
+	if elapsed != nil && (math.IsNaN(*elapsed) || math.IsInf(*elapsed, 0) || *elapsed < 0 || *elapsed > suiteElapsedLimit) {
+		return errors.New("invalid suite root elapsed time")
+	}
+	c.timings.Completed++
+	if !publicSuiteRoot(e.Test) {
+		c.timings.WithheldNames++
+	} else if elapsed == nil {
+		c.timings.Missing++
+	} else {
+		c.timings.Measured++
+		// Preserve the existing integer-only metadata grammar. This unit
+		// conversion adds no precision to Go's observed Elapsed seconds.
+		nanoseconds := int64(math.Round(*elapsed * float64(time.Second)))
+		c.timings.Slowest = append(c.timings.Slowest, suiteTiming{e.Package, e.Test, e.Action, nanoseconds})
+		slices.SortFunc(c.timings.Slowest, compareSuiteTiming)
+		c.timings.Slowest = c.timings.Slowest[:min(len(c.timings.Slowest), suiteTimingLimit)]
+	}
+	return nil
+}
+
+func (c *suiteCollector) timingSnapshot() suiteTimings {
+	value := c.timings
+	value.Basis, value.Limit = "go_test_elapsed_nanoseconds", suiteTimingLimit
+	value.Slowest = append([]suiteTiming{}, value.Slowest...)
+	return value
 }
 
 type suiteStreamReader struct {

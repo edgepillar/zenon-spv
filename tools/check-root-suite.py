@@ -56,9 +56,36 @@ def integer(value, maximum=65536):
     return type(value) is int and 0 <= value <= maximum
 
 
+def check_timings(value, counts, passed_packages):
+    require(type(value) is dict and set(value) == {
+        "basis", "limit", "completed_roots", "measured_roots", "missing_elapsed", "withheld_names", "slowest_roots",
+    })
+    require(value["basis"] == "go_test_elapsed_nanoseconds" and type(value["limit"]) is int and value["limit"] == 20)
+    for key in ("completed_roots", "measured_roots", "missing_elapsed", "withheld_names"):
+        require(integer(value[key]))
+    require(value["completed_roots"] == counts["root_tests"]
+            and value["measured_roots"] + value["missing_elapsed"] + value["withheld_names"] == value["completed_roots"])
+    rows = value["slowest_roots"]
+    require(type(rows) is list and len(rows) == min(value["limit"], value["measured_roots"]))
+    identities, ordering = [], []
+    for row in rows:
+        require(type(row) is dict and set(row) == {"package", "test", "status", "elapsed_nanoseconds"})
+        name, package, elapsed = row["test"], row["package"], row["elapsed_nanoseconds"]
+        require(type(name) is str and len(name) <= 256
+                and re.fullmatch(r"(?:Test|Fuzz|Example)[A-Za-z0-9_]*", name) is not None
+                and type(package) is str and package in passed_packages and row["status"] in ("pass", "skip")
+                and integer(elapsed, 86400 * 10**9))
+        identities.append((package, name))
+        ordering.append((-elapsed, package, name))
+    require(len(set(identities)) == len(identities) and ordering == sorted(ordering)
+            and sum(row["status"] == "skip" for row in rows) <= counts["skipped"])
+
+
 def check_receipt(value, report, race, coverage, package_timeout, overall_timeout):
-    require(type(value) is dict and set(value) == RECEIPT_KEYS)
-    require(value["format"] == "zenon-root-suite/v1" and value["status"] == report["status"]
+    require(type(value) is dict)
+    version2 = value.get("format") == "zenon-root-suite/v2"
+    require(set(value) == RECEIPT_KEYS | ({"timings"} if version2 else set()))
+    require(value["format"] in ("zenon-root-suite/v1", "zenon-root-suite/v2") and value["status"] == report["status"]
             and value["status"] in ("passed", "passed_with_skips") and value["error"] is None)
     require(value["source"] == report["source"] and value["source_matches_after_run"] is True
             and value["test_parent_race_enabled"] is race
@@ -91,6 +118,8 @@ def check_receipt(value, report, race, coverage, package_timeout, overall_timeou
             passed.add(name)
     require(names == sorted(set(names))
             and {MODULE + "/" + case["package"] for case in report["cases"]} <= passed)
+    if version2:
+        check_timings(value["timings"], counts, passed)
 
 
 def verify(args):
@@ -108,7 +137,7 @@ def verify(args):
     check_receipt(receipt, report, args.expect_race == "true", args.expect_coverage == "true",
                   args.expect_package_timeout, args.expect_overall_timeout)
     require(receipt["selected_report_sha256"] == args.expect_report_sha256)
-    return {
+    result = {
         "format": "zenon-root-suite-check/v1", "status": "consistent", "category": None,
         "source_revision": args.expect_revision, "source_inputs_sha256": selection["source_inputs_sha256"],
         "os": args.expect_os, "architecture": args.expect_architecture,
@@ -118,6 +147,9 @@ def verify(args):
         "selected_scenarios": receipt["selected_scenarios"],
         "test_execution_authenticated": False, "network_or_state_value_acceptance": False,
     }
+    if receipt["format"] == "zenon-root-suite/v2":
+        result.update(format="zenon-root-suite-check/v2", receipt_format=receipt["format"], timings=receipt["timings"])
+    return result
 
 
 class Parser(argparse.ArgumentParser):

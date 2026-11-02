@@ -7,7 +7,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -86,6 +88,125 @@ func TestFullSuiteProjectionMatchesSelectedReport(t *testing.T) {
 	}{packages, full.counts, full.selected.cases})
 	if err != nil || bytes.Contains(report, []byte("PRIVATE")) {
 		t.Fatal("unselected diagnostics or dynamic test names reached the report")
+	}
+	if timings := full.timingSnapshot(); timings.Completed != 3 || timings.Missing != 3 || timings.Measured != 0 || len(timings.Slowest) != 0 {
+		t.Fatal("absent elapsed fields were invented or subtests were timed as roots")
+	}
+}
+
+func TestFullSuiteTimingsBoundedDeterministicAndPrivate(t *testing.T) {
+	var stream bytes.Buffer
+	write := func(action, pkg, name string, elapsed *float64) {
+		t.Helper()
+		if err := json.NewEncoder(&stream).Encode(struct {
+			testEvent
+			Elapsed *float64 `json:",omitempty"`
+		}{testEvent{Action: action, Package: pkg, Test: name}, elapsed}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	a, b := modulePath+"/internal/a", modulePath+"/internal/b"
+	// Reverse package arrival and equal durations exercise deterministic ties.
+	for _, pkg := range []string{b, a} {
+		write("start", pkg, "", nil)
+		for i := 0; i < 24; i++ {
+			name, seconds := fmt.Sprintf("TestTimed%02d", i), float64(i)
+			write("run", pkg, name, nil)
+			write("pass", pkg, name, &seconds)
+		}
+		write("run", pkg, "TestNested", nil)
+		write("pause", pkg, "TestNested", nil)
+		write("cont", pkg, "TestNested", nil)
+		write("run", pkg, "TestNested/PRIVATE_PATH_AND_DATA", nil)
+		seconds := 999.0
+		write("pass", pkg, "TestNested/PRIVATE_PATH_AND_DATA", &seconds)
+		seconds = 0
+		write("pass", pkg, "TestNested", &seconds)
+		write("run", pkg, "TestMissing", nil)
+		write("pass", pkg, "TestMissing", nil)
+		write("run", pkg, "TestPRIVATE NAME", nil)
+		write("pass", pkg, "TestPRIVATE NAME", &seconds)
+		write("pass", pkg, "", nil)
+	}
+	c, err := newSuiteCollector(newCollector(nil), []string{a, b})
+	if err != nil || c.read(&stream) != nil || c.finish(true) != "passed" {
+		t.Fatal("complete timed stream refused")
+	}
+	got := c.timingSnapshot()
+	if got.Basis != "go_test_elapsed_nanoseconds" || got.Limit != 20 || got.Completed != 54 || got.Measured != 50 || got.Missing != 2 || got.WithheldNames != 2 || len(got.Slowest) != 20 {
+		t.Fatal("timing coverage or retained row bound lost")
+	}
+	for i, row := range got.Slowest {
+		pkg := a
+		if i%2 != 0 {
+			pkg = b
+		}
+		if row.Package != pkg || row.Test != fmt.Sprintf("TestTimed%02d", 23-i/2) || row.Nanoseconds != int64(23-i/2)*int64(time.Second) || row.Status != "pass" {
+			t.Fatal("slowest roots or deterministic tie ordering changed")
+		}
+	}
+	raw, err := json.Marshal(got)
+	if err != nil || bytes.Contains(raw, []byte("PRIVATE")) {
+		t.Fatal("dynamic names or private root spelling escaped into timings")
+	}
+	got.Slowest[0].Test = "changed"
+	if c.timingSnapshot().Slowest[0].Test == "changed" {
+		t.Fatal("timing snapshot aliases collector state")
+	}
+}
+
+func TestFullSuiteTimingFailuresAndMissingValues(t *testing.T) {
+	for _, elapsed := range []float64{-1, math.NaN(), math.Inf(1), math.Inf(-1), suiteElapsedLimit + 1} {
+		c := &suiteCollector{}
+		if err := c.recordTiming(testEvent{Test: "TestTimed", Action: "pass"}, &elapsed); err == nil || strings.Contains(err.Error(), "TestTimed") || c.timings.Completed != 0 {
+			t.Fatal("invalid elapsed value accepted or disclosed")
+		}
+	}
+	for _, status := range []string{"pass", "fail", "skip"} {
+		pkg := modulePath + "/internal/a"
+		raw := fmt.Sprintf("{\"Action\":\"start\",\"Package\":%q}\n{\"Action\":\"run\",\"Package\":%q,\"Test\":\"TestTimed\"}\n{\"Action\":%q,\"Package\":%q,\"Test\":\"TestTimed\",\"Elapsed\":0}\n{\"Action\":%q,\"Package\":%q}\n", pkg, pkg, status, pkg, status, pkg)
+		c, err := newSuiteCollector(newCollector(nil), []string{pkg})
+		if err != nil || c.read(strings.NewReader(raw)) != nil {
+			t.Fatal("completed zero-duration root refused")
+		}
+		got := c.timingSnapshot()
+		if got.Measured != 1 || got.Missing != 0 || got.Slowest[0].Nanoseconds != 0 || got.Slowest[0].Status != status || c.finish(false) != "failed" || status == "fail" && c.finish(true) != "failed" {
+			t.Fatal("zero duration, real failure or status was lost")
+		}
+	}
+	for _, name := range []string{"TestUnicode_λ", "PRIVATE", strings.Repeat("Test", 65), "Test/PRIVATE", "Test-private"} {
+		if publicSuiteRoot(name) {
+			t.Fatal("nonpublic root spelling accepted")
+		}
+	}
+	for _, name := range []string{"TestRoot", "FuzzRoot", "Example", "ExampleRoot_case"} {
+		if !publicSuiteRoot(name) {
+			t.Fatal("static Go root identifier refused")
+		}
+	}
+}
+
+func TestFullSuiteTimingIntegerJSON(t *testing.T) {
+	for _, tc := range []struct {
+		seconds     float64
+		nanoseconds int64
+	}{{0, 0}, {1.234, 1234000000}, {0.0000000006, 1}, {suiteElapsedLimit, 86400000000000}} {
+		c := &suiteCollector{}
+		if err := c.recordTiming(testEvent{Action: "pass", Package: modulePath, Test: "TestTimed"}, &tc.seconds); err != nil {
+			t.Fatal("bounded fractional Go elapsed value refused")
+		}
+		raw, err := json.Marshal(c.timingSnapshot())
+		if err != nil {
+			t.Fatal("integer-only timing metadata could not be encoded")
+		}
+		var value struct {
+			Rows []struct {
+				Elapsed json.RawMessage `json:"elapsed_nanoseconds"`
+			} `json:"slowest_roots"`
+		}
+		if json.Unmarshal(raw, &value) != nil || len(value.Rows) != 1 || string(value.Rows[0].Elapsed) != fmt.Sprint(tc.nanoseconds) || bytes.Contains(raw, []byte("elapsed_seconds")) {
+			t.Fatal("Go elapsed seconds were not normalized to canonical integer nanoseconds")
+		}
 	}
 }
 
@@ -214,7 +335,8 @@ func TestFullSuiteReceiptIsIndependentAndExclusive(t *testing.T) {
 	if err != nil {
 		t.Fatal("independent receipt refused")
 	}
-	value := suiteReceipt{Format: "zenon-root-suite/v1", Status: "failed", ProcessOK: false, StreamComplete: false}
+	value := suiteReceipt{Format: "zenon-root-suite/v2", Status: "failed", ProcessOK: false, StreamComplete: false,
+		Timings: (&suiteCollector{}).timingSnapshot()}
 	if writeSuiteReceipt(file, value) != nil {
 		t.Fatal("failure receipt was not preserved")
 	}
@@ -311,10 +433,13 @@ func TestFullSuiteActualNativeNames(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	ok, category := runTestProcess(ctx, goTool, []string{"tool", "test2json", "-p", pkg, self,
+	ok, category := runTestProcess(ctx, goTool, []string{"tool", "test2json", "-t", "-p", pkg, self,
 		"-test.v=test2json", "-test.run=^TestFullSuiteNativeNameHelper$"}, pilotEnvironment(goTool), c.read)
 	if !ok || category != nil || c.finish(ok) != "passed" || selected.finish(ok) != "passed" ||
 		c.counts != (suiteCounts{RootTests: 1, Subtests: 5, Passed: 6}) {
 		t.Fatal("actual slash-labelled or parallel Go subtests did not complete")
+	}
+	if timings := c.timingSnapshot(); timings.Completed != 1 || timings.Measured != 1 || timings.Missing != 0 || len(timings.Slowest) != 1 || timings.Slowest[0].Test != "TestFullSuiteNativeNameHelper" {
+		t.Fatal("actual Go elapsed metadata was lost or subtests leaked into root timings")
 	}
 }
