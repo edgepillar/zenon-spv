@@ -98,8 +98,11 @@ GOWORK=off GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off CGO_ENABLED=1 \
 
 The next integrated path still needs an explicitly selected network/genesis,
 anchor, activation profile and producer schedule; the actual selected-genesis
-v3 boundary; an owned immutable v3 header/context and persistence; and one
-header-root-bound, locally keyed, typed `BatchEntry` consumer query. A provider
+v3 boundary; and one header-root-bound, locally keyed, typed `BatchEntry`
+consumer query. The separate [experimental owned-state implementation](experimental-v3-owned-state.md)
+now supplies profile/context, finite schedule, immutable header/root and
+persistence mechanics under explicit configured inputs. Its recorded workflow
+does not establish these selected-network gates. A provider
 root, candidate hash or experimental switch supplies none of that authority.
 The production v1/v2 gate still rejects these v3 results. Production state-proof
 and irreversible-settlement decisions remain `NO_GO`.

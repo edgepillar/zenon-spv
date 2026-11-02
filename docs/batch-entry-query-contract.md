@@ -34,7 +34,7 @@ they do not authenticate a live network or its activation.
 | --- | --- | --- |
 | Network and genesis | One exact network and genesis hash, selected independently of the witness provider | Open; source chain ID 69 is a default, not authenticated identity |
 | Anchor | Height/hash and provenance for the chosen trust start | Open |
-| Header and context | Owned accepted H/hash/context plus selected retained-state/tip binding | Not implemented for supported v3 |
+| Header and context | Owned accepted H/hash/context plus selected retained-state/tip binding | Experimental mechanics implemented; selected-network qualification and accepting BatchEntry binding remain open |
 | Producer schedule | Independently selected authorization, coverage and provenance | Open |
 | First incoming v3 | Actual boundary from v1 genesis and parent-frontier activation behavior | Open for the selected network; the [isolated node fixture](first-v3-node-boundary.md) does not qualify network activation |
 | Settlement address | Fixed raw 20-byte address from the selected local profile | Source constant mapped; active network selection remains open |
