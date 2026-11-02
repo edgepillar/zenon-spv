@@ -46,6 +46,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	timeout := fs.Duration("timeout", 10*time.Minute, "overall test timeout")
 	race := fs.Bool("race", false, "instrument test parents with the race detector")
 	fullSuite := fs.Bool("full-suite", false, "derive the selected report from one complete root-module test run")
+	suiteFailureDiagnostics := fs.Bool("suite-failure-diagnostics", false, "emit bounded static failed-root diagnostics to stderr for an unsuccessful full suite")
 	packageTimeout := fs.Duration("package-timeout", 0, "explicit per-package deadline for full-suite mode")
 	suiteReceiptPath := fs.String("suite-receipt", "", "new absolute receipt outside the checkout and candidate directory")
 	coverage := fs.Bool("coverage", false, "write coverage.out in full-suite mode")
@@ -59,14 +60,14 @@ func run(args []string, stdout, stderr io.Writer) int {
 	})
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
-			return writeReport(stdout, stderr, []byte("Usage: offline-pilot [--race] [--timeout 10m] [--export-binaries ABSOLUTE_NEW_DIRECTORY]\nFull root module: add --full-suite --package-timeout 10m --suite-receipt ABSOLUTE_NEW_FILE [--coverage].\nRun from the repository root with dependencies already cached.\n"), 0)
+			return writeReport(stdout, stderr, []byte("Usage: offline-pilot [--race] [--timeout 10m] [--export-binaries ABSOLUTE_NEW_DIRECTORY]\nFull root module: add --full-suite --package-timeout 10m --suite-receipt ABSOLUTE_NEW_FILE [--coverage] [--suite-failure-diagnostics].\nRun from the repository root with dependencies already cached.\n"), 0)
 		}
 		_, _ = fmt.Fprintln(stderr, "offline-pilot: invalid arguments; use --help")
 		return 64
 	}
 	if fs.NArg() != 0 || *timeout <= 0 || *timeout > time.Hour ||
 		(*fullSuite && (*packageTimeout <= 0 || *packageTimeout > *timeout || *suiteReceiptPath == "" || len(*suiteReceiptPath) > 4096 || !filepath.IsAbs(*suiteReceiptPath))) ||
-		(!*fullSuite && (*packageTimeout != 0 || *suiteReceiptPath != "" || *coverage)) {
+		(!*fullSuite && (*packageTimeout != 0 || *suiteReceiptPath != "" || *coverage || *suiteFailureDiagnostics)) {
 		_, _ = fmt.Fprintln(stderr, "offline-pilot: invalid arguments; use --help")
 		return 64
 	}
@@ -207,6 +208,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 			_, _ = fmt.Fprintln(stderr, "offline-pilot: suite receipt output failed")
 			return 70
 		}
+	}
+	if *fullSuite {
+		return writeFullSuiteReport(stdout, stderr, raw, code, suite, *suiteFailureDiagnostics, processOK, report.Status)
 	}
 	return writeReport(stdout, stderr, raw, code)
 }

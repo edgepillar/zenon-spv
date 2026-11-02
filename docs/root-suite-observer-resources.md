@@ -41,3 +41,31 @@ Windows uses its peak-working-set counter. These synthetic retained-window
 observations do not establish representative R1 hardware budgets, live-network
 activation, consensus finality or state-value acceptance. Unsigned reports still
 require actual source-specific native CI and artifact qualification.
+
+## Bounded failure diagnostics
+
+In full-suite mode, `--suite-failure-diagnostics` emits one
+`offline-pilot-suite-failures` JSON line to stderr for an unsuccessful run. CI
+enables this option on Linux, macOS and Windows so an unselected test failure
+does not require another complete run merely to recover its root identifier.
+The default remains quiet, and successful runs emit no diagnostic record.
+
+The `zenon-root-suite-failures/v1` supplement retains at most 20 terminal failed
+roots, sorted by package and root identifier, within a 16 KiB total output cap.
+It uses the same ASCII root-name allowlist as timing observations and limits
+package names to 256 bytes. It never copies `t.Run` labels, test output, paths,
+timestamps or underlying error messages. Counts distinguish observed failures,
+withheld names and eligible roots omitted by the row cap. The source-pinned Go
+process remains trusted; this is not an independent test-registry attestation.
+
+The record binds the selected report SHA-256 and observed stream digest/byte
+count, and preserves process success and stream-completeness flags. A missing
+terminal root event, build failure, interrupted stream or process failure cannot
+be inferred into a named root failure. Zero listed roots does not mean success.
+Failure to write the optional diagnostic returns exit 70 while still attempting
+the selected report output; no diagnostic write is retried.
+
+The selected schema-2 report, root-suite v3 receipt, existing archive membership,
+complete uncached test selection, race/coverage settings and deadlines remain
+unchanged. Existing failure evidence is preserved; a later passing revision does
+not identify or relabel a missing failure root from an older run.

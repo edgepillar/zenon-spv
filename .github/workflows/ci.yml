@@ -630,7 +630,7 @@ jobs:
         id: root_suite
         # Execute every root-module package once. Project the unchanged selected
         # report from that actual stream; preserve race, coverage and -p 1.
-        run: go run ./tools/offline-pilot --full-suite --timeout 30m --package-timeout 10m --race --coverage --suite-receipt "${{ runner.temp }}/root-suite.json" --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
+        run: go run ./tools/offline-pilot --full-suite --timeout 30m --package-timeout 10m --race --coverage --suite-failure-diagnostics --suite-receipt "${{ runner.temp }}/root-suite.json" --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
       - name: Verify root module cache
         id: root_module_cache
         shell: bash
@@ -847,7 +847,7 @@ jobs:
         shell: bash
         # Keep every package and the complete repeated-wire grid. The explicit
         # package watchdog remains 10m; the driver bounds the whole suite.
-        run: go run ./tools/offline-pilot --full-suite --timeout 30m --package-timeout 10m --suite-receipt "${{ runner.temp }}/root-suite.json" --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
+        run: go run ./tools/offline-pilot --full-suite --timeout 30m --package-timeout 10m --suite-failure-diagnostics --suite-receipt "${{ runner.temp }}/root-suite.json" --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
       - name: Offline pilot report
         id: pilot
         shell: bash

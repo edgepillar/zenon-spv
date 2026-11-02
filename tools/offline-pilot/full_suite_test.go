@@ -210,6 +210,198 @@ func TestFullSuiteTimingIntegerJSON(t *testing.T) {
 	}
 }
 
+func TestFullSuiteFailureDiagnosticsAreBoundedDeterministicAndPrivate(t *testing.T) {
+	collect := func(reverse bool) *suiteCollector {
+		t.Helper()
+		packages := []string{modulePath + "/internal/a", modulePath + "/internal/b"}
+		c, err := newSuiteCollector(newCollector(nil), packages)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if reverse {
+			slices.Reverse(packages)
+		}
+		var stream bytes.Buffer
+		write := func(e testEvent) {
+			t.Helper()
+			if err := json.NewEncoder(&stream).Encode(e); err != nil {
+				t.Fatal(err)
+			}
+		}
+		for _, pkg := range packages {
+			write(testEvent{Action: "start", Package: pkg})
+			var names []string
+			for i := range 24 {
+				names = append(names, fmt.Sprintf("TestFailed%02d", i))
+			}
+			names = append(names, "TestPRIVATE NAME", "PRIVATE_ROOT", "TestNested")
+			if reverse {
+				slices.Reverse(names)
+			}
+			for _, name := range names {
+				write(testEvent{Action: "run", Package: pkg, Test: name})
+				write(testEvent{Action: "output", Package: pkg, Test: name, Output: "PRIVATE_PATH_AND_VALUE"})
+				if name == "TestNested" {
+					write(testEvent{Action: "run", Package: pkg, Test: name + "/PRIVATE_LABEL"})
+					write(testEvent{Action: "fail", Package: pkg, Test: name + "/PRIVATE_LABEL"})
+				}
+				write(testEvent{Action: "fail", Package: pkg, Test: name})
+			}
+			write(testEvent{Action: "fail", Package: pkg})
+		}
+		if c.read(&stream) != nil || c.finish(true) != "failed" {
+			t.Fatal("valid unselected failures were lost")
+		}
+		return c
+	}
+	a, b := collect(false), collect(true)
+	if !reflect.DeepEqual(a.failures, b.failures) || a.failures.Observed != 54 || a.failures.Withheld != 4 || len(a.failures.Roots) != 20 {
+		t.Fatal("root accounting, retained bound or deterministic ordering changed")
+	}
+	for i, row := range a.failures.Roots {
+		if row.Package != modulePath+"/internal/a" || row.Test != fmt.Sprintf("TestFailed%02d", i) {
+			t.Fatal("bounded failure selection changed")
+		}
+	}
+	var out bytes.Buffer
+	reportDigest := sha256.Sum256([]byte("selected report"))
+	if writeSuiteFailures(&out, true, a, "failed", false, reportDigest) != nil || out.Len() > suiteFailureOutputLimit || bytes.Contains(out.Bytes(), []byte("PRIVATE")) || bytes.Count(out.Bytes(), []byte("\n")) != 1 {
+		t.Fatal("failure output was not bounded, private and single-line")
+	}
+	var value struct {
+		Format   string `json:"format"`
+		Report   string `json:"selected_report_sha256"`
+		Observed int    `json:"observed_failed_roots"`
+		Withheld int    `json:"withheld_names"`
+		Omitted  int    `json:"omitted_roots"`
+	}
+	if json.Unmarshal(bytes.TrimPrefix(out.Bytes(), []byte(suiteFailureMarker)), &value) != nil || value.Format != "zenon-root-suite-failures/v1" || value.Report != hex.EncodeToString(reportDigest[:]) || value.Observed != 54 || value.Withheld != 4 || value.Omitted != 30 {
+		t.Fatal("failure supplement lost its report binding or truncation counters")
+	}
+}
+
+func TestFullSuiteFailureDiagnosticIdentifierBounds(t *testing.T) {
+	// Long source-owned packages remain part of the suite but are withheld from
+	// this small log supplement. Boundaries apply before JSON allocation.
+	for _, pkgBytes := range []int{256, 257} {
+		pkg := modulePath + "/" + strings.Repeat("a", pkgBytes-len(modulePath)-1)
+		c, err := newSuiteCollector(newCollector(nil), []string{pkg})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, e := range []testEvent{{Action: "start", Package: pkg}, {Action: "run", Package: pkg, Test: "Test" + strings.Repeat("x", 252)}, {Action: "fail", Package: pkg, Test: "Test" + strings.Repeat("x", 252)}, {Action: "fail", Package: pkg}} {
+			if err := c.event(e); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if c.failures.Observed != 1 || c.failures.Withheld != pkgBytes-256 || len(c.failures.Roots) != 257-pkgBytes {
+			t.Fatal("diagnostic package or root boundary changed suite accounting")
+		}
+	}
+	c, err := newSuiteCollector(newCollector(nil), []string{modulePath})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range suiteFailureRootLimit {
+		c.recordFailure(testEvent{Action: "fail", Package: modulePath + "/" + strings.Repeat("a", 255-len(modulePath)), Test: fmt.Sprintf("Test%03d", i) + strings.Repeat("x", 249)})
+	}
+	var out bytes.Buffer
+	if writeSuiteFailures(&out, true, c, "failed", false, sha256.Sum256(nil)) != nil || out.Len() > suiteFailureOutputLimit || len(c.failures.Roots) != suiteFailureRootLimit {
+		t.Fatal("maximum retained identifier lengths exceeded the output bound")
+	}
+}
+
+type suiteDiagnosticWriter struct {
+	failingWriter
+	calls int
+}
+
+func (w *suiteDiagnosticWriter) Write(raw []byte) (int, error) {
+	w.calls++
+	return w.failingWriter.Write(raw)
+}
+
+func TestFullSuiteFailureDiagnosticsPreserveOutputAndIncompleteState(t *testing.T) {
+	raw := []byte("{\"status\":\"failed\"}\n")
+	for _, tc := range []struct {
+		enabled bool
+		status  string
+		code    int
+	}{
+		{false, "failed", 1}, {true, "passed", 0}, {true, "passed_with_skips", 0},
+	} {
+		var stdout, stderr bytes.Buffer
+		if got := writeFullSuiteReport(&stdout, &stderr, raw, tc.code, nil, tc.enabled, tc.code == 0, tc.status); got != tc.code || !bytes.Equal(stdout.Bytes(), raw) || stderr.Len() != 0 {
+			t.Fatal("quiet mode, successful output or original exit status changed")
+		}
+	}
+	for _, short := range []bool{false, true} {
+		var stdout bytes.Buffer
+		stderr := &suiteDiagnosticWriter{failingWriter: failingWriter{short: short}}
+		if got := writeFullSuiteReport(&stdout, stderr, raw, 1, nil, true, false, "failed"); got != 70 || !bytes.Equal(stdout.Bytes(), raw) || stderr.calls != 1 {
+			t.Fatal("failed diagnostic was retried, hid the selected report or reported success")
+		}
+	}
+	pkg := modulePath + "/internal/a"
+	c, err := newSuiteCollector(newCollector(nil), []string{pkg})
+	if err != nil {
+		t.Fatal(err)
+	}
+	stream := fmt.Sprintf("{\"Action\":\"start\",\"Package\":%q}\n{\"Action\":\"run\",\"Package\":%q,\"Test\":\"TestObserved\"}\n{\"Action\":\"fail\",\"Package\":%q,\"Test\":\"TestObserved\"}\nPRIVATE_TRUNCATED", pkg, pkg, pkg)
+	if c.read(strings.NewReader(stream)) == nil || c.complete {
+		t.Fatal("partial input claimed complete")
+	}
+	for _, suite := range []*suiteCollector{nil, c} {
+		var stdout, stderr bytes.Buffer
+		if writeFullSuiteReport(&stdout, &stderr, raw, 1, suite, true, false, "incomplete") != 1 || !bytes.Equal(stdout.Bytes(), raw) || bytes.Contains(stderr.Bytes(), []byte("PRIVATE")) {
+			t.Fatal("interrupted output or actual failure was lost")
+		}
+		var value struct {
+			Complete  bool `json:"stream_complete"`
+			ProcessOK bool `json:"test_process_succeeded"`
+			Observed  int  `json:"observed_failed_roots"`
+		}
+		if json.Unmarshal(bytes.TrimPrefix(stderr.Bytes(), []byte(suiteFailureMarker)), &value) != nil || value.Complete || value.ProcessOK || (suite == nil && value.Observed != 0) || (suite != nil && value.Observed != 1) {
+			t.Fatal("absent or partial events became complete execution evidence")
+		}
+	}
+	var out bytes.Buffer
+	if writeSuiteFailures(&out, true, nil, "PRIVATE_STATUS", false, sha256.Sum256(nil)) == nil || out.Len() != 0 {
+		t.Fatal("unknown status was disclosed")
+	}
+	if run([]string{"--suite-failure-diagnostics"}, &out, io.Discard) != 64 || out.Len() != 0 {
+		t.Fatal("full-suite-only option reached selected-mode setup")
+	}
+}
+
+func TestFullSuiteActualFailureDiagnostics(t *testing.T) {
+	t.Setenv(suiteNameHelperEnvironment, "failure-diagnostics")
+	t.Setenv("GORACE", "atexit_sleep_ms=0")
+	goTool, err := exec.LookPath("go")
+	if err != nil {
+		t.Fatal("native failure control requires the Go toolchain")
+	}
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal("cannot identify native helper")
+	}
+	pkg := modulePath + "/tools/offline-pilot"
+	c, err := newSuiteCollector(newCollector(nil), []string{pkg})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	ok, category := runTestProcess(ctx, goTool, []string{"tool", "test2json", "-t", "-p", pkg, self, "-test.v=test2json", "-test.run=^TestFullSuiteNativeNameHelper$"}, pilotEnvironment(goTool), c.read)
+	if ok || category == nil || !c.complete || c.finish(ok) != "failed" || c.counts.Failed != 2 || c.failures.Observed != 1 || len(c.failures.Roots) != 1 || c.failures.Roots[0] != (suiteFailedRoot{pkg, "TestFullSuiteNativeNameHelper"}) {
+		t.Fatal("actual unselected root failure or failed child exit was lost")
+	}
+	var out bytes.Buffer
+	if writeSuiteFailures(&out, true, c, "failed", ok, sha256.Sum256(nil)) != nil || bytes.Contains(out.Bytes(), []byte("PRIVATE")) {
+		t.Fatal("actual private output or dynamic label escaped")
+	}
+}
+
 func TestFullSuiteRefusesUnselectedFailuresAndIncompleteExecution(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
@@ -398,6 +590,10 @@ func TestFullSuiteActualProcessCompletion(t *testing.T) {
 const suiteNameHelperEnvironment = "SPV_SUITE_NATIVE_NAME_HELPER"
 
 func TestFullSuiteNativeNameHelper(t *testing.T) {
+	if os.Getenv(suiteNameHelperEnvironment) == "failure-diagnostics" {
+		t.Run("PRIVATE_LABEL", func(t *testing.T) { t.Error("PRIVATE_PATH_AND_VALUE") })
+		return
+	}
 	if os.Getenv(suiteNameHelperEnvironment) != "1" {
 		return
 	}
