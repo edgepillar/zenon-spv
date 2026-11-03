@@ -121,6 +121,12 @@ The existing typed-query API implements the BatchEntry proof only. Candidate
 ABI/subkey captures and independent byte checks. They return untrusted data;
 atomic supporting-proof composition remains an implementation gate.
 
+The [bounded candidate proof-set helper](candidate-smt-proof-set.md) now prepares
+shared framing and cumulative proof/value/sibling preflight for up to three
+distinct paths. It hashes and copies no values before all work caps pass, and
+returns no partial data on a late mathematical failure. Its root remains a
+caller-selected mathematical input; owned typed-query integration is still open.
+
 ## Current context and submission-time context
 
 At the pinned source,
