@@ -1,0 +1,108 @@
+{
+  "execution": {
+    "actual_exit": 0,
+    "cgo_enabled": true,
+    "full_module_graph_go_mod_verify": "NOT_ESTABLISHED",
+    "gate_sha256": "923313f8091162021e390ffbabb2410e551ec3f52b7fbf5c3fd9d082ec2937c5",
+    "go": "go1.25.14",
+    "native_execution_repeated_for_publication": false,
+    "native_test": "TestSPVSelectedDevnetGenesisLifecycle",
+    "output_bytes": 23745,
+    "output_complete": true,
+    "output_sha256": "5bdc702a455942718b82297e2bfa56d6b76523bb0ae32bdbd104d3a173d26a5e",
+    "platform": "darwin/arm64",
+    "record_sha256": "38b3b33c74ea7226febf9d5759726c923ab449363a4530f0c3f013a5da454b9f",
+    "used_modules_verified": 25
+  },
+  "format": "zenon-recorded-selected-devnet-genesis/v1",
+  "genesis_config": {
+    "bytes": 8137,
+    "git_blob": "0f158f4414d165075c85a5ba3bde48a9eff792e4",
+    "path": "internal/testdata/conformance/selected-devnet-genesis-config.json",
+    "sha256": "0dd33b18b147f70b3d3d5f07199a2b45311f6e9b84a98b3f86d8f6c6b45f419a",
+    "source_path": "docker/devnet/genesis.json"
+  },
+  "harness": {
+    "bytes": 4458,
+    "path": "tools/gen-state-root-vectors/selected-devnet-genesis-lifecycle_test.go.txt",
+    "sha256": "1f2eb54d60b777ed73e6cebd1d1bcdff28a8a7536aa0f1617bad7fb36a3ee542"
+  },
+  "scope": {
+    "Chain_Start_called": false,
+    "accepted_SPV_header": false,
+    "anchor_selected": false,
+    "consensus_finality": false,
+    "first_incoming_v3_captured": false,
+    "network_execution": false,
+    "network_identity_authenticated": false,
+    "producer_schedule_authenticated": false,
+    "production_qualified": false,
+    "profile_agreed": false,
+    "real_manager_Init_Stop_reopen_cycles": 2,
+    "source_genesis_H1_only": true,
+    "state_value_accepted": false
+  },
+  "source": {
+    "archive_sha256": "8ca1512eff8c04ee8b6ed0ff9a5da9e3eeba518660b07833f99a6b74e1dcc3a3",
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "938fca3b7787da86827a5eb63371509b36e14761",
+    "tree": "f3b7947d2267ebdb806f18ff0c02bba5bffae9c4"
+  },
+  "trace": {
+    "Chain_Start_called": false,
+    "cycles": [
+      {
+        "cycle": 1,
+        "hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+        "height": 1,
+        "version": 1
+      },
+      {
+        "cycle": 2,
+        "hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+        "height": 1,
+        "version": 1
+      }
+    ],
+    "first_incoming_v3_executed": false,
+    "format": "selected-node-source-genesis-lifecycle/v1",
+    "header": {
+      "chainIdentifier": 69,
+      "changesHash": "0c18fe329bce4b4d14a4f4a99d5fd40fac586d7d9d850b5d635d08a7b6789c16",
+      "contentHash": "3b92b3c85d00020c25b2e6dc6de112195d5f2c3ece2d7981ecd7329a57f23ca3",
+      "dataHash": "adba8026eac7d31d73e3b722918cb75a4c46c2b4098e2803471adfabffb2c92e",
+      "hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+      "height": 1,
+      "nextFusionPrice": 0,
+      "nextWorkPrice": 0,
+      "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "publicKey": null,
+      "signature": null,
+      "stateRoot": "0000000000000000000000000000000000000000000000000000000000000000",
+      "timestamp": 1739923200,
+      "version": 1
+    },
+    "scope": "LOCAL_GENESIS_H1_RESTART_NOT_NETWORK_IDENTITY",
+    "source_genesis_sha256": "0dd33b18b147f70b3d3d5f07199a2b45311f6e9b84a98b3f86d8f6c6b45f419a",
+    "sporks": [
+      {
+        "activated": true,
+        "enforcement_height": 0,
+        "id": "0000000000000000000000000000000000000000000000000000000000000002",
+        "name": "dynamic-plasma"
+      },
+      {
+        "activated": true,
+        "enforcement_height": 0,
+        "id": "0000000000000000000000000000000000000000000000000000000000000003",
+        "name": "merkle-state-root"
+      },
+      {
+        "activated": true,
+        "enforcement_height": 0,
+        "id": "0000000000000000000000000000000000000000000000000000000000000004",
+        "name": "offchain-execution"
+      }
+    ]
+  }
+}

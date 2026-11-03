@@ -1,0 +1,117 @@
+// SPDX-License-Identifier: MIT
+// Local genesis-only DB lifecycle; no Chain.Start, network service or wallet.
+package genesis_test
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"testing"
+
+	corechain "github.com/zenon-network/go-zenon/chain"
+	cache "github.com/zenon-network/go-zenon/chain/cache/storage"
+	"github.com/zenon-network/go-zenon/chain/genesis"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+func TestSPVSelectedDevnetGenesisLifecycle(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "docker", "devnet", "genesis.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(raw)
+	if len(raw) != 8137 || hex.EncodeToString(sum[:]) != "0dd33b18b147f70b3d3d5f07199a2b45311f6e9b84a98b3f86d8f6c6b45f419a" {
+		t.Fatal("selected public source genesis changed")
+	}
+	var config genesis.GenesisConfig
+	if err := json.Unmarshal(raw, &config); err != nil {
+		t.Fatal(err)
+	}
+	if err := genesis.CheckGenesis(&config); err != nil {
+		t.Fatal(err)
+	}
+	if config.ChainIdentifier != 69 || config.SporkConfig == nil {
+		t.Fatal("unexpected selected source chain")
+	}
+	sporks := make([]map[string]interface{}, 0, 3)
+	for _, selected := range []*types.ImplementedSpork{types.DynamicPlasmaSpork, types.StateRootSpork, types.OffchainExecutionSpork} {
+		count := 0
+		for _, entry := range config.SporkConfig.Sporks {
+			if entry.Id == selected.SporkId {
+				if !entry.Activated || entry.EnforcementHeight != 0 {
+					t.Fatal("selected source spork differs")
+				}
+				sporks = append(sporks, map[string]interface{}{"id": entry.Id.String(), "name": entry.Name, "activated": entry.Activated, "enforcement_height": entry.EnforcementHeight})
+				count++
+			}
+		}
+		if count != 1 {
+			t.Fatal("missing or duplicate selected source spork")
+		}
+	}
+	store := genesis.NewGenesis(&config)
+	m := store.GetGenesisMomentum()
+	if m.Version != 1 || m.Height != 1 || m.ChainIdentifier != 69 || !m.PreviousHash.IsZero() || !m.StateRoot.IsZero() || len(m.PublicKey) != 0 || len(m.Signature) != 0 || m.ComputeHash() != m.Hash {
+		t.Fatal("source genesis is not the expected unsigned v1 trust-start encoding")
+	}
+
+	directory := t.TempDir()
+	for _, name := range []string{"ledger", "cache", "state"} {
+		if err := os.MkdirAll(filepath.Join(directory, name), 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cycles := make([]map[string]interface{}, 0, 2)
+	for cycle := 1; cycle <= 2; cycle++ {
+		func() {
+			ch := corechain.NewChain(
+				db.NewLevelDBManager(filepath.Join(directory, "ledger")),
+				cache.NewCacheDBManager(filepath.Join(directory, "cache")),
+				genesis.NewGenesis(&config), filepath.Join(directory, "state"), false)
+			stopped := false
+			defer func() {
+				if !stopped {
+					if err := ch.Stop(); err != nil {
+						t.Errorf("cleanup Stop: %v", err)
+					}
+				}
+			}()
+			if err := ch.Init(); err != nil {
+				t.Fatal("genesis-only Init", err)
+			}
+			frontier, err := ch.GetFrontierMomentumStore().GetFrontierMomentum()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if frontier.Height != 1 || frontier.Hash != m.Hash || frontier.Version != 1 || !frontier.StateRoot.IsZero() {
+				t.Fatal("reopened genesis frontier differs")
+			}
+			err = ch.Stop()
+			stopped = true
+			if err != nil {
+				t.Fatal("genesis-only Stop", err)
+			}
+			cycles = append(cycles, map[string]interface{}{"cycle": cycle, "height": frontier.Height, "hash": frontier.Hash.String(), "version": frontier.Version})
+		}()
+	}
+
+	report := map[string]interface{}{
+		"format": "selected-node-source-genesis-lifecycle/v1", "scope": "LOCAL_GENESIS_H1_RESTART_NOT_NETWORK_IDENTITY",
+		"source_genesis_sha256": hex.EncodeToString(sum[:]), "sporks": sporks, "cycles": cycles, "Chain_Start_called": false, "first_incoming_v3_executed": false,
+		"header": map[string]interface{}{
+			"version": m.Version, "chainIdentifier": m.ChainIdentifier, "hash": m.Hash.String(),
+			"previousHash": m.PreviousHash.String(), "height": m.Height, "timestamp": m.TimestampUnix,
+			"dataHash": types.NewHash(m.Data).String(), "contentHash": m.Content.Hash().String(), "changesHash": m.ChangesHash.String(),
+			"publicKey": []byte(m.PublicKey), "signature": m.Signature, "nextFusionPrice": m.NextFusionPrice, "nextWorkPrice": m.NextWorkPrice,
+			"stateRoot": m.StateRoot.String(),
+		},
+	}
+	encoded, err := json.Marshal(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("SPV_SELECTED_DEVNET_GENESIS_LIFECYCLE %s", encoded)
+}
