@@ -116,13 +116,42 @@ func CheckCandidateBalanceProof(claim CandidateBalanceClaim, raw []byte, limits 
 }
 
 func checkCandidateSMT(root, path chain.Hash, value, raw []byte, present, compare bool, limits CandidateSMTLimits) (CandidateSMTMatch, error) {
-	if limits.MaxProofBytes < 99 || limits.MaxProofBytes > CandidateSMTMaxProofBytes ||
-		limits.MaxValueBytes <= 0 || limits.MaxValueBytes > CandidateSMTMaxValueBytes ||
-		len(raw) > limits.MaxProofBytes || len(value) > limits.MaxValueBytes {
+	if !validCandidateSMTLimits(limits) || len(raw) > limits.MaxProofBytes || len(value) > limits.MaxValueBytes {
 		return CandidateSMTMatch{}, ErrCandidateSMTBounds
 	}
+	view, err := parseCandidateSMT(raw, limits)
+	if err != nil {
+		return CandidateSMTMatch{}, err
+	}
+	match, err := view.check(root, path, value, present, compare)
+	if err != nil {
+		return CandidateSMTMatch{}, err
+	}
+	match.Value = bytes.Clone(match.Value)
+	return match, nil
+}
+
+func validCandidateSMTLimits(limits CandidateSMTLimits) bool {
+	return limits.MaxProofBytes >= 99 && limits.MaxProofBytes <= CandidateSMTMaxProofBytes &&
+		limits.MaxValueBytes > 0 && limits.MaxValueBytes <= CandidateSMTMaxValueBytes
+}
+
+// candidateSMTView borrows input only inside this package. Exported readers
+// detach values after all selected proofs have passed. Keeping framing separate
+// lets a small proof set reject aggregate work before hashing or copying values.
+type candidateSMTView struct {
+	path, leaf chain.Hash
+	raw, value []byte
+	present    bool
+	count      int
+}
+
+func parseCandidateSMT(raw []byte, limits CandidateSMTLimits) (candidateSMTView, error) {
+	if !validCandidateSMTLimits(limits) || len(raw) > limits.MaxProofBytes {
+		return candidateSMTView{}, ErrCandidateSMTBounds
+	}
 	if len(raw) < 99 || raw[0] > 1 {
-		return CandidateSMTMatch{}, ErrCandidateSMTEncoding
+		return candidateSMTView{}, ErrCandidateSMTEncoding
 	}
 	var encodedPath, leaf chain.Hash
 	copy(encodedPath[:], raw[1:33])
@@ -134,51 +163,59 @@ func checkCandidateSMT(root, path chain.Hash, value, raw []byte, present, compar
 		popcount += bits.OnesCount8(b)
 	}
 	if count > 256 || count != popcount {
-		return CandidateSMTMatch{}, ErrCandidateSMTEncoding
+		return candidateSMTView{}, ErrCandidateSMTEncoding
 	}
 	// count is bounded before multiplication or slicing on every architecture.
 	offset := 99 + count*chain.HashSize
 	if len(raw) < offset {
-		return CandidateSMTMatch{}, ErrCandidateSMTEncoding
+		return candidateSMTView{}, ErrCandidateSMTEncoding
 	}
 	inclusion := raw[0] == 1
 	var stored []byte
 	if inclusion {
 		if len(raw)-offset < 4 {
-			return CandidateSMTMatch{}, ErrCandidateSMTEncoding
+			return candidateSMTView{}, ErrCandidateSMTEncoding
 		}
 		length := binary.BigEndian.Uint32(raw[offset : offset+4])
 		if uint64(length) != uint64(len(raw)-offset-4) {
-			return CandidateSMTMatch{}, ErrCandidateSMTEncoding
+			return candidateSMTView{}, ErrCandidateSMTEncoding
 		}
 		if length > uint32(limits.MaxValueBytes) {
-			return CandidateSMTMatch{}, ErrCandidateSMTBounds
+			return candidateSMTView{}, ErrCandidateSMTBounds
 		}
 		stored = raw[offset+4:]
+	} else if len(raw) != offset || !leaf.IsZero() {
+		return candidateSMTView{}, ErrCandidateSMTEncoding
+	}
+	return candidateSMTView{path: encodedPath, leaf: leaf, raw: raw, value: stored, present: inclusion, count: count}, nil
+}
+
+// check returns a borrowed value for internal composition. A caller must not
+// expose the successful match until it has detached the value.
+func (v candidateSMTView) check(root, path chain.Hash, value []byte, present, compare bool) (CandidateSMTMatch, error) {
+	if v.present {
 		// Fixed local storage avoids allocation from the untrusted length.
 		var preimage [chain.HashSize + CandidateSMTMaxValueBytes]byte
-		copy(preimage[:chain.HashSize], encodedPath[:])
-		copy(preimage[chain.HashSize:], stored)
-		if chain.Hash(sha3.Sum256(preimage[:chain.HashSize+len(stored)])) != leaf {
+		copy(preimage[:chain.HashSize], v.path[:])
+		copy(preimage[chain.HashSize:], v.value)
+		if chain.Hash(sha3.Sum256(preimage[:chain.HashSize+len(v.value)])) != v.leaf {
 			return CandidateSMTMatch{}, ErrCandidateSMTEncoding
 		}
-	} else if len(raw) != offset || !leaf.IsZero() {
+	}
+	if compare && v.present != present {
 		return CandidateSMTMatch{}, ErrCandidateSMTEncoding
 	}
-	if compare && inclusion != present {
-		return CandidateSMTMatch{}, ErrCandidateSMTEncoding
-	}
-	if encodedPath != path {
+	if v.path != path {
 		return CandidateSMTMatch{}, ErrCandidateSMTPath
 	}
-	if compare && present && !bytes.Equal(stored, value) {
+	if compare && present && !bytes.Equal(v.value, value) {
 		return CandidateSMTMatch{}, ErrCandidateSMTMismatch
 	}
-	current, cursor, canonical := leaf, 99, true
+	current, cursor, canonical := v.leaf, 99, true
 	for index := 0; index < 256; index++ {
 		var sibling chain.Hash
-		if bitmap[index/8]&(1<<uint(7-index%8)) != 0 {
-			copy(sibling[:], raw[cursor:cursor+chain.HashSize])
+		if v.raw[65+index/8]&(1<<uint(7-index%8)) != 0 {
+			copy(sibling[:], v.raw[cursor:cursor+chain.HashSize])
 			cursor += chain.HashSize
 			canonical = canonical && !sibling.IsZero()
 		}
@@ -198,5 +235,5 @@ func checkCandidateSMT(root, path chain.Hash, value, raw []byte, present, compar
 	if current != root {
 		return CandidateSMTMatch{}, ErrCandidateSMTMismatch
 	}
-	return CandidateSMTMatch{Present: inclusion, Value: bytes.Clone(stored), Canonical: canonical, SiblingCount: uint16(count)}, nil
+	return CandidateSMTMatch{Present: v.present, Value: v.value, Canonical: canonical, SiblingCount: uint16(v.count)}, nil
 }

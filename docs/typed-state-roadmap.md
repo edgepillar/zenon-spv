@@ -134,6 +134,12 @@ Each PR/main source requires its own scheduled CI/artifact qualification.
 These partial results leave every D0-D6 acceptance exit open and do not change
 the frozen independent-review candidate or production NO-GO gates.
 
+The [bounded candidate SMT proof-set helper](candidate-smt-proof-set.md) prepares
+aggregate work preflight for the three supporting witnesses. It preserves the
+single-proof contract and defers detached output until every mathematical match
+passes. This is a D1 implementation primitive; the owned header/context-bound
+three-row query and D3 consumer acceptance remain open.
+
 ### Maintainer feedback follow-up: 3 November 2026
 
 The [source-checked domain-context record](batch-entry-domain-context.md)
