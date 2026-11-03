@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha3"
 	"encoding/binary"
+	"fmt"
 	"math"
 	"slices"
 	"sort"
@@ -60,6 +61,12 @@ func checkContentSerialization(t testing.TB, headers []AccountHeader) {
 
 func TestMomentumContentHashSerializationContract(t *testing.T) {
 	boundary := contentBoundaryHeaders()
+	ordered := slices.Clone(boundary)
+	// Select order through independent serialized rows, not the production
+	// field comparator or AccountHeader encoder.
+	sort.Slice(ordered, func(i, j int) bool {
+		return bytes.Compare(referenceContentBytes(ordered[i:i+1]), referenceContentBytes(ordered[j:j+1])) < 0
+	})
 	reverse := slices.Clone(boundary)
 	slices.Reverse(reverse)
 	for _, tc := range []struct {
@@ -68,9 +75,17 @@ func TestMomentumContentHashSerializationContract(t *testing.T) {
 	}{
 		{"nil", nil}, {"empty", []AccountHeader{}}, {"one", boundary[:1]},
 		{"field boundaries and duplicate", boundary}, {"reversed boundaries", reverse},
+		{"ordered field boundaries and duplicate", ordered},
 		{"all equal", slices.Repeat(boundary[:1], 257)},
 	} {
 		t.Run(tc.name, func(t *testing.T) { checkContentSerialization(t, tc.headers) })
+	}
+	for i := 1; i < len(ordered); i++ {
+		t.Run(fmt.Sprintf("adjacent swap at %d", i), func(t *testing.T) {
+			changed := slices.Clone(ordered)
+			changed[i-1], changed[i] = changed[i], changed[i-1]
+			checkContentSerialization(t, changed)
+		})
 	}
 	t.Run("duplicates are committed", func(t *testing.T) {
 		if MomentumContentHash(boundary[:1]) == MomentumContentHash(slices.Repeat(boundary[:1], 2)) {
