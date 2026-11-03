@@ -1,0 +1,245 @@
+{
+  "format": "zenon-recorded-source-parent-snapshot-slots/v1",
+  "source": {
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "938fca3b7787da86827a5eb63371509b36e14761",
+    "tree": "f3b7947d2267ebdb806f18ff0c02bba5bffae9c4",
+    "archive_sha256": "8ca1512eff8c04ee8b6ed0ff9a5da9e3eeba518660b07833f99a6b74e1dcc3a3"
+  },
+  "source_files": {
+    "consensus/election.go": {
+      "bytes": 7115,
+      "git_blob": "ba530f44a8b1fbf4497f4ebff3b56fe4c15e91e0",
+      "sha256": "a45497b3df349e4b0a9cc3d7680d8e88c148663df81fc8673f322605c7b3e017"
+    },
+    "consensus/consensus.go": {
+      "bytes": 5249,
+      "git_blob": "4ca364631a16b94b845fe997ee2ea1eb2a8edc96",
+      "sha256": "bfc388fc8115d0b648015eef73dbe11d392ba647e5a0039671bfc15d0a61550b"
+    },
+    "consensus/context.go": {
+      "bytes": 536,
+      "git_blob": "5845e15286b603a0fdeebf789b6cd1cf68b15bf8",
+      "sha256": "b38b279d160e6d38c25b7ef6c65b623e25ec131bc1bb8e5c0a034a71c5e49ebe"
+    },
+    "consensus/election_algorithm.go": {
+      "bytes": 3449,
+      "git_blob": "f4a3cc9a6dcc8ad0b13f52f069289b9bb2eaf9be",
+      "sha256": "f4dc4b54b5806832559c6b209dd1824858c677b705c9d583e61d93a46a8ff95b"
+    },
+    "vm/constants/consensus.go": {
+      "bytes": 581,
+      "git_blob": "5b7bec0ff69e6596bab8c8161b9de9a72731836c",
+      "sha256": "ac4089b8401b9a1ab8959202666448c9d5894c18885de9a96c6697b0dbb16c66"
+    }
+  },
+  "genesis_config": {
+    "path": "internal/testdata/conformance/selected-devnet-genesis-config.json",
+    "source_path": "docker/devnet/genesis.json",
+    "bytes": 8137,
+    "sha256": "0dd33b18b147f70b3d3d5f07199a2b45311f6e9b84a98b3f86d8f6c6b45f419a",
+    "git_blob": "0f158f4414d165075c85a5ba3bde48a9eff792e4"
+  },
+  "helpers": {
+    "adapter": {
+      "path": "tools/gen-state-root-vectors/parent-schedule-adapter.go.txt",
+      "injected_path": "consensus/spv_parent_schedule_adapter.go",
+      "bytes": 4062,
+      "sha256": "7c2976c0feb437dd7689a01709e146559014b4e4f9aa93c1828f9cebc2388c79"
+    },
+    "harness": {
+      "path": "tools/gen-state-root-vectors/parent-schedule-capture_test.go.txt",
+      "injected_path": "consensus/spv_parent_schedule_capture_test.go",
+      "bytes": 6329,
+      "sha256": "53d1a65e87e0a5a74045f85078a242b3d5b827611f6ebe844671318e5815504c"
+    }
+  },
+  "execution": {
+    "native_test": "TestSPVParentSnapshotProducerCapture",
+    "go": "go1.25.14",
+    "platform": "darwin/arm64",
+    "cgo_enabled": true,
+    "node_test_actual_exit": 0,
+    "node_test_output_complete": true,
+    "node_test_output": {
+      "bytes": 14654,
+      "sha256": "a584da4b0d248fdc0d6ccad631dd3be7b386a2af31df7134a7da05d7f30895de"
+    },
+    "readback_record": {
+      "sha256": "4fd4ea84994b73031ee6cd3f485b116ba7229c937bc96126f78424cc610262d4",
+      "bytes": 2901
+    },
+    "trace_object": {
+      "sha256": "1a62a4f51d30f79fc962714f8b293743b6aadb988289ba405ce098841bb47f74",
+      "bytes": 4274
+    },
+    "module_integrity_record": {
+      "sha256": "164c86ea90851ca2ba4658b609e0abd1b448b75391e92422548861cddcef1432",
+      "bytes": 19263
+    },
+    "used_modules_verified": 25,
+    "passed_test_events": 11,
+    "full_module_graph_go_mod_verify": "NOT_ESTABLISHED",
+    "original_controller_outcome": "FAILURE",
+    "original_controller_exit": 1,
+    "cleanup_failed_after_completed_node_test": true,
+    "native_execution_repeated_for_publication": false
+  },
+  "scope": {
+    "source_H1_snapshot_only": true,
+    "explicit_parent_and_timestamp_inputs": true,
+    "original_consensus_parameters_unchanged": true,
+    "original_node_implementation_files_unchanged": true,
+    "independent_replay_recomputes_election_order": false,
+    "network_execution": false,
+    "network_height_assignment": false,
+    "accepting_ProducerSchedule_created": false,
+    "network_identity_or_activation_authenticated": false,
+    "first_incoming_v3_captured": false,
+    "authenticated_election_or_fork_choice": false,
+    "accepted_SPV_header": false,
+    "state_value_accepted": false,
+    "consensus_finality": false,
+    "production_qualified": false
+  },
+  "trace": {
+    "Chain_Start_called": false,
+    "Stop_returned_nil": true,
+    "accepting_ProducerSchedule_created": false,
+    "authenticated_election_or_fork_choice": false,
+    "consensus_Start_called": false,
+    "divergent_network_branches_executed": false,
+    "format": "selected-node-parent-snapshot-slots/v1",
+    "frontier_unchanged": true,
+    "genesis": {
+      "hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+      "height": 1
+    },
+    "genesis_timestamp": 1739923200,
+    "limits": {
+      "max_genesis_delta_seconds": 315360000,
+      "query_count": 64
+    },
+    "network_activation_or_state_values_accepted": false,
+    "network_execution": false,
+    "network_height_assignment": false,
+    "parameters": {
+      "block_time": 10,
+      "counting_zts": "zts1znnxxxxxxxxxxxxx9z4ulx",
+      "node_count": 30,
+      "rand_count": 15
+    },
+    "refused_controls": [
+      "foreign-parent-hash",
+      "foreign-parent-height",
+      "before-genesis",
+      "off-slot",
+      "unordered",
+      "duplicate",
+      "too-many",
+      "empty",
+      "time-work-limit",
+      "valid-prefix-invalid-tail"
+    ],
+    "scope": "SOURCE_H1_SLOT_LOOKUP_NOT_NETWORK_SCHEDULE",
+    "signing_selected": false,
+    "snapshot": {
+      "parent": {
+        "hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+        "height": 1
+      },
+      "rows": [
+        {
+          "name": "dev2",
+          "producer": "z1qz9zr5c7a0p8qljvrwt2cy5j99w98c5myrn2un",
+          "proof_block": {
+            "hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+            "height": 1
+          },
+          "proof_block_timestamp": 1739923200,
+          "proof_time": 1739923201,
+          "slot_end": 1739923220,
+          "slot_start": 1739923210,
+          "tick": 0,
+          "timestamp": 1739923210
+        },
+        {
+          "name": "dev3",
+          "producer": "z1qzedcjmds6cwuqu7wkrvl0dadwwauzaana6g8e",
+          "proof_block": {
+            "hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+            "height": 1
+          },
+          "proof_block_timestamp": 1739923200,
+          "proof_time": 1739923201,
+          "slot_end": 1739923230,
+          "slot_start": 1739923220,
+          "tick": 0,
+          "timestamp": 1739923220
+        },
+        {
+          "name": "dev3",
+          "producer": "z1qzedcjmds6cwuqu7wkrvl0dadwwauzaana6g8e",
+          "proof_block": {
+            "hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+            "height": 1
+          },
+          "proof_block_timestamp": 1739923200,
+          "proof_time": 1739923201,
+          "slot_end": 1739923500,
+          "slot_start": 1739923490,
+          "tick": 0,
+          "timestamp": 1739923490
+        },
+        {
+          "name": "dev1",
+          "producer": "z1qq9n7fpaqd8lpcljandzmx4xtku9w4ftwyg0mq",
+          "proof_block": {
+            "hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+            "height": 1
+          },
+          "proof_block_timestamp": 1739923200,
+          "proof_time": 1739923201,
+          "slot_end": 1739923510,
+          "slot_start": 1739923500,
+          "tick": 1,
+          "timestamp": 1739923500
+        },
+        {
+          "name": "dev3",
+          "producer": "z1qzedcjmds6cwuqu7wkrvl0dadwwauzaana6g8e",
+          "proof_block": {
+            "hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+            "height": 1
+          },
+          "proof_block_timestamp": 1739923200,
+          "proof_time": 1739923201,
+          "slot_end": 1739923800,
+          "slot_start": 1739923790,
+          "tick": 1,
+          "timestamp": 1739923790
+        },
+        {
+          "name": "dev1",
+          "producer": "z1qq9n7fpaqd8lpcljandzmx4xtku9w4ftwyg0mq",
+          "proof_block": {
+            "hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+            "height": 1
+          },
+          "proof_block_timestamp": 1739923200,
+          "proof_time": 1739923500,
+          "slot_end": 1739923810,
+          "slot_start": 1739923800,
+          "tick": 2,
+          "timestamp": 1739923800
+        }
+      ]
+    },
+    "source_genesis_sha256": "0dd33b18b147f70b3d3d5f07199a2b45311f6e9b84a98b3f86d8f6c6b45f419a",
+    "source_pillars": {
+      "dev1": "z1qq9n7fpaqd8lpcljandzmx4xtku9w4ftwyg0mq",
+      "dev2": "z1qz9zr5c7a0p8qljvrwt2cy5j99w98c5myrn2un",
+      "dev3": "z1qzedcjmds6cwuqu7wkrvl0dadwwauzaana6g8e"
+    }
+  }
+}
