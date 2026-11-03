@@ -35,10 +35,15 @@ incoming v3 at height 3. An actual selected-chain-69 transition capture is still
 required; the isolated chain-100 trace is not reassigned to that network.
 
 The maintainer identifies the normal consensus schedule from the genesis pillar
-set, rather than a separate attested schedule file. The experimental SPV API
-still needs explicit finite height/timestamp/address entries and their provenance.
-The pillar list alone supplies neither those entries nor authenticated election,
-fork choice or finality.
+set, rather than a separate attested schedule file. The
+[subsequent review](https://github.com/Zeno-L2/zeno-devnet/issues/1#issuecomment-6612559092)
+also suggests signature plus genesis-set membership for a limited prototype.
+That is a different authorization policy from checking the elected producer at
+a parent snapshot. The experimental SPV API keeps its explicit finite
+height/timestamp/address entries and provenance requirements. Observing a
+producer in the same provider's header cannot independently authorize that entry.
+The [policy distinction](batch-entry-domain-context.md#producer-authorization)
+remains explicit; no genesis-set fallback is selected or implemented here.
 
 The [source parent-snapshot slot capture](source-parent-slots.md) now exercises
 six explicit timestamp lookups through the original normal-consensus algorithm
@@ -77,6 +82,7 @@ they do not authenticate a live network or its activation.
 | First incoming v3 | Actual boundary from v1 genesis and parent-frontier activation behavior | Source-conditioned expectation is height 3 for the pinned devnet genesis; actual transition capture remains open and the [chain-100 fixture](first-v3-node-boundary.md) does not qualify its activation |
 | Settlement address | Fixed raw 20-byte address from the selected local profile | Source constant mapped; active network selection remains open |
 | Domain | Locally selected uint32 | Source default 1; active query selection remains open |
+| Domain context | Locally derived domainRecord and domainConfig keys; supporting proofs at the same accepted H/root/context | Source schemas and temporal limits are [recorded](batch-entry-domain-context.md); typed supporting-proof composition remains open |
 | Batch | Locally selected uint64, with bounded exact text parsing at the CLI boundary | Open; the gateway must not select the expected batch |
 | Proof and value limits | Explicit positive schema-aware byte, sibling and cumulative-work limits | Experimental schema-1 policy implemented; selected-network review/selection remains open |
 | Temporal claims | First query claims membership at H; any additional delay claim is separate | No consensus-finality, receive or spendability claim |
@@ -124,9 +130,14 @@ has 17 ordered fields:
 | state | uint8 |
 
 The query profile must bind the exact L1 ABI/schema and relevant domain/runtime
-identity. stfSpecHash alone is insufficient. The three dynamic fields need
-individual and cumulative limits, and the selected ABI codec needs explicit
-offset, length, padding, integer-width, trailing-data and string rules.
+identity. stfSpecHash alone is insufficient. Two additional locally keyed proofs
+for domainRecord and domainConfig can bind the current domain context to the
+same accepted H/root. Their fields, mutation paths and remaining implementation
+gates are specified in [domain context](batch-entry-domain-context.md).
+Current context does not by itself prove the runtime or configuration used when
+an older batch was submitted. The three dynamic fields need individual and
+cumulative limits, and the selected ABI codec needs explicit offset, length,
+padding, integer-width, trailing-data and string rules.
 The experimental binding now requires an explicit local schema-1 policy for
 those decisions; selected-network agreement and acceptance remain open. A
 separate [candidate ABI decoder](candidate-batch-entry-codec.md) supplies
@@ -173,11 +184,21 @@ Settlement-delay predicate at H, compute `H.height >= row.finalizeAtHeight`
 from the proven row at H. Do not substitute the gateway's frontier boolean or
 treat that predicate as W depth, consensus finality, funds release or receive.
 
-The `executorPillar` string needs an individual dynamic bound in addition to
-`assetFlowSummary` and `proofData`, plus their cumulative bound and explicit
-string rule. No trie-level protocol value cap is supplied by this source;
-the existing 4 KiB candidate ceiling remains a local unsupported-data boundary
-in the experimental schema-1 policy. Selected-network policy review is still
+For the pinned SubmitBatch path, the source bounds are at most 40 bytes for
+`executorPillar`, `4 + 96*n` bytes with `n <= 16` for `assetFlowSummary`
+(at most 1,540 bytes), and an empty `proofData`. The
+[bound derivation](batch-entry-domain-context.md#batchentry-source-bounds)
+separates the wire commitment's 15 KiB cap from the stored ABI value. These
+source-conditioned field bounds give a computed canonical ABI upper bound of
+2,272 bytes. This is not an observed selected-network maximum or a trie-level
+protocol cap.
+
+The existing 4 KiB candidate ceiling remains a local unsupported-data boundary.
+Its generic codec permits untrusted encodings outside the SubmitBatch business
+rules; it does not yet enforce those source semantics. In particular, its byte
+caps must be positive: setting MaxProofDataBytes to zero is invalid. Requiring
+empty proofData needs a separate semantic check in a reviewed query policy,
+without relaxing the codec's bounds. Selected-network policy review remains
 required.
 
 ## Bounds and failure contract
