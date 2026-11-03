@@ -160,6 +160,10 @@ jobs:
         run: python -I -B tools/check-context-pin-options_test.py -v
       - name: Candidate v3 header encoding controls
         run: go test -json -count=1 -run '^TestCandidateV3Header' ./internal/chain
+      - name: Selected source-genesis byte controls
+        run: python -I -B tools/gen-state-root-vectors/check_selected_devnet_genesis_test.py -v
+      - name: Independent selected source-genesis bytes
+        run: python -I -B tools/gen-state-root-vectors/check_selected_devnet_genesis.py --source-revision "${{ github.sha }}"
       - name: Candidate sparse proof controls
         run: go test -json -count=1 -run '^(TestCandidateSMT|TestCandidateBatchEntry)' ./internal/proof
       - name: Owned state persistence controls
@@ -883,6 +887,10 @@ jobs:
         run: python -I -B tools/check-context-pin-options_test.py -v
       - name: Candidate v3 header encoding controls
         run: go test -json -count=1 -run '^TestCandidateV3Header' ./internal/chain
+      - name: Selected source-genesis byte controls
+        run: python -I -B tools/gen-state-root-vectors/check_selected_devnet_genesis_test.py -v
+      - name: Independent selected source-genesis bytes
+        run: python -I -B tools/gen-state-root-vectors/check_selected_devnet_genesis.py --source-revision "${{ github.sha }}"
       - name: Candidate sparse proof controls
         run: go test -json -count=1 -run '^(TestCandidateSMT|TestCandidateBatchEntry)' ./internal/proof
       - name: Owned state persistence controls

@@ -21,6 +21,12 @@ The exact file is 8,137 bytes with SHA-256
 That file digest is distinct from the genesis momentum hash and does not
 authenticate a running endpoint.
 
+The retained [source-genesis H1 capture](selected-devnet-genesis.md) derives
+momentum hash `fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9`
+from that exact configuration and node revision. Independent Python and SPV
+checks replay its unsigned v1 preimage. This supplies a source-conditioned
+identity, without selecting a live trust root, height-2 anchor or v3 profile.
+
 The source declares chain ID 69, three initial pillars, and activated
 `merkle-state-root` and `offchain-execution` sporks with enforcement height zero.
 `IsSporkActive` returns false at parent frontier height 1. With this selected
@@ -58,7 +64,7 @@ they do not authenticate a live network or its activation.
 
 | Input | Contract requirement | Current selection |
 | --- | --- | --- |
-| Network and genesis | One exact network and genesis hash, selected independently of the witness provider | Maintainer selects the pinned chain-69 source genesis; running-network identity and exact trust binding remain open |
+| Network and genesis | One exact network and genesis hash, selected independently of the witness provider | Pinned chain-69 source genesis and its H1 hash are recorded; running-network identity and exact trust binding remain open |
 | Anchor | Height/hash and provenance for the chosen trust start | Open |
 | Header and context | Owned accepted H/hash/context plus selected retained-state/tip binding | Experimental header and typed-query mechanics implemented; selected-network qualification remains open |
 | Producer schedule | Independently selected authorization, coverage and provenance | Genesis/normal-consensus source identified; finite explicit entries and selected-range provenance remain open |
