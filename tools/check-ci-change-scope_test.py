@@ -52,6 +52,18 @@ def receipt(raw=b"", actual_exit=0, complete=True):
                                    "eof": complete, "truncated": False, "read_error": False}}}
 
 
+def tree_record(path, mode=b"100644", kind=b"blob", oid=b"a" * 40):
+    return mode + b" " + kind + b" " + oid + b"\t" + path + b"\0"
+
+
+def archive_tree():
+    return (tree_record(b"internal/proof/core.go")
+            + tree_record(b".github/workflows/ci.yml", oid=b"b" * 40)
+            + tree_record(b"docs/contract.md")
+            + tree_record(b"tools/check-ci-change-scope.py")
+            + tree_record(b"tools/ledger-transport/archive_tail.py"))
+
+
 class FixtureRunner:
     def __init__(self, selected=None, diff=None):
         self.selection = selection() if selected is None else selected
@@ -72,8 +84,12 @@ class FixtureRunner:
             raw = (TREE + "\n").encode()
         elif args[0] == "show":
             raw = (ROOT / args[1].split(":", 1)[1]).read_bytes()
+            if args[1].split(":", 1)[1] == M.ARCHIVE_WORKFLOW:
+                raw = raw.replace(b"\r\n", b"\n")
         elif args[0] == "diff":
             raw = self.diff
+        elif args[0] == "ls-tree":
+            raw = archive_tree()
         else:
             raise AssertionError("Unexpected read-only Git request")
         return raw, receipt(raw)
@@ -418,6 +434,190 @@ class CIChangeScopeControls(unittest.TestCase):
         for changed_raw in (raw[:-1], raw[:-2], raw + b"extra", raw.replace(b'{', b'{"format":"unknown",', 1), b"x" * (M.MAX_REPORT_BYTES + 1)):
             with self.subTest(size=len(changed_raw)):
                 self.assertIsNotNone(self.workflow_guard(changed_raw)[0])
+
+    def archive_result(self, diff=None, runner=None, selected=None):
+        selected = selection() if selected is None else selected
+        runner = FixtureRunner(selected, record(b"tools/ledger-transport/archive_tail.py")
+                               if diff is None else diff) if runner is None else runner
+        with mock.patch.object(M, "RUNTIME_SOURCE_PIN", M.runtime_fingerprint(archive_tree())["sha256"]):
+            return M.select_scope(ROOT, selected, runner)
+
+    def test_archive_modified_leaves_and_mixed_documents_select_portable(self):
+        for path in sorted(M.ARCHIVE_FILES):
+            with self.subTest(path=path):
+                result = self.archive_result(record(path.encode()) + record())
+                self.assertFalse(result["run_runtime"])
+                self.assertEqual((result["format"], result["status"]), (M.ARCHIVE_FORMAT, "PORTABLE_ARCHIVE_ONLY"))
+                self.assertEqual(result["portable_archive_paths"], [{"path": path, "change": "M"}])
+                self.assertEqual(result["documentation_paths"], [{"path": "docs/contract.md", "change": "M"}])
+                self.assertEqual(result["required_workflows"], [M.ARCHIVE_WORKFLOW])
+                self.assertEqual(len(result["source_pins"]), 4)
+                self.assertEqual(len(result["commands"]), 9)
+                self.assertFalse(result["runtime_qualification_transferred"])
+
+    def test_archive_direct_parent_push_selects_same_portable_lane(self):
+        selected = selection("push")
+        result = self.archive_result(selected=selected)
+        self.assertFalse(result["run_runtime"])
+        self.assertEqual(result["selection"], selected)
+
+    def test_archive_add_delete_modes_renames_and_aliases_require_runtime(self):
+        path = b"tools/ledger-transport/archive_tail.py"
+        records = [record(path, b"A", b"000000"), record(path, b"D", new_mode=b"000000"),
+                   record(path, old_mode=b"100755", new_mode=b"100755"),
+                   record(path, old_mode=b"120000", new_mode=b"120000"),
+                   record(path, change=b"R100"), record(path) + record(path),
+                   record(path) + record(path.upper()), record(path.replace(b"/", b"//", 1))]
+        for raw in records:
+            with self.subTest(raw=raw[:90]):
+                self.require_full(raw)
+
+    def test_archive_raw_stream_export_and_other_dependencies_keep_runtime(self):
+        for path in ("tools/ledger-transport/transport.py", "tools/ledger-transport/transport_test.py",
+                     "tools/ledger-inventory/inventory.py", "tools/ledger-export/cli_test.go",
+                     "tools/ledger-transport/future.py", "internal/proof/core.go", "go.mod"):
+            with self.subTest(path=path):
+                self.require_full(record(b"tools/ledger-transport/archive_index.py") + record(path.encode()))
+
+    def test_archive_pinned_workflow_base_and_checkout_must_match(self):
+        runner = FixtureRunner(diff=record(b"tools/ledger-transport/archive_tail.py"))
+        original = runner.__call__
+        def changed_base(root, args, limit):
+            raw, result = original(root, args, limit)
+            if args == ["show", BASE + ":" + M.ARCHIVE_WORKFLOW]:
+                raw += b"\n"
+                result = receipt(raw)
+            return raw, result
+        result = self.archive_result(runner=changed_base)
+        self.assertTrue(result["run_runtime"])
+        self.assertEqual(result["reason"], "archive_workflow_pin")
+        for field, bad in (("ARCHIVE_WORKFLOW_SHA256", "0" * 64), ("ARCHIVE_WORKFLOW_BYTES", 1)):
+            with self.subTest(field=field), mock.patch.object(M, field, bad):
+                result = self.archive_result()
+                self.assertTrue(result["run_runtime"])
+                self.assertEqual(result["reason"], "archive_workflow_pin")
+
+    def test_archive_workflow_and_tree_incomplete_results_keep_runtime(self):
+        for target in ("archive-source", "archive-base", "ls-tree"):
+            for code, complete in ((1, True), (0, False), (None, False)):
+                runner = FixtureRunner(diff=record(b"tools/ledger-transport/archive_index.py"))
+                original = runner.__call__
+                def incomplete(root, args, limit):
+                    raw, value = original(root, args, limit)
+                    selected = (args[0] == "ls-tree" if target == "ls-tree" else
+                                args == ["show", (CHECKOUT if target == "archive-source" else BASE)
+                                         + ":" + M.ARCHIVE_WORKFLOW])
+                    return (b"", receipt(actual_exit=code, complete=complete)) if selected else (raw, value)
+                with self.subTest(target=target, code=code, complete=complete):
+                    result = self.archive_result(runner=incomplete)
+                    self.assertTrue(result["run_runtime"])
+                    self.assertEqual(result["reason"], "git_incomplete_or_failed")
+                    self.assertEqual(result["commands"][-1]["actual_exit"], code)
+
+    def test_archive_future_runtime_source_changes_disable_portable(self):
+        original = archive_tree()
+        for raw in (original.replace(b"a" * 40, b"c" * 40, 1),
+                    original.replace(b"b" * 40, b"c" * 40, 1),
+                    original + tree_record(b"tools/new-dependency.py"),
+                    original + tree_record(b"docs/linked.md", mode=b"120000"),
+                    original + tree_record(b"tools/ledger-transport/transport.py")):
+            runner = FixtureRunner(diff=record(b"tools/ledger-transport/archive_tail.py"))
+            runner.overrides["ls-tree"] = raw, receipt(raw)
+            with self.subTest(size=len(raw)):
+                result = self.archive_result(runner=runner)
+                self.assertTrue(result["run_runtime"])
+                self.assertEqual(result["reason"], "runtime_source_pin")
+
+    def test_archive_tree_excludes_only_regular_reviewed_paths(self):
+        expected = M.runtime_fingerprint(archive_tree())
+        for path in sorted(M.ARCHIVE_FILES | set(M.SOURCE_FILES[:2]) | {"README.md", "docs/new.md"}):
+            if path in ("tools/ledger-transport/archive_tail.py", "tools/check-ci-change-scope.py"):
+                continue
+            with self.subTest(path=path):
+                self.assertEqual(M.runtime_fingerprint(archive_tree() + tree_record(path.encode())), expected)
+                self.assertNotEqual(M.runtime_fingerprint(archive_tree() + tree_record(path.encode(), mode=b"120000")), expected)
+
+    def test_archive_tree_bounds_shapes_and_duplicates_are_refused(self):
+        invalid = [b"", b"x", "not bytes", b"x" * (M.MAX_TREE_BYTES + 1),
+                   tree_record(b"/absolute"), tree_record(b"a/../b"), tree_record(b"a\\b"),
+                   tree_record(b"source", oid=b"0" * 40), tree_record(b"source", mode=b"040000", kind=b"tree"),
+                   tree_record(b"source", mode=b"160000"), archive_tree() + tree_record(b"internal/proof/core.go"),
+                   b"".join(tree_record(("code/" + str(n)).encode()) for n in range(M.MAX_TREE_RECORDS + 1)),
+                   tree_record(b"README.md")]
+        for raw in invalid:
+            with self.subTest(type=type(raw).__name__, size=len(raw)):
+                with self.assertRaises(M.ScopeError):
+                    M.runtime_fingerprint(raw)
+
+    def test_archive_tree_ordering_and_literal_digest_are_independent(self):
+        kept = [tree_record(b"internal/proof/core.go"), tree_record(b".github/workflows/ci.yml", oid=b"b" * 40)]
+        expected = {"sha256": hashlib.sha256(b"".join(sorted(kept))).hexdigest(),
+                    "bytes": sum(map(len, kept)), "entries": 2}
+        self.assertEqual(M.runtime_fingerprint(archive_tree()), expected)
+        self.assertEqual(M.runtime_fingerprint(b"\0".join(reversed(archive_tree().split(b"\0")[:-1])) + b"\0"), expected)
+
+    def test_archive_workflow_guard_accepts_complete_portable_selection(self):
+        for path in sorted(M.ARCHIVE_FILES):
+            result = self.archive_result(record(path.encode()))
+            with self.subTest(path=path):
+                self.assertEqual(self.workflow_guard(self.guard_bytes(result)), (None, "run_runtime=false\n"))
+
+    def test_archive_workflow_guard_refuses_other_lanes_bindings_and_closures(self):
+        result = self.archive_result()
+        mutations = []
+        for key, value in (("format", M.FORMAT), ("status", "DOCUMENTATION_ONLY"),
+                           ("required_workflows", []), ("required_workflows", ["other"]),
+                           ("portable_archive_paths", []), ("documentation_paths", "unknown"),
+                           ("runtime_qualification_transferred", True), ("commands", result["commands"][:-1])):
+            changed = copy.deepcopy(result);changed[key] = value;mutations.append(changed)
+        for path in ([{"path": "tools/ledger-transport/transport.py", "change": "M"}],
+                     [{"path": "tools/ledger-transport/archive_tail.py", "change": "A"}],
+                     result["portable_archive_paths"] * 2):
+            changed = copy.deepcopy(result);changed["portable_archive_paths"] = path;mutations.append(changed)
+        for target, field, value in (("archive_workflow", "base_matches_checkout", False),
+                                     ("archive_workflow", "sha256", "0" * 64),
+                                     ("runtime_closure", "matched", False),
+                                     ("runtime_closure", "expected_sha256", "0" * 64),
+                                     ("runtime_closure", "bytes", True),
+                                     ("runtime_closure", "bytes", (2 << 20) + 1),
+                                     ("runtime_closure", "entries", 0),
+                                     ("runtime_closure", "entries", True)):
+            changed = copy.deepcopy(result);changed[target][field] = value;mutations.append(changed)
+        changed = copy.deepcopy(result);del changed["source_pins"][M.ARCHIVE_WORKFLOW];mutations.append(changed)
+        changed = copy.deepcopy(result);changed["source_pins"][M.ARCHIVE_WORKFLOW]["git_sha256"] = "0" * 64;mutations.append(changed)
+        for index, changed in enumerate(mutations):
+            with self.subTest(mutation=index):
+                self.assertIsNotNone(self.workflow_guard(self.guard_bytes(changed))[0])
+
+    def test_archive_workflow_guard_runtime_fallback_never_skips(self):
+        result = M.select_scope(ROOT, selection(), FixtureRunner(diff=record(b"tools/ledger-transport/archive_tail.py")))
+        self.assertTrue(result["run_runtime"])
+        self.assertEqual(result["format"], M.ARCHIVE_FORMAT)
+        self.assertEqual(self.workflow_guard(self.guard_bytes(result)), (None, "run_runtime=true\n"))
+
+    def test_archive_selector_controls_and_workflow_changes_need_full_lane(self):
+        for path in (*M.SOURCE_FILES, M.ARCHIVE_WORKFLOW):
+            with self.subTest(path=path):
+                self.require_full(record(b"tools/ledger-transport/archive_tail.py") + record(path.encode()))
+
+    def test_archive_tree_receipts_and_source_byte_caps_are_retained(self):
+        result = self.archive_result()
+        self.assertEqual(result["commands"][-1]["streams"]["stdout"]["sha256"], hashlib.sha256(archive_tree()).hexdigest())
+        runner = FixtureRunner(diff=record(b"tools/ledger-transport/archive_tail.py"))
+        raw = b"x" * (M.MAX_TREE_BYTES + 1)
+        runner.overrides["ls-tree"] = raw, receipt(raw)
+        result = self.archive_result(runner=runner)
+        self.assertTrue(result["run_runtime"])
+        self.assertEqual(result["reason"], "git_bounds")
+
+    def test_archive_branch_cannot_mask_malformed_or_unselected_diff_records(self):
+        for raw in (record(b"tools/ledger-transport/archive_tail.py")[:-1],
+                    record(b"tools/ledger-transport/archive_tail.py") + b"bad\0unknown\0",
+                    record(b"tools/ledger-transport/archive_tail.py") + record(b"internal/other.go")):
+            runner = FixtureRunner(diff=raw)
+            result = self.archive_result(runner=runner)
+            self.assertTrue(result["run_runtime"])
+            self.assertFalse(any(args[0] == "ls-tree" for args, _ in runner.calls))
 
 
 class ControlResult(unittest.TextTestResult):

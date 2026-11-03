@@ -38,7 +38,7 @@ jobs:
         run: |
           python -I -B tools/check-ci-change-scope.py --repository "$GITHUB_REPOSITORY" --event "$GITHUB_EVENT_NAME" --base-revision "$CI_SCOPE_BASE" --feature-revision "$CI_SCOPE_FEATURE" --checkout-revision "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" > "$RUNNER_TEMP/ci-change-scope.json"
           python -I -B - <<'PY'
-          import json, os
+          import json, os, re
           from pathlib import Path
           path = Path(os.environ['RUNNER_TEMP']) / 'ci-change-scope.json'
           with path.open('rb') as stream:
@@ -46,7 +46,7 @@ jobs:
           assert len(raw) <= 1 << 20
           value = json.loads(raw)
           assert (json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False) + '\n').encode() == raw
-          assert value['format'] == 'zenon-ci-change-scope/v1'
+          assert value['format'] in ('zenon-ci-change-scope/v1', 'zenon-ci-change-scope/v2')
           assert value['selection'] == {'repository': os.environ['GITHUB_REPOSITORY'], 'event': os.environ['GITHUB_EVENT_NAME'],
               'base_revision': os.environ['CI_SCOPE_BASE'], 'feature_revision': os.environ['CI_SCOPE_FEATURE'],
               'checkout_revision': os.environ['GITHUB_SHA'], 'run_id': int(os.environ['GITHUB_RUN_ID']),
@@ -55,10 +55,34 @@ jobs:
           flag = value['run_runtime']
           assert type(flag) is bool
           if not flag:
-              assert value['status'] == 'DOCUMENTATION_ONLY' and value['reason'] == 'regular_markdown_only'
-              assert value['source_binding_complete'] is True and value['documentation_paths']
-              assert set(value['source_pins']) == {'tools/check-ci-change-scope.py', 'tools/check-ci-change-scope_test.py', '.github/workflows/ci.yml'}
-              assert len(value['commands']) == 6
+              assert value['source_binding_complete'] is True
+              pins = {'tools/check-ci-change-scope.py', 'tools/check-ci-change-scope_test.py', '.github/workflows/ci.yml'}
+              if value['format'] == 'zenon-ci-change-scope/v1':
+                  assert value['status'] == 'DOCUMENTATION_ONLY' and value['reason'] == 'regular_markdown_only'
+                  assert value['documentation_paths'] and len(value['commands']) == 6
+              else:
+                  workflow = '.github/workflows/ledger-transport.yml'
+                  assert value['status'] == 'PORTABLE_ARCHIVE_ONLY' and value['reason'] == 'modified_independent_archive_leaves'
+                  assert value['required_workflows'] == [workflow] and len(value['commands']) == 9
+                  allowed = {'tools/ledger-transport/' + name for name in ('archive_index.py', 'archive_index_test.py',
+                      'archive_tail.py', 'archive_tail_test.py', 'README.md', 'THIRD_PARTY_NOTICES')}
+                  paths = value['portable_archive_paths']
+                  assert type(paths) is list and 0 < len(paths) <= len(allowed)
+                  assert all(set(path) == {'path', 'change'} and path['path'] in allowed and path['change'] == 'M' for path in paths)
+                  assert len({path['path'] for path in paths}) == len(paths)
+                  assert type(value['documentation_paths']) is list
+                  assert value['archive_workflow'] == {'path': workflow, 'sha256': '3101f06e85bd6bd6d74fe89e86e06a04cce38a26aad7d945f5371880250e49b0',
+                      'bytes': 7894, 'base_matches_checkout': True}
+                  closure = value['runtime_closure']
+                  assert set(closure) == {'sha256', 'bytes', 'entries', 'expected_sha256', 'matched'}
+                  assert closure['matched'] is True and closure['sha256'] == closure['expected_sha256']
+                  assert re.fullmatch('[0-9a-f]{64}', closure['sha256']) and closure['sha256'] != '0' * 64
+                  assert type(closure['bytes']) is int and 0 < closure['bytes'] <= 2 << 20
+                  assert type(closure['entries']) is int and 0 < closure['entries'] <= 8192
+                  pins.add(workflow)
+                  assert value['source_pins'][workflow]['git_sha256'] == value['archive_workflow']['sha256']
+                  assert value['source_pins'][workflow]['git_bytes'] == value['archive_workflow']['bytes']
+              assert set(value['source_pins']) == pins
               for command in value['commands']:
                   assert type(command['actual_exit']) is int and command['actual_exit'] == 0 and command['capture_complete'] is True
                   assert command['readers_joined'] is True and command['launch_error'] is False and command['timed_out'] is False
