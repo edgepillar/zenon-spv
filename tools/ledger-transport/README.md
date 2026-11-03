@@ -222,8 +222,8 @@ python3 -I -B tools/ledger-transport/archive_index_test.py
 Finite literal directories, a standard-library ZIP encoder, logical >4 GiB
 offsets, 10,000 members, malformed ranges/records, alias/type/encoding/size
 refusals, short reads, actual CLI exits and failed output controls create no
-payload files. They are not real dataset measurements. CI runs both test suites
-on the same three platforms and retains only source, licenses and small reports.
+payload files. They are not real dataset measurements. Three-platform CI retains
+only source, licenses and small reports for the stream, directory and tail suites.
 The current `zenon-r1-transport-ci/v3` package binds all three suites. Retained
 v1 stream-only and v2 stream/directory packages keep their original identities
 and coverage; they are not rewritten or relabeled. Raw-stream manifest formats

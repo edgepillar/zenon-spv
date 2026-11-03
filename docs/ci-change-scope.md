@@ -136,6 +136,22 @@ qualified. Their costs are outside this general-workflow table.
 These are different observed work selections, not a controlled performance
 benchmark, production resource budget or measured APFS reclaim. No protected
 evidence was deleted. The documentation route itself confers no native runtime
-qualification. The later runtime-qualified baseline is explicitly pinned to
-`bc0be26d76dd07d297dfdf5b00768d23527e49f5` in the
-[review ledger](review-candidate-changes.md); documentation heads do not advance it.
+qualification. That historical experiment kept
+`bc0be26d76dd07d297dfdf5b00768d23527e49f5` as its then-qualified runtime baseline
+in the [review ledger](review-candidate-changes.md). Its original records retain
+that meaning.
+
+The independent archive-route adoption is fully runtime-qualified at
+[`722990a07f1523e792b917b83644bba40806aa6e`](https://github.com/edgepillar/zenon-spv/commit/722990a07f1523e792b917b83644bba40806aa6e),
+through separate [PR CI](https://github.com/edgepillar/zenon-spv/actions/runs/41602430674)
+and [main CI](https://github.com/edgepillar/zenon-spv/actions/runs/41606398665).
+Each context passed all seven scheduled jobs, qualified all 37 archives and
+21 native binary bindings, and reconciled four scope reports with 52 controls
+each. These are mechanical source/runtime observations; independent review,
+network activation and authenticated distribution remain separate gates.
+
+Keep that full-runtime revision pinned when a later eligible archive change
+selects v2. Its skipped groups supply no new native execution or binary, and its
+separate portable workflow still needs actual three-platform qualification.
+Record each real route observation against its own source, run and attempt;
+the closure pin alone does not establish completion or savings.
