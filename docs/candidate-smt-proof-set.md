@@ -53,7 +53,8 @@ The existing original-node corpus is reused without a new node execution or
 another source/archive download. Local allocation controls and bounded fuzzing
 are implementation evidence; resource timings do not qualify a live workload.
 
-The bounded local run used Go 1.25.14, darwin/arm64 and two Go workers. The
+The initial bounded local run at `5ec4f7204dfa63f6e36a73acd9bc96542ad4171d`
+used Go 1.25.14, darwin/arm64 and two Go workers. The
 race-selected lane passed 20 test roots and 293 subtest pass events, including
 8 new roots and 81 new subtests. Five seconds of targeted fuzzing exercised
 145,326 inputs. Vet and the two used modules' ZIP/expanded h1 checks and
@@ -75,6 +76,15 @@ workspace observation was 353,392,112 bytes under a 768 MiB task limit; this is
 not a continuously measured peak. Owned temporary source/module/build/fuzz data
 was removed. The source inputs, actual output receipts and compressed test
 binary were retained once; no new node capture or full-job logs were needed.
+
+That revision's Linux lint lane reported staticcheck QF1003 in benchmark setup.
+The follow-up uses a tagged switch for the same three benchmark cases. The
+production readers and every test/fuzz function remain byte-identical. The
+configured golangci-lint v2.6.2 checks and the same three benchmark cases passed
+in a bounded local workspace; prior unit/fuzz work was preserved without
+reexecution. The failed revision's evidence remains separate. The corrected
+source still requires its own three-platform CI/artifact qualification; no
+linter rule is disabled.
 
 Presence and canonical encoding remain returned facts. An enclosing typed-query
 policy must require both for all three supporting rows. A successful set read

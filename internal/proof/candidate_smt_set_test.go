@@ -339,9 +339,10 @@ func BenchmarkCandidateSMTProofSet(b *testing.B) {
 			selected := append([]proof.CandidateSMTProofInput(nil), inputs...)
 			limits := candidateSMTSetLimits()
 			want := error(nil)
-			if name == "late_root_mismatch" {
+			switch name {
+			case "late_root_mismatch":
 				selected[2], want = foreign[0], proof.ErrCandidateSMTMismatch
-			} else if name == "aggregate_refusal" {
+			case "aggregate_refusal":
 				limits.MaxTotalValueBytes, want = 1, proof.ErrCandidateSMTBounds
 			}
 			b.ReportAllocs()
