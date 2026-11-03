@@ -134,6 +134,20 @@ Each PR/main source requires its own scheduled CI/artifact qualification.
 These partial results leave every D0-D6 acceptance exit open and do not change
 the frozen independent-review candidate or production NO-GO gates.
 
+### Maintainer feedback follow-up: 3 November 2026
+
+The [source-checked domain-context record](batch-entry-domain-context.md)
+incorporates the maintainer's review of the unchanged query-contract draft at
+`702180a`. It records SubmitBatch's 40/1,540/0-byte dynamic-field bounds, a
+computed 2,272-byte canonical ABI upper bound, and two additional local keys
+for domainRecord/domainConfig proofs at the same accepted H/root. It also
+records the configuration/spec mutation paths: current-H context cannot prove
+the configuration or runtime used by an older batch. The existing finite
+producer authorization remains intact; genesis membership is a distinct
+policy proposal. This is D0-D1 source preparation, with supporting codecs and
+proof composition still open. It does not complete a selected-network query
+or transfer human review, old CI or live-network authority to a new revision.
+
 ## Authority and required invariants
 
 - The original owner memo is a dated architectural input; Zeno research/state-root.md is a separate informative file. Neither overrides the selected normative contract or actual source behavior.
