@@ -193,9 +193,13 @@ jobs:
       - name: Independent source parent-slot context
         run: python -I -B tools/gen-state-root-vectors/check_parent_snapshot_slots.py --source-revision "${{ github.sha }}"
       - name: Recorded BatchEntry header/witness byte replay
+        id: batch_replay
+        shell: bash
         run: |
-          python -I -B tools/gen-state-root-vectors/check_batch_entry_header_witness_test.py -v
-          python -I -B tools/gen-state-root-vectors/check_batch_entry_header_witness.py --source-revision "${{ github.sha }}"
+          set -euo pipefail
+          python -I -B tools/record-batch-entry-replay_test.py -v
+          set -o noclobber
+          python -I -B tools/record-batch-entry-replay.py --source-revision "${{ github.sha }}" --expect-platform "$(go env GOOS)-$(go env GOARCH)" > "$RUNNER_TEMP/batch-entry-replay.json"
       - name: Candidate sparse proof controls
         run: go test -json -count=1 -run '^(TestCandidateSMT|TestCandidateBatchEntry)' ./internal/proof
       - name: Owned state persistence controls
@@ -727,11 +731,13 @@ jobs:
           executable_suffix="$(go env GOEXE)"
           python -I -B tools/check-observer-report-consumer.py --observer "$candidate_directory/observe-block$executable_suffix" --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --collector "$candidate_directory/fetch-bundle$executable_suffix" --source-revision "${{ github.sha }}"
       - name: Upload offline pilot report
-        if: ${{ !cancelled() && steps.pilot.outcome != 'skipped' }}
+        if: ${{ !cancelled() && (steps.pilot.outcome != 'skipped' || steps.batch_replay.outcome != 'skipped') }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: offline-pilot-linux
-          path: ${{ runner.temp }}/offline-pilot.json
+          path: |
+            ${{ runner.temp }}/offline-pilot.json
+            ${{ runner.temp }}/batch-entry-replay.json
           if-no-files-found: error
           retention-days: 14
       - name: Prepare checked candidate stream
@@ -928,9 +934,13 @@ jobs:
       - name: Independent source parent-slot context
         run: python -I -B tools/gen-state-root-vectors/check_parent_snapshot_slots.py --source-revision "${{ github.sha }}"
       - name: Recorded BatchEntry header/witness byte replay
+        id: batch_replay
+        shell: bash
         run: |
-          python -I -B tools/gen-state-root-vectors/check_batch_entry_header_witness_test.py -v
-          python -I -B tools/gen-state-root-vectors/check_batch_entry_header_witness.py --source-revision "${{ github.sha }}"
+          set -euo pipefail
+          python -I -B tools/record-batch-entry-replay_test.py -v
+          set -o noclobber
+          python -I -B tools/record-batch-entry-replay.py --source-revision "${{ github.sha }}" --expect-platform "$(go env GOOS)-$(go env GOARCH)" > "$RUNNER_TEMP/batch-entry-replay.json"
       - name: Candidate sparse proof controls
         run: go test -json -count=1 -run '^(TestCandidateSMT|TestCandidateBatchEntry)' ./internal/proof
       - name: Owned state persistence controls
@@ -1448,11 +1458,13 @@ jobs:
           executable_suffix="$(go env GOEXE)"
           python -I -B tools/check-observer-report-consumer.py --observer "$candidate_directory/observe-block$executable_suffix" --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --collector "$candidate_directory/fetch-bundle$executable_suffix" --source-revision "${{ github.sha }}"
       - name: Upload offline pilot report
-        if: ${{ !cancelled() && steps.pilot.outcome != 'skipped' }}
+        if: ${{ !cancelled() && (steps.pilot.outcome != 'skipped' || steps.batch_replay.outcome != 'skipped') }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: offline-pilot-${{ matrix.os }}
-          path: ${{ runner.temp }}/offline-pilot.json
+          path: |
+            ${{ runner.temp }}/offline-pilot.json
+            ${{ runner.temp }}/batch-entry-replay.json
           if-no-files-found: error
           retention-days: 14
       - name: Prepare checked candidate stream

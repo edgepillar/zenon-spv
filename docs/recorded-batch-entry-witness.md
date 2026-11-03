@@ -81,6 +81,45 @@ The record's test_selection is an explicit synthetic test configuration.
 Its settings and pins are not independently selected live trust. Do not extract
 them as a live profile or let a provider generate real query configuration.
 
+## Small CI replay receipts
+
+CI runs the same 23 Python controls and independent byte replay through
+[record-batch-entry-replay.py](../tools/record-batch-entry-replay.py). The wrapper
+adds no node execution or Go build. Its separate in-memory regression controls
+cover failure, error, skip, expected-failure, unexpected-success, class setup
+and teardown errors, source changes, bounds and output completion.
+
+The wrapper emits one JSON receipt of at most 32 KiB and caps diagnostics at
+256 KiB. It names every selected and started root, records root outcomes and
+separate subtest counts, and includes the mathematical summary. Six fixed
+source/corpus/harness files have bounded byte counts and SHA-256 digests checked
+before and after the run. The declared revision must still be bound to the
+selected source by the qualifier; unchanged local bytes alone do not prove a
+Git revision. Permitted Git/checkout line-ending relations are checked there.
+
+The existing offline-pilot CI archive now carries this receipt beside its
+unchanged pilot report. Early root-suite publication and the number of archives
+remain unchanged. Qualification can consume the small receipt instead of
+downloading three complete native-job logs. Existing logs, older archive shapes,
+original-node evidence and failed attempts retain their original interpretation.
+No historical evidence is deleted or relabelled.
+
+    python -I -B tools/record-batch-entry-replay_test.py -v
+    python -I -B tools/record-batch-entry-replay.py \
+      --source-revision <full-checkout-revision> --expect-platform <os-architecture>
+
+A successful receipt has exit 0 and status passed only when all 23 roots pass,
+without skips or other exceptional outcomes, the mathematical replay matches and
+the source remains unchanged. Failed controls retain a failed receipt and exit 1.
+Invalid invocation exits 64; an operational or output failure exits 70. A partial
+write or failed flush is unusable even if already written bytes include passed.
+Input/operational diagnostics omit supplied argument values and private paths.
+
+The receipt remains unsigned consistency data. Check the actual process exit,
+complete output, exact source inputs, platform, selected CI revision and successful
+job/step records before using it. It authenticates neither execution provenance
+nor network trust. The selected-network and production gates above remain open.
+
 ## Reproduction and resources
 
 Prepare a new task-owned isolated copy of the exact node and verified dependencies.
