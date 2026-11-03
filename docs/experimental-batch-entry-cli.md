@@ -19,9 +19,11 @@ can acquire a bounded provider document using explicit local selectors. Its
 success grants no header or proof authority; these offline commands still
 require independent configuration, request and expected context pins.
 
-This is a functional experimental consumer seam. The recorded workflow covers
-real public header signatures and rejection of an incompatible witness; a
-matching positive accepted-header BatchEntry witness on the selected network
+This is a functional experimental consumer seam. The recorded workflow retains
+its incompatible-witness control and now includes a
+[matching original-node fixture](recorded-batch-entry-witness.md), with the
+same two fresh executables reused for collection and the successful typed query.
+A matching positive BatchEntry witness on the independently selected network
 is still missing. This command does not close D0-D3 or a release gate.
 
 ## Inputs and independent selection
