@@ -1,0 +1,135 @@
+// SPDX-License-Identifier: MIT
+// Synthetic ABI and subkey evidence; no chain, profile or state acceptance.
+package definition
+
+import (
+	"bytes"
+	"encoding/hex"
+	"encoding/json"
+	"math"
+	"reflect"
+	"testing"
+
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+func spvDomainRecordPack(record DomainRecord) ([]byte, error) {
+	return ABISettlement.PackVariable(DomainRecordVariableName,
+		record.DomainClass, record.RuntimeKind, record.StfSpecHash,
+		record.InputSource, record.ExecProfile, record.ForeignProfile,
+		record.ProfileConfig, record.ChainBinding, record.MinExecutors,
+		record.ProposerPolicy, record.FinalityModel, record.Status)
+}
+
+func spvDomainRecordFields(record DomainRecord) map[string]interface{} {
+	return map[string]interface{}{
+		"domainClass": record.DomainClass, "runtimeKind": record.RuntimeKind,
+		"stfSpecHash": record.StfSpecHash.String(), "inputSource": record.InputSource,
+		"execProfile": record.ExecProfile, "foreignProfile": record.ForeignProfile,
+		"profileConfigHex": hex.EncodeToString(record.ProfileConfig),
+		"chainBindingHex":  hex.EncodeToString(record.ChainBinding),
+		"minExecutors":     record.MinExecutors, "proposerPolicy": record.ProposerPolicy,
+		"finalityModel": record.FinalityModel, "status": record.Status,
+	}
+}
+
+func TestSPVDomainContextEncoding(t *testing.T) {
+	makeRecord := func(size int) DomainRecord {
+		var hash types.Hash
+		for i := range hash {
+			hash[i] = byte(i + 1)
+		}
+		return DomainRecord{
+			StfSpecHash: hash, MinExecutors: 1,
+			ProfileConfig: bytes.Repeat([]byte{0x11}, size),
+			ChainBinding:  bytes.Repeat([]byte{0xfe}, size),
+		}
+	}
+	firstEmpty, secondEmpty, widest := makeRecord(33), makeRecord(33), makeRecord(1)
+	firstEmpty.ProfileConfig, secondEmpty.ChainBinding = nil, nil
+	widest.DomainClass, widest.RuntimeKind, widest.InputSource = math.MaxUint8, math.MaxUint8, math.MaxUint8
+	widest.ExecProfile, widest.ForeignProfile, widest.MinExecutors = math.MaxUint8, math.MaxUint8, math.MaxUint8
+	widest.ProposerPolicy, widest.FinalityModel, widest.Status = math.MaxUint8, math.MaxUint8, math.MaxUint8
+	var records, configs, keys []map[string]interface{}
+	for _, row := range []struct {
+		name   string
+		record DomainRecord
+	}{
+		{"empty", DomainRecord{}}, {"selected-fields", makeRecord(0)},
+		{"word-31", makeRecord(31)}, {"word-32", makeRecord(32)}, {"word-33", makeRecord(33)},
+		{"first-empty", firstEmpty}, {"second-empty", secondEmpty}, {"unsigned-widths", widest},
+	} {
+		t.Run("record-"+row.name, func(t *testing.T) {
+			packed, err := spvDomainRecordPack(row.record)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var decoded DomainRecord
+			if err := ABISettlement.UnpackVariable(&decoded, DomainRecordVariableName, packed); err != nil {
+				t.Fatal(err)
+			}
+			repacked, err := spvDomainRecordPack(decoded)
+			if err != nil || !bytes.Equal(packed, repacked) || !reflect.DeepEqual(spvDomainRecordFields(row.record), spvDomainRecordFields(decoded)) {
+				t.Fatal("original domainRecord ABI round trip changed fields", err)
+			}
+			records = append(records, map[string]interface{}{
+				"name": row.name, "packed_hex": hex.EncodeToString(packed), "fields": spvDomainRecordFields(row.record),
+			})
+		})
+	}
+	for _, row := range []struct {
+		name                string
+		withdrawal, upgrade uint64
+	}{
+		{"zero", 0, 0}, {"devnet-minimum", 30, 30},
+		{"distinct", 30, 64}, {"unsigned-widths", math.MaxUint64, math.MaxUint64 - 1},
+	} {
+		t.Run("config-"+row.name, func(t *testing.T) {
+			packed, err := ABISettlement.PackVariable(domainConfigVariableName, row.withdrawal, row.upgrade)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var decoded DomainConfig
+			if err := ABISettlement.UnpackVariable(&decoded, domainConfigVariableName, packed); err != nil {
+				t.Fatal(err)
+			}
+			repacked, err := ABISettlement.PackVariable(domainConfigVariableName, decoded.WithdrawalDelay, decoded.RuntimeUpgradeDelay)
+			if err != nil || !bytes.Equal(packed, repacked) || decoded.WithdrawalDelay != row.withdrawal || decoded.RuntimeUpgradeDelay != row.upgrade {
+				t.Fatal("original domainConfig ABI round trip changed fields", err)
+			}
+			configs = append(configs, map[string]interface{}{
+				"name": row.name, "packed_hex": hex.EncodeToString(packed),
+				"withdrawalDelay": row.withdrawal, "runtimeUpgradeDelay": row.upgrade,
+			})
+		})
+	}
+	for _, row := range []struct {
+		name   string
+		domain uint32
+	}{
+		{"zero", 0}, {"one", 1}, {"byte-order", 0x01020304}, {"unsigned-widths", math.MaxUint32},
+	} {
+		t.Run("key-"+row.name, func(t *testing.T) {
+			recordKey := (&DomainRecordKey{DomainId: row.domain}).Key()
+			configKey := getDomainConfigKey(row.domain)
+			if len(recordKey) != 5 || len(configKey) != 5 || bytes.Equal(recordKey, configKey) {
+				t.Fatal("original domain subkeys have wrong width or alias")
+			}
+			keys = append(keys, map[string]interface{}{
+				"name": row.name, "domain_id": row.domain,
+				"record_subkey_hex": hex.EncodeToString(recordKey), "config_subkey_hex": hex.EncodeToString(configKey),
+			})
+		})
+	}
+	result := map[string]interface{}{
+		"format":                 "selected-node-domain-context-encoding/v1",
+		"scope":                  "SYNTHETIC_ABI_AND_SUBKEYS_NOT_STATE_ACCEPTANCE",
+		"settlement_address_hex": hex.EncodeToString(types.SettlementContract[:]),
+		"records":                records, "configs": configs, "keys": keys,
+	}
+	raw, err := json.Marshal(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("SPV_DOMAIN_CONTEXT_TRACE %s", raw)
+}

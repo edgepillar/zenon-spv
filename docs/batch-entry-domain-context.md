@@ -116,9 +116,10 @@ namespaces or contexts. Bound individual value/proof work and the cumulative
 three-proof work before allocation. Missing or unavailable context cannot be
 silently replaced with provider DTO fields or inferred absence.
 
-The existing typed-query API implements the BatchEntry proof only. Domain keys,
-strict codecs, independent byte checks and atomic supporting-proof composition
-remain implementation gates; this document does not claim they already exist.
+The existing typed-query API implements the BatchEntry proof only. Candidate
+[domain keys and strict codecs](candidate-domain-context.md) now have original
+ABI/subkey captures and independent byte checks. They return untrusted data;
+atomic supporting-proof composition remains an implementation gate.
 
 ## Current context and submission-time context
 
@@ -182,9 +183,9 @@ No such policy change is made by this follow-up.
 
 ## Remaining implementation and network gates
 
-The next independent D1 slice is local domain key derivation and bounded,
-detached codecs, compared with the original ABI and independent bytes. Then
-add all-or-nothing supporting proofs at one owned accepted H/context, explicit
+The candidate local key/codec slice now supplies the
+[original ABI and independent-byte comparison](candidate-domain-context.md).
+Next add all-or-nothing supporting proofs at one owned accepted H/context, explicit
 source semantics and aggregate work budgets. Negative controls must cover
 cross-context/domain substitution, malformed canonical encodings, empty or
 missing supporting rows, changed configuration and unsupported source rules.
