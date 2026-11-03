@@ -170,54 +170,61 @@ func (s *capacitySequence) refuseSelections() {
 func TestRetainedCapacitySequenceModel(t *testing.T) {
 	for _, k := range []int{16, 256, MaxRetainHeaders} {
 		for mode, name := range []string{"v1", "v1_v2_profile", "v1_v2_schedule"} {
-			fixture := newSequenceFixtureSize(mode, 2*k+32)
-			if fixture.profile != nil {
-				fixture.profile.ValidThrough = fixture.anchor.Height + uint64(2*k+16)
-			}
-			if mode == 2 {
-				fixture.schedule = fixture.anchor.Height + uint64(2*k+12)
-			}
-			for _, w := range []uint64{6, uint64(k - 1)} {
-				t.Run(fmt.Sprintf("K%d/%s/W%d", k, name, w), func(t *testing.T) {
-					m := sequenceModel{w: w, k: k}
-					state, err := NewVerifiedState(fixture.anchor, fixture.options(t, m))
-					if err != nil {
-						t.Fatal(err)
-					}
-					s := capacitySequence{t: t, fixture: fixture, model: m, state: state,
-						path: filepath.Join(t.TempDir(), "state.json"), targets: []int{0, k / 2, k - 1},
-						covered: make(map[ReasonCode]bool)}
-					s.check()
-					s.extend(k, "") // Fill exactly K, including W=K-1 startup.
-					s.resume(w, k)
-					s.extend(3, "signature")
-					s.extend(3, "hash")
-					s.extend(1, "") // Evict the original oldest delayed target.
-					s.refuseShrink()
-					s.refuseSelections()
-					s.resume(6, 8)
-					s.resume(6, k) // Growth must not restore the evicted history.
-					s.resume(6, k)
-					s.extend(k-8, "") // Refill the enlarged window from its retained tail.
-					s.extend(9, "")
-					s.resume(uint64(k-1), k) // Only the oldest height meets W=K-1.
-					s.extend(11, "")         // Required schedule expires inside this batch.
-					s.extend(15, "")         // Profile expiry also refuses the whole valid prefix.
-					s.resume(6, 16)
-					s.resume(6, 16)
-					for _, reason := range []ReasonCode{ReasonOK, ReasonInvalidSignature, ReasonInvalidHash} {
-						if !s.covered[reason] {
-							t.Fatal("fixed capacity sequence missed extension reason", reason)
+			// This sequential group waits for its two parallel children and
+			// their cleanup. Higher -parallel values cannot add more windows;
+			// the root's elapsed diagnostic still includes their execution.
+			t.Run(fmt.Sprintf("K%d/%s", k, name), func(t *testing.T) {
+				for _, w := range []uint64{6, uint64(k - 1)} {
+					t.Run(fmt.Sprintf("W%d", w), func(t *testing.T) {
+						t.Parallel()
+						// Construct only selected cases, with no shared mutable fixture.
+						fixture := newSequenceFixtureSize(mode, 2*k+32)
+						if fixture.profile != nil {
+							fixture.profile.ValidThrough = fixture.anchor.Height + uint64(2*k+16)
 						}
-					}
-					if mode == 1 && !s.covered[ReasonProtocolProfileCoverage] || mode == 2 && !s.covered[ReasonProducerSetUnknown] {
-						t.Fatal("fixed capacity sequence missed its finite trust-input boundary")
-					}
-					if s.steps != 20 {
-						t.Fatal("fixed capacity operation count changed", s.steps)
-					}
-				})
-			}
+						if mode == 2 {
+							fixture.schedule = fixture.anchor.Height + uint64(2*k+12)
+						}
+						m := sequenceModel{w: w, k: k}
+						state, err := NewVerifiedState(fixture.anchor, fixture.options(t, m))
+						if err != nil {
+							t.Fatal(err)
+						}
+						s := capacitySequence{t: t, fixture: fixture, model: m, state: state,
+							path: filepath.Join(t.TempDir(), "state.json"), targets: []int{0, k / 2, k - 1},
+							covered: make(map[ReasonCode]bool)}
+						s.check()
+						s.extend(k, "") // Fill exactly K, including W=K-1 startup.
+						s.resume(w, k)
+						s.extend(3, "signature")
+						s.extend(3, "hash")
+						s.extend(1, "") // Evict the original oldest delayed target.
+						s.refuseShrink()
+						s.refuseSelections()
+						s.resume(6, 8)
+						s.resume(6, k) // Growth must not restore the evicted history.
+						s.resume(6, k)
+						s.extend(k-8, "") // Refill the enlarged window from its retained tail.
+						s.extend(9, "")
+						s.resume(uint64(k-1), k) // Only the oldest height meets W=K-1.
+						s.extend(11, "")         // Required schedule expires inside this batch.
+						s.extend(15, "")         // Profile expiry also refuses the whole valid prefix.
+						s.resume(6, 16)
+						s.resume(6, 16)
+						for _, reason := range []ReasonCode{ReasonOK, ReasonInvalidSignature, ReasonInvalidHash} {
+							if !s.covered[reason] {
+								t.Fatal("fixed capacity sequence missed extension reason", reason)
+							}
+						}
+						if mode == 1 && !s.covered[ReasonProtocolProfileCoverage] || mode == 2 && !s.covered[ReasonProducerSetUnknown] {
+							t.Fatal("fixed capacity sequence missed its finite trust-input boundary")
+						}
+						if s.steps != 20 {
+							t.Fatal("fixed capacity operation count changed", s.steps)
+						}
+					})
+				}
+			})
 		}
 	}
 }

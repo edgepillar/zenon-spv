@@ -53,6 +53,33 @@ expire inside a multi-header batch. An explicit reason-coverage assertion
 requires that expiry path to occur. This complements the separate populated
 capacity measurements; it does not measure memory, latency or a network budget.
 The `retained_capacity_sequences` offline case selects this deterministic test.
+
+Each capacity/mode pair is a sequential Go subtest with two parallel W cases.
+The pair waits for both children and their temporary-directory cleanup before
+the next pair starts, so even a higher `-parallel` setting allows at most two
+windows within this model. `-parallel=1` keeps execution serial. Each selected
+case constructs its own fixture; filtered-out cases construct none. The 18 leaf
+names, 20 operations per leaf, independent oracle and all verification assertions
+remain unchanged. Nine group completion events are additional containers, not
+additional model cases. Waiting inside these groups also keeps the root test's
+elapsed diagnostic inclusive of the parallel work.
+
+A single local darwin/arm64 comparison used the same Go 1.25.14 test executable,
+race and atomic coverage instrumentation, and `GOMAXPROCS=2`:
+
+| Diagnostic | `-parallel=1` | `-parallel=2` |
+| --- | ---: | ---: |
+| Go-reported root test elapsed | 155.46 s | 79.30 s |
+| Utility process wall time, including the launcher | 160.03 s | 84.29 s |
+| Utility process-family maximum RSS | 244.9 MiB | 411.3 MiB |
+
+Both executions passed all 18 leaves and nine groups without skips. A separate
+K=16 selection passed its six leaves with `-parallel=64`. The RSS observation is
+the BSD `time -l` process-family maximum, not summed concurrent memory or a
+portable memory limit. This trades higher local peak memory for shorter elapsed
+time; it establishes no whole-CI speedup or representative device/network budget.
+Use the serial setting when that memory tradeoff is unsuitable.
+
 The offline runner passes its selected overall `--timeout` to Go's per-package
 deadline too. Its overall process context remains the bound, with the existing
 ten-minute default and one-hour maximum; there is no shorter hidden five-minute
