@@ -187,9 +187,33 @@ is a separate retained derivation, not repeated by this portable checker.
 python3 -I -B tools/gen-state-root-vectors/default_retention_model_test.py -v
 python3 -I -B tools/gen-state-root-vectors/prepare_default_retention_test.py -v
 python3 -I -B tools/gen-state-root-vectors/check_default_retention_test.py -v
-python3 -I -B tools/gen-state-root-vectors/check_default_retention_corpus_test.py -v
-python3 -I -B tools/gen-state-root-vectors/check_default_retention_corpus.py
+python3 -I -B tools/gen-state-root-vectors/run_default_retention_checks_test.py -v
+python3 -I -B tools/gen-state-root-vectors/run_default_retention_checks.py
 ```
+
+The joint driver executes the unchanged 27 recorded-corpus controls and then
+the final comparison in one fresh Python process. Both phases use the original
+single-entry cache keyed by the complete admitted bytes. The cached graph must
+retain its presealed SHA-256 after the controls and after the comparison; the
+comparison must add one cache hit and no model-cache miss. All 32,768 heights,
+complete table bytes, canonical proofs, six samples and scope checks remain.
+This avoids the second full history derivation previously performed by a
+separate comparison process. No oracle algorithm or historical source/corpus
+manifest is modified.
+
+The driver refuses incomplete, failed, skipped or stopped controls, unexpected
+stdout, source/corpus changes, a cold or altered cached graph, another derivation,
+and changed comparison authority. It publishes the original comparison JSON
+only after all checks pass. A separate `recorded-retention-joint` receipt on
+stderr records the 27 executed controls and cache transition. Exit zero still
+means a recorded comparison passed; `consumer_result` remains `REFUSED`.
+
+The historical control script and comparison CLI remain available unchanged
+when separate processes are explicitly needed. This reuse lasts for one fresh
+qualification invocation; it creates no disk cache, network request, new node
+execution or representative resource measurement. The joint-driver controls use
+small in-memory graphs, regular temporary pin fixtures and bounded CLI usage
+processes, rather than another full history replay.
 
 The first native CI head exposed two preparation-fixture errors because the
 local managed-scratch environment variable is absent on hosted runners. Fixture
