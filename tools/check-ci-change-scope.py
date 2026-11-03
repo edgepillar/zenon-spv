@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-only
-"""Select documentation-only CI from an exact, bounded, read-only Git diff.
+"""Select documentation-only or independent archive CI from a bounded Git diff.
 
 This selects work; it never qualifies an executable at a new revision. Any
 missing selection, changed source, incomplete command or unrecognized record
@@ -20,6 +20,7 @@ import threading
 import time
 
 FORMAT = "zenon-ci-change-scope/v1"
+ARCHIVE_FORMAT = "zenon-ci-change-scope/v2"
 REPOSITORY = "edgepillar/zenon-spv"
 MAX_DIFF_BYTES = 256 << 10
 MAX_SOURCE_BYTES = 256 << 10
@@ -29,6 +30,18 @@ MAX_RECORDS = 512
 GIT_TIMEOUT = 10
 SOURCE_FILES = ("tools/check-ci-change-scope.py",
                 "tools/check-ci-change-scope_test.py", ".github/workflows/ci.yml")
+ARCHIVE_WORKFLOW = ".github/workflows/ledger-transport.yml"
+ARCHIVE_WORKFLOW_SHA256 = "3101f06e85bd6bd6d74fe89e86e06a04cce38a26aad7d945f5371880250e49b0"
+ARCHIVE_WORKFLOW_BYTES = 7894
+ARCHIVE_FILES = frozenset("tools/ledger-transport/" + name for name in (
+    "archive_index.py", "archive_index_test.py", "archive_tail.py",
+    "archive_tail_test.py", "README.md", "THIRD_PARTY_NOTICES"))
+# Selected after the dependency audit; changing the selector itself requires
+# the complete lane. Never silently refresh this pin after a source change.
+RUNTIME_SOURCE_PIN = "9330e4977842420f031554693c66bd3435e8d0ac2aeba31a3f3d7d12df7ddb44"
+MAX_TREE_BYTES = 2 << 20
+MAX_TREE_RECORDS = 8192
+TREE_RECORD = re.compile(rb"(100644|100755|120000|160000) (blob|commit) ([0-9a-f]{40})\t([^\0]+)\Z")
 OID = re.compile(r"[0-9a-f]{40}\Z")
 ZERO = "0" * 40
 RAW_HEADER = re.compile(rb":([0-7]{6}) ([0-7]{6}) ([0-9a-f]{40}) ([0-9a-f]{40}) ([AMD])\Z")
@@ -62,7 +75,7 @@ def document_path(raw):
                     and part.split(".", 1)[0].upper() not in RESERVED for part in parts))
 
 
-def parse_diff(raw):
+def parse_diff(raw, include_archive=False):
     if type(raw) is not bytes or len(raw) > MAX_DIFF_BYTES:
         raise ScopeError("diff_bounds")
     if not raw:
@@ -92,7 +105,10 @@ def parse_diff(raw):
                 or old_oid == new_oid):
             raise ScopeError("diff_identity")
         if not document_path(path):
-            raise ScopeError("outside_documentation")
+            if not include_archive or path.decode("ascii", errors="replace") not in ARCHIVE_FILES:
+                raise ScopeError("outside_documentation")
+            if change != b"M":
+                raise ScopeError("archive_change")
         if path in seen:
             raise ScopeError("duplicate_path")
         if path.lower() in case_names:
@@ -101,6 +117,37 @@ def parse_diff(raw):
         case_names.add(path.lower())
         paths.append({"path": path.decode("ascii"), "change": change.decode("ascii")})
     return paths
+
+
+def runtime_fingerprint(raw):
+    """Commit every non-document dependency except the reviewed leaf/policy set."""
+    if (type(raw) is not bytes or not 0 < len(raw) <= MAX_TREE_BYTES
+            or not raw.endswith(b"\0")):
+        raise ScopeError("runtime_tree_bounds")
+    records = raw.split(b"\0")[:-1]
+    if not 0 < len(records) <= MAX_TREE_RECORDS:
+        raise ScopeError("runtime_tree_bounds")
+    kept, seen = [], set()
+    excluded = {path.encode("ascii") for path in ARCHIVE_FILES | set(SOURCE_FILES[:2])}
+    for record in records:
+        match = TREE_RECORD.fullmatch(record)
+        if match is None:
+            raise ScopeError("runtime_tree_record")
+        mode, kind, oid, path = match.groups()
+        if ((mode == b"160000") != (kind == b"commit") or oid == ZERO.encode()
+                or len(path) > 4096 or path.startswith(b"/") or b"\\" in path
+                or any(part in (b"", b".", b"..") for part in path.split(b"/"))
+                or path in seen):
+            raise ScopeError("runtime_tree_record")
+        seen.add(path)
+        if mode == b"100644" and (path in excluded or document_path(path)):
+            continue
+        kept.append(record + b"\0")
+    if not kept:
+        raise ScopeError("runtime_tree_empty")
+    encoded = b"".join(sorted(kept))
+    return {"sha256": hashlib.sha256(encoded).hexdigest(), "bytes": len(encoded),
+            "entries": len(kept)}
 
 
 def _empty_stream():
@@ -226,6 +273,26 @@ def select_scope(root, selection, runner=run_git):
             raise ScopeError("git_bounds")
         return raw
 
+    def bind_source(name, checkout):
+        path = Path(root) / name
+        if not stat.S_ISREG(path.lstat().st_mode):
+            raise ScopeError("source_binding")
+        with path.open("rb") as stream:
+            working = stream.read(MAX_SOURCE_BYTES + 1)
+        if len(working) > MAX_SOURCE_BYTES:
+            raise ScopeError("source_bounds")
+        selected = query(["show", checkout + ":" + name], MAX_SOURCE_BYTES)
+        relation = ("exact" if working == selected else "CRLF-only"
+                    if b"\r\n" not in selected and working == selected.replace(b"\n", b"\r\n")
+                    else None)
+        if relation is None:
+            raise ScopeError("source_binding")
+        report["source_pins"][name] = {
+            "git_sha256": hashlib.sha256(selected).hexdigest(), "git_bytes": len(selected),
+            "checkout_sha256": hashlib.sha256(working).hexdigest(),
+            "checkout_bytes": len(working), "checkout_relation": relation}
+        return selected
+
     try:
         if not selection_valid(selection):
             return report
@@ -249,29 +316,43 @@ def select_scope(root, selection, runner=run_git):
         if (Path(root) / SOURCE_FILES[0]).resolve(strict=True) != Path(__file__).resolve(strict=True):
             raise ScopeError("source_binding")
         for name in SOURCE_FILES:
-            path = Path(root) / name
-            if not stat.S_ISREG(path.lstat().st_mode):
-                raise ScopeError("source_binding")
-            with path.open("rb") as stream:
-                working = stream.read(MAX_SOURCE_BYTES + 1)
-            if len(working) > MAX_SOURCE_BYTES:
-                raise ScopeError("source_bounds")
-            selected = query(["show", checkout + ":" + name], MAX_SOURCE_BYTES)
-            relation = ("exact" if working == selected else "CRLF-only"
-                        if b"\r\n" not in selected and working == selected.replace(b"\n", b"\r\n")
-                        else None)
-            if relation is None:
-                raise ScopeError("source_binding")
-            report["source_pins"][name] = {
-                "git_sha256": hashlib.sha256(selected).hexdigest(), "git_bytes": len(selected),
-                "checkout_sha256": hashlib.sha256(working).hexdigest(),
-                "checkout_bytes": len(working), "checkout_relation": relation}
+            bind_source(name, checkout)
         report["source_binding_complete"] = True
         raw = query(["diff", "--raw", "-z", "--no-abbrev", "--no-renames",
                      "--no-ext-diff", "--no-textconv", "--ignore-submodules=none",
                      base, checkout, "--"], MAX_DIFF_BYTES)
-        report["documentation_paths"] = parse_diff(raw)
-        report.update(status="DOCUMENTATION_ONLY", run_runtime=False, reason="regular_markdown_only")
+        try:
+            documents = parse_diff(raw)
+        except ScopeError as error:
+            if error.reason != "outside_documentation":
+                raise
+            paths = parse_diff(raw, include_archive=True)
+            archive = [path for path in paths if path["path"] in ARCHIVE_FILES]
+            if not archive:
+                raise ScopeError("outside_documentation")
+            report["format"] = ARCHIVE_FORMAT
+            selected = bind_source(ARCHIVE_WORKFLOW, checkout)
+            previous = query(["show", base + ":" + ARCHIVE_WORKFLOW], MAX_SOURCE_BYTES)
+            if (selected != previous or len(selected) != ARCHIVE_WORKFLOW_BYTES
+                    or hashlib.sha256(selected).hexdigest() != ARCHIVE_WORKFLOW_SHA256):
+                raise ScopeError("archive_workflow_pin")
+            closure = runtime_fingerprint(query(
+                ["ls-tree", "-r", "-z", "--full-tree", checkout], MAX_TREE_BYTES))
+            if closure["sha256"] != RUNTIME_SOURCE_PIN:
+                raise ScopeError("runtime_source_pin")
+            report.update(format=ARCHIVE_FORMAT, status="PORTABLE_ARCHIVE_ONLY",
+                          run_runtime=False, reason="modified_independent_archive_leaves",
+                          documentation_paths=[path for path in paths if path not in archive],
+                          portable_archive_paths=archive, required_workflows=[ARCHIVE_WORKFLOW],
+                          archive_workflow={"path": ARCHIVE_WORKFLOW,
+                                            "sha256": ARCHIVE_WORKFLOW_SHA256,
+                                            "bytes": ARCHIVE_WORKFLOW_BYTES,
+                                            "base_matches_checkout": True},
+                          runtime_closure={**closure, "expected_sha256": RUNTIME_SOURCE_PIN,
+                                           "matched": True})
+        else:
+            report["documentation_paths"] = documents
+            report.update(status="DOCUMENTATION_ONLY", run_runtime=False, reason="regular_markdown_only")
     except ScopeError as error:
         report["reason"] = error.reason
     except (OSError, UnicodeError, KeyError, TypeError, ValueError):
