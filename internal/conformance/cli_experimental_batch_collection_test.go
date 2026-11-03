@@ -30,8 +30,9 @@ func collectionWorkflowHash(t *testing.T, value string) chain.Hash {
 }
 
 // These are existing recorded public signatures. The witness is deliberately
-// incompatible with their root; this workflow cannot establish a positive
-// BatchEntry query, selected-network activation or production acceptance.
+// incompatible with their root. Keep that control, then reuse the same two
+// executables for a separate matching original-node fixture. Neither fixture
+// establishes selected-network activation or production acceptance.
 func TestCompiledExperimentalBatchCandidateWorkflow(t *testing.T) {
 	bins := buildQueryCLIs(t, "fetch-bundle", "zenon-spv")
 	raw, err := os.ReadFile("../testdata/conformance/candidate-v3-node-rpc.json")
@@ -171,4 +172,7 @@ func TestCompiledExperimentalBatchCandidateWorkflow(t *testing.T) {
 	if bytes.Contains(result.stdout, []byte("PRIVATE_")) || strings.Contains(string(collected.stdout), peer.URL) {
 		t.Fatal("private source or endpoint reached ordinary result")
 	}
+	t.Run("recorded-positive", func(t *testing.T) {
+		runRecordedPositiveBatchWorkflow(t, bins)
+	})
 }

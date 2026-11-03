@@ -122,10 +122,13 @@ now includes:
 - The [experimental BatchEntry binding](experimental-batch-entry-query.md)
   adds explicit typed-query context/caps, local domain/batch key derivation,
   proof-value reads, strict ABI composition and all-stored-field gateway
-  comparison. Recorded public headers qualify refusal/binding controls;
-  positive proof/ABI composition is mathematical only. A matching positive
-  witness under an accepted header, selected-network inputs and an actual
-  consumer remain open. This does not close D2/D3 or add production guarantees.
+  comparison. The [original-node positive fixture](recorded-batch-entry-witness.md)
+  now composes a matching proof with its signed header, explicit test profile,
+  saved context, all-stored-field gateway comparison and compiled CLI. Earlier
+  incompatible-witness controls remain. The fixture selects no live trust;
+  selected-network inputs, a matching selected-network witness and an actual
+  selected-network consumer remain open. This does not close D2/D3 or add
+  production guarantees.
 
 Each PR/main source requires its own scheduled CI/artifact qualification.
 These partial results leave every D0-D6 acceptance exit open and do not change

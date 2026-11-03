@@ -192,6 +192,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_parent_snapshot_slots_test.py -v
       - name: Independent source parent-slot context
         run: python -I -B tools/gen-state-root-vectors/check_parent_snapshot_slots.py --source-revision "${{ github.sha }}"
+      - name: Recorded BatchEntry header/witness byte replay
+        run: |
+          python -I -B tools/gen-state-root-vectors/check_batch_entry_header_witness_test.py -v
+          python -I -B tools/gen-state-root-vectors/check_batch_entry_header_witness.py --source-revision "${{ github.sha }}"
       - name: Candidate sparse proof controls
         run: go test -json -count=1 -run '^(TestCandidateSMT|TestCandidateBatchEntry)' ./internal/proof
       - name: Owned state persistence controls
@@ -923,6 +927,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_parent_snapshot_slots_test.py -v
       - name: Independent source parent-slot context
         run: python -I -B tools/gen-state-root-vectors/check_parent_snapshot_slots.py --source-revision "${{ github.sha }}"
+      - name: Recorded BatchEntry header/witness byte replay
+        run: |
+          python -I -B tools/gen-state-root-vectors/check_batch_entry_header_witness_test.py -v
+          python -I -B tools/gen-state-root-vectors/check_batch_entry_header_witness.py --source-revision "${{ github.sha }}"
       - name: Candidate sparse proof controls
         run: go test -json -count=1 -run '^(TestCandidateSMT|TestCandidateBatchEntry)' ./internal/proof
       - name: Owned state persistence controls

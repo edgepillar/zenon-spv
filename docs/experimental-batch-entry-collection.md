@@ -102,8 +102,11 @@ stage and rejects the deliberately incompatible witness. It performs no RPC
 read and leaves all input files unchanged. Separate transport controls cover
 pagination, complete byte caps, full-width selectors and unavailable results.
 
-These controls establish the collection-to-refusal workflow, not a successful
-selected-network state query. A matching positive `BatchEntry` witness bound
+The same two fresh executables also replay a
+[matching original-node fixture](recorded-batch-entry-witness.md), compare
+all stored gateway fields and obtain a typed configured-header result. These
+controls cover recorded fixture success and refusal; they do not establish a
+successful selected-network query. A matching positive `BatchEntry` witness bound
 to an accepted header on the selected network remains missing. D0-D3,
 representative R1 measurements, activation and release gates remain open.
 Native v1/v2 inclusion and production state-value verification remain separate.

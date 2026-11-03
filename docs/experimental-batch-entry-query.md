@@ -6,7 +6,9 @@ with local key derivation, bounded SMT reads and the strict 17-field ABI codec.
 It does not register a production profile or complete D0-D3 acceptance.
 The separate [read-only CLI seam](experimental-batch-entry-cli.md) consumes this
 API with mandatory configuration pins and a separate local request file. A
-public module, matching positive live query and release remain open.
+[recorded original-node fixture](recorded-batch-entry-witness.md) now exercises
+a matching positive proof through the exported API, saved context and compiled
+CLI. A public module, matching positive live query and release remain open.
 
 ## Authority and request identity
 
@@ -108,22 +110,25 @@ created.
 
 ## Executed-control scope and open gates
 
-The tests keep three different evidence scopes separate:
+The tests keep the following evidence scopes separate:
 
 - The unchanged original-node proof and ABI corpora retain their historical
   execution pins. Native reads/composition do not reexecute or relabel a node.
 - Independent Python `hashlib`/`struct` bytes fix the 302-byte typed-context and
   158-byte query preimages, plus one 839-byte mathematical proof. Its root is
   deliberately different from the recorded signed-header root.
-- Recorded public signatures exercise owned-header/request/persistence binding
+- Historical recorded signatures exercise owned-header/request/persistence binding
   and RPC-to-query refusal. Wrong provider roots, copied root hints with wrong
   proofs, changed context/tip/key, malformed encodings and resource overflows
-  produce no row. No new signatures are created for these tests.
+  produce no row. Those refusal controls reuse their existing signatures.
+- The separate [positive original-node fixture](recorded-batch-entry-witness.md)
+  includes its original test-producer signatures and matching stored proof.
+  Exported-API, persistence and compiled CLI checks replay that capture without
+  producing signatures or running the node again.
 
-There is no matching positive BatchEntry witness under a recorded accepted
-header in the current fixture cohort. Mathematical proof/ABI success and a
-working refusal workflow are not qualification of a positive owned query.
-That selected-network capture and an actual CLI/consumer result remain open,
+The matching recorded-fixture query does not select live trust or qualify a
+selected-network consumer. A matching selected-network capture and an actual
+selected-network CLI/consumer result remain open,
 along with the [D0-D6 gates](typed-state-roadmap.md). The isolated chain-100
 fixture does not establish chain-69 activation. Production v1/v2 behavior and
 the default state-value refusal remain unchanged.

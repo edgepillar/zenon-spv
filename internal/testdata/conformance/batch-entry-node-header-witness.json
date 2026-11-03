@@ -1,0 +1,259 @@
+{
+  "execution": {
+    "actual_exit": 0,
+    "cgo_enabled": true,
+    "full_module_graph_go_mod_verify": "NOT_ESTABLISHED",
+    "go": "go1.25.14",
+    "native_test": "TestSPVBatchEntryHeaderWitnessCapture",
+    "original_regular_source_files_unchanged": 484,
+    "output_bytes": 42933,
+    "output_complete": true,
+    "output_sha256": "d914355c15f183587139a1b8d43f39a095ae09639881195b53988bcfb35a3c3f",
+    "platform": "darwin/arm64",
+    "prior_failed_capture": {
+      "actual_exit": 1,
+      "outcome_preserved": "FAILURE",
+      "output_sha256": "c3f6d68790ea113a2abcf398e8a24092be5f28b728683b63df3dba7519ae799f",
+      "reason": "The convenience helper expected no activation logs; the corrected harness starts that assertion after fixture setup.",
+      "record_sha256": "81aa234c4869a3f5aadf8e3bb009a7281e4463627c2dae80adb8ad60950f85fa"
+    },
+    "record_sha256": "9803750517e87d55c8a14c5b5eb06d6653bbf77d82d72c07cb61239d51f6adf5",
+    "used_modules_verified": 34
+  },
+  "format": "zenon-recorded-batch-entry-header-witness/v1",
+  "harness": {
+    "bytes": 7741,
+    "path": "tools/gen-state-root-vectors/batch-entry-header-witness_test.go.txt",
+    "sha256": "230ae18c289f5adcf9e195a2405bbefec56851ec7742956a00eb66348060a45a"
+  },
+  "scope": {
+    "STF_execution_proven": false,
+    "authenticated_election_or_fork_choice": false,
+    "consensus_finality_proven": false,
+    "fixture_public_keys_only": true,
+    "independent_network_trust_selected": false,
+    "isolated_chain_100_fixture": true,
+    "network_activation_authenticated": false,
+    "original_node_contract_RPC_and_proof_executed": true,
+    "production_state_value_accepted": false,
+    "release_qualified": false,
+    "selected_chain_69_executed": false
+  },
+  "source": {
+    "archive_sha256": "8ca1512eff8c04ee8b6ed0ff9a5da9e3eeba518660b07833f99a6b74e1dcc3a3",
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "938fca3b7787da86827a5eb63371509b36e14761",
+    "tree": "f3b7947d2267ebdb806f18ff0c02bba5bffae9c4"
+  },
+  "test_selection": {
+    "config": {
+      "header_policy": {
+        "max_batch_headers": 3,
+        "retain_headers": 2,
+        "w": 1
+      },
+      "header_profile": {
+        "anchor": {
+          "chain_id": 100,
+          "header_hash": "af8fe904122a682a93d0a680b7c5057d52d38b3d237c58558d130ca49b0a2f28",
+          "height": 76
+        },
+        "first_v3_height": 31,
+        "genesis": {
+          "chain_id": 100,
+          "header_hash": "0385d849ee33b94c8783288c148e3ae741c2ecec98b08b3f59d6bcc219168fe5",
+          "height": 1
+        },
+        "node_revision": "938fca3b7787da86827a5eb63371509b36e14761",
+        "source": "Recorded isolated chain-100 fixture; not a selected network profile",
+        "valid_through": 79,
+        "version": 1
+      },
+      "producer_schedule": {
+        "chain_id": 100,
+        "coverage": [
+          {
+            "from_height": 77,
+            "through_height": 79
+          }
+        ],
+        "entries": [
+          {
+            "height": 77,
+            "producing_addr": "000158b48383939b98ae2adb58e4c9f805830d7e",
+            "timestamp_unix": 1000000760
+          },
+          {
+            "height": 78,
+            "producing_addr": "00307b83bf59e59a44e7a9469f1e77466d17f4c0",
+            "timestamp_unix": 1000000770
+          },
+          {
+            "height": 79,
+            "producing_addr": "008ecf473d5308a18fe0f42d084d1c3e367dda72",
+            "timestamp_unix": 1000000780
+          }
+        ],
+        "schedule_hash": "c2af0cb92aec11b4ce9c7b38a1abc6a9510f06dfa8fbfe15d7d4d25d7d671117"
+      },
+      "query_profile": {
+        "domain_id": 1,
+        "limits": {
+          "max_asset_flow_summary_bytes": 1024,
+          "max_dynamic_bytes": 2048,
+          "max_executor_pillar_bytes": 256,
+          "max_proof_data_bytes": 1024,
+          "max_value_bytes": 4096,
+          "string_rule": 2
+        },
+        "max_proof_bytes": 12391,
+        "max_siblings": 256,
+        "runtime_identity": "d7ec0446deaefaf66be5011edda5b9c5ac1d77804832f12fde23b16b523ba0ad",
+        "settlement": "01b3b6e5adcb4d0cad7fcef33598c6318c6318c0",
+        "source": "Recorded attestation fixture; not a selected live runtime",
+        "version": 1
+      },
+      "version": 1
+    },
+    "header_context": "44e8152dff49aa2a2a5158f898a0e829f63f9ab5de1195040a6f787baa71c49e",
+    "query_context": "8912b7405529acabc7a284964f1c9e1f1c7e59b2670e275d760d9dc83d251873",
+    "query_fingerprint": "1a043b687ad74d4f9e533976a8148e01a75e6add0b25a42b28c8a0018aa907b7",
+    "request": {
+      "batch_id": 0,
+      "context": "8912b7405529acabc7a284964f1c9e1f1c7e59b2670e275d760d9dc83d251873",
+      "header_hash": "741f33c4d5689b4e8d27260bc42050e1c6c1213d519a9a93a307fe89f595612b",
+      "height": 78,
+      "tip_hash": "fb20809a49201f227be32f7c18e3f883df289282ac47e38d6c207c351f27d7d8",
+      "tip_height": 79
+    },
+    "scope": "EXPLICIT_SYNTHETIC_TEST_SETTINGS_NOT_INDEPENDENT_NETWORK_TRUST"
+  },
+  "trace": {
+    "RPC_P2P_service_started": false,
+    "STF_execution_or_finality_established": false,
+    "absent_batch_id": 1,
+    "absent_witness": {
+      "proof": "AMzOrUXFYQ4QBR4ByQYtNNMHJIioDVoOTyfpki6ySc6NAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABfwAIkDartD5mzRNMfE0G8LppYFFgBPyOnagtBkuBrGRtfQZ6k4kuK+X4H3QrZNhY1Y+LjUlzltS3QH77Yaa50z23/U4FOlD1CDZPbd83uArOrtfKqKxau71MAaHkVsnuoAhs0+r2FmxLbi3y5LoT0sN47E7fwp/qslo2uqJozFsjdJuonRmuYRIg5v31B9/qLINhbzIVRxZRkgPw/fNuM/yr6+KeGchSWQWhExjwIricWqiK+viKdQo98131QOqnVpv2P1CX3rcl24EcgeL/3k65QknDx8+hMmXV6DZ4sUUCRnn3WR/BKTuLgiiR/TebfsHjs51+RiZ1WM45r5Vczts60A==",
+      "root": "127ed71d79414ca914379b410f48d23773ad8d2bfc537e8090aada4833476595",
+      "value": null
+    },
+    "anchor": {
+      "hash": "af8fe904122a682a93d0a680b7c5057d52d38b3d237c58558d130ca49b0a2f28",
+      "height": 76
+    },
+    "batch_id": 0,
+    "bundle": {
+      "gateway": {
+        "assetFlowSummary": "AAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAU5mMYxjGMYxjGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+        "batchId": 0,
+        "daHash": "3434343434343434343434343434343434343434343434343434343434343434",
+        "daMode": 0,
+        "domainId": 1,
+        "eventRoot": "3232323232323232323232323232323232323232323232323232323232323232",
+        "executorPillar": "TEST-pillar-1",
+        "finalizeAtHeight": 87,
+        "firstInputSeq": 0,
+        "inputRoot": "3030303030303030303030303030303030303030303030303030303030303030",
+        "isFinalized": false,
+        "lastInputSeq": 0,
+        "outboxRoot": "3333333333333333333333333333333333333333333333333333333333333333",
+        "postStateRoot": "5151515151515151515151515151515151515151515151515151515151515151",
+        "preStateRoot": "0000000000000000000000000000000000000000000000000000000000000000",
+        "proofData": "",
+        "protocolVersion": 1,
+        "receiptRoot": "3131313131313131313131313131313131313131313131313131313131313131",
+        "state": 0,
+        "submittedAtHeight": 77
+      },
+      "momentums": [
+        {
+          "chainIdentifier": 100,
+          "changesHash": "1253ba4a4972e6c3ae23dc9430ecde999b210dc503416dd9874d94a254387307",
+          "content": [
+            {
+              "address": "z1qzal6c5s9rjnnxd2z7dvdhjxpmmj4fmw56a0mz",
+              "hash": "796e8c9dcaa361939539a62bb82c107949353a567715e505542e975140cf26b6",
+              "height": 3
+            }
+          ],
+          "data": "",
+          "hash": "93dac5a2528a2a560c0307436952a6d4844fdde74caffb1d1278ab6117cb9e28",
+          "height": 77,
+          "nextFusionPrice": 1000,
+          "nextWorkPrice": 1000,
+          "previousHash": "af8fe904122a682a93d0a680b7c5057d52d38b3d237c58558d130ca49b0a2f28",
+          "producer": "z1qqq43dyrswfehx9w9td43exflqzcxrt7g6alah",
+          "publicKey": "OAAT4PzhY8pyoC3QonDP+sGBfJBY7JqXIOhexwQFUJg=",
+          "signature": "1iXm9ABv4Ll8H/2jsuiKdpMZSvj9zZgF4wFeSbfH786RUZI99PG3yWU9BOn2ezTNr+9Ecq3PbCMHLoRdqPh0Cw==",
+          "stateRoot": "4201832580d717a60ca219d9d080d0d62ca286b5ccafd920a1ca4155147103ed",
+          "timestamp": 1000000760,
+          "version": 3
+        },
+        {
+          "chainIdentifier": 100,
+          "changesHash": "f94496bee7fbde12603ea31cd65c95d422931d1e32a6847de8b1be81286b0ea6",
+          "content": [
+            {
+              "address": "z1qxemdeddedxsettlementxxxxxxxxxxqtmqrx9",
+              "hash": "967de36c4082054c25492dcb2a364a06704d9382dc41909a643ef8edd1d41996",
+              "height": 9
+            }
+          ],
+          "data": "",
+          "hash": "741f33c4d5689b4e8d27260bc42050e1c6c1213d519a9a93a307fe89f595612b",
+          "height": 78,
+          "nextFusionPrice": 1000,
+          "nextWorkPrice": 1000,
+          "previousHash": "93dac5a2528a2a560c0307436952a6d4844fdde74caffb1d1278ab6117cb9e28",
+          "producer": "z1qqc8hqalt8je538849rf78nhgek30axq8h0g69",
+          "publicKey": "jOzQyT5sEz7/LN/4EE0wKNupK1olhyYw7CugRUau0Io=",
+          "signature": "uXn/o2aEW0tr2KRYwSQ6iLo91Tz7fjP3xeMssOg3Fj3lLOl0ehVxga58rQgOoaemRhs/xwKT7ekrTlBRGlmOCQ==",
+          "stateRoot": "127ed71d79414ca914379b410f48d23773ad8d2bfc537e8090aada4833476595",
+          "timestamp": 1000000770,
+          "version": 3
+        },
+        {
+          "chainIdentifier": 100,
+          "changesHash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+          "content": [],
+          "data": "",
+          "hash": "fb20809a49201f227be32f7c18e3f883df289282ac47e38d6c207c351f27d7d8",
+          "height": 79,
+          "nextFusionPrice": 1000,
+          "nextWorkPrice": 1000,
+          "previousHash": "741f33c4d5689b4e8d27260bc42050e1c6c1213d519a9a93a307fe89f595612b",
+          "producer": "z1qz8v73ea2vy2rrlq7skssngu8cm8mknjjkr2ju",
+          "publicKey": "SAPwVIVQma3zMak169crdLkcu2B2Gm3iBCdDgfQ6IxU=",
+          "signature": "6nYPAoRbyUAnSljijBpb3BCjo1eXnOpix/NkUtyaPY3o9WoDfBRRGUJJTUoFms/lqokdk2p3+IZb9AI8B13HAQ==",
+          "stateRoot": "127ed71d79414ca914379b410f48d23773ad8d2bfc537e8090aada4833476595",
+          "timestamp": 1000000780,
+          "version": 3
+        }
+      ],
+      "version": 1,
+      "witness": {
+        "proof": "AV7kNY/z0A9LJM/aHZv1EgwCzhWUrqStpxdnuS6GKG1vLIG8W9DbnVLkUxargh49qqpetmgCMq0D6sGt+pw5jHMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvwAHLXwymoQHXLm9gk+VyeluYGq/XxxvIHNpiN5LLN4xfu4SAD7MWOAyOVZBELo9ZQh7gluilzca1XSZSYyfqqNhcHcRxQvzoeytFGya2Bjfh8Nnb7UuPJZKlBAS8uN3rOTPf9Av9ODNKSEKRysDYlC340/kzSEN++BFDQLyT1lrfm2KmrK53ynC2povAS+eg3Jw1yBz+Vtj224+R3twWJ4SdamPpgwlQ8xqzl5X3eeui3CzWCiHWaLxWCYP830dYED5ta1oPj9to7OBxTuJGrBxkSQZz5DD1Rf/hikBv36ZLs4AAAMgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzNDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANVEVTVC1waWxsYXItMQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFOZjGMYxjGMYxgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "root": "127ed71d79414ca914379b410f48d23773ad8d2bfc537e8090aada4833476595",
+        "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzNDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANVEVTVC1waWxsYXItMQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFOZjGMYxjGMYxgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      }
+    },
+    "chain_id": 100,
+    "domain_id": 1,
+    "first_incoming_v3": 31,
+    "fixture_public_keys_only": true,
+    "format": "selected-node-batch-entry-header-witness/v1",
+    "genesis_hash": "0385d849ee33b94c8783288c148e3ae741c2ecec98b08b3f59d6bcc219168fe5",
+    "header_hash": "741f33c4d5689b4e8d27260bc42050e1c6c1213d519a9a93a307fe89f595612b",
+    "height": 78,
+    "historical_witness_stable": true,
+    "ledger_key": "0301b3b6e5adcb4d0cad7fcef33598c6318c6318c00402000000010000000000000000",
+    "network_execution": false,
+    "original_proof_and_ABI_checked": true,
+    "path": "5ee4358ff3d00f4b24cfda1d9bf5120c02ce1594aea4ada71767b92e86286d6f",
+    "scope": "ISOLATED_ATTESTATION_FIXTURE_NOT_SELECTED_NETWORK_OR_STF_EXECUTION",
+    "selected_network_profile_or_anchor": false,
+    "tampered_value_refused": true,
+    "tip_hash": "fb20809a49201f227be32f7c18e3f883df289282ac47e38d6c207c351f27d7d8",
+    "tip_height": 79
+  }
+}

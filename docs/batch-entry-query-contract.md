@@ -227,8 +227,11 @@ native candidate byte checks close only their named scopes.
 
 The separate experimental API supplies owned-v3 RPC/authentication/context,
 persistence and header-root-bound typed ABI mechanics. D2/D3 still require their
-selected-network qualification, a matching positive witness and one real
-read-only consumer. No live experiment,
+selected-network qualification, a matching selected-network witness and one real
+read-only consumer. The separate
+[positive original-node fixture](recorded-batch-entry-witness.md) exercises the
+exported API, persistence and compiled CLI without selecting those live inputs.
+No live experiment,
 release, activation or accepted state-value result is established by this
 document. Independent native v1/v2 inclusion remains a separate track.
 
