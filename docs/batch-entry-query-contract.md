@@ -40,6 +40,12 @@ still needs explicit finite height/timestamp/address entries and their provenanc
 The pillar list alone supplies neither those entries nor authenticated election,
 fork choice or finality.
 
+The [source parent-snapshot slot capture](source-parent-slots.md) now exercises
+six explicit timestamp lookups through the original normal-consensus algorithm
+against the exact H1 snapshot, with ten refusal controls. It records proof-block
+and slot context without assigning network heights or constructing an accepting
+schedule. The source oracle does not replace the finite explicit trust inputs.
+
 ## One query and its authority
 
 The first result is L1 membership of one Settlement BatchEntry at an owned

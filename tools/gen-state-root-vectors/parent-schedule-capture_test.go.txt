@@ -1,0 +1,153 @@
+// SPDX-License-Identifier: MIT
+// Add only to an owned copy of the pinned node's consensus package.
+// This source fixture initializes H1 locally and records normal-consensus slots.
+// It never starts the chain/consensus services or creates a signed momentum.
+package consensus_test
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/inconshreveable/log15"
+	corechain "github.com/zenon-network/go-zenon/chain"
+	cache "github.com/zenon-network/go-zenon/chain/cache/storage"
+	"github.com/zenon-network/go-zenon/chain/genesis"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/types"
+	"github.com/zenon-network/go-zenon/consensus"
+	"github.com/zenon-network/go-zenon/vm/constants"
+)
+
+const spvSlotQueryLimit = 64
+const spvSlotMaxGenesisDelta = uint64(10 * 365 * 24 * 60 * 60)
+
+func TestSPVParentSnapshotProducerCapture(t *testing.T) {
+	log15.Root().SetHandler(log15.DiscardHandler())
+	raw, err := os.ReadFile(filepath.Join("..", "docker", "devnet", "genesis.json"))
+	if err != nil {
+		t.Fatal("cannot read selected public genesis")
+	}
+	sum := sha256.Sum256(raw)
+	if len(raw) != 8137 || hex.EncodeToString(sum[:]) != "0dd33b18b147f70b3d3d5f07199a2b45311f6e9b84a98b3f86d8f6c6b45f419a" {
+		t.Fatal("selected public genesis changed")
+	}
+	var config genesis.GenesisConfig
+	if err := json.Unmarshal(raw, &config); err != nil || genesis.CheckGenesis(&config) != nil || config.ChainIdentifier != 69 {
+		t.Fatal("selected public genesis is invalid")
+	}
+	parameters := constants.ConsensusConfig
+	if parameters == nil || parameters.BlockTime != 10 || parameters.NodeCount != 30 ||
+		parameters.RandCount != 15 || parameters.CountingZTS != types.ZnnTokenStandard {
+		t.Fatal("normal source consensus defaults changed")
+	}
+	g := genesis.NewGenesis(&config)
+	first := g.GetGenesisMomentum()
+	if first.Version != 1 || first.Height != 1 || first.Hash.String() != "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9" ||
+		first.ComputeHash() != first.Hash || !first.StateRoot.IsZero() || len(first.PublicKey) != 0 || len(first.Signature) != 0 {
+		t.Fatal("source genesis differs from retained H1 identity")
+	}
+	directory := t.TempDir()
+	for _, name := range []string{"ledger", "cache", "state"} {
+		if err := os.MkdirAll(filepath.Join(directory, name), 0700); err != nil {
+			t.Fatal("cannot create owned source fixture")
+		}
+	}
+	c := corechain.NewChain(db.NewLevelDBManager(filepath.Join(directory, "ledger")),
+		cache.NewCacheDBManager(directory), g, filepath.Join(directory, "state"), false)
+	stopped := false
+	defer func() {
+		if !stopped {
+			if err := c.Stop(); err != nil {
+				t.Error("cleanup Stop failed")
+			}
+		}
+	}()
+	if err := c.Init(); err != nil {
+		t.Fatal("source H1 initialization failed")
+	}
+	parent := first.Identifier()
+	if c.GetFrontierMomentumStore().Identifier() != parent {
+		t.Fatal("source frontier differs from selected H1")
+	}
+	base := first.TimestampUnix
+	timestamps := []uint64{base + 10, base + 20, base + 290, base + 300, base + 590, base + 600}
+	observed, err := consensus.SPVCaptureParentSlots(c, parent, timestamps)
+	if err != nil || observed == nil || len(observed.Rows) != len(timestamps) {
+		t.Fatal("normal parent-slot capture failed")
+	}
+	pillars := make(map[string]string)
+	for _, pillar := range config.PillarConfig.Pillars {
+		pillars[pillar.Name] = pillar.BlockProducingAddress.String()
+	}
+	if len(pillars) != 3 {
+		t.Fatal("source pillar set changed")
+	}
+	for _, row := range observed.Rows {
+		if pillars[row.Name] != row.Producer || row.ProofBlock != parent || row.ProofBlockTimestamp != base {
+			t.Fatal("slot result escaped the selected H1 proof context")
+		}
+	}
+	foreignHash := parent
+	foreignHash.Hash[0] ^= 1
+	foreignHeight := parent
+	foreignHeight.Height++
+	tooMany := make([]uint64, spvSlotQueryLimit+1)
+	for i := range tooMany {
+		tooMany[i] = base + uint64(i)*10
+	}
+	controls := []struct {
+		name   string
+		parent types.HashHeight
+		times  []uint64
+	}{
+		{"foreign-parent-hash", foreignHash, timestamps},
+		{"foreign-parent-height", foreignHeight, timestamps},
+		{"before-genesis", parent, []uint64{base - 1}},
+		{"off-slot", parent, []uint64{base + 1}},
+		{"unordered", parent, []uint64{base + 20, base + 10}},
+		{"duplicate", parent, []uint64{base + 10, base + 10}},
+		{"too-many", parent, tooMany},
+		{"empty", parent, nil},
+		{"time-work-limit", parent, []uint64{base + spvSlotMaxGenesisDelta + 1}},
+		{"valid-prefix-invalid-tail", parent, []uint64{base + 10, base + 11}},
+	}
+	refusals := make([]string, 0, len(controls))
+	for _, control := range controls {
+		t.Run(control.name, func(t *testing.T) {
+			result, err := consensus.SPVCaptureParentSlots(c, control.parent, control.times)
+			if err == nil || result != nil {
+				t.Fatal("invalid parent-slot input returned partial or accepting data")
+			}
+		})
+		refusals = append(refusals, control.name)
+	}
+	if c.GetFrontierMomentumStore().Identifier() != parent {
+		t.Fatal("capture changed the selected frontier")
+	}
+	if err := c.Stop(); err != nil {
+		t.Fatal("source H1 Stop failed")
+	}
+	stopped = true
+	report := map[string]interface{}{
+		"format": "selected-node-parent-snapshot-slots/v1", "scope": "SOURCE_H1_SLOT_LOOKUP_NOT_NETWORK_SCHEDULE",
+		"source_genesis_sha256": hex.EncodeToString(sum[:]), "genesis": parent, "genesis_timestamp": base,
+		"parameters": map[string]interface{}{"block_time": parameters.BlockTime, "node_count": parameters.NodeCount,
+			"rand_count": parameters.RandCount, "counting_zts": parameters.CountingZTS.String()},
+		"limits":   map[string]interface{}{"query_count": spvSlotQueryLimit, "max_genesis_delta_seconds": spvSlotMaxGenesisDelta},
+		"snapshot": observed, "source_pillars": pillars, "refused_controls": refusals,
+		"frontier_unchanged": true, "Stop_returned_nil": true, "Chain_Start_called": false,
+		"consensus_Start_called": false, "signing_selected": false, "network_execution": false,
+		"network_height_assignment": false, "accepting_ProducerSchedule_created": false,
+		"authenticated_election_or_fork_choice": false, "divergent_network_branches_executed": false,
+		"network_activation_or_state_values_accepted": false,
+	}
+	encoded, err := json.Marshal(report)
+	if err != nil {
+		t.Fatal("cannot encode parent-slot record")
+	}
+	t.Logf("SPV_PARENT_SNAPSHOT_SLOTS %s", encoded)
+}

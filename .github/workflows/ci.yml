@@ -164,6 +164,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_selected_devnet_genesis_test.py -v
       - name: Independent selected source-genesis bytes
         run: python -I -B tools/gen-state-root-vectors/check_selected_devnet_genesis.py --source-revision "${{ github.sha }}"
+      - name: Source parent-slot replay controls
+        run: python -I -B tools/gen-state-root-vectors/check_parent_snapshot_slots_test.py -v
+      - name: Independent source parent-slot context
+        run: python -I -B tools/gen-state-root-vectors/check_parent_snapshot_slots.py --source-revision "${{ github.sha }}"
       - name: Candidate sparse proof controls
         run: go test -json -count=1 -run '^(TestCandidateSMT|TestCandidateBatchEntry)' ./internal/proof
       - name: Owned state persistence controls
@@ -891,6 +895,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_selected_devnet_genesis_test.py -v
       - name: Independent selected source-genesis bytes
         run: python -I -B tools/gen-state-root-vectors/check_selected_devnet_genesis.py --source-revision "${{ github.sha }}"
+      - name: Source parent-slot replay controls
+        run: python -I -B tools/gen-state-root-vectors/check_parent_snapshot_slots_test.py -v
+      - name: Independent source parent-slot context
+        run: python -I -B tools/gen-state-root-vectors/check_parent_snapshot_slots.py --source-revision "${{ github.sha }}"
       - name: Candidate sparse proof controls
         run: go test -json -count=1 -run '^(TestCandidateSMT|TestCandidateBatchEntry)' ./internal/proof
       - name: Owned state persistence controls

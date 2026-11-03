@@ -1,0 +1,111 @@
+// SPDX-License-Identifier: MIT
+// Add only to an owned copy of the pinned node's consensus package.
+// This temporary source adapter is not a node or SPV production API.
+package consensus
+
+import (
+	"errors"
+	"time"
+
+	corechain "github.com/zenon-network/go-zenon/chain"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/types"
+	consensusdb "github.com/zenon-network/go-zenon/consensus/storage"
+)
+
+const spvSlotQueryLimit = 64
+const spvSlotMaxGenesisDelta = uint64(10 * 365 * 24 * 60 * 60)
+
+type SPVParentSlot struct {
+	Timestamp           uint64           `json:"timestamp"`
+	Tick                uint64           `json:"tick"`
+	SlotStart           uint64           `json:"slot_start"`
+	SlotEnd             uint64           `json:"slot_end"`
+	Producer            string           `json:"producer"`
+	Name                string           `json:"name"`
+	ProofTime           uint64           `json:"proof_time"`
+	ProofBlock          types.HashHeight `json:"proof_block"`
+	ProofBlockTimestamp uint64           `json:"proof_block_timestamp"`
+}
+
+type SPVParentSlots struct {
+	Parent types.HashHeight `json:"parent"`
+	Rows   []SPVParentSlot  `json:"rows"`
+}
+
+// SPVCaptureParentSlots records a source oracle, not a ProducerSchedule. The
+// caller must supply the exact snapshot and timestamps. No network height is
+// assigned to a slot, and the result has no SPV acceptance authority.
+func SPVCaptureParentSlots(c corechain.Chain, parent types.HashHeight, timestamps []uint64) (result *SPVParentSlots, err error) {
+	defer func() {
+		if recover() != nil {
+			result = nil
+			err = errors.New("source parent-slot capture refused")
+		}
+	}()
+	refuse := func() (*SPVParentSlots, error) {
+		return nil, errors.New("source parent-slot capture refused")
+	}
+	if len(timestamps) == 0 || len(timestamps) > spvSlotQueryLimit || parent.Height == 0 || parent.Hash.IsZero() {
+		return refuse()
+	}
+	genesisTime := c.GetGenesisMomentum().TimestampUnix
+	for index, timestamp := range timestamps {
+		if timestamp < genesisTime || timestamp-genesisTime > spvSlotMaxGenesisDelta ||
+			(index > 0 && timestamp <= timestamps[index-1]) {
+			return refuse()
+		}
+	}
+	view := c.GetMomentumStore(parent)
+	if view == nil || view.Identifier() != parent {
+		return refuse()
+	}
+	frontier, lookupErr := view.GetFrontierMomentum()
+	if lookupErr != nil || frontier == nil || frontier.Identifier() != parent || frontier.ComputeHash() != parent.Hash {
+		return refuse()
+	}
+	// The original election implementation writes only its own ephemeral
+	// in-memory result cache; it reads the explicitly selected chain snapshot.
+	em := newElectionManager(c, consensusdb.NewConsensusDB(db.NewMemDB(), 32, 32))
+	rows := make([]SPVParentSlot, 0, len(timestamps))
+	for _, timestamp := range timestamps {
+		if view.Identifier() != parent {
+			return refuse()
+		}
+		query := time.Unix(int64(timestamp), 0)
+		election, lookupErr := em.electionByTimeAt(view, query)
+		if lookupErr != nil {
+			return refuse()
+		}
+		producer, lookupErr := producerAt(election, query)
+		if lookupErr != nil {
+			return refuse()
+		}
+		tick := em.ToTick(query)
+		proofTime := em.genProofTime(tick)
+		proof, lookupErr := getMomentumBeforeTime(view, proofTime)
+		if lookupErr != nil || proof.Height > parent.Height || proof.ComputeHash() != proof.Hash {
+			return refuse()
+		}
+		found := 0
+		for _, plan := range election.Producers {
+			if plan.StartTime == query {
+				if plan.Producer != *producer || plan.EndTime.Sub(plan.StartTime) != time.Duration(em.BlockTime)*time.Second {
+					return refuse()
+				}
+				rows = append(rows, SPVParentSlot{
+					Timestamp: timestamp, Tick: tick,
+					SlotStart: uint64(plan.StartTime.Unix()), SlotEnd: uint64(plan.EndTime.Unix()),
+					Producer: producer.String(), Name: plan.Name,
+					ProofTime: uint64(proofTime.Unix()), ProofBlock: proof.Identifier(),
+					ProofBlockTimestamp: proof.TimestampUnix,
+				})
+				found++
+			}
+		}
+		if found != 1 || view.Identifier() != parent {
+			return refuse()
+		}
+	}
+	return &SPVParentSlots{Parent: parent, Rows: rows}, nil
+}
