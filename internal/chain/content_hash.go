@@ -38,29 +38,44 @@ func MomentumContentHash(headers []AccountHeader) Hash {
 		copy(out[:], d.Sum(nil))
 		return out
 	}
-	// Sort indices so the caller's headers stay immutable and no canonical
-	// byte slice needs to be allocated for each member. Numeric uint64 order
-	// matches lexicographic order of the big-endian height bytes.
-	order := make([]int, len(headers))
-	for i := range order {
-		order[i] = i
+	// A complete adjacent check allows already ordered content to be hashed
+	// directly. The first inversion selects the same private index sort used
+	// for arbitrary input; no provider's claim of sortedness is trusted.
+	var order []int
+	for i := 1; i < len(headers); i++ {
+		if compareContentHeaders(&headers[i-1], &headers[i]) <= 0 {
+			continue
+		}
+		order = make([]int, len(headers))
+		for j := range order {
+			order[j] = j
+		}
+		slices.SortFunc(order, func(a, b int) int {
+			return compareContentHeaders(&headers[a], &headers[b])
+		})
+		break
 	}
-	slices.SortFunc(order, func(i, j int) int {
-		a, b := &headers[i], &headers[j]
-		if c := bytes.Compare(a.Address[:], b.Address[:]); c != 0 {
-			return c
-		}
-		if c := cmp.Compare(a.Height, b.Height); c != 0 {
-			return c
-		}
-		return bytes.Compare(a.Hash[:], b.Hash[:])
-	})
 	var row [AccountHeaderRawLen]byte
-	for _, i := range order {
-		headers[i].putBytes(&row)
+	for i := range headers {
+		index := i
+		if order != nil {
+			index = order[i]
+		}
+		headers[index].putBytes(&row)
 		d.Write(row[:])
 	}
 	var out Hash
 	copy(out[:], d.Sum(nil))
 	return out
+}
+
+// Numeric uint64 order matches lexicographic order of the big-endian height.
+func compareContentHeaders(a, b *AccountHeader) int {
+	if c := bytes.Compare(a.Address[:], b.Address[:]); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(a.Height, b.Height); c != 0 {
+		return c
+	}
+	return bytes.Compare(a.Hash[:], b.Hash[:])
 }

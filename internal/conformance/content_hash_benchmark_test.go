@@ -15,7 +15,7 @@ func BenchmarkContentHashOrdering(b *testing.B) {
 	for _, size := range []int{1000, 100000} {
 		b.Run(fmt.Sprintf("M%d", size), func(b *testing.B) {
 			w := newFlatWorkload(b, size, 1)
-			for _, order := range []string{"Sorted", "Reversed", "Shuffled"} {
+			for _, order := range []string{"Sorted", "Reversed", "Shuffled", "LastSwap"} {
 				b.Run(order, func(b *testing.B) {
 					headers := slices.Clone(w.bundle.Commitments[0].Flat.SortedHeaders)
 					switch order {
@@ -24,6 +24,10 @@ func BenchmarkContentHashOrdering(b *testing.B) {
 					case "Shuffled":
 						rng := rand.New(rand.NewPCG(1, 2))
 						rng.Shuffle(len(headers), func(i, j int) { headers[i], headers[j] = headers[j], headers[i] })
+					case "LastSwap":
+						// Force fallback only after checking the whole prefix.
+						n := len(headers)
+						headers[n-2], headers[n-1] = headers[n-1], headers[n-2]
 					}
 					before := slices.Clone(headers)
 					b.ReportAllocs()

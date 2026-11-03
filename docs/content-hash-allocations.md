@@ -19,6 +19,11 @@ wire data, resource caps, target membership or trust policy. Empty input remains
 SHA3-256 of zero bytes. Caller-owned input must remain immutable during a hash
 call, as concurrent writes would already be a data race.
 
+The later [ordered-input comparison](content-hash-sorted-inputs.md) adds a full
+adjacent-order check and avoids the index allocation for already ordered lists.
+The historical measurements below retain their original implementation and
+source identities; fallback sorting still uses the private index array.
+
 ## Correctness evidence
 
 The byte-level oracle in `TestMomentumContentHashSerializationContract` builds

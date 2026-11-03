@@ -1,0 +1,1025 @@
+{
+  "baseline_content_source": {
+    "bytes": 2134,
+    "sha256": "0f13fb5574c8e83c841438a2684da8c3573dac279dbb75b7f90e61bcdd7d6856"
+  },
+  "baseline_input_fingerprint": "8b3ef3d1c1a98961e4021c3ce2c6d85406d395f14bbd64cc25d2805a070ebfb5",
+  "candidate_content_source": {
+    "bytes": 2501,
+    "sha256": "df8eb3a6276231da091bd72b8ba125396d388bb20f91b1772834896b77a549bc"
+  },
+  "candidate_input_fingerprint": "337af92c514e16c6330daf6e390a2cba7495068cb22b58c35ac57259762096d3",
+  "completed_controls": {
+    "chain_content_roots_race": 5,
+    "chain_content_subtests_race": 19,
+    "fetch_content_parity_roots": 1,
+    "fuzz_executions": 170216,
+    "fuzz_reported_test_elapsed_seconds": 6.205,
+    "independent_python_content_members": 101001,
+    "independent_python_momentum_preimages": 21,
+    "module_verify": true,
+    "new_dependency_network_downloads": 0,
+    "node_content_scaling_workloads": 4,
+    "requested_fuzz_duration_seconds": 5,
+    "vet": true
+  },
+  "fingerprint_method": "SHA256 of sorted UTF-8 path, NUL, decimal byte count, NUL, lowercase SHA256, newline for tracked Go/JSON/module inputs before adding the new reports. Both variants use the added tests/benchmarks; baseline replaces only the production content_hash.go.",
+  "format": "spv-content-hash-sorted-input-samples/v1",
+  "measurement_receipt": {
+    "bytes": 34390,
+    "sha256": "eece33e8d4954fcdbd805ff9dfc7295554222c62369632d284042a7a43e069ea"
+  },
+  "medians": [
+    {
+      "baseline": {
+        "allocations_per_op": 2,
+        "bytes_per_op": 8224,
+        "ns_per_op": 69364.0
+      },
+      "candidate": {
+        "allocations_per_op": 1,
+        "bytes_per_op": 32,
+        "ns_per_op": 66105.0
+      },
+      "members": 1000,
+      "order": "Sorted"
+    },
+    {
+      "baseline": {
+        "allocations_per_op": 2,
+        "bytes_per_op": 8224,
+        "ns_per_op": 69012.0
+      },
+      "candidate": {
+        "allocations_per_op": 2,
+        "bytes_per_op": 8224,
+        "ns_per_op": 69112.0
+      },
+      "members": 1000,
+      "order": "Reversed"
+    },
+    {
+      "baseline": {
+        "allocations_per_op": 2,
+        "bytes_per_op": 8224,
+        "ns_per_op": 116016.0
+      },
+      "candidate": {
+        "allocations_per_op": 2,
+        "bytes_per_op": 8224,
+        "ns_per_op": 121405.0
+      },
+      "members": 1000,
+      "order": "Shuffled"
+    },
+    {
+      "baseline": {
+        "allocations_per_op": 2,
+        "bytes_per_op": 8224,
+        "ns_per_op": 68648.0
+      },
+      "candidate": {
+        "allocations_per_op": 2,
+        "bytes_per_op": 8224,
+        "ns_per_op": 71617.0
+      },
+      "members": 1000,
+      "order": "LastSwap"
+    },
+    {
+      "baseline": {
+        "allocations_per_op": 2,
+        "bytes_per_op": 802848,
+        "ns_per_op": 6681479.0
+      },
+      "candidate": {
+        "allocations_per_op": 1,
+        "bytes_per_op": 32,
+        "ns_per_op": 6615467.0
+      },
+      "members": 100000,
+      "order": "Sorted"
+    },
+    {
+      "baseline": {
+        "allocations_per_op": 2,
+        "bytes_per_op": 802848,
+        "ns_per_op": 6749756.0
+      },
+      "candidate": {
+        "allocations_per_op": 2,
+        "bytes_per_op": 802848,
+        "ns_per_op": 6795232.0
+      },
+      "members": 100000,
+      "order": "Reversed"
+    },
+    {
+      "baseline": {
+        "allocations_per_op": 2,
+        "bytes_per_op": 802848,
+        "ns_per_op": 20607096.0
+      },
+      "candidate": {
+        "allocations_per_op": 2,
+        "bytes_per_op": 802848,
+        "ns_per_op": 21199221.0
+      },
+      "members": 100000,
+      "order": "Shuffled"
+    },
+    {
+      "baseline": {
+        "allocations_per_op": 2,
+        "bytes_per_op": 802848,
+        "ns_per_op": 6793749.0
+      },
+      "candidate": {
+        "allocations_per_op": 2,
+        "bytes_per_op": 802848,
+        "ns_per_op": 7002125.0
+      },
+      "members": 100000,
+      "order": "LastSwap"
+    }
+  ],
+  "method": {
+    "cpu": 1,
+    "duration_per_cell": "200ms",
+    "fixture_setup_outside_timing": true,
+    "independently_pinned_node_roots_required": true,
+    "input_immutability_checked": true,
+    "input_orders": [
+      "Sorted",
+      "Reversed",
+      "Shuffled",
+      "LastSwap"
+    ],
+    "members": [
+      1000,
+      100000
+    ],
+    "order_by_round": [
+      [
+        "baseline",
+        "candidate"
+      ],
+      [
+        "candidate",
+        "baseline"
+      ],
+      [
+        "baseline",
+        "candidate"
+      ],
+      [
+        "candidate",
+        "baseline"
+      ],
+      [
+        "baseline",
+        "candidate"
+      ]
+    ],
+    "ordinary_binaries_built_once_each": true,
+    "rounds": 5,
+    "shuffle_generator": "math/rand/v2 PCG(1,2)"
+  },
+  "platform": "darwin/arm64",
+  "race_instrumented_benchmarks": false,
+  "retained_preparation_failures": [
+    {
+      "actual_exit": 1,
+      "reason": "Direct conformance binary used module root; relative fixture path not found.",
+      "retained": {
+        "bytes": 7414,
+        "sha256": "64aa50a5d898d93bc71cbb76f31354974bd04c50264ec11b6f2a1d9990cf637a"
+      }
+    },
+    {
+      "actual_exit": 1,
+      "reason": "Isolated Python omitted the replay's sibling import path.",
+      "retained": {
+        "bytes": 3896,
+        "sha256": "2edd556b9e4ce71bd763c85415f36fc10bb28b114ec5e85da519385a71a9be18"
+      }
+    }
+  ],
+  "samples": [
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3261,
+      "members": 1000,
+      "ns_per_op": 70329.0,
+      "order": "Sorted",
+      "round": 1,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3619,
+      "members": 1000,
+      "ns_per_op": 69012.0,
+      "order": "Reversed",
+      "round": 1,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 2002,
+      "members": 1000,
+      "ns_per_op": 115709.0,
+      "order": "Shuffled",
+      "round": 1,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3614,
+      "members": 1000,
+      "ns_per_op": 68648.0,
+      "order": "LastSwap",
+      "round": 1,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 33,
+      "members": 100000,
+      "ns_per_op": 6844283.0,
+      "order": "Sorted",
+      "round": 1,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 32,
+      "members": 100000,
+      "ns_per_op": 6879750.0,
+      "order": "Reversed",
+      "round": 1,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 12,
+      "members": 100000,
+      "ns_per_op": 21326420.0,
+      "order": "Shuffled",
+      "round": 1,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 37,
+      "members": 100000,
+      "ns_per_op": 6793749.0,
+      "order": "LastSwap",
+      "round": 1,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 1,
+      "bytes_per_op": 32,
+      "iterations": 3771,
+      "members": 1000,
+      "ns_per_op": 66105.0,
+      "order": "Sorted",
+      "round": 1,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3400,
+      "members": 1000,
+      "ns_per_op": 69003.0,
+      "order": "Reversed",
+      "round": 1,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 2130,
+      "members": 1000,
+      "ns_per_op": 120769.0,
+      "order": "Shuffled",
+      "round": 1,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3336,
+      "members": 1000,
+      "ns_per_op": 71823.0,
+      "order": "LastSwap",
+      "round": 1,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 1,
+      "bytes_per_op": 32,
+      "iterations": 38,
+      "members": 100000,
+      "ns_per_op": 6549841.0,
+      "order": "Sorted",
+      "round": 1,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 34,
+      "members": 100000,
+      "ns_per_op": 6683339.0,
+      "order": "Reversed",
+      "round": 1,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 12,
+      "members": 100000,
+      "ns_per_op": 20133899.0,
+      "order": "Shuffled",
+      "round": 1,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 32,
+      "members": 100000,
+      "ns_per_op": 6853229.0,
+      "order": "LastSwap",
+      "round": 1,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 1,
+      "bytes_per_op": 32,
+      "iterations": 3360,
+      "members": 1000,
+      "ns_per_op": 65871.0,
+      "order": "Sorted",
+      "round": 2,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3560,
+      "members": 1000,
+      "ns_per_op": 67094.0,
+      "order": "Reversed",
+      "round": 2,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 1948,
+      "members": 1000,
+      "ns_per_op": 119999.0,
+      "order": "Shuffled",
+      "round": 2,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3223,
+      "members": 1000,
+      "ns_per_op": 70954.0,
+      "order": "LastSwap",
+      "round": 2,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 1,
+      "bytes_per_op": 32,
+      "iterations": 36,
+      "members": 100000,
+      "ns_per_op": 6382073.0,
+      "order": "Sorted",
+      "round": 2,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 33,
+      "members": 100000,
+      "ns_per_op": 6744333.0,
+      "order": "Reversed",
+      "round": 2,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 10,
+      "members": 100000,
+      "ns_per_op": 21199221.0,
+      "order": "Shuffled",
+      "round": 2,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 32,
+      "members": 100000,
+      "ns_per_op": 6932467.0,
+      "order": "LastSwap",
+      "round": 2,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3224,
+      "members": 1000,
+      "ns_per_op": 69364.0,
+      "order": "Sorted",
+      "round": 2,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3362,
+      "members": 1000,
+      "ns_per_op": 68457.0,
+      "order": "Reversed",
+      "round": 2,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 2098,
+      "members": 1000,
+      "ns_per_op": 114145.0,
+      "order": "Shuffled",
+      "round": 2,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3732,
+      "members": 1000,
+      "ns_per_op": 67468.0,
+      "order": "LastSwap",
+      "round": 2,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 34,
+      "members": 100000,
+      "ns_per_op": 6643153.0,
+      "order": "Sorted",
+      "round": 2,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 34,
+      "members": 100000,
+      "ns_per_op": 6776005.0,
+      "order": "Reversed",
+      "round": 2,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 10,
+      "members": 100000,
+      "ns_per_op": 21493496.0,
+      "order": "Shuffled",
+      "round": 2,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 33,
+      "members": 100000,
+      "ns_per_op": 6932087.0,
+      "order": "LastSwap",
+      "round": 2,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3799,
+      "members": 1000,
+      "ns_per_op": 67323.0,
+      "order": "Sorted",
+      "round": 3,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3846,
+      "members": 1000,
+      "ns_per_op": 67798.0,
+      "order": "Reversed",
+      "round": 3,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 2073,
+      "members": 1000,
+      "ns_per_op": 116369.0,
+      "order": "Shuffled",
+      "round": 3,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3439,
+      "members": 1000,
+      "ns_per_op": 67969.0,
+      "order": "LastSwap",
+      "round": 3,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 34,
+      "members": 100000,
+      "ns_per_op": 6681479.0,
+      "order": "Sorted",
+      "round": 3,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 37,
+      "members": 100000,
+      "ns_per_op": 6716688.0,
+      "order": "Reversed",
+      "round": 3,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 10,
+      "members": 100000,
+      "ns_per_op": 20298346.0,
+      "order": "Shuffled",
+      "round": 3,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 33,
+      "members": 100000,
+      "ns_per_op": 6900676.0,
+      "order": "LastSwap",
+      "round": 3,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 1,
+      "bytes_per_op": 32,
+      "iterations": 3296,
+      "members": 1000,
+      "ns_per_op": 66044.0,
+      "order": "Sorted",
+      "round": 3,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3434,
+      "members": 1000,
+      "ns_per_op": 69446.0,
+      "order": "Reversed",
+      "round": 3,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 2013,
+      "members": 1000,
+      "ns_per_op": 121405.0,
+      "order": "Shuffled",
+      "round": 3,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3459,
+      "members": 1000,
+      "ns_per_op": 71617.0,
+      "order": "LastSwap",
+      "round": 3,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 1,
+      "bytes_per_op": 32,
+      "iterations": 39,
+      "members": 100000,
+      "ns_per_op": 6633608.0,
+      "order": "Sorted",
+      "round": 3,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 34,
+      "members": 100000,
+      "ns_per_op": 6880330.0,
+      "order": "Reversed",
+      "round": 3,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 10,
+      "members": 100000,
+      "ns_per_op": 21278225.0,
+      "order": "Shuffled",
+      "round": 3,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 31,
+      "members": 100000,
+      "ns_per_op": 7127312.0,
+      "order": "LastSwap",
+      "round": 3,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 1,
+      "bytes_per_op": 32,
+      "iterations": 3133,
+      "members": 1000,
+      "ns_per_op": 73527.0,
+      "order": "Sorted",
+      "round": 4,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 2728,
+      "members": 1000,
+      "ns_per_op": 89023.0,
+      "order": "Reversed",
+      "round": 4,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 1514,
+      "members": 1000,
+      "ns_per_op": 233668.0,
+      "order": "Shuffled",
+      "round": 4,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 2774,
+      "members": 1000,
+      "ns_per_op": 83765.0,
+      "order": "LastSwap",
+      "round": 4,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 1,
+      "bytes_per_op": 32,
+      "iterations": 31,
+      "members": 100000,
+      "ns_per_op": 7518234.0,
+      "order": "Sorted",
+      "round": 4,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 31,
+      "members": 100000,
+      "ns_per_op": 7583843.0,
+      "order": "Reversed",
+      "round": 4,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 9,
+      "members": 100000,
+      "ns_per_op": 24327607.0,
+      "order": "Shuffled",
+      "round": 4,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 31,
+      "members": 100000,
+      "ns_per_op": 7245649.0,
+      "order": "LastSwap",
+      "round": 4,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3250,
+      "members": 1000,
+      "ns_per_op": 70392.0,
+      "order": "Sorted",
+      "round": 4,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3192,
+      "members": 1000,
+      "ns_per_op": 70466.0,
+      "order": "Reversed",
+      "round": 4,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 2086,
+      "members": 1000,
+      "ns_per_op": 116475.0,
+      "order": "Shuffled",
+      "round": 4,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3230,
+      "members": 1000,
+      "ns_per_op": 69547.0,
+      "order": "LastSwap",
+      "round": 4,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 36,
+      "members": 100000,
+      "ns_per_op": 6700212.0,
+      "order": "Sorted",
+      "round": 4,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 36,
+      "members": 100000,
+      "ns_per_op": 6717587.0,
+      "order": "Reversed",
+      "round": 4,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 12,
+      "members": 100000,
+      "ns_per_op": 19650767.0,
+      "order": "Shuffled",
+      "round": 4,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 36,
+      "members": 100000,
+      "ns_per_op": 6749221.0,
+      "order": "LastSwap",
+      "round": 4,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3771,
+      "members": 1000,
+      "ns_per_op": 68506.0,
+      "order": "Sorted",
+      "round": 5,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3721,
+      "members": 1000,
+      "ns_per_op": 69515.0,
+      "order": "Reversed",
+      "round": 5,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 1954,
+      "members": 1000,
+      "ns_per_op": 116016.0,
+      "order": "Shuffled",
+      "round": 5,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3450,
+      "members": 1000,
+      "ns_per_op": 68945.0,
+      "order": "LastSwap",
+      "round": 5,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 36,
+      "members": 100000,
+      "ns_per_op": 6650870.0,
+      "order": "Sorted",
+      "round": 5,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 34,
+      "members": 100000,
+      "ns_per_op": 6749756.0,
+      "order": "Reversed",
+      "round": 5,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 10,
+      "members": 100000,
+      "ns_per_op": 20607096.0,
+      "order": "Shuffled",
+      "round": 5,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 37,
+      "members": 100000,
+      "ns_per_op": 6772496.0,
+      "order": "LastSwap",
+      "round": 5,
+      "variant": "baseline"
+    },
+    {
+      "allocations_per_op": 1,
+      "bytes_per_op": 32,
+      "iterations": 3524,
+      "members": 1000,
+      "ns_per_op": 66622.0,
+      "order": "Sorted",
+      "round": 5,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3750,
+      "members": 1000,
+      "ns_per_op": 69112.0,
+      "order": "Reversed",
+      "round": 5,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 2056,
+      "members": 1000,
+      "ns_per_op": 122620.0,
+      "order": "Shuffled",
+      "round": 5,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 8224,
+      "iterations": 3537,
+      "members": 1000,
+      "ns_per_op": 70908.0,
+      "order": "LastSwap",
+      "round": 5,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 1,
+      "bytes_per_op": 32,
+      "iterations": 33,
+      "members": 100000,
+      "ns_per_op": 6615467.0,
+      "order": "Sorted",
+      "round": 5,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 34,
+      "members": 100000,
+      "ns_per_op": 6795232.0,
+      "order": "Reversed",
+      "round": 5,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 12,
+      "members": 100000,
+      "ns_per_op": 21112462.0,
+      "order": "Shuffled",
+      "round": 5,
+      "variant": "candidate"
+    },
+    {
+      "allocations_per_op": 2,
+      "bytes_per_op": 802848,
+      "iterations": 32,
+      "members": 100000,
+      "ns_per_op": 7002125.0,
+      "order": "LastSwap",
+      "round": 5,
+      "variant": "candidate"
+    }
+  ],
+  "scope": {
+    "peak_rss_measured": false,
+    "production_state_proof_acceptance": false,
+    "real_network_capacity_established": false,
+    "receipt_origin_authenticated": false,
+    "selected_devnet_query_acceptance": false,
+    "whole_CI_speedup_established": false
+  },
+  "source_base": "cbc6d9edd245653acbbccdf1bb4df88cc3dc8bcb",
+  "source_inventory": {
+    "bytes": 210254,
+    "sha256": "861600711a3c72d72801cfcafa64c89d2370f1902754b08301df063a46016994"
+  },
+  "source_scope": "All tracked Go, JSON and module files at local measurement time; documentation added afterward is not part of the measured source inventory.",
+  "toolchain": "go1.25.14"
+}
