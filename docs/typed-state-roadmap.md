@@ -144,8 +144,9 @@ for domainRecord/domainConfig proofs at the same accepted H/root. It also
 records the configuration/spec mutation paths: current-H context cannot prove
 the configuration or runtime used by an older batch. The existing finite
 producer authorization remains intact; genesis membership is a distinct
-policy proposal. This is D0-D1 source preparation, with supporting codecs and
-proof composition still open. It does not complete a selected-network query
+policy proposal. The candidate [domain keys and bounded codecs](candidate-domain-context.md)
+now have original-node ABI/subkey captures and independent byte comparisons;
+supporting proof composition remains open. These D0-D1 slices do not complete a selected-network query
 or transfer human review, old CI or live-network authority to a new revision.
 
 ## Authority and required invariants
