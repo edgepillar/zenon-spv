@@ -162,6 +162,10 @@ equality is a transport observation, not snapshot or publisher authentication.
 This tool does not perform or authenticate that HTTP selection. Do not retry a
 completed transfer merely because later metadata promotion fails.
 
+The separate [conditional tail getter](#acquire-one-selected-https-tail) now
+provides this bounded acquisition step. Retain its actual stdout, stderr receipt
+and completion under the controller before selecting the tail for this observer.
+
 ```sh
 python3 -I -B tools/ledger-transport/archive_index.py \
   --archive-bytes "$ARCHIVE_BYTES" --archive-sha256 "$ADVERTISED_ARCHIVE_SHA256" \
@@ -220,5 +224,93 @@ offsets, 10,000 members, malformed ranges/records, alias/type/encoding/size
 refusals, short reads, actual CLI exits and failed output controls create no
 payload files. They are not real dataset measurements. CI runs both test suites
 on the same three platforms and retains only source, licenses and small reports.
-The CI package advances to `zenon-r1-transport-ci/v2` to bind both suites; existing
-v1 packages and raw-stream manifest formats remain unchanged.
+The current `zenon-r1-transport-ci/v3` package binds all three suites. Retained
+v1 stream-only and v2 stream/directory packages keep their original identities
+and coverage; they are not rewritten or relabeled. Raw-stream manifest formats
+remain unchanged.
+
+## Acquire one selected HTTPS tail
+
+`archive_tail.py` is a separate read-only HTTPS getter. Select the URL, complete
+archive length, advertised archive SHA-256, exact final-tail length and strong
+ETag before starting it. These pins come from the intended source/acquisition
+record, not a candidate directory manifest. URLs must be ASCII HTTPS references
+without userinfo, fragments or control characters; pass credentials through
+neither this command nor its output.
+
+```sh
+python3 -I -B tools/ledger-transport/archive_tail.py \
+  --url "$ARCHIVE_URL" --archive-bytes "$ARCHIVE_BYTES" \
+  --archive-sha256 "$ADVERTISED_ARCHIVE_SHA256" \
+  --tail-bytes "$TAIL_BYTES" --etag "$STRONG_ETAG"
+```
+
+Run it through the approved storage controller. Binary stdout is the raw tail;
+stderr is a small JSON receipt. Keep one CAS payload and its actual exit and
+complete streams, without a stdout-to-ZIP copy or extracted member files. Only
+actual exit 0, complete capture and `SELECTED_TAIL_CAPTURED` admit the tail for
+the directory observer. Its `tail.bytes` and `tail.sha256` can then select that
+same retained object as the observer's stdin. The tool opens no destination path.
+The controller must serialize acquisition under the selected artifact's lease
+and reuse a previously verified matching object by reference. This stateless
+getter does not acquire storage leases, adopt caches or implement retention.
+
+One GET requests the exact final byte range, `If-Match` with the selected strong
+ETag, and identity content encoding. It uses Python's normal verified HTTPS
+handler and does not follow redirects, retry, enlarge the tail or fall back to
+a full response. A whole very small archive is allowed only when its entire
+length was explicitly selected as the bounded tail. The conditional request uses
+[HTTP preconditions](https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.1)
+and [byte ranges](https://www.rfc-editor.org/rfc/rfc9110.html#section-14.2); this
+tool deliberately supports a restricted response subset.
+
+Before calling a body read, require 206, unchanged response URL, one exact
+`Content-Range`, one exact `Content-Length` and one matching strong ETag. Duplicate
+framing fields, transfer encoding and non-identity content encoding refuse.
+Unknown extra headers do not create authority. The admitted header set is at
+most 64 fields / 16 KiB; Python's HTTP parser buffers headers before this check,
+so this is not a pre-parser or OS memory bound. Refusal before a body read does
+not promise zero wire traffic or zero buffering by the HTTP stack.
+
+| Limit | Default | Hard cap |
+| --- | ---: | ---: |
+| Selected tail / `--max-tail-bytes` | 1 MiB | 4 MiB |
+| Selected archive logical length | caller-supplied | 1 TiB |
+| `--timeout-seconds` | 15 | 60 |
+| One body read request | 64 KiB | 64 KiB |
+
+The timeout applies to blocking socket operations; an elapsed check also runs
+between open/read/flush operations. Incremental `read1` is preferred when the
+response supports it, so a progressing peer does not hold one coalescing body
+read while elapsed checks wait. An external process deadline is still
+required: these checks are not an OS-enforced total latency, RSS or disk quota.
+The API freezes selections and limits before opening. A SHA-256 is computed over
+the exact streamed tail, followed by the HTTP response body's EOF check and a
+successful stdout flush. It does not inspect bytes outside the framed response.
+
+Failures keep binary stdout separate from metadata: a partial tail may already
+have been emitted. UNKNOWN receipts have static reasons, without URLs, ETags,
+private labels, body bytes or exception text. Invalid options exit 64, rejected
+responses/data exit 2, I/O failures normally exit 70 and Python interruption exits
+130. Failed diagnostic output can leave no complete receipt; interpreter shutdown
+can alter a nonzero exit. Preserve the observed exit and bytes rather than
+inferring completion or retrying a finished attempt after a bookkeeping failure.
+Help exits 0 with UNKNOWN and no payload.
+
+ETag/range matching is a selected transport observation. The advertised whole
+archive digest is recorded only as `sha256_selection`, not verified by a tail.
+Neither this getter nor the directory observer establishes archive provenance,
+member integrity, database consistency/completeness, reconstructed SMT root,
+accepted-header binding, network activation or state-value acceptance. Existing
+raw-stream manifests and independent inventory/import gates remain unchanged.
+
+```sh
+python3 -I -B tools/ledger-transport/archive_tail_test.py
+```
+
+Controls use bounded synthetic readers and the real stdlib HTTPS-handler/error
+chain with controlled responses. Actual child entrypoints check binary/receipt
+separation and refuse 200/302/412 responses before body consumption. A selected
+literal tail also feeds the independent directory observer. No live TLS peer,
+real archive, dataset, server deployment or state-proof acceptance is qualified.
+The three-platform CI package binds this third suite and its sources separately.
