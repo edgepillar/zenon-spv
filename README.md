@@ -17,6 +17,11 @@ untrusted input; trust settings, the local request and both expected context pin
 require independent selection. A matching positive witness and completed
 consumer run on the selected network remain open acceptance gates.
 
+The separate [three-witness query and CLI](docs/experimental-batch-context-query.md)
+binds BatchEntry, domainRecord and domainConfig to one owned H/hash/root and
+explicit context. Its synthetic offline consumer does not close those network
+acceptance gates or establish submission-time configuration.
+
 ## Status
 
 The native verifier's main surfaces are:

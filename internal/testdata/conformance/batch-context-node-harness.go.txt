@@ -1,0 +1,132 @@
+// SPDX-License-Identifier: MIT
+// Pure original-node trie/ABI fixture; no chain, wallet, RPC or live state.
+package definition
+
+import (
+	"bytes"
+	"encoding/hex"
+	"encoding/json"
+	"os"
+	"testing"
+
+	"github.com/zenon-network/go-zenon/common"
+	"github.com/zenon-network/go-zenon/common/trie"
+	"github.com/zenon-network/go-zenon/common/types"
+)
+
+func TestSPVThreeRowWitnessCapture(t *testing.T) {
+	var input struct {
+		Batch  string `json:"batch_value_hex"`
+		Record string `json:"record_value_hex"`
+		Config string `json:"config_value_hex"`
+	}
+	raw, err := os.ReadFile("spv_three_row_inputs.json")
+	if err != nil || len(raw) > 16384 || json.Unmarshal(raw, &input) != nil {
+		t.Fatal("bounded selected ABI inputs unavailable", err)
+	}
+	decode := func(text string) []byte {
+		data, err := hex.DecodeString(text)
+		if err != nil || len(data) == 0 || len(data) > 4096 {
+			t.Fatal("invalid selected ABI bytes", err)
+		}
+		return data
+	}
+	values := [][]byte{decode(input.Batch), decode(input.Record), decode(input.Config)}
+	var batch BatchEntry
+	var domain DomainRecord
+	var config DomainConfig
+	if err := ABISettlement.UnpackVariable(&batch, BatchEntryVariableName, values[0]); err != nil {
+		t.Fatal("original BatchEntry ABI", err)
+	}
+	if err := ABISettlement.UnpackVariable(&domain, DomainRecordVariableName, values[1]); err != nil {
+		t.Fatal("original domainRecord ABI", err)
+	}
+	if err := ABISettlement.UnpackVariable(&config, domainConfigVariableName, values[2]); err != nil {
+		t.Fatal("original domainConfig ABI", err)
+	}
+	subkeys := [][]byte{
+		(&BatchEntryKey{DomainId: 1, BatchId: 0}).Key(),
+		(&DomainRecordKey{DomainId: 1}).Key(),
+		getDomainConfigKey(1),
+	}
+	keys := make([][]byte, 3)
+	paths := make([]trie.Path, 3)
+	compact := trie.NewCompactTree()
+	for i, key := range subkeys {
+		keys[i] = common.JoinBytes([]byte{0x03}, types.SettlementContract.Bytes(), []byte{0x04}, key)
+		if len(keys[i]) != []int{35, 27, 27}[i] {
+			t.Fatal("full ledger key framing changed")
+		}
+		paths[i] = trie.Path(types.NewHash(keys[i]))
+		compact.Insert(paths[i], values[i])
+	}
+	root, err := trie.RootOfLeaves(paths, values)
+	if err != nil || root == types.ZeroHash || compact.Root() != root {
+		t.Fatal("original-node root implementations disagree", err)
+	}
+	rows := make([]map[string]interface{}, 0, 4)
+	for i, name := range []string{"batch_entry", "domain_record", "domain_config"} {
+		t.Run(name, func(t *testing.T) {
+			present, value, encoded, err := trie.ProveByPath(paths, values, paths[i])
+			if err != nil || !present || !bytes.Equal(value, values[i]) {
+				t.Fatal("original selected proof unavailable", err)
+			}
+			ok, err := trie.VerifyProofByPath(root, paths[i], value, encoded)
+			if err != nil || !ok {
+				t.Fatal("original path-native proof comparison", err)
+			}
+			changed := append([]byte(nil), value...)
+			changed[0] ^= 1
+			if ok, _ := trie.VerifyProofByPath(root, paths[i], changed, encoded); ok {
+				t.Fatal("different value retained membership")
+			}
+			wrong := root
+			wrong[0] ^= 1
+			if ok, _ := trie.VerifyProofByPath(wrong, paths[i], value, encoded); ok {
+				t.Fatal("different root retained membership")
+			}
+			path := types.Hash(paths[i])
+			rows = append(rows, map[string]interface{}{
+				"name": name, "present": present, "ledger_key_hex": hex.EncodeToString(keys[i]),
+				"path_hex": path.String(), "value_hex": hex.EncodeToString(value),
+				"proof_hex": hex.EncodeToString(encoded), "altered_root_and_value_refused": true,
+			})
+		})
+	}
+	t.Run("absent_batch", func(t *testing.T) {
+		key := common.JoinBytes([]byte{0x03}, types.SettlementContract.Bytes(), []byte{0x04},
+			(&BatchEntryKey{DomainId: 1, BatchId: 1}).Key())
+		path := types.NewHash(key)
+		present, value, encoded, err := trie.ProveByPath(paths, values, trie.Path(path))
+		if err != nil || present || len(value) != 0 {
+			t.Fatal("separate absence proof unavailable", err)
+		}
+		ok, err := trie.VerifyAbsenceByPath(root, trie.Path(path), encoded)
+		if err != nil || !ok {
+			t.Fatal("original path-native absence comparison", err)
+		}
+		rows = append(rows, map[string]interface{}{
+			"name": "absent_batch", "present": false, "ledger_key_hex": hex.EncodeToString(key),
+			"path_hex": path.String(), "value_hex": "", "proof_hex": hex.EncodeToString(encoded),
+		})
+	})
+	if len(rows) != 4 || batch.FinalizeAtHeight < batch.SubmittedAtHeight {
+		t.Fatal("incomplete selected mathematical fixture")
+	}
+	data, err := json.Marshal(map[string]interface{}{
+		"format":   "selected-node-three-row-witness/v1",
+		"scope":    "SYNTHETIC_THREE_LEAF_TREE_NO_HEADER_OR_NETWORK_ACCEPTANCE",
+		"root_hex": root.String(), "domain_id": 1, "batch_id": 0,
+		"settlement_address_hex":              hex.EncodeToString(types.SettlementContract.Bytes()),
+		"original_trie_implementations_agree": true, "rows": rows,
+		"stored_submission_height": batch.SubmittedAtHeight, "stored_finalize_height": batch.FinalizeAtHeight,
+		"current_withdrawal_delay":                        config.WithdrawalDelay,
+		"stored_delay_equals_selected_current_config":     batch.FinalizeAtHeight-batch.SubmittedAtHeight == config.WithdrawalDelay,
+		"source_fixture_values_are_one_original_snapshot": false,
+		"node_chain_wallet_RPC_or_transactions_started":   false,
+	})
+	if err != nil || len(data) > 32768 {
+		t.Fatal("bounded trace encoding", err)
+	}
+	t.Logf("SPV_THREE_ROW_TRACE %s", data)
+}

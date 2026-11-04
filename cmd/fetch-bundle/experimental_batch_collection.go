@@ -11,6 +11,7 @@ import (
 	"io"
 	"math"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
@@ -19,6 +20,7 @@ import (
 )
 
 const experimentalCollectionCommand = "experimental-batch-entry"
+const experimentalContextCollectionCommand = "experimental-batch-context"
 const experimentalCollectionUsage = "Usage: fetch-bundle experimental-batch-entry --rpc <url> --chain-id <n> --anchor-height <n> --anchor-hash <64-hex> --height <n> --header-hash <64-hex> --tip-height <n> --tip-hash <64-hex> --domain-id <u32> --batch-id <u64> [--compare-gateway] [--timeout <duration>]\n"
 
 type collectionFlag struct {
@@ -69,11 +71,20 @@ func collectionHash(value string) (chain.Hash, bool) {
 // This explicit mode is dispatched before the native environment/default flow.
 // Collection has no checkpoint export, state writer or acceptance guarantee.
 func runExperimentalCollection(parent context.Context, args []string, stdout, stderr io.Writer, clientFor func(string) *fetch.Client) int {
+	return runExperimentalCollectionMode(parent, args, stdout, stderr, clientFor, false)
+}
+
+func runExperimentalCollectionMode(parent context.Context, args []string, stdout, stderr io.Writer, clientFor func(string) *fetch.Client, withContext bool) int {
 	fail := func(code int, category string) int {
 		_, _ = fmt.Fprintln(stderr, "fetch-bundle experimental collection:", category)
 		return code
 	}
-	fs := flag.NewFlagSet(experimentalCollectionCommand, flag.ContinueOnError)
+	command, usage := experimentalCollectionCommand, experimentalCollectionUsage
+	if withContext {
+		command = experimentalContextCollectionCommand
+		usage = strings.Replace(experimentalCollectionUsage, experimentalCollectionCommand, command, 1)
+	}
+	fs := flag.NewFlagSet(command, flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	rpc := fs.String("rpc", "", "explicit RPC endpoint")
 	chainID := fs.Uint64("chain-id", 0, "locally selected non-mainnet chain")
@@ -90,8 +101,8 @@ func runExperimentalCollection(parent context.Context, args []string, stdout, st
 	guards := make(map[string]*collectionFlag)
 	fs.VisitAll(func(f *flag.Flag) { guard := &collectionFlag{Value: f.Value}; f.Value = guard; guards[f.Name] = guard })
 	if err := fs.Parse(args); errors.Is(err, flag.ErrHelp) {
-		n, err := io.WriteString(stdout, experimentalCollectionUsage)
-		if err != nil || n != len(experimentalCollectionUsage) {
+		n, err := io.WriteString(stdout, usage)
+		if err != nil || n != len(usage) {
 			return fail(70, "output failed")
 		}
 		return 0
@@ -121,13 +132,18 @@ func runExperimentalCollection(parent context.Context, args []string, stdout, st
 		return fail(64, "invalid arguments")
 	}
 	selected.DomainID = uint32(*domain)
-	if selected.Validate() != nil {
+	if selected.Validate() != nil || withContext && selected.DomainID == 0 {
 		return fail(64, "invalid arguments")
 	}
 	ctx, cancel := context.WithTimeout(parent, *timeout)
 	defer cancel()
 	client := clientFor(*rpc)
-	data, err := client.FetchCandidateBatchEntryBundle(ctx, selected, *compare)
+	var data []byte
+	if withContext {
+		data, err = client.FetchCandidateBatchContextBundle(ctx, selected, *compare)
+	} else {
+		data, err = client.FetchCandidateBatchEntryBundle(ctx, selected, *compare)
+	}
 	if err != nil {
 		return fail(1, "candidate acquisition failed")
 	}

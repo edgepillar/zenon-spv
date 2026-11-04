@@ -190,6 +190,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_selected_devnet_genesis.py --source-revision "${{ github.sha }}"
       - name: Independent domain context encoding bytes
         run: python -I -B tools/gen-state-root-vectors/check_domain_context.py
+      - name: Independent three-witness consumer bytes
+        run: |
+          python -I -B tools/gen-state-root-vectors/check_batch_context_test.py -v
+          python -I -B tools/gen-state-root-vectors/check_batch_context.py --source-revision "${{ github.sha }}"
       - name: Source parent-slot replay controls
         run: python -I -B tools/gen-state-root-vectors/check_parent_snapshot_slots_test.py -v
       - name: Independent source parent-slot context
@@ -933,6 +937,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_selected_devnet_genesis.py --source-revision "${{ github.sha }}"
       - name: Independent domain context encoding bytes
         run: python -I -B tools/gen-state-root-vectors/check_domain_context.py
+      - name: Independent three-witness consumer bytes
+        run: |
+          python -I -B tools/gen-state-root-vectors/check_batch_context_test.py -v
+          python -I -B tools/gen-state-root-vectors/check_batch_context.py --source-revision "${{ github.sha }}"
       - name: Source parent-slot replay controls
         run: python -I -B tools/gen-state-root-vectors/check_parent_snapshot_slots_test.py -v
       - name: Independent source parent-slot context

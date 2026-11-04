@@ -141,9 +141,9 @@ Concatenate output events before decoding JSON after `SPV_DOMAIN_CONTEXT_TRACE`;
 long log lines can be split. Retain actual exit/completeness and source,
 toolchain and module identities. Hosted candidate replay is not another node run.
 
-Supporting proof composition must still bind all local keys/schemas to one owned
-accepted H/hash/root/context, retained tip and aggregate budget, with
-all-or-nothing results. Current-H configuration/spec cannot prove an older
+The [separate versioned three-witness query](experimental-batch-context-query.md)
+binds all local keys/schemas to one owned accepted H/hash/root/context, retained
+tip and aggregate budget, with all-or-nothing results. Current-H configuration/spec cannot prove an older
 batch's submission-time context. These rows do not authenticate an external
 executor binary or an L2 transition. The real chain-69 boundary/query,
 independent review and production NO-GO gates remain open.
