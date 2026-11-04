@@ -16,6 +16,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       run_runtime: ${{ steps.scope.outputs.run_runtime }}
+      run_recorded_oracles: ${{ steps.scope.outputs.run_recorded_oracles }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -46,7 +47,7 @@ jobs:
           assert len(raw) <= 1 << 20
           value = json.loads(raw)
           assert (json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False) + '\n').encode() == raw
-          assert value['format'] in ('zenon-ci-change-scope/v1', 'zenon-ci-change-scope/v2')
+          assert value['format'] in ('zenon-ci-change-scope/v1', 'zenon-ci-change-scope/v2', 'zenon-ci-change-scope/v3')
           assert value['selection'] == {'repository': os.environ['GITHUB_REPOSITORY'], 'event': os.environ['GITHUB_EVENT_NAME'],
               'base_revision': os.environ['CI_SCOPE_BASE'], 'feature_revision': os.environ['CI_SCOPE_FEATURE'],
               'checkout_revision': os.environ['GITHUB_SHA'], 'run_id': int(os.environ['GITHUB_RUN_ID']),
@@ -54,13 +55,18 @@ jobs:
           assert value['selection_only'] is True and value['runtime_qualification_transferred'] is False
           flag = value['run_runtime']
           assert type(flag) is bool
-          if not flag:
+          oracle_flag = flag
+          if value['format'] == 'zenon-ci-change-scope/v3':
+              assert flag is True
+              oracle_flag = value['run_recorded_oracles']
+              assert type(oracle_flag) is bool
+          if not flag or not oracle_flag:
               assert value['source_binding_complete'] is True
               pins = {'tools/check-ci-change-scope.py', 'tools/check-ci-change-scope_test.py', '.github/workflows/ci.yml'}
               if value['format'] == 'zenon-ci-change-scope/v1':
                   assert value['status'] == 'DOCUMENTATION_ONLY' and value['reason'] == 'regular_markdown_only'
                   assert value['documentation_paths'] and len(value['commands']) == 6
-              else:
+              elif value['format'] == 'zenon-ci-change-scope/v2':
                   workflow = '.github/workflows/ledger-transport.yml'
                   assert value['status'] == 'PORTABLE_ARCHIVE_ONLY' and value['reason'] == 'modified_independent_archive_leaves'
                   assert value['required_workflows'] == [workflow] and len(value['commands']) == 9
@@ -82,6 +88,22 @@ jobs:
                   pins.add(workflow)
                   assert value['source_pins'][workflow]['git_sha256'] == value['archive_workflow']['sha256']
                   assert value['source_pins'][workflow]['git_bytes'] == value['archive_workflow']['bytes']
+              else:
+                  assert value['status'] == 'NATIVE_RUNTIME_ONLY' and value['reason'] == 'modified_native_v3_leaves'
+                  assert len(value['commands']) == 7 and type(value['documentation_paths']) is list
+                  allowed = {'internal/verify/experimental_v3_' + name for name in (
+                      'state.go', 'profile.go', 'file.go', 'checkpoint.go', 'state_test.go', 'profile_test.go',
+                      'file_test.go', 'checkpoint_test.go', 'workflow_test.go', 'retention_test.go')}
+                  paths = value['native_paths']
+                  assert type(paths) is list and 0 < len(paths) <= len(allowed)
+                  assert all(set(path) == {'path', 'change'} and path['path'] in allowed and path['change'] == 'M' for path in paths)
+                  assert len({path['path'] for path in paths}) == len(paths)
+                  closure = value['oracle_closure']
+                  assert set(closure) == {'sha256', 'bytes', 'entries', 'expected_sha256', 'matched'}
+                  assert closure['matched'] is True and closure['sha256'] == closure['expected_sha256']
+                  assert re.fullmatch('[0-9a-f]{64}', closure['sha256']) and closure['sha256'] != '0' * 64
+                  assert type(closure['bytes']) is int and 0 < closure['bytes'] <= 2 << 20
+                  assert type(closure['entries']) is int and 0 < closure['entries'] <= 8192
               assert set(value['source_pins']) == pins
               for command in value['commands']:
                   assert type(command['actual_exit']) is int and command['actual_exit'] == 0 and command['capture_complete'] is True
@@ -93,6 +115,7 @@ jobs:
               assert value['status'] == 'RUNTIME_REQUIRED'
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
               output.write('run_runtime=' + ('true' if flag else 'false') + '\n')
+              output.write('run_recorded_oracles=' + ('true' if oracle_flag else 'false') + '\n')
           PY
       - name: Upload change scope selection
         if: ${{ !cancelled() && steps.scope_controls.outcome != 'skipped' }}
@@ -1556,7 +1579,7 @@ jobs:
   recorded-oracles:
     name: Recorded oracles (${{ matrix.platform }})
     needs: change_scope
-    if: ${{ !cancelled() && (needs.change_scope.result != 'success' || needs.change_scope.outputs.run_runtime != 'false') }}
+    if: ${{ !cancelled() && (needs.change_scope.result != 'success' || needs.change_scope.outputs.run_recorded_oracles != 'false') }}
     runs-on: ${{ matrix.os }}
     # These portable checks use a separate runner, not native benchmark resources.
     timeout-minutes: ${{ matrix.os == 'macos-15-intel' && 90 || 60 }}

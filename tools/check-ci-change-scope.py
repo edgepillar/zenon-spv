@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-only
-"""Select documentation-only or independent archive CI from a bounded Git diff.
+"""Select documentation-only, archive or native-only CI from a bounded Git diff.
 
 This selects work; it never qualifies an executable at a new revision. Any
 missing selection, changed source, incomplete command or unrecognized record
@@ -21,6 +21,7 @@ import time
 
 FORMAT = "zenon-ci-change-scope/v1"
 ARCHIVE_FORMAT = "zenon-ci-change-scope/v2"
+NATIVE_FORMAT = "zenon-ci-change-scope/v3"
 REPOSITORY = "edgepillar/zenon-spv"
 MAX_DIFF_BYTES = 256 << 10
 MAX_SOURCE_BYTES = 256 << 10
@@ -39,6 +40,15 @@ ARCHIVE_FILES = frozenset("tools/ledger-transport/" + name for name in (
 # Selected after the dependency audit; changing the selector itself requires
 # the complete lane. Never silently refresh this pin after a source change.
 RUNTIME_SOURCE_PIN = "9330e4977842420f031554693c66bd3435e8d0ac2aeba31a3f3d7d12df7ddb44"
+# These existing Go leaves are exercised by the native jobs, not by the
+# recorded Python oracle job. New files and other Go paths are not eligible.
+NATIVE_FILES = frozenset("internal/verify/experimental_v3_" + name for name in (
+    "state.go", "profile.go", "file.go", "checkpoint.go", "state_test.go",
+    "profile_test.go", "file_test.go", "checkpoint_test.go", "workflow_test.go",
+    "retention_test.go"))
+# Every other non-document tree record remains in this reviewed closure,
+# including workflows, research Go sources, Python helpers and fixture data.
+ORACLE_SOURCE_PIN = "e2c3c49e18a728ae2af500b258b4d5f12720d3461c67b518add5cd8732816129"
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192
 TREE_RECORD = re.compile(rb"(100644|100755|120000|160000) (blob|commit) ([0-9a-f]{40})\t([^\0]+)\Z")
@@ -75,7 +85,7 @@ def document_path(raw):
                     and part.split(".", 1)[0].upper() not in RESERVED for part in parts))
 
 
-def parse_diff(raw, include_archive=False):
+def parse_diff(raw, include_archive=False, include_native=False):
     if type(raw) is not bytes or len(raw) > MAX_DIFF_BYTES:
         raise ScopeError("diff_bounds")
     if not raw:
@@ -105,10 +115,13 @@ def parse_diff(raw, include_archive=False):
                 or old_oid == new_oid):
             raise ScopeError("diff_identity")
         if not document_path(path):
-            if not include_archive or path.decode("ascii", errors="replace") not in ARCHIVE_FILES:
+            name = path.decode("ascii", errors="replace")
+            archive = include_archive and name in ARCHIVE_FILES
+            native = include_native and name in NATIVE_FILES
+            if not archive and not native:
                 raise ScopeError("outside_documentation")
             if change != b"M":
-                raise ScopeError("archive_change")
+                raise ScopeError("archive_change" if archive else "native_change")
         if path in seen:
             raise ScopeError("duplicate_path")
         if path.lower() in case_names:
@@ -121,6 +134,15 @@ def parse_diff(raw, include_archive=False):
 
 def runtime_fingerprint(raw):
     """Commit every non-document dependency except the reviewed leaf/policy set."""
+    return tree_fingerprint(raw, ARCHIVE_FILES | set(SOURCE_FILES[:2]))
+
+
+def oracle_fingerprint(raw):
+    """Exclude only regular reviewed native leaves, documents and selector code."""
+    return tree_fingerprint(raw, NATIVE_FILES | set(SOURCE_FILES[:2]))
+
+
+def tree_fingerprint(raw, excluded_paths):
     if (type(raw) is not bytes or not 0 < len(raw) <= MAX_TREE_BYTES
             or not raw.endswith(b"\0")):
         raise ScopeError("runtime_tree_bounds")
@@ -128,7 +150,7 @@ def runtime_fingerprint(raw):
     if not 0 < len(records) <= MAX_TREE_RECORDS:
         raise ScopeError("runtime_tree_bounds")
     kept, seen = [], set()
-    excluded = {path.encode("ascii") for path in ARCHIVE_FILES | set(SOURCE_FILES[:2])}
+    excluded = {path.encode("ascii") for path in excluded_paths}
     for record in records:
         match = TREE_RECORD.fullmatch(record)
         if match is None:
@@ -326,30 +348,49 @@ def select_scope(root, selection, runner=run_git):
         except ScopeError as error:
             if error.reason != "outside_documentation":
                 raise
-            paths = parse_diff(raw, include_archive=True)
-            archive = [path for path in paths if path["path"] in ARCHIVE_FILES]
-            if not archive:
-                raise ScopeError("outside_documentation")
-            report["format"] = ARCHIVE_FORMAT
-            selected = bind_source(ARCHIVE_WORKFLOW, checkout)
-            previous = query(["show", base + ":" + ARCHIVE_WORKFLOW], MAX_SOURCE_BYTES)
-            if (selected != previous or len(selected) != ARCHIVE_WORKFLOW_BYTES
-                    or hashlib.sha256(selected).hexdigest() != ARCHIVE_WORKFLOW_SHA256):
-                raise ScopeError("archive_workflow_pin")
-            closure = runtime_fingerprint(query(
-                ["ls-tree", "-r", "-z", "--full-tree", checkout], MAX_TREE_BYTES))
-            if closure["sha256"] != RUNTIME_SOURCE_PIN:
-                raise ScopeError("runtime_source_pin")
-            report.update(format=ARCHIVE_FORMAT, status="PORTABLE_ARCHIVE_ONLY",
-                          run_runtime=False, reason="modified_independent_archive_leaves",
-                          documentation_paths=[path for path in paths if path not in archive],
-                          portable_archive_paths=archive, required_workflows=[ARCHIVE_WORKFLOW],
-                          archive_workflow={"path": ARCHIVE_WORKFLOW,
-                                            "sha256": ARCHIVE_WORKFLOW_SHA256,
-                                            "bytes": ARCHIVE_WORKFLOW_BYTES,
-                                            "base_matches_checkout": True},
-                          runtime_closure={**closure, "expected_sha256": RUNTIME_SOURCE_PIN,
-                                           "matched": True})
+            try:
+                paths = parse_diff(raw, include_archive=True)
+                lane = "archive"
+            except ScopeError as leaf_error:
+                if leaf_error.reason != "outside_documentation":
+                    raise
+                paths = parse_diff(raw, include_native=True)
+                lane = "native"
+            if lane == "native":
+                report.update(format=NATIVE_FORMAT, run_recorded_oracles=True)
+                closure = oracle_fingerprint(query(
+                    ["ls-tree", "-r", "-z", "--full-tree", checkout], MAX_TREE_BYTES))
+                if closure["sha256"] != ORACLE_SOURCE_PIN:
+                    raise ScopeError("oracle_source_pin")
+                native = [path for path in paths if path["path"] in NATIVE_FILES]
+                report.update(status="NATIVE_RUNTIME_ONLY", run_runtime=True,
+                              run_recorded_oracles=False, reason="modified_native_v3_leaves",
+                              documentation_paths=[path for path in paths if path not in native],
+                              native_paths=native,
+                              oracle_closure={**closure, "expected_sha256": ORACLE_SOURCE_PIN,
+                                              "matched": True})
+            else:
+                archive = [path for path in paths if path["path"] in ARCHIVE_FILES]
+                report["format"] = ARCHIVE_FORMAT
+                selected = bind_source(ARCHIVE_WORKFLOW, checkout)
+                previous = query(["show", base + ":" + ARCHIVE_WORKFLOW], MAX_SOURCE_BYTES)
+                if (selected != previous or len(selected) != ARCHIVE_WORKFLOW_BYTES
+                        or hashlib.sha256(selected).hexdigest() != ARCHIVE_WORKFLOW_SHA256):
+                    raise ScopeError("archive_workflow_pin")
+                closure = runtime_fingerprint(query(
+                    ["ls-tree", "-r", "-z", "--full-tree", checkout], MAX_TREE_BYTES))
+                if closure["sha256"] != RUNTIME_SOURCE_PIN:
+                    raise ScopeError("runtime_source_pin")
+                report.update(format=ARCHIVE_FORMAT, status="PORTABLE_ARCHIVE_ONLY",
+                              run_runtime=False, reason="modified_independent_archive_leaves",
+                              documentation_paths=[path for path in paths if path not in archive],
+                              portable_archive_paths=archive, required_workflows=[ARCHIVE_WORKFLOW],
+                              archive_workflow={"path": ARCHIVE_WORKFLOW,
+                                                "sha256": ARCHIVE_WORKFLOW_SHA256,
+                                                "bytes": ARCHIVE_WORKFLOW_BYTES,
+                                                "base_matches_checkout": True},
+                              runtime_closure={**closure, "expected_sha256": RUNTIME_SOURCE_PIN,
+                                               "matched": True})
         else:
             report["documentation_paths"] = documents
             report.update(status="DOCUMENTATION_ONLY", run_runtime=False, reason="regular_markdown_only")

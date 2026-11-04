@@ -1,4 +1,4 @@
-# Documentation, archive leaves and CI scope
+# Documentation, archive leaves and native CI scope
 
 The general workflow first selects the exact Git change scope with
 `tools/check-ci-change-scope.py`. A nonempty diff containing only regular
@@ -7,6 +7,8 @@ recorded-oracle jobs. The small scope job still runs its controls and retains a
 source-bound selection report. Other workflows retain their existing triggers.
 One additional, explicitly bounded route selects the independent archive tools
 described below. It still requires their separate three-platform workflow.
+The native-v3 route below keeps all native jobs and selects only the unchanged
+recorded-oracle job out of the execution plan.
 Full-runtime jobs also retain small source-bound scope-control reports on all
 three native platforms. These avoid downloading complete job logs just to
 reconcile the new controls' actual test names and outcomes.
@@ -35,6 +37,9 @@ Windows names, trailing-dot components and case aliases
 also require runtime CI. Empty diffs require runtime CI, including identity-only
 history recreations. A rename is considered its actual deletion/addition pair;
 both paths must qualify.
+
+The native-v3 route does not change these native-runtime requirements. It has a
+separate, conservative output for selecting recorded-oracle work.
 
 The executing helper, controls and workflow must match the selected Git blobs,
 allowing only recorded LF-to-CRLF checkout conversion. Git replacement objects
@@ -155,3 +160,55 @@ selects v2. Its skipped groups supply no new native execution or binary, and its
 separate portable workflow still needs actual three-platform qualification.
 Record each real route observation against its own source, run and attempt;
 the closure pin alone does not establish completion or savings.
+
+## Native v3 leaves and recorded oracles
+
+`NATIVE_RUNTIME_ONLY` can select the three recorded-oracle jobs out only for
+mode-100644 **modifications** to these ten existing files below
+`internal/verify/`, optionally mixed with regular documentation changes:
+
+- `experimental_v3_state.go`, `experimental_v3_profile.go`,
+  `experimental_v3_file.go` and `experimental_v3_checkpoint.go`;
+- their four matching `_test.go` files, plus `experimental_v3_workflow_test.go`
+  and `experimental_v3_retention_test.go`.
+
+This does not classify the whole Go directory. Added/deleted files, other Go
+files, Python controls, JSON data, modules, workflows, modes and mixed archive
+changes require both native and recorded-oracle jobs. The native jobs still run
+the full root Go suite and their existing conformance, compiled consumer,
+platform and artifact steps at the new source revision. The general workflow's
+other triggers are unchanged.
+
+The selected recorded-oracle job has 33 Python commands. Its source-bound
+inventory includes the target-hex, complete-graph, child-resource and retention
+wrappers. Those commands replay the research module's pinned original-node
+bytes and synthetic recordings; they do not build or execute the ten native
+v3 Go leaves. Research `go.mod`, Go harnesses and `.go.txt` files are distinct
+inputs and remain inside the closure, along with all Python helpers and data.
+Independent byte checks in the native job are not moved out or skipped.
+
+The new `oracle_closure` SHA-256 covers every Git tree record except regular
+documentation, these ten leaves and the selector/control pair. It includes the
+general workflow, other workflows, all other native sources, research sources,
+wrappers and fixtures. The same bounded tree framing, modes, duplicate checks
+and deterministic NUL-terminated record encoding used by the archive route
+apply. A changed dependency, new file or unexpected mode changes the pin and
+restores the complete lane until an explicit dependency review. The older
+archive closure pin is preserved; this change does not silently refresh it.
+
+An eligible report uses `zenon-ci-change-scope/v3`, seven complete Git command
+receipts, the exact source pins, reviewed modified paths and closure facts. It
+keeps `run_runtime=true` and selects `run_recorded_oracles=false`. Existing v1
+and v2 report schemas retain their original meaning. The actual workflow output
+guard validates the v3 decision before writing the separate literal output.
+Unknown, failed, absent or incomplete scope observations keep both lanes
+required; controls also exercise that guard and verify the native job conditions.
+
+Skipping the recorded job supplies no new oracle execution or oracle artifact.
+Retain the last source-pinned oracle completion separately and qualify every
+new native source/run/platform artifact. The selector and workflow change
+itself requires the full seven-job lane. A later actual eligible PR and main
+push need separate reconciliation of source scope, skipped provider records,
+native results and artifacts before claiming measured savings. Fewer selected
+jobs are not a controlled wall-time benchmark, node resource measurement,
+independent review or network/state-value acceptance.

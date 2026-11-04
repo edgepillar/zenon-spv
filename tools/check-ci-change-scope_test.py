@@ -64,6 +64,13 @@ def archive_tree():
             + tree_record(b"tools/ledger-transport/archive_tail.py"))
 
 
+def native_tree():
+    return (archive_tree()
+            + tree_record(b"internal/verify/experimental_v3_state.go")
+            + tree_record(b"tools/gen-state-root-vectors/check_patch_file.py")
+            + tree_record(b"tools/gen-state-root-vectors/testdata/candidate-patch-file.json"))
+
+
 class FixtureRunner:
     def __init__(self, selected=None, diff=None):
         self.selection = selection() if selected is None else selected
@@ -401,7 +408,8 @@ class CIChangeScopeControls(unittest.TestCase):
     def test_actual_workflow_guard_writes_only_the_selected_literal_boolean(self):
         for diff, expected in ((record(), "false"), (record(b"internal/control.go"), "true")):
             result = M.select_scope(ROOT, selection(), FixtureRunner(diff=diff))
-            self.assertEqual(self.workflow_guard(self.guard_bytes(result)), (None, "run_runtime=" + expected + "\n"))
+            self.assertEqual(self.workflow_guard(self.guard_bytes(result)),
+                             (None, "run_runtime=" + expected + "\nrun_recorded_oracles=" + expected + "\n"))
 
     def test_actual_workflow_guard_rejects_missing_binding_or_failure_facts(self):
         report = M.select_scope(ROOT, selection(), FixtureRunner())
@@ -560,7 +568,8 @@ class CIChangeScopeControls(unittest.TestCase):
         for path in sorted(M.ARCHIVE_FILES):
             result = self.archive_result(record(path.encode()))
             with self.subTest(path=path):
-                self.assertEqual(self.workflow_guard(self.guard_bytes(result)), (None, "run_runtime=false\n"))
+                self.assertEqual(self.workflow_guard(self.guard_bytes(result)),
+                                 (None, "run_runtime=false\nrun_recorded_oracles=false\n"))
 
     def test_archive_workflow_guard_refuses_other_lanes_bindings_and_closures(self):
         result = self.archive_result()
@@ -593,7 +602,8 @@ class CIChangeScopeControls(unittest.TestCase):
         result = M.select_scope(ROOT, selection(), FixtureRunner(diff=record(b"tools/ledger-transport/archive_tail.py")))
         self.assertTrue(result["run_runtime"])
         self.assertEqual(result["format"], M.ARCHIVE_FORMAT)
-        self.assertEqual(self.workflow_guard(self.guard_bytes(result)), (None, "run_runtime=true\n"))
+        self.assertEqual(self.workflow_guard(self.guard_bytes(result)),
+                         (None, "run_runtime=true\nrun_recorded_oracles=true\n"))
 
     def test_archive_selector_controls_and_workflow_changes_need_full_lane(self):
         for path in (*M.SOURCE_FILES, M.ARCHIVE_WORKFLOW):
@@ -618,6 +628,167 @@ class CIChangeScopeControls(unittest.TestCase):
             result = self.archive_result(runner=runner)
             self.assertTrue(result["run_runtime"])
             self.assertFalse(any(args[0] == "ls-tree" for args, _ in runner.calls))
+
+
+    def native_result(self, diff=None, runner=None, selected=None):
+        selected = selection() if selected is None else selected
+        if runner is None:
+            runner = FixtureRunner(selected, record(b"internal/verify/experimental_v3_state.go")
+                                   if diff is None else diff)
+            raw = native_tree()
+            runner.overrides["ls-tree"] = raw, receipt(raw)
+        with mock.patch.object(M, "ORACLE_SOURCE_PIN", M.oracle_fingerprint(native_tree())["sha256"]):
+            return M.select_scope(ROOT, selected, runner)
+
+    def test_native_reviewed_modified_leaves_keep_native_and_skip_only_oracles(self):
+        for path in sorted(M.NATIVE_FILES):
+            with self.subTest(path=path):
+                report = self.native_result(record(path.encode()) + record())
+                self.assertEqual((report["format"], report["status"]), (M.NATIVE_FORMAT, "NATIVE_RUNTIME_ONLY"))
+                self.assertIs(report["run_runtime"], True)
+                self.assertIs(report["run_recorded_oracles"], False)
+                self.assertEqual(report["native_paths"], [{"path": path, "change": "M"}])
+                self.assertEqual(report["documentation_paths"], [{"path": "docs/contract.md", "change": "M"}])
+                self.assertEqual(set(report["source_pins"]), set(M.SOURCE_FILES))
+                self.assertEqual(len(report["commands"]), 7)
+                self.assertFalse(report["runtime_qualification_transferred"])
+
+    def test_native_direct_parent_push_uses_the_same_bounded_selection(self):
+        selected = selection("push")
+        report = self.native_result(selected=selected)
+        self.assertEqual(report["selection"], selected)
+        self.assertIs(report["run_runtime"], True)
+        self.assertIs(report["run_recorded_oracles"], False)
+
+    def test_native_additions_deletions_modes_aliases_and_incomplete_records_keep_full_lane(self):
+        path = b"internal/verify/experimental_v3_state.go"
+        for raw in (record(path, b"A", b"000000"), record(path, b"D", new_mode=b"000000"),
+                    record(path, old_mode=b"100755", new_mode=b"100755"),
+                    record(path, old_mode=b"120000", new_mode=b"120000"),
+                    record(path, change=b"R100"), record(path) + record(path), record(path)[:-1],
+                    record(path) + record(path.upper()), record(path.replace(b"/", b"//", 1))):
+            with self.subTest(raw=raw[:90]):
+                report = self.native_result(raw)
+                self.assertTrue(report["run_runtime"])
+                self.assertTrue(report.get("run_recorded_oracles", True))
+                self.assertEqual(report["status"], "RUNTIME_REQUIRED")
+
+    def test_native_unreviewed_go_python_fixtures_and_policy_changes_keep_full_lane(self):
+        paths = ("internal/verify/experimental_v3_future.go", "internal/verify/retained.go",
+                 "internal/chain/hash.go", "go.mod", "internal/testdata/conformance/profile.json",
+                 "tools/gen-state-root-vectors/check.py", "tools/ledger-transport/archive_tail.py",
+                 *M.SOURCE_FILES)
+        for path in paths:
+            with self.subTest(path=path):
+                report = self.native_result(record(b"internal/verify/experimental_v3_state.go") + record(path.encode()))
+                self.assertTrue(report["run_runtime"])
+                self.assertTrue(report.get("run_recorded_oracles", True))
+                self.assertEqual(report["status"], "RUNTIME_REQUIRED")
+                self.assertEqual(len(report["commands"]), 6)
+
+    def test_native_closure_changes_and_nonregular_excluded_paths_keep_full_lane(self):
+        for path in ("internal/proof/core.go", ".github/workflows/ci.yml",
+                     "tools/gen-state-root-vectors/check_patch_file.py",
+                     "tools/gen-state-root-vectors/testdata/candidate-patch-file.json",
+                     "tools/ledger-transport/archive_tail.py"):
+            original = native_tree()
+            raw = original.replace(tree_record(path.encode()), tree_record(path.encode(), oid=b"c" * 40))
+            if path == ".github/workflows/ci.yml":
+                raw = original.replace(b"b" * 40, b"c" * 40)
+            runner = FixtureRunner(diff=record(b"internal/verify/experimental_v3_state.go"))
+            runner.overrides["ls-tree"] = raw, receipt(raw)
+            with self.subTest(path=path):
+                report = self.native_result(runner=runner)
+                self.assertEqual(report["reason"], "oracle_source_pin")
+                self.assertTrue(report["run_recorded_oracles"])
+        for raw in (native_tree() + tree_record(b"tools/new-dependency.py"),
+                    native_tree() + tree_record(b"docs/linked.md", mode=b"120000"),
+                    native_tree().replace(tree_record(b"internal/verify/experimental_v3_state.go"),
+                        tree_record(b"internal/verify/experimental_v3_state.go", mode=b"120000"))):
+            runner = FixtureRunner(diff=record(b"internal/verify/experimental_v3_state.go"))
+            runner.overrides["ls-tree"] = raw, receipt(raw)
+            self.assertTrue(self.native_result(runner=runner)["run_recorded_oracles"])
+
+    def test_native_closure_literal_digest_excludes_only_regular_reviewed_leaves(self):
+        kept = [tree_record(b"internal/proof/core.go"), tree_record(b".github/workflows/ci.yml", oid=b"b" * 40),
+                tree_record(b"tools/ledger-transport/archive_tail.py"),
+                tree_record(b"tools/gen-state-root-vectors/check_patch_file.py"),
+                tree_record(b"tools/gen-state-root-vectors/testdata/candidate-patch-file.json")]
+        expected = {"sha256": hashlib.sha256(b"".join(sorted(kept))).hexdigest(),
+                    "bytes": sum(map(len, kept)), "entries": len(kept)}
+        self.assertEqual(M.oracle_fingerprint(native_tree()), expected)
+        for path in sorted(M.NATIVE_FILES | set(M.SOURCE_FILES[:2]) | {"README.md", "docs/extra.md"}):
+            if path in ("internal/verify/experimental_v3_state.go", "tools/check-ci-change-scope.py"):
+                continue
+            with self.subTest(path=path):
+                self.assertEqual(M.oracle_fingerprint(native_tree() + tree_record(path.encode())), expected)
+                self.assertNotEqual(M.oracle_fingerprint(native_tree() + tree_record(path.encode(), mode=b"120000")), expected)
+
+    def test_native_closure_malformed_duplicate_empty_and_oversized_trees_are_refused(self):
+        for raw in (b"", b"unknown", b"x" * (M.MAX_TREE_BYTES + 1), tree_record(b"../escape"),
+                    native_tree() + tree_record(b"internal/proof/core.go"),
+                    tree_record(b"internal/verify/experimental_v3_state.go")):
+            with self.subTest(size=len(raw)), self.assertRaises(M.ScopeError):
+                M.oracle_fingerprint(raw)
+
+    def test_native_incomplete_or_failed_tree_observations_preserve_failure_and_full_lane(self):
+        for code, complete in ((1, True), (0, False), (None, False)):
+            runner = FixtureRunner(diff=record(b"internal/verify/experimental_v3_state.go"))
+            runner.overrides["ls-tree"] = b"", receipt(actual_exit=code, complete=complete)
+            with self.subTest(code=code, complete=complete):
+                report = self.native_result(runner=runner)
+                self.assertTrue(report["run_runtime"])
+                self.assertTrue(report["run_recorded_oracles"])
+                self.assertEqual(report["reason"], "git_incomplete_or_failed")
+                self.assertEqual(report["commands"][-1]["actual_exit"], code)
+
+    def test_native_workflow_guard_keeps_native_jobs_enabled(self):
+        report = self.native_result()
+        self.assertEqual(self.workflow_guard(self.guard_bytes(report)),
+                         (None, "run_runtime=true\nrun_recorded_oracles=false\n"))
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text("utf-8")
+        for name in ("test", "native-platform"):
+            block = workflow.split("\n  " + name + ":\n", 1)[1].split("    runs-on:", 1)[0]
+            self.assertIn("needs.change_scope.outputs.run_runtime != 'false'", block)
+            self.assertNotIn("outputs.run_recorded_oracles", block)
+        block = workflow.split("\n  recorded-oracles:\n", 1)[1].split("    runs-on:", 1)[0]
+        self.assertIn("needs.change_scope.outputs.run_recorded_oracles != 'false'", block)
+        self.assertIn("needs.change_scope.result != 'success'", block)
+
+    def test_native_workflow_guard_rejects_incomplete_closures_paths_and_exit_facts(self):
+        report = self.native_result()
+        mutations = []
+        for key, value in (("run_runtime", False), ("run_recorded_oracles", "false"),
+                           ("status", "RUNTIME_REQUIRED"), ("source_binding_complete", False),
+                           ("source_pins", {}), ("native_paths", []), ("documentation_paths", "unknown"),
+                           ("commands", report["commands"][:-1])):
+            changed = copy.deepcopy(report);changed[key] = value;mutations.append(changed)
+        for paths in ([{"path": "internal/verify/unreviewed.go", "change": "M"}],
+                      [{"path": "internal/verify/experimental_v3_state.go", "change": "A"}],
+                      report["native_paths"] * 2):
+            changed = copy.deepcopy(report);changed["native_paths"] = paths;mutations.append(changed)
+        for key, value in (("matched", False), ("expected_sha256", "0" * 64), ("bytes", True),
+                           ("bytes", (2 << 20) + 1), ("entries", 0), ("entries", True)):
+            changed = copy.deepcopy(report);changed["oracle_closure"][key] = value;mutations.append(changed)
+        for key, value in (("actual_exit", False), ("actual_exit", 7), ("capture_complete", False)):
+            changed = copy.deepcopy(report);changed["commands"][-1][key] = value;mutations.append(changed)
+        for index, changed in enumerate(mutations):
+            with self.subTest(mutation=index):
+                self.assertIsNotNone(self.workflow_guard(self.guard_bytes(changed))[0])
+
+    def test_native_workflow_guard_cannot_apply_oracle_flags_to_legacy_reports(self):
+        report = M.select_scope(ROOT, selection(), FixtureRunner(diff=record(b"internal/unselected.go")))
+        report["run_recorded_oracles"] = False
+        self.assertEqual(self.workflow_guard(self.guard_bytes(report)),
+                         (None, "run_runtime=true\nrun_recorded_oracles=true\n"))
+
+    def test_native_workflow_guard_falls_back_after_an_unmatched_closure(self):
+        runner = FixtureRunner(diff=record(b"internal/verify/experimental_v3_state.go"))
+        report = M.select_scope(ROOT, selection(), runner)
+        self.assertEqual(report["format"], M.NATIVE_FORMAT)
+        self.assertTrue(report["run_recorded_oracles"])
+        self.assertEqual(self.workflow_guard(self.guard_bytes(report)),
+                         (None, "run_runtime=true\nrun_recorded_oracles=true\n"))
 
 
 class ControlResult(unittest.TextTestResult):
