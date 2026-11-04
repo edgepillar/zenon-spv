@@ -94,9 +94,7 @@ func writeValidatedHeaderState(path string, state HeaderState, openDir func(stri
 		body.Version = retentionStateFileVersion
 	}
 	return writeAtomicStateFile(path, func(w io.Writer) error {
-		enc := json.NewEncoder(&limitedStateWriter{destination: w, remaining: MaxStateFileBytes})
-		enc.SetIndent("", "  ")
-		return enc.Encode(body)
+		return encodePersistedState(w, body)
 	}, openDir)
 }
 

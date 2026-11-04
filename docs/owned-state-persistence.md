@@ -87,3 +87,68 @@ schedule, context-pin, accepted-header and state-value boundaries remain as
 defined by the [verification contract](verification-contract.md) and
 [native roadmap](native-roadmap.md). Independent review and authenticated
 distribution remain separate release requirements.
+
+## Bounded native JSON encoding
+
+The native v1/v2 writer now encodes the same top-level metadata and each retained
+header through one reused `encoding/json` value buffer. A separate output buffer
+starts at 1 KiB for an empty window and grows with the selected header count up
+to 32 KiB. This avoids assembling and indenting the entire retained array in one
+JSON buffer. One metadata value, including a selected profile's source label,
+can still require a larger value buffer; this is not a fixed total-memory bound.
+
+Field order, indentation, escaping, final newline and null/empty representations
+remain byte-for-byte compatible with the preceding whole-object encoder. The
+global file-byte limit applies before destination writes. The existing private
+temporary file, sync, close, rename and parent-directory sync protocol remains
+unchanged, including cleanup after an encoding failure. No validation is removed:
+mutable saves, loads and trusted resume retain their complete checks. The separate
+experimental version-4 state encoder is unchanged.
+
+The reason for inspecting this path was a source-pinned Go 1.25.14 darwin/arm64
+profile of the existing K4096/scheduled/W6 capacity-sequence leaf at
+[`2e46e91329a492dc106530c002f0b056b39e2c3d`](https://github.com/edgepillar/zenon-spv/commit/2e46e91329a492dc106530c002f0b056b39e2c3d).
+It passed all 20 existing operations with race and atomic coverage instrumentation.
+The leaf's elapsed diagnostic was 24.84 seconds. Sampling attributed substantial
+allocation to JSON buffer growth and indentation, alongside required signature
+verification and race instrumentation. CPU and allocation profiles remain separate
+from representative device, dataset or network measurements.
+
+A paired encoding-only benchmark uses the preceding whole-object encoder and
+the new writer in the same executable, writing identical synthetic data to
+`io.Discard`. Go 1.25.14 darwin/arm64, benchmark CPU=1, three repetitions of three
+operations produced all 18 retained rows:
+
+| Retained headers | Whole-object B/op | Bounded B/op | Whole-object allocs/op | Bounded allocs/op |
+| ---: | ---: | ---: | ---: | ---: |
+| 16 | 68,368 | 30,992 | 101 | 116 |
+| 256 | 990,224 | 183,573-183,589 | 1,310 | 1,557 |
+| 4096 | 18,103,597 | 2,395,413 | 20,526 | 24,597 |
+
+The observed whole-object/bounded time ranges were 57.6-64.2 / 59.1-73.3 us/op
+at 16 headers, 762.8-818.9 / 683.5-805.2 us/op at 256, and 13.08-13.62 /
+11.25-12.24 ms/op at 4096. The 73.3 us small-input sample and the increased
+allocation counts remain explicit. These small local observations establish
+reduced allocated bytes for these encodings, not a whole-CI speedup, filesystem
+latency, process RSS, sustained workload budget or selected-network acceptance.
+
+The new controls compare complete bytes with the previous `encoding/json`
+whole-object encoder across all three native schema versions, 0/1/16/256/4096
+headers, profile escaping, invalid UTF-8 replacement and empty/null values.
+They also check unchanged input bytes, partial/short destination failures,
+output-cap boundaries and the global byte limit. Existing ownership, roundtrip
+and post-rename durability controls stay separate. The selected local invocation
+passed 11 roots and 73 subtest events with the race detector, focused vet and
+module verification. Canonical CI must still qualify each changed source and
+its actual artifacts; local success does not transfer a prior native run.
+
+```sh
+go test -race -count=1 -run '^(TestPersistedStateEncoding.*|TestVerifiedStateSave.*|TestSaveHeaderState_Parent.*|TestSaveLoadHeaderState_RoundTrip)$' ./internal/verify
+go test -run '^$' -bench '^BenchmarkPersistedStateEncoding$' -benchtime=3x -benchmem -cpu=1 -count=3 ./internal/verify
+```
+
+The encoding comparison creates no large input/output fixture files. Its owned
+module/build/test workspace is disposable; source pins, actual phase results,
+all benchmark rows and the earlier profiles remain protected evidence. Header,
+producer, profile, context, native inclusion and production state-value trust
+boundaries are unchanged.
