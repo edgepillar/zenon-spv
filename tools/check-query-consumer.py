@@ -627,15 +627,31 @@ def wire_equivalent(value):
                   lambda match: b'"\\u%04x' % match[1][0] + match[2] + b'":', raw)
 
 
-def generated_cases():
+def generated_prefix(command, version, seed):
+    return "generated_%s_v%d_seed%08x_" % (command.removeprefix("verify-"), version, seed)
+
+
+def generated_case_ids():
+    """Enumerate the finite selection without constructing report bytes."""
+    return [generated_prefix(command, version, seed) + variant
+            for command in ("verify-commitment", "verify-segment")
+            for version in (1, 2) for seed in GENERATED_SEEDS
+            for variant in GENERATED_VARIANTS]
+
+
+def generated_cases(case_id=None):
     """Finite seeded programs with declarative decisions, never oracle votes."""
     corpus = []
     for command in ("verify-commitment", "verify-segment"):
         for version in (1, 2):
             for seed_index, seed in enumerate(GENERATED_SEEDS):
+                prefix = generated_prefix(command, version, seed)
+                variants = [variant for variant in GENERATED_VARIANTS
+                            if case_id is None or prefix + variant == case_id]
+                if not variants:
+                    continue
                 report, expected = generated_inputs(command, version, seed_index)
-                prefix = "generated_%s_v%d_seed%08x_" % (command.removeprefix("verify-"), version, seed)
-                for variant in GENERATED_VARIANTS:
+                for variant in variants:
                     r, e = copy.deepcopy(report), copy.deepcopy(expected)
                     category, status = None, 0
                     # The last selected row ensures mutations are not confined
@@ -803,18 +819,21 @@ class ComparisonRunner:
 
 
 def compare(consumer, source_revision, case_id=None):
-    available = cases()
-    corpus = available if case_id is None else [case for case in available if case["id"] == case_id]
-    if not corpus or len({case["id"] for case in available}) != len(available):
+    pinned = pinned_cases()
+    available = [case["id"] for case in pinned] + generated_case_ids()
+    if not available or len(set(available)) != len(available) or (case_id is not None and case_id not in available):
+        raise Invalid("case selection")
+    corpus = (pinned if case_id is None else [case for case in pinned if case["id"] == case_id]) + generated_cases(case_id)
+    if [case["id"] for case in corpus] != (available if case_id is None else [case_id]):
         raise Invalid("case selection")
     executable = consumer.read_bytes()
     executable_digest = hashlib.sha256(executable).hexdigest()
     runner = ComparisonRunner(consumer, len(corpus), len(available))
     with runner.boundary("complete"):
-        return compare_selected(runner, corpus, executable, executable_digest, source_revision, case_id)
+        return compare_selected(runner, corpus, executable, executable_digest, source_revision, case_id, len(pinned))
 
 
-def compare_selected(runner, corpus, executable, executable_digest, source_revision, case_id):
+def compare_selected(runner, corpus, executable, executable_digest, source_revision, case_id, pinned_count):
     with runner.directory() as directory:
         directory.chmod(0o700)
         paths = [directory / "report.json", directory / "expectations.json"]
@@ -831,7 +850,7 @@ def compare_selected(runner, corpus, executable, executable_digest, source_revis
             "consumer_bytes_unchanged": True,
             "oracle_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), "cases": runner.rows,
             "case_selection": case_id, "comparison_counts": counts, "process_outcomes": runner.process_outcomes,
-            "available_pinned_cases": len(pinned_cases()),
+            "available_pinned_cases": pinned_count,
             "generated_corpus": {"version": 1, "identity_derivation": "sha256-v1", "seeds": list(GENERATED_SEEDS),
                                  "programs": 4 * len(GENERATED_SEEDS), "cases_per_program": len(GENERATED_VARIANTS),
                                  "available_cases": 4 * len(GENERATED_SEEDS) * len(GENERATED_VARIANTS)},

@@ -77,7 +77,7 @@ failure separately without replacing that refusal. Cancellation and unexpected
 programming errors retain their original exception. A completed comparison
 counter records completion, not a matching decision. Successful full-corpus
 reports include 738 completed process records; a one-case replay includes one.
-Twenty-eight Python controls cover the original corpus and these failure
+Thirty-two Python controls cover the original corpus and these failure
 boundaries. Replay the exact selected case from the same source and executable:
 
 ```sh
@@ -91,6 +91,29 @@ claiming a complete corpus run. Preserve a reproducible mismatch as a regression
 case and investigate it; do not retry, remove or relabel failures to qualify an
 unchanged candidate. The selected seeds/variant names, source and input hashes
 make every generated case reproducible without saving raw operational inputs.
+
+Replay preparation enumerates the complete finite case-identifier catalog and
+rejects duplicates or unknown selections before reading the executable or
+starting a child. It constructs only the selected generated program and variant;
+the original 98 fixed cases are still prepared. The default run constructs and
+compares all 738 cases. Both paths require the prepared identifiers to match the
+selected catalog exactly. No mutable fixture cache or cached comparison result
+is used. Controls compare every generated selection with the complete corpus,
+pin all 738 cases' input/status/summary hashes, and check fresh preparation and
+catalog failures. Existing one-case failure controls now request their named
+fixture directly instead of constructing all 640 generated cases for each fault.
+
+A local Python 3.9.6 Darwin/arm64 observation against source
+`94a6bd5b7236aa26bbe003105c62915c38fd3109` ran the original 28 controls in
+14.52 seconds and the expanded 32 controls in 4.81 seconds. Four selected replay
+preparations had median times of 19.7-30.2 ms, compared with 320.2-329.0 ms
+before this change (three interleaved samples per version and selection).
+Those replay samples used fixed mocked child outcomes to isolate preparation;
+they are not compiled-consumer throughput, peak-memory, full-CI or network
+measurements. All selected reports matched except for the expected oracle source
+hash. The complete corpus remained byte-identical: 88 matches and 650 refusals.
+The adjacent 22 node-workflow controls also passed locally. Actual compiled
+comparisons remain in the existing Linux/macOS/Windows CI lanes.
 
 This finite synthetic corpus is compatibility evidence. Python/Go agreement
 does not establish exhaustive parser equivalence, independent human review,

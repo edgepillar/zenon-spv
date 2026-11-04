@@ -19,6 +19,10 @@ oracle = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(oracle)
 
 
+def generated_case(variant="account_address"):
+    return oracle.generated_cases("generated_commitment_v1_seed00000000_" + variant)[0]
+
+
 class OracleControls(unittest.TestCase):
     def test_all_selected_decisions_are_pinned(self):
         cases = oracle.cases()
@@ -52,6 +56,61 @@ class OracleControls(unittest.TestCase):
             groups.setdefault((program, seed), set()).add(variant)
         self.assertEqual(len(groups), 32)
         self.assertTrue(all(variants == set(oracle.GENERATED_VARIANTS) for variants in groups.values()))
+
+    def test_complete_corpus_bytes_remain_pinned(self):
+        pins = [{"id": case["id"], "exit_code": case["wanted"][0], "process_exit": case["process_exit"],
+                 "report_sha256": hashlib.sha256(case["report"]).hexdigest(),
+                 "expectations_sha256": hashlib.sha256(case["expectations"]).hexdigest(),
+                 "summary_sha256": hashlib.sha256(case["wanted"][1]).hexdigest()}
+                for case in oracle.cases()]
+        self.assertEqual(len(pins), 738)
+        self.assertEqual(hashlib.sha256(json.dumps(pins, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
+                         "238bdf4551f9268e910303a7bf4606181d7b7caed027faf306711c7158583ca4")
+
+    def test_generated_selection_matches_every_complete_case(self):
+        complete = oracle.generated_cases()
+        self.assertEqual(oracle.generated_case_ids(), [case["id"] for case in complete])
+        for case in complete:
+            with self.subTest(case=case["id"]):
+                self.assertEqual(oracle.generated_cases(case["id"]), [case])
+
+    def test_selected_preparation_is_fresh_and_bounded(self):
+        case_id = "generated_segment_v2_seedffffffff_valid"
+        with mock.patch.object(oracle, "generated_inputs", wraps=oracle.generated_inputs) as inputs, \
+                mock.patch.object(oracle, "wire_equivalent", side_effect=AssertionError("unselected variant")):
+            first = oracle.generated_cases(case_id)
+        inputs.assert_called_once_with("verify-segment", 2, 7)
+        self.assertEqual(len(first), 1)
+        original = dict(first[0])
+        first[0]["report"] = b"changed local fixture"
+        self.assertEqual(oracle.generated_cases(case_id), [original])
+        with mock.patch.object(oracle, "generated_inputs") as inputs:
+            self.assertEqual(oracle.generated_cases("unknown-case"), [])
+        inputs.assert_not_called()
+
+    def test_selection_catalog_refuses_before_executable_or_child(self):
+        case_id = "generated_commitment_v1_seed00000000_valid"
+        identifiers = oracle.generated_case_ids()
+        faults = (
+            (case_id, identifiers + [identifiers[0]], None),
+            ("unselected-private-input", identifiers, None),
+            (case_id, identifiers, []),
+            (None, identifiers, []),
+        )
+        for selected, catalog, generated in faults:
+            with self.subTest(selected=selected, count=len(catalog), empty=generated is not None):
+                with mock.patch.object(oracle, "generated_case_ids", return_value=catalog), \
+                        mock.patch.object(oracle, "generated_cases", return_value=generated) as prepare, \
+                        mock.patch.object(Path, "read_bytes") as read, \
+                        mock.patch.object(oracle.tempfile, "TemporaryDirectory") as temporary, \
+                        mock.patch.object(oracle.subprocess, "run") as child:
+                    with self.assertRaises(oracle.Invalid):
+                        oracle.compare(Path("PRIVATE_CONSUMER"), "a" * 40, selected)
+                if generated is None:
+                    prepare.assert_not_called()
+                read.assert_not_called()
+                temporary.assert_not_called()
+                child.assert_not_called()
 
     def test_generated_wire_forms_and_boundary_identities(self):
         heights, segment_blocks, counts, producer_sources = set(), set(), set(), set()
@@ -100,7 +159,7 @@ class OracleControls(unittest.TestCase):
         self.assertEqual(checked, 128)
 
     def test_replay_counts_only_selected_actual_comparisons(self):
-        case = oracle.generated_cases()[19]
+        case = generated_case("process_failure")
         called = []
         with tempfile.TemporaryDirectory() as directory:
             executable = Path(directory) / "trusted-synthetic-consumer"
@@ -118,6 +177,8 @@ class OracleControls(unittest.TestCase):
             self.assertEqual(len(called), 1)
             self.assertEqual(result["case_selection"], case["id"])
             self.assertEqual([row["id"] for row in result["cases"]], [case["id"]])
+            self.assertEqual(result["available_pinned_cases"], 98)
+            self.assertEqual(result["generated_corpus"]["available_cases"], 640)
             self.assertEqual(result["comparison_counts"], {"selected": 1, "reference_checked": 1,
                              "consumer_attempted": 1, "consumer_compared": 1, "skipped": 0, "not_selected": 737})
             with mock.patch.object(oracle.subprocess, "run") as child:
@@ -126,7 +187,7 @@ class OracleControls(unittest.TestCase):
                 child.assert_not_called()
 
     def test_failure_counters_and_diagnostics_do_not_hide_or_leak_results(self):
-        case = oracle.generated_cases()[2]
+        case = generated_case()
         with tempfile.TemporaryDirectory() as directory:
             executable = Path(directory) / "trusted-synthetic-consumer"
             executable.write_bytes(b"synthetic executable identity")
@@ -151,7 +212,7 @@ class OracleControls(unittest.TestCase):
                     self.assertNotIn(directory, json.dumps(details))
 
     def comparison_fault(self, completed=None, cleanup_error=None, creation_error=None, effect=None):
-        case = oracle.generated_cases()[2]
+        case = generated_case()
         with tempfile.TemporaryDirectory() as directory:
             executable = Path(directory) / "PRIVATE_CONSUMER"
             executable.write_bytes(b"fixed executable identity")
@@ -180,7 +241,7 @@ class OracleControls(unittest.TestCase):
         self.assertEqual(error.details["stage"], "compiled_decision")
         self.assertEqual(error.details["comparison_counts"]["consumer_compared"], 1)
         self.assertEqual(error.details["process_outcomes"], [{
-            "case_id": oracle.generated_cases()[2]["id"], "role": "consumer", "completed": True,
+            "case_id": generated_case()["id"], "role": "consumer", "completed": True,
             "actual_exit": -9, "stdout_bytes": len(result.stdout), "stderr_bytes": len(result.stderr),
             "stdout_sha256": hashlib.sha256(result.stdout).hexdigest(),
             "stderr_sha256": hashlib.sha256(result.stderr).hexdigest(),
@@ -196,12 +257,12 @@ class OracleControls(unittest.TestCase):
                 self.assertEqual(attempted, 1)
                 self.assertEqual(error.details["stage"], "child_run")
                 self.assertEqual(error.details["comparison_counts"]["consumer_compared"], 0)
-                self.assertEqual(error.details["process_outcomes"], [{"case_id": oracle.generated_cases()[2]["id"],
+                self.assertEqual(error.details["process_outcomes"], [{"case_id": generated_case()["id"],
                                  "role": "consumer", "completed": False, "actual_exit": None}])
                 self.assertNotIn("PRIVATE", json.dumps(error.details))
 
     def test_deleted_input_after_completion_retains_structured_evidence(self):
-        case = oracle.generated_cases()[2]
+        case = generated_case()
         def child(arguments, **_):
             Path(arguments[2]).unlink()
             return subprocess.CompletedProcess([], case["wanted"][0], case["wanted"][1], b"")
@@ -292,7 +353,7 @@ class OracleControls(unittest.TestCase):
         factory.assert_called_once()
 
     def test_cli_emits_only_structured_failure_after_completed_process(self):
-        case = oracle.generated_cases()[2]
+        case = generated_case()
         stderr, stdout = io.StringIO(), io.StringIO()
         def child(arguments, **_):
             Path(arguments[2]).unlink()
