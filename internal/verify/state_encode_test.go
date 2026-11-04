@@ -144,6 +144,37 @@ func TestPersistedStateEncodingGlobalByteCap(t *testing.T) {
 	}
 }
 
+func TestPersistedStateEncodingLargeMetadata(t *testing.T) {
+	body := stateEncodingBody(16)
+	body.ProtocolProfile = &ProtocolProfile{Version: 1, Anchor: body.Genesis,
+		V2FromHeight: 102, ValidThrough: 200, Source: strings.Repeat("x", 64<<10)}
+	var want, got bytes.Buffer
+	if err := wholePersistedStateEncoding(&want, body); err != nil {
+		t.Fatal(err)
+	}
+	if err := encodePersistedState(&got, body); err != nil || !bytes.Equal(got.Bytes(), want.Bytes()) {
+		t.Fatal("large metadata bytes changed", err)
+	}
+	// A metadata value larger than the output buffer can take bufio's direct
+	// write path. Even a writer that violates the short-write contract must
+	// terminate with an error rather than repeatedly making zero progress.
+	fault := errors.New("injected large metadata destination failure")
+	for _, limit := range []int{0, 1, (32 << 10) - 1, 32 << 10, (32 << 10) + 1, (64 << 10) - 1, 64 << 10, want.Len() - 1} {
+		for _, short := range []bool{false, true} {
+			t.Run(fmt.Sprintf("after%d/short%t", limit, short), func(t *testing.T) {
+				w := &stateEncodingFailureWriter{remaining: limit, err: fault, short: short}
+				expected := fault
+				if short {
+					expected = io.ErrShortWrite
+				}
+				if err := encodePersistedState(w, body); !errors.Is(err, expected) || w.written > limit {
+					t.Fatalf("large destination failure lost: error=%v written=%d limit=%d", err, w.written, limit)
+				}
+			})
+		}
+	}
+}
+
 func BenchmarkPersistedStateEncoding(b *testing.B) {
 	for _, count := range []int{16, 256, MaxRetainHeaders} {
 		body := stateEncodingBody(count)

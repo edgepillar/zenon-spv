@@ -104,6 +104,10 @@ temporary file, sync, close, rename and parent-directory sync protocol remains
 unchanged, including cleanup after an encoding failure. No validation is removed:
 mutable saves, loads and trusted resume retain their complete checks. The separate
 experimental version-4 state encoder is unchanged.
+Short destination writes become `io.ErrShortWrite`, including metadata values
+large enough to use the output buffer's direct-write path. Even a destination
+that returns a short count without an error cannot leave that path making zero
+progress indefinitely.
 
 The reason for inspecting this path was a source-pinned Go 1.25.14 darwin/arm64
 profile of the existing K4096/scheduled/W6 capacity-sequence leaf at
@@ -121,14 +125,16 @@ operations produced all 18 retained rows:
 
 | Retained headers | Whole-object B/op | Bounded B/op | Whole-object allocs/op | Bounded allocs/op |
 | ---: | ---: | ---: | ---: | ---: |
-| 16 | 68,368 | 30,992 | 101 | 116 |
-| 256 | 990,224 | 183,573-183,589 | 1,310 | 1,557 |
-| 4096 | 18,103,597 | 2,395,413 | 20,526 | 24,597 |
+| 16 | 68,368 | 30,992-31,008 | 101 | 116 |
+| 256 | 990,224 | 183,573 | 1,310 | 1,557 |
+| 4096 | 18,103,597-18,103,642 | 2,395,506 | 20,526-20,527 | 24,598 |
 
-The observed whole-object/bounded time ranges were 57.6-64.2 / 59.1-73.3 us/op
-at 16 headers, 762.8-818.9 / 683.5-805.2 us/op at 256, and 13.08-13.62 /
-11.25-12.24 ms/op at 4096. The 73.3 us small-input sample and the increased
-allocation counts remain explicit. These small local observations establish
+The observed whole-object/bounded time ranges were 74.6-85.0 / 49.2-56.2 us/op
+at 16 headers, 788.3-827.9 / 704.1-748.7 us/op at 256, and 12.36-13.03 /
+11.28-11.78 ms/op at 4096. The preceding encoder prototype's 18 rows remain
+retained at `99f7509e984acdb0de6960b82c444c8d02a010f0`; they include overlapping
+small-input timings and the 73.3 us bounded sample. Increased allocation counts
+remain explicit. These small local observations establish
 reduced allocated bytes for these encodings, not a whole-CI speedup, filesystem
 latency, process RSS, sustained workload budget or selected-network acceptance.
 
@@ -137,10 +143,15 @@ whole-object encoder across all three native schema versions, 0/1/16/256/4096
 headers, profile escaping, invalid UTF-8 replacement and empty/null values.
 They also check unchanged input bytes, partial/short destination failures,
 output-cap boundaries and the global byte limit. Existing ownership, roundtrip
-and post-rename durability controls stay separate. The selected local invocation
-passed 11 roots and 73 subtest events with the race detector, focused vet and
-module verification. Canonical CI must still qualify each changed source and
-its actual artifacts; local success does not transfer a prior native run.
+and post-rename durability controls stay separate. The revised local components
+completed 12 roots and 89 subtest events with the race detector, all 18 benchmark
+rows, focused vet and module verification. The outer wrapper was interrupted
+with actual exit -9 during later cache cleanup; its capture remains incomplete
+and its outcome remains FAILURE. The source-bound component reconciliation uses
+the completed phase records and retains that distinct wrapper failure. It does
+not report a successful wrapper or repeat completed tests/benchmarks. Canonical
+CI must still qualify each changed source and its actual artifacts; local
+component evidence does not transfer a prior native run.
 
 ```sh
 go test -race -count=1 -run '^(TestPersistedStateEncoding.*|TestVerifiedStateSave.*|TestSaveHeaderState_Parent.*|TestSaveLoadHeaderState_RoundTrip)$' ./internal/verify
@@ -148,7 +159,8 @@ go test -run '^$' -bench '^BenchmarkPersistedStateEncoding$' -benchtime=3x -benc
 ```
 
 The encoding comparison creates no large input/output fixture files. Its owned
-module/build/test workspace is disposable; source pins, actual phase results,
-all benchmark rows and the earlier profiles remain protected evidence. Header,
+module/build/test workspace is disposable; the interrupted cleanup remainder
+stays held for a scoped decision. Source pins, actual phase results, all benchmark
+rows and the earlier profiles remain protected evidence. Header,
 producer, profile, context, native inclusion and production state-value trust
 boundaries are unchanged.

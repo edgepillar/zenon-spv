@@ -11,6 +11,18 @@ import (
 // schema. Adding or reordering a field requires reviewing this positional guard.
 var _ = persistedState{nil, 0, GenesisTrustRoot{}, nil, 0}
 
+type stateEncodingWriter struct {
+	limitedStateWriter
+}
+
+func (w *stateEncodingWriter) Write(raw []byte) (int, error) {
+	n, err := w.limitedStateWriter.Write(raw)
+	if err == nil && n < len(raw) {
+		err = io.ErrShortWrite
+	}
+	return n, err
+}
+
 // encodePersistedState preserves the existing indented JSON bytes while keeping
 // the encoding/json value buffer to one metadata value or retained header. The
 // output buffer amortizes file writes; the existing byte cap applies before any
@@ -20,7 +32,7 @@ func encodePersistedState(destination io.Writer, body persistedState) error {
 	if len(body.Window) < 31 {
 		bufferBytes = (1 + len(body.Window)) << 10
 	}
-	out := bufio.NewWriterSize(&limitedStateWriter{destination: destination, remaining: MaxStateFileBytes}, bufferBytes)
+	out := bufio.NewWriterSize(&stateEncodingWriter{limitedStateWriter{destination: destination, remaining: MaxStateFileBytes}}, bufferBytes)
 	var value bytes.Buffer
 	encoder := json.NewEncoder(&value)
 	write := func(raw string) error {
