@@ -560,7 +560,7 @@ func protectCLIState(t *testing.T, path string) func() {
 	return func() {
 		t.Helper()
 		current, err := os.Stat(path)
-		if err != nil || !os.SameFile(info, current) || !info.ModTime().Equal(current.ModTime()) || info.Mode() != current.Mode() || !bytes.Equal(before, readCLIFile(t, path)) {
+		if err != nil || !os.SameFile(info, current) || !info.ModTime().Equal(current.ModTime()) || info.Mode() != current.Mode() || !equalCLIStateFile(path, before) {
 			t.Fatal("query replaced or rewrote trusted state")
 		}
 	}

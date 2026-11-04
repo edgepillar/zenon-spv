@@ -196,3 +196,49 @@ after its separate trust selections; this example supplies no endpoint or networ
 authorization. Canonicality/finality, election/activation authentication,
 state-value proofs, independent review and authenticated release distribution
 remain separate gates.
+
+## Keep post-run fixture checks out of application measurements
+
+The conformance helper `protectCLIState` retains the expected input bytes once
+and checks file identity, modification time, permissions and exact content after
+each selected call. Its content comparison now reads through a buffer capped at
+32 KiB instead of allocating another complete checkpoint on every check. Small
+inputs use a smaller buffer. The retained expected bytes remain a complete
+independent copy; no digest or size-only shortcut replaces byte equality.
+
+Matching input still requires actual EOF. Truncation, growth, changed bytes,
+short reads and read errors cannot become an unchanged-file result. A comparison
+consumes at most the expected byte count plus one probe byte. Each call owns its
+buffer. Existing file metadata checks and the observer's inputs, process counts,
+timing boundaries and acceptance behavior are unchanged.
+
+A local Go 1.25.14 `darwin/arm64` comparison retained all 18 benchmark rows:
+three file sizes, two implementations and three repetitions of three operations.
+The paired reference uses the previous `os.ReadFile` plus `bytes.Equal` approach
+from base `5166cf5778b9b1c6e8ceb2a72781830dc8ebe4cc`. All repetitions reported:
+
+| Input bytes | Whole-file B/op | Bounded B/op | Whole-file allocs/op | Bounded allocs/op |
+| --- | ---: | ---: | ---: | ---: |
+| 2 KiB | 2,856 | 2,632 | 5 | 4 |
+| 1 MiB | 1,057,320 | 33,096 | 5 | 4 |
+| 8 MiB | 8,397,352 | 33,096 | 5 | 4 |
+
+Fixtures, expected bytes and filesystem setup are outside the timed loop. These
+are comparison allocations, not whole-test heap/RSS or application memory.
+Timing is not an acceptance threshold: the bounded 1 MiB samples ranged from
+0.580 to 2.941 ms/op, while the whole-file samples ranged from 0.596 to 0.661
+ms/op. No sample was filtered or retried. This does not establish faster total
+CI, reduced matching-input disk I/O, production performance or a consumer SLA.
+
+The regular-file and in-memory controls require no compiled CLI, RPC, FIFO,
+symlink or socket fixture:
+
+```sh
+go test -race -count=1 -run '^TestCLIState(ReaderComparison|ReaderCompletion|FileComparison)$' ./internal/conformance
+go test -count=3 -run '^$' -bench '^BenchmarkCLIStateFileComparison$' \
+  -benchtime=3x -benchmem -cpu=1 ./internal/conformance
+```
+
+The ordinary root-suite run continues exercising the guarded compiled workflows.
+The benchmark is a separate local observation; adding it does not execute a
+benchmark on every CI platform or qualify the actual network consumer.
