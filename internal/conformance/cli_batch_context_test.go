@@ -12,9 +12,12 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
 
+	"github.com/0x3639/zenon-spv/internal/chain"
+	"github.com/0x3639/zenon-spv/internal/fetch"
 	"github.com/0x3639/zenon-spv/internal/verify"
 )
 
@@ -73,6 +76,9 @@ func TestCompiledCLIExperimentalBatchContextWorkflow(t *testing.T) {
 		witnesses[row.Name], byKey[row.Key] = witness, witness
 	}
 	var failedProof, proofReads atomic.Int32
+	var selectedStart, selectedCount atomic.Uint64
+	selectedStart.Store(87)
+	selectedCount.Store(4)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var call struct {
 			Method string
@@ -89,12 +95,12 @@ func TestCompiledCLIExperimentalBatchContextWorkflow(t *testing.T) {
 		case "ledger.getMomentumsByHeight":
 			var start, count uint64
 			if len(call.Params) != 2 || json.Unmarshal(call.Params[0], &start) != nil || json.Unmarshal(call.Params[1], &count) != nil ||
-				start != 87 || count != 4 {
+				start != selectedStart.Load() || count != selectedCount.Load() {
 				t.Error("selected header range changed")
 				http.Error(w, "wrong range", 400)
 				return
 			}
-			result = map[string]any{"list": unit.Momentums, "count": 4}
+			result = map[string]any{"list": unit.Momentums[start-87 : start-87+count], "count": count}
 		case "ledger.getProof":
 			var height uint64
 			var key []byte
@@ -150,17 +156,24 @@ func TestCompiledCLIExperimentalBatchContextWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 	args := []string{"query-experimental-batch-context", "--config", configPath, "--request", requestPath, "--expect-header-context", unit.Expected.Header, "--expect-query-context", unit.Expected.Context, bundlePath}
-	query := func(t *testing.T, arguments []string, want int) {
+	type contextReport struct {
+		Status      string
+		ExitCode    int `json:"exit_code"`
+		Result      *verify.ExperimentalBatchContextResult
+		RPCRequests int `json:"rpc_requests"`
+		Persistence string
+		Production  bool `json:"production_state_value_guarantee"`
+		StateInput  *struct {
+			SHA256          string `json:"sha256"`
+			Bytes           uint64 `json:"bytes"`
+			ProviderHeaders uint32 `json:"provider_headers"`
+			Trust           string `json:"trust"`
+		} `json:"state_input"`
+	}
+	query := func(t *testing.T, arguments []string, want int) contextReport {
 		t.Helper()
 		actual := runQueryCLI(t, binaries["zenon-spv"], arguments...)
-		var report struct {
-			Status      string
-			ExitCode    int `json:"exit_code"`
-			Result      *verify.ExperimentalBatchContextResult
-			RPCRequests int `json:"rpc_requests"`
-			Persistence string
-			Production  bool `json:"production_state_value_guarantee"`
-		}
+		var report contextReport
 		if actual.code != want || json.Unmarshal(actual.stdout, &report) != nil || report.ExitCode != want ||
 			report.RPCRequests != 0 || report.Persistence != "read_only" || report.Production || len(actual.stderr) != 0 {
 			t.Fatal("compiled query envelope", actual.code, string(actual.stdout), string(actual.stderr))
@@ -169,14 +182,144 @@ func TestCompiledCLIExperimentalBatchContextWorkflow(t *testing.T) {
 			if report.Result != nil {
 				t.Fatal("partial consumer row")
 			}
-			return
+			return report
 		}
 		if report.Result == nil || report.Status != "matched" || report.Result.Entry.FinalizeAtHeight != 87 ||
 			report.Result.DomainConfig.WithdrawalDelay != 30 || hex.EncodeToString(report.Result.Root[:]) != unit.Expected.Root {
 			t.Fatal("real command did not return the selected typed unit row")
 		}
+		return report
 	}
 	t.Run("typed_consumer", func(t *testing.T) { query(t, args, 0) })
+	var checkpointConfig struct {
+		Profile  verify.ExperimentalV3Profile `json:"header_profile"`
+		Policy   verify.ExperimentalV3Policy  `json:"header_policy"`
+		Schedule *verify.ProducerSchedule     `json:"producer_schedule"`
+	}
+	var headerPin chain.Hash
+	if json.Unmarshal(unit.Config, &checkpointConfig) != nil || headerPin.UnmarshalText([]byte(unit.Expected.Header)) != nil {
+		t.Fatal("checkpoint configuration")
+	}
+	headers := make([]chain.CandidateV3Header, 0, 4)
+	for _, raw := range unit.Momentums {
+		h, err := fetch.DecodeCandidateV3Momentum(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		headers = append(headers, h.Header)
+	}
+	checkpoint := func(t *testing.T, count int, name string) (string, []byte) {
+		t.Helper()
+		state, err := verify.NewExperimentalV3State(checkpointConfig.Profile, checkpointConfig.Policy, checkpointConfig.Schedule, headerPin)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if count > 0 {
+			outcome, next := state.Extend(headers[:count])
+			if outcome.Outcome != verify.OutcomeAccept {
+				t.Fatal(outcome)
+			}
+			state = next
+		}
+		path := filepath.Join(dir, name+".json")
+		if err := state.Save(path); err != nil {
+			t.Fatal(err)
+		}
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return path, raw
+	}
+	checkpointArgs := func(path string, raw []byte, provider string) []string {
+		pin := sha256.Sum256(raw)
+		return append(append([]string(nil), args[:len(args)-1]...), "--trusted-state", path, "--expect-state-sha256", hex.EncodeToString(pin[:]), provider)
+	}
+	fullPath, fullCheckpoint := checkpoint(t, 4, "full-checkpoint")
+	proofOnly := writeCLIJSON(t, dir, "proof-only.json", map[string]any{"version": 1, "momentums": []json.RawMessage{}, "witnesses": witnesses})
+	t.Run("trusted_checkpoint_only", func(t *testing.T) {
+		before, err := os.Stat(fullPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r := query(t, checkpointArgs(fullPath, fullCheckpoint, proofOnly), 0)
+		if r.StateInput == nil || r.StateInput.ProviderHeaders != 0 || r.StateInput.Bytes != uint64(len(fullCheckpoint)) || r.StateInput.Trust != "trusted_local_provenance_required" {
+			t.Fatal("compiled checkpoint query omitted selected source")
+		}
+		trusted := false
+		for _, value := range r.Result.HeaderTrust {
+			trusted = trusted || value == verify.TrustPersistedState
+		}
+		after, err := os.Stat(fullPath)
+		raw, readErr := os.ReadFile(fullPath)
+		if !trusted || err != nil || readErr != nil || !os.SameFile(before, after) || !before.ModTime().Equal(after.ModTime()) || !bytes.Equal(raw, fullCheckpoint) {
+			t.Fatal("compiled read-only checkpoint changed provenance or bytes", err, readErr)
+		}
+	})
+	t.Run("trusted_checkpoint_successors", func(t *testing.T) {
+		defer func() { selectedStart.Store(87); selectedCount.Store(4); proofReads.Store(0) }()
+		selectedStart.Store(89)
+		selectedCount.Store(2)
+		proofReads.Store(0)
+		path, raw := checkpoint(t, 2, "prefix-checkpoint")
+		tailArgs := append([]string(nil), collect...)
+		for i := range tailArgs {
+			switch tailArgs[i] {
+			case "--anchor-height":
+				tailArgs[i+1] = "88"
+			case "--anchor-hash":
+				tailArgs[i+1] = hex.EncodeToString(headers[1].Header.HeaderHash[:])
+			}
+		}
+		tail := runQueryCLI(t, binaries["fetch-bundle"], tailArgs...)
+		if tail.code != 0 || proofReads.Load() != 3 || len(tail.stderr) != 0 || len(tail.stdout) >= len(acquired.stdout) {
+			t.Fatal("reduced candidate header range did not complete")
+		}
+		provider := filepath.Join(dir, "successors.json")
+		if err := os.WriteFile(provider, tail.stdout, 0600); err != nil {
+			t.Fatal(err)
+		}
+		r := query(t, checkpointArgs(path, raw, provider), 0)
+		if r.StateInput == nil || r.StateInput.ProviderHeaders != 2 {
+			t.Fatal("compiled successor query replayed the original anchor range")
+		}
+	})
+	for _, name := range []string{"digest", "context", "tamper", "empty", "old_range", "pruned"} {
+		t.Run("trusted_checkpoint_"+name, func(t *testing.T) {
+			path, raw := checkpoint(t, 4, "control-"+name)
+			selected := checkpointArgs(path, raw, proofOnly)
+			want := 70
+			switch name {
+			case "digest":
+				selected[len(selected)-2], want = strings.Repeat("1", 64), 1
+			case "context", "tamper":
+				bad := bytes.ReplaceAll(raw, []byte(unit.Expected.Root), []byte(strings.Repeat("1", 64)))
+				if name == "context" {
+					var value map[string]any
+					if json.Unmarshal(raw, &value) != nil {
+						t.Fatal("checkpoint context control")
+					}
+					value["context"] = strings.Repeat("1", 64)
+					bad = mustBatchContextJSON(t, value)
+				}
+				if err := os.WriteFile(path, bad, 0600); err != nil {
+					t.Fatal(err)
+				}
+				selected = checkpointArgs(path, bad, proofOnly)
+			case "empty":
+				path, raw = checkpoint(t, 0, "control-empty")
+				selected = checkpointArgs(path, raw, proofOnly)
+			case "old_range":
+				selected, want = checkpointArgs(path, raw, bundlePath), 1
+			case "pruned":
+				request := unit.Request
+				request.Height, request.HeaderHash = 88, headers[1].Header.HeaderHash
+				selected[4] = writeCLIJSON(t, dir, "pruned-request.json", request)
+				want = 2
+			}
+			query(t, selected, want)
+		})
+	}
 	for i := int32(1); i <= 3; i++ {
 		t.Run("collector_unavailable_"+strconv.Itoa(int(i)), func(t *testing.T) {
 			proofReads.Store(0)
@@ -222,6 +365,7 @@ func TestCompiledCLIExperimentalBatchContextWorkflow(t *testing.T) {
 	}
 	receipt := map[string]any{"format": "compiled-three-witness-consumer/v1", "scope": "SYNTHETIC_OFFLINE_CONSUMER", "typed_consumer": true,
 		"three_complete_key_reads": true, "late_collection_failures": 3, "unavailable_contexts": 3, "provider_authority_imported": false,
+		"checkpoint_provider_headers": []uint32{0, 2}, "checkpoint_file_unchanged": true, "checkpoint_signature_checks_retained": true,
 		"production_state_value_accepted": false, "source_values_are_one_original_snapshot": false}
 	t.Logf("three-witness-consumer %s", bytes.TrimSpace(mustBatchContextJSON(t, receipt)))
 }

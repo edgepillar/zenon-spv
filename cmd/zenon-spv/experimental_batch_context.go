@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -18,7 +19,14 @@ import (
 const experimentalContextConfigCommand = "inspect-experimental-batch-context-config"
 const experimentalContextQueryCommand = "query-experimental-batch-context"
 const experimentalContextConfigUsage = "Usage: zenon-spv inspect-experimental-batch-context-config --config <path>\n"
-const experimentalContextQueryUsage = "Usage: zenon-spv query-experimental-batch-context --config <path> --request <path> --expect-header-context <64-hex> --expect-query-context <64-hex> [--compare-gateway] <bundle.json>\n"
+const experimentalContextQueryUsage = "Usage: zenon-spv query-experimental-batch-context --config <path> --request <path> --expect-header-context <64-hex> --expect-query-context <64-hex> [--trusted-state <path> --expect-state-sha256 <64-hex>] [--compare-gateway] <bundle.json>\n"
+
+type experimentalContextCheckpointReport struct {
+	SHA256          string `json:"sha256"`
+	Bytes           uint64 `json:"bytes"`
+	ProviderHeaders uint32 `json:"provider_headers"`
+	Trust           string `json:"trust"`
+}
 
 type experimentalContextCLIReport struct {
 	SchemaVersion                 uint32                                          `json:"schema_version"`
@@ -30,6 +38,7 @@ type experimentalContextCLIReport struct {
 	HeaderContext                 *verify.ExperimentalV3Context                   `json:"header_context"`
 	QueryContext                  *verify.ExperimentalBatchContext                `json:"query_context"`
 	Headers                       *experimentalCLIHeaderReport                    `json:"headers"`
+	StateInput                    *experimentalContextCheckpointReport            `json:"state_input,omitempty"`
 	Result                        *verify.ExperimentalBatchContextResult          `json:"result"`
 	Gateway                       *verify.ExperimentalBatchEntryGatewayComparison `json:"gateway_comparison"`
 	Persistence                   string                                          `json:"persistence"`
@@ -68,11 +77,15 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 	var requestPath *string
 	var compare *bool
 	headerPin, queryPin := new(contextPinFlag), new(contextPinFlag)
+	checkpointPin := new(contextPinFlag)
+	checkpointPath := new(string)
 	if !inspect {
 		requestPath = fs.String("request", "", "separate locally selected query identity")
 		compare = fs.Bool("compare-gateway", false, "compare the frontier DTO separately from historical proof validity")
 		fs.Var(headerPin, "expect-header-context", "required independently selected header context fingerprint")
 		fs.Var(queryPin, "expect-query-context", "required independently selected typed-query context fingerprint")
+		fs.StringVar(checkpointPath, "trusted-state", "", "explicit trusted local experimental state; never provider-selected")
+		fs.Var(checkpointPin, "expect-state-sha256", "required independently selected SHA-256 of the trusted state bytes")
 	}
 	selections := registerSelectionGuards(fs)
 	if err := fs.Parse(args); errors.Is(err, flag.ErrHelp) {
@@ -84,7 +97,7 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 	} else if err != nil || selections() != nil || *configPath == "" || inspect && fs.NArg() != 0 || !inspect && (fs.NArg() != 1 || *requestPath == "") {
 		return finish(64, "arguments", "usage")
 	}
-	var selectedHeader, selectedQuery *chain.Hash
+	var selectedHeader, selectedQuery, selectedCheckpoint *chain.Hash
 	if !inspect {
 		var err error
 		if selectedHeader, err = parseContextPin(headerPin); err != nil || selectedHeader == nil || selectedHeader.IsZero() {
@@ -92,6 +105,16 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 		}
 		if selectedQuery, err = parseContextPin(queryPin); err != nil || selectedQuery == nil || selectedQuery.IsZero() {
 			return finish(64, "arguments", "usage")
+		}
+		pathSupplied := false
+		fs.Visit(func(f *flag.Flag) { pathSupplied = pathSupplied || f.Name == "trusted-state" })
+		if pathSupplied != checkpointPin.supplied || pathSupplied && *checkpointPath == "" {
+			return finish(64, "arguments", "usage")
+		}
+		if checkpointPin.supplied {
+			if selectedCheckpoint, err = parseContextPin(checkpointPin); err != nil || selectedCheckpoint == nil || selectedCheckpoint.IsZero() {
+				return finish(64, "arguments", "usage")
+			}
 		}
 		report.GatewayComparisonRequested = *compare
 	}
@@ -132,6 +155,24 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 	if err != nil || request.Context != *selectedQuery {
 		return finish(70, "request", "invalid_identity")
 	}
+	state := empty
+	if selectedCheckpoint != nil {
+		// The regular-file reader bounds and owns these bytes once. The same
+		// buffer is digested and decoded; the provider cannot select this path.
+		raw, err = readExperimentalCLIFile(*checkpointPath, verify.MaxExperimentalV3StateBytes, openExperimentalCLIFile)
+		if err != nil {
+			return finish(70, "state_input", "invalid_input")
+		}
+		state, err = verify.DecodePinnedTrustedExperimentalV3State(raw, config.HeaderProfile, config.HeaderPolicy, config.Schedule, *selectedHeader, [32]byte(*selectedCheckpoint))
+		if errors.Is(err, verify.ErrExperimentalV3CheckpointDigest) {
+			return finish(1, "state_input", "digest_mismatch")
+		}
+		if err != nil || state.Empty() {
+			return finish(70, "state_input", "invalid_checkpoint")
+		}
+		report.StateInput = &experimentalContextCheckpointReport{SHA256: hex.EncodeToString(selectedCheckpoint[:]), Bytes: uint64(len(raw)), Trust: "trusted_local_provenance_required"}
+		report.Caveats = append(report.Caveats, "The selected checkpoint digest identifies bytes; trusted local provenance remains required for evicted ancestry and file authenticity.")
+	}
 	raw, err = readExperimentalCLIFile(fs.Arg(0), maxExperimentalBundleBytes, openExperimentalCLIFile)
 	if err != nil {
 		return finish(70, "bundle", "invalid_input")
@@ -146,10 +187,19 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 	if err != nil {
 		return finish(70, "bundle", "invalid_encoding")
 	}
-	headerResult, state := empty.Extend(bundle.Headers)
-	report.Headers = &experimentalCLIHeaderReport{headerResult.Outcome.String(), headerResult.Reason.String(), headerResult.FailedAt}
-	if headerResult.Outcome != verify.OutcomeAccept {
-		return finish(outcomeExitCode(headerResult.Outcome), "headers", "not_accepted")
+	if report.StateInput != nil {
+		report.StateInput.ProviderHeaders = uint32(len(bundle.Headers))
+	}
+	// A proof-only bundle can use the restored tip, but empty provider headers
+	// never make an empty/default anchor state authoritative. No extension
+	// outcome is fabricated when the checkpoint is used without successors.
+	if len(bundle.Headers) > 0 || selectedCheckpoint == nil {
+		headerResult, next := state.Extend(bundle.Headers)
+		report.Headers = &experimentalCLIHeaderReport{headerResult.Outcome.String(), headerResult.Reason.String(), headerResult.FailedAt}
+		if headerResult.Outcome != verify.OutcomeAccept {
+			return finish(outcomeExitCode(headerResult.Outcome), "headers", "not_accepted")
+		}
+		state = next
 	}
 	query, err := verify.NewExperimentalBatchContextQuery(state, config.QueryProfile, *selectedQuery)
 	if err != nil {
