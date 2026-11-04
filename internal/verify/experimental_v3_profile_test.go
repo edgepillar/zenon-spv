@@ -27,7 +27,7 @@ type experimentalV3Fixture struct {
 
 // This reuses public signatures. It never signs, starts a node or treats the
 // isolated chain-100 cohort as the selected source's chain-69 live network.
-func experimentalV3Inputs(t *testing.T) experimentalV3Fixture {
+func experimentalV3Inputs(t testing.TB) experimentalV3Fixture {
 	t.Helper()
 	raw, err := os.ReadFile("../testdata/conformance/first-v3-node-headers.json")
 	if err != nil {
@@ -89,7 +89,7 @@ func experimentalV3Inputs(t *testing.T) experimentalV3Fixture {
 	return f
 }
 
-func experimentalV3New(t *testing.T, f experimentalV3Fixture) ExperimentalV3State {
+func experimentalV3New(t testing.TB, f experimentalV3Fixture) ExperimentalV3State {
 	t.Helper()
 	s, err := NewExperimentalV3State(f.profile, f.policy, f.schedule, f.pin)
 	if err != nil {

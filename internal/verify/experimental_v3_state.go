@@ -62,28 +62,35 @@ func (s ExperimentalV3State) Extend(headers []chain.CandidateV3Header) (Result, 
 		h := s.data.headers[n-1].Header
 		previous = GenesisTrustRoot{ChainID: h.ChainIdentifier, Height: h.Height, HeaderHash: h.HeaderHash}
 	}
-	working := append(make([]chain.CandidateV3Header, 0, len(s.data.headers)+len(headers)), s.data.headers...)
 	for i, incoming := range headers {
-		// Reject malformed typed key/signature widths before copying their
-		// buffers. Successful validation bounds each detached copy to 96 bytes.
+		// Validate every input, including headers outside the final retained
+		// suffix. No provisional header slice or key/signature copy is needed.
 		if r := validateExperimentalV3Header(incoming, c, i); r.Outcome != OutcomeAccept {
 			return fail(r)
 		}
-		h := cloneExperimentalV3Header(incoming)
-		if h.Header.Height <= previous.Height || h.Header.Height-previous.Height != 1 {
+		h := incoming.Header
+		if h.Height <= previous.Height || h.Height-previous.Height != 1 {
 			return fail(reject(ReasonHeightNonMonotonic, i, "experimental v3 header is not an immediate successor"))
 		}
-		if h.Header.PreviousHash != previous.HeaderHash {
+		if h.PreviousHash != previous.HeaderHash {
 			return fail(reject(ReasonBrokenLinkage, i, "experimental v3 header does not link to the owned tip"))
 		}
-		working = append(working, h)
-		previous = GenesisTrustRoot{ChainID: h.Header.ChainIdentifier, Height: h.Header.Height, HeaderHash: h.Header.HeaderHash}
+		previous = GenesisTrustRoot{ChainID: h.ChainIdentifier, Height: h.Height, HeaderHash: h.HeaderHash}
 	}
-	if uint64(len(working)) < c.policy.W {
+	// Construction and batch admission bound both lengths before this sum.
+	total := len(s.data.headers) + len(headers)
+	if uint64(total) < c.policy.W {
 		return fail(refuse(ReasonWindowNotMet, "experimental v3 retained depth is not built"))
 	}
-	if len(working) > int(c.policy.RetainHeaders) {
-		working = append([]chain.CandidateV3Header(nil), working[len(working)-int(c.policy.RetainHeaders):]...)
+	keep := min(total, int(c.policy.RetainHeaders))
+	newCount := min(keep, len(headers))
+	oldCount := keep - newCount
+	working := make([]chain.CandidateV3Header, keep)
+	// Existing headers already belong to immutable private state. A fresh
+	// slice preserves old handles; only newly retained caller bytes need clones.
+	copy(working, s.data.headers[len(s.data.headers)-oldCount:])
+	for i, incoming := range headers[len(headers)-newCount:] {
+		working[oldCount+i] = cloneExperimentalV3Header(incoming)
 	}
 	next := ExperimentalV3State{data: &experimentalV3StateData{config: c, headers: working, trustedLocal: s.data.trustedLocal}}
 	return next.acceptedEnvelope(), next
