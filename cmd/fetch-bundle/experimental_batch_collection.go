@@ -83,6 +83,7 @@ func runExperimentalCollectionMode(parent context.Context, args []string, stdout
 	if withContext {
 		command = experimentalContextCollectionCommand
 		usage = strings.Replace(experimentalCollectionUsage, experimentalCollectionCommand, command, 1)
+		usage = strings.Replace(usage, " [--compare-gateway]", " [--after-height <n> --after-hash <64-hex>] [--compare-gateway]", 1)
 	}
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
@@ -98,6 +99,11 @@ func runExperimentalCollectionMode(parent context.Context, args []string, stdout
 	batch := fs.Uint64("batch-id", 0, "locally selected batch (uint64)")
 	compare := fs.Bool("compare-gateway", false, "also collect the selected frontier DTO")
 	timeout := fs.Duration("timeout", 30*time.Second, "overall timeout (positive, at most 10m)")
+	afterHeight, afterHash := new(uint64), new(string)
+	if withContext {
+		fs.Uint64Var(afterHeight, "after-height", 0, "explicit local continuation height; collection grants no trust")
+		fs.StringVar(afterHash, "after-hash", "", "explicit local continuation hash; never peer-selected")
+	}
 	guards := make(map[string]*collectionFlag)
 	fs.VisitAll(func(f *flag.Flag) { guard := &collectionFlag{Value: f.Value}; f.Value = guard; guards[f.Name] = guard })
 	if err := fs.Parse(args); errors.Is(err, flag.ErrHelp) {
@@ -110,7 +116,8 @@ func runExperimentalCollectionMode(parent context.Context, args []string, stdout
 		return fail(64, "invalid arguments")
 	}
 	for name, guard := range guards {
-		if guard.invalid || !guard.supplied && name != "timeout" && name != "compare-gateway" {
+		optional := name == "timeout" || name == "compare-gateway" || withContext && (name == "after-height" || name == "after-hash")
+		if guard.invalid || !guard.supplied && !optional {
 			return fail(64, "invalid arguments")
 		}
 	}
@@ -132,14 +139,33 @@ func runExperimentalCollectionMode(parent context.Context, args []string, stdout
 		return fail(64, "invalid arguments")
 	}
 	selected.DomainID = uint32(*domain)
-	if selected.Validate() != nil || withContext && selected.DomainID == 0 {
+	var after *fetch.CandidateBatchContextResume
+	if withContext {
+		if guards["after-height"].supplied != guards["after-hash"].supplied {
+			return fail(64, "invalid arguments")
+		}
+		if guards["after-height"].supplied {
+			value, valid := collectionHash(*afterHash)
+			if !valid {
+				return fail(64, "invalid arguments")
+			}
+			after = &fetch.CandidateBatchContextResume{Height: *afterHeight, Hash: value}
+		}
+	}
+	selectionErr := selected.Validate()
+	if after != nil {
+		selectionErr = selected.ValidateContextResume(*after)
+	}
+	if selectionErr != nil || withContext && selected.DomainID == 0 {
 		return fail(64, "invalid arguments")
 	}
 	ctx, cancel := context.WithTimeout(parent, *timeout)
 	defer cancel()
 	client := clientFor(*rpc)
 	var data []byte
-	if withContext {
+	if after != nil {
+		data, err = client.FetchCandidateBatchContextBundleAfter(ctx, selected, *after, *compare)
+	} else if withContext {
 		data, err = client.FetchCandidateBatchContextBundle(ctx, selected, *compare)
 	} else {
 		data, err = client.FetchCandidateBatchEntryBundle(ctx, selected, *compare)

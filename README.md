@@ -21,8 +21,10 @@ The separate [three-witness query and CLI](docs/experimental-batch-context-query
 binds BatchEntry, domainRecord and domainConfig to one owned H/hash/root and
 explicit context. Pinned read-only checkpoint reuse avoids replaying an evicted
 anchor prefix while rechecking the retained headers and preserving local-file
-trust assumptions. Its synthetic offline consumer does not close those network
-acceptance gates or establish submission-time configuration.
+trust assumptions. Paired collector continuation selectors retain the original
+anchor and omit already held headers from transport. Its synthetic offline
+consumer does not close those network acceptance gates or establish
+submission-time configuration.
 
 ## Status
 

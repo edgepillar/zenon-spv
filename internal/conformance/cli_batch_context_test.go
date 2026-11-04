@@ -75,7 +75,7 @@ func TestCompiledCLIExperimentalBatchContextWorkflow(t *testing.T) {
 		witness := map[string]any{"root": trace.Root, "value": value, "proof": proof}
 		witnesses[row.Name], byKey[row.Key] = witness, witness
 	}
-	var failedProof, proofReads atomic.Int32
+	var failedProof, proofReads, headerReads atomic.Int32
 	var selectedStart, selectedCount atomic.Uint64
 	selectedStart.Store(87)
 	selectedCount.Store(4)
@@ -93,6 +93,7 @@ func TestCompiledCLIExperimentalBatchContextWorkflow(t *testing.T) {
 		var result any
 		switch call.Method {
 		case "ledger.getMomentumsByHeight":
+			headerReads.Add(1)
 			var start, count uint64
 			if len(call.Params) != 2 || json.Unmarshal(call.Params[0], &start) != nil || json.Unmarshal(call.Params[1], &count) != nil ||
 				start != selectedStart.Load() || count != selectedCount.Load() {
@@ -236,7 +237,17 @@ func TestCompiledCLIExperimentalBatchContextWorkflow(t *testing.T) {
 		return append(append([]string(nil), args[:len(args)-1]...), "--trusted-state", path, "--expect-state-sha256", hex.EncodeToString(pin[:]), provider)
 	}
 	fullPath, fullCheckpoint := checkpoint(t, 4, "full-checkpoint")
-	proofOnly := writeCLIJSON(t, dir, "proof-only.json", map[string]any{"version": 1, "momentums": []json.RawMessage{}, "witnesses": witnesses})
+	proofCollect := append(append([]string(nil), collect...), "--after-height", "90", "--after-hash", hex.EncodeToString(unit.Request.TipHash[:]))
+	headerReads.Store(0)
+	proofReads.Store(0)
+	proofCapture := runQueryCLI(t, binaries["fetch-bundle"], proofCollect...)
+	if proofCapture.code != 0 || len(proofCapture.stderr) != 0 || headerReads.Load() != 0 || proofReads.Load() != 3 || len(proofCapture.stdout) >= len(acquired.stdout) {
+		t.Fatal("shipped collector did not omit the already retained header prefix")
+	}
+	proofOnly := filepath.Join(dir, "proof-only.json")
+	if err := os.WriteFile(proofOnly, proofCapture.stdout, 0600); err != nil {
+		t.Fatal(err)
+	}
 	t.Run("trusted_checkpoint_only", func(t *testing.T) {
 		before, err := os.Stat(fullPath)
 		if err != nil {
@@ -261,18 +272,13 @@ func TestCompiledCLIExperimentalBatchContextWorkflow(t *testing.T) {
 		selectedStart.Store(89)
 		selectedCount.Store(2)
 		proofReads.Store(0)
+		headerReads.Store(0)
 		path, raw := checkpoint(t, 2, "prefix-checkpoint")
-		tailArgs := append([]string(nil), collect...)
-		for i := range tailArgs {
-			switch tailArgs[i] {
-			case "--anchor-height":
-				tailArgs[i+1] = "88"
-			case "--anchor-hash":
-				tailArgs[i+1] = hex.EncodeToString(headers[1].Header.HeaderHash[:])
-			}
-		}
+		// Keep the original anchor; the continuation is a separate transport
+		// selector, not a replacement trust root or checkpoint authority.
+		tailArgs := append(append([]string(nil), collect...), "--after-height", "88", "--after-hash", hex.EncodeToString(headers[1].Header.HeaderHash[:]))
 		tail := runQueryCLI(t, binaries["fetch-bundle"], tailArgs...)
-		if tail.code != 0 || proofReads.Load() != 3 || len(tail.stderr) != 0 || len(tail.stdout) >= len(acquired.stdout) {
+		if tail.code != 0 || proofReads.Load() != 3 || headerReads.Load() != 1 || len(tail.stderr) != 0 || len(tail.stdout) >= len(acquired.stdout) {
 			t.Fatal("reduced candidate header range did not complete")
 		}
 		provider := filepath.Join(dir, "successors.json")
@@ -283,6 +289,33 @@ func TestCompiledCLIExperimentalBatchContextWorkflow(t *testing.T) {
 		if r.StateInput == nil || r.StateInput.ProviderHeaders != 2 {
 			t.Fatal("compiled successor query replayed the original anchor range")
 		}
+	})
+	for _, name := range []string{"height_only", "hash_only", "tip_mismatch", "legacy_refused"} {
+		t.Run("collector_resume_"+name, func(t *testing.T) {
+			headerReads.Store(0)
+			proofReads.Store(0)
+			bad := append([]string(nil), collect...)
+			switch name {
+			case "height_only":
+				bad = append(bad, "--after-height", "90")
+			case "hash_only":
+				bad = append(bad, "--after-hash", hex.EncodeToString(unit.Request.TipHash[:]))
+			case "tip_mismatch":
+				bad = append(bad, "--after-height", "90", "--after-hash", strings.Repeat("1", 64))
+			case "legacy_refused":
+				bad = append([]string(nil), proofCollect...)
+				bad[0] = "experimental-batch-entry"
+			}
+			value := runQueryCLI(t, binaries["fetch-bundle"], bad...)
+			if value.code != 64 || len(value.stdout) != 0 || headerReads.Load() != 0 || proofReads.Load() != 0 {
+				t.Fatal("invalid continuation reached the provider")
+			}
+		})
+	}
+	t.Run("proof_only_requires_checkpoint", func(t *testing.T) {
+		bad := append([]string(nil), args...)
+		bad[len(bad)-1] = proofOnly
+		query(t, bad, 2)
 	})
 	for _, name := range []string{"digest", "context", "tamper", "empty", "old_range", "pruned"} {
 		t.Run("trusted_checkpoint_"+name, func(t *testing.T) {
@@ -330,6 +363,16 @@ func TestCompiledCLIExperimentalBatchContextWorkflow(t *testing.T) {
 			}
 			failedProof.Store(0)
 		})
+		t.Run("resumed_collector_unavailable_"+strconv.Itoa(int(i)), func(t *testing.T) {
+			proofReads.Store(0)
+			headerReads.Store(0)
+			failedProof.Store(i)
+			value := runQueryCLI(t, binaries["fetch-bundle"], proofCollect...)
+			failedProof.Store(0)
+			if value.code != 1 || len(value.stdout) != 0 || headerReads.Load() != 0 || proofReads.Load() != i {
+				t.Fatal("late resumed collection failure emitted partial bundle or fetched headers")
+			}
+		})
 	}
 	for _, name := range []string{"batch_entry", "domain_record", "domain_config"} {
 		t.Run("missing_"+name, func(t *testing.T) {
@@ -366,6 +409,7 @@ func TestCompiledCLIExperimentalBatchContextWorkflow(t *testing.T) {
 	receipt := map[string]any{"format": "compiled-three-witness-consumer/v1", "scope": "SYNTHETIC_OFFLINE_CONSUMER", "typed_consumer": true,
 		"three_complete_key_reads": true, "late_collection_failures": 3, "unavailable_contexts": 3, "provider_authority_imported": false,
 		"checkpoint_provider_headers": []uint32{0, 2}, "checkpoint_file_unchanged": true, "checkpoint_signature_checks_retained": true,
+		"collector_continuation_preserves_original_anchor": true, "resumed_late_collection_failures": 3, "proof_only_header_requests": 0,
 		"production_state_value_accepted": false, "source_values_are_one_original_snapshot": false}
 	t.Logf("three-witness-consumer %s", bytes.TrimSpace(mustBatchContextJSON(t, receipt)))
 }
