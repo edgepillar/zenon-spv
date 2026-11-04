@@ -161,6 +161,10 @@ retained-header authentication and either proof-only input or bounded successors
 It preserves the existing persisted-state provenance assumption and never writes
 or silently initializes a checkpoint. This prepares D2/D3 repeat queries without
 closing any selected-network, ancestry, activation or production acceptance gate.
+The matching three-witness collector has separate paired continuation selectors:
+it preserves the original anchor, fetches only bounded successors, or requests
+only the three proofs at an already retained tip. Collection remains candidate
+acquisition and cannot select or authenticate checkpoint, context or producer trust.
 
 ## Authority and required invariants
 

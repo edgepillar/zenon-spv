@@ -37,10 +37,45 @@ type CandidateBatchCollectionSelection struct {
 // explicit heights imply a complete range immediately after the given anchor;
 // the existing candidate-v3 range/header/byte limits remain in force.
 func (s CandidateBatchCollectionSelection) Validate() error {
+	if err := s.validateIdentity(); err != nil {
+		return err
+	}
+	if s.TipHeight-s.AnchorHeight > MaxCandidateV3RangeHeaders {
+		return ErrInvalidQuery
+	}
+	return nil
+}
+
+func (s CandidateBatchCollectionSelection) validateIdentity() error {
 	if s.ChainID == 0 || s.AnchorHeight == 0 || s.TipHeight <= s.AnchorHeight ||
-		s.TipHeight-s.AnchorHeight > MaxCandidateV3RangeHeaders || s.Height <= s.AnchorHeight || s.Height > s.TipHeight ||
+		s.Height <= s.AnchorHeight || s.Height > s.TipHeight ||
 		s.AnchorHash.IsZero() || s.HeaderHash.IsZero() || s.TipHash.IsZero() || s.Settlement == (chain.Address{}) ||
 		s.Height == s.TipHeight && s.HeaderHash != s.TipHash {
+		return ErrInvalidQuery
+	}
+	return nil
+}
+
+// CandidateBatchContextResume selects where candidate header transport resumes.
+// It is not an accepted checkpoint or authorization. The offline verifier still
+// requires its independently pinned trusted state and all original trust inputs.
+type CandidateBatchContextResume struct {
+	Height uint64
+	Hash   chain.Hash
+}
+
+// ValidateContextResume keeps the original request/anchor identity and bounds
+// only the fetched successors. A query at or before the continuation point must
+// be checked against retained owned state by the separate offline verifier.
+func (s CandidateBatchCollectionSelection) ValidateContextResume(after CandidateBatchContextResume) error {
+	if err := s.validateIdentity(); err != nil {
+		return err
+	}
+	if s.DomainID == 0 || after.Height < s.AnchorHeight || after.Height > s.TipHeight || after.Hash.IsZero() ||
+		s.TipHeight-after.Height > MaxCandidateV3RangeHeaders ||
+		after.Height == s.AnchorHeight && after.Hash != s.AnchorHash ||
+		after.Height == s.Height && after.Hash != s.HeaderHash ||
+		after.Height == s.TipHeight && after.Hash != s.TipHash {
 		return ErrInvalidQuery
 	}
 	return nil
@@ -74,7 +109,7 @@ func (d *collectedCandidateMomentumDecoder) UnmarshalJSON(raw []byte) error {
 // All selected reads must complete before any document is returned. Errors
 // return nil, including missing results, later-page failure and cancellation.
 func (c *Client) FetchCandidateBatchEntryBundle(ctx context.Context, selected CandidateBatchCollectionSelection, compareGateway bool) ([]byte, error) {
-	return c.fetchCandidateBatchBundle(ctx, selected, compareGateway, false)
+	return c.fetchCandidateBatchBundle(ctx, selected, compareGateway, false, nil)
 }
 
 // FetchCandidateBatchContextBundle collects three exact, locally derived keys
@@ -87,7 +122,16 @@ func (c *Client) FetchCandidateBatchContextBundle(ctx context.Context, selected 
 	if selected.DomainID == 0 {
 		return nil, ErrInvalidQuery
 	}
-	return c.fetchCandidateBatchBundle(ctx, selected, compareGateway, true)
+	return c.fetchCandidateBatchBundle(ctx, selected, compareGateway, true, nil)
+}
+
+// FetchCandidateBatchContextBundleAfter collects only the immediate successors
+// of an explicit local continuation point, followed by the same three witnesses
+// and optional gateway DTO. At the selected tip it requests no headers and emits
+// momentums:[]; no checkpoint file is read or trusted by collection. The original
+// anchor stays selected, and any header identity not fetched remains unverified.
+func (c *Client) FetchCandidateBatchContextBundleAfter(ctx context.Context, selected CandidateBatchCollectionSelection, after CandidateBatchContextResume, compareGateway bool) ([]byte, error) {
+	return c.fetchCandidateBatchBundle(ctx, selected, compareGateway, true, &after)
 }
 
 type collectedBatchContextWitnesses struct {
@@ -96,8 +140,16 @@ type collectedBatchContextWitnesses struct {
 	DomainConfig json.RawMessage `json:"domain_config"`
 }
 
-func (c *Client) fetchCandidateBatchBundle(ctx context.Context, selected CandidateBatchCollectionSelection, compareGateway, withContext bool) ([]byte, error) {
-	if err := selected.Validate(); err != nil {
+func (c *Client) fetchCandidateBatchBundle(ctx context.Context, selected CandidateBatchCollectionSelection, compareGateway, withContext bool, after *CandidateBatchContextResume) ([]byte, error) {
+	var err error
+	if after == nil {
+		err = selected.Validate()
+	} else if !withContext {
+		err = ErrInvalidQuery
+	} else {
+		err = selected.ValidateContextResume(*after)
+	}
+	if err != nil {
 		return nil, err
 	}
 	if err := ctx.Err(); err != nil {
@@ -106,23 +158,30 @@ func (c *Client) fetchCandidateBatchBundle(ctx context.Context, selected Candida
 	if c == nil || c.HTTP == nil {
 		return nil, ErrInvalidQuery
 	}
-	start, count := selected.AnchorHeight+1, selected.TipHeight-selected.AnchorHeight
-	previous := selected.AnchorHash
-	rows, err := fetchHeightRange(ctx, c, "ledger.getMomentumsByHeight", start, count,
-		func(height, size uint64) []any { return []any{height, size} },
-		func(target *collectedCandidateMomentum) any { return &collectedCandidateMomentumDecoder{target} },
-		func(row collectedCandidateMomentum, index uint64) (json.RawMessage, error) {
-			h := row.header.Header
-			if h.Height != start+index || h.ChainIdentifier != selected.ChainID || h.PreviousHash != previous ||
-				h.Height == selected.Height && h.HeaderHash != selected.HeaderHash ||
-				index == count-1 && h.HeaderHash != selected.TipHash {
-				return nil, ErrQueryMismatch
-			}
-			previous = h.HeaderHash
-			return row.wire, nil
-		}, &rpcResponseBudget{remaining: MaxCandidateV3RangeBytes})
-	if err != nil {
-		return nil, err
+	height, previous := selected.AnchorHeight, selected.AnchorHash
+	if after != nil {
+		height, previous = after.Height, after.Hash
+	}
+	count := selected.TipHeight - height
+	rows := make([]json.RawMessage, 0)
+	if count > 0 {
+		start := height + 1 // count > 0 proves height < tip, including at uint64's limit.
+		rows, err = fetchHeightRange(ctx, c, "ledger.getMomentumsByHeight", start, count,
+			func(height, size uint64) []any { return []any{height, size} },
+			func(target *collectedCandidateMomentum) any { return &collectedCandidateMomentumDecoder{target} },
+			func(row collectedCandidateMomentum, index uint64) (json.RawMessage, error) {
+				h := row.header.Header
+				if h.Height != start+index || h.ChainIdentifier != selected.ChainID || h.PreviousHash != previous ||
+					h.Height == selected.Height && h.HeaderHash != selected.HeaderHash ||
+					index == count-1 && h.HeaderHash != selected.TipHash {
+					return nil, ErrQueryMismatch
+				}
+				previous = h.HeaderHash
+				return row.wire, nil
+			}, &rpcResponseBudget{remaining: MaxCandidateV3RangeBytes})
+		if err != nil {
+			return nil, err
+		}
 	}
 	key := proof.CandidateSettlementBatchEntryKey(selected.Settlement, selected.DomainID, selected.BatchID)
 	witness, err := c.collectCandidateResult(ctx, "ledger.getProof", []any{selected.Height, key[:]}, func(raw []byte) error {
@@ -189,6 +248,9 @@ func (c *Client) fetchCandidateBatchBundle(ctx context.Context, selected Candida
 }
 
 func (c *Client) collectCandidateResult(ctx context.Context, method string, params []any, validate func([]byte) error) (json.RawMessage, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	var raw json.RawMessage
 	if err := c.callWithBudget(ctx, method, params, &raw, &rpcResponseBudget{remaining: MaxCandidateStateResponseBytes}); err != nil {
 		return nil, err

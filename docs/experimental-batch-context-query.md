@@ -103,14 +103,36 @@ fetch-bundle experimental-batch-context --rpc <read-only-rpc> \
   --chain-id <n> --anchor-height <n> --anchor-hash <64-hex> \
   --height <n> --header-hash <64-hex> \
   --tip-height <n> --tip-hash <64-hex> \
-  --domain-id <positive-u32> --batch-id <u64> [--compare-gateway]
+  --domain-id <positive-u32> --batch-id <u64> \
+  [--after-height <saved-tip-height> --after-hash <saved-tip-hash>] [--compare-gateway]
 ```
 
-The collector performs the bounded selected header read, then three
+By default the collector performs the bounded selected header read, then three
 `ledger.getProof(H, fullKey)` reads. Each response has a separate byte cap.
 A later failed read emits no partial provider document. Collection does not
 authenticate a root or select trust settings from a peer frontier. Neither
 command starts a wallet, signs, transacts or deploys.
+
+The optional paired `--after-height` and `--after-hash` select a separate local
+continuation point for this command. Keep the original anchor selected. The
+collector reads only immediate successors of that point through the exact tip;
+the range and byte limits apply to those requested successors. At the exact tip
+it makes no header RPC, emits `momentums: []`, and still completes all three
+proof reads (plus the optional gateway read) before returning any document.
+This also avoids adding one to a tip at the uint64 limit. Missing/repeated or
+inconsistent selectors refuse before client creation. Late failure or cancellation
+still returns no partial document.
+The shared candidate-read helper also checks cancellation before each proof or
+gateway request, including the legacy single-row mode. Default/legacy selectors
+and provider schemas are preserved.
+
+A continuation selector grants no trust and reads no checkpoint. The collector
+checks the links and selected identities present in fetched rows; an older
+query header omitted from transport remains unchecked by collection. The offline
+query must independently select and verify its trusted local checkpoint, SHA-256
+and both context pins, then find the exact query/tip identities in owned state.
+A proof-only candidate cannot initialize authority in the default anchor mode.
+The legacy single-row command has no continuation flags.
 
 ### Pinned read-only checkpoint reuse
 
@@ -185,7 +207,8 @@ activation evidence or an executed state transition.
 python3 -I -B tools/gen-state-root-vectors/check_batch_context_test.py -v
 python3 -I -B tools/gen-state-root-vectors/check_batch_context.py
 go test -race -count=1 -run '^TestExperimentalBatchContext' ./internal/verify ./cmd/zenon-spv
-go test -count=1 -run '^TestCandidateBatchContextCollection' ./internal/fetch
+go test -count=1 -run '^TestCandidateBatchContext(Collection|Resume)' ./internal/fetch
+go test -count=1 -run '^TestExperimentalContextCollectionResumeCLI' ./cmd/fetch-bundle
 go test -count=1 -run '^TestCompiledCLIExperimentalBatchContextWorkflow$' ./internal/conformance
 ```
 
@@ -193,13 +216,18 @@ The compiled workflow builds both commands together once, collects only from a
 loopback fixture and consumes the typed result. It exercises all three late
 collection failures, unavailable contexts and incompatible context/schema pins,
 checks production guarantees stay disabled and checks no state file is created.
+Checkpoint cases obtain proof-only and successor documents from the real
+collector command, preserving the original anchor and comparing zero/one header
+requests with the original full-range read. Invalid continuation selectors never
+reach the loopback provider; each resumed late-proof failure emits no document.
 The source-selected scenario `experimental_batch_context_query` records its
-nine child passes and both executed binary digests in the existing offline-pilot
+child outcomes and both executed binary digests in the existing offline-pilot
 report. It reuses full-suite execution; it adds no second test execution lane.
 Unit controls cover per-row/aggregate boundaries, opaque handles, detached values,
 canonicality/absence, source-rule narrowing, persistence/pruning and legacy behavior.
 
-Local Go 1.25.14 Darwin/arm64 qualification passed 33 selected Go roots and 497
+The earlier Go 1.25.14 Darwin/arm64 composition qualification, before pinned
+checkpoint reuse and collector continuation, passed 33 selected Go roots and 497
 subtest pass events with the race detector, three independent Python control
 roots, configured golangci-lint 2.6.2, vet and module verification. It finished in
 78.9 seconds; the largest workspace observed after a phase was 527,327,425 bytes
