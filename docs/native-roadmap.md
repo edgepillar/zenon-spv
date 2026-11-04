@@ -7,7 +7,9 @@ query. The [typed-state delivery plan](typed-state-roadmap.md), selected on
 work. Balance verification is a later use of the same core. The native verifier
 keeps explicit anchor, profile, producer-schedule and context-pin trust boundaries.
 The [verification contract](verification-contract.md) defines current guarantees;
-this planning update does not enable runtime v3 or state-value acceptance.
+this plan does not authorize network activation, production state proofs or
+settlement. The configured experimental header and typed-query paths keep their
+own [profile and trust boundaries](experimental-batch-context-query.md).
 
 ## Selected review candidate
 
@@ -27,16 +29,14 @@ Later changes include executable code and tests, as well as documentation and
 research. The [frozen-to-baseline change ledger](review-candidate-changes.md)
 retains the historical `879fbce33dd77f483f7aba18994fb037f248e842` observations
 and the completed `d85aff12dd0de8b2d1bd8db46e0e4e727c7e60ff` pipeline. It
-enumerates the complete 18-file root-module Go delta and separate Python/workflow
-changes through qualified `da04d4189017da7ddd2f56e82bd856875e272aed`. Its own
-general and transport main CI cover ten jobs and all 40 actual artifacts,
-including the complete root-suite receipts, source-bound candidate streams and
-recorded scopes. The preceding `1b8a33f` seven-job/34-archive, `8767708`
-ten-job/37-archive, `bc0be26` 34-archive and `b6358c1` 28-archive qualifications
-remain pinned in the ledger. These scopes retain their own source identities.
-It
-also distinguishes original review revisions from their identity-normalized
-counterparts. A later documentation-only workflow supplies no new native
+preserves the historical 18-file root-module delta through `da04d418` and selects
+the separately qualified `e1e2fda4` runtime baseline in its
+[current qualification record](review-candidate-changes.md#current-qualified-runtime-baseline).
+The frozen-to-current comparison now contains 89 root-module Go paths; the
+historical table and all earlier pipeline observations retain their original
+revision pairs. The ledger also distinguishes original review revisions from
+their identity-normalized counterparts. A later documentation-only workflow
+supplies no new native
 execution; retain the latest runtime-qualified revision explicitly. These source
 and mechanical CI observations do not transfer independent review to a changed
 revision. Every later executable candidate needs its own source, binary, report,
@@ -80,12 +80,17 @@ does not wait for a complete mainnet inventory, and does not close representativ
 production budgets or node recovery/activation gates.
 
 The latest ledger-selected runtime baseline is
-[`da04d4189017da7ddd2f56e82bd856875e272aed`](https://github.com/edgepillar/zenon-spv/tree/da04d4189017da7ddd2f56e82bd856875e272aed).
-Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41341596977)
-and [transport CI](https://github.com/edgepillar/zenon-spv/actions/runs/41341597164)
-passed and all 40 actual archives were reconciled. This follows the canonical
-local merge of [PR #292](https://github.com/edgepillar/zenon-spv/pull/292);
-the original frozen review candidate remains unchanged.
+[`e1e2fda4910d876588adb9badcb1c0d06c109ccd`](https://github.com/edgepillar/zenon-spv/tree/e1e2fda4910d876588adb9badcb1c0d06c109ccd).
+Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41779740902)
+passed on attempt 1. All seven scheduled jobs and 37 archives were reconciled,
+including 21 ordinary native executables and complete root-suite receipts.
+The selected 61-scenario reports retain five Windows skips and zero Linux/macOS
+skips; the full-suite skip counts have a separate scope in the ledger.
+This follows the local `edgepillar` author/committer merge of
+[PR #325](https://github.com/edgepillar/zenon-spv/pull/325).
+The separate exporter/transport workflows did not run at this revision, and
+their earlier qualifications remain pinned to their original sources. The
+original frozen human-review candidate remains unchanged.
 The planning pins `df1cc52` and `1b8a33f` retain their original historical
 meanings. Later documentation-only heads do not advance runtime qualification.
 

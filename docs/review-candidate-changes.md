@@ -9,6 +9,72 @@ executables and 59 scenarios per platform. Five Windows skips remain explicit;
 Linux and macOS have zero. This is mechanical qualification, not independent
 human acceptance or authenticated distribution.
 
+## Current qualified runtime baseline
+
+The runtime baseline selected by this ledger is
+[`e1e2fda4910d876588adb9badcb1c0d06c109ccd`](https://github.com/edgepillar/zenon-spv/tree/e1e2fda4910d876588adb9badcb1c0d06c109ccd),
+tree `6fe6c917722a6b741b2a52808f0ed0f67d7afd57`, following the local merge of
+[PR #325](https://github.com/edgepillar/zenon-spv/pull/325). Both author and
+committer are `edgepillar`. Its own
+[general main CI](https://github.com/edgepillar/zenon-spv/actions/runs/41779740902)
+passed on attempt 1. Reconciliation covers all seven scheduled jobs, 37 actual
+archive IDs and 59,889,796 archive bytes, including 21 ordinary native
+executables, source/build metadata, architecture checks and the selected
+61-scenario reports. The selected Windows reports retain five skips; Linux and
+macOS have zero. The separate exporter/transport workflows did not run at this
+revision: their earlier observations retain their original source pins.
+
+The complete uncached root-suite receipts cover 16 root-module packages.
+Linux and macOS each have 928 passing roots, 5,714 passing subtest events and
+6,642 total passing events, with zero skips. Windows has 924 passing roots,
+5,797 passing subtest events, 6,705 total passing events and 16 skip events.
+These full-suite counts and the five selected Windows skips describe different
+scopes. The three-witness compiled consumer case has 25 passing child events on
+each platform, 75 in total, zero skips and six executed binary bindings. These
+events come from the same existing suite and candidate builds; the artifact
+reader extracts no payload files or executes another candidate.
+
+Since the historical `da04d418` baseline, the source adds configured owned-v3
+headers, immutable state/persistence, typed `BatchEntry` and three-witness
+queries, explicitly hash-pinned trusted checkpoint reuse, and collection of
+only the missing header suffix while retaining the original anchor. Their
+[experimental contract](experimental-batch-context-query.md) retains locally
+derived keys, header-bound roots and finite operator-selected producer schedules.
+The pooled node-derived leaf values and separately signed synthetic header
+fixtures are not one real network capture or a state-transition proof.
+
+The frozen-to-current pair contains 432 changed tracked paths, 176 changed
+selected inputs and 89 root-module Go paths: 40 implementation/driver files and
+49 test files. Root `go.mod` and `go.sum` are unchanged. The narrower historical
+`da04d418`-to-current pair contains 157 tracked changes, 90 selected-input
+changes and 76 root-module Go paths. Counts use per-revision module ownership;
+the historical 18-path table below describes only its original pair.
+
+Review the complete current pair with explicit two-revision commands:
+
+```sh
+git diff --name-status 6ecc2310538d511e3b26bea4c658082853266a11 e1e2fda4910d876588adb9badcb1c0d06c109ccd
+git diff 6ecc2310538d511e3b26bea4c658082853266a11 e1e2fda4910d876588adb9badcb1c0d06c109ccd -- cmd internal tools go.mod go.sum
+```
+
+The second command includes nested modules and other material in those
+directories; apply the module filter defined below for the 89-path Go scope.
+The selected-input fingerprint is independently recomputed from Git blobs in
+the table below. Python, workflow and other excluded inputs still require
+their own inspection and exact-source execution evidence.
+
+This pointer repair supplies no new native execution and does not advance the
+frozen human-review candidate. The [D0-D6 plan](typed-state-roadmap.md) still
+requires the independently selected query/profile/anchor/schedule and actual
+network capture, representative R1 data, independent review and authenticated
+distribution. Production state proofs and irreversible settlement remain NO-GO.
+
+## Historical source-specific records
+
+The following records preserve their original revisions and meanings of
+"current". They do not replace the runtime selection above or the frozen
+human-review selection at the start of this document.
+
 The historical qualified development baseline is
 [`879fbce33dd77f483f7aba18994fb037f248e842`](https://github.com/edgepillar/zenon-spv/tree/879fbce33dd77f483f7aba18994fb037f248e842),
 tree `a8eb348464eb76eae080d3966ded6592ef078f9f`. Its
@@ -128,9 +194,9 @@ In the preceding stream record, "current" meant the explicitly selected qualifie
 root-suite successor. The frozen human-review candidate and original packet
 remain fixed.
 
-## Current complete-root-suite baseline
+## Historical complete-root-suite baseline
 
-The latest qualified development baseline selected by this ledger is
+The qualified root-suite development baseline selected at PR #292 was
 [`da04d4189017da7ddd2f56e82bd856875e272aed`](https://github.com/edgepillar/zenon-spv/tree/da04d4189017da7ddd2f56e82bd856875e272aed),
 tree `d6b5513900b8dce954778160e7501611a6d563ee`. Its author and committer
 are both `edgepillar`. It follows the canonical local merge of
@@ -195,12 +261,12 @@ revision is still the original `6ecc2310538d511e3b26bea4c658082853266a11`.
 Use an explicit two-revision `git diff` for the intended file comparison.
 A three-dot comparison against the original commit can choose an earlier common
 ancestor after the migration. The
-[normalized ancestry comparison](https://github.com/edgepillar/zenon-spv/compare/710627ae9589beca4a23400cc47fb038eb5495fd...da04d4189017da7ddd2f56e82bd856875e272aed)
+[normalized ancestry comparison](https://github.com/edgepillar/zenon-spv/compare/710627ae9589beca4a23400cc47fb038eb5495fd...e1e2fda4910d876588adb9badcb1c0d06c109ccd)
 is useful for navigation with the tree-equivalence limit above.
 
-## Complete current root-module Go and module-file delta
+## Historical root-module Go and module-file delta at PR #292
 
-The exact frozen-to-current diff contains 18 root-module Go files: eight
+The exact frozen-to-`da04d418` diff contains 18 root-module Go files: eight
 implementation/driver files and ten test files. Root `go.mod` and `go.sum`
 are unchanged. This table excludes nested research modules, corpus JSON,
 scripts, workflow and documentation changes; it is not the complete repository
@@ -230,10 +296,10 @@ An em dash means the path was absent in the frozen revision.
 
 The historical nine-file table stopped at `879fbce33dd77f483f7aba18994fb037f248e842`.
 The intervening `1b8a33f` record contained 15 distinct root-module paths,
-including the source-enumeration test change after `8767708`. The current
+including the source-enumeration test change after `8767708`. That historical
 root-suite delivery adds three more distinct paths in `tools/offline-pilot`:
 `full_suite.go`, `full_suite_test.go` and the newly changed `main.go`.
-All 18 current paths are listed above; earlier table counts retain their own
+All 18 paths for that pair are listed above; earlier table counts retain their own
 revision pairs.
 
 Review the complete pair with:
@@ -249,8 +315,9 @@ necessary for research, corpus, workflow and script changes.
 
 ## Recomputable input fingerprints
 
-The complete frozen-to-current tracked-file delta contains 296 paths. The input
-selector below changes at 91 paths. Neither number is the 18-file root-module
+The historical frozen-to-`da04d418` tracked-file delta contains 296 paths. The
+input selector below changes at 91 paths for that pair. Neither number is the
+18-file root-module
 delta. Python helpers, workflow files, shell scripts and other excluded paths
 remain outside the selected-input fingerprint and require their own inspection.
 
@@ -273,6 +340,7 @@ length framing.
 | `87677080c335444fb047c54c1b8d683cee436726` | 1,152 | 634 | 34,948,025 | `46367e744b6c687ca3ebe3558df3d745963a322efb32fcbd651bad2098497da9` |
 | `1b8a33fd351ee5b7c697aac21940323ee1f81c74` | 1,158 | 634 | 34,948,765 | `2cc96345633910a132df1d72fe0c7d3b05b6917b8469c4c36277b1784fbee8e0` |
 | `da04d4189017da7ddd2f56e82bd856875e272aed` | 1,162 | 636 | 34,974,843 | `91971f2505e3511263feee52fcdfe70b6fd29ef989351ce6926f819c7fff2328` |
+| `e1e2fda4910d876588adb9badcb1c0d06c109ccd` | 1,288 | 714 | 35,742,217 | `f1e2db03cee2175bba53fb520eca844b63b7938bb919c863f9e8b862f47f4003` |
 
 The historical frozen-to-`879fbce` comparison contains 204 tracked-file changes
 and 59 selected-input changes. Those historical counts remain valid for that
@@ -288,7 +356,8 @@ selected-input changes. Those preceding counts and fingerprint remain specific
 to that historical pair. The frozen-to-`1b8a33f` pair retains its 291
 tracked-file changes and 88 selected-input changes.
 
-For the root-module table, include an existing path only if it is a root-module
+For the root-module table and current counts, include an existing path only if
+it is a root-module
 `.go` file or a root module file in at least one compared revision. Determine
 module ownership separately in each revision: exclude a Go file beneath a
 directory containing that revision's nested `go.mod`. Test existence before
@@ -368,8 +437,11 @@ workflow does not update that runtime qualification.
 The development source extends the [candidate-v3 codec](candidate-v3-header-codec.md),
 [sparse-proof primitive](candidate-smt-proof.md),
 [owned-state save path](owned-state-persistence.md) and
-[observer contract](block-observer.md). Runtime v3/state-value acceptance
-remains refused. The [source scenario companion](scenario-inventory.md)
+[observer contract](block-observer.md) with the separately configured
+[experimental typed-query path](experimental-batch-context-query.md).
+Production state-value acceptance remains refused; synthetic/recorded fixture
+results do not close the selected-network query or activation gates.
+The [source scenario companion](scenario-inventory.md)
 checks source/report correspondence; it does not transfer independent review
 between revisions.
 
