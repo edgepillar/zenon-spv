@@ -216,10 +216,46 @@ func readExperimentalCLIFile(path string, limit int64, openFile func(string) (*o
 		_ = f.Close()
 		return nil, errExperimentalCLIInput
 	}
-	raw, readErr := io.ReadAll(io.LimitReader(f, limit+1))
+	raw, readErr := readExperimentalCLIBytes(f, limit, opened.Size())
 	closeErr := f.Close()
 	if readErr != nil || closeErr != nil || int64(len(raw)) > limit {
 		return nil, errExperimentalCLIInput
 	}
 	return raw, nil
+}
+
+// The opened regular file's size is an allocation hint, never an input bound.
+// Stable files need one buffer; stale hints still read to EOF or one byte over
+// the selected cap. Neither growth nor an unusable hint can relax that cap.
+func readExperimentalCLIBytes(r io.Reader, maxBytes, sizeHint int64) ([]byte, error) {
+	if maxBytes <= 0 || maxBytes > maxExperimentalBundleBytes {
+		return nil, errExperimentalCLIInput
+	}
+	// The fixed 8 MiB ceiling also bounds these conversions on 32-bit hosts.
+	limit := int(maxBytes) + 1
+	initial := min(512, limit)
+	if sizeHint > 0 && sizeHint <= maxBytes {
+		initial = max(initial, int(sizeHint)+1)
+	}
+	raw := make([]byte, 0, initial)
+	for {
+		n, err := r.Read(raw[len(raw):cap(raw)])
+		raw = raw[:len(raw)+n]
+		// A simultaneous data/error read must never become accepted input,
+		// including when it supplies a complete document or the overflow byte.
+		if err != nil && err != io.EOF {
+			return nil, errExperimentalCLIInput
+		}
+		if len(raw) > int(maxBytes) {
+			return nil, errExperimentalCLIInput
+		}
+		if err == io.EOF {
+			return raw, nil
+		}
+		if len(raw) == cap(raw) {
+			grown := make([]byte, len(raw), min(limit, cap(raw)*2))
+			copy(grown, raw)
+			raw = grown
+		}
+	}
 }
