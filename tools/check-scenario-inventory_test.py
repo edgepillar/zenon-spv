@@ -99,15 +99,19 @@ class ScenarioInventoryControls(unittest.TestCase):
             M.parse_scenarios(raw)
         self.assertEqual(captured.exception.category, "scenario_source_syntax")
 
-    def test_current_source_has_all_60_unique_literal_entries(self):
+    def test_current_source_has_all_61_unique_literal_entries(self):
         selected = M.parse_scenarios((HERE / "offline-pilot/manifest.go").read_bytes())
-        self.assertEqual(len(selected), 60)
+        self.assertEqual(len(selected), 61)
         self.assertEqual(selected["consumer_input_fifo"]["commands"], frozenset())
         self.assertEqual(selected["genesis_pinning"]["commands"], {"verify-mainnet-genesis"})
         collection = selected["experimental_batch_candidate_collection"]
         self.assertEqual(collection["package"], "internal/conformance")
         self.assertEqual(collection["test"], "TestCompiledExperimentalBatchCandidateWorkflow")
         self.assertEqual(collection["commands"], {"zenon-spv", "fetch-bundle"})
+        context = selected["experimental_batch_context_query"]
+        self.assertEqual(context["package"], "internal/conformance")
+        self.assertEqual(context["test"], "TestCompiledCLIExperimentalBatchContextWorkflow")
+        self.assertEqual(context["commands"], {"zenon-spv", "fetch-bundle"})
 
     def test_comments_crlf_and_literal_command_lists_preserve_selection(self):
         raw = self.source.read_bytes()

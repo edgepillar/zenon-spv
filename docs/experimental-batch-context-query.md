@@ -146,6 +146,9 @@ The compiled workflow builds both commands together once, collects only from a
 loopback fixture and consumes the typed result. It exercises all three late
 collection failures, unavailable contexts and incompatible context/schema pins,
 checks production guarantees stay disabled and checks no state file is created.
+The source-selected scenario `experimental_batch_context_query` records its
+nine child passes and both executed binary digests in the existing offline-pilot
+report. It reuses full-suite execution; it adds no second test execution lane.
 Unit controls cover per-row/aggregate boundaries, opaque handles, detached values,
 canonicality/absence, source-rule narrowing, persistence/pruning and legacy behavior.
 
