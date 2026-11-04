@@ -30,9 +30,9 @@ research. The [frozen-to-baseline change ledger](review-candidate-changes.md)
 retains the historical `879fbce33dd77f483f7aba18994fb037f248e842` observations
 and the completed `d85aff12dd0de8b2d1bd8db46e0e4e727c7e60ff` pipeline. It
 preserves the historical 18-file root-module delta through `da04d418` and selects
-the separately qualified `e1e2fda4` runtime baseline in its
+the separately qualified `62524106` runtime baseline in its
 [current qualification record](review-candidate-changes.md#current-qualified-runtime-baseline).
-The frozen-to-current comparison now contains 89 root-module Go paths; the
+The frozen-to-current comparison now contains 96 root-module Go paths; the
 historical table and all earlier pipeline observations retain their original
 revision pairs. The ledger also distinguishes original review revisions from
 their identity-normalized counterparts. A later documentation-only workflow
@@ -80,14 +80,14 @@ does not wait for a complete mainnet inventory, and does not close representativ
 production budgets or node recovery/activation gates.
 
 The latest ledger-selected runtime baseline is
-[`e1e2fda4910d876588adb9badcb1c0d06c109ccd`](https://github.com/edgepillar/zenon-spv/tree/e1e2fda4910d876588adb9badcb1c0d06c109ccd).
-Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41779740902)
+[`62524106cb363c51a1018f474693f46842eb6f32`](https://github.com/edgepillar/zenon-spv/tree/62524106cb363c51a1018f474693f46842eb6f32).
+Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41908988549)
 passed on attempt 1. All seven scheduled jobs and 37 archives were reconciled,
 including 21 ordinary native executables and complete root-suite receipts.
 The selected 61-scenario reports retain five Windows skips and zero Linux/macOS
 skips; the full-suite skip counts have a separate scope in the ledger.
 This follows the local `edgepillar` author/committer merge of
-[PR #325](https://github.com/edgepillar/zenon-spv/pull/325).
+[PR #333](https://github.com/edgepillar/zenon-spv/pull/333).
 The separate exporter/transport workflows did not run at this revision, and
 their earlier qualifications remain pinned to their original sources. The
 original frozen human-review candidate remains unchanged.
