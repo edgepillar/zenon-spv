@@ -170,6 +170,8 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 
 func experimentalBatchContextQueryError(err error) (int, string) {
 	switch {
+	case errors.Is(err, verify.ErrExperimentalBatchContextRequiredRows):
+		return 2, "required_row_absent"
 	case errors.Is(err, verify.ErrExperimentalBatchEntryAbsent):
 		return 2, "typed_value_absent"
 	case errors.Is(err, proof.ErrCandidateSMTBounds), errors.Is(err, proof.ErrCandidateBatchEntryBounds), errors.Is(err, proof.ErrCandidateDomainBounds):

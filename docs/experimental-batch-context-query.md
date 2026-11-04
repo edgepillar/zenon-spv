@@ -40,6 +40,10 @@ only from the owned header. `ReadCandidateSMTProofSet` preflights per-row and
 aggregate work before proof hashing/copies. All proofs and strict ABI decodes must
 pass before a detached consumer result is returned. Errors return a zero result.
 Provider root/value hints must match; they never select authority.
+The three-row API uses a separate required-row absence error and the CLI category
+`required_row_absent`. It never returns the legacy single-row `BatchEntry absent`
+signal for missing supporting context; no application absence or DTO fallback is
+inferred. The legacy single-row API keeps its existing error behavior.
 
 Individual proof/value/opaque-field caps and total proof/value caps must be positive.
 Sibling caps are inclusive: zero means no encoded siblings. Config's fixed value
@@ -152,15 +156,16 @@ report. It reuses full-suite execution; it adds no second test execution lane.
 Unit controls cover per-row/aggregate boundaries, opaque handles, detached values,
 canonicality/absence, source-rule narrowing, persistence/pruning and legacy behavior.
 
-Local Go 1.25.14 Darwin/arm64 qualification passed 32 selected Go roots and 493
+Local Go 1.25.14 Darwin/arm64 qualification passed 33 selected Go roots and 497
 subtest pass events with the race detector, three independent Python control
 roots, configured golangci-lint 2.6.2, vet and module verification. It finished in
-88.2 seconds; the largest workspace observed after a phase was 527,479,417 bytes
+78.9 seconds; the largest workspace observed after a phase was 527,327,425 bytes
 under a 1 GiB task limit. This is not a continuously sampled peak. The owned
 temporary source/module/build workspace was removed; evidence stayed protected.
-The synthetic three-row query measured approximately 134 microseconds, 3,040
+Before the required-row error refinement, the synthetic three-row query measured approximately 134 microseconds, 3,040
 allocated bytes and 24 allocations per operation in one short local benchmark.
-These are local implementation observations, not network/device acceptance limits.
+That short benchmark was retained without reexecution. These are local
+implementation observations, not network/device acceptance limits.
 An earlier fixture used raw hex for the RPC producer instead of Bech32; its
 failed CLI evidence was retained. The corrected wire encoding reuses unchanged
 header signatures, fingerprints and original-node proofs.

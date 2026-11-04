@@ -15,8 +15,9 @@ import (
 )
 
 var (
-	ErrExperimentalBatchContextOpaque = errors.New("experimental three-witness handles cannot be encoded or supplied by a caller")
-	ErrExperimentalDomainRecordRule   = errors.New("domain record differs from the selected phase1 source rule")
+	ErrExperimentalBatchContextOpaque       = errors.New("experimental three-witness handles cannot be encoded or supplied by a caller")
+	ErrExperimentalBatchContextRequiredRows = errors.New("a required three-witness row is absent")
+	ErrExperimentalDomainRecordRule         = errors.New("domain record differs from the selected phase1 source rule")
 )
 
 // ExperimentalBatchContextRequest has the same local selectors as the legacy
@@ -181,13 +182,8 @@ func (q ExperimentalBatchContextQuery) read(b experimentalBatchContextBinding, r
 	if err != nil {
 		return ExperimentalBatchContextResult{}, err
 	}
-	for _, match := range matches {
-		if !match.Canonical {
-			return ExperimentalBatchContextResult{}, ErrExperimentalBatchEntryCanonical
-		}
-		if !match.Present {
-			return ExperimentalBatchContextResult{}, ErrExperimentalBatchEntryAbsent
-		}
+	if err := requireExperimentalBatchContextRows(matches); err != nil {
+		return ExperimentalBatchContextResult{}, err
 	}
 	entry, err := proof.DecodeCandidateBatchEntry(matches[0].Value, p.Entry.Limits.abi())
 	if err != nil {
@@ -217,6 +213,25 @@ func (q ExperimentalBatchContextQuery) read(b experimentalBatchContextBinding, r
 		Entry:            entry, DomainRecord: record, DomainConfig: config,
 		HeaderTrust: q.data.entry.data.state.acceptedEnvelope().TrustAssumptions,
 	}, nil
+}
+
+// Missing supporting context must never become the legacy single-row
+// "BatchEntry absent" signal. Only a complete present canonical set can reach
+// typed decoding. The matches come exclusively from the mathematical checker;
+// this policy helper grants no root, key or header authority by itself.
+func requireExperimentalBatchContextRows(matches []proof.CandidateSMTMatch) error {
+	if len(matches) != 3 {
+		return proof.ErrCandidateSMTEncoding
+	}
+	for _, match := range matches {
+		if !match.Canonical {
+			return ErrExperimentalBatchEntryCanonical
+		}
+		if !match.Present {
+			return ErrExperimentalBatchContextRequiredRows
+		}
+	}
+	return nil
 }
 
 // The explicit phase1 source rule does not claim all RegisterDomain checks:

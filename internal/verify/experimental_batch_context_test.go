@@ -340,7 +340,7 @@ func TestExperimentalBatchContextCanonicalPresenceAndRule(t *testing.T) {
 	r.BatchID = 1
 	p := f.proofs()
 	p.BatchEntry = f.absent
-	if result, err := f.query.Query(r, p); err != ErrExperimentalBatchEntryAbsent || !reflect.DeepEqual(result, ExperimentalBatchContextResult{}) {
+	if result, err := f.query.Query(r, p); err != ErrExperimentalBatchContextRequiredRows || !reflect.DeepEqual(result, ExperimentalBatchContextResult{}) {
 		t.Fatal("absence became typed value", err)
 	}
 	result, err := f.query.Query(f.Request, f.proofs())
@@ -371,6 +371,31 @@ func TestExperimentalBatchContextCanonicalPresenceAndRule(t *testing.T) {
 	result.Entry.ExecutorPillar = string([]byte{0xff})
 	if _, err := json.Marshal(result); err == nil {
 		t.Fatal("opaque string silently replaced")
+	}
+}
+
+func TestExperimentalBatchContextRequiredRowsNoAbsenceFallback(t *testing.T) {
+	// Pure policy controls after mathematical matching, not header/proof
+	// authentication. The exported query's valid target-absence fixture above
+	// additionally exercises the complete owned-state composition.
+	present := []proof.CandidateSMTMatch{
+		{Present: true, Canonical: true}, {Present: true, Canonical: true}, {Present: true, Canonical: true},
+	}
+	if err := requireExperimentalBatchContextRows(present); err != nil {
+		t.Fatal(err)
+	}
+	for i := range present {
+		t.Run("required-row-"+string(rune('0'+i)), func(t *testing.T) {
+			matches := append([]proof.CandidateSMTMatch(nil), present...)
+			matches[i].Present = false
+			err := requireExperimentalBatchContextRows(matches)
+			if err != ErrExperimentalBatchContextRequiredRows || errors.Is(err, ErrExperimentalBatchEntryAbsent) {
+				t.Fatal("a required context row became application BatchEntry absence", err)
+			}
+		})
+	}
+	if err := requireExperimentalBatchContextRows(present[:2]); err != proof.ErrCandidateSMTEncoding {
+		t.Fatal("partial match set became a complete typed query", err)
 	}
 }
 

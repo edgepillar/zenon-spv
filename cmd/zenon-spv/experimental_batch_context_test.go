@@ -19,6 +19,7 @@ import (
 type batchContextCLIInputs struct {
 	config, bundle                      map[string]any
 	request                             verify.ExperimentalBatchContextRequest
+	absent                              []byte
 	headerPin, queryPin                 string
 	configPath, requestPath, bundlePath string
 }
@@ -77,8 +78,13 @@ func newBatchContextCLIInputs(t *testing.T) batchContextCLIInputs {
 		}
 		witnesses[row.Name] = map[string]any{"root": trace.Root, "value": value, "proof": encoded}
 	}
+	absent, err := hex.DecodeString(trace.Rows[3].Proof)
+	if err != nil {
+		t.Fatal(err)
+	}
 	dir := t.TempDir()
 	f := batchContextCLIInputs{config: fixture.Config, request: fixture.Request,
+		absent:    absent,
 		bundle:    map[string]any{"version": 1, "momentums": fixture.Momentums, "witnesses": witnesses},
 		headerPin: expected.Header, queryPin: expected.Query, configPath: filepath.Join(dir, "config.json"), requestPath: filepath.Join(dir, "request.json"), bundlePath: filepath.Join(dir, "bundle.json")}
 	f.write(t)
@@ -157,7 +163,7 @@ func TestExperimentalBatchContextCLIConsumerAndGateway(t *testing.T) {
 }
 
 func TestExperimentalBatchContextCLIFailuresAndBounds(t *testing.T) {
-	for _, name := range []string{"request-context", "header-pin", "query-pin", "wrong-tip", "wrong-header", "old-profile", "old-bundle", "witnesses-null", "config-oversize"} {
+	for _, name := range []string{"request-context", "header-pin", "query-pin", "wrong-tip", "wrong-header", "old-profile", "old-bundle", "witnesses-null", "config-oversize", "proven-absence"} {
 		t.Run(name, func(t *testing.T) {
 			f := newBatchContextCLIInputs(t)
 			args := f.args()
@@ -182,6 +188,11 @@ func TestExperimentalBatchContextCLIFailuresAndBounds(t *testing.T) {
 				delete(f.bundle, "witnesses")
 			case "witnesses-null":
 				f.bundle["witnesses"] = nil
+			case "proven-absence":
+				f.request.BatchID = 1
+				row := f.bundle["witnesses"].(map[string]any)["batch_entry"].(map[string]any)
+				row["proof"], row["value"] = f.absent, nil
+				want = 2
 			}
 			f.write(t)
 			if name == "config-oversize" {
@@ -189,7 +200,10 @@ func TestExperimentalBatchContextCLIFailuresAndBounds(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			batchContextCLIReport(t, experimentalContextQueryCommand, args, want)
+			report := batchContextCLIReport(t, experimentalContextQueryCommand, args, want)
+			if name == "proven-absence" && (report.Error == nil || report.Error.Category != "required_row_absent") {
+				t.Fatal("required-row absence became application BatchEntry absence")
+			}
 		})
 	}
 	for _, row := range []string{"batch_entry", "domain_record", "domain_config"} {
