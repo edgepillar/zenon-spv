@@ -12,6 +12,107 @@ human acceptance or authenticated distribution.
 ## Current qualified runtime baseline
 
 The runtime baseline selected by this ledger is
+[`62524106cb363c51a1018f474693f46842eb6f32`](https://github.com/edgepillar/zenon-spv/tree/62524106cb363c51a1018f474693f46842eb6f32),
+tree `fe67354c5d483aa7f3216462a73c7c87d953b153`, following the local merge of
+[PR #333](https://github.com/edgepillar/zenon-spv/pull/333). Both author and
+committer are `edgepillar`. Its own
+[general main CI](https://github.com/edgepillar/zenon-spv/actions/runs/41908988549)
+passed on attempt 1. Reconciliation covers all seven scheduled jobs, 37 actual
+archive IDs and 59,944,159 archive bytes, including 21 ordinary native
+executables, source/build metadata, architecture checks and the selected
+61-scenario reports. The selected Windows reports retain five skips; Linux and
+macOS have zero. The separate exporter/transport workflows did not run at this
+revision: their earlier observations retain their original source pins.
+
+The complete uncached root-suite receipts cover 16 root-module packages.
+Linux and macOS each record 942 root and 5,967 subtest completions: 6,909
+passing events and zero skips. Windows records 938 root and 6,050 subtest
+completions: 6,972 passing events and 16 skip events. Root/subtest completion
+counts include skips; they must not be read as additional passing counts.
+These full-suite counts and the five selected Windows skips describe different
+scopes. The artifact reader extracts no payload files and executes no new native
+tests or candidate binaries. It reused 25 verified archive objects and acquired
+the remaining 12 once; every archive still received its own source/content checks.
+
+Since the historical `da04d418` baseline, the source adds configured owned-v3
+headers, immutable state/persistence, typed `BatchEntry` and three-witness
+queries, explicitly hash-pinned trusted checkpoint reuse, and collection of
+only the missing header suffix while retaining the original anchor. Their
+[experimental contract](experimental-batch-context-query.md) retains locally
+derived keys, header-bound roots and finite operator-selected producer schedules.
+The pooled node-derived leaf values and separately signed synthetic header
+fixtures are not one real network capture or a state-transition proof.
+
+The frozen-to-current pair contains 445 changed tracked paths, 183 changed
+selected inputs and 96 root-module Go paths: 42 implementation/driver files and
+54 test files. Root `go.mod` and `go.sum` are unchanged. The narrower historical
+`da04d418`-to-current pair contains 170 tracked changes, 97 selected-input
+changes and 83 root-module Go paths: 38 implementation/driver files and 45 tests.
+Counts use per-revision module ownership; the historical 18-path table below
+describes only its original pair.
+
+### Changes since the preceding runtime selection
+
+The direct `e1e2fda4`-to-`62524106` pair contains 25 tracked changes and ten
+selected-input changes, all ten of them root-module Go paths: four implementation
+files and six test files. The following entry points describe that narrower pair;
+they do not replace review of the complete frozen-to-current delta. Blob IDs
+identify file bytes; an em dash means the earlier path was absent.
+
+| Path | Earlier blob | Selected baseline blob | Review impact |
+| --- | --- | --- | --- |
+| `cmd/zenon-spv/experimental_batch_input.go` | `f2af375cf7f474b0192e673fc50592cfac7386c6` | `8ea02bcc7986a283eff04b2f7e040d3421273063` | Uses an opened regular-file size as a bounded allocation hint; EOF, growth and read-error checks remain required. |
+| `cmd/zenon-spv/experimental_batch_read_test.go` | — | `5a98885e43b7b6765e09610139adfe2340211ca4` | Exercises read hints, allocation observations and exact bounded-input behavior. |
+| `internal/conformance/cli_query_test.go` | `0f3e79d57e21daa044a5cf6074eb8aa874743646` | `f91fbddd35d6f851d852e3f61332b93797732869` | Routes unchanged-checkpoint guards through the bounded byte comparison. |
+| `internal/conformance/cli_state_guard_test.go` | — | `df9b8f3997817d532e7147e0a113b571a5aab58d` | Checks exact bytes, EOF and read failures with a private comparison buffer; retains finite paired allocation observations. |
+| `internal/proof/bundle_json.go` | `9f02e67a235c4de82abe30f31f1b0b18264070a3` | `7e9f01cf521a55cb75e922906ccea60f8bc1cc52` | Keeps the public syntax/nesting validation and shares already completed encoding/json validation only through private callbacks. |
+| `internal/proof/bundle_syntax_test.go` | — | `683b131153010b56715239edd7f028c597c62b23` | Exercises direct/public decoding, encoding/json callbacks and malformed or over-limit JSON. |
+| `internal/proof/serialize.go` | `dbd420e8a63fa56f04754c0883499f461889d1b2` | `0ac8bb2a11c437939e10ea34c1d212d9a306b390` | Uses the private checked-decoder path after bounded top-level JSON syntax validation. |
+| `internal/verify/experimental_v3_profile_test.go` | `1ce5f0aaf28bc72bd080fa2fdad68cdb7edac949` | `8abb022c21233e0a543c0a48328eac212610afd5` | Preserves admission/refusal controls while checking retained-state behavior. |
+| `internal/verify/experimental_v3_retention_test.go` | — | `f7640e354000774307b12b193ac75f8e1ad2b323` | Exercises header-tail ownership, old-handle independence, rejected input and finite retention allocations. |
+| `internal/verify/experimental_v3_state.go` | `5d44e2e3f8fee00473159b21a22061dd9b4947f0` | `9874a3ad2c35e6e3ac853973f11467abb592b47e` | Validates every incoming header, then copies only the retained new tail into fresh owned storage. |
+
+The other 15 paths cover Python consumer selection and its controls, CI scope
+and workflow selection, and documentation. The
+[selected consumer check](independent-consumer-checks.md) validates the complete
+738-ID catalog but prepares only a requested finite case; the default full
+enumeration remains unchanged. The
+[recorded-oracle scope rule](ci-change-scope.md) can omit unchanged recorded
+oracles for a finite reviewed native-v3 change; required native execution and
+source-specific artifact checks remain separate. The bounded input, JSON syntax,
+retention and test-guard observations have local resource scopes; none establishes
+representative network budgets, whole-CI acceleration or independent acceptance.
+
+Review the complete current pair with explicit two-revision commands:
+
+```sh
+git diff --name-status 6ecc2310538d511e3b26bea4c658082853266a11 62524106cb363c51a1018f474693f46842eb6f32
+git diff 6ecc2310538d511e3b26bea4c658082853266a11 62524106cb363c51a1018f474693f46842eb6f32 -- cmd internal tools go.mod go.sum
+```
+
+The second command includes nested modules and other material in those
+directories; apply the module filter defined below for the 96-path Go scope.
+The 718 selected-input fingerprint is independently recomputed from Git blobs
+in the table below. Python, workflow and other excluded inputs still require
+their own inspection and exact-source execution evidence.
+
+This ledger update supplies no new native execution and does not advance the
+frozen human-review candidate. Later documentation-only heads retain the runtime
+qualification at `62524106`; their scope-only CI cannot qualify native execution.
+The [D0-D6 plan](typed-state-roadmap.md) still requires the independently selected
+query/profile/anchor/schedule and actual network capture, representative R1 data,
+independent review and authenticated distribution. Production state proofs and
+irreversible settlement remain NO-GO.
+
+## Historical source-specific records
+
+The following records preserve their original revisions and meanings of
+"current". They do not replace the runtime selection above or the frozen
+human-review selection at the start of this document.
+
+### Earlier runtime selection: `e1e2fda4`
+
+The runtime baseline selected by this ledger is
 [`e1e2fda4910d876588adb9badcb1c0d06c109ccd`](https://github.com/edgepillar/zenon-spv/tree/e1e2fda4910d876588adb9badcb1c0d06c109ccd),
 tree `6fe6c917722a6b741b2a52808f0ed0f67d7afd57`, following the local merge of
 [PR #325](https://github.com/edgepillar/zenon-spv/pull/325). Both author and
@@ -68,12 +169,6 @@ frozen human-review candidate. The [D0-D6 plan](typed-state-roadmap.md) still
 requires the independently selected query/profile/anchor/schedule and actual
 network capture, representative R1 data, independent review and authenticated
 distribution. Production state proofs and irreversible settlement remain NO-GO.
-
-## Historical source-specific records
-
-The following records preserve their original revisions and meanings of
-"current". They do not replace the runtime selection above or the frozen
-human-review selection at the start of this document.
 
 The historical qualified development baseline is
 [`879fbce33dd77f483f7aba18994fb037f248e842`](https://github.com/edgepillar/zenon-spv/tree/879fbce33dd77f483f7aba18994fb037f248e842),
@@ -261,7 +356,7 @@ revision is still the original `6ecc2310538d511e3b26bea4c658082853266a11`.
 Use an explicit two-revision `git diff` for the intended file comparison.
 A three-dot comparison against the original commit can choose an earlier common
 ancestor after the migration. The
-[normalized ancestry comparison](https://github.com/edgepillar/zenon-spv/compare/710627ae9589beca4a23400cc47fb038eb5495fd...e1e2fda4910d876588adb9badcb1c0d06c109ccd)
+[normalized ancestry comparison](https://github.com/edgepillar/zenon-spv/compare/710627ae9589beca4a23400cc47fb038eb5495fd...62524106cb363c51a1018f474693f46842eb6f32)
 is useful for navigation with the tree-equivalence limit above.
 
 ## Historical root-module Go and module-file delta at PR #292
@@ -341,6 +436,7 @@ length framing.
 | `1b8a33fd351ee5b7c697aac21940323ee1f81c74` | 1,158 | 634 | 34,948,765 | `2cc96345633910a132df1d72fe0c7d3b05b6917b8469c4c36277b1784fbee8e0` |
 | `da04d4189017da7ddd2f56e82bd856875e272aed` | 1,162 | 636 | 34,974,843 | `91971f2505e3511263feee52fcdfe70b6fd29ef989351ce6926f819c7fff2328` |
 | `e1e2fda4910d876588adb9badcb1c0d06c109ccd` | 1,288 | 714 | 35,742,217 | `f1e2db03cee2175bba53fb520eca844b63b7938bb919c863f9e8b862f47f4003` |
+| `62524106cb363c51a1018f474693f46842eb6f32` | 1,293 | 718 | 35,773,059 | `23143e1325f6b86588ee9a03e8b9a6df8342d16ac78ff701c36d9f8eeffa28ce` |
 
 The historical frozen-to-`879fbce` comparison contains 204 tracked-file changes
 and 59 selected-input changes. Those historical counts remain valid for that
