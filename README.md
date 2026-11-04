@@ -233,7 +233,15 @@ COMMITTING=$(curl -sk -X POST -H "Content-Type: application/json" \
 ./zenon-spv verify-segment --genesis-config /tmp/anchor.json /tmp/bundle.json
 ```
 
-A successful run prints `ACCEPT ReasonOK` with `CONTENT_INCLUSION` and `SIGNATURE_AUTHENTICITY` in `proven:`. **Verify time is ~120 ms per block on a laptop**, dominated by JSON parse + Ed25519 signature verification.
+A successful run prints `ACCEPT ReasonOK` with `CONTENT_INCLUSION` and
+`SIGNATURE_AUTHENTICITY` in `proven:`.
+
+Verification cost depends on the selected input, retained history and host.
+Use the [native verification benchmarks](docs/native-benchmarks.md) for
+repeatable local workloads and the [selected-height observer resource
+observations](docs/selected-observer-resources.md) for a measured
+collector/verifier/consumer workflow. Each guide records its measurement
+boundary and source context.
 
 ## Subcommand cheatsheet
 
