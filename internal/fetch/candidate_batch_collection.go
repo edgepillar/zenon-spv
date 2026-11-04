@@ -74,6 +74,29 @@ func (d *collectedCandidateMomentumDecoder) UnmarshalJSON(raw []byte) error {
 // All selected reads must complete before any document is returned. Errors
 // return nil, including missing results, later-page failure and cancellation.
 func (c *Client) FetchCandidateBatchEntryBundle(ctx context.Context, selected CandidateBatchCollectionSelection, compareGateway bool) ([]byte, error) {
+	return c.fetchCandidateBatchBundle(ctx, selected, compareGateway, false)
+}
+
+// FetchCandidateBatchContextBundle collects three exact, locally derived keys
+// at the same selected height. The command-specific witnesses object cannot
+// supply profiles, contexts or keys to the offline verifier. Each RPC response
+// is capped separately at 32 KiB, so the three proof responses together are
+// bounded by 96 KiB, in addition to the existing header and final bundle caps.
+// Missing/failed later reads return nil rather than a partial provider bundle.
+func (c *Client) FetchCandidateBatchContextBundle(ctx context.Context, selected CandidateBatchCollectionSelection, compareGateway bool) ([]byte, error) {
+	if selected.DomainID == 0 {
+		return nil, ErrInvalidQuery
+	}
+	return c.fetchCandidateBatchBundle(ctx, selected, compareGateway, true)
+}
+
+type collectedBatchContextWitnesses struct {
+	BatchEntry   json.RawMessage `json:"batch_entry"`
+	DomainRecord json.RawMessage `json:"domain_record"`
+	DomainConfig json.RawMessage `json:"domain_config"`
+}
+
+func (c *Client) fetchCandidateBatchBundle(ctx context.Context, selected CandidateBatchCollectionSelection, compareGateway, withContext bool) ([]byte, error) {
 	if err := selected.Validate(); err != nil {
 		return nil, err
 	}
@@ -109,6 +132,25 @@ func (c *Client) FetchCandidateBatchEntryBundle(ctx context.Context, selected Ca
 	if err != nil {
 		return nil, err
 	}
+	var witnesses *collectedBatchContextWitnesses
+	if withContext {
+		recordKey := proof.CandidateSettlementDomainRecordKey(selected.Settlement, selected.DomainID)
+		configKey := proof.CandidateSettlementDomainConfigKey(selected.Settlement, selected.DomainID)
+		witnesses = &collectedBatchContextWitnesses{BatchEntry: witness}
+		for _, next := range [...]struct {
+			key    [27]byte
+			target *json.RawMessage
+		}{{recordKey, &witnesses.DomainRecord}, {configKey, &witnesses.DomainConfig}} {
+			*next.target, err = c.collectCandidateResult(ctx, "ledger.getProof", []any{selected.Height, next.key[:]}, func(raw []byte) error {
+				_, err := DecodeCandidateStateWitness(raw)
+				return err
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+		witness = nil // The three-row schema has no legacy witness field.
+	}
 	var gateway json.RawMessage
 	if compareGateway {
 		gateway, err = c.collectCandidateResult(ctx, "embedded.settlement.getBatch", []any{selected.DomainID, selected.BatchID}, func(raw []byte) error {
@@ -132,11 +174,12 @@ func (c *Client) FetchCandidateBatchEntryBundle(ctx context.Context, selected Ca
 	encoder := json.NewEncoder(&output)
 	encoder.SetEscapeHTML(false)
 	if err := encoder.Encode(struct {
-		Version   uint32            `json:"version"`
-		Momentums []json.RawMessage `json:"momentums"`
-		Witness   json.RawMessage   `json:"witness"`
-		Gateway   json.RawMessage   `json:"gateway,omitempty"`
-	}{1, rows, witness, gateway}); err != nil {
+		Version   uint32                          `json:"version"`
+		Momentums []json.RawMessage               `json:"momentums"`
+		Witness   json.RawMessage                 `json:"witness,omitempty"`
+		Witnesses *collectedBatchContextWitnesses `json:"witnesses,omitempty"`
+		Gateway   json.RawMessage                 `json:"gateway,omitempty"`
+	}{1, rows, witness, witnesses, gateway}); err != nil {
 		return nil, ErrInvalidRPCResponse
 	}
 	if output.Len() > MaxCandidateBatchBundleBytes {

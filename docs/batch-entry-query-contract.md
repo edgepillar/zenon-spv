@@ -82,7 +82,7 @@ they do not authenticate a live network or its activation.
 | First incoming v3 | Actual boundary from v1 genesis and parent-frontier activation behavior | Source-conditioned expectation is height 3 for the pinned devnet genesis; actual transition capture remains open and the [chain-100 fixture](first-v3-node-boundary.md) does not qualify its activation |
 | Settlement address | Fixed raw 20-byte address from the selected local profile | Source constant mapped; active network selection remains open |
 | Domain | Locally selected uint32 | Source default 1; active query selection remains open |
-| Domain context | Locally derived domainRecord and domainConfig keys; supporting proofs at the same accepted H/root/context | Source schemas and temporal limits are [recorded](batch-entry-domain-context.md); typed supporting-proof composition remains open |
+| Domain context | Locally derived domainRecord and domainConfig keys; supporting proofs at the same accepted H/root/context | Source schemas and temporal limits are [recorded](batch-entry-domain-context.md); the [separate versioned three-row query](experimental-batch-context-query.md) implements offline supporting-proof composition; selected-network qualification remains open |
 | Batch | Locally selected uint64, with bounded exact text parsing at the CLI boundary | Open; the gateway must not select the expected batch |
 | Proof and value limits | Explicit positive schema-aware byte, sibling and cumulative-work limits | Experimental schema-1 policy implemented; selected-network review/selection remains open |
 | Temporal claims | First query claims membership at H; any additional delay claim is separate | No consensus-finality, receive or spendability claim |

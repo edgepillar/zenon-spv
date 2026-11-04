@@ -138,7 +138,7 @@ The [bounded candidate SMT proof-set helper](candidate-smt-proof-set.md) prepare
 aggregate work preflight for the three supporting witnesses. It preserves the
 single-proof contract and defers detached output until every mathematical match
 passes. This is a D1 implementation primitive; the owned header/context-bound
-three-row query and D3 consumer acceptance remain open.
+[three-row query](experimental-batch-context-query.md) now has a separate versioned offline implementation; selected-network D3 consumer acceptance remains open.
 
 ### Maintainer feedback follow-up: 3 November 2026
 
@@ -152,7 +152,7 @@ the configuration or runtime used by an older batch. The existing finite
 producer authorization remains intact; genesis membership is a distinct
 policy proposal. The candidate [domain keys and bounded codecs](candidate-domain-context.md)
 now have original-node ABI/subkey captures and independent byte comparisons;
-supporting proof composition remains open. These D0-D1 slices do not complete a selected-network query
+the [versioned three-row workflow](experimental-batch-context-query.md) adds offline composition. These slices do not complete a selected-network query
 or transfer human review, old CI or live-network authority to a new revision.
 
 ## Authority and required invariants

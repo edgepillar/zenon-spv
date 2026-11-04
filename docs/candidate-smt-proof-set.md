@@ -82,9 +82,8 @@ The follow-up uses a tagged switch for the same three benchmark cases. The
 production readers and every test/fuzz function remain byte-identical. The
 configured golangci-lint v2.6.2 checks and the same three benchmark cases passed
 in a bounded local workspace; prior unit/fuzz work was preserved without
-reexecution. The failed revision's evidence remains separate. The corrected
-source still requires its own three-platform CI/artifact qualification; no
-linter rule is disabled.
+reexecution. The failed revision's evidence remains separate. The corrected source was qualified independently on its PR and locally merged
+main; those results do not qualify this new integration. No linter rule is disabled.
 
 Presence and canonical encoding remain returned facts. An enclosing typed-query
 policy must require both for all three supporting rows. A successful set read
@@ -92,8 +91,8 @@ does not establish application coverage, accepted header/height/context, a domai
 identity, ABI semantics, registration rules or historical configuration. It
 cannot create an owned state handle or enable production state-value acceptance.
 
-The next integration still needs an explicit versioned context and work profile,
-three locally derived keys at one owned H/hash/root/context/tip, typed decoding
-and all-or-nothing consumer output. Current-H context does not establish a
+The [separate versioned integration](experimental-batch-context-query.md) adds an
+explicit context and work profile, three locally derived keys at one owned
+H/hash/root/context/tip, typed decoding and all-or-nothing consumer output. Current-H context does not establish a
 batch's submission-time configuration. Selected-network capture, independent
 trust inputs, independent review and authenticated distribution remain open.
