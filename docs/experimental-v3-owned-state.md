@@ -108,6 +108,47 @@ Typed headers are validated before their key/signature buffers are detached;
 malformed large buffers do not cause a same-sized copy. Callers must not mutate
 input slices concurrently with verification.
 
+### Retained-header allocation
+
+Extension allocates its new retained-header slice only after every incoming
+header and link has passed. Even an incoming header that will be evicted must
+pass its hash, signature, profile and finite schedule checks. Only newly retained
+caller key/signature buffers are cloned; existing private immutable headers can
+be reused in a fresh slice. Any refusal, rejection or insufficient depth returns
+the original handle without a provisional header array or detached input copies.
+Context fingerprints, saved format, trusted-local provenance and v1/v2 behavior
+are unchanged.
+
+The local regression reuses the existing chain-100 public signatures at heights
+12-14. For bounded invalid input it repeats those records to 4,096 rows: either
+the first version is unsupported, or the first repeated height fails after the
+three valid records. That array is not another valid chain or network capture.
+The allocation-bound control failed against the original production file at
+[`b7145074`](https://github.com/edgepillar/zenon-spv/blob/b714507403e7d0e5fe77b228458b4ca1efe18a2c/internal/verify/experimental_v3_state.go)
+and passed after the change; the original failure remains retained.
+
+The same benchmark harness, Go 1.25.14 and macOS arm64 produced three samples
+of ten calls per case. Inputs and configuration are prepared outside the measured
+interval. The table reports cumulative allocation per call, not peak RSS,
+representative R1 budgets or a controlled latency improvement.
+
+| Case | Before bytes/call | After bytes/call | Before/after allocations/call |
+| --- | ---: | ---: | ---: |
+| Three public headers, retain two | 2,624 | 1,632 | 16 / 13 |
+| Unsupported first row in a 4,096-row batch | 1,179,808-1,179,817 | 160 | 5 / 4 |
+| Repeated height after the three public headers | 1,180,192 | 160 | 13 / 4 |
+
+```sh
+go test -run '^$' -bench '^BenchmarkExperimentalV3RetainedCopies$' \
+  -benchtime=10x -count=3 ./internal/verify
+```
+
+The controls also compare all four partitions of the public three-header chain
+at retention 2, 3 and 4,096, preserve earlier handles after input/output mutation,
+and reject changed eventually evicted rows. No new node execution or signatures
+are needed for these controls. Each delivered revision still requires its own
+scheduled platform CI and artifact reconciliation.
+
 ## Persistence and compatibility
 
 The separate file format is `zenon-experimental-v3-owned-state/v1`, with numeric
