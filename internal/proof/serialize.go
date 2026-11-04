@@ -100,7 +100,14 @@ type bundleJSONDecoder struct {
 }
 
 func (decoder *bundleJSONDecoder) UnmarshalJSON(raw []byte) error {
-	return decoder.target.unmarshalJSON(raw, decoder.limits)
+	// This private adapter is used only through json.Unmarshal above, which
+	// checks the complete document before invoking an Unmarshaler. Reuse that
+	// syntax/nesting check rather than scanning the same input a second time.
+	// HeaderBundle.UnmarshalJSON retains its standalone validation path.
+	if err := decoder.limits.validate(); err != nil {
+		return err
+	}
+	return decoder.target.unmarshalValidatedJSON(raw, decoder.limits)
 }
 
 // MarshalHeaderBundleJSON writes hb to indented JSON for fixtures.

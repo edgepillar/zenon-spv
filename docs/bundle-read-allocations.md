@@ -1,5 +1,10 @@
 # Bounded bundle input allocation comparison
 
+The later [syntax-validation reuse](bundle-syntax-validation.md) removes one
+redundant complete-document scan only inside the standard-library-backed bundle
+adapter. Standalone calls keep their own syntax checks; decoding, resource and
+trust boundaries remain separate from input-buffer allocation observations.
+
 ## Unused extension decoding
 
 The current bundle object decoder also avoids retaining a `json.RawMessage`

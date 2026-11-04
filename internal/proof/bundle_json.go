@@ -21,6 +21,21 @@ func (b *HeaderBundle) unmarshalJSON(raw []byte, limits DecodeLimits) error {
 	if err := limits.validate(); err != nil {
 		return err
 	}
+	// Standalone calls, including a direct UnmarshalJSON invocation, must
+	// validate complete syntax and nesting before borrowing any value spans.
+	var syntax discardedBundleValueJSON
+	if err := json.Unmarshal(raw, &syntax); err != nil {
+		return err
+	}
+	return b.unmarshalValidatedJSON(raw, limits)
+}
+
+// unmarshalValidatedJSON requires one complete, syntax-checked JSON value and
+// nonnegative limits. The standalone decoder above supplies those checks. The
+// private bundleJSONDecoder callback can also supply them because encoding/json
+// validates the whole document before invoking it. Neither path may pass a
+// partially validated stream or a provider's claim of valid syntax here.
+func (b *HeaderBundle) unmarshalValidatedJSON(raw []byte, limits DecodeLimits) error {
 	var decoded HeaderBundle
 	evidence := newEvidenceDecoder(limits)
 	fields := []struct {
@@ -33,11 +48,6 @@ func (b *HeaderBundle) unmarshalJSON(raw []byte, limits DecodeLimits) error {
 		{"commitments", &bundleRows[CommitmentEvidence]{target: &decoded.Commitments, field: "commitments", limit: limits.MaxCommitments, decode: evidence.commitment}},
 		{"segments", &bundleRows[AccountSegment]{target: &decoded.Segments, field: "segments", limit: limits.MaxSegments, decode: evidence.segment}},
 		{"state_value_proofs", &bundleRows[StateValueProof]{target: &decoded.StateValueProofs, field: "state_value_proofs", limit: limits.MaxStateValueProofs, decode: evidence.stateProof}},
-	}
-	// Validate complete syntax and nesting before borrowing any value spans.
-	var syntax discardedBundleValueJSON
-	if err := json.Unmarshal(raw, &syntax); err != nil {
-		return err
 	}
 	cursor := bundleValueCursor{raw: raw}
 	cursor.space()
