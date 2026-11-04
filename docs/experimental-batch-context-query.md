@@ -58,6 +58,7 @@ zenon-spv query-experimental-batch-context \
   --config <config.json> --request <request.json> \
   --expect-header-context <independently-selected-64-hex> \
   --expect-query-context <independently-selected-64-hex> \
+  [--trusted-state <local-checkpoint.json> --expect-state-sha256 <independently-selected-64-hex>] \
   [--compare-gateway] <provider.json>
 ```
 
@@ -110,6 +111,48 @@ The collector performs the bounded selected header read, then three
 A later failed read emits no partial provider document. Collection does not
 authenticate a root or select trust settings from a peer frontier. Neither
 command starts a wallet, signs, transacts or deploys.
+
+### Pinned read-only checkpoint reuse
+
+Repeated queries may select an existing trusted local experimental state with
+both `--trusted-state` and a nonzero `--expect-state-sha256`. Once checkpoint
+reuse is requested, missing, empty, repeated or unpaired selectors refuse before
+input reads. Header and query
+context pins remain mandatory and are checked before the checkpoint or provider.
+The checkpoint is never selected by provider JSON or by a default filename.
+
+The regular-file reader caps the state at 8 MiB and reads its bytes once. The
+same buffer is SHA-256 checked and strictly decoded through
+`DecodePinnedTrustedExperimentalV3State`. Profile/policy/context, retained
+header layouts, root-bound hashes, signatures, finite producer authorization and
+links are rechecked. A matching digest is content identity, not authentication:
+trusted local provenance is still required for evicted ancestry and file origin.
+The persisted v4 format and existing trusted file loader are unchanged.
+
+The provider can contain an empty `momentums` array when all query/tip headers
+are already retained, or only the bounded immediate successors of the saved tip.
+Without the explicit checkpoint pair, an empty header array keeps its existing
+refusal. Incorrect/pruned query identity, stale tip, replayed old ranges, invalid
+successors or unavailable witnesses never fall back to a provider root or a
+different state. No checkpoint is created, updated, migrated or locked for writing.
+
+Checkpoint mode adds a `state_input` report with the selected SHA-256, bounded
+byte count, provider-header count and `trusted_local_provenance_required` trust
+label. The typed result retains the existing persisted-state trust assumption.
+With no successor headers, `headers` is null: no extension outcome is invented.
+Default anchor replay omits `state_input` and keeps its prior report/exit behavior.
+Forwarded reports and result caches must preserve the checkpoint byte identity
+and `header_trust` assumptions: an equal row/query fingerprint does not establish
+equal local-file provenance. Detached JSON cannot construct an owned handle.
+Digest mismatch is rejection 1 (`state_input/digest_mismatch`); unreadable,
+oversized, empty or invalid checkpoints are input error 70. These are not proof
+of absence and never produce a partial typed result.
+
+The existing compiled two-command scenario reuses its same builds to compare
+full four-header acquisition with two successor headers and a proof-only query.
+The retained tail is still rechecked; a zero provider-header count does not mean
+zero signature work. These small fixture counts establish reduced replay scope,
+not representative network latency, R1 resource budgets or production support.
 
 ## Fixtures and qualification boundaries
 

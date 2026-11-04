@@ -131,6 +131,16 @@ resizing or migrating the state. A saved evicted tail cannot re-prove its missin
 ancestry or authenticate its own local-file provenance. This does not qualify
 original-node state-tree recovery or root rebuilding.
 
+`DecodePinnedTrustedExperimentalV3State` adds the same trusted-local decoding
+contract for a bounded, caller-owned byte buffer and an independently selected
+nonzero SHA-256 pin. Hashing and decoding use the same buffer, so a consumer can
+read one regular file once without a path/hash/reopen race. The caller must not
+mutate the buffer concurrently. Retained authentication is rechecked and input
+bytes are not retained. The digest does not authenticate local provenance or
+restore evicted ancestry. The [three-row CLI](experimental-batch-context-query.md)
+uses this path only with an explicit checkpoint selector and both context pins;
+it never writes the checkpoint or imports one from provider JSON.
+
 The shared atomic-writer extraction preserves native serialized bytes. A
 2,073-byte v1/v2 saved-state vector from the existing public signed fixture has
 independent Python SHA-256

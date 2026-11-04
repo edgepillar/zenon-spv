@@ -155,6 +155,13 @@ now have original-node ABI/subkey captures and independent byte comparisons;
 the [versioned three-row workflow](experimental-batch-context-query.md) adds offline composition. These slices do not complete a selected-network query
 or transfer human review, old CI or live-network authority to a new revision.
 
+The three-row CLI can also reuse explicitly selected trusted local persistence
+with independent SHA-256/header/query pins, a single bounded state-file read,
+retained-header authentication and either proof-only input or bounded successors.
+It preserves the existing persisted-state provenance assumption and never writes
+or silently initializes a checkpoint. This prepares D2/D3 repeat queries without
+closing any selected-network, ancestry, activation or production acceptance gate.
+
 ## Authority and required invariants
 
 - The original owner memo is a dated architectural input; Zeno research/state-root.md is a separate informative file. Neither overrides the selected normative contract or actual source behavior.
