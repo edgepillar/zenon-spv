@@ -50,7 +50,13 @@ func (state *persistedState) UnmarshalJSON(raw []byte) error {
 			target = field.target
 			break
 		}
-		if err := d.Decode(target); err != nil {
+		if target == &decoded.Window {
+			window, err := decodeRetainedWindowValue(d, MaxPersistedHeaders)
+			if err != nil {
+				return err
+			}
+			decoded.Window = window
+		} else if err := d.Decode(target); err != nil {
 			return err
 		}
 	}
