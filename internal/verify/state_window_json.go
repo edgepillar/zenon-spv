@@ -24,10 +24,29 @@ func (window *retainedHeaderWindow) UnmarshalJSON(raw []byte) error {
 }
 
 func decodeRetainedWindow(raw []byte, maxHeaders int) ([]chain.Header, error) {
+	d := json.NewDecoder(bytes.NewReader(raw))
+	decoded, err := decodeRetainedWindowValue(d, maxHeaders)
+	if err != nil {
+		return nil, err
+	}
+	var extra json.RawMessage
+	if err := d.Decode(&extra); err != io.EOF {
+		if err == nil {
+			err = errors.New("retained window: trailing JSON value")
+		}
+		return nil, err
+	}
+	return decoded, nil
+}
+
+// decodeRetainedWindowValue consumes one bounded value from an existing
+// decoder. The state-object decoder uses it directly so Decode need not buffer
+// the complete retained array before another decoder processes its headers.
+// The caller remains responsible for its enclosing object or end-of-input.
+func decodeRetainedWindowValue(d *json.Decoder, maxHeaders int) ([]chain.Header, error) {
 	if maxHeaders < 0 {
 		return nil, fmt.Errorf("%w: negative header count limit", ErrInvalidRetainedState)
 	}
-	d := json.NewDecoder(bytes.NewReader(raw))
 	first, err := d.Token()
 	if err != nil {
 		return nil, err
@@ -52,13 +71,6 @@ func decodeRetainedWindow(raw []byte, maxHeaders int) ([]chain.Header, error) {
 		if _, err := d.Token(); err != nil {
 			return nil, err
 		}
-	}
-	var extra json.RawMessage
-	if err := d.Decode(&extra); err != io.EOF {
-		if err == nil {
-			err = errors.New("retained window: trailing JSON value")
-		}
-		return nil, err
 	}
 	return decoded, nil
 }

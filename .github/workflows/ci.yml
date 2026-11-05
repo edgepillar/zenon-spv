@@ -239,6 +239,10 @@ jobs:
         run: go test -race -v -count=1 -run '^TestOwnedHeaderEnvelope' ./internal/verify
       - name: Detached header envelope allocation observations
         run: go test -run '^$' -bench '^BenchmarkOwnedHeaderEnvelope' -benchtime=20x -benchmem -cpu=1 -count=3 ./internal/verify
+      - name: Streamed retained state decoding controls
+        run: go test -race -v -count=1 -run '^TestStreamedStateWindow' ./internal/verify
+      - name: Streamed retained state allocation observations
+        run: go test -run '^$' -bench '^BenchmarkStreamedStateWindow/' -benchtime=3x -benchmem -cpu=1 -count=3 ./internal/verify
       - name: Retained model header equality controls
         run: go test -v -count=1 -run '^TestSequenceHeaderEqualityMatchesReflection$' ./internal/verify
       - name: Retained model header comparison observations
@@ -990,6 +994,10 @@ jobs:
         run: go test -v -count=1 -run '^TestOwnedHeaderEnvelope' ./internal/verify
       - name: Detached header envelope allocation observations
         run: go test -run '^$' -bench '^BenchmarkOwnedHeaderEnvelope' -benchtime=20x -benchmem -cpu=1 -count=3 ./internal/verify
+      - name: Streamed retained state decoding controls
+        run: go test -v -count=1 -run '^TestStreamedStateWindow' ./internal/verify
+      - name: Streamed retained state allocation observations
+        run: go test -run '^$' -bench '^BenchmarkStreamedStateWindow/' -benchtime=3x -benchmem -cpu=1 -count=3 ./internal/verify
       - name: Retained model header equality controls
         run: go test -v -count=1 -run '^TestSequenceHeaderEqualityMatchesReflection$' ./internal/verify
       - name: Retained model header comparison observations
