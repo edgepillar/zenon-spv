@@ -1,0 +1,58 @@
+name: devnet-resource-preflight
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/devnet-resource-preflight.yml'
+      - 'tools/devnet-preflight/**'
+      - 'docs/devnet-resource-preflight.md'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/devnet-resource-preflight.yml'
+      - 'tools/devnet-preflight/**'
+      - 'docs/devnet-resource-preflight.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  controls:
+    name: Resource preflight (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux-amd64
+          - os: macos-15-intel
+            platform: darwin-amd64
+          - os: windows-latest
+            platform: windows-amd64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Resource observation controls
+        id: controls
+        shell: bash
+        run: python -I -B tools/devnet-preflight/preflight_test.py --receipt "${{ runner.temp }}/devnet-resource-controls.json"
+      - name: Read the fresh Linux runner resources
+        if: ${{ runner.os == 'Linux' }}
+        shell: bash
+        run: python -I -B tools/devnet-preflight/preflight.py --workspace "${{ runner.temp }}" --minimum-free-bytes 10737418240 --expected-allocation-bytes 8589934592 --report "${{ runner.temp }}/devnet-resource-observation.json"
+      - name: Upload bounded read-only observations
+        if: ${{ !cancelled() && steps.controls.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: devnet-resource-${{ matrix.platform }}
+          path: |
+            ${{ runner.temp }}/devnet-resource-controls.json
+            ${{ runner.temp }}/devnet-resource-observation.json
+          if-no-files-found: error
+          retention-days: 14
