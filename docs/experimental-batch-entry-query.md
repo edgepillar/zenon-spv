@@ -44,6 +44,54 @@ with schema `zenon-settlement-batch-entry-17/v1` and raw Settlement address
 `01b3b6e5adcb4d0cad7fcef33598c6318c6318c0`. A different source schema or
 Settlement contract needs an explicit new profile implementation.
 
+## Version 2 source-field policy
+
+Version 1 keeps its original exact profile schema, JSON encoding and context
+fingerprint. It does not admit a `source_rule` field, even an empty one. Version
+2 requires the additional exact field
+`"source_rule": "zenon-phase1-batch-fields/v1"`. Choosing that policy requires
+reselecting the query-context pin and request context; a legacy pin cannot
+authorize it. The ABI schema, positive local byte caps, header profile, key,
+proof limits and trusted-state persistence remain unchanged.
+
+The version 2 rule checks this subset from node revision
+`938fca3b7787da86827a5eb63371509b36e14761` after canonical membership and strict
+bounded ABI decoding:
+
+- `executorPillar`: 1 through 40 ASCII bytes matching the source
+  `^([a-zA-Z0-9]+[-._]?)*[a-zA-Z0-9]$` name rule.
+- `assetFlowSummary`: u32 big-endian count at most 16, followed by exactly that
+  many 96-byte entries. Each entry has a 32-byte asset ID with 22 zero prefix
+  bytes and two unsigned 256-bit amounts. Asset IDs must strictly increase;
+  deposit and withdrawal amounts cannot both be zero. A zero count is valid;
+  an all-zero asset ID is encoding-valid and is not a token-registry assertion.
+- `proofData`: exactly empty. Its configured byte cap must still be positive.
+
+These map to `checkPillarName`, `decodeAssetFlowSummary` and `ZTSFromAssetId`
+in the pinned source. They do not verify all SubmitBatch rules, executor
+authorization, input/deposit accounting, sequence/state transitions, runtime
+execution, registration, activation or finality. Local work caps can be tighter
+than these source bounds and still refuse an otherwise source-shaped value.
+
+Context version 2 changes the entry namespace's final version byte to `02`,
+encodes the context version as u64 big-endian and appends the rule's
+u64-big-endian length plus ASCII bytes after the original limit fields.
+The [three-row context](experimental-batch-context-query.md) also requires
+version 2, changes its namespace version byte and binds this entry fingerprint.
+Every existing version 1 preimage remains byte-identical. Audit source labels
+remain excluded from behavior identity. The CLI reports a semantic failure as
+exit 1, `query/source_rule_mismatch`, with a null result; accepted headers do
+not turn that failure into accepted state data.
+
+The independent Python corpus contains 34 canonical ABI vectors, including
+exact 40-byte/16-entry bounds, malformed framing, asset-ID prefix/order,
+zero/nonzero amounts and nonempty proof data. Its sparse-tree calculation
+reproduces the retained original three-row proof bytes before constructing a
+separate negative mathematical tree. Public synthetic headers bind that
+negative tree for API and compiled-CLI controls; those are not node execution.
+The positive original-node fixture is reused without modification under both
+profile versions. These controls do not close selected-network D0-D3 gates.
+
 ## Consumer seam and results
 
 An internal Go consumer can use the following sequence with its independently

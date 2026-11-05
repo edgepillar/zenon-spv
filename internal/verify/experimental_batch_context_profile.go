@@ -124,7 +124,8 @@ type ExperimentalBatchContextProfile struct {
 
 func (p ExperimentalBatchContextProfile) Validate() error {
 	// Validate individual caps before adding them, including on 32-bit hosts.
-	if p.Version != 1 || p.Entry.Validate() != nil || p.Entry.DomainID == 0 || p.DomainRule != ExperimentalDomainRecordRule ||
+	if (p.Version != 1 && p.Version != 2) || p.Entry.Version != p.Version ||
+		p.Entry.Validate() != nil || p.Entry.DomainID == 0 || p.DomainRule != ExperimentalDomainRecordRule ||
 		!p.DomainRecord.valid() || !p.DomainConfig.valid() {
 		return ErrExperimentalBatchContextProfile
 	}
@@ -186,11 +187,12 @@ func ExperimentalBatchContextFor(state ExperimentalV3State, p ExperimentalBatchC
 	if err != nil {
 		return ExperimentalBatchContext{}, err
 	}
-	c := ExperimentalBatchContext{Version: 1, Entry: entry, DomainRecordSchema: ExperimentalDomainRecordSchema,
+	c := ExperimentalBatchContext{Version: p.Version, Entry: entry, DomainRecordSchema: ExperimentalDomainRecordSchema,
 		DomainConfigSchema: ExperimentalDomainConfigSchema, DomainRule: p.DomainRule, DomainRecord: p.DomainRecord,
 		DomainConfig: p.DomainConfig, Limits: p.Limits, RequireCanonical: true, RequirePresent: true}
 	var b bytes.Buffer
-	b.WriteString("ZENON-EXPERIMENTAL-BATCH-CONTEXT\x00\x01")
+	b.WriteString("ZENON-EXPERIMENTAL-BATCH-CONTEXT\x00")
+	b.WriteByte(byte(c.Version))
 	b.Write(entry.Fingerprint[:])
 	word := func(n uint64) { var v [8]byte; binary.BigEndian.PutUint64(v[:], n); b.Write(v[:]) }
 	word(uint64(c.Version))

@@ -230,6 +230,9 @@ func readExperimentalBatchEntry(root, path chain.Hash, raw []byte, p Experimenta
 	if err != nil {
 		return proof.CandidateSMTMatch{}, proof.CandidateBatchEntry{}, err
 	}
+	if err := experimentalBatchEntrySourceRule(entry, p.SourceRule); err != nil {
+		return proof.CandidateSMTMatch{}, proof.CandidateBatchEntry{}, err
+	}
 	return match, entry, nil
 }
 
