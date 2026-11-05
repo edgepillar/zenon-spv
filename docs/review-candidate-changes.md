@@ -12,6 +12,114 @@ human acceptance or authenticated distribution.
 ## Current qualified runtime baseline
 
 The runtime baseline selected by this ledger is
+[`762ae9ac8c735cdf8747b7dd73824bb50c1514b4`](https://github.com/edgepillar/zenon-spv/tree/762ae9ac8c735cdf8747b7dd73824bb50c1514b4),
+tree `1057d25af955a139e2f273b0bcfa54a8b46cdd55`, following the local merge of
+[PR #339](https://github.com/edgepillar/zenon-spv/pull/339). Both author and
+committer are `edgepillar`. Its own
+[general main CI](https://github.com/edgepillar/zenon-spv/actions/runs/41961563244)
+passed all seven scheduled jobs on attempt 1. Reconciliation covers all 37
+actual archive IDs and 59,973,765 archive bytes, including 21 ordinary
+native binary bindings, source/build metadata, architecture checks and selected
+61-scenario reports. The separate exporter/transport workflows did not run at
+this runtime revision; earlier observations retain their original source pins.
+
+The complete uncached root-suite receipts cover 16 root-module packages.
+Linux and macOS each record 955 root and 6,247 subtest completions: 7,202
+passing events and zero skips. Windows records 951 root and 6,330 subtest
+completions: 7,265 passing events and 16 skip events. Completion counts include
+skips. The selected Windows reports separately retain five skips; the two
+traces' skip counts are not additive. The
+[candidate CI](https://github.com/edgepillar/zenon-spv/actions/runs/41958417224)
+has its own completed source/run query and qualification of 37 archives
+(59,973,698 bytes). Equal file trees did not transfer qualification between
+candidate checkout `fb8f19dc128aeb042d01260053e82ed5153111b7` and main.
+Archive readers reuse verified CAS objects, extract no payload files and
+execute no new native tests or binaries.
+
+### Per-header ownership copies
+
+The [detached header copier](owned-header-copies.md) uses one private allocation
+for each complete key/signature pair. Its two fields are disjoint and
+capacity-clipped; nil/empty shape, mutation and append isolation, independent
+snapshots and captured context remain covered. It does not retain a complete
+window's byte storage when a single key is kept. The exact preceding copier is
+an independent test reference. Existing extension, persistence, concurrency and
+full-capacity sequence controls remain required and unchanged.
+
+Local selected race tests passed 34 roots and 224 subtest completions, including
+the complete 18-cell full-capacity model. Bounded fuzzing, vet and module
+verification also passed. Three small structural benchmark repeats record
+2 to 1 allocations per complete 32/64-byte envelope, and 8,193 to 4,097 for a
+K=4096 snapshot; bytes allocated per operation are unchanged. These are copy
+observations, not lower RSS, whole-CI latency or representative device budgets.
+
+The preceding runtime's [version 2 BatchEntry source-field policy](experimental-batch-entry-query.md#version-2-source-field-policy),
+34 independent canonical ABI vectors, original-node positive bytes, version 1
+wire compatibility and context namespaces remain unchanged. This copy helper
+changes no header serialization, signature validation, producer authorization,
+anchor/profile/schedule selection, retention policy, state-file encoding or
+proof acceptance rule. The source-field subset still does not establish all
+SubmitBatch validation, executor authorization, input accounting, state
+transitions, registration, activation or consensus finality.
+
+### Source and review scope
+
+The frozen-to-current pair contains 455 changed tracked paths, 191 changed
+selected inputs and 102 root-module Go paths: 44 implementation/driver files
+and 58 test files. Root `go.mod` and `go.sum` are unchanged. The narrower
+historical `da04d418`-to-current pair contains 182 tracked changes, 106
+selected-input changes and 90 root-module Go paths: 41 implementation/driver
+files and 49 tests. Counts use per-revision module ownership; all earlier
+records keep their original pairs.
+
+The direct preceding-runtime `143725d`-to-`762ae9a` pair contains seven changed
+tracked paths, two selected inputs and two root-module Go paths (one
+implementation file and one test file). Four documentation paths and the CI
+workflow are outside the selected-input fingerprint. The table below uses exact
+Git blob IDs; an em dash means the earlier path was absent.
+
+| Path | Earlier blob | Selected baseline blob | Review impact |
+| --- | --- | --- | --- |
+| `.github/workflows/ci.yml` | `cc564808ffba478c28a6df654fb1e2e1019da32f` | `f4179f78d34264ba8952e0f37d12feb13cd397c5` | Adds source-bound copy controls and bounded allocation observations on the native lanes. |
+| `docs/native-roadmap.md` | `1071141ff08dd3063bf064a9d2d678eb48b8c69a` | `0ec9c933e14f8022dd53a0a6552a845e972a10a2` | Source-specific scope and evidence; no new native execution or human acceptance. |
+| `docs/owned-header-copies.md` | — | `61442ed304b5c5b803bfa3ed76ecb46eb12181c3` | Source-specific scope and evidence; no new native execution or human acceptance. |
+| `docs/retained-state-sequences.md` | `0f7bbf44f4bcced10706b9b28da7062870f920d8` | `5ae28e03f0d8833c3083783e8c9a8d26b6fb1a75` | Source-specific scope and evidence; no new native execution or human acceptance. |
+| `docs/review-candidate-changes.md` | `4b2bbcd334f026ef1ea58b8ae4e8d2cc54acaaf4` | `94569b563b76bcb2388801354b3ff35faefeafd8` | Source-specific scope and evidence; no new native execution or human acceptance. |
+| `internal/verify/owned_header_copy_test.go` | — | `e678a6731b1f1f04ecde70e0192a449dd42bf0f8` | Prior-copier comparison, shape/overlap/ownership, bounded fuzz and allocation controls. |
+| `internal/verify/verified_state.go` | `d46adcd549fced047fabd27fefff61416cdb1601` | `8e3ac09b3177e8c1564802b83ea63383f612f3af` | One private capacity-clipped envelope allocation; validation and serialized bytes unchanged. |
+
+Review the complete current pair with explicit two-revision commands:
+
+```sh
+git diff --name-status 6ecc2310538d511e3b26bea4c658082853266a11 762ae9ac8c735cdf8747b7dd73824bb50c1514b4
+git diff 6ecc2310538d511e3b26bea4c658082853266a11 762ae9ac8c735cdf8747b7dd73824bb50c1514b4 -- cmd internal tools go.mod go.sum
+```
+
+The second command includes nested modules and other material in those
+directories; use the module filter below for the 102-path root Go scope.
+The 726-input fingerprint below was independently recomputed from Git blobs.
+Python, workflows and other excluded inputs require separate inspection.
+
+This ledger update supplies no new native execution and does not advance the
+frozen human-review candidate. Later documentation-only heads retain runtime
+qualification at `762ae9a`; scope-only CI cannot qualify native execution.
+All failed, interrupted and superseded observations retain their actual
+outcomes; later successful CI does not rewrite them.
+
+The [D0-D6 contract](typed-state-roadmap.md) still needs the independently
+selected network/query/profile/anchor/schedule and actual consumer capture,
+representative R1 data, independent review and authenticated distribution.
+Production state proofs and irreversible settlement remain NO-GO.
+
+## Historical source-specific records
+
+The following records preserve their original revisions and meanings of
+"current". They do not replace the runtime selection above or the frozen
+human-review selection at the start of this document.
+
+### Earlier runtime selection: `143725d`
+
+The runtime baseline selected by this ledger is
 [`143725d9df7bd726d6bdd598466576b8bc7423a4`](https://github.com/edgepillar/zenon-spv/tree/143725d9df7bd726d6bdd598466576b8bc7423a4),
 tree `51476602315de56d0e51b9bd13cdd8f2691bebfc`, following the local merge of
 [PR #337](https://github.com/edgepillar/zenon-spv/pull/337). Both author and
@@ -124,11 +232,6 @@ qualification at `143725d`; scope-only CI cannot qualify native execution.
 All failed, interrupted and superseded observations retain their actual
 outcomes; later successful CI does not rewrite them.
 
-## Historical source-specific records
-
-The following records preserve their original revisions and meanings of
-"current". They do not replace the runtime selection above or the frozen
-human-review selection at the start of this document.
 
 ### Earlier runtime selection: `4ae2914`
 
@@ -650,6 +753,7 @@ length framing.
 | `62524106cb363c51a1018f474693f46842eb6f32` | 1,293 | 718 | 35,773,059 | `23143e1325f6b86588ee9a03e8b9a6df8342d16ac78ff701c36d9f8eeffa28ce` |
 | `4ae2914d6c3e07def37316a3a7f1e61ed86028cb` | 1,295 | 720 | 35,783,417 | `68187a1462190d5095bd547172668305b2f6965af2fc0dd6ecf0b0f7f3d53222` |
 | `143725d9df7bd726d6bdd598466576b8bc7423a4` | 1,301 | 725 | 35,897,087 | `8a790a9158ff83890606c8317aac1728a4ff604c55a3a9a88b7cd8c00a0b280f` |
+| `762ae9ac8c735cdf8747b7dd73824bb50c1514b4` | 1,303 | 726 | 35,905,702 | `19e3a45a6d55e9bfc591dbbd3bfd4dfa2cc1be40e47c4936bb37ed731b5add01` |
 
 The historical frozen-to-`879fbce` comparison contains 204 tracked-file changes
 and 59 selected-input changes. Those historical counts remain valid for that
