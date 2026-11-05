@@ -74,3 +74,44 @@ dataset acquisition is implied by that artifact.
 R1 consistency and representativeness, M2 agreement, accepted-header StateRoot
 binding, independent consumer/reviewer acceptance and authenticated distribution
 remain separate requirements. Runtime state-value requests remain refused.
+
+## Contained field copies
+
+A field already contained in the current immutable input buffer now returns one
+`bytes` slice. The reader no longer constructs a `bytearray` and copies it back
+to `bytes` for that field. Empty reads perform no refill, including at selected
+EOF. Fields crossing a refill retain the existing accumulator path. Returned
+bytes remain stable after later refills; no mutable buffer view is exposed.
+The 64 KiB read bound, selected-byte prefetch, digest/count/order checks, error
+categories and complete v1 report are unchanged.
+
+A separate paired local observation used 16,384 distinct 32-byte typed balance
+keys with 32-byte zero values: **1,097,728 canonical put bytes**. Fixture
+construction stayed outside the timer, and the complete inventory call stayed
+inside. Python 3.9.6 on macOS ARM64 ran one warmup and three timed calls per
+variant, alternating their order. A separate counting call per variant measured
+explicit `bytearray` accumulator construction, outside the timing observations.
+
+| Finite observation | Prior buffered reader | Contained-field reader |
+| --- | ---: | ---: |
+| Explicit field accumulators | 32,768 | 16 |
+| Local elapsed range | 82.416-85.339 ms | 71.594-74.569 ms |
+
+The reports are byte-identical with SHA-256
+`d34a25bcdda9079ea3947b56ed03d7c75016fa955f53e2b0cb81f85d45fc2e19`.
+The input SHA-256 is
+`8e0f1d59cc86e28a571ad3adb3654a6f8f19084e4f258fcc8d15701afad1209a`.
+The prior inventory source has SHA-256
+`4137da7ecc9b8bcc1d010c0389420fa2d81aa6b2dbb271befa46335fdad1df19`;
+the observed contained-field source has SHA-256
+`397f8c4506097d07116ac243c0e98d54f6d26754e830f9e59710618824bd5e03`.
+No fixture file, payload copy, database, exporter, node or network process was
+created. Accumulator counts are not total Python allocations, RSS or physical
+disk savings. These timings establish no representative R1 throughput or
+wall-time acceptance threshold. The earlier observations above retain their
+original scope and source identities.
+
+Additional literal-slice controls cover immutable results after later refills,
+full-buffer boundaries, short reads, zero/out-of-bounds requests without
+prefetch, and partial fields followed by EOF or a read error. The existing
+whole-inventory, privacy, generated-value and bounded-memory controls remain.
