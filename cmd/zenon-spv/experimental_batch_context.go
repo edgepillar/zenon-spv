@@ -39,6 +39,7 @@ type experimentalContextCLIReport struct {
 	QueryContext                  *verify.ExperimentalBatchContext                `json:"query_context"`
 	Headers                       *experimentalCLIHeaderReport                    `json:"headers"`
 	StateInput                    *experimentalContextCheckpointReport            `json:"state_input,omitempty"`
+	StateOutput                   *experimentalContextStateOutput                 `json:"state_output,omitempty"`
 	Result                        *verify.ExperimentalBatchContextResult          `json:"result"`
 	Gateway                       *verify.ExperimentalBatchEntryGatewayComparison `json:"gateway_comparison"`
 	Persistence                   string                                          `json:"persistence"`
@@ -52,6 +53,7 @@ type experimentalContextCLIReport struct {
 // never loads a provider bundle, authenticates headers or returns a typed row.
 func runExperimentalBatchContext(command string, args []string, stdout, stderr io.Writer) int {
 	inspect := command == experimentalContextConfigCommand
+	export := command == experimentalContextExportCommand
 	report := experimentalContextCLIReport{SchemaVersion: 1, Command: command, Persistence: "read_only", Scope: "EXPERIMENTAL_CONFIGURED_HEADER_THREE_ROW_MEMBERSHIP", Caveats: []string{
 		"Configured fingerprints do not authenticate network activation, file provenance or independently selected trust inputs.",
 		"Configured-header membership does not establish canonicality, consensus finality, STF correctness, funds release or recipient receive.",
@@ -62,13 +64,20 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 	if inspect {
 		report.Scope = "EXPERIMENTAL_CONFIGURATION_DIAGNOSTIC"
 	}
+	if export {
+		report.Persistence = "checkpoint_not_exported"
+		report.Caveats = append(report.Caveats, "Checkpoint bytes require successful command completion and trusted local provenance; their digest supplies no additional acceptance authority.")
+	}
 	finish := func(code int, stage, category string) int {
 		if stage != "" {
 			report.Error = &reportError{Stage: stage, Category: category}
 		}
+		if export {
+			return finishExperimentalBatchContext(report, code, stderr, stderr)
+		}
 		return finishExperimentalBatchContext(report, code, stdout, stderr)
 	}
-	if !inspect && command != experimentalContextQueryCommand {
+	if !inspect && !export && command != experimentalContextQueryCommand {
 		return finish(64, "arguments", "usage")
 	}
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
@@ -92,6 +101,8 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 		usage := experimentalContextQueryUsage
 		if inspect {
 			usage = experimentalContextConfigUsage
+		} else if export {
+			usage = experimentalContextExportUsage
 		}
 		return writeExperimentalBatch(stdout, stderr, []byte(usage), 0)
 	} else if err != nil || selections() != nil || *configPath == "" || inspect && fs.NArg() != 0 || !inspect && (fs.NArg() != 1 || *requestPath == "") {
@@ -215,6 +226,20 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 		report.Gateway = &comparison
 	}
 	report.HeaderContext, report.QueryContext, report.Result = &headerContext, &queryContext, &result
+	if export {
+		// Reuse the consumer's encoding refusal before emitting any checkpoint.
+		// Later output metadata contains only locally generated scalar fields.
+		if _, err := json.Marshal(report); err != nil {
+			return finish(70, "output", "encoding")
+		}
+		written, err := exportExperimentalContextState(state, stdout)
+		if err != nil {
+			report.Persistence = "checkpoint_output_incomplete"
+			return finish(70, "checkpoint_output", "write_failed")
+		}
+		report.StateOutput = written
+		report.Persistence = "checkpoint_streamed"
+	}
 	return finish(0, "", "")
 }
 

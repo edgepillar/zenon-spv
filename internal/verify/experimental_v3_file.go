@@ -96,16 +96,8 @@ func (s ExperimentalV3State) saveExperimentalV3(path string, openDir func(string
 	if s.data == nil {
 		return ErrUninitializedState
 	}
-	headers := s.data.headers
-	if headers == nil {
-		headers = []chain.CandidateV3Header{}
-	}
-	body := experimentalV3File{Format: experimentalV3StateFormat, Version: 4, Context: s.data.config.context.Fingerprint,
-		Profile: s.data.config.profile, Policy: s.data.config.policy, Headers: headers}
 	return writeAtomicStateFile(path, func(w io.Writer) error {
-		e := json.NewEncoder(&limitedStateWriter{destination: w, remaining: MaxExperimentalV3StateBytes})
-		e.SetIndent("", "  ")
-		return e.Encode(body)
+		return s.encodeExperimentalV3Checkpoint(w, s.data.config.profile)
 	}, openDir)
 }
 
