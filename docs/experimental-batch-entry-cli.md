@@ -48,6 +48,15 @@ The [header mechanics](experimental-v3-owned-state.md) and
 There is no default mainnet anchor, inferred activation, implicit producer
 schedule or environment-based trust selection for these commands.
 
+The outer configuration and provider schemas remain version 1. The nested
+query profile can explicitly select version 2 with
+`"source_rule": "zenon-phase1-batch-fields/v1"`, as described by the
+[source-field policy](experimental-batch-entry-query.md#version-2-source-field-policy).
+This changes the query-context pin and request context; it leaves the header
+context and trusted-state schema unchanged. The single-row and three-row CLI
+commands return exit 1, `query/source_rule_mismatch` and a null result for a
+source-field mismatch after valid canonical membership/ABI checks.
+
 Inspection validates this configuration and returns `header_context` and
 `query_context`, including their fingerprints. Its status is `inspected`,
 scope is `EXPERIMENTAL_CONFIGURATION_DIAGNOSTIC`, and both `headers` and

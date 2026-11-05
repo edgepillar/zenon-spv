@@ -157,6 +157,7 @@ func TestCompiledCLIExperimentalBatchContextWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 	args := []string{"query-experimental-batch-context", "--config", configPath, "--request", requestPath, "--expect-header-context", unit.Expected.Header, "--expect-query-context", unit.Expected.Context, bundlePath}
+	runCompiledBatchSourceRuleControls(t, binaries["zenon-spv"], unit.Config, unit.Request, unit.Expected.Header, bundlePath)
 	type contextReport struct {
 		Status      string
 		ExitCode    int `json:"exit_code"`

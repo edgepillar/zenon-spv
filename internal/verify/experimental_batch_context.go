@@ -189,6 +189,9 @@ func (q ExperimentalBatchContextQuery) read(b experimentalBatchContextBinding, r
 	if err != nil {
 		return ExperimentalBatchContextResult{}, err
 	}
+	if err := experimentalBatchEntrySourceRule(entry, p.Entry.SourceRule); err != nil {
+		return ExperimentalBatchContextResult{}, err
+	}
 	record, err := proof.DecodeCandidateDomainRecord(matches[1].Value, p.DomainRecord.abi())
 	if err != nil {
 		return ExperimentalBatchContextResult{}, err

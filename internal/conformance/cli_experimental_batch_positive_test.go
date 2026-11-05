@@ -246,6 +246,37 @@ func runRecordedPositiveBatchWorkflow(t *testing.T, bins map[string]string) {
 	for _, guard := range guards {
 		guard()
 	}
+	t.Run("explicit-source-rule-original-node-bytes", func(t *testing.T) {
+		profile := config.QueryProfile
+		profile.Version, profile.SourceRule = 2, verify.ExperimentalBatchEntrySourceRule
+		context, err := verify.ExperimentalBatchEntryContextFor(state, profile)
+		if err != nil || hex.EncodeToString(context.Fingerprint[:]) != "203c1f61315054effea611d0a530819ee6a43be1a918165a9b24aec921261e62" {
+			t.Fatal("independent version 2 context differs", err)
+		}
+		q, err := verify.NewExperimentalBatchEntryQuery(state, profile, context.Fingerprint)
+		if err != nil {
+			t.Fatal(err)
+		}
+		request := selected
+		request.Context = context.Fingerprint
+		got, err := q.QueryWithGateway(request, witness, gateway)
+		if err != nil || !reflect.DeepEqual(got.Entry, result.Entry) ||
+			hex.EncodeToString(got.QueryFingerprint[:]) != "915a9a0836f57c4de9856da0317a8fe457cdfdf266529eab6770b6cbdf349b02" {
+			t.Fatal("source rule changed the original proven row", err)
+		}
+		var configured map[string]json.RawMessage
+		if json.Unmarshal(f.Selection.Config, &configured) != nil {
+			t.Fatal("source-rule configuration")
+		}
+		configured["query_profile"], _ = json.Marshal(profile)
+		dir := t.TempDir()
+		c := writeCLIJSON(t, dir, "source-rule-config.json", configured)
+		r := writeCLIJSON(t, dir, "source-rule-request.json", request)
+		invocation := selectQueryCLIOption(queryArgs, "--config", c)
+		invocation = selectQueryCLIOption(invocation, "--request", r)
+		invocation = selectQueryCLIOption(invocation, "--expect-query-context", hex.EncodeToString(context.Fingerprint[:]))
+		runCompiledSourceRuleReport(t, bins["zenon-spv"], invocation, true, result.Scope)
+	})
 	t.Run("compiled-identity-and-witness-refusals", func(t *testing.T) {
 		for _, name := range []string{"provider-root", "value-hint", "proof-byte", "gateway-field", "local-batch", "header-identity", "tip-identity", "signature", "unavailable", "typed-absence"} {
 			t.Run(name, func(t *testing.T) {

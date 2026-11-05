@@ -184,6 +184,8 @@ func experimentalBatchQueryError(err error) (int, string) {
 		return 1, "query_identity_mismatch"
 	case errors.Is(err, verify.ErrExperimentalBatchEntryGateway):
 		return 1, "gateway_mismatch"
+	case errors.Is(err, verify.ErrExperimentalBatchEntrySourceRule):
+		return 1, "source_rule_mismatch"
 	case errors.Is(err, verify.ErrExperimentalBatchEntryWitnessRoot), errors.Is(err, verify.ErrExperimentalBatchEntryWitnessValue), errors.Is(err, verify.ErrExperimentalBatchEntryCanonical), errors.Is(err, proof.ErrCandidateSMTEncoding), errors.Is(err, proof.ErrCandidateSMTPath), errors.Is(err, proof.ErrCandidateSMTMismatch), errors.Is(err, proof.ErrCandidateBatchEntryEncoding):
 		return 1, "invalid_witness"
 	default:

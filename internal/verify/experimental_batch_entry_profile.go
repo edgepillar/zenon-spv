@@ -92,8 +92,9 @@ func (v ExperimentalBatchEntryLimits) abi() proof.CandidateBatchEntryLimits {
 // ExperimentalBatchEntryProfile binds the local key domain and strict ABI/work
 // policy. RuntimeIdentity is independently selected metadata about the exact
 // domain/runtime contract, not an authenticated runtime or execution proof.
-// Schema 1 always requires canonical SMT encodings and the selected Settlement
-// source constant. A custom address or a larger proof needs another profile.
+// Both versions require canonical SMT encodings and the selected Settlement
+// source constant. Version 2 additionally selects an explicit source-field rule;
+// version 1 retains its original ABI-only interpretation.
 type ExperimentalBatchEntryProfile struct {
 	Version         uint32                       `json:"version"`
 	Settlement      chain.Address                `json:"settlement"`
@@ -103,10 +104,12 @@ type ExperimentalBatchEntryProfile struct {
 	MaxSiblings     uint16                       `json:"max_siblings"`
 	Limits          ExperimentalBatchEntryLimits `json:"limits"`
 	Source          string                       `json:"source"`
+	SourceRule      string                       `json:"source_rule,omitempty"`
 }
 
 func (p ExperimentalBatchEntryProfile) Validate() error {
-	if p.Version != 1 || p.Settlement != ExperimentalBatchEntrySettlementAddress() || p.RuntimeIdentity.IsZero() ||
+	if !((p.Version == 1 && p.SourceRule == "") || (p.Version == 2 && p.SourceRule == ExperimentalBatchEntrySourceRule)) ||
+		p.Settlement != ExperimentalBatchEntrySettlementAddress() || p.RuntimeIdentity.IsZero() ||
 		p.MaxProofBytes < 103+proof.CandidateBatchEntryMinBytes || p.MaxProofBytes > proof.CandidateSMTMaxProofBytes ||
 		p.MaxSiblings > 256 || p.Limits.validate() != nil || len(p.Source) > 1024 ||
 		strings.TrimSpace(p.Source) == "" || !utf8.ValidString(p.Source) {
@@ -130,8 +133,9 @@ func (p ExperimentalBatchEntryProfile) MarshalJSON() ([]byte, error) {
 		MaxSiblings     uint16                       `json:"max_siblings"`
 		Limits          ExperimentalBatchEntryLimits `json:"limits"`
 		Source          string                       `json:"source"`
+		SourceRule      string                       `json:"source_rule,omitempty"`
 	}
-	return json.Marshal(wire{p.Version, hex.EncodeToString(p.Settlement[:]), p.DomainID, p.RuntimeIdentity, p.MaxProofBytes, p.MaxSiblings, p.Limits, p.Source})
+	return json.Marshal(wire{p.Version, hex.EncodeToString(p.Settlement[:]), p.DomainID, p.RuntimeIdentity, p.MaxProofBytes, p.MaxSiblings, p.Limits, p.Source, p.SourceRule})
 }
 
 func (p *ExperimentalBatchEntryProfile) UnmarshalJSON(raw []byte) error {
@@ -140,10 +144,22 @@ func (p *ExperimentalBatchEntryProfile) UnmarshalJSON(raw []byte) error {
 	}
 	var next ExperimentalBatchEntryProfile
 	var address, runtime string
-	if decodeRequiredObject(raw, map[string]any{
+	// This bounded probe only selects the exact schema. The strict pass below
+	// still rejects duplicates, case aliases, nulls and all unknown fields.
+	var probe struct {
+		Version uint32 `json:"version"`
+	}
+	if json.Unmarshal(raw, &probe) != nil || (probe.Version != 1 && probe.Version != 2) {
+		return ErrExperimentalBatchEntryProfile
+	}
+	fields := map[string]any{
 		"version": &next.Version, "settlement": &address, "domain_id": &next.DomainID, "runtime_identity": &runtime,
 		"max_proof_bytes": &next.MaxProofBytes, "max_siblings": &next.MaxSiblings, "limits": &next.Limits, "source": &next.Source,
-	}) != nil {
+	}
+	if probe.Version == 2 {
+		fields["source_rule"] = &next.SourceRule
+	}
+	if decodeRequiredObject(raw, fields) != nil {
 		return ErrExperimentalBatchEntryProfile
 	}
 	if len(address) != 40 || len(runtime) != 64 {
@@ -189,6 +205,7 @@ type ExperimentalBatchEntryContext struct {
 	Limits           ExperimentalBatchEntryLimits `json:"limits"`
 	RequireCanonical bool                         `json:"require_canonical"`
 	Fingerprint      chain.Hash                   `json:"fingerprint"`
+	SourceRule       string                       `json:"source_rule,omitempty"`
 }
 
 func ExperimentalBatchEntryContextFor(state ExperimentalV3State, p ExperimentalBatchEntryProfile) (ExperimentalBatchEntryContext, error) {
@@ -202,12 +219,13 @@ func ExperimentalBatchEntryContextFor(state ExperimentalV3State, p ExperimentalB
 	if header.NodeRevision != ExperimentalV3NodeRevision {
 		return ExperimentalBatchEntryContext{}, ErrExperimentalBatchEntryProfile
 	}
-	c := ExperimentalBatchEntryContext{Version: 1, Header: header, Schema: ExperimentalBatchEntrySchema,
+	c := ExperimentalBatchEntryContext{Version: p.Version, Header: header, Schema: ExperimentalBatchEntrySchema,
 		ExecutorRevision: ExperimentalBatchEntryExecutorRevision, SDKRevision: ExperimentalBatchEntrySDKRevision,
 		Settlement: p.Settlement, DomainID: p.DomainID, RuntimeIdentity: p.RuntimeIdentity,
-		MaxProofBytes: p.MaxProofBytes, MaxSiblings: p.MaxSiblings, Limits: p.Limits, RequireCanonical: true}
+		MaxProofBytes: p.MaxProofBytes, MaxSiblings: p.MaxSiblings, Limits: p.Limits, RequireCanonical: true, SourceRule: p.SourceRule}
 	var b bytes.Buffer
-	b.WriteString("ZENON-EXPERIMENTAL-BATCH-ENTRY\x00\x01")
+	b.WriteString("ZENON-EXPERIMENTAL-BATCH-ENTRY\x00")
+	b.WriteByte(byte(c.Version))
 	word := func(n uint64) { var v [8]byte; binary.BigEndian.PutUint64(v[:], n); b.Write(v[:]) }
 	word(uint64(c.Version))
 	b.Write(header.Fingerprint[:])
@@ -226,6 +244,10 @@ func ExperimentalBatchEntryContextFor(state ExperimentalV3State, p ExperimentalB
 		uint64(c.Limits.MaxExecutorPillarBytes), uint64(c.Limits.MaxAssetFlowSummaryBytes), uint64(c.Limits.MaxProofDataBytes),
 		uint64(c.Limits.MaxDynamicBytes), uint64(c.Limits.StringRule)} {
 		word(n)
+	}
+	if c.Version == 2 {
+		word(uint64(len(c.SourceRule)))
+		b.WriteString(c.SourceRule)
 	}
 	c.Fingerprint = chain.Hash(sha3.Sum256(b.Bytes()))
 	return c, nil

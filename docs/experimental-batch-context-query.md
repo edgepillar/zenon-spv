@@ -14,8 +14,13 @@ an explicit profile and an independently selected nonzero fingerprint.
 Provider roots, diagnostic contexts and retained projections cannot construct it.
 The legacy single-row profile, fingerprint namespace and APIs are unchanged.
 
-The new profile's exact fields are `version` (1), `entry` (the unchanged entry
-profile), `domain_rule`, `domain_record`, `domain_config` and `limits`.
+The profile's exact fields are `version`, `entry`, `domain_rule`,
+`domain_record`, `domain_config` and `limits`. Version 1 requires entry profile
+version 1 and preserves its original JSON and fingerprint bytes. Explicit
+version 2 requires entry profile version 2 with
+`source_rule: "zenon-phase1-batch-fields/v1"`; mixed versions are refused.
+Both version 2 contexts have separate fingerprint namespace bytes. No request,
+provider, header-state or persisted-state schema is changed.
 The positive local domain ID, complete legacy header/entry context, both new
 schemas, source-rule version and every individual/aggregate work cap enter the
 new fingerprint. Canonical encoding and presence are mandatory for all rows.
@@ -25,8 +30,11 @@ The rule `zenon-phase1-domain-record/v1` requires zero class/runtime/input/
 execution/foreign/proposer/finality selectors, one executor, empty profileConfig/
 chainBinding, and active or paused status. This local source-mapped subset is
 **not all RegisterDomain or SubmitBatch validation**. Build/network-dependent
-registration delay bounds, asset-flow semantics and pillar validation remain
-separate. Generic ABI decoding does not establish those business rules.
+registration delay bounds remain separate. Version 2 additionally applies the
+[BatchEntry source-field subset](experimental-batch-entry-query.md#version-2-source-field-policy)
+after all three membership proofs and the bounded BatchEntry ABI decode.
+Version 1 retains its ABI-only BatchEntry interpretation. Generic ABI decoding
+alone does not establish these source rules or all submission business rules.
 
 DomainConfig is exactly 64 bytes, with two lossless `uint64` delays. Current-H
 record/spec/config does not establish submission-time context. Stored finalization

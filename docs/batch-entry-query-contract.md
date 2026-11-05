@@ -195,10 +195,13 @@ protocol cap.
 
 The existing 4 KiB candidate ceiling remains a local unsupported-data boundary.
 Its generic codec permits untrusted encodings outside the SubmitBatch business
-rules; it does not yet enforce those source semantics. In particular, its byte
-caps must be positive: setting MaxProofDataBytes to zero is invalid. Requiring
-empty proofData needs a separate semantic check in a reviewed query policy,
-without relaxing the codec's bounds. Selected-network policy review remains
+rules. The opt-in [version 2 query policy](experimental-batch-entry-query.md#version-2-source-field-policy)
+adds the source pillar-name, asset-flow framing/ID/order/amount and empty
+proofData checks after canonical membership and strict ABI decoding. Version 1
+keeps its original interpretation. Both versions retain positive byte caps:
+setting MaxProofDataBytes to zero is invalid, including with the empty-data rule.
+This source-field subset does not establish all SubmitBatch rules, a state
+transition or an agreed selected-network policy. Selected-network review remains
 required.
 
 ## Bounds and failure contract
