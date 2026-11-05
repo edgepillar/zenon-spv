@@ -180,7 +180,12 @@ mutate the buffer concurrently. Retained authentication is rechecked and input
 bytes are not retained. The digest does not authenticate local provenance or
 restore evicted ancestry. The [three-row CLI](experimental-batch-context-query.md)
 uses this path only with an explicit checkpoint selector and both context pins;
-it never writes the checkpoint or imports one from provider JSON.
+the query never rewrites its checkpoint or imports one from provider JSON.
+The separate [checkpoint export command](experimental-checkpoint-export.md)
+streams a v4 artifact only after a successful three-row query. The Go
+`WriteCheckpoint` method shares the bounded encoder, strips the informational
+private Source label, and detects incomplete stream writes. Existing `Save`
+keeps its source label and file behavior; export adds no provenance authority.
 
 The shared atomic-writer extraction preserves native serialized bytes. A
 2,073-byte v1/v2 saved-state vector from the existing public signed fixture has

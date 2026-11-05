@@ -564,4 +564,5 @@ func TestExperimentalBatchCLICompiledWorkflow(t *testing.T) {
 			t.Fatal("compiled command did not bind the incompatible proof to recorded accepted headers")
 		}
 	}
+	testCompiledExperimentalContextCheckpoint(t, ctx, binary)
 }

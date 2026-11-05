@@ -100,6 +100,7 @@ Usage:
   zenon-spv query-experimental-batch-entry --config <path> --request <path> --expect-header-context <64-hex> --expect-query-context <64-hex> [--compare-gateway] <bundle.json>
   zenon-spv inspect-experimental-batch-context-config --config <path>
   zenon-spv query-experimental-batch-context --config <path> --request <path> --expect-header-context <64-hex> --expect-query-context <64-hex> [--trusted-state <path> --expect-state-sha256 <64-hex>] [--compare-gateway] <bundle.json>
+  zenon-spv export-experimental-batch-context-state --config <path> --request <path> --expect-header-context <64-hex> --expect-query-context <64-hex> [--trusted-state <path> --expect-state-sha256 <64-hex>] [--compare-gateway] <bundle.json>
   zenon-spv verify-headers     [--window {low|medium|high}] [--genesis-config <path>] [--state <path>] [--schedule <path>] <bundle.json>
   zenon-spv verify-commitment  [--window ...] [--genesis-config ...] [--state <path>] [--schedule <path>] <bundle.json>
   zenon-spv verify-segment     [--window ...] [--genesis-config ...] [--state <path>] [--schedule <path>] <bundle.json>
@@ -254,7 +255,7 @@ func main() {
 		os.Exit(runInspectState(os.Args[2:], os.Stdout, os.Stderr))
 	case experimentalConfigCommand, experimentalQueryCommand:
 		os.Exit(runExperimentalBatch(os.Args[1], os.Args[2:], os.Stdout, os.Stderr))
-	case experimentalContextConfigCommand, experimentalContextQueryCommand:
+	case experimentalContextConfigCommand, experimentalContextQueryCommand, experimentalContextExportCommand:
 		os.Exit(runExperimentalBatchContext(os.Args[1], os.Args[2:], os.Stdout, os.Stderr))
 	case "verify-headers":
 		os.Exit(runVerifyHeaders(os.Args[2:]))

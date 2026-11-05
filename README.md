@@ -26,6 +26,11 @@ anchor and omit already held headers from transport. Its synthetic offline
 consumer does not close those network acceptance gates or establish
 submission-time configuration.
 
+The explicit [checkpoint export](docs/experimental-checkpoint-export.md) command
+can create the initial local artifact after that same query matches. It streams
+checkpoint bytes and a separate completion/consumer report while preserving
+the existing independently pinned trusted import and read-only query paths.
+
 ## Status
 
 The native verifier's main surfaces are:

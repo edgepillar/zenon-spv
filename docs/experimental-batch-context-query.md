@@ -154,6 +154,11 @@ The legacy single-row command has no continuation flags.
 
 ### Pinned read-only checkpoint reuse
 
+The separate [checkpoint export command](experimental-checkpoint-export.md)
+can produce the initial local v4 artifact after this same three-row query
+matches. It streams the checkpoint to stdout and the consumer/completion report
+to stderr. Existing query output and read-only behavior remain unchanged.
+
 Repeated queries may select an existing trusted local experimental state with
 both `--trusted-state` and a nonzero `--expect-state-sha256`. Once checkpoint
 reuse is requested, missing, empty, repeated or unpaired selectors refuse before
