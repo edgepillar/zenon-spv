@@ -12,6 +12,130 @@ human acceptance or authenticated distribution.
 ## Current qualified runtime baseline
 
 The runtime baseline selected by this ledger is
+[`2092095126ca6f3243b99b9d8b34c4661f5d6934`](https://github.com/edgepillar/zenon-spv/tree/2092095126ca6f3243b99b9d8b34c4661f5d6934),
+tree `98790a73fa06e16bf602147b38ef0c10e4657cd4`, following the local merge of
+[PR #343](https://github.com/edgepillar/zenon-spv/pull/343). Both author and
+committer are `edgepillar`. Its own
+[general main CI](https://github.com/edgepillar/zenon-spv/actions/runs/41988312888)
+passed all seven scheduled jobs on attempt 1. All 37 selected archive IDs and
+59,975,037 archive bytes were reconciled, including 21 ordinary
+native binary bindings, source/build metadata, architecture checks and selected
+61-scenario reports. The separate exporter/transport workflows did not run at
+this runtime revision; earlier observations keep their original source pins.
+
+The complete uncached root-suite receipts cover 16 root-module packages.
+Linux and macOS each record 965 root and 6,333 subtest completions: 7,298
+passing events and zero skips. Windows records 961 root and 6,416 subtest
+completions: 7,361 passing events and 16 skip events. Completion counts include
+skips. The selected Windows reports separately retain five skips; these counts
+are not additive.
+
+The [candidate CI](https://github.com/edgepillar/zenon-spv/actions/runs/41979306603)
+has its own source/run/artifact reconciliation. Attempt 1 remains FAILURE:
+the macOS runner reported two `CreateArtifact` `ENOTFOUND` errors, and dependent
+later steps were skipped. All 34 available archives and its actual job log were
+retained before one macOS-only recovery. The six successful jobs were not
+requested again. GitHub's attempt-2 API records clone those six completed
+executions with new job IDs; their original times and steps remain bound to
+attempt 1. Only macOS executed afresh on attempt 2.
+
+The complete candidate gate selects 37 archives (59,975,069 bytes): 28 from
+attempt 1 and nine bound to the new macOS job's upload IDs and log. Six earlier
+macOS archives remain preserved outside this selected gate. It does not call
+all seven jobs fresh attempt-2 execution. Candidate feature
+`21dd142945616fc0ba0f0d52faed2203c36e1bf1`, checked out as
+`f59a6960788291bdde193646e4adae8635bc8989`, and main have equal trees but
+separate qualification. Together they have 74 selected archives and
+119,950,106 compressed bytes; the six excluded first-attempt
+macOS archives are additional retained evidence. Archive readers reuse verified
+CAS objects, extract no payload files and execute no new native tests or binaries.
+
+### Reusing an actually executed source root
+
+The [fixed source-enumeration group](source-root-control-reuse.md) replaces two
+duplicate ordinary-parent Go processes and their 32,769-entry directory fixtures
+on macOS/Windows. It requires the exact package/root, six passed subtest
+completions and zero skipped/failed children inside a complete source-bound
+stream and successful process. The Python reader independently checks names,
+integer-only counts, selected-scenario disjointness and suite totals.
+
+This is opt-in `zenon-root-suite/v4` qualification metadata. The default
+producer retains v3; v1/v2/v3 verification remains supported. Linux retains its
+separate ordinary-parent control alongside the instrumented complete suite.
+Full package/model coverage, cryptographic checks and verifier acceptance rules
+are unchanged. Historical dedicated-step times of 11 seconds on macOS and
+44 seconds on Windows are observations, not a controlled whole-CI speedup claim.
+
+Local targeted evidence contains 21 passed Go roots and 18 subtest completions
+with race instrumentation, 17 independent Python checker roots, a Go-to-Python
+group-contract comparison, vet and module integrity. The small actual Go-event
+fixture is synthetic; the complete hosted suites run the unchanged real directory
+test. A [source review at `21dd142`](https://github.com/edgepillar/zenon-spv/pull/343#issuecomment-6652166973)
+reports 75 Linux race tests, 17 checker tests and two discriminating mutations.
+Those are reviewer-reported observations, not a new frozen release-review
+selection or authenticated distribution.
+
+The preceding [incremental retained-window decoder](streamed-state-window.md),
+[per-header ownership copies](owned-header-copies.md), version 2 BatchEntry
+source-field policy, independent ABI vectors and version 1 compatibility remain
+covered. No current observation establishes selected-network activation,
+complete SubmitBatch validation, executor authorization, state transitions or
+consensus finality.
+
+### Source and review scope
+
+The frozen-to-current pair contains 462 changed tracked paths, 196 changed
+selected inputs and 107 root-module Go paths: 47 implementation/driver files
+and 60 tests. Root `go.mod` and `go.sum` are unchanged. The narrower historical
+`da04d418`-to-current pair contains 189 tracked changes, 111 selected-input changes
+and 95 root-module Go paths: 44 implementation/driver files and 51 tests.
+Module ownership is determined separately at each revision.
+
+The direct preceding-runtime `fdd17be`-to-`2092095` pair contains ten changed
+tracked paths, four selected inputs and four root-module Go paths: three
+implementation/driver files and one test. Python helpers, documentation and the
+workflow require separate inspection outside the selected-input fingerprint.
+
+| Path | Earlier blob | Selected baseline blob | Review impact |
+| --- | --- | --- | --- |
+| `.github/workflows/ci.yml` | `79b320fbd9c921533bb5fb9998b2332140e52538` | `5dd0b1e98f2f206c2946ceae53503d0dda71ff33` | Reuses the required ordinary-parent group on macOS/Windows; Linux's separate ordinary control remains. |
+| `docs/native-roadmap.md` | `1014a605472b2acc0d3ce4a8dc858dc5a4c3a2c6` | `088c7a4e5e1066ed5568576811d7db6ed2c88f50` | Preceding source-specific ledger update; no new native execution by the documentation itself. |
+| `docs/review-candidate-changes.md` | `63e1b7a669e978a6176de3587305e35ea611f0d7` | `50bb63aa923be39ae9908b901de3889b964f121e` | Preceding qualification record and preserved history. |
+| `docs/source-root-control-reuse.md` | — | `6ed2a16648caadbc458a82e730fef052a3379f93` | Fixed-group contract, observations and limits. |
+| `tools/check-root-suite.py` | `3f7b0cffab52e7fd5782cf11151bf5ed60fe726b` | `005dc4d69e10cc9c7c912f87073b6f82808be2af` | Strict v4 group, inventory/count checks and explicit older-receipt refusal; legacy formats remain. |
+| `tools/check-root-suite_test.py` | `0423b3f26ba6d1edb4d20e522c19037bc91e56fa` | `6c3d1d8dc53d07dcf218cecb5d8e31bef0a972ef` | Finite schema/type/count/recipe refusal controls. |
+| `tools/offline-pilot/full_suite.go` | `707a273031f56012eea4ab852c944219d02fd6bd` | `9a3340abe27a793f5975dd4ef2f1e0c457c0815b` | Collects the required root after lifecycle validation; incomplete groups cannot pass. |
+| `tools/offline-pilot/main.go` | `8262857ced272cb65db926598e917f111bc63aec` | `d852f49bebfb904efc48c26f142f34e1dc484e20` | Validates the opt-in selector before setup and emits v4 only when requested. |
+| `tools/offline-pilot/source_roots.go` | — | `d04b0813e438c501f38d21b51bd9c380b2a07497` | Fixed root and six-child counters; no dynamic labels or diagnostics in the receipt. |
+| `tools/offline-pilot/source_roots_test.go` | — | `981209855ba7317f72b71b832589d2738944272c` | Lifecycle, skip/failure, privacy and small actual Go-event fixture controls. |
+
+Review the complete pair explicitly:
+
+```sh
+git diff --name-status 6ecc2310538d511e3b26bea4c658082853266a11 2092095126ca6f3243b99b9d8b34c4661f5d6934
+git diff 6ecc2310538d511e3b26bea4c658082853266a11 2092095126ca6f3243b99b9d8b34c4661f5d6934 -- cmd internal tools go.mod go.sum
+```
+
+The second command includes nested research modules and excluded material.
+The 729-input fingerprint below was independently recomputed from Git blobs.
+This ledger update supplies no new native execution and preserves the preceding
+runtime record verbatim. Later documentation-only heads retain runtime
+qualification at `2092095`; scope-only CI cannot qualify native execution.
+
+The [D0-D6 contract](typed-state-roadmap.md) still requires the selected real
+network/query/profile/anchor/producer authorization and actual consumer capture,
+representative R1 data, independent release review and authenticated distribution.
+Production state proofs and irreversible settlement remain NO-GO.
+
+## Historical source-specific records
+
+The following records preserve their original revisions and meanings of
+"current". They do not replace the runtime selection above or the frozen
+human-review selection at the start of this document.
+
+### Earlier runtime selection: `fdd17be`
+
+The runtime baseline selected by this ledger is
 [`fdd17be9d3c9a7b0a98068a72b44bb2b10eb253e`](https://github.com/edgepillar/zenon-spv/tree/fdd17be9d3c9a7b0a98068a72b44bb2b10eb253e),
 tree `87dd030885f21059c9d1a8626bc1838c99f7f769`, following the local merge of
 [PR #341](https://github.com/edgepillar/zenon-spv/pull/341). Both author and
@@ -123,12 +247,6 @@ The [D0-D6 contract](typed-state-roadmap.md) still needs the independently
 selected network/query/profile/anchor/schedule and actual consumer capture,
 representative R1 data, independent review and authenticated distribution.
 Production state proofs and irreversible settlement remain NO-GO.
-
-## Historical source-specific records
-
-The following records preserve their original revisions and meanings of
-"current". They do not replace the runtime selection above or the frozen
-human-review selection at the start of this document.
 
 ### Earlier runtime selection: `762ae9a`
 
@@ -871,6 +989,7 @@ length framing.
 | `143725d9df7bd726d6bdd598466576b8bc7423a4` | 1,301 | 725 | 35,897,087 | `8a790a9158ff83890606c8317aac1728a4ff604c55a3a9a88b7cd8c00a0b280f` |
 | `762ae9ac8c735cdf8747b7dd73824bb50c1514b4` | 1,303 | 726 | 35,905,702 | `19e3a45a6d55e9bfc591dbbd3bfd4dfa2cc1be40e47c4936bb37ed731b5add01` |
 | `fdd17be9d3c9a7b0a98068a72b44bb2b10eb253e` | 1,305 | 727 | 35,919,134 | `60c9c9cbfb5d86d7acded963a8b81d4ce1ed4915ba6dec6bcbdf70aa08e4e012` |
+| `2092095126ca6f3243b99b9d8b34c4661f5d6934` | 1,308 | 729 | 35,931,304 | `2a3a789e1567bf1a92ff1c0e9fbbd7de458716b0588724ee31dbc467afcb9398` |
 
 The historical frozen-to-`879fbce` comparison contains 204 tracked-file changes
 and 59 selected-input changes. Those historical counts remain valid for that

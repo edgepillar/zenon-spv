@@ -30,9 +30,9 @@ research. The [frozen-to-baseline change ledger](review-candidate-changes.md)
 retains the historical `879fbce33dd77f483f7aba18994fb037f248e842` observations
 and the completed `d85aff12dd0de8b2d1bd8db46e0e4e727c7e60ff` pipeline. It
 preserves the historical 18-file root-module delta through `da04d418` and selects
-the separately qualified `fdd17be` runtime baseline in its
+the separately qualified `2092095` runtime baseline in its
 [current qualification record](review-candidate-changes.md#current-qualified-runtime-baseline).
-The frozen-to-current comparison now contains 105 root-module Go paths; the
+The frozen-to-current comparison now contains 107 root-module Go paths; the
 historical table and all earlier pipeline observations retain their original
 revision pairs. The ledger also distinguishes original review revisions from
 their identity-normalized counterparts. A later documentation-only workflow
@@ -80,37 +80,49 @@ does not wait for a complete mainnet inventory, and does not close representativ
 production budgets or node recovery/activation gates.
 
 The latest ledger-selected runtime baseline is
-[`fdd17be9d3c9a7b0a98068a72b44bb2b10eb253e`](https://github.com/edgepillar/zenon-spv/tree/fdd17be9d3c9a7b0a98068a72b44bb2b10eb253e).
-Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41971763273)
+[`2092095126ca6f3243b99b9d8b34c4661f5d6934`](https://github.com/edgepillar/zenon-spv/tree/2092095126ca6f3243b99b9d8b34c4661f5d6934).
+Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41988312888)
 passed all seven jobs on attempt 1. All 37 archives and 21 native binary
 bindings were reconciled, including complete root-suite receipts. Linux and
 macOS have zero skips; Windows retains separate full-suite (16) and selected
 scenario (five) skip ledgers. The counts are not additive.
 This follows the local `edgepillar` author/committer merge of
-[PR #341](https://github.com/edgepillar/zenon-spv/pull/341).
+[PR #343](https://github.com/edgepillar/zenon-spv/pull/343).
 
-The [incremental state-window decoder](streamed-state-window.md) removes one
-whole-array decoder buffer while preserving count, syntax, duplicate-field,
-nil/empty and publish-on-success controls. Full-window cryptographic,
-anchor/profile and producer validation still precede resizing. A local K=4096
-structural parser benchmark records about 51% fewer allocated bytes; it does not
-measure complete-loader RSS, end-to-end latency or whole-CI speedup. The initial
-local fixture failure remains recorded separately from its corrected control
-and the complete final-source hosted suites.
+The [fixed source-enumeration receipt](source-root-control-reuse.md) lets macOS
+and Windows verify the actual complete-suite root and its six passed children
+instead of repeating the ordinary-parent directory workload. Linux keeps its
+separate ordinary-parent control alongside race/coverage CI. The opt-in v4
+receipt binds the complete stream and source; the default remains v3, and
+v1/v2/v3 verification is retained. No package/model or cryptographic check is
+removed. Avoiding two Go processes and two 32,769-entry fixtures per native
+revision is not a controlled whole-CI latency or physical-disk-saving claim.
 
-The preceding [detached header-copy improvement](owned-header-copies.md),
-version 2 BatchEntry source-field policy, independent ABI vectors, original-node
-positive bytes and version 1 compatibility remain covered. The
+The candidate's first hosted attempt remains FAILURE after two macOS
+`CreateArtifact` `ENOTFOUND` errors. Its 34 available archives and job log were
+retained. One macOS-only recovery completed the selected 37-archive candidate
+gate; the six successful jobs were not requested again. The
 [frozen-to-current ledger](review-candidate-changes.md#current-qualified-runtime-baseline)
-recomputes the source scope and preserves the preceding runtime record verbatim.
+records the exact execution and artifact attempts, preserves six excluded
+first-attempt macOS archives and keeps main's own fresh qualification separate.
+The [source review at `21dd142`](https://github.com/edgepillar/zenon-spv/pull/343#issuecomment-6652166973)
+has a bounded source-level scope; it does not advance the frozen human-review
+handoff or authenticate a release.
+
+The preceding [incremental state-window decoder](streamed-state-window.md) and
+[detached header-copy improvement](owned-header-copies.md), version 2 BatchEntry
+source-field policy, independent ABI vectors and version 1 compatibility remain
+covered. The preceding runtime record and all failed/interrupted outcomes remain
+preserved with their original source identities.
 
 The separate exporter/transport workflows did not run at this runtime revision;
 their earlier qualifications remain pinned to their original sources.
 The frozen human-review candidate remains unchanged. The planning pins
 `df1cc52` and `1b8a33f` retain their original meanings. Later
 documentation-only heads do not advance runtime qualification. Selected-network
-D0-D3 acceptance, representative R1 data, independent review and authenticated
-distribution remain open.
+D0-D3 acceptance, representative R1 data, independent release review and
+authenticated distribution remain open. Production state proofs and
+irreversible settlement remain NO-GO.
 
 The [bounded R1 transport tool](../tools/ledger-transport/README.md) prepares the
 snapshot transport track without enabling state values. It hashes fixed chunks
