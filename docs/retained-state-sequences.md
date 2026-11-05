@@ -36,6 +36,10 @@ The deterministic matrix is the `retained_state_sequences` offline-pilot case.
 
 ## Full-capacity operation sequences
 
+The [detached header-copy controls](owned-header-copies.md) separately reduce
+public-key/signature copy allocations without changing this model's selection,
+fixtures, operations or assertions.
+
 `TestRetainedCapacitySequenceModel` reuses the independent fixture-index model
 at K=16/256/4096, in all three profile/schedule modes, with W=6 or W=K-1.
 These 18 cells start by filling exactly K signed headers. Each then combines
