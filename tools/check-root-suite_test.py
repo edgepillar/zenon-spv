@@ -64,6 +64,18 @@ def observer_fixture(platform="linux"):
     return receipt, report
 
 
+def source_root_fixture(platform="darwin"):
+    receipt, report = observer_fixture(platform)
+    receipt.update(format="zenon-root-suite/v4", source_root_controls={
+        "format": "zenon-source-root-controls/v1", "group": "compiled-source-enumeration/v1", "status": "complete",
+        "roots": [{"package": CHECKER.MODULE + "/tools/offline-pilot", "test": "TestCompiledPilotSourceEnumeration",
+                   "status": "pass", "passed_subtests": 6, "skipped_subtests": 0, "failed_subtests": 0}]})
+    receipt["packages"].append({"package": CHECKER.MODULE + "/tools/offline-pilot", "status": "pass"})
+    receipt["tests"].update(root_tests=5, subtests=14, passed=18)
+    receipt["timings"].update(completed_roots=5, missing_elapsed=2)
+    return receipt, report
+
+
 class RootSuiteControls(unittest.TestCase):
     def check(self, receipt, report):
         CHECKER.check_receipt(receipt, report, True, True, "10m0s", "30m0s")
@@ -71,6 +83,62 @@ class RootSuiteControls(unittest.TestCase):
     def test_complete_receipt_and_unselected_skip(self):
         self.check(*fixture())
         self.check(*timed_fixture())
+
+    def test_source_root_group_is_explicit_and_platform_bound(self):
+        for platform in ("linux", "darwin", "windows"):
+            receipt, report = source_root_fixture(platform)
+            CHECKER.check_receipt(receipt, report, True, True, "10m0s", "30m0s", platform,
+                                  "compiled-source-enumeration/v1")
+            summary = CHECKER.check_source_roots(receipt["source_root_controls"], receipt["tests"],
+                {p["package"] for p in receipt["packages"] if p["status"] == "pass"}, report)
+            self.assertEqual(summary, {"group": "compiled-source-enumeration/v1", "roots": 1,
+                                       "passed_subtests": 6, "skipped_subtests": 0})
+        for make in (fixture, timed_fixture, observer_fixture):
+            receipt, report = make()
+            with self.assertRaises(CHECKER.Rejected):
+                CHECKER.check_receipt(receipt, report, True, True, "10m0s", "30m0s", "linux",
+                                      "compiled-source-enumeration/v1")
+
+    def test_source_root_evidence_refuses_missing_shadowed_and_unexecuted_values(self):
+        mutations = [lambda r: r.pop("source_root_controls"), lambda r: r.update(format="zenon-root-suite/v3"),
+                     lambda r: r["source_root_controls"].update(format="PRIVATE"),
+                     lambda r: r["source_root_controls"].update(group="PRIVATE"),
+                     lambda r: r["source_root_controls"].update(status="incomplete"),
+                     lambda r: r["source_root_controls"].update(extra="PRIVATE"),
+                     lambda r: r["source_root_controls"].update(roots=[]),
+                     lambda r: r["source_root_controls"]["roots"].append(r["source_root_controls"]["roots"][0]),
+                     lambda r: r["tests"].update(subtests=8, passed=12),
+                     lambda r: r["packages"][-1].update(status="skip")]
+        for key, options in {
+            "test": ["TestOther", "TestCompiledPilotSourceEnumeration/PRIVATE", None],
+            "package": ["PRIVATE", CHECKER.MODULE + "/internal/conformance"],
+            "status": ["missing", "running", "skip", "fail"],
+            "passed_subtests": [5, 7, True, 6.0, "6"],
+            "skipped_subtests": [1, False], "failed_subtests": [1, False], "extra": ["PRIVATE"],
+        }.items():
+            for value in options:
+                mutations.append(lambda r, k=key, v=value: r["source_root_controls"]["roots"][0].update({k: v}))
+        for index, mutate in enumerate(mutations):
+            with self.subTest(index=index):
+                receipt, report = source_root_fixture()
+                mutate(receipt)
+                with self.assertRaises(CHECKER.Rejected):
+                    CHECKER.check_receipt(receipt, report, True, True, "10m0s", "30m0s", "darwin",
+                                          "compiled-source-enumeration/v1")
+
+    def test_source_root_reuse_preserves_parent_instrumentation_and_complete_suite(self):
+        workflow = (HERE.parent / ".github/workflows/ci.yml").read_text()
+        linux, matrix = workflow.split("\n  native-platform:\n", 1)
+        matrix = matrix.split("\n  recorded-oracles:\n", 1)[0]
+        command = "-run '^TestCompiledPilotSourceEnumeration$'"
+        self.assertIn(command, linux)
+        self.assertNotIn(command, matrix)
+        self.assertIn("--full-suite --timeout 30m --package-timeout 10m --race --coverage", linux)
+        self.assertIn("--full-suite --timeout 30m --package-timeout 10m --suite-root-group compiled-source-enumeration/v1", matrix)
+        self.assertIn("--require-source-root-group compiled-source-enumeration/v1", matrix)
+        steps = re.findall(r"^      - name: (.+)$", matrix, re.M)
+        self.assertLess(steps.index("Upload root suite receipt"), steps.index("Compiled pilot source enumeration controls"))
+        self.assertLess(steps.index("Compiled pilot source enumeration controls"), steps.index("Bounded ledger inventory controls"))
 
     def test_observer_resources_are_complete_and_platform_bound(self):
         for platform in ("linux", "darwin", "windows"):

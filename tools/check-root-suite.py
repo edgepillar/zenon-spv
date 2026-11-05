@@ -18,6 +18,8 @@ sys.dont_write_bytecode = True
 HERE = Path(__file__).resolve().parent
 DEPENDENCY = (17361, "868167a81686d1fea06469e8b7b94da1558782ffc784fbaf091d91f741a314eb")
 MODULE = "github.com/0x3639/zenon-spv"
+SOURCE_ROOT_GROUP = "compiled-source-enumeration/v1"
+SOURCE_ROOT_TEST = "TestCompiledPilotSourceEnumeration"
 RECEIPT_KEYS = {
     "format", "status", "error", "source", "source_matches_after_run", "test_parent_race_enabled",
     "coverage_enabled", "package_timeout", "overall_timeout", "package_inventory_succeeded", "test_process_succeeded",
@@ -137,12 +139,35 @@ def check_observer_resources(value, platform):
     return {"format": value["format"], "status": "consistent", "groups": len(rows), "process_observations": slot_count}
 
 
-def check_receipt(value, report, race, coverage, package_timeout, overall_timeout, platform=None):
+def check_source_roots(value, counts, passed_packages, report):
+    require(type(value) is dict and set(value) == {"format", "group", "status", "roots"}
+            and value["format"] == "zenon-source-root-controls/v1" and value["group"] == SOURCE_ROOT_GROUP
+            and value["status"] == "complete" and type(value["roots"]) is list and len(value["roots"]) == 1)
+    row = value["roots"][0]
+    require(type(row) is dict and set(row) == {
+        "package", "test", "status", "passed_subtests", "skipped_subtests", "failed_subtests"})
+    package = MODULE + "/tools/offline-pilot"
+    require(row["package"] == package and package in passed_packages and row["test"] == SOURCE_ROOT_TEST
+            and row["status"] == "pass" and all(integer(row[key]) for key in
+                ("passed_subtests", "skipped_subtests", "failed_subtests"))
+            and row["passed_subtests"] == 6 and row["skipped_subtests"] == row["failed_subtests"] == 0)
+    require(not any(case["package"] == "tools/offline-pilot" and case.get("test") == SOURCE_ROOT_TEST
+                    for case in report["cases"]))
+    require(counts["root_tests"] >= len(report["cases"]) + 1
+            and counts["subtests"] >= 6 + sum(case["passed_subtests"] + case["skipped_subtests"]
+                                              for case in report["cases"]))
+    return {"group": SOURCE_ROOT_GROUP, "roots": 1, "passed_subtests": 6, "skipped_subtests": 0}
+
+
+def check_receipt(value, report, race, coverage, package_timeout, overall_timeout, platform=None, required_group=None):
     require(type(value) is dict)
-    version2 = value.get("format") in ("zenon-root-suite/v2", "zenon-root-suite/v3")
-    version3 = value.get("format") == "zenon-root-suite/v3"
-    require(set(value) == RECEIPT_KEYS | ({"timings"} if version2 else set()) | ({"observer_resources"} if version3 else set()))
-    require(value["format"] in ("zenon-root-suite/v1", "zenon-root-suite/v2", "zenon-root-suite/v3") and value["status"] == report["status"]
+    version2 = value.get("format") in ("zenon-root-suite/v2", "zenon-root-suite/v3", "zenon-root-suite/v4")
+    version3 = value.get("format") in ("zenon-root-suite/v3", "zenon-root-suite/v4")
+    version4 = value.get("format") == "zenon-root-suite/v4"
+    require(required_group is None or required_group == SOURCE_ROOT_GROUP and version4)
+    require(set(value) == RECEIPT_KEYS | ({"timings"} if version2 else set()) | ({"observer_resources"} if version3 else set())
+            | ({"source_root_controls"} if version4 else set()))
+    require(value["format"] in ("zenon-root-suite/v1", "zenon-root-suite/v2", "zenon-root-suite/v3", "zenon-root-suite/v4") and value["status"] == report["status"]
             and value["status"] in ("passed", "passed_with_skips") and value["error"] is None)
     require(value["source"] == report["source"] and value["source_matches_after_run"] is True
             and value["test_parent_race_enabled"] is race
@@ -180,6 +205,8 @@ def check_receipt(value, report, race, coverage, package_timeout, overall_timeou
     if version3:
         require(MODULE + "/internal/conformance" in passed)
         check_observer_resources(value["observer_resources"], platform)
+    if version4:
+        check_source_roots(value["source_root_controls"], counts, passed, report)
 
 
 def verify(args):
@@ -195,7 +222,7 @@ def verify(args):
     require(hashlib.sha256(report_raw).hexdigest() == args.expect_report_sha256)
     report = c.metadata(report_raw)
     check_receipt(receipt, report, args.expect_race == "true", args.expect_coverage == "true",
-                  args.expect_package_timeout, args.expect_overall_timeout, args.expect_os)
+                  args.expect_package_timeout, args.expect_overall_timeout, args.expect_os, args.require_source_root_group)
     require(receipt["selected_report_sha256"] == args.expect_report_sha256)
     result = {
         "format": "zenon-root-suite-check/v1", "status": "consistent", "category": None,
@@ -207,10 +234,13 @@ def verify(args):
         "selected_scenarios": receipt["selected_scenarios"],
         "test_execution_authenticated": False, "network_or_state_value_acceptance": False,
     }
-    if receipt["format"] in ("zenon-root-suite/v2", "zenon-root-suite/v3"):
+    if receipt["format"] in ("zenon-root-suite/v2", "zenon-root-suite/v3", "zenon-root-suite/v4"):
         result.update(format=receipt["format"].replace("root-suite/", "root-suite-check/"), receipt_format=receipt["format"], timings=receipt["timings"])
-    if receipt["format"] == "zenon-root-suite/v3":
+    if receipt["format"] in ("zenon-root-suite/v3", "zenon-root-suite/v4"):
         result["observer_resources"] = check_observer_resources(receipt["observer_resources"], args.expect_os)
+    if receipt["format"] == "zenon-root-suite/v4":
+        result["source_root_controls"] = check_source_roots(receipt["source_root_controls"], receipt["tests"],
+            {p["package"] for p in receipt["packages"] if p["status"] == "pass"}, report)
     return result
 
 
@@ -232,6 +262,7 @@ def main(argv=None, output=None):
                  "expect-revision", "expect-os", "expect-architecture", "expect-race", "expect-coverage",
                  "expect-package-timeout", "expect-overall-timeout"):
         parser.add_argument("--" + name, action=Once, required=True)
+    parser.add_argument("--require-source-root-group", action=Once)
     try:
         args = parser.parse_args(argv)
         require(args.expect_race in ("true", "false") and args.expect_coverage in ("true", "false"))

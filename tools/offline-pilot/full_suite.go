@@ -54,19 +54,21 @@ type suiteReceipt struct {
 	SelectedReportSHA string                 `json:"selected_report_sha256"`
 	Timings           suiteTimings           `json:"timings"`
 	ObserverResources suiteObserverResources `json:"observer_resources"`
+	SourceRoots       *sourceRootEvidence    `json:"source_root_controls,omitempty"`
 }
 
 type suiteCollector struct {
-	selected *eventCollector
-	packages map[string]string
-	active   map[string]bool
-	counts   suiteCounts
-	failures suiteFailures
-	timings  suiteTimings
-	observer observerResourceCollector
-	digest   hash.Hash
-	bytes    int64
-	complete bool
+	selected    *eventCollector
+	packages    map[string]string
+	active      map[string]bool
+	counts      suiteCounts
+	failures    suiteFailures
+	timings     suiteTimings
+	observer    observerResourceCollector
+	sourceRoots *sourceRootCollector
+	digest      hash.Hash
+	bytes       int64
+	complete    bool
 }
 
 func fullSuiteArguments(race bool, timeout time.Duration, coverage string) []string {
@@ -434,6 +436,9 @@ func (c *suiteCollector) event(e testEvent) error {
 	if err := c.observer.event(e); err != nil {
 		return err
 	}
+	if err := c.sourceRoots.event(e); err != nil {
+		return err
+	}
 	if slices.ContainsFunc(c.selected.cases, func(result caseResult) bool {
 		return result.Test == root && modulePath+"/"+result.Package == e.Package
 	}) {
@@ -447,6 +452,9 @@ func (c *suiteCollector) finish(processOK bool) string {
 		return "failed"
 	}
 	if !c.complete || len(c.packages) == 0 || c.counts.RootTests == 0 {
+		return "incomplete"
+	}
+	if !c.sourceRoots.complete() {
 		return "incomplete"
 	}
 	for _, state := range c.packages {
