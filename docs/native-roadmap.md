@@ -30,9 +30,9 @@ research. The [frozen-to-baseline change ledger](review-candidate-changes.md)
 retains the historical `879fbce33dd77f483f7aba18994fb037f248e842` observations
 and the completed `d85aff12dd0de8b2d1bd8db46e0e4e727c7e60ff` pipeline. It
 preserves the historical 18-file root-module delta through `da04d418` and selects
-the separately qualified `62524106` runtime baseline in its
+the separately qualified `4ae2914` runtime baseline in its
 [current qualification record](review-candidate-changes.md#current-qualified-runtime-baseline).
-The frozen-to-current comparison now contains 96 root-module Go paths; the
+The frozen-to-current comparison now contains 98 root-module Go paths; the
 historical table and all earlier pipeline observations retain their original
 revision pairs. The ledger also distinguishes original review revisions from
 their identity-normalized counterparts. A later documentation-only workflow
@@ -80,16 +80,20 @@ does not wait for a complete mainnet inventory, and does not close representativ
 production budgets or node recovery/activation gates.
 
 The latest ledger-selected runtime baseline is
-[`62524106cb363c51a1018f474693f46842eb6f32`](https://github.com/edgepillar/zenon-spv/tree/62524106cb363c51a1018f474693f46842eb6f32).
-Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41908988549)
+[`4ae2914d6c3e07def37316a3a7f1e61ed86028cb`](https://github.com/edgepillar/zenon-spv/tree/4ae2914d6c3e07def37316a3a7f1e61ed86028cb).
+Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41928953290)
 passed on attempt 1. All seven scheduled jobs and 37 archives were reconciled,
 including 21 ordinary native executables and complete root-suite receipts.
 The selected 61-scenario reports retain five Windows skips and zero Linux/macOS
 skips; the full-suite skip counts have a separate scope in the ledger.
 This follows the local `edgepillar` author/committer merge of
-[PR #333](https://github.com/edgepillar/zenon-spv/pull/333).
-The separate exporter/transport workflows did not run at this revision, and
-their earlier qualifications remain pinned to their original sources. The
+[PR #335](https://github.com/edgepillar/zenon-spv/pull/335). The
+[bounded native persistence encoding](owned-state-persistence.md) keeps the
+serialized bytes, validation and atomic-write protocol while reducing allocated
+bytes in its declared local encoding benchmark. It does not establish a
+whole-CI speedup, representative resource budget or new query authority.
+The separate exporter/transport workflows did not run at this runtime revision,
+and their earlier qualifications remain pinned to their original sources. The
 original frozen human-review candidate remains unchanged.
 The planning pins `df1cc52` and `1b8a33f` retain their original historical
 meanings. Later documentation-only heads do not advance runtime qualification.
