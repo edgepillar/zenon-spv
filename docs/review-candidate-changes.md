@@ -12,6 +12,127 @@ human acceptance or authenticated distribution.
 ## Current qualified runtime baseline
 
 The runtime baseline selected by this ledger is
+[`fdd17be9d3c9a7b0a98068a72b44bb2b10eb253e`](https://github.com/edgepillar/zenon-spv/tree/fdd17be9d3c9a7b0a98068a72b44bb2b10eb253e),
+tree `87dd030885f21059c9d1a8626bc1838c99f7f769`, following the local merge of
+[PR #341](https://github.com/edgepillar/zenon-spv/pull/341). Both author and
+committer are `edgepillar`. Its own
+[general main CI](https://github.com/edgepillar/zenon-spv/actions/runs/41971763273)
+passed all seven scheduled jobs on attempt 1. Reconciliation covers all 37
+actual archive IDs and 59,974,847 archive bytes, including 21 ordinary native
+binary bindings, source/build metadata, architecture checks and selected
+61-scenario reports. The separate exporter/transport workflows did not run at
+this runtime revision; earlier observations retain their original source pins.
+
+The complete uncached root-suite receipts cover 16 root-module packages.
+Linux and macOS each record 960 root and 6,333 subtest completions: 7,293
+passing events and zero skips. Windows records 956 root and 6,416 subtest
+completions: 7,356 passing events and 16 skip events. Completion counts include
+skips. The selected Windows reports separately retain five skips; the two
+traces' skip counts are not additive. The
+[candidate CI](https://github.com/edgepillar/zenon-spv/actions/runs/41968659940)
+has its own completed source/run query and qualification of 37 archives
+(59,974,783 bytes). Equal file trees did not transfer qualification between
+candidate feature `eab89bbbdcba4d8e1672afe679f110bc59028090`, checked out as
+`2064993c5921c324a648eb8de678a2afa3abdad3`, and main. Both revisions together
+account for 74 reconciled archives and 119,949,630 compressed bytes.
+Archive readers reuse verified CAS objects, extract no payload files and
+execute no new native tests or binaries.
+
+### Incremental retained-window decoding
+
+The [state-window decoder](streamed-state-window.md) consumes the bounded
+`retained_window` value directly from the enclosing state-object decoder,
+avoiding one complete array buffer and a second decoder. Standalone EOF
+checks and the enclosing object's syntax checks remain separate. Array/null
+shape, nil/empty distinction, duplicate known-field refusal, Unicode field
+matching, the count guard before the next row and publication only on success
+remain covered. Complete hash/signature/link/checkpoint validation and
+anchor/profile/producer checks still precede retention resizing. File
+encoding, schema versions 1/2/3, trust boundaries and proof acceptance rules
+are unchanged. This is not fully streaming file loading or a signature cache.
+
+The independent preceding parser is frozen at `8ada23c` with source hashes.
+Local retained evidence spans 50 passed roots and 303 unique subtest
+completions, including the unchanged 18-cell full-capacity model. The first
+attempt remains FAILURE: a new schedule test requested 38 slots from a
+32-header fixture. The fixture now contains 64 headers; that corrected root
+and the previously unexecuted benchmark, bounded differential fuzz, standalone
+window/state fuzz, vet and module checks passed. Successful model runs were
+not repeated merely to repair the fixture. The final hosted root suites
+executed the complete corrected source independently on each platform.
+
+Three local Go 1.25.14 darwin/arm64 structural benchmark repeats at K=4096
+record 16,407,048 B/op for the preceding parser and 8,020,048–8,020,053 B/op
+for the incremental parser, about 51% fewer allocated bytes. These direct
+`UnmarshalJSON` measurements exclude input reads, the complete loader's outer
+syntax pass and cryptographic validation. They establish no complete-loader
+RSS, end-to-end latency, whole-CI speedup or representative device budget.
+
+The preceding [per-header ownership copies](owned-header-copies.md),
+version 2 BatchEntry source-field policy, independent ABI vectors, original-node
+positive bytes and version 1 compatibility remain covered by the fresh
+source-specific suites. These observations do not establish selected-network
+activation, complete SubmitBatch validation, executor authorization, state
+transitions or consensus finality.
+
+### Source and review scope
+
+The frozen-to-current pair contains 459 changed tracked paths, 194 changed
+selected inputs and 105 root-module Go paths: 46 implementation/driver files
+and 59 test files. Root `go.mod` and `go.sum` are unchanged. The narrower
+historical `da04d418`-to-current pair contains 186 tracked changes, 109
+selected-input changes and 93 root-module Go paths: 43 implementation/driver
+files and 50 tests. Counts use per-revision module ownership; all earlier
+records keep their original pairs.
+
+The direct preceding-runtime `762ae9a`-to-`fdd17be` pair contains seven changed
+tracked paths, three selected inputs and three root-module Go paths: two
+implementation files and one test file. Three documentation paths and the CI
+workflow are outside the selected-input fingerprint. The table below uses exact
+Git blob IDs; an em dash means the earlier path was absent.
+
+| Path | Earlier blob | Selected baseline blob | Review impact |
+| --- | --- | --- | --- |
+| `.github/workflows/ci.yml` | `f4179f78d34264ba8952e0f37d12feb13cd397c5` | `79b320fbd9c921533bb5fb9998b2332140e52538` | Adds native decoder controls and bounded structural allocation observations. |
+| `docs/native-roadmap.md` | `0ec9c933e14f8022dd53a0a6552a845e972a10a2` | `1014a605472b2acc0d3ce4a8dc858dc5a4c3a2c6` | Source-specific evidence and scope; documentation supplies no new native execution or independent acceptance. |
+| `docs/review-candidate-changes.md` | `94569b563b76bcb2388801354b3ff35faefeafd8` | `63e1b7a669e978a6176de3587305e35ea611f0d7` | Source-specific evidence and scope; documentation supplies no new native execution or independent acceptance. |
+| `docs/streamed-state-window.md` | — | `fb302501f34777ef84efb27364aaa8c3be8af4d6` | Source-specific evidence and scope; documentation supplies no new native execution or independent acceptance. |
+| `internal/verify/state_json.go` | `556f464d36daad239c7b87f8de55528a852e8367` | `a925ae01b696d5204a15d8c3aa0deecfec94c748` | Consumes the bounded window directly within the state-object decoder; duplicate and publish-on-success rules remain. |
+| `internal/verify/state_window_json.go` | `a0225c884fa08377128277f122d4a21a24bf58fe` | `1d6a48f082834af93a24d1d1d7d441fdc77651ac` | Separates one bounded nested value from standalone EOF validation; header decoding and count guard remain. |
+| `internal/verify/state_window_stream_test.go` | — | `c53574e3c125da6eebe58d748a7ae203bc72e954` | Frozen preceding parser, bounded differential fuzz, schema/order/count checks and signed resume controls. |
+
+Review the complete current pair with explicit two-revision commands:
+
+```sh
+git diff --name-status 6ecc2310538d511e3b26bea4c658082853266a11 fdd17be9d3c9a7b0a98068a72b44bb2b10eb253e
+git diff 6ecc2310538d511e3b26bea4c658082853266a11 fdd17be9d3c9a7b0a98068a72b44bb2b10eb253e -- cmd internal tools go.mod go.sum
+```
+
+The second command includes nested modules and other material in those
+directories; use the module filter below for the 105-path root Go scope.
+The 727-input fingerprint below was independently recomputed from Git blobs.
+Python, workflows and other excluded inputs require separate inspection.
+
+This ledger update supplies no new native execution and does not advance the
+frozen human-review candidate. Later documentation-only heads retain runtime
+qualification at `fdd17be`; scope-only CI cannot qualify native execution.
+All failed, interrupted and superseded observations retain their actual
+outcomes; later successful CI does not rewrite them.
+
+The [D0-D6 contract](typed-state-roadmap.md) still needs the independently
+selected network/query/profile/anchor/schedule and actual consumer capture,
+representative R1 data, independent review and authenticated distribution.
+Production state proofs and irreversible settlement remain NO-GO.
+
+## Historical source-specific records
+
+The following records preserve their original revisions and meanings of
+"current". They do not replace the runtime selection above or the frozen
+human-review selection at the start of this document.
+
+### Earlier runtime selection: `762ae9a`
+
+The runtime baseline selected by this ledger is
 [`762ae9ac8c735cdf8747b7dd73824bb50c1514b4`](https://github.com/edgepillar/zenon-spv/tree/762ae9ac8c735cdf8747b7dd73824bb50c1514b4),
 tree `1057d25af955a139e2f273b0bcfa54a8b46cdd55`, following the local merge of
 [PR #339](https://github.com/edgepillar/zenon-spv/pull/339). Both author and
@@ -111,11 +232,6 @@ selected network/query/profile/anchor/schedule and actual consumer capture,
 representative R1 data, independent review and authenticated distribution.
 Production state proofs and irreversible settlement remain NO-GO.
 
-## Historical source-specific records
-
-The following records preserve their original revisions and meanings of
-"current". They do not replace the runtime selection above or the frozen
-human-review selection at the start of this document.
 
 ### Earlier runtime selection: `143725d`
 
@@ -754,6 +870,7 @@ length framing.
 | `4ae2914d6c3e07def37316a3a7f1e61ed86028cb` | 1,295 | 720 | 35,783,417 | `68187a1462190d5095bd547172668305b2f6965af2fc0dd6ecf0b0f7f3d53222` |
 | `143725d9df7bd726d6bdd598466576b8bc7423a4` | 1,301 | 725 | 35,897,087 | `8a790a9158ff83890606c8317aac1728a4ff604c55a3a9a88b7cd8c00a0b280f` |
 | `762ae9ac8c735cdf8747b7dd73824bb50c1514b4` | 1,303 | 726 | 35,905,702 | `19e3a45a6d55e9bfc591dbbd3bfd4dfa2cc1be40e47c4936bb37ed731b5add01` |
+| `fdd17be9d3c9a7b0a98068a72b44bb2b10eb253e` | 1,305 | 727 | 35,919,134 | `60c9c9cbfb5d86d7acded963a8b81d4ce1ed4915ba6dec6bcbdf70aa08e4e012` |
 
 The historical frozen-to-`879fbce` comparison contains 204 tracked-file changes
 and 59 selected-input changes. Those historical counts remain valid for that

@@ -30,9 +30,9 @@ research. The [frozen-to-baseline change ledger](review-candidate-changes.md)
 retains the historical `879fbce33dd77f483f7aba18994fb037f248e842` observations
 and the completed `d85aff12dd0de8b2d1bd8db46e0e4e727c7e60ff` pipeline. It
 preserves the historical 18-file root-module delta through `da04d418` and selects
-the separately qualified `762ae9a` runtime baseline in its
+the separately qualified `fdd17be` runtime baseline in its
 [current qualification record](review-candidate-changes.md#current-qualified-runtime-baseline).
-The frozen-to-current comparison now contains 102 root-module Go paths; the
+The frozen-to-current comparison now contains 105 root-module Go paths; the
 historical table and all earlier pipeline observations retain their original
 revision pairs. The ledger also distinguishes original review revisions from
 their identity-normalized counterparts. A later documentation-only workflow
@@ -80,21 +80,29 @@ does not wait for a complete mainnet inventory, and does not close representativ
 production budgets or node recovery/activation gates.
 
 The latest ledger-selected runtime baseline is
-[`762ae9ac8c735cdf8747b7dd73824bb50c1514b4`](https://github.com/edgepillar/zenon-spv/tree/762ae9ac8c735cdf8747b7dd73824bb50c1514b4).
-Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41961563244)
+[`fdd17be9d3c9a7b0a98068a72b44bb2b10eb253e`](https://github.com/edgepillar/zenon-spv/tree/fdd17be9d3c9a7b0a98068a72b44bb2b10eb253e).
+Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41971763273)
 passed all seven jobs on attempt 1. All 37 archives and 21 native binary
 bindings were reconciled, including complete root-suite receipts. Linux and
 macOS have zero skips; Windows retains separate full-suite (16) and selected
 scenario (five) skip ledgers. The counts are not additive.
 This follows the local `edgepillar` author/committer merge of
-[PR #339](https://github.com/edgepillar/zenon-spv/pull/339).
+[PR #341](https://github.com/edgepillar/zenon-spv/pull/341).
 
-The [detached header-copy improvement](owned-header-copies.md) keeps independent
-key/signature fields, snapshots and captured context while reducing allocation
-counts. The preceding runtime's explicit version 2 BatchEntry source-field
-policy, 34 independent ABI vectors, unchanged original-node positive bytes and
-version 1 compatibility remain covered. No whole-CI, RSS or representative
-resource budget follows from the small structural copy benchmarks.
+The [incremental state-window decoder](streamed-state-window.md) removes one
+whole-array decoder buffer while preserving count, syntax, duplicate-field,
+nil/empty and publish-on-success controls. Full-window cryptographic,
+anchor/profile and producer validation still precede resizing. A local K=4096
+structural parser benchmark records about 51% fewer allocated bytes; it does not
+measure complete-loader RSS, end-to-end latency or whole-CI speedup. The initial
+local fixture failure remains recorded separately from its corrected control
+and the complete final-source hosted suites.
+
+The preceding [detached header-copy improvement](owned-header-copies.md),
+version 2 BatchEntry source-field policy, independent ABI vectors, original-node
+positive bytes and version 1 compatibility remain covered. The
+[frozen-to-current ledger](review-candidate-changes.md#current-qualified-runtime-baseline)
+recomputes the source scope and preserves the preceding runtime record verbatim.
 
 The separate exporter/transport workflows did not run at this runtime revision;
 their earlier qualifications remain pinned to their original sources.
