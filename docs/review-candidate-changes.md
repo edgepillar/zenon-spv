@@ -12,6 +12,127 @@ human acceptance or authenticated distribution.
 ## Current qualified runtime baseline
 
 The runtime baseline selected by this ledger is
+[`143725d9df7bd726d6bdd598466576b8bc7423a4`](https://github.com/edgepillar/zenon-spv/tree/143725d9df7bd726d6bdd598466576b8bc7423a4),
+tree `51476602315de56d0e51b9bd13cdd8f2691bebfc`, following the local merge of
+[PR #337](https://github.com/edgepillar/zenon-spv/pull/337). Both author and
+committer are `edgepillar`. Its own
+[general main CI](https://github.com/edgepillar/zenon-spv/actions/runs/41948622040)
+passed all seven scheduled jobs on attempt 1. Reconciliation covers all 37
+actual archive IDs and 59,975,612 archive bytes, including 21 ordinary native
+binary bindings, source/build metadata, architecture checks and selected
+61-scenario reports. The separate exporter/transport workflows did not run at
+this runtime revision; earlier observations retain their original source pins.
+
+The complete uncached root-suite receipts cover 16 root-module packages.
+Linux and macOS each record 950 root and 6,116 subtest completions: 7,066
+passing events and zero skips. Windows records 946 root and 6,199 subtest
+completions: 7,129 passing events and 16 skip events. Completion counts include
+skips. The selected Windows reports separately retain five skips; the two
+traces' skip counts are not additive. The
+[candidate CI](https://github.com/edgepillar/zenon-spv/actions/runs/41945212880)
+has its own completed source/run query and qualification of 37 archives
+(59,975,518 bytes). Equal file trees did not transfer qualification between
+candidate checkout `5fe021ff422878b2c84a7080763b62c5d8d56692` and main.
+Each source's receipt controls refused all 110 changed source/run/step bindings.
+Archive readers reuse verified CAS objects, extract no payload files and
+execute no new native tests or binaries.
+
+### Explicit BatchEntry source-field policy
+
+[Query profile version 2](experimental-batch-entry-query.md#version-2-source-field-policy)
+requires `source_rule: "zenon-phase1-batch-fields/v1"`. After canonical
+membership and bounded strict ABI decoding, both the single-row and three-row
+APIs check the pinned phase1 pillar-name rule (1 through 40 ASCII bytes),
+asset-flow count/framing/token-ID encoding/order/nonzero amounts, and empty
+proof data. Positive local caps remain mandatory. The three-row and entry
+profile versions must agree; both version 2 contexts have separate namespace
+bytes. Version 1 retains its original exact wire schema and context preimages.
+The read-only CLI reports a mismatch as exit 1, `query/source_rule_mismatch`,
+with a null result even when the configured headers and proof were valid.
+
+The independent Python corpus supplies 34 canonical ABI vectors and
+reconstructs the retained original three-row proof bytes before constructing
+a separate negative mathematical tree. Positive original-node bytes remain
+unchanged. The negative owned-state and compiled-CLI controls use public
+synthetic unit signatures; they are not original-node or selected-network
+execution. Trusted restart, mixed-version refusals, detached results and
+legacy behavior remain covered. The generic ABI codec is unchanged.
+
+This rule is a source-field subset at the pinned node revision. It does not
+establish all SubmitBatch validation, executor authorization, input/deposit
+accounting, state transitions, registration, activation or consensus finality.
+The [D0-D6 contract](typed-state-roadmap.md) still needs the independently
+selected network/query/profile/anchor/schedule and actual consumer capture,
+representative R1 data, independent review and authenticated distribution.
+Production state proofs and irreversible settlement remain NO-GO.
+
+### Source and review scope
+
+The frozen-to-current pair contains 453 changed tracked paths, 190 changed
+selected inputs and 101 root-module Go paths: 44 implementation/driver files
+and 57 test files. Root `go.mod` and `go.sum` are unchanged. The narrower
+historical `da04d418`-to-current pair contains 179 tracked changes, 104
+selected-input changes and 88 root-module Go paths: 40 implementation/driver
+files and 48 tests. Counts use per-revision module ownership; all earlier
+records keep their original pairs.
+
+The direct preceding-runtime `4ae2914`-to-`143725d` pair contains 20 changed
+tracked paths, 13 selected inputs and 11 root-module Go paths (seven
+implementation files and four tests). Six other paths are documentation; the
+independent Python generator is outside the selected-input fingerprint.
+The table below uses exact Git blob IDs; an em dash means the earlier path
+was absent.
+
+| Path | Earlier blob | Selected baseline blob | Review impact |
+| --- | --- | --- | --- |
+| `cmd/zenon-spv/experimental_batch_context.go` | `a8cf0cfa3621c05068340b5708ee4c8dda7e4dc7` | `61435a6be6ab541aaee8489f680c58df6e225da8` | Maps source mismatch to exit 1 with a null consumer result. |
+| `cmd/zenon-spv/experimental_batch_entry.go` | `01f08696622497a23f7fb88f243b926e64649da6` | `dbdeed18298704c39017360437f54e1a6e9d09c9` | Maps source mismatch to exit 1 with a null consumer result. |
+| `docs/batch-entry-query-contract.md` | `b93c6eed4b3b4deeb114f4f41ab5f2cdbfe11f00` | `ab0201d023248f966970f7060015da770232b97e` | Source-specific scope and evidence; no new native execution or human acceptance. |
+| `docs/experimental-batch-context-query.md` | `79fd3520549847eae3517b8cae95d8c5f10e65ba` | `0eeaffe1c81e338c7db4a7c027d90e73f974bb03` | Source-specific scope and evidence; no new native execution or human acceptance. |
+| `docs/experimental-batch-entry-cli.md` | `f29ec185e4ffa83a3601ae0958be56e7e4381fe2` | `8df811e8ef1d476c729ace1b2f0aa29a9c4a4923` | Source-specific scope and evidence; no new native execution or human acceptance. |
+| `docs/experimental-batch-entry-query.md` | `c9731c674ef5ad713ab98a75e1f50e4e27d47488` | `68d127ecdc4156423f59a2d4f16aeee218eed839` | Source-specific scope and evidence; no new native execution or human acceptance. |
+| `docs/native-roadmap.md` | `5761ed0b743f02b46e2536f35ac96a0ec3111116` | `1071141ff08dd3063bf064a9d2d678eb48b8c69a` | Source-specific scope and evidence; no new native execution or human acceptance. |
+| `docs/review-candidate-changes.md` | `cc72202ff812930af51e2fb90db8a506a6f92048` | `4b2bbcd334f026ef1ea58b8ae4e8d2cc54acaaf4` | Source-specific scope and evidence; no new native execution or human acceptance. |
+| `internal/conformance/cli_batch_context_test.go` | `549be3a6d020d3695cd4f067610da1f71c9d07d3` | `3da4d713005b08e5c6a5cdb34a04f90276e32e01` | Exercises opt-in policy, unchanged node bytes, synthetic rejection and legacy compatibility. |
+| `internal/conformance/cli_batch_source_rule_test.go` | — | `ef0cfc8b136a97512d20cd55eaf4d4acfa9a3b78` | Exercises opt-in policy, unchanged node bytes, synthetic rejection and legacy compatibility. |
+| `internal/conformance/cli_experimental_batch_positive_test.go` | `53f3bfd4527052302b6391e44943a366f8f8565f` | `374092dce1c9364b920fc19307c45175d9af41de` | Exercises opt-in policy, unchanged node bytes, synthetic rejection and legacy compatibility. |
+| `internal/testdata/conformance/batch-entry-source-rule-invalid-context.json` | — | `93008a673839fcd90d054589dc17954cadb05f1b` | Independent ABI/proof vectors or synthetic negative workflow; no network acceptance. |
+| `internal/testdata/conformance/batch-entry-source-rule.json` | — | `a46f2567322a66f44982c9fee9992caccbb67477` | Independent ABI/proof vectors or synthetic negative workflow; no network acceptance. |
+| `internal/testdata/conformance/batch-entry-source-rule.py` | — | `7ba6578c64c78354dae0c2cdc54a40340f389edf` | Independent stdlib byte reproduction, outside the selected-input fingerprint. |
+| `internal/verify/experimental_batch_context.go` | `cbcf864071244dc2ed3303898f2a7bda120ef2bb` | `c125a8acd6e70003ec5c02c613d8be653332debb` | Applies the selected rule after canonical membership and strict ABI decoding. |
+| `internal/verify/experimental_batch_context_profile.go` | `0bdd8e5b6c7782540ba10ed8d8fe108104fa38f5` | `bb175da1d86f7122269bbbc9295a62ef799a2c0e` | Requires matching profile versions and a distinct v2 namespace. |
+| `internal/verify/experimental_batch_entry.go` | `48fbc57a7a808705c2866cb6b2643fe0c0a1c0d0` | `b76e0d8fe29029683924e45297be56b22770acbf` | Applies the selected rule after canonical membership and strict ABI decoding. |
+| `internal/verify/experimental_batch_entry_profile.go` | `76e5b8914b3c9b27e1575b344c946d3874a59ffb` | `64a4268df9645245fbe65b86aa9735b934c1d597` | Separates exact v1/v2 schemas, rules and context preimages. |
+| `internal/verify/experimental_batch_entry_source_rule.go` | — | `db203cb0ac42f3fd5dbda25c4ded077dd8b40366` | Implements the selected bounded source-field subset. |
+| `internal/verify/experimental_batch_entry_source_rule_test.go` | — | `5349648c1dcaa96a3aabb4518f694a99b8c94ae4` | Exercises opt-in policy, unchanged node bytes, synthetic rejection and legacy compatibility. |
+
+Review the complete current pair with explicit two-revision commands:
+
+```sh
+git diff --name-status 6ecc2310538d511e3b26bea4c658082853266a11 143725d9df7bd726d6bdd598466576b8bc7423a4
+git diff 6ecc2310538d511e3b26bea4c658082853266a11 143725d9df7bd726d6bdd598466576b8bc7423a4 -- cmd internal tools go.mod go.sum
+```
+
+The second command includes nested modules and other material in those
+directories; use the module filter below for the 101-path root Go scope.
+The 725-input fingerprint below was independently recomputed from Git blobs.
+Python, workflows and other excluded inputs require separate inspection.
+
+This ledger update supplies no new native execution and does not advance the
+frozen human-review candidate. Later documentation-only heads retain runtime
+qualification at `143725d`; scope-only CI cannot qualify native execution.
+All failed, interrupted and superseded observations retain their actual
+outcomes; later successful CI does not rewrite them.
+
+## Historical source-specific records
+
+The following records preserve their original revisions and meanings of
+"current". They do not replace the runtime selection above or the frozen
+human-review selection at the start of this document.
+
+### Earlier runtime selection: `4ae2914`
+
+The runtime baseline selected by this ledger is
 [`4ae2914d6c3e07def37316a3a7f1e61ed86028cb`](https://github.com/edgepillar/zenon-spv/tree/4ae2914d6c3e07def37316a3a7f1e61ed86028cb),
 tree `63e421a7c05abf340cbd070cc7d7c6db1f77c5aa`, following the local merge of
 [PR #335](https://github.com/edgepillar/zenon-spv/pull/335). Both author and
@@ -104,11 +225,6 @@ query/profile/anchor/schedule and actual network capture, representative R1 data
 independent review and authenticated distribution. Production state proofs and
 irreversible settlement remain NO-GO.
 
-## Historical source-specific records
-
-The following records preserve their original revisions and meanings of
-"current". They do not replace the runtime selection above or the frozen
-human-review selection at the start of this document.
 
 ### Earlier runtime selection: `62524106`
 
@@ -533,6 +649,7 @@ length framing.
 | `e1e2fda4910d876588adb9badcb1c0d06c109ccd` | 1,288 | 714 | 35,742,217 | `f1e2db03cee2175bba53fb520eca844b63b7938bb919c863f9e8b862f47f4003` |
 | `62524106cb363c51a1018f474693f46842eb6f32` | 1,293 | 718 | 35,773,059 | `23143e1325f6b86588ee9a03e8b9a6df8342d16ac78ff701c36d9f8eeffa28ce` |
 | `4ae2914d6c3e07def37316a3a7f1e61ed86028cb` | 1,295 | 720 | 35,783,417 | `68187a1462190d5095bd547172668305b2f6965af2fc0dd6ecf0b0f7f3d53222` |
+| `143725d9df7bd726d6bdd598466576b8bc7423a4` | 1,301 | 725 | 35,897,087 | `8a790a9158ff83890606c8317aac1728a4ff604c55a3a9a88b7cd8c00a0b280f` |
 
 The historical frozen-to-`879fbce` comparison contains 204 tracked-file changes
 and 59 selected-input changes. Those historical counts remain valid for that

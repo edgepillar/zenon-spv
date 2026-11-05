@@ -30,9 +30,9 @@ research. The [frozen-to-baseline change ledger](review-candidate-changes.md)
 retains the historical `879fbce33dd77f483f7aba18994fb037f248e842` observations
 and the completed `d85aff12dd0de8b2d1bd8db46e0e4e727c7e60ff` pipeline. It
 preserves the historical 18-file root-module delta through `da04d418` and selects
-the separately qualified `4ae2914` runtime baseline in its
+the separately qualified `143725d` runtime baseline in its
 [current qualification record](review-candidate-changes.md#current-qualified-runtime-baseline).
-The frozen-to-current comparison now contains 98 root-module Go paths; the
+The frozen-to-current comparison now contains 101 root-module Go paths; the
 historical table and all earlier pipeline observations retain their original
 revision pairs. The ledger also distinguishes original review revisions from
 their identity-normalized counterparts. A later documentation-only workflow
@@ -80,23 +80,29 @@ does not wait for a complete mainnet inventory, and does not close representativ
 production budgets or node recovery/activation gates.
 
 The latest ledger-selected runtime baseline is
-[`4ae2914d6c3e07def37316a3a7f1e61ed86028cb`](https://github.com/edgepillar/zenon-spv/tree/4ae2914d6c3e07def37316a3a7f1e61ed86028cb).
-Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41928953290)
-passed on attempt 1. All seven scheduled jobs and 37 archives were reconciled,
-including 21 ordinary native executables and complete root-suite receipts.
-The selected 61-scenario reports retain five Windows skips and zero Linux/macOS
-skips; the full-suite skip counts have a separate scope in the ledger.
+[`143725d9df7bd726d6bdd598466576b8bc7423a4`](https://github.com/edgepillar/zenon-spv/tree/143725d9df7bd726d6bdd598466576b8bc7423a4).
+Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41948622040)
+passed all seven jobs on attempt 1. All 37 archives and 21 native binary
+bindings were reconciled, including complete root-suite receipts. Linux and
+macOS have zero skips; Windows retains separate full-suite (16) and selected
+scenario (five) skip ledgers. The counts are not additive.
 This follows the local `edgepillar` author/committer merge of
-[PR #335](https://github.com/edgepillar/zenon-spv/pull/335). The
-[bounded native persistence encoding](owned-state-persistence.md) keeps the
-serialized bytes, validation and atomic-write protocol while reducing allocated
-bytes in its declared local encoding benchmark. It does not establish a
-whole-CI speedup, representative resource budget or new query authority.
-The separate exporter/transport workflows did not run at this runtime revision,
-and their earlier qualifications remain pinned to their original sources. The
-original frozen human-review candidate remains unchanged.
-The planning pins `df1cc52` and `1b8a33f` retain their original historical
-meanings. Later documentation-only heads do not advance runtime qualification.
+[PR #337](https://github.com/edgepillar/zenon-spv/pull/337).
+
+The [explicit version 2 BatchEntry policy](experimental-batch-entry-query.md#version-2-source-field-policy)
+checks the pinned source pillar-name, asset-flow framing/ID/order/amount and
+empty-proof-data rules after canonical membership and strict ABI decoding.
+Version 1 wire schemas and context preimages remain unchanged. The three-row
+profile also requires version 2; the read-only CLI returns no partial result
+on a source-rule mismatch. Independent byte vectors and unchanged original-node
+positive bytes support this source-field subset. Synthetic negative headers
+and green CI do not close the selected-network D0-D3 acceptance gates.
+
+The separate exporter/transport workflows did not run at this runtime revision;
+their earlier qualifications remain pinned to their original sources.
+The frozen human-review candidate remains unchanged. The planning pins
+`df1cc52` and `1b8a33f` retain their original meanings. Later
+documentation-only heads do not advance runtime qualification.
 
 The [bounded R1 transport tool](../tools/ledger-transport/README.md) prepares the
 snapshot transport track without enabling state values. It hashes fixed chunks
