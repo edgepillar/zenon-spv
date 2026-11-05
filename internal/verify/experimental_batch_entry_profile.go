@@ -108,8 +108,19 @@ type ExperimentalBatchEntryProfile struct {
 }
 
 func (p ExperimentalBatchEntryProfile) Validate() error {
-	if !((p.Version == 1 && p.SourceRule == "") || (p.Version == 2 && p.SourceRule == ExperimentalBatchEntrySourceRule)) ||
-		p.Settlement != ExperimentalBatchEntrySettlementAddress() || p.RuntimeIdentity.IsZero() ||
+	switch p.Version {
+	case 1:
+		if p.SourceRule != "" {
+			return ErrExperimentalBatchEntryProfile
+		}
+	case 2:
+		if p.SourceRule != ExperimentalBatchEntrySourceRule {
+			return ErrExperimentalBatchEntryProfile
+		}
+	default:
+		return ErrExperimentalBatchEntryProfile
+	}
+	if p.Settlement != ExperimentalBatchEntrySettlementAddress() || p.RuntimeIdentity.IsZero() ||
 		p.MaxProofBytes < 103+proof.CandidateBatchEntryMinBytes || p.MaxProofBytes > proof.CandidateSMTMaxProofBytes ||
 		p.MaxSiblings > 256 || p.Limits.validate() != nil || len(p.Source) > 1024 ||
 		strings.TrimSpace(p.Source) == "" || !utf8.ValidString(p.Source) {
