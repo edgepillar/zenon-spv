@@ -101,6 +101,15 @@ class Reader:
 
     def take(self, size):
         require(0 <= size <= self.size - self.position, "truncated_input")
+        if size == 0:
+            return b""
+        self.fill()
+        end = self.offset + size
+        if end <= len(self.buffer):
+            raw = self.buffer[self.offset:end]
+            self.position += size
+            self.offset = end
+            return raw
         raw = bytearray()
         while len(raw) < size:
             self.fill()

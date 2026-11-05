@@ -345,6 +345,89 @@ class LedgerInventoryTests(unittest.TestCase):
         self.assertEqual(INV.inventory(OneByte(raw), pin(raw, 2)),
                          INV.inventory(io.BytesIO(raw), pin(raw, 2)))
 
+    def test_field_reads_keep_immutable_bytes_across_refills(self):
+        raw = bytes(range(256)) * (3 * INV.CHUNK_BYTES // 256 + 1)
+        for prefix in (0, 1, INV.CHUNK_BYTES - 33, INV.CHUNK_BYTES - 32,
+                       INV.CHUNK_BYTES - 31, INV.CHUNK_BYTES - 1,
+                       INV.CHUNK_BYTES, INV.CHUNK_BYTES + 1):
+            for size in (0, 1, 31, 32, 33, INV.CHUNK_BYTES, INV.CHUNK_BYTES + 1):
+                with self.subTest(prefix=prefix, size=size):
+                    stream = CountedReads(raw)
+                    reader = INV.Reader(stream, len(raw))
+                    head = reader.take(prefix)
+                    field = reader.take(size)
+                    tail = reader.take(len(raw) - prefix - size)
+                    self.assertIs(type(field), bytes)
+                    self.assertEqual((head, field, tail),
+                                     (raw[:prefix], raw[prefix:prefix + size], raw[prefix + size:]))
+                    self.assertEqual(reader.position, len(raw))
+                    self.assertEqual(reader.hash.hexdigest(), hashlib.sha256(raw).hexdigest())
+                    self.assertFalse(reader.raw_read(1))
+                    self.assertEqual(stream.tell(), len(raw))
+                    self.assertLessEqual(max(stream.requests), INV.CHUNK_BYTES)
+
+    def test_field_reads_preserve_bytes_with_short_fragments(self):
+        raw = bytes(range(256)) * 2
+        for fragment in (1, 3, 31):
+            class Fragmented(CountedReads):
+                def read(self, size):
+                    if not 0 < size <= INV.CHUNK_BYTES:
+                        raise AssertionError("unbounded read requested")
+                    return super().read(min(size, fragment))
+            for prefix in (0, 1, 30, 31, 32):
+                for size in (0, 1, 31, 32, 33, 129):
+                    with self.subTest(fragment=fragment, prefix=prefix, size=size):
+                        stream = Fragmented(raw)
+                        reader = INV.Reader(stream, len(raw))
+                        self.assertEqual(reader.take(prefix), raw[:prefix])
+                        field = reader.take(size)
+                        reader.take(len(raw) - prefix - size)
+                        self.assertIs(type(field), bytes)
+                        self.assertEqual(field, raw[prefix:prefix + size])
+                        self.assertEqual(reader.position, len(raw))
+                        self.assertEqual(reader.hash.hexdigest(), hashlib.sha256(raw).hexdigest())
+                        self.assertFalse(reader.raw_read(1))
+
+    def test_empty_and_invalid_field_reads_do_not_prefetch(self):
+        stream = CountedReads(b"abc")
+        reader = INV.Reader(stream, 3)
+        self.assertEqual(reader.take(0), b"")
+        for size in (-1, 4):
+            with self.subTest(size=size):
+                with self.assertRaises(INV.Refused) as raised:
+                    reader.take(size)
+                self.assertEqual(str(raised.exception), "truncated_input")
+                self.assertEqual((reader.position, stream.tell(), stream.requests), (0, 0, []))
+        self.assertEqual(reader.take(3), b"abc")
+        requests = list(stream.requests)
+        self.assertEqual(reader.take(0), b"")
+        with self.assertRaises(INV.Refused):
+            reader.take(1)
+        self.assertEqual(stream.requests, requests)
+        self.assertEqual(reader.position, 3)
+
+    def test_partial_field_refill_failure_returns_no_value(self):
+        raw = b"a" * INV.CHUNK_BYTES + b"b" * 16
+        for cutoff in (INV.CHUNK_BYTES, INV.CHUNK_BYTES + 8):
+            for failed_read in (False, True):
+                class Interrupted(io.BytesIO):
+                    def read(self, size):
+                        if not 0 < size <= INV.CHUNK_BYTES:
+                            raise AssertionError("unbounded read requested")
+                        if self.tell() >= cutoff:
+                            if failed_read:
+                                raise OSError("private input failure")
+                            return b""
+                        return super().read(min(size, cutoff - self.tell()))
+                with self.subTest(cutoff=cutoff, failed_read=failed_read):
+                    stream = Interrupted(raw)
+                    reader = INV.Reader(stream, len(raw))
+                    with self.assertRaises(INV.Refused) as raised:
+                        reader.take(len(raw))
+                    self.assertEqual(str(raised.exception),
+                                     "input_read" if failed_read else "truncated_input")
+                    self.assertEqual((reader.position, stream.tell()), (cutoff, cutoff))
+
     def test_varint_crosses_a_full_buffer_boundary(self):
         raw = b"x" * (INV.CHUNK_BYTES - 1) + varint(129)
         stream = CountedReads(raw)
