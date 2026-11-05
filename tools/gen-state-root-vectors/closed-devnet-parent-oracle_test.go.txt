@@ -1,0 +1,255 @@
+// SPDX-License-Identifier: MIT
+// Inject beside the offline command only in a newly owned pinned node copy.
+// The native H1 control initializes and closes a new source fixture; it never
+// starts consensus, signs a momentum, transacts or touches existing node data.
+package main
+
+import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/inconshreveable/log15"
+	corechain "github.com/zenon-network/go-zenon/chain"
+	cache "github.com/zenon-network/go-zenon/chain/cache/storage"
+	"github.com/zenon-network/go-zenon/chain/genesis"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/types"
+	"github.com/zenon-network/go-zenon/consensus"
+)
+
+func canonicalRequest(t *testing.T, value request) []byte {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal("cannot encode selected request")
+	}
+	return append(raw, '\n')
+}
+
+func requestFixture() request {
+	return request{ExpectedFrontier: identifier{Hash: strings.Repeat("ab", 32), Height: 3},
+		Targets: []identifier{{Hash: strings.Repeat("cd", 32), Height: 2}, {Hash: strings.Repeat("ab", 32), Height: 3}}, Version: 1}
+}
+
+func TestClosedParentOracleRequestBoundaries(t *testing.T) {
+	value := requestFixture()
+	raw := canonicalRequest(t, value)
+	if actual, err := parseRequest(raw); err != nil || !reflect.DeepEqual(actual, value) {
+		t.Fatal("canonical selected request was refused")
+	}
+	mutate := func(change func(*request)) []byte {
+		next := requestFixture()
+		change(&next)
+		return canonicalRequest(t, next)
+	}
+	cases := map[string][]byte{
+		"unknown-field":      bytes.Replace(raw, []byte("{\"expected_frontier\""), []byte("{\"unknown\":true,\"expected_frontier\""), 1),
+		"duplicate-version":  bytes.Replace(raw, []byte("\"version\":1"), []byte("\"version\":1,\"version\":1"), 1),
+		"duplicate-targets":  bytes.Replace(raw, []byte("\"targets\":"), []byte("\"targets\":[],\"targets\":"), 1),
+		"missing-version":    bytes.Replace(raw, []byte(",\"version\":1"), nil, 1),
+		"second-document":    append(append([]byte{}, raw...), []byte("{}")...),
+		"trailing-space":     append(append([]byte{}, raw...), ' '),
+		"no-final-newline":   append([]byte{}, raw[:len(raw)-1]...),
+		"null-document":      []byte("null\n"),
+		"empty-document":     nil,
+		"request-byte-limit": bytes.Repeat([]byte(" "), maxRequestBytes+1),
+		"null-targets":       mutate(func(v *request) { v.Targets = nil }),
+		"empty-targets":      mutate(func(v *request) { v.Targets = []identifier{} }),
+		"genesis-frontier":   mutate(func(v *request) { v.ExpectedFrontier.Height = 1 }),
+		"genesis-target":     mutate(func(v *request) { v.Targets[0].Height = 1 }),
+		"after-frontier":     mutate(func(v *request) { v.Targets[1].Height = 4 }),
+		"repeated-height":    mutate(func(v *request) { v.Targets[1].Height = 2 }),
+		"reversed-height":    mutate(func(v *request) { v.Targets[0].Height, v.Targets[1].Height = 3, 2 }),
+		"missing-successor":  mutate(func(v *request) { v.ExpectedFrontier.Height, v.Targets[1].Height = 4, 4 }),
+		"zero-frontier-hash": mutate(func(v *request) { v.ExpectedFrontier.Hash = strings.Repeat("0", 64) }),
+		"zero-target-hash":   mutate(func(v *request) { v.Targets[0].Hash = strings.Repeat("0", 64) }),
+		"uppercase-hash":     mutate(func(v *request) { v.Targets[0].Hash = strings.Repeat("CD", 32) }),
+		"short-hash":         mutate(func(v *request) { v.Targets[0].Hash = "cd" }),
+		"prefixed-hash":      mutate(func(v *request) { v.Targets[0].Hash = "0x" + v.Targets[0].Hash }),
+		"unknown-version":    mutate(func(v *request) { v.Version = 2 }),
+		"too-many-targets": mutate(func(v *request) {
+			v.ExpectedFrontier.Height = maxTargets + 2
+			v.Targets = make([]identifier, maxTargets+1)
+			for index := range v.Targets {
+				v.Targets[index] = identifier{Hash: strings.Repeat("cd", 32), Height: uint64(index) + 2}
+			}
+		}),
+	}
+	for name, input := range cases {
+		t.Run(name, func(t *testing.T) {
+			if result, err := parseRequest(input); err == nil || result.Version != 0 || result.Targets != nil {
+				t.Fatal("invalid request returned selected or partial inputs")
+			}
+		})
+	}
+}
+
+func TestClosedParentOracleRegularInput(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "request.json")
+	raw := canonicalRequest(t, requestFixture())
+	if os.WriteFile(path, raw, 0600) != nil {
+		t.Fatal("cannot create owned regular input")
+	}
+	if got, err := regularBytes(path, len(raw)); err != nil || !bytes.Equal(got, raw) {
+		t.Fatal("regular bounded input changed")
+	}
+	if got, err := regularBytes(path, len(raw)-1); err == nil || got != nil {
+		t.Fatal("oversized input returned bytes")
+	}
+	if got, err := regularBytes(filepath.Dir(path), maxRequestBytes); err == nil || got != nil {
+		t.Fatal("directory was accepted as regular input")
+	}
+}
+
+func ledgerManifest(t *testing.T, root string) map[string]string {
+	t.Helper()
+	result := make(map[string]string)
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		info, err := entry.Info()
+		if err != nil || !info.Mode().IsRegular() {
+			t.Fatal("fixture contains a nonregular file")
+		}
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		name, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		sum := sha256.Sum256(raw)
+		result[filepath.ToSlash(name)] = hex.EncodeToString(sum[:])
+		return nil
+	})
+	if err != nil || len(result) == 0 {
+		t.Fatal("cannot inventory complete owned raw-ledger fixture")
+	}
+	return result
+}
+
+func TestClosedParentOracleReadOnlySourceH1(t *testing.T) {
+	log15.Root().SetHandler(log15.DiscardHandler())
+	raw, err := regularBytes(filepath.Join("..", "..", "docker", "devnet", "genesis.json"), 8137)
+	sum := sha256.Sum256(raw)
+	if err != nil || len(raw) != 8137 || hex.EncodeToString(sum[:]) != selectedGenesisSHA256 {
+		t.Fatal("selected source genesis differs")
+	}
+	var config genesis.GenesisConfig
+	if json.Unmarshal(raw, &config) != nil || genesis.CheckGenesis(&config) != nil {
+		t.Fatal("invalid selected source genesis")
+	}
+	g := genesis.NewGenesis(&config)
+	originalSporkAddress := types.SporkAddress
+	t.Cleanup(func() { types.SporkAddress = originalSporkAddress })
+	root := t.TempDir()
+	ledger := filepath.Join(root, "ledger")
+	fixture := corechain.NewChain(db.NewLevelDBManager(ledger), cache.NewCacheDBManager(root), g, filepath.Join(root, "state"), false)
+	if err := fixture.Init(); err != nil {
+		fixture.Stop()
+		t.Fatal("owned source H1 initialization failed")
+	}
+	if err := fixture.Stop(); err != nil {
+		t.Fatal("owned source fixture did not close")
+	}
+	// The reader must not inherit the fixture's Chain.Init side effects or its
+	// populated genesis caches. Match a fresh invocation of the offline command.
+	types.SporkAddress = originalSporkAddress
+	var readerConfig genesis.GenesisConfig
+	if json.Unmarshal(raw, &readerConfig) != nil {
+		t.Fatal("cannot reconstruct fresh selected reader genesis")
+	}
+	readerGenesis := genesis.NewGenesis(&readerConfig)
+	before := ledgerManifest(t, ledger)
+	manager, err := db.NewReadOnlyLevelDBManager(ledger)
+	if err != nil {
+		t.Fatal("owned closed raw ledger did not open read-only")
+	}
+	stopped := false
+	defer func() {
+		if !stopped {
+			if manager.Stop() != nil {
+				t.Error("read-only manager cleanup failed")
+			}
+		}
+	}()
+	c := corechain.NewChain(manager, nil, readerGenesis, "", false)
+	first := readerGenesis.GetGenesisMomentum()
+	if first.Hash.String() != selectedGenesisHash || c.GetFrontierMomentumStore().Identifier() != first.Identifier() {
+		t.Fatal("read-only frontier differs from source H1")
+	}
+	timestamps := []uint64{first.TimestampUnix + 10, first.TimestampUnix + 20,
+		first.TimestampUnix + 290, first.TimestampUnix + 300, first.TimestampUnix + 590, first.TimestampUnix + 600}
+	oracle, err := consensus.SPVCaptureParentSlots(c, first.Identifier(), timestamps)
+	if err != nil || oracle == nil || len(oracle.Rows) != len(timestamps) {
+		t.Fatal("read-only source parent-slot lookup failed")
+	}
+	recorded, err := regularBytes(filepath.Join("testdata", "source-h1-slots.json"), 8640)
+	recordedSum := sha256.Sum256(recorded)
+	if err != nil || len(recorded) != 8640 || hex.EncodeToString(recordedSum[:]) != "7fbc24c4f9ba19fce5ee01856cd567e9f9c45625cc595fb5ec24f41b7709c45a" {
+		t.Fatal("independently retained source H1 trace changed")
+	}
+	var baseline struct {
+		Format string `json:"format"`
+		Trace  struct {
+			Snapshot consensus.SPVParentSlots `json:"snapshot"`
+		} `json:"trace"`
+	}
+	if json.Unmarshal(recorded, &baseline) != nil || baseline.Format != "zenon-recorded-source-parent-snapshot-slots/v1" ||
+		!reflect.DeepEqual(*oracle, baseline.Trace.Snapshot) {
+		t.Fatal("read-only oracle differs from the retained original-node H1 ordering and proof context")
+	}
+	for index, row := range oracle.Rows {
+		if row.Timestamp != timestamps[index] || row.ProofBlock != first.Identifier() || row.ProofBlockTimestamp != first.TimestampUnix {
+			t.Fatal("read-only oracle escaped the selected source H1 snapshot")
+		}
+	}
+	if err := manager.Stop(); err != nil {
+		t.Fatal("read-only manager did not close")
+	}
+	stopped = true
+	if !reflect.DeepEqual(before, ledgerManifest(t, ledger)) {
+		t.Fatal("read-only source lookup changed raw-ledger file content or names")
+	}
+	selected := requestFixture()
+	if result, err := capture(ledger, &config, selected, canonicalRequest(t, selected)); err == nil || result != nil {
+		t.Fatal("foreign selected frontier returned an oracle report")
+	}
+	if !reflect.DeepEqual(before, ledgerManifest(t, ledger)) {
+		t.Fatal("refused capture changed raw-ledger file content or names")
+	}
+	missing := filepath.Join(root, "missing-ledger")
+	if unexpected, err := db.NewReadOnlyLevelDBManager(missing); err == nil || unexpected != nil {
+		if unexpected != nil {
+			unexpected.Stop()
+		}
+		t.Fatal("missing ledger was accepted")
+	}
+	if _, err := os.Lstat(missing); !os.IsNotExist(err) {
+		t.Fatal("missing read-only ledger path was created")
+	}
+	trace, err := json.Marshal(map[string]any{
+		"format": "zenon-read-only-source-H1-slots-control/v1", "snapshot": oracle,
+		"baseline_sha256": hex.EncodeToString(recordedSum[:]), "raw_ledger_files": len(before),
+		"raw_ledger_names_and_content_unchanged": true, "source_H1_only": true,
+		"Chain_Init_in_reader": false, "Chain_Start": false, "consensus_Start": false,
+		"accepting_schedule": false, "actual_devnet_query": false,
+	})
+	if err != nil {
+		t.Fatal("cannot encode read-only H1 trace")
+	}
+	t.Logf("SPV_CLOSED_PARENT_ORACLE_H1 %s", trace)
+}

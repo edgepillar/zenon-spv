@@ -1,0 +1,268 @@
+// SPDX-License-Identifier: MIT
+// Build only in an owned copy of node revision 938fca3 with the separately
+// pinned parent-schedule adapter. This is an offline source oracle, not an SPV
+// acceptance API. It never calls Chain.Init, Chain.Start or consensus.Start.
+package main
+
+import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"io"
+	"os"
+
+	"github.com/inconshreveable/log15"
+	corechain "github.com/zenon-network/go-zenon/chain"
+	"github.com/zenon-network/go-zenon/chain/genesis"
+	"github.com/zenon-network/go-zenon/chain/nom"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/types"
+	"github.com/zenon-network/go-zenon/consensus"
+)
+
+const maxRequestBytes = 32 << 10
+const maxReportBytes = 256 << 10
+const maxTargets = 64
+const selectedGenesisHash = "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9"
+const selectedGenesisSHA256 = "0dd33b18b147f70b3d3d5f07199a2b45311f6e9b84a98b3f86d8f6c6b45f419a"
+
+var errRefused = errors.New("closed devnet parent-slot capture refused")
+
+// Field order is intentional: requests use exactly the canonical encoding from
+// json.Marshal plus one newline. A second spelling, duplicate key, omitted
+// field, unknown field, null list or trailing document is refused.
+type identifier struct {
+	Hash   string `json:"hash"`
+	Height uint64 `json:"height"`
+}
+
+type request struct {
+	ExpectedFrontier identifier   `json:"expected_frontier"`
+	Targets          []identifier `json:"targets"`
+	Version          uint64       `json:"version"`
+}
+
+type capturedRow struct {
+	Header                   types.HashHeight        `json:"header"`
+	Parent                   types.HashHeight        `json:"parent"`
+	Version                  uint64                  `json:"version"`
+	StateRoot                types.Hash              `json:"state_root"`
+	Timestamp                uint64                  `json:"timestamp"`
+	ProducingAddress         string                  `json:"producing_addr"`
+	Oracle                   consensus.SPVParentSlot `json:"source_parent_slot"`
+	MatchesStoredKeyProducer bool                    `json:"matches_stored_key_producer"`
+}
+
+type report struct {
+	Format                 string           `json:"format"`
+	NodeRevision           string           `json:"node_revision"`
+	Genesis                types.HashHeight `json:"genesis"`
+	Frontier               types.HashHeight `json:"frontier"`
+	RequestSHA256          string           `json:"request_sha256"`
+	Rows                   []capturedRow    `json:"rows"`
+	ReadOnlyLedger         bool             `json:"read_only_ledger"`
+	FrontierUnchanged      bool             `json:"frontier_unchanged"`
+	ManagerStopSucceeded   bool             `json:"manager_stop_succeeded"`
+	ChainInitCalled        bool             `json:"Chain_Init_called"`
+	ChainStartCalled       bool             `json:"Chain_Start_called"`
+	ConsensusStartCalled   bool             `json:"consensus_Start_called"`
+	HeaderSignatureChecked bool             `json:"header_signature_checked"`
+	AcceptingScheduleMade  bool             `json:"accepting_schedule_created"`
+	AuthenticatedElection  bool             `json:"authenticated_election_or_fork_choice"`
+	NetworkOrValueAccepted bool             `json:"network_or_state_value_accepted"`
+	ProductionQualified    bool             `json:"production_qualified"`
+}
+
+func parseHash(value string) (types.Hash, error) {
+	var result types.Hash
+	raw, err := hex.DecodeString(value)
+	if err != nil || len(raw) != len(result) || hex.EncodeToString(raw) != value {
+		return result, errRefused
+	}
+	copy(result[:], raw)
+	if result.IsZero() {
+		return types.Hash{}, errRefused
+	}
+	return result, nil
+}
+
+func parseRequest(raw []byte) (request, error) {
+	var result request
+	if len(raw) == 0 || len(raw) > maxRequestBytes {
+		return request{}, errRefused
+	}
+	reader := json.NewDecoder(bytes.NewReader(raw))
+	reader.DisallowUnknownFields()
+	if reader.Decode(&result) != nil || reader.Decode(new(any)) != io.EOF {
+		return request{}, errRefused
+	}
+	canonical, err := json.Marshal(result)
+	if err != nil || !bytes.Equal(append(canonical, '\n'), raw) || result.Version != 1 ||
+		len(result.Targets) == 0 || len(result.Targets) > maxTargets || result.ExpectedFrontier.Height < 2 {
+		return request{}, errRefused
+	}
+	if _, err := parseHash(result.ExpectedFrontier.Hash); err != nil {
+		return request{}, errRefused
+	}
+	for index, target := range result.Targets {
+		if _, err := parseHash(target.Hash); err != nil || target.Height < 2 || target.Height > result.ExpectedFrontier.Height ||
+			(index > 0 && (target.Height <= result.Targets[index-1].Height || target.Height-result.Targets[index-1].Height != 1)) {
+			return request{}, errRefused
+		}
+	}
+	return result, nil
+}
+
+func regularBytes(path string, limit int) ([]byte, error) {
+	before, err := os.Lstat(path)
+	if err != nil || !before.Mode().IsRegular() || before.Size() <= 0 || before.Size() > int64(limit) {
+		return nil, errRefused
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, errRefused
+	}
+	opened, statErr := file.Stat()
+	if statErr != nil || !opened.Mode().IsRegular() || !os.SameFile(before, opened) {
+		file.Close()
+		return nil, errRefused
+	}
+	raw, readErr := io.ReadAll(io.LimitReader(file, int64(limit)+1))
+	after, afterErr := file.Stat()
+	closeErr := file.Close()
+	pathAfter, pathErr := os.Lstat(path)
+	if readErr != nil || afterErr != nil || closeErr != nil || pathErr != nil ||
+		!os.SameFile(opened, after) || !pathAfter.Mode().IsRegular() || !os.SameFile(opened, pathAfter) ||
+		len(raw) != int(opened.Size()) || after.Size() != opened.Size() || len(raw) > limit {
+		return nil, errRefused
+	}
+	return raw, nil
+}
+
+func capture(ledgerPath string, config *genesis.GenesisConfig, selected request, requestRaw []byte) (result *report, err error) {
+	defer func() {
+		if recover() != nil {
+			result, err = nil, errRefused
+		}
+	}()
+	manager, err := db.NewReadOnlyLevelDBManager(ledgerPath)
+	if err != nil {
+		return nil, errRefused
+	}
+	defer func() {
+		if manager.Stop() != nil {
+			result, err = nil, errRefused
+		} else if result != nil && err == nil {
+			result.ManagerStopSucceeded = true
+		}
+	}()
+	// This is the original node's offline prebuild construction pattern. No
+	// Chain.Init means no cache DB, state tree, background build or chain writes.
+	c := corechain.NewChain(manager, nil, genesis.NewGenesis(config), "", false)
+	frontierStore := c.GetFrontierMomentumStore()
+	frontier, err := frontierStore.GetFrontierMomentum()
+	expectedHash, hashErr := parseHash(selected.ExpectedFrontier.Hash)
+	if err != nil || hashErr != nil || frontier == nil || frontier.Height != selected.ExpectedFrontier.Height ||
+		frontier.Hash != expectedHash || frontier.ComputeHash() != frontier.Hash {
+		return nil, errRefused
+	}
+	first, err := frontierStore.GetMomentumByHeight(1)
+	if err != nil || first == nil || first.ChainIdentifier != 69 || first.Hash.String() != selectedGenesisHash ||
+		first.Version != 1 || !first.StateRoot.IsZero() || first.ComputeHash() != first.Hash ||
+		c.GetGenesisMomentum().Hash != first.Hash {
+		return nil, errRefused
+	}
+	rows := make([]capturedRow, 0, len(selected.Targets))
+	for _, target := range selected.Targets {
+		hash, err := parseHash(target.Hash)
+		if err != nil {
+			return nil, errRefused
+		}
+		header, err := frontierStore.GetMomentumByHeight(target.Height)
+		if err != nil || header == nil || header.Hash != hash || header.Height != target.Height ||
+			header.ChainIdentifier != 69 || header.ComputeHash() != header.Hash || len(header.PublicKey) != 32 ||
+			header.Version == 0 || header.Version > nom.StateRootMomentumVersion ||
+			(header.Version < nom.StateRootMomentumVersion && !header.StateRoot.IsZero()) ||
+			(header.Version == nom.StateRootMomentumVersion && header.StateRoot.IsZero()) {
+			return nil, errRefused
+		}
+		parent, err := frontierStore.GetMomentumByHeight(target.Height - 1)
+		if err != nil || parent == nil || parent.Height != target.Height-1 || parent.ChainIdentifier != 69 ||
+			parent.Hash != header.PreviousHash || parent.ComputeHash() != parent.Hash || parent.TimestampUnix >= header.TimestampUnix {
+			return nil, errRefused
+		}
+		observed, err := consensus.SPVCaptureParentSlots(c, parent.Identifier(), []uint64{header.TimestampUnix})
+		if err != nil || observed == nil || observed.Parent != parent.Identifier() || len(observed.Rows) != 1 {
+			return nil, errRefused
+		}
+		slot := observed.Rows[0]
+		producer, err := types.ParseAddress(slot.Producer)
+		if err != nil || producer != header.Producer() {
+			return nil, errRefused
+		}
+		rows = append(rows, capturedRow{Header: header.Identifier(), Parent: parent.Identifier(),
+			Version: header.Version, StateRoot: header.StateRoot, Timestamp: header.TimestampUnix,
+			ProducingAddress: hex.EncodeToString(producer[:]), Oracle: slot, MatchesStoredKeyProducer: true})
+	}
+	if c.GetFrontierMomentumStore().Identifier() != frontier.Identifier() {
+		return nil, errRefused
+	}
+	sum := sha256.Sum256(requestRaw)
+	return &report{Format: "zenon-closed-devnet-parent-slots/v1", NodeRevision: "938fca3b7787da86827a5eb63371509b36e14761",
+		Genesis: first.Identifier(), Frontier: frontier.Identifier(), RequestSHA256: hex.EncodeToString(sum[:]),
+		Rows: rows, ReadOnlyLedger: true, FrontierUnchanged: true}, nil
+}
+
+func run(args []string) error {
+	if len(args) != 6 {
+		return errRefused
+	}
+	paths := make(map[string]string, 3)
+	for index := 0; index < len(args); index += 2 {
+		name, value := args[index], args[index+1]
+		if (name != "--ledger" && name != "--request" && name != "--genesis") || value == "" || paths[name] != "" {
+			return errRefused
+		}
+		paths[name] = value
+	}
+	requestRaw, err := regularBytes(paths["--request"], maxRequestBytes)
+	if err != nil {
+		return errRefused
+	}
+	selected, err := parseRequest(requestRaw)
+	if err != nil {
+		return errRefused
+	}
+	genesisRaw, err := regularBytes(paths["--genesis"], 8137)
+	sum := sha256.Sum256(genesisRaw)
+	if err != nil || len(genesisRaw) != 8137 || hex.EncodeToString(sum[:]) != selectedGenesisSHA256 {
+		return errRefused
+	}
+	var config genesis.GenesisConfig
+	if json.Unmarshal(genesisRaw, &config) != nil || genesis.CheckGenesis(&config) != nil || config.ChainIdentifier != 69 {
+		return errRefused
+	}
+	result, err := capture(paths["--ledger"], &config, selected, requestRaw)
+	if err != nil || result == nil || !result.ManagerStopSucceeded {
+		return errRefused
+	}
+	raw, err := json.Marshal(result)
+	if err != nil || len(raw)+1 > maxReportBytes {
+		return errRefused
+	}
+	raw = append(raw, '\n')
+	if count, err := os.Stdout.Write(raw); err != nil || count != len(raw) {
+		return errRefused
+	}
+	return nil
+}
+
+func main() {
+	log15.Root().SetHandler(log15.DiscardHandler())
+	if run(os.Args[1:]) != nil {
+		_, _ = os.Stderr.WriteString("closed devnet parent-slot capture refused\n")
+		os.Exit(1)
+	}
+}
