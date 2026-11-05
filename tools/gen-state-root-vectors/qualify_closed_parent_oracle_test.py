@@ -139,6 +139,16 @@ class Controls(unittest.TestCase):
             with self.subTest(name=name), patch.dict(os.environ, {**values, name: value}, clear=True), self.assertRaises(Q.Refused):
                 Q.context(native)
 
+    def test_complete_node_requires_native_cgo_toolchain(self):
+        for platform in ("linux-amd64", "darwin-amd64", "windows-amd64"):
+            go = {"GOOS": platform.split("-")[0], "GOARCH": "amd64", "GOVERSION": "go1.25.14",
+                  "CGO_ENABLED": "1", "CC": "clang" if platform.startswith("darwin") else "gcc"}
+            Q.require_toolchain(go, platform)
+            for field, value in (("CGO_ENABLED", "0"), ("GOARCH", "arm64"),
+                                 ("CC", "unselected-compiler"), ("GOVERSION", "go1.23.0")):
+                with self.subTest(platform=platform, field=field), self.assertRaises(Q.Refused):
+                    Q.require_toolchain({**go, field: value}, platform)
+
     def test_low_space_refuses_before_creating_paths(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

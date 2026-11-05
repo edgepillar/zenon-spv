@@ -243,6 +243,15 @@ def installed_inputs(node):
     return result
 
 
+def require_toolchain(go, platform):
+    require(type(go) is dict and set(go) == {"GOOS", "GOARCH", "GOVERSION", "CGO_ENABLED", "CC"}
+            and all(type(value) is str for value in go.values())
+            and platform in ("linux-amd64", "darwin-amd64", "windows-amd64"), "selected_toolchain_shape")
+    require(go["GOOS"] + "-" + go["GOARCH"] == platform and go["GOVERSION"] == "go1.25.14"
+            and go["CGO_ENABLED"] == "1"
+            and go["CC"] == ("clang" if platform == "darwin-amd64" else "gcc"), "selected_toolchain")
+
+
 def selected_sources(index, paths):
     """Bind working helper bytes to the selected Git index, never a path label.
 
@@ -343,10 +352,10 @@ def qualify(work, output, selected, records):
     index = git(output, "qualified-node-index", ["ls-files", "--stage", "-z"], node, records)
     require(source_inventory(node, index) == marker["original_sources"], "original_source_changed")
     allocation = space(work)
-    go_raw = command(output, "go-environment", ["go", "env", "-json", "GOOS", "GOARCH", "GOVERSION", "CGO_ENABLED"], node, records)
+    go_raw = command(output, "go-environment", ["go", "env", "-json", "GOOS", "GOARCH", "GOVERSION", "CGO_ENABLED", "CC"], node, records)
     go = json.loads(go_raw)
-    require(go["GOOS"] + "-" + go["GOARCH"] == selected["platform"] and go["GOVERSION"] == "go1.25.14"
-            and go["CGO_ENABLED"] == "0", "selected_toolchain")
+    require_toolchain(go, selected["platform"])
+    command(output, "c-compiler-version", [go["CC"], "--version"], node, records, cap=64 << 10, timeout=30)
     command(output, "native-test", ["go", "test", "-mod=readonly", "-p=2", "-tags", "devnet", "-json", "-count=1",
                                     "-timeout=90s", "./cmd/spv-closed-parent-oracle"], node, records)
     binary = output / "spv-closed-parent-oracle.exe"

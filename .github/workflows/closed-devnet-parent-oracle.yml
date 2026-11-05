@@ -42,7 +42,8 @@ jobs:
       GOENV: 'off'
       GOWORK: 'off'
       GOFLAGS: '-mod=readonly'
-      CGO_ENABLED: '0'
+      CGO_ENABLED: '1'
+      CC: ${{ matrix.platform == 'darwin-amd64' && 'clang' || 'gcc' }}
       GOMAXPROCS: '2'
       SPV_FEATURE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
     defaults:

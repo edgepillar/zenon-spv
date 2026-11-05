@@ -79,6 +79,10 @@ the complete original Git tree and every tracked file's blob identity, adds
 the four declared inputs, then runs the selected native tests and builds one
 ordinary command. A local line-ending setting applies only to that new node
 copy; no existing checkout or global Git configuration is rewritten.
+The complete node dependency closure requires CGO. The lane selects
+`CGO_ENABLED=1`, uses the runner's native gcc or clang, and retains the actual
+compiler version output with the Go environment. It does not replace or patch
+the node's secp256k1 implementation.
 
 The driver verifies its stage context and directory identities before reuse.
 It refuses pre-existing unrelated directories and does not place failure
