@@ -1,0 +1,86 @@
+name: closed-devnet-parent-oracle
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/closed-devnet-parent-oracle.yml'
+      - 'tools/gen-state-root-vectors/closed-devnet-parent-oracle*.go.txt'
+      - 'tools/gen-state-root-vectors/qualify_closed_parent_oracle*.py'
+      - 'tools/gen-state-root-vectors/parent-schedule-adapter.go.txt'
+      - 'internal/testdata/conformance/selected-parent-slots.json'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/closed-devnet-parent-oracle.yml'
+      - 'tools/gen-state-root-vectors/closed-devnet-parent-oracle*.go.txt'
+      - 'tools/gen-state-root-vectors/qualify_closed_parent_oracle*.py'
+      - 'tools/gen-state-root-vectors/parent-schedule-adapter.go.txt'
+      - 'internal/testdata/conformance/selected-parent-slots.json'
+
+permissions:
+  contents: read
+
+jobs:
+  oracle:
+    if: github.repository == 'edgepillar/zenon-spv'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            platform: linux-amd64
+          - runner: macos-15-intel
+            platform: darwin-amd64
+          - runner: windows-latest
+            platform: windows-amd64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      GOTOOLCHAIN: local
+      GOENV: 'off'
+      GOWORK: 'off'
+      GOFLAGS: '-mod=readonly'
+      CGO_ENABLED: '0'
+      GOMAXPROCS: '2'
+      SPV_FEATURE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Qualification driver boundary controls
+        run: python -I -B tools/gen-state-root-vectors/qualify_closed_parent_oracle_test.py -v
+      - name: Prepare exact owned node source and local helpers
+        run: python -I -B tools/gen-state-root-vectors/qualify_closed_parent_oracle.py --mode prepare --platform '${{ matrix.platform }}' --workspace "$RUNNER_TEMP/spv-closed-parent-work" --evidence "$RUNNER_TEMP/spv-closed-parent-evidence"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.25.14'
+          cache-dependency-path: ${{ runner.temp }}/spv-closed-parent-work/node/go.sum
+      - name: Isolate Go telemetry
+        run: |
+          python -I -B - <<'PY'
+          import os
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP']) / 'spv-closed-parent-telemetry'
+          path.mkdir()
+          (path / 'mode').write_text('off', encoding='ascii')
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as stream:
+              stream.write('GOTELEMETRYDIR=' + str(path) + '\n')
+          PY
+      - name: Native read-only source H1 controls and command build
+        run: python -I -B tools/gen-state-root-vectors/qualify_closed_parent_oracle.py --mode qualify --platform '${{ matrix.platform }}' --workspace "$RUNNER_TEMP/spv-closed-parent-work" --evidence "$RUNNER_TEMP/spv-closed-parent-evidence"
+      - name: Preserve bounded actual command evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: closed-parent-oracle-${{ matrix.platform }}
+          path: ${{ runner.temp }}/spv-closed-parent-evidence/
+          if-no-files-found: warn
+          retention-days: 14
