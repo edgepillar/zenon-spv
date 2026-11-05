@@ -81,15 +81,43 @@ they do not authenticate a live network or its activation.
 | Producer schedule | Independently selected authorization, coverage and provenance | Genesis/normal-consensus source identified; finite explicit entries and selected-range provenance remain open |
 | First incoming v3 | Actual boundary from v1 genesis and parent-frontier activation behavior | Source-conditioned expectation is height 3 for the pinned devnet genesis; actual transition capture remains open and the [chain-100 fixture](first-v3-node-boundary.md) does not qualify its activation |
 | Settlement address | Fixed raw 20-byte address from the selected local profile | Source constant mapped; active network selection remains open |
-| Domain | Locally selected uint32 | Source default 1; active query selection remains open |
+| Domain | Locally selected uint32 | Prepared owned experiment selects 1 before provider reads; selected-network execution remains open |
 | Domain context | Locally derived domainRecord and domainConfig keys; supporting proofs at the same accepted H/root/context | Source schemas and temporal limits are [recorded](batch-entry-domain-context.md); the [separate versioned three-row query](experimental-batch-context-query.md) implements offline supporting-proof composition; selected-network qualification remains open |
-| Batch | Locally selected uint64, with bounded exact text parsing at the CLI boundary | Open; the gateway must not select the expected batch |
+| Batch | Locally selected uint64, with bounded exact text parsing at the CLI boundary | Prepared owned experiment selects 0 before provider reads; no fallback to another provider-selected batch |
 | Proof and value limits | Explicit positive schema-aware byte, sibling and cumulative-work limits | Experimental schema-1 policy implemented; selected-network review/selection remains open |
 | Temporal claims | First query claims membership at H; any additional delay claim is separate | No consensus-finality, receive or spendability claim |
 
 One independently selected operator can support a scoped experiment. Another
 operator is not a prerequisite for source work or a deliberately limited
 devnet pilot. The selected trust inputs and provenance must still be explicit.
+
+## Prepared local consumer selection
+
+The [canonical metadata descriptor](../internal/testdata/conformance/prepared-devnet-consumer-selection.json)
+selects the pinned chain-69 source genesis, Settlement address, domain 1, batch 0
+and source domain/runtime metadata before any selected-network provider read.
+The [prepared version-2 query profile](../internal/testdata/conformance/prepared-devnet-query-profile.json)
+binds its runtime_identity to SHA-256 of the exact canonical descriptor bytes,
+including the trailing newline. This is a local metadata identifier, not
+authentication of runtime identity or execution. The consumer executable and
+its CI/artifact provenance must be pinned separately.
+
+The profile selects the phase-1 source-field rule and explicit work ceilings.
+Its positive one-byte proofData work cap does not relax the versioned source
+rule requiring an empty proofData value. The source configuration declares an
+STF spec hash ending in 01, withdrawal delay 30 and runtime-upgrade delay
+17,280. These are independently selected expectations: hashing the descriptor
+does not automatically compare them with proven fields. An actual consumer
+must check the selected semantic expectations before relying on those claims.
+
+This pair supplies no height-2 anchor hash, finite producer authorizations,
+actual v1/v3 transition, accepting header profile, trusted checkpoint or context
+pins. It cannot be used alone as an accepting command configuration. The
+source-conditioned genesis identity does not authenticate an endpoint; the
+selected-network capture and actual read-only consumer result remain open.
+Go controls decode the prepared profile through the public API, bind its
+metadata digest and compare all three locally derived keys/paths with literal
+source-key vectors. They do not start a node, sign or submit transactions.
 
 ## Source and schema cohort
 
