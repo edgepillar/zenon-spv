@@ -201,8 +201,18 @@ func (s VerifiedState) withStateTrust(r Result) Result {
 }
 
 func cloneStateHeader(h chain.Header) chain.Header {
-	h.PublicKey = bytes.Clone(h.PublicKey)
-	h.Signature = bytes.Clone(h.Signature)
+	// Each envelope owns its bytes. Full slice expressions keep append on one
+	// field from reaching the other, without retaining an entire window's keys.
+	keyLen := len(h.PublicKey)
+	owned := make([]byte, keyLen+len(h.Signature))
+	if h.PublicKey != nil {
+		copy(owned, h.PublicKey)
+		h.PublicKey = owned[:keyLen:keyLen]
+	}
+	if h.Signature != nil {
+		copy(owned[keyLen:], h.Signature)
+		h.Signature = owned[keyLen:len(owned):len(owned)]
+	}
 	return h
 }
 
