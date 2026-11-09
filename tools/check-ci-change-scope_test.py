@@ -101,7 +101,8 @@ class FixtureRunner:
             raw = f"tree {TREE}\nparent {BASE}\n\nfixture\n".encode()
         elif args[0] == "show":
             raw = (ROOT / args[1].split(":", 1)[1]).read_bytes()
-            if args[1].split(":", 1)[1] in (M.ARCHIVE_WORKFLOW, M.PREPARATION_WORKFLOW):
+            if args[1].split(":", 1)[1] in (M.ARCHIVE_WORKFLOW, M.PREPARATION_WORKFLOW,
+                                            M.R1_EXPORT_WORKFLOW):
                 raw = raw.replace(b"\r\n", b"\n")
         elif args[0] == "diff":
             raw = self.diff
@@ -388,15 +389,16 @@ class CIChangeScopeControls(unittest.TestCase):
         self.assertIn(b"documentation-only", result.stdout)
         self.assertNotIn(b'"run_runtime":false', result.stdout)
 
-    def workflow_guard(self, raw):
+    def workflow_guard(self, raw, selected=None):
         workflow = (ROOT / ".github/workflows/ci.yml").read_text("utf-8")
         block = workflow.split("          python -I -B - <<'PY'\n", 1)[1].split("          PY\n", 1)[0]
         self.assertTrue(all(line.startswith("          ") for line in block.splitlines()))
         program = compile("\n".join(line[10:] for line in block.splitlines()), "<workflow-scope-output-guard>", "exec")
-        selected = selection()
+        selected = selection() if selected is None else selected
         env = {"RUNNER_TEMP": "owned-runner-temp", "GITHUB_OUTPUT": "owned-scope-output",
                "GITHUB_REPOSITORY": selected["repository"], "GITHUB_EVENT_NAME": selected["event"],
-               "CI_SCOPE_BASE": BASE, "CI_SCOPE_FEATURE": FEATURE, "GITHUB_SHA": CHECKOUT,
+               "CI_SCOPE_BASE": selected["base_revision"], "CI_SCOPE_FEATURE": selected["feature_revision"],
+               "GITHUB_SHA": selected["checkout_revision"],
                "GITHUB_RUN_ID": "123", "GITHUB_RUN_ATTEMPT": "1"}
         output = io.StringIO()
         def output_file(name, mode, encoding):
@@ -829,7 +831,7 @@ class CIChangeScopeControls(unittest.TestCase):
         rows = [record(path, b"A", b"000000"), record(path, b"D", new_mode=b"000000"),
                 record(path, old_mode=b"100755", new_mode=b"100755"), record(path) + record(path.upper()),
                 record(path) + b"".join(record(f"docs/d{i}.md".encode())
-                                         for i in range(M.MAX_PREPARATION_DIFF_RECORDS))]
+                                         for i in range(M.MAX_FILTERED_DIFF_RECORDS))]
         for unrelated in (M.PREPARATION_WORKFLOW, "tools/owned-devnet-query/contract.json",
                           "tools/owned-devnet-query/controls.py", "tools/owned-devnet-query/runner.py",
                           "internal/testdata/conformance/prepared-devnet-query-profile.json",
@@ -870,6 +872,112 @@ class CIChangeScopeControls(unittest.TestCase):
             with self.subTest(key=key):
                 changed = {**report, key: value}
                 self.assertIsNotNone(self.workflow_guard(self.guard_bytes(changed))[0])
+
+    def r1_handoff_result(self, runner):
+        tree = archive_tree() + b"".join(
+            tree_record(path.encode()) for path in sorted(
+                M.R1_HANDOFF_FILES | {M.ARCHIVE_WORKFLOW, M.R1_EXPORT_WORKFLOW}))
+        runner.overrides.setdefault("ls-tree", (tree, receipt(tree)))
+        with mock.patch.object(M, "R1_HANDOFF_SOURCE_PIN", M.r1_handoff_fingerprint(tree)["sha256"]):
+            return M.select_scope(ROOT, runner.selection, runner)
+
+    def test_r1_handoff_selects_each_required_three_platform_workflow(self):
+        transport, exporter = M.ARCHIVE_WORKFLOW, M.R1_EXPORT_WORKFLOW
+        shared = record(b"tools/ledger-transport/transport.py")
+        handoff = record(b"tools/ledger-export/inventory_completed_export.py")
+        cases = ((shared, [transport, exporter]),
+                 (record(b"tools/ledger-transport/transport_test.py"), [transport]),
+                 (handoff, [exporter]),
+                 (record(b"tools/ledger-export/inventory_completed_export_test.py"), [exporter]),
+                 (record(b"tools/ledger-export/README.md"), [exporter]),
+                 (handoff + record(b"docs/state-root-r1-intake.md"), [transport, exporter]),
+                 (handoff + record(b"docs/native-roadmap.md"), [transport, exporter]),
+                 (handoff + record(b"docs/contract.md"), [exporter]))
+        for event in ("pull_request", "push"):
+            for diff, required in cases:
+                with self.subTest(event=event, diff=diff):
+                    runner = FixtureRunner(selection(event), diff)
+                    result = self.r1_handoff_result(runner)
+                    self.assertEqual((result["format"], result["status"], result["run_runtime"]),
+                                     (M.R1_HANDOFF_FORMAT, "R1_HANDOFF_ONLY", False))
+                    self.assertEqual(result["required_workflows"], required)
+                    self.assertEqual([v["path"] for v in result["r1_handoff_workflows"]], required)
+                    self.assertEqual(set(result["source_pins"]), set(M.SOURCE_FILES) | set(required))
+                    self.assertEqual(result["r1_handoff_event_tree"], TREE)
+                    self.assertEqual(len(result["commands"]), 7 + 2 * len(required) + (event == "pull_request"))
+                    self.assertEqual(self.workflow_guard(self.guard_bytes(result), runner.selection),
+                                     (None, "run_runtime=false\nrun_recorded_oracles=false\n"))
+
+    def test_r1_handoff_requires_direct_event_diff_and_bounded_paths(self):
+        leaf = b"tools/ledger-transport/transport.py"
+        for raw in (f"tree {FEATURE}\nparent {BASE}\n\n",
+                    f"tree {TREE}\nparent {CHECKOUT}\n\n",
+                    f"tree {TREE}\nparent {BASE}\nparent {FEATURE}\n\n"):
+            runner = FixtureRunner(diff=record(leaf))
+            runner.overrides["cat-file"] = raw.encode(), receipt(raw.encode())
+            result = self.r1_handoff_result(runner)
+            self.assertEqual((result["run_runtime"], result["reason"]), (True, "r1_handoff_event_diff"))
+        runner = FixtureRunner(selection("push"), record(leaf))
+        raw = f"{FEATURE} {CHECKOUT} {BASE}\n".encode()
+        runner.overrides["rev-list"] = raw, receipt(raw)
+        self.assertEqual(self.r1_handoff_result(runner)["reason"], "r1_handoff_event_diff")
+        raw = record(leaf) + b"".join(record(f"docs/d{i}.md".encode())
+                                      for i in range(M.MAX_FILTERED_DIFF_RECORDS))
+        self.assertEqual(self.r1_handoff_result(FixtureRunner(diff=raw))["reason"], "r1_handoff_diff_count")
+
+    def test_r1_handoff_other_paths_and_file_actions_require_full_ci(self):
+        leaf = b"tools/ledger-transport/transport.py"
+        records = [record(leaf, b"A", b"000000"), record(leaf, b"D", new_mode=b"000000"),
+                   record(leaf, old_mode=b"100755", new_mode=b"100755"),
+                   record(leaf) + record(leaf.upper())]
+        records.extend(record(leaf) + record(path.encode()) for path in (
+            *M.SOURCE_FILES, M.ARCHIVE_WORKFLOW, M.R1_EXPORT_WORKFLOW,
+            "tools/ledger-inventory/inventory.py", "tools/ledger-export/main.go",
+            "tools/ledger-export/consume_completion.py", "tools/ledger-transport/archive_tail.py",
+            "internal/proof/core.go"))
+        for index, diff in enumerate(records):
+            with self.subTest(case=index):
+                result = self.r1_handoff_result(FixtureRunner(diff=diff))
+                self.assertEqual((result["run_runtime"], result["status"]), (True, "RUNTIME_REQUIRED"))
+
+    def test_r1_handoff_refuses_workflow_drift_and_keeps_other_sources_in_closure(self):
+        leaf = record(b"tools/ledger-transport/transport.py")
+        for path, reason in ((M.ARCHIVE_WORKFLOW, "r1_transport_workflow_pin"),
+                             (M.R1_EXPORT_WORKFLOW, "r1_export_workflow_pin")):
+            runner = FixtureRunner(diff=leaf)
+            raw = (ROOT / path).read_bytes() + b"\n"
+            runner.overrides[("show", BASE + ":" + path)] = raw, receipt(raw)
+            result = self.r1_handoff_result(runner)
+            self.assertEqual((result["run_runtime"], result["reason"]), (True, reason))
+        for path in (b"tools/ledger-inventory/inventory.py", b"tools/ledger-export/main.go", b"tools/new.py"):
+            runner = FixtureRunner(diff=leaf)
+            self.r1_handoff_result(runner)
+            raw = runner.overrides["ls-tree"][0] + tree_record(path)
+            runner.overrides["ls-tree"] = raw, receipt(raw)
+            result = self.r1_handoff_result(runner)
+            self.assertEqual((result["run_runtime"], result["reason"]), (True, "r1_handoff_source_pin"))
+        runner = FixtureRunner(diff=leaf)
+        runner.overrides["ls-tree"] = b"", receipt(actual_exit=1, complete=False)
+        result = self.r1_handoff_result(runner)
+        self.assertEqual((result["run_runtime"], result["reason"]), (True, "git_incomplete_or_failed"))
+        self.assertEqual(self.workflow_guard(self.guard_bytes(result)),
+                         (None, "run_runtime=true\nrun_recorded_oracles=true\n"))
+
+    def test_r1_handoff_workflow_guard_refuses_missing_or_altered_requirements(self):
+        result = self.r1_handoff_result(FixtureRunner(diff=record(b"tools/ledger-transport/transport.py")))
+        for key, value in (("required_workflows", [M.ARCHIVE_WORKFLOW]),
+                           ("r1_handoff_workflows", result["r1_handoff_workflows"][:1]),
+                           ("r1_handoff_event_tree", FEATURE),
+                           ("r1_handoff_paths", result["r1_handoff_paths"] * 2),
+                           ("documentation_paths", [{"path": "internal/proof/core.go", "change": "M"}]),
+                           ("documentation_paths", [{"path": "docs/../private.md", "change": "M"}]),
+                           ("commands", result["commands"][:-1]),
+                           ("runtime_closure", {**result["runtime_closure"], "matched": False})):
+            with self.subTest(key=key):
+                self.assertIsNotNone(self.workflow_guard(self.guard_bytes({**result, key: value}))[0])
+        changed = copy.deepcopy(result)
+        changed["source_pins"][M.R1_EXPORT_WORKFLOW]["git_sha256"] = "0" * 64
+        self.assertIsNotNone(self.workflow_guard(self.guard_bytes(changed))[0])
 
 
 class ControlResult(unittest.TextTestResult):
