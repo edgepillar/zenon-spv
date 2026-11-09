@@ -185,15 +185,37 @@ values are compared by length and SHA-256. No raw key or value is emitted.
 The default patch bounds are 8 MiB and 32,768 operations. Explicit
 `--max-patch-bytes` and `--max-patch-records` can raise them to 64 MiB and
 262,144 operations. The earlier and derived snapshots use the existing
-inventory bounds. Only the last Put payload and ordered length/digest
-descriptors are retained per touched key. Other base values are streamed in
-64 KiB slices. Python object overhead and transient field buffers count
-separately from logical input sizes.
+inventory bounds. The reader counts transitions after the first operation on
+each key while reading the patch. The first operation is classified against
+the earlier snapshot during replay. Each touched key retains the first and
+latest length/digest summaries and its final value when present. Other base
+values are streamed in 64 KiB slices. Python object overhead and transient
+field buffers count separately from logical input sizes.
 
 Exit 0 reports `SELECTED_PATCH_REPLAY_MATCHED`. A refusal emits `UNKNOWN`
 with a static reason and no partial counts. The selected adjacent pair and
 digest match remain separate from authenticated parent linkage, complete
 patch provenance, representative measurements and accepted state roots.
+
+### Repeated-key allocation observation
+
+A paired in-memory observation compared the replay at
+`a4328650c34413897de6a4eb6203df3889788840` with transition counting on
+macOS ARM64 and Python 3.9.6. The repeated-key cases use the regression
+fixture's 64 interleaved storage keys and 100 or 800 cycles. The singleton
+case uses 16,384 storage keys with one Put each. Half of the keys start with
+the value used in the first Put. Every complete report was byte-identical.
+
+| Patch operations | Distinct keys | Previous traced peak | Current traced peak | Previous elapsed | Current elapsed |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 32,064 | 64 | 2,560,660 B | 163,233 B | 82–87 ms | 84–93 ms |
+| 256,064 | 64 | 20,638,796 B | 163,289 B | 660–661 ms | 672–676 ms |
+| 16,384 | 16,384 | 6,490,650 B | 5,306,234 B | 113–117 ms | 111–113 ms |
+
+The elapsed ranges use three paired samples with tracing off. Input generation
+and stream construction are outside both measurements. The cases created no
+fixture files. These observations cover finite fixture allocation and latency;
+representative R1 memory and throughput require a selected dataset.
 
 ## Regression controls
 
@@ -209,7 +231,7 @@ Python allocation peak during the call**, not a total-process RSS budget or a
 representative network measurement.
 
 CI runs the same complete suite on Linux amd64, macOS Intel amd64 and Windows
-amd64. Its JSON record lists every attempted/passed test and the two source
+amd64. Its JSON record lists every attempted/passed test and all three source
 digests. `--source-revision` adds the controller-selected revision; that field
 alone does not authenticate execution. Native verifier source/binary/report,
 independent review and distribution checks remain separate.

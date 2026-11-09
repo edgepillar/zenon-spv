@@ -83,18 +83,27 @@ def value_size(reader, caps):
     return size
 
 
+def operation_kind(current, value):
+    if value is None:
+        return "absent_deletes" if current is None else "deleted"
+    if current is None:
+        return "inserted"
+    return "unchanged_puts" if current == value else "changed"
+
+
 class Edit:
-    __slots__ = ("operations", "value")
+    __slots__ = ("family", "first", "last", "value")
 
-    def __init__(self):
-        self.operations = []
-        self.value = None
+    def __init__(self, family, summary, value):
+        self.family = family
+        self.first = self.last = summary
+        self.value = value
 
 
-def read_patch(stream, pin, caps):
+def read_patch(stream, pin, caps, families):
     reader = inventory.Reader(stream, pin["bytes"])
-    # Different keys are independent. Keep each key's operation order and
-    # retain only its final Put payload for the derived snapshot digest.
+    # Only the first operation needs the earlier snapshot. Later transitions
+    # can be counted immediately in stream order using the previous patch value.
     edits = {}
     count = 0
     while reader.position < pin["bytes"]:
@@ -102,16 +111,19 @@ def read_patch(stream, pin, caps):
         tag = reader.byte()
         require(tag in (0, 1), "patch_record_tag")
         key = read_key(reader, caps)
-        edit = edits.get(key)
-        if edit is None:
-            edit = edits[key] = Edit()
+        value = summary = None
         if tag == 1:
             size = value_size(reader, caps)
-            edit.value = reader.take(size)
-            edit.operations.append((size, hashlib.sha256(edit.value).digest()))
+            value = reader.take(size)
+            summary = (size, hashlib.sha256(value).digest())
+        edit = edits.get(key)
+        if edit is None:
+            edits[key] = Edit(inventory.family(key), summary, value)
         else:
-            edit.value = None
-            edit.operations.append(None)
+            operations = families[edit.family]["operations"]
+            operations[operation_kind(edit.last, summary)] += 1
+            operations["repeated_key_operations"] += 1
+            edit.last, edit.value = summary, value
         count += 1
     require(count == pin["records"], "patch_records")
     require(reader.hash.hexdigest() == pin["sha256"], "patch_digest")
@@ -155,21 +167,11 @@ class Replay:
         self.count += 1
 
     def apply(self, key, edit, current):
-        name = inventory.family(key)
-        counts = self.families[name]["operations"]
+        counts = self.families[edit.family]["operations"]
         counts["touched_keys"] += 1
-        counts["repeated_key_operations"] += len(edit.operations) - 1
-        for value in edit.operations:
-            if value is None:
-                operation = "absent_deletes" if current is None else "deleted"
-            elif current is None:
-                operation = "inserted"
-            else:
-                operation = "unchanged_puts" if value == current else "changed"
-            counts[operation] += 1
-            current = value
+        counts[operation_kind(current, edit.first)] += 1
         if edit.value is not None:
-            self.begin_record(name, key, len(edit.value))
+            self.begin_record(edit.family, key, len(edit.value))
             self.hash.update(edit.value)
 
     def totals(self, name, fields):
@@ -183,9 +185,8 @@ def hash_value(reader, size, target):
         size -= len(part)
 
 
-def replay_snapshot(stream, pin, caps, edits, after):
+def replay_snapshot(stream, pin, caps, edits, replay):
     reader = inventory.Reader(stream, pin["bytes"])
-    replay = Replay(after)
     pending = iter(sorted(edits))
     next_key = next(pending, None)
     previous, records = None, 0
@@ -217,9 +218,9 @@ def replay_snapshot(stream, pin, caps, edits, after):
     require(not reader.raw_read(1), "trailing_input")
     require(records == pin["records"], "before_records")
     require(reader.hash.hexdigest() == pin["sha256"], "before_digest")
+    after = replay.after
     require((replay.size, replay.count) == (after["bytes"], after["records"]), "after_size_or_records")
     require(replay.hash.hexdigest() == after["sha256"], "after_digest")
-    return replay
 
 
 def inspect(stream, plan_bytes, plan_sha256, configured_limits=None, *,
@@ -228,8 +229,9 @@ def inspect(stream, plan_bytes, plan_sha256, configured_limits=None, *,
     require(type(max_patch_bytes) is int and 0 < max_patch_bytes <= HARD_PATCH_BYTES
             and type(max_patch_records) is int and 0 < max_patch_records <= HARD_PATCH_RECORDS, "patch_limits")
     plan = read_plan(stream, plan_bytes, plan_sha256, caps, max_patch_bytes, max_patch_records)
-    edits = read_patch(stream, plan["patch"], caps)
-    replay = replay_snapshot(stream, plan["before"], caps, edits, plan["after"])
+    replay = Replay(plan["after"])
+    edits = read_patch(stream, plan["patch"], caps, replay.families)
+    replay_snapshot(stream, plan["before"], caps, edits, replay)
     return {"format": REPORT_FORMAT, "status": "SELECTED_PATCH_REPLAY_MATCHED",
             "selection": plan, "plan": {"bytes": plan_bytes, "sha256": plan_sha256},
             "limits": {**caps, "patch_bytes": max_patch_bytes, "patch_records": max_patch_records},
