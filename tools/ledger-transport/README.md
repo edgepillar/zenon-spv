@@ -112,8 +112,10 @@ python3 -I -B tools/ledger-transport/transport.py plan-range \
 
 `SELECTED_RANGE_PLANNED` provides a zero-based byte offset, exact range length
 and ordered chunk pins. Use those fields to bound the replacement acquisition.
-For a range-capable transport, the last byte is `offset + bytes - 1`. Keep
-source identity, transfer and storage ownership in the existing controller.
+The [HTTPS range command](#recover-one-verified-https-range) accepts a single
+planned chunk when the URL serves the exact selected stream. For a
+range-capable transport, the last byte is `offset + bytes - 1`. Keep source
+identity, transfer and storage ownership in the existing controller.
 To check the replacement, use `verify-range` with the same arguments and supply
 the exact manifest followed immediately by only the selected bytes, then EOF.
 An existing manifest object and selected fragment can be streamed together
@@ -348,3 +350,42 @@ separation and refuse 200/302/412 responses before body consumption. A selected
 literal tail also feeds the independent directory observer. No live TLS peer,
 real archive, dataset, server deployment or state-proof acceptance is qualified.
 The three-platform CI package binds this third suite and its sources separately.
+
+## Recover one verified HTTPS range
+
+Run `plan-range` with `--chunk-count 1` using the independently pinned
+manifest. Select the URL and strong ETag for that exact byte representation.
+Use the plan's selection length and SHA-256 for the whole-stream pins. Take
+the offset from `range.offset` and the length and digest from the sole
+`range.chunks` entry. A manifest for a raw export and a URL for a compressed
+archive select different byte streams.
+
+```sh
+python3 -I -B tools/ledger-transport/archive_tail.py range \
+  --url "$ARCHIVE_URL" --etag "$STRONG_ETAG" \
+  --archive-bytes "$R1_BYTES" --archive-sha256 "$R1_SHA256" \
+  --offset "$R1_RANGE_OFFSET" --range-bytes "$R1_RANGE_BYTES" \
+  --range-sha256 "$R1_RANGE_SHA256" --max-range-bytes "$R1_RANGE_BYTES"
+```
+
+The range mode uses one conditional GET and the same strict response
+admission, deadlines and 64 KiB read bound as the tail command. Its default
+limit is 1 MiB. An explicit `--max-range-bytes` permits up to 64 MiB for a
+larger manifest chunk. It checks the selected offset and byte count against
+the representation before opening the request.
+
+Reserve the selected size with the storage controller and stream stdout
+under the artifact lease with the expected length and SHA-256. Reuse a
+verified matching CAS object when available. Admit a new fragment only after
+actual exit 0, complete capture, a matching object digest and the
+`zenon-r1-archive-range/v1` receipt with status `SELECTED_RANGE_MATCHED`.
+Retain the receipt with its manifest and chunk references. A refusal may
+already have emitted unverified bytes. Keep the actual failure record and
+exclude those bytes from the ordered stream.
+
+The successful receipt establishes the selected fragment's length, SHA-256
+and framed response EOF. Once every chunk is available, the existing
+`verify` command checks the full ordered stream against its independent
+digest. The range receipt keeps whole-archive and ledger acceptance fields
+false. The portable tests exercise the CLI from a planned middle chunk
+through a controlled HTTPS response to the independent `verify-range` check.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""Stream one selected HTTPS archive tail; never fall back to a full download."""
+"""Stream a selected HTTPS archive tail or verify one replacement range."""
 
 import hashlib
 import http.client
@@ -15,15 +15,23 @@ import urllib.request
 
 READ_BYTES = 64 << 10
 HARD_TAIL_BYTES = 4 << 20
+HARD_RANGE_BYTES = 64 << 20
 HARD_ARCHIVE_BYTES = 1 << 40
 HEADER_BYTES = 16 << 10
-DEFAULT_LIMITS = {"tail_bytes": 1 << 20, "timeout_seconds": 15}
+DEFAULT_BYTES = 1 << 20
+DEFAULT_TIMEOUT_SECONDS = 15
+TAIL_FORMAT = "zenon-r1-archive-tail/v1"
+RANGE_FORMAT = "zenon-r1-archive-range/v1"
 REASONS = frozenset(("options", "http_status", "response_origin", "response_headers",
                      "content_range", "content_length", "etag", "transfer_encoding",
-                     "content_encoding", "deadline", "body_length", "output_incomplete"))
+                     "content_encoding", "deadline", "body_length", "range_sha256", "output_incomplete"))
 USAGE = ("archive-tail: require --url, --archive-bytes, --archive-sha256, "
          "--tail-bytes and --etag; optional --max-tail-bytes and --timeout-seconds. "
          "Binary tail bytes go to stdout; a small receipt goes to stderr.\n")
+RANGE_USAGE = ("Run archive-tail range with --url, --archive-bytes, --archive-sha256, "
+               "--offset, --range-bytes, --range-sha256 and --etag. Optional flags are "
+               "--max-range-bytes and --timeout-seconds. Binary range bytes go to "
+               "stdout and a small receipt goes to stderr.\n")
 
 
 class Refused(ValueError):
@@ -44,26 +52,37 @@ def scope():
         "network_activation_authenticated", "state_value_acceptance_enabled")}
 
 
-def limits(configured=None):
+def limits(configured=None, *, range_mode=False):
     require(configured is None or type(configured) is dict, "options")
-    value = dict(DEFAULT_LIMITS) if configured is None else dict(configured)
-    require(set(value) == set(DEFAULT_LIMITS), "options")
+    byte_key = "range_bytes" if range_mode else "tail_bytes"
+    maximum = HARD_RANGE_BYTES if range_mode else HARD_TAIL_BYTES
+    defaults = {byte_key: DEFAULT_BYTES, "timeout_seconds": DEFAULT_TIMEOUT_SECONDS}
+    value = defaults if configured is None else dict(configured)
+    require(set(value) == set(defaults), "options")
     require(all(type(v) is int for v in value.values()), "options")
-    require(0 < value["tail_bytes"] <= HARD_TAIL_BYTES and
+    require(0 < value[byte_key] <= maximum and
             0 < value["timeout_seconds"] <= 60, "options")
     return value
 
 
-def selection(selected, caps):
-    require(type(selected) is dict and set(selected) ==
-            {"url", "archive_bytes", "archive_sha256", "tail_bytes", "etag"}, "options")
+def selection(selected, caps, *, range_mode=False):
+    byte_key = "range_bytes" if range_mode else "tail_bytes"
+    required = {"url", "archive_bytes", "archive_sha256", byte_key, "etag"}
+    if range_mode:
+        required |= {"offset", "range_sha256"}
+    require(type(selected) is dict and set(selected) == required, "options")
     pin = dict(selected)
     require(type(pin["archive_bytes"]) is int and
             0 < pin["archive_bytes"] <= HARD_ARCHIVE_BYTES, "options")
-    require(type(pin["tail_bytes"]) is int and
-            0 < pin["tail_bytes"] <= min(caps["tail_bytes"], pin["archive_bytes"]), "options")
+    require(type(pin[byte_key]) is int and
+            0 < pin[byte_key] <= min(caps[byte_key], pin["archive_bytes"]), "options")
     require(type(pin["archive_sha256"]) is str and
             re.fullmatch("[0-9a-f]{64}", pin["archive_sha256"]) is not None, "options")
+    if range_mode:
+        require(type(pin["offset"]) is int and
+                0 <= pin["offset"] <= pin["archive_bytes"] - pin[byte_key], "options")
+        require(type(pin["range_sha256"]) is str and
+                re.fullmatch("[0-9a-f]{64}", pin["range_sha256"]) is not None, "options")
     require(type(pin["etag"]) is str and
             re.fullmatch(r'"[\x21\x23-\x7e]{0,510}"', pin["etag"]) is not None, "options")
     url = pin["url"]
@@ -95,7 +114,7 @@ def https_open(request, timeout):
         raise Refused("http_status") from None
 
 
-def check_headers(response, pin, start):
+def check_headers(response, pin, start, count):
     require(type(response.status) is int and response.status == 206, "http_status")
     require(response.geturl() == pin["url"], "response_origin")
     fields = list(response.headers.raw_items())
@@ -110,20 +129,21 @@ def check_headers(response, pin, start):
         return values[0]
 
     require(one("Content-Range") == "bytes %d-%d/%d" %
-            (start, pin["archive_bytes"] - 1, pin["archive_bytes"]), "content_range")
-    require(one("Content-Length") == str(pin["tail_bytes"]), "content_length")
+            (start, start + count - 1, pin["archive_bytes"]), "content_range")
+    require(one("Content-Length") == str(count), "content_length")
     require(one("ETag") == pin["etag"], "etag")
     require(not response.headers.get_all("Transfer-Encoding", []), "transfer_encoding")
     coding = response.headers.get_all("Content-Encoding", [])
     require(coding == [] or coding == ["identity"], "content_encoding")
 
 
-def fetch(selected, writer, configured_limits=None, opener=None, clock=time.monotonic):
-    caps = limits(configured_limits)
-    pin = selection(selected, caps)
-    start = pin["archive_bytes"] - pin["tail_bytes"]
+def fetch(selected, writer, configured_limits=None, opener=None, clock=time.monotonic, *, range_mode=False):
+    caps = limits(configured_limits, range_mode=range_mode)
+    pin = selection(selected, caps, range_mode=range_mode)
+    count = pin["range_bytes"] if range_mode else pin["tail_bytes"]
+    start = pin["offset"] if range_mode else pin["archive_bytes"] - count
     request = urllib.request.Request(pin["url"], method="GET", headers={
-        "Range": "bytes=%d-%d" % (start, pin["archive_bytes"] - 1),
+        "Range": "bytes=%d-%d" % (start, start + count - 1),
         "If-Match": pin["etag"], "Accept-Encoding": "identity"})
     deadline = clock() + caps["timeout_seconds"]
 
@@ -134,14 +154,14 @@ def fetch(selected, writer, configured_limits=None, opener=None, clock=time.mono
     response = (https_open if opener is None else opener)(request, caps["timeout_seconds"])
     try:
         within_deadline()
-        check_headers(response, pin, start)
+        check_headers(response, pin, start, count)
         # HTTPResponse.read1 performs one underlying buffered read, so a slow
         # but progressing peer does not keep one coalescing read active while
         # elapsed checks wait. Injected bounded readers may expose read only.
         reader = getattr(response, "read1", None)
         if reader is None:
             reader = response.read
-        remaining = pin["tail_bytes"]
+        remaining = count
         digest = hashlib.sha256()
         while remaining:
             within_deadline()
@@ -157,15 +177,21 @@ def fetch(selected, writer, configured_limits=None, opener=None, clock=time.mono
         extra = reader(1)
         require(type(extra) is bytes and extra == b"", "body_length")
         within_deadline()
+        observed = digest.hexdigest()
+        if range_mode:
+            require(observed == pin["range_sha256"], "range_sha256")
         writer.flush()
         within_deadline()
     finally:
         response.close()
-    return {"format": "zenon-r1-archive-tail/v1", "status": "SELECTED_TAIL_CAPTURED",
-            "archive": {"bytes": pin["archive_bytes"], "sha256_selection": pin["archive_sha256"]},
-            "tail": {"offset": start, "bytes": pin["tail_bytes"], "sha256": digest.hexdigest()},
-            "conditional_range_headers_matched": True, "response_body_eof_observed": True,
-            "stdout_flushed": True, "scope": scope()}
+    captured = {"offset": start, "bytes": count, "sha256": observed}
+    common = {"archive": {"bytes": pin["archive_bytes"], "sha256_selection": pin["archive_sha256"]},
+              "conditional_range_headers_matched": True, "response_body_eof_observed": True,
+              "stdout_flushed": True, "scope": scope()}
+    if range_mode:
+        return {"format": RANGE_FORMAT, "status": "SELECTED_RANGE_MATCHED",
+                "range": captured, "range_sha256_verified": True, **common}
+    return {"format": TAIL_FORMAT, "status": "SELECTED_TAIL_CAPTURED", "tail": captured, **common}
 
 
 def decimal(token):
@@ -173,50 +199,64 @@ def decimal(token):
     return int(token)
 
 
-def options(args):
-    required = {"--url", "--archive-bytes", "--archive-sha256", "--tail-bytes", "--etag"}
-    known = required | {"--max-tail-bytes", "--timeout-seconds"}
+def options(args, *, range_mode=False):
+    byte_key = "range_bytes" if range_mode else "tail_bytes"
+    byte_flag = "--range-bytes" if range_mode else "--tail-bytes"
+    max_flag = "--max-range-bytes" if range_mode else "--max-tail-bytes"
+    required = {"--url", "--archive-bytes", "--archive-sha256", byte_flag, "--etag"}
+    if range_mode:
+        required |= {"--offset", "--range-sha256"}
+    known = required | {max_flag, "--timeout-seconds"}
     require(len(args) <= 2 * len(known) and len(args) % 2 == 0, "options")
     values = {}
     for key, value in zip(args[::2], args[1::2]):
         require(key in known and key not in values and type(value) is str, "options")
         values[key] = value
     require(required <= set(values), "options")
-    caps = limits({"tail_bytes": decimal(values.get("--max-tail-bytes", str(DEFAULT_LIMITS["tail_bytes"]))),
-                   "timeout_seconds": decimal(values.get("--timeout-seconds", str(DEFAULT_LIMITS["timeout_seconds"])))})
-    pin = selection({"url": values["--url"], "archive_bytes": decimal(values["--archive-bytes"]),
-                     "archive_sha256": values["--archive-sha256"], "tail_bytes": decimal(values["--tail-bytes"]),
-                     "etag": values["--etag"]}, caps)
-    return pin, caps
+    caps = limits({byte_key: decimal(values.get(max_flag, str(DEFAULT_BYTES))),
+                   "timeout_seconds": decimal(values.get("--timeout-seconds", str(DEFAULT_TIMEOUT_SECONDS)))},
+                  range_mode=range_mode)
+    pin = {"url": values["--url"], "archive_bytes": decimal(values["--archive-bytes"]),
+           "archive_sha256": values["--archive-sha256"], byte_key: decimal(values[byte_flag]),
+           "etag": values["--etag"]}
+    if range_mode:
+        pin.update(offset=decimal(values["--offset"]), range_sha256=values["--range-sha256"])
+    return selection(pin, caps, range_mode=range_mode), caps
 
 
-def unknown(reason):
-    return {"format": "zenon-r1-archive-tail/v1", "status": "UNKNOWN", "reason": reason,
+def unknown(reason, *, range_mode=False):
+    if range_mode:
+        return {"format": RANGE_FORMAT, "status": "UNKNOWN", "reason": reason,
+                "stdout_may_contain_unverified_range": True, "scope": scope()}
+    return {"format": TAIL_FORMAT, "status": "UNKNOWN", "reason": reason,
             "stdout_may_contain_partial_tail": True, "scope": scope()}
 
 
 def main(args, writer, diagnostic, opener=None, clock=time.monotonic):
-    code, result = 0, None
+    range_mode = args[:1] == ["range"]
+    if range_mode:
+        args = args[1:]
+    code = 0
     try:
         if args == ["--help"]:
-            diagnostic.write(USAGE)
-            result = unknown("help_only")
+            diagnostic.write(RANGE_USAGE if range_mode else USAGE)
+            result = unknown("help_only", range_mode=range_mode)
         else:
             try:
-                pin, caps = options(args)
+                pin, caps = options(args, range_mode=range_mode)
             except (Refused, TypeError, ValueError, OverflowError):
-                code, result = 64, unknown("options")
-            if result is None:
-                result = fetch(pin, writer, caps, opener, clock)
+                code, result = 64, unknown("options", range_mode=range_mode)
+            else:
+                result = fetch(pin, writer, caps, opener, clock, range_mode=range_mode)
     except Refused as error:
         reason = str(error)
-        code, result = 2, unknown(reason if reason in REASONS else "refused_data")
+        code, result = 2, unknown(reason if reason in REASONS else "refused_data", range_mode=range_mode)
     except KeyboardInterrupt:
-        code, result = 130, unknown("interrupted")
+        code, result = 130, unknown("interrupted", range_mode=range_mode)
     except (OSError, urllib.error.URLError, http.client.HTTPException, ValueError, TypeError):
-        code, result = 70, unknown("io_failure")
+        code, result = 70, unknown("io_failure", range_mode=range_mode)
     except Exception:
-        code, result = 70, unknown("unexpected_failure")
+        code, result = 70, unknown("unexpected_failure", range_mode=range_mode)
     try:
         encoded = json.dumps(result, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
         if diagnostic.write(encoded) != len(encoded):
