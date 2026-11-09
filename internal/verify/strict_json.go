@@ -11,6 +11,7 @@ import (
 // decodeRequiredObject accepts exactly the named fields, once each, with no
 // null values. Callers bound raw before decoding and supply temporary targets
 // so a failure cannot change an already selected trust configuration.
+// A function target consumes one value directly and checks its non-null shape.
 func decodeRequiredObject(raw []byte, fields map[string]any) error {
 	d := json.NewDecoder(bytes.NewReader(raw))
 	start, err := d.Token()
@@ -29,6 +30,12 @@ func decodeRequiredObject(raw []byte, fields map[string]any) error {
 			return errors.New("unknown or duplicate field")
 		}
 		seen[key] = true
+		if readValue, ok := target.(func(*json.Decoder) error); ok {
+			if err := readValue(d); err != nil {
+				return fmt.Errorf("invalid %s", key)
+			}
+			continue
+		}
 		var value json.RawMessage
 		if err := d.Decode(&value); err != nil {
 			return errors.New("malformed JSON field")

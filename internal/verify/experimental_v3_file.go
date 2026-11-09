@@ -34,7 +34,10 @@ func (f *experimentalV3File) UnmarshalJSON(raw []byte) error {
 	}
 	var next experimentalV3File
 	var text string
-	if err := decodeRequiredObject(raw, map[string]any{"format": &next.Format, "version": &next.Version, "context": &text, "profile": &next.Profile, "policy": &next.Policy, "retained_headers": &next.Headers}); err != nil {
+	if err := decodeRequiredObject(raw, map[string]any{
+		"format": &next.Format, "version": &next.Version, "context": &text,
+		"profile": &next.Profile, "policy": &next.Policy, "retained_headers": next.Headers.readValue,
+	}); err != nil {
 		return ErrExperimentalV3StateFile
 	}
 	if next.Format != experimentalV3StateFormat || next.Version != 4 || len(text) != 64 || next.Context.UnmarshalText([]byte(text)) != nil {
@@ -55,6 +58,20 @@ func (w *experimentalV3Window) UnmarshalJSON(raw []byte) error {
 		return ErrExperimentalV3StateFile
 	}
 	d := json.NewDecoder(bytes.NewReader(raw))
+	var next experimentalV3Window
+	if err := next.readValue(d); err != nil {
+		return err
+	}
+	if d.Decode(new(json.RawMessage)) != io.EOF {
+		return ErrExperimentalV3StateFile
+	}
+	*w = next
+	return nil
+}
+
+// readValue leaves the enclosing object's remaining fields and EOF to its
+// decoder. It buffers individual headers rather than the full retained array.
+func (w *experimentalV3Window) readValue(d *json.Decoder) error {
 	if token, err := d.Token(); err != nil || token != json.Delim('[') {
 		return ErrExperimentalV3StateFile
 	}
@@ -74,9 +91,6 @@ func (w *experimentalV3Window) UnmarshalJSON(raw []byte) error {
 		rows = append(rows, h)
 	}
 	if token, err := d.Token(); err != nil || token != json.Delim(']') {
-		return ErrExperimentalV3StateFile
-	}
-	if d.Decode(new(json.RawMessage)) != io.EOF {
 		return ErrExperimentalV3StateFile
 	}
 	*w = rows

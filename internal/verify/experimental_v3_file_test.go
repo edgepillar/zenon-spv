@@ -16,9 +16,127 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
 )
+
+// bufferedExperimentalV3File uses the prior whole-value path for the retained
+// array. Both paths use the same per-header decoder.
+func bufferedExperimentalV3File(raw []byte) (experimentalV3File, error) {
+	if int64(len(raw)) > MaxExperimentalV3StateBytes || !utf8.Valid(raw) {
+		return experimentalV3File{}, ErrExperimentalV3StateFile
+	}
+	var file experimentalV3File
+	var text string
+	if err := decodeRequiredObject(raw, map[string]any{
+		"format": &file.Format, "version": &file.Version, "context": &text,
+		"profile": &file.Profile, "policy": &file.Policy, "retained_headers": &file.Headers,
+	}); err != nil {
+		return experimentalV3File{}, ErrExperimentalV3StateFile
+	}
+	if file.Format != experimentalV3StateFormat || file.Version != 4 || len(text) != 64 || file.Context.UnmarshalText([]byte(text)) != nil {
+		return experimentalV3File{}, ErrExperimentalV3StateFile
+	}
+	canonical, _ := file.Context.MarshalText()
+	if string(canonical) != text {
+		return experimentalV3File{}, ErrExperimentalV3StateFile
+	}
+	return file, nil
+}
+
+func TestStreamedStateWindowExperimentalV3Parity(t *testing.T) {
+	f := experimentalV3Inputs(t)
+	initial := experimentalV3File{Format: experimentalV3StateFormat, Version: 4, Context: f.pin,
+		Profile: f.profile, Policy: f.policy, Headers: experimentalV3Window(f.headers)}
+	raw := experimentalV3JSON(t, initial)
+	fields := experimentalV3Fields(t, raw)
+	array := fields["retained_headers"]
+	delete(fields, "retained_headers")
+	rest := experimentalV3JSON(t, fields)
+	withWindow := func(field string, value []byte) []byte {
+		return []byte("{"+field+":"+string(value)+","+string(rest[1:]))
+	}
+	first := withWindow("\"retained_headers\"", array)
+	alias := withWindow("\"retained_hea\\u0064ers\"", array)
+	duplicate := []byte("{\"retained_headers\":"+string(array)+","+string(alias[1:]))
+	unknown := []byte(string(first[:len(first)-1])+",\"unknown\":false}")
+	tests := []struct {
+		name string
+		raw  []byte
+		ok   bool
+	}{
+		{"window-last", raw, true},
+		{"window-first", first, true},
+		{"escaped-window-name", alias, true},
+		{"empty-window", withWindow("\"retained_headers\"", []byte("[]")), true},
+		{"missing-window", rest, false},
+		{"null-window", withWindow("\"retained_headers\"", []byte("null")), false},
+		{"object-window", withWindow("\"retained_headers\"", []byte("{}")), false},
+		{"invalid-row", withWindow("\"retained_headers\"", []byte("[null]")), false},
+		{"duplicate-escaped-name", duplicate, false},
+		{"unknown-after-window", unknown, false},
+		{"trailing-object", append(bytes.Clone(first), []byte("{}")...), false},
+		{"truncated-object", first[:len(first)-1], false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			want, priorErr := bufferedExperimentalV3File(tc.raw)
+			got := initial
+			err := got.UnmarshalJSON(tc.raw)
+			if (err == nil) != tc.ok || (priorErr == nil) != tc.ok {
+				t.Fatalf("streamed error %v, buffered error %v", err, priorErr)
+			}
+			if !tc.ok {
+				want = initial
+			}
+			if !reflect.DeepEqual(got, want) {
+				t.Fatal("decoded value or failure atomicity changed")
+			}
+		})
+	}
+	window := initial.Headers
+	if err := window.UnmarshalJSON(append(bytes.Clone(array), []byte("[]")...)); err == nil || !reflect.DeepEqual(window, initial.Headers) {
+		t.Fatal("standalone window accepted trailing data or published a prefix")
+	}
+}
+
+var experimentalV3WindowBenchmarkSink experimentalV3File
+
+func benchmarkExperimentalV3Window(b *testing.B) {
+	f := experimentalV3Inputs(b)
+	headers := make(experimentalV3Window, MaxRetainHeaders)
+	for i := range headers {
+		headers[i] = f.headers[i%len(f.headers)]
+	}
+	raw, err := json.Marshal(experimentalV3File{Format: experimentalV3StateFormat, Version: 4, Context: f.pin,
+		Profile: f.profile, Policy: f.policy, Headers: headers})
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.Run("buffered", func(b *testing.B) {
+		b.SetBytes(int64(len(raw)))
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			file, err := bufferedExperimentalV3File(raw)
+			if err != nil || len(file.Headers) != MaxRetainHeaders {
+				b.Fatal(err)
+			}
+			experimentalV3WindowBenchmarkSink = file
+		}
+	})
+	b.Run("streamed", func(b *testing.B) {
+		b.SetBytes(int64(len(raw)))
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			var file experimentalV3File
+			if err := file.UnmarshalJSON(raw); err != nil || len(file.Headers) != MaxRetainHeaders {
+				b.Fatal(err)
+			}
+			experimentalV3WindowBenchmarkSink = file
+		}
+	})
+}
 
 func experimentalV3Saved(t *testing.T, f experimentalV3Fixture) (ExperimentalV3State, string, []byte) {
 	t.Helper()

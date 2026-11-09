@@ -373,4 +373,5 @@ func BenchmarkStreamedStateWindow(b *testing.B) {
 			}
 		})
 	}
+	b.Run(fmt.Sprintf("experimental-v3/K%d", MaxRetainHeaders), benchmarkExperimentalV3Window)
 }
