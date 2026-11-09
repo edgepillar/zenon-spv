@@ -284,6 +284,73 @@ class ReviewTests(unittest.TestCase):
         return review.review_stream(io.BytesIO(raw), archive_pin or pin(raw), SOURCE, run,
                                     contract or self.contract, ROOT)
 
+    def hosted_review(self, raw, *, conclusion="success", execution="success", archive_sha256=None):
+        run, jobs, artifact = hosted_metadata()
+        run["conclusion"] = jobs["jobs"][0]["conclusion"] = conclusion
+        jobs["jobs"][0]["steps"][0]["conclusion"] = execution
+        artifact.update(size_in_bytes=len(raw), digest="sha256:" + (archive_sha256 or pin(raw)["sha256"]))
+        out, error = io.BytesIO(), io.StringIO()
+        args = ["review-hosted", "--expect-source-revision", SOURCE, "--expect-run-id", str(RUN),
+                "--expect-artifact-id", str(ARTIFACT), "--expect-contract-sha256", self.contract.sha256]
+        with tempfile.TemporaryDirectory(prefix="owned-hosted-review-") as directory:
+            root = Path(directory)
+            archive = root / "original.zip"
+            archive.write_bytes(raw)
+            args.extend(("--archive", str(archive)))
+            for name, row in zip(("run", "jobs", "artifact"), (run, jobs, artifact)):
+                path = root / (name + ".json")
+                path.write_bytes(canonical(row))
+                args.extend(("--" + name + "-metadata", str(path)))
+            with patch.object(review.model, "read_contract", return_value=self.contract):
+                exit_code = review.main(args, out, error)
+            self.assertEqual(sorted(path.name for path in root.iterdir()),
+                             ["artifact.json", "jobs.json", "original.zip", "run.json"])
+        result = json.loads(out.getvalue()) if out.getvalue() else None
+        return exit_code, result, error.getvalue()
+
+    def test_hosted_review_uses_the_selected_archive_and_rechecks_the_consumer(self):
+        raw = make_archive(self.files)
+        with patch.object(review.inputs, "_hash_stream", wraps=review.inputs._hash_stream) as digest:
+            code, result, error = self.hosted_review(raw)
+        self.assertEqual(code, 0, error)
+        digest.assert_called_once()
+        self.assertEqual(result["status"], "HOSTED_RECORDED_CONSUMER_BYTES_MATCH")
+        self.assertEqual(result["archive_review"]["archive"], pin(raw))
+        self.assertEqual(result["metadata_selection"]["artifact"]["id"], ARTIFACT)
+        self.assertEqual(result["archive_review"]["comparison"]["three_membership_proofs_checked"], 3)
+        self.assertEqual(result["archive_review"]["materialized_bytes"], 0)
+        self.assertTrue(result["artifact_payload_verified"])
+        self.assertFalse(result["new_devnet_acceptance_established"])
+
+    def test_hosted_failure_preserves_both_conclusions_without_acceptance(self):
+        cases = (
+            (make_archive(self.files), "failure", "success", "RECORDED_CONSUMER_BYTES_MATCH"),
+            (make_archive(self.files), "cancelled", "cancelled", "RECORDED_CONSUMER_BYTES_MATCH"),
+            (make_archive({"evidence/terminal.json": canonical(terminal("UNKNOWN"))}),
+             "failure", "failure", "RECORDED_NON_ACCEPTING_OUTCOME"),
+        )
+        for raw, conclusion, execution, expected in cases:
+            with self.subTest(conclusion=conclusion, execution=execution):
+                code, result, error = self.hosted_review(raw, conclusion=conclusion, execution=execution)
+                self.assertEqual(code, 1, error)
+                self.assertEqual(result["status"], "HOSTED_RECORDED_NON_ACCEPTING_OUTCOME")
+                self.assertEqual(result["metadata_selection"]["run_conclusion"], conclusion)
+                self.assertEqual(result["archive_review"]["status"], expected)
+                self.assertFalse(result["new_devnet_acceptance_established"])
+
+    def test_hosted_review_refuses_archive_and_execution_mismatches(self):
+        accepted = make_archive(self.files)
+        incomplete = make_archive({"evidence/terminal.json": canonical(terminal("UNKNOWN"))})
+        for raw, options, reason in (
+                (accepted, {"archive_sha256": "a" * 64}, "archive_digest"),
+                (accepted, {"conclusion": "failure", "execution": "failure"}, "review_hosted_execution_outcome"),
+                (incomplete, {}, "review_hosted_execution_outcome")):
+            with self.subTest(options=options, reason=reason):
+                code, result, error = self.hosted_review(raw, **options)
+                self.assertEqual(code, 2)
+                self.assertIsNone(result)
+                self.assertIn(reason, error)
+
     def test_rechecks_complete_index_three_proofs_and_gateway_without_extraction(self):
         raw = make_archive(self.files)
         with patch.object(zipfile.ZipFile, "extractall", side_effect=AssertionError):

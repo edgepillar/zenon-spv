@@ -138,8 +138,26 @@ the JSON depends on its acquisition. The expected contract pin selects the
 local contract for the later archive review.
 
 Use the selected byte count and SHA-256 to fetch or reuse one original result
-ZIP under the artifact lease. Then inspect that ZIP with the same runner
-revision, run ID and contract pin.
+ZIP under the artifact lease. Review the ZIP and the retained metadata together
+with the same runner revision, run ID and contract pin.
+
+```sh
+python3 -I -B tools/owned-devnet-query/review.py review-hosted \
+  --run-metadata "$RUN_METADATA" --jobs-metadata "$JOBS_METADATA" \
+  --artifact-metadata "$ARTIFACT_METADATA" --expect-artifact-id "$ARTIFACT_ID" \
+  --expect-source-revision "$RUNNER_SHA" --expect-contract-sha256 "$CONTRACT_SHA256" \
+  --expect-run-id "$RUN_ID" --archive "$RESULT_ZIP"
+```
+
+Exit 0 reports `HOSTED_RECORDED_CONSUMER_BYTES_MATCH` when the supplied run
+concludes successfully and the archive's consumer comparison passes. Exit 1
+retains both the hosted and archive outcomes for a nonaccepting run, including
+when the archive passes its own comparison. Exit 2 reports a refusal, including
+a reported success or failure of the execution step that conflicts with the
+archived terminal outcome. The combined review binds the supplied metadata to
+the exact original ZIP and rechecks the recorded result without another download.
+
+An independently pinned ZIP can also be inspected on its own.
 
 ```sh
 python3 -I -B tools/owned-devnet-query/review.py \
