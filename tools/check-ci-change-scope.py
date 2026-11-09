@@ -56,12 +56,12 @@ PORTABLE_WORKFLOWS = (
      "3101f06e85bd6bd6d74fe89e86e06a04cce38a26aad7d945f5371880250e49b0"),
     (".github/workflows/ledger-export.yml", EXPORT_FILES | {SHARED_TRANSPORT}, 7817,
      "5c0f8e7215bf86044f0bf44f330a48520c6a4c17187740909bc593158a26106a"),
-    (".github/workflows/owned-devnet-query.yml", PREPARATION_FILES, 3486,
-     "5d2bcf80acef2509490b36b12a2d2dfc1cec8dfaa9251862179c6acc78dd06a2"),
+    (".github/workflows/owned-devnet-query.yml", PREPARATION_FILES, 4354,
+     "fa7e5e9397ef0621770f9ad944acaeb04722ce890c61cd2d78344d90f9f1d1d1"),
 )
 # Keep every remaining non-document dependency, including all workflows.
 # Refresh only after reviewing dependencies and selecting full runtime CI.
-PORTABLE_SOURCE_PIN = "9dad4f3ac779c2cbd11b1ebbaa53d050a8cd5ba343d5485465b54f547c60cea4"
+PORTABLE_SOURCE_PIN = "04c26fa9e1f0e65efd4a1898b6d7d8ef12e1bb161155507d2cc2e725790828a2"
 MAX_FILTERED_DIFF_RECORDS = 256
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192

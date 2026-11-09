@@ -6,13 +6,20 @@ Container resource configuration is checked separately by engine.py.
 """
 from __future__ import annotations
 
+import argparse
 import math
 import os
 from pathlib import Path
 import platform
 import re
 import stat
+import subprocess
+import sys
 import time
+
+HERE = Path(__file__).resolve().parent
+if __name__ == "__main__":
+    sys.path.insert(0, str(HERE))
 
 import model
 from model import Refused, require
@@ -39,6 +46,29 @@ def linux_observation(path):
     return {"system": platform.system(), "machine": platform.machine(),
             "available_memory_bytes": int(matches[0]) * 1024,
             "effective_cpu_count": cpus, "free_bytes": disk.f_bavail * disk.f_frsize}
+
+
+def preparation_admission_report(contract, path, source_revision, run_id, run_attempt, *, observe=linux_observation):
+    """Compare a read-only preparation sample with the actual admission rules."""
+    model.digest(source_revision, model.HEX40)
+    model.uint(run_id)
+    model.uint(run_attempt)
+    minimums = model.host_minimums(contract.data["limits"])
+    observations, status, reason = None, "UNAVAILABLE", None
+    try:
+        observations = observe(path)
+        model.admit_host(contract, observations)
+        status = "MEETS_THRESHOLDS"
+    except Refused as error:
+        status = "REFUSED" if observations is not None else "UNAVAILABLE"
+        reason = error.reason
+    except (OSError, ValueError):
+        reason = "observation_failed"
+    return {"format": "owned-devnet-host-admission-sample/v1", "status": status, "reason": reason,
+            "source_revision": source_revision, "run_id": run_id, "run_attempt": run_attempt,
+            "contract_sha256": contract.sha256, "minimums": minimums, "observations": observations,
+            "engine_contacted": False, "experiment_executed": False,
+            "OS_aggregate_quota_or_runtime_enforcement_proven": False}
 
 
 def evidence_bytes(directory, identity):
@@ -136,3 +166,32 @@ class Budget:
             "OS_aggregate_quota_or_runtime_enforcement_proven": False,
             "unrelated_writer_attribution_established": False,
             "transient_allocations_between_samples_measured": False}
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Record one read-only host admission sample.", allow_abbrev=False)
+    parser.add_argument("--source-revision", required=True)
+    parser.add_argument("--run-id", type=int, required=True)
+    parser.add_argument("--run-attempt", type=int, required=True)
+    parser.add_argument("--report", type=Path, required=True)
+    args = parser.parse_args(argv)
+    try:
+        def git(*arguments):
+            return subprocess.check_output(["git", "--no-optional-locks", *arguments],
+                                           cwd=HERE, timeout=10, stderr=subprocess.DEVNULL)
+
+        revision = git("rev-parse", "HEAD").decode("ascii").strip()
+        require(revision == args.source_revision and not git("status", "--porcelain=v1", "-z",
+                "--untracked-files=all"), "host_sample_source_revision")
+        contract = model.read_contract(HERE / "contract.json")
+        report = preparation_admission_report(contract, args.report.parent, revision, args.run_id, args.run_attempt)
+        with args.report.open("xb") as output:
+            output.write(model.canonical(report))
+        return 0
+    except (OSError, ValueError, subprocess.SubprocessError):
+        sys.stderr.write("Host admission sample could not be retained.\n")
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
