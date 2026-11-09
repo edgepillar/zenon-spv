@@ -191,7 +191,7 @@ class Artifacts:
                     and receipt["output_complete"] is True
                     and {k: receipt["outputs"]["stdout"][k] for k in ("sha256", "bytes")}
                     == selected["archive"], "artifact_transport_content")
-            with original.open_stdout(selected["archive"]["bytes"]) as stream:
+            with original.open_stdout_for_validation(selected["archive"]["bytes"]) as stream:
                 binaries = inputs.unpack_binaries(stream, role, selected, self.directory / role)
             result = Materialized(original, binaries, canonical(binding))
         # Lease reconciliation is part of success. A failure while leaving the

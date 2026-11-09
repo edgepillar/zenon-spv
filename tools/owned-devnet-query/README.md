@@ -50,6 +50,11 @@ in-memory hit rechecks original file identities and binary contents. Incomplete
 or failed attempts are terminal for that workspace. This step does not qualify
 a new CI run or enable binary execution.
 
+On fresh intake, the ZIP and Node archive readers perform their existing
+pre-extraction SHA-256 scan on the recorded stdout descriptor. The recorder
+holds and checks the file identity around that scan and extraction. The
+compressed, decoded and selected-binary checks retain their separate pins.
+
 `node_toolchain.py` separately handles the official Node 22.23.0 Linux x64 input.
 It checks the original SHA-256/31,048,380-byte input, the decoded TAR digest and
 the 4,690-file selected manifest. The selected Node/npm/header files total

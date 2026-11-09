@@ -320,7 +320,8 @@ class Result:
         return json.loads(self.receipt_raw)
 
     @contextmanager
-    def _open_stdout(self, limit):
+    def open_stdout_for_validation(self, limit):
+        """Hold the recorded stdout inode for a reader that checks the selected digest."""
         expected = self.receipt["outputs"]["stdout"]
         require(expected["bytes"] <= limit, "command_result_read_bound")
         path = self.directory / self.stdout_name
@@ -343,7 +344,7 @@ class Result:
 
     def stdout(self, limit=2 << 20):
         expected = self.receipt["outputs"]["stdout"]
-        with self._open_stdout(limit) as stream:
+        with self.open_stdout_for_validation(limit) as stream:
             raw = stream.read(limit + 1)
             require(len(raw) == expected["bytes"]
                     and hashlib.sha256(raw).hexdigest() == expected["sha256"],
@@ -354,7 +355,7 @@ class Result:
     def open_stdout(self, limit):
         """Verify the one original file, then expose its same open descriptor."""
         expected = self.receipt["outputs"]["stdout"]
-        with self._open_stdout(limit) as stream:
+        with self.open_stdout_for_validation(limit) as stream:
             sha = hashlib.sha256()
             size = 0
             for chunk in iter(lambda: stream.read(65536), b""):

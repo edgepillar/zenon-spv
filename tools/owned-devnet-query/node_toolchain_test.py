@@ -12,7 +12,9 @@ import stat
 import sys
 import tarfile
 import tempfile
+from types import SimpleNamespace
 import unittest
+from unittest import mock
 
 sys.dont_write_bytecode = True
 HERE = Path(__file__).absolute().parent
@@ -259,6 +261,26 @@ class RegularMaterializationTests(unittest.TestCase):
 
 @unittest.skipUnless(os.name == "posix", "Recorded POSIX leases are not Windows qualification")
 class LeaseTests(unittest.TestCase):
+    def test_download_intake_uses_the_unpackers_archive_digest_pass(self):
+        raw, selected = fixture()
+        contract = SimpleNamespace(data={"node_toolchain": selected})
+        with tempfile.TemporaryDirectory(prefix="node-intake-control-") as temporary:
+            root = Path(temporary)
+            recorder = owned_process.Recorder(root / "commands")
+            command = [sys.executable, "-I", "-B", "-c", f"import sys; sys.stdout.buffer.write({raw!r})"]
+            installer = node_toolchain.Installer(contract, recorder, root / "node", command, {}, lambda: None)
+            with mock.patch.object(owned_process.Result, "open_stdout",
+                                   side_effect=AssertionError("duplicate archive digest pass")), \
+                    mock.patch.object(node_toolchain, "_hash_stream",
+                                      wraps=node_toolchain._hash_stream) as hash_stream:
+                installation = installer.fetch()
+                hash_stream.assert_called_once()
+                self.assertEqual(hash_stream.call_args.args[1], pin(raw))
+            self.assertIs(installation.execution_enabled, False)
+            self.assertEqual(installation.verify()["selected_manifest"], selected["selected_manifest"])
+            self.assertEqual(len(recorder.records), 1)
+            self.assertEqual((recorder.directory / selected["filename"]).read_bytes(), raw)
+
     def test_lease_is_one_new_recorded_regular_inode_and_releases(self):
         import fcntl
         with tempfile.TemporaryDirectory(prefix="node-lease-control-") as temporary:
