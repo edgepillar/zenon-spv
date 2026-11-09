@@ -119,6 +119,21 @@ Go controls decode the prepared profile through the public API, bind its
 metadata digest and compare all three locally derived keys/paths with literal
 source-key vectors. They do not start a node, sign or submit transactions.
 
+### Inspect a retained Linux archive
+
+Run the inspection from the reviewed checkout against the original verified
+ZIP in the evidence store.
+
+```sh
+python3 -I -B tools/owned-devnet-query/inputs.py \
+  --component consumer --archive "$SPV_ARTIFACT_ZIP"
+```
+
+Use `parent_oracle` for the closed-parent-slot helper archive. On exit zero, the
+JSON report binds the selected binary SHA-256 pins to the contract, binary
+source and artifact identifiers. The inspection writes zero extracted bytes.
+Bind the archive to the actual GitHub run and attempt separately.
+
 ## Source and schema cohort
 
 The component set is selected from
