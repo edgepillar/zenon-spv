@@ -711,6 +711,35 @@ class LedgerChurnTests(unittest.TestCase):
                                                 "repeated_key_operations": len(operations) - touched})
         self.assertEqual(report["after_totals"]["put_wire_bytes"], len(dump(expected)))
 
+    def test_repeated_patch_transitions_do_not_retain_every_operation(self):
+        keys = [b"\x03" + i.to_bytes(20, "big") + b"\x04slot" for i in range(64)]
+        original = dump((key, b"start") for key in keys[::2])
+        final = dump((key, b"start") for key in keys)
+        cycle = put_delete((key, value) for value in (b"end", b"end", None, None, b"start")
+                           for key in keys)
+        cycles = 100
+        patch = final + cycle * cycles
+        count = len(keys) * cycles
+        plan = replay_plan(stream_pin(original, len(keys) // 2), stream_pin(patch, len(keys) + 5 * count),
+                           stream_pin(final, len(keys)))
+        raw = INV.encoded(plan)
+        stream = io.BytesIO(raw + patch + original)
+        plan_sha = hashlib.sha256(raw).hexdigest()
+
+        tracemalloc.start()
+        try:
+            report = CHURN.inspect(stream, len(raw), plan_sha)
+            _, peak = tracemalloc.get_traced_memory()
+        finally:
+            tracemalloc.stop()
+        self.assertLess(peak, 1 << 20)
+        self.assertEqual(report["operations"], {
+            "inserted": count + len(keys) // 2, "changed": count, "deleted": count,
+            "unchanged_puts": count + len(keys) // 2, "absent_deletes": count,
+            "touched_keys": len(keys), "repeated_key_operations": 5 * count})
+        self.assertEqual(report["families"]["contract_storage"]["after"]["records"], len(keys))
+        self.assertEqual(report["input_bytes"], stream.tell())
+
     def test_empty_patch_empty_snapshot_and_edge_insertions(self):
         for before, operations, after in (
                 ([], [], []), ([(b"m", b"")], [], [(b"m", b"")]),
