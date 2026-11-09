@@ -25,9 +25,10 @@ consistent or complete. Preserve the exporter and outer completion receipts.
 Use the approved task-storage manager for capture and retention. Reserve the
 operation's budget and free-space floor before acquisition. Preserve one verified
 raw object, the small manifest, actual exits, capture completeness and result
-receipts by reference. Do not package the raw stream again or keep one file per
-chunk. This tool is independent of the local storage manager and adds no storage
-adoption, cleanup or eviction behavior.
+receipts by reference. Read ranges in place when the full raw object is
+available. For an interrupted transfer, reuse the protected fragment references
+and retain one object per digest. This tool is independent of the local storage
+manager. Ownership and retention stay with the controller.
 
 ## Describe a retained stream once
 
@@ -94,6 +95,38 @@ match selected record counts and bytes. Transport success has not run inventory,
 imported state, compared a reconstructed root with an accepted header or qualified
 a representative workload.
 
+## Verify only the missing range
+
+For an interrupted transfer, choose a contiguous group of missing chunks from
+the independently pinned manifest. Indices are zero-based. The following
+example plans one chunk using only the exact manifest bytes:
+
+```sh
+python3 -I -B tools/ledger-transport/transport.py plan-range \
+  --manifest-bytes "$R1_MANIFEST_BYTES" --manifest-sha256 "$R1_MANIFEST_SHA256" \
+  --expect-bytes "$R1_BYTES" --expect-sha256 "$R1_SHA256" \
+  --expect-height "$R1_HEIGHT" --expect-hash "$R1_HASH" \
+  --provenance-sha256 "$R1_PROVENANCE_SHA256" \
+  --first-chunk "$R1_MISSING_CHUNK" --chunk-count 1 < "$R1_MANIFEST_OBJECT"
+```
+
+`SELECTED_RANGE_PLANNED` provides a zero-based byte offset, exact range length
+and ordered chunk pins. Use those fields to bound the replacement acquisition.
+For a range-capable transport, the last byte is `offset + bytes - 1`. Keep
+source identity, transfer and storage ownership in the existing controller.
+To check the replacement, use `verify-range` with the same arguments and supply
+the exact manifest followed immediately by only the selected bytes, then EOF.
+An existing manifest object and selected fragment can be streamed together
+without writing a combined file.
+
+Require actual exit 0, complete capture and `SELECTED_RANGE_MATCHED`.
+It checks each selected chunk's size and digest and the range EOF. The report
+keeps `whole_stream_digest_verified` false even for a range covering every
+chunk. When the full set is available, stream the manifest and fragments in
+order to `verify` or to the [combined inventory recount](../ledger-export/README.md#check-the-transport-manifest-during-the-recount).
+That final pass checks the independent whole-stream digest. Prior successful
+fragment receipts and actual failed attempts remain distinct records.
+
 ## Resource and failure boundaries
 
 | Limit | Default | Hard cap |
@@ -130,10 +163,11 @@ python3 -I -B tools/ledger-transport/transport_test.py
 
 Controls use separately framed literal manifests and streams, bounded short reads,
 an 8 MiB virtual stream, pre-payload refusals, changed/reordered/repeated chunks,
-EOF/error/interruption/output completion and actual CLI processes. The CLI flow
-also feeds the same finite put bytes to the separate inventory tool. It creates
-no payload files and measures no production RSS, representative throughput or
-real network/dataset acceptance.
+EOF/error/interruption/output completion and actual CLI processes. The controls
+include replacing one missing chunk before final ordered verification and
+refusing to treat a range as a verified whole stream. The CLI flow also feeds
+the same finite put bytes to the separate inventory tool. Its evidence is scoped
+to the bounded synthetic data and process outcomes.
 
 The dedicated CI matrix runs the same controls on Linux amd64, macOS Intel amd64
 and Windows amd64. Its small artifacts contain the portable scripts, README,
