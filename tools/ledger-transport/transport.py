@@ -149,7 +149,7 @@ class _ChunkStream:
     def __init__(self, reader, pin, plan):
         self.reader, self.expected_stream = reader, pin["sha256"]
         self.plan = iter(plan)
-        self.whole = hashlib.sha256()
+        self.whole, self.chunk = hashlib.sha256(), None
         self.remaining, self.rows = 0, []
         self.complete, self.failed = False, False
 
@@ -173,11 +173,14 @@ class _ChunkStream:
                 self.complete = True
                 return b""
             self.chunk_size, self.expected_chunk = next_chunk
-            self.remaining, self.chunk = self.chunk_size, hashlib.sha256()
+            self.remaining = self.chunk_size
+            # At the first boundary the whole-stream state covers exactly the first chunk.
+            self.chunk = self.whole if self.chunk is None else hashlib.sha256()
         part = read_part(self.reader, min(size, self.remaining))
         require(bool(part), "stream_truncated")
         self.whole.update(part)
-        self.chunk.update(part)
+        if self.chunk is not self.whole:
+            self.chunk.update(part)
         self.remaining -= len(part)
         if not self.remaining:
             actual = self.chunk.hexdigest()

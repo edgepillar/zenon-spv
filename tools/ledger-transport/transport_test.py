@@ -10,6 +10,7 @@ from pathlib import Path
 import subprocess
 import sys
 import unittest
+from unittest import mock
 
 
 HERE = Path(__file__).resolve().parent
@@ -92,6 +93,52 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(reader.position, len(manifest) + len(raw))
         self.assertEqual(reader.requests[-1], 1)
         self.assertTrue(report["stream_eof_observed"])
+
+    def test_first_chunk_bytes_are_hashed_once_in_describe_and_verify(self):
+        original_sha256 = hashlib.sha256
+        updates = []
+
+        class MeasuredSHA256:
+            def __init__(self, raw=b""):
+                self.digest = original_sha256(raw)
+
+            def update(self, raw):
+                updates.append(len(raw))
+                self.digest.update(raw)
+
+            def hexdigest(self):
+                return self.digest.hexdigest()
+
+        for raw in (b"", b"abc", b"abcdefg"):
+            with self.subTest(payload_bytes=len(raw)):
+                expected = oracle_manifest(raw)
+                manifest, pin = json_bytes(expected), selected(raw)
+                manifest_pin = sha(manifest)
+                caps = {"bytes": 8, "chunk_bytes": 3, "chunks": 3}
+                hashed_payload_bytes = 2 * len(raw) - min(len(raw), caps["chunk_bytes"])
+                updates.clear()
+                with mock.patch.object(tool.hashlib, "sha256", MeasuredSHA256):
+                    described = tool.describe(ObservedReader(raw, short=2), pin, caps)
+                    self.assertEqual(described, expected)
+                    self.assertEqual(sum(updates), hashed_payload_bytes)
+                    updates.clear()
+                    report = tool.verify(ObservedReader(manifest + raw, short=2),
+                                         len(manifest), manifest_pin, pin, caps)
+                    self.assertEqual(report["chunks_checked"], len(expected["chunks"]))
+                    self.assertTrue(report["stream_eof_observed"])
+                    self.assertEqual(sum(updates), hashed_payload_bytes)
+
+    def test_single_chunk_still_requires_both_selected_digests(self):
+        raw = b"abc"
+        for field, reason in (("chunks", "chunk_digest"), ("selection", "stream_digest")):
+            with self.subTest(field=field):
+                value = oracle_manifest(raw)
+                selected_digest = value["chunks"][0] if field == "chunks" else value["selection"]
+                selected_digest["sha256"] = "0" * 64
+                manifest = json_bytes(value)
+                with self.assertRaisesRegex(tool.Refused, "^" + reason + "$"):
+                    tool.verify(ObservedReader(manifest + raw), len(manifest),
+                                sha(manifest), value["selection"])
 
     def test_large_virtual_stream_without_files_or_chunk_buffers(self):
         size, chunk_size = (8 << 20) + 19, 512 << 10
