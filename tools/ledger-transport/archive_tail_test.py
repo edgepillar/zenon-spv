@@ -34,16 +34,23 @@ def selected(size=8):
             "tail_bytes": size, "etag": '"selected-version"'}
 
 
+def selected_range(raw=b"abcdefgh", offset=8):
+    pin = selected()
+    del pin["tail_bytes"]
+    return {**pin, "offset": offset, "range_bytes": len(raw), "range_sha256": sha(raw)}
+
+
 class Response:
     def __init__(self, raw=b"abcdefgh", pin=None):
         self.pin = selected(len(raw)) if pin is None else dict(pin)
         self.raw, self.position, self.requests = raw, 0, []
         self.closed, self.status, self.short = False, 206, None
+        count = self.pin.get("range_bytes", self.pin.get("tail_bytes"))
+        start = self.pin.get("offset", self.pin["archive_bytes"] - count)
         self.headers = Message()
         self.headers["Content-Range"] = "bytes %d-%d/%d" % (
-            self.pin["archive_bytes"] - self.pin["tail_bytes"],
-            self.pin["archive_bytes"] - 1, self.pin["archive_bytes"])
-        self.headers["Content-Length"] = str(self.pin["tail_bytes"])
+            start, start + count - 1, self.pin["archive_bytes"])
+        self.headers["Content-Length"] = str(count)
         self.headers["ETag"] = self.pin["etag"]
 
     def geturl(self):
@@ -419,6 +426,12 @@ class ArchiveTailTests(unittest.TestCase):
                 "--archive-sha256", pin["archive_sha256"], "--tail-bytes", str(pin["tail_bytes"]),
                 "--etag", pin["etag"]]
 
+    def range_arguments(self, pin):
+        return ["range", "--url", pin["url"], "--archive-bytes", str(pin["archive_bytes"]),
+                "--archive-sha256", pin["archive_sha256"], "--etag", pin["etag"],
+                "--offset", str(pin["offset"]), "--range-bytes", str(pin["range_bytes"]),
+                "--range-sha256", pin["range_sha256"]]
+
     def test_main_success_keeps_binary_and_receipt_separate(self):
         raw, diagnostic = io.BytesIO(), io.StringIO()
         self.assertEqual(tool.main(self.arguments(), raw, diagnostic, lambda request, timeout: Response()), 0)
@@ -517,6 +530,170 @@ runpy.run_path(sys.argv[0],run_name="__main__")
                 self.assertEqual(report["status"], "UNKNOWN")
                 self.assertEqual(report["reason"], "http_status")
                 self.assertNotIn(b"PRIVATE", result.stderr)
+
+    def test_planned_middle_chunk_feeds_the_actual_range_entrypoint_and_verifier(self):
+        fixture = b"01234567abcdefghABCDEFGH"
+        common = ["--expect-bytes", "24", "--expect-sha256", sha(fixture), "--expect-height", "3",
+                  "--expect-hash", "23" * 32, "--provenance-sha256", "34" * 32,
+                  "--max-chunk-bytes", "8"]
+        transport = [sys.executable, "-I", "-B", str(HERE / "transport.py")]
+        manifest = subprocess.run([*transport, "describe", *common], input=fixture,
+                                  capture_output=True, timeout=10)
+        self.assertEqual(manifest.returncode, 0, manifest.stderr)
+        options = [*common, "--manifest-bytes", str(len(manifest.stdout)), "--manifest-sha256", sha(manifest.stdout),
+                   "--first-chunk", "1", "--chunk-count", "1"]
+        plan = subprocess.run([*transport, "plan-range", *options], input=manifest.stdout,
+                              capture_output=True, timeout=10)
+        self.assertEqual(plan.returncode, 0, plan.stderr)
+        planned = json.loads(plan.stdout)
+        self.assertEqual(planned["status"], "SELECTED_RANGE_PLANNED")
+        span, = planned["range"]["chunks"]
+        self.assertEqual((planned["range"]["offset"], span["bytes"], span["sha256"]),
+                         (8, 8, sha(b"abcdefgh")))
+        pin = {**selected_range(), "archive_bytes": planned["selection"]["bytes"],
+               "archive_sha256": planned["selection"]["sha256"], "offset": planned["range"]["offset"],
+               "range_bytes": span["bytes"], "range_sha256": span["sha256"]}
+        harness = '''import io, runpy, sys, urllib.request, urllib.response
+from email.message import Message
+class Fixture(urllib.request.HTTPSHandler):
+ def https_open(self, request):
+  assert request.get_method() == "GET"
+  assert request.get_header("Range") == "bytes=8-15"
+  assert request.get_header("If-match") == '"selected-version"'
+  assert request.get_header("Accept-encoding") == "identity"
+  headers=Message()
+  headers["Content-Range"]="bytes 8-15/24"
+  headers["Content-Length"]="8"
+  headers["ETag"]='"selected-version"'
+  response=urllib.response.addinfourl(io.BytesIO(b"abcdefgh"),headers,request.full_url,206)
+  response.msg="Partial Content"
+  return response
+original=urllib.request.build_opener
+urllib.request.build_opener=lambda *handlers: original(*handlers,Fixture())
+sys.argv=sys.argv[1:]
+runpy.run_path(sys.argv[0],run_name="__main__")
+'''
+        result = subprocess.run([sys.executable, "-I", "-B", "-c", harness,
+                                 str(HERE / "archive_tail.py"), *self.range_arguments(pin)],
+                                capture_output=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, fixture[8:16])
+        self.assertNotIn(b"PRIVATE", result.stderr)
+        report = json.loads(result.stderr)
+        self.assertEqual((report["format"], report["status"]),
+                         ("zenon-r1-archive-range/v1", "SELECTED_RANGE_MATCHED"))
+        self.assertEqual(report["archive"], {"bytes": 24, "sha256_selection": sha(fixture)})
+        self.assertEqual(report["range"], {"offset": 8, "bytes": 8, "sha256": sha(fixture[8:16])})
+        self.assertTrue(report["range_sha256_verified"] and report["response_body_eof_observed"])
+        self.assertFalse(report["scope"]["whole_archive_sha256_verified"])
+        verified = subprocess.run([*transport, "verify-range", *options], input=manifest.stdout + result.stdout,
+                                  capture_output=True, timeout=10)
+        self.assertEqual(verified.returncode, 0, verified.stderr)
+        checked = json.loads(verified.stdout)
+        self.assertEqual(checked["status"], "SELECTED_RANGE_MATCHED")
+        self.assertFalse(checked["whole_stream_digest_verified"])
+
+    def test_range_bad_digest_and_incomplete_body_report_unknown(self):
+        pin = selected_range()
+        for body, reason in ((b"Abcdefgh", "range_sha256"), (b"abc", "body_length"),
+                             (b"abcdefghX", "body_length")):
+            with self.subTest(reason=reason, body_length=len(body)):
+                response = Response(body, pin)
+                raw, diagnostic = io.BytesIO(), io.StringIO()
+                result = tool.main(self.range_arguments(pin), raw, diagnostic, lambda request, timeout: response)
+                self.assertEqual(result, 2)
+                self.assertEqual(raw.getvalue(), body[:8])
+                self.assertTrue(response.closed)
+                report = json.loads(diagnostic.getvalue())
+                self.assertEqual((report["format"], report["status"], report["reason"]),
+                                 ("zenon-r1-archive-range/v1", "UNKNOWN", reason))
+                self.assertTrue(report["stdout_may_contain_unverified_range"])
+                self.assertNotIn("range", report)
+                self.assertNotIn("PRIVATE", diagnostic.getvalue())
+
+    def test_range_bounds_and_mode_options_are_refused_before_connecting(self):
+        pin = selected_range()
+        arguments = self.range_arguments(pin)
+        bad = [self.range_arguments({**pin, key: value}) for key, value in (
+            ("offset", -1), ("offset", pin["archive_bytes"] - 7),
+            ("range_bytes", 0), ("range_bytes", (1 << 20) + 1),
+            ("range_sha256", "PRIVATE"))]
+        bad.extend([arguments[:-2], arguments + ["--offset", "9"], arguments + ["--tail-bytes", "8"],
+                    arguments + ["--max-tail-bytes", "8"], arguments + ["--max-range-bytes", str((64 << 20) + 1)],
+                    self.arguments() + ["--offset", "8"]])
+        for index, args in enumerate(bad):
+            with self.subTest(case=index):
+                raw, diagnostic, opener = io.BytesIO(), io.StringIO(), mock.Mock()
+                self.assertEqual(tool.main(args, raw, diagnostic, opener), 64)
+                opener.assert_not_called()
+                self.assertEqual(raw.getvalue(), b"")
+                self.assertNotIn("PRIVATE", diagnostic.getvalue())
+        raw, diagnostic, opener = io.BytesIO(), io.StringIO(), mock.Mock()
+        self.assertEqual(tool.main(["range", "--help"], raw, diagnostic, opener), 0)
+        opener.assert_not_called()
+        self.assertIn("--range-sha256", diagnostic.getvalue())
+
+    def test_range_requires_exact_middle_response_before_reading_body(self):
+        pin = {**selected_range(), "archive_bytes": 24}
+        for status, header, value in ((200, "Content-Range", "bytes 8-15/24"),
+                                      (412, "Content-Range", "bytes 8-15/24"),
+                                      (206, "Content-Range", "bytes 16-23/24"),
+                                      (206, "Content-Range", "bytes 8-16/24"),
+                                      (206, "Content-Range", "bytes 8-15/25"),
+                                      (206, "Content-Length", "24"),
+                                      (206, "ETag", '"different-version"')):
+            with self.subTest(status=status, header=header, value=value):
+                response = Response(b"abcdefgh", pin)
+                response.status = status
+                response.headers.replace_header(header, value)
+                raw, diagnostic = io.BytesIO(), io.StringIO()
+                self.assertEqual(tool.main(self.range_arguments(pin), raw, diagnostic,
+                                           lambda request, timeout: response), 2)
+                self.assertEqual(response.requests, [])
+                self.assertEqual(raw.getvalue(), b"")
+                self.assertTrue(response.closed)
+
+    def test_largest_selected_range_streams_in_fixed_slices(self):
+        size = 64 << 20
+        block = b"x" * (64 << 10)
+        expected = hashlib.sha256()
+        for _ in range(size // len(block)):
+            expected.update(block)
+        pin = {**selected_range(offset=(1 << 39) + 17), "archive_bytes": 1 << 40,
+               "range_bytes": size, "range_sha256": expected.hexdigest()}
+
+        class Virtual(Response):
+            def read1(self, requested):
+                if not 0 < requested <= len(block):
+                    raise AssertionError("unbounded virtual read")
+                self.requests.append(requested)
+                count = min(requested, size - self.position)
+                self.position += count
+                return block[:count]
+
+            def read(self, requested):
+                raise AssertionError("unexpected coalescing read")
+
+        class Sink:
+            count = 0
+
+            def write(self, raw):
+                self.count += len(raw)
+                return len(raw)
+
+            def flush(self):
+                pass
+
+        response, writer = Virtual(b"", pin), Sink()
+        opener = mock.Mock(return_value=response)
+        report = tool.fetch(pin, writer, {"range_bytes": size, "timeout_seconds": 15},
+                            opener, range_mode=True)
+        request = opener.call_args.args[0]
+        self.assertEqual(request.get_header("Range"), "bytes=%d-%d" % (pin["offset"], pin["offset"] + size - 1))
+        self.assertEqual((response.position, writer.count), (size, size))
+        self.assertEqual(response.requests, [len(block)] * (size // len(block)) + [1])
+        self.assertTrue(response.closed)
+        self.assertEqual(report["range"]["sha256"], expected.hexdigest())
 
     def test_selected_tail_feeds_the_independent_directory_observer(self):
         import struct
