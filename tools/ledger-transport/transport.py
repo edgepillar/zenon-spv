@@ -13,17 +13,20 @@ import sys
 
 MANIFEST_FORMAT = "zenon-r1-transport-manifest/v1"
 RESULT_FORMAT = "zenon-r1-transport-check/v1"
+RANGE_FORMAT = "zenon-r1-transport-range/v1"
 READ_BYTES = 64 << 10
 MANIFEST_BYTES = 512 << 10
 UINT64_MAX = (1 << 64) - 1
 DEFAULT_LIMITS = {"bytes": 256 << 20, "chunk_bytes": 16 << 20, "chunks": 1024}
 HARD_LIMITS = {"bytes": 16 << 30, "chunk_bytes": 64 << 20, "chunks": 4096}
 PIN_KEYS = {"bytes", "sha256", "height", "hash", "provenance_sha256", "record_space"}
-USAGE = ("ledger-transport describe|verify: require --expect-bytes, --expect-sha256, "
+USAGE = ("ledger-transport describe|verify|plan-range|verify-range: require --expect-bytes, --expect-sha256, "
          "--expect-height, --expect-hash and --provenance-sha256; optional "
-         "--max-bytes, --max-chunk-bytes and --max-chunks. Verify also requires "
-         "--manifest-bytes and --manifest-sha256. Describe reads the selected "
-         "stream; verify reads exact manifest bytes followed by that stream.\n")
+         "--max-bytes, --max-chunk-bytes and --max-chunks. Except for describe, require "
+         "--manifest-bytes and --manifest-sha256. Range modes also require "
+         "--first-chunk (zero-based) and --chunk-count. Describe reads the selected stream. "
+         "Verify reads the manifest followed by the whole stream, plan-range reads only "
+         "the manifest, and verify-range reads the manifest followed by the selected range.\n")
 
 
 class Refused(ValueError):
@@ -146,10 +149,11 @@ def chunk_plan(value, pin, caps):
 
 
 class _ChunkStream:
-    def __init__(self, reader, pin, plan):
-        self.reader, self.expected_stream = reader, pin["sha256"]
+    def __init__(self, reader, plan, expected_stream=None):
+        self.reader, self.expected_stream = reader, expected_stream
         self.plan = iter(plan)
-        self.whole, self.chunk = hashlib.sha256(), None
+        self.whole = hashlib.sha256() if expected_stream is not None else None
+        self.chunk = None
         self.remaining, self.rows = 0, []
         self.complete, self.failed = False, False
 
@@ -169,16 +173,19 @@ class _ChunkStream:
             next_chunk = next(self.plan, None)
             if next_chunk is None:
                 require(not read_part(self.reader, 1), "trailing_input")
-                require(self.whole.hexdigest() == self.expected_stream, "stream_digest")
+                if self.whole is not None:
+                    require(self.whole.hexdigest() == self.expected_stream, "stream_digest")
                 self.complete = True
                 return b""
             self.chunk_size, self.expected_chunk = next_chunk
             self.remaining = self.chunk_size
             # At the first boundary the whole-stream state covers exactly the first chunk.
-            self.chunk = self.whole if self.chunk is None else hashlib.sha256()
+            self.chunk = (self.whole if self.chunk is None and self.whole is not None
+                          else hashlib.sha256())
         part = read_part(self.reader, min(size, self.remaining))
         require(bool(part), "stream_truncated")
-        self.whole.update(part)
+        if self.whole is not None:
+            self.whole.update(part)
         if self.chunk is not self.whole:
             self.chunk.update(part)
         self.remaining -= len(part)
@@ -196,7 +203,7 @@ def _drain(stream):
 
 def consume(reader, pin, plan):
     """One pass, no chunk buffers or files; retain only hashes and bounded rows."""
-    stream = _ChunkStream(reader, pin, plan)
+    stream = _ChunkStream(reader, plan, pin["sha256"])
     _drain(stream)
     return stream.rows
 
@@ -215,6 +222,16 @@ def describe(reader, selected, configured_limits=None):
     return value
 
 
+def _read_manifest(reader, manifest_bytes, manifest_sha256, pin, caps):
+    require(type(manifest_bytes) is int and 0 < manifest_bytes <= MANIFEST_BYTES and
+            digest(manifest_sha256), "manifest_pin")
+    raw = read_exact(reader, manifest_bytes)
+    require(hashlib.sha256(raw).hexdigest() == manifest_sha256, "manifest_digest")
+    value = parse_manifest(raw)
+    plan = chunk_plan(value, pin, caps)
+    return value["chunk_bytes"], plan
+
+
 def verify_with(reader, manifest_bytes, manifest_sha256, selected, inspect, configured_limits=None):
     """Return the transport report and a read-only inspector's result after EOF.
 
@@ -223,12 +240,8 @@ def verify_with(reader, manifest_bytes, manifest_sha256, selected, inspect, conf
     """
     caps = limits(configured_limits)
     pin = selection(selected, caps)
-    require(type(manifest_bytes) is int and 0 < manifest_bytes <= MANIFEST_BYTES and
-            digest(manifest_sha256), "manifest_pin")
-    raw = read_exact(reader, manifest_bytes)
-    require(hashlib.sha256(raw).hexdigest() == manifest_sha256, "manifest_digest")
-    plan = chunk_plan(parse_manifest(raw), pin, caps)
-    stream = _ChunkStream(reader, pin, plan)
+    _, plan = _read_manifest(reader, manifest_bytes, manifest_sha256, pin, caps)
+    stream = _ChunkStream(reader, plan, pin["sha256"])
     result = inspect(stream)
     require(stream.complete and not stream.failed, "stream_incomplete")
     report = {"format": RESULT_FORMAT, "status": "SELECTED_TRANSPORT_MATCHED", "reason": None,
@@ -243,6 +256,38 @@ def verify(reader, manifest_bytes, manifest_sha256, selected, configured_limits=
     return report
 
 
+def check_range(reader, manifest_bytes, manifest_sha256, selected, first_chunk, chunk_count,
+                configured_limits=None, *, verify_payload=False):
+    """Plan a selected contiguous chunk range, or check its exact payload.
+
+    The whole-stream pin selects the manifest's identity. Only verify() and
+    verify_with() check the SHA-256 of the complete ordered stream.
+    """
+    caps = limits(configured_limits)
+    pin = selection(selected, caps)
+    require(type(verify_payload) is bool and unsigned(first_chunk) and unsigned(chunk_count)
+            and 0 < chunk_count <= caps["chunks"] - first_chunk, "range_selection")
+    size, plan = _read_manifest(reader, manifest_bytes, manifest_sha256, pin, caps)
+    end_chunk = first_chunk + chunk_count
+    require(end_chunk <= len(plan), "range_selection")
+    part = plan[first_chunk:end_chunk]
+    if verify_payload:
+        stream = _ChunkStream(reader, part)
+        _drain(stream)
+        chunks = stream.rows
+    else:
+        require(not read_part(reader, 1), "trailing_input")
+        chunks = [{"bytes": count, "sha256": sha256} for count, sha256 in part]
+    return {"format": RANGE_FORMAT,
+            "status": "SELECTED_RANGE_MATCHED" if verify_payload else "SELECTED_RANGE_PLANNED",
+            "reason": None, "manifest": {"bytes": manifest_bytes, "sha256": manifest_sha256},
+            "selection": pin,
+            "range": {"first_chunk": first_chunk, "chunk_count": chunk_count, "offset": first_chunk * size,
+                      "bytes": sum(row["bytes"] for row in chunks), "chunks": chunks},
+            "range_eof_observed": verify_payload, "whole_stream_digest_verified": False,
+            "limits": caps, "read_request_limit_bytes": READ_BYTES, "scope": scope()}
+
+
 def decimal(token):
     require(type(token) is str and 0 < len(token) <= 20 and
             re.fullmatch(r"0|[1-9][0-9]*", token, re.ASCII), "options")
@@ -252,13 +297,16 @@ def decimal(token):
 
 
 def options(args):
-    require(type(args) in (list, tuple) and 0 < len(args) <= 24 and
+    require(type(args) in (list, tuple) and 0 < len(args) <= 25 and
             all(type(arg) is str for arg in args) and sum(map(len, args)) <= 4096, "options")
     mode = args[0]
-    require(mode in ("describe", "verify"), "options")
+    require(mode in ("describe", "verify", "plan-range", "verify-range"), "options")
+    ranged = mode in ("plan-range", "verify-range")
     required = {"--expect-bytes", "--expect-sha256", "--expect-height", "--expect-hash", "--provenance-sha256"}
-    if mode == "verify":
+    if mode != "describe":
         required |= {"--manifest-bytes", "--manifest-sha256"}
+    if ranged:
+        required |= {"--first-chunk", "--chunk-count"}
     optional = {"--max-" + key.replace("_", "-") for key in DEFAULT_LIMITS}
     values, index = {}, 1
     while index < len(args):
@@ -282,7 +330,11 @@ def options(args):
     manifest = None if mode == "describe" else (decimal(values["--manifest-bytes"]), values["--manifest-sha256"])
     if manifest is not None:
         require(0 < manifest[0] <= MANIFEST_BYTES and digest(manifest[1]), "options")
-    return mode, pin, caps, manifest
+    span = None
+    if ranged:
+        span = (decimal(values["--first-chunk"]), decimal(values["--chunk-count"]))
+        require(0 < span[1] <= caps["chunks"] - span[0], "options")
+    return mode, pin, caps, manifest, span
 
 
 def unknown(reason):
@@ -298,10 +350,15 @@ def main(args, reader, writer, diagnostic):
             result = unknown("help")
         else:
             try:
-                mode, pin, caps, manifest = options(args)
+                mode, pin, caps, manifest, span = options(args)
             except Refused:
                 raise Refused("options") from None
-            result = describe(reader, pin, caps) if mode == "describe" else verify(reader, *manifest, pin, caps)
+            if mode == "describe":
+                result = describe(reader, pin, caps)
+            elif mode == "verify":
+                result = verify(reader, *manifest, pin, caps)
+            else:
+                result = check_range(reader, *manifest, pin, *span, caps, verify_payload=mode == "verify-range")
     except Refused as error:
         code, result = (64 if str(error) == "options" else 2), unknown(str(error))
     except (OSError, TypeError, ValueError, OverflowError):

@@ -32,6 +32,11 @@ export, the [combined transport and inventory handoff](../tools/ledger-export/RE
 can perform both checks in one read of the retained stream. A standalone
 transport check still leaves the independent raw-stream inventory to run.
 
+After an interrupted transfer, the [selected-range commands](../tools/ledger-transport/README.md#verify-only-the-missing-range)
+derive offsets from the same pinned manifest and verify replacement chunks
+without re-reading the retained ranges. Keep the ordered whole-stream digest
+and inventory recount as the final checks before using the reconstructed input.
+
 The [bounded effective ledger inventory tool](../tools/ledger-inventory/README.md)
 can inspect a separately selected ordered put stream without keeping a key map
 or copying the export. It checks selection pins, reports prefix/size counts and

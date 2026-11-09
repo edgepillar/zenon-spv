@@ -94,6 +94,104 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(reader.requests[-1], 1)
         self.assertTrue(report["stream_eof_observed"])
 
+    def test_resume_plan_selects_exact_middle_and_final_chunk_offsets(self):
+        raw = b"abcdefgh"
+        value = oracle_manifest(raw)
+        manifest = json_bytes(value)
+        for first, count, length in ((0, 1, 3), (1, 2, 5), (2, 1, 2)):
+            with self.subTest(first=first, count=count):
+                plan_reader = ObservedReader(manifest, short=2)
+                plan = tool.check_range(plan_reader, len(manifest), sha(manifest), selected(raw), first, count)
+                self.assertEqual(plan["format"], "zenon-r1-transport-range/v1")
+                self.assertEqual(plan["status"], "SELECTED_RANGE_PLANNED")
+                self.assertEqual(plan["range"], {"first_chunk": first, "chunk_count": count,
+                    "offset": 3 * first, "bytes": length, "chunks": value["chunks"][first:first + count]})
+                self.assertFalse(plan["range_eof_observed"])
+                self.assertEqual(plan_reader.position, len(manifest))
+                self.assertEqual(plan_reader.requests[-1], 1)
+                reader = ObservedReader(manifest + raw[3 * first:3 * first + length], short=1)
+                matched = tool.check_range(reader, len(manifest), sha(manifest), selected(raw),
+                                           first, count, verify_payload=True)
+                self.assertEqual(matched, {**plan, "status": "SELECTED_RANGE_MATCHED",
+                                           "range_eof_observed": True})
+                self.assertFalse(matched["whole_stream_digest_verified"])
+                self.assertTrue(all(item is False for item in matched["scope"].values()))
+                self.assertEqual(reader.position, len(manifest) + length)
+                self.assertEqual(reader.requests[-1], 1)
+
+    def test_resume_rejects_invalid_range_before_payload(self):
+        raw = b"abcdefgh"
+        manifest = json_bytes(oracle_manifest(raw))
+        for first, count in ((True, 1), (0, False), (-1, 1), (0, 0), (1023, 2), (1 << 64, 1)):
+            with self.subTest(first=first, count=count), self.assertRaisesRegex(tool.Refused, "range_selection"):
+                tool.check_range(NeverRead(), len(manifest), sha(manifest), selected(raw), first, count)
+        for first, count in ((1, 3), (3, 1), (4, 2)):
+            reader = ObservedReader(manifest + raw)
+            with self.subTest(first=first, count=count), self.assertRaisesRegex(tool.Refused, "range_selection"):
+                tool.check_range(reader, len(manifest), sha(manifest), selected(raw), first, count, verify_payload=True)
+            self.assertEqual(reader.position, len(manifest))
+        empty = json_bytes(oracle_manifest(b""))
+        with self.assertRaisesRegex(tool.Refused, "range_selection"):
+            tool.check_range(ObservedReader(empty), len(empty), sha(empty), selected(b""), 0, 1)
+
+    def test_resume_checks_manifest_and_each_selected_chunk_and_eof(self):
+        raw = b"abcdefgh"
+        manifest = json_bytes(oracle_manifest(raw))
+        reader = ObservedReader(manifest + raw[3:])
+        with self.assertRaisesRegex(tool.Refused, "manifest_digest"):
+            tool.check_range(reader, len(manifest), "0" * 64, selected(raw), 1, 2, verify_payload=True)
+        self.assertEqual(reader.position, len(manifest))
+        for payload, reason in ((b"de", "stream_truncated"), (b"deFgH", "chunk_digest"),
+                                (b"ghdef", "chunk_digest"), (b"defde", "chunk_digest"),
+                                (b"defghx", "trailing_input")):
+            with self.subTest(payload=payload), self.assertRaisesRegex(tool.Refused, reason):
+                tool.check_range(ObservedReader(manifest + payload, short=2), len(manifest), sha(manifest),
+                                 selected(raw), 1, 2, verify_payload=True)
+        reader = ObservedReader(manifest + b"not a manifest-only stream")
+        with self.assertRaisesRegex(tool.Refused, "trailing_input"):
+            tool.check_range(reader, len(manifest), sha(manifest), selected(raw), 1, 2)
+        self.assertEqual(reader.position, len(manifest) + 1)
+
+    def test_even_a_full_range_does_not_match_the_whole_stream_digest(self):
+        raw = b"abcdefgh"
+        value = oracle_manifest(raw)
+        value["selection"]["sha256"] = "0" * 64
+        manifest = json_bytes(value)
+        report = tool.check_range(ObservedReader(manifest + raw), len(manifest), sha(manifest),
+                                  value["selection"], 0, 3, verify_payload=True)
+        self.assertEqual(report["status"], "SELECTED_RANGE_MATCHED")
+        self.assertFalse(report["whole_stream_digest_verified"])
+        with self.assertRaisesRegex(tool.Refused, "stream_digest"):
+            tool.verify(ObservedReader(manifest + raw), len(manifest), sha(manifest), value["selection"])
+
+    def test_actual_resume_cli_and_final_ordered_verification(self):
+        raw = b"abcdefgh"
+        manifest = json_bytes(oracle_manifest(raw))
+        command = [sys.executable, "-I", "-B", str(HERE / "transport.py")]
+        base = self.arguments(raw)[1:] + ["--manifest-bytes", str(len(manifest)),
+                                        "--manifest-sha256", sha(manifest)]
+        span = ["--first-chunk", "1", "--chunk-count", "1"]
+        planned = subprocess.run(command + ["plan-range"] + base + span,
+                                 input=manifest, capture_output=True, timeout=10)
+        self.assertEqual(planned.returncode, 0, planned.stderr)
+        plan = json.loads(planned.stdout)["range"]
+        replacement = raw[plan["offset"]:plan["offset"] + plan["bytes"]]
+        for payload, exit_code, status in ((replacement, 0, "SELECTED_RANGE_MATCHED"),
+                                          (b"wrong", 2, "UNKNOWN")):
+            checked = subprocess.run(command + ["verify-range"] + base + span,
+                                     input=manifest + payload, capture_output=True, timeout=10)
+            self.assertEqual(checked.returncode, exit_code, checked.stderr)
+            self.assertEqual(json.loads(checked.stdout)["status"], status)
+        for args in (["verify-range"] + base, ["plan-range"] + base + ["--first-chunk", "0", "--chunk-count", "0"],
+                     ["verify"] + base + span):
+            out = io.BytesIO()
+            self.assertEqual(tool.main(args, NeverRead(), out, io.StringIO()), 64)
+            self.assertEqual(json.loads(out.getvalue())["status"], "UNKNOWN")
+        checked = subprocess.run(command + ["verify"] + base,
+                                 input=manifest + raw[:3] + replacement + raw[6:], capture_output=True, timeout=10)
+        self.assertEqual(checked.returncode, 0, checked.stderr)
+        self.assertEqual(json.loads(checked.stdout)["status"], "SELECTED_TRANSPORT_MATCHED")
+
     def test_first_chunk_bytes_are_hashed_once_in_describe_and_verify(self):
         original_sha256 = hashlib.sha256
         updates = []
