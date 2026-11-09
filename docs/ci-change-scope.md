@@ -5,8 +5,8 @@ The general workflow first selects the exact Git change scope with
 `README.md` or Markdown files below `docs/` can skip the three native and three
 recorded-oracle jobs. The small scope job still runs its controls and retains a
 source-bound selection report. Other workflows retain their existing triggers.
-One additional, explicitly bounded route selects the independent archive tools
-described below. It still requires their separate three-platform workflow.
+The portable route selects the required three-platform workflows for a fixed set
+of archive, export and devnet preparation files.
 The native-v3 route below keeps all native jobs and selects only the unchanged
 recorded-oracle job out of the execution plan.
 Full-runtime jobs also retain small source-bound scope-control reports on all
@@ -31,7 +31,7 @@ It reads an explicit two-tree raw diff with NUL framing, rename detection,
 external diff and text conversion disabled. Only added, modified or deleted
 mode-100644 Markdown files with ordinary ASCII path components are eligible.
 Executable modes, links, Git submodules, type changes, unknown records, duplicate
-paths and code outside the exact archive set require the full runtime jobs.
+paths and code outside the reviewed file sets require the full runtime jobs.
 All workflow or selector/control changes require that full lane. Reserved
 Windows names, trailing-dot components and case aliases
 also require runtime CI. Empty diffs require runtime CI, including identity-only
@@ -61,105 +61,53 @@ preserves failure fallback while respecting workflow cancellation. A skipped
 job's reported success does not mean its tests ran; inspect its actual job and
 step records before describing qualification.
 
-## Independent archive leaves
+## Portable tool changes
 
-A diff can select `PORTABLE_ARCHIVE_ONLY` only for mode-100644 **modifications**
-to the following existing files, optionally mixed with the regular documentation
-changes above:
+The `PORTABLE_WORKFLOWS_ONLY` route selects the union of the three-platform
+workflows required by modifications to the following existing mode-100644
+files. Regular Markdown may accompany the changes.
 
-- `tools/ledger-transport/archive_index.py` and `archive_index_test.py`;
-- `tools/ledger-transport/archive_tail.py` and `archive_tail_test.py`;
-- that directory's `README.md` and `THIRD_PARTY_NOTICES`.
+| Directory | Reviewed files | Required workflow |
+| --- | --- | --- |
+| `tools/ledger-transport` | `archive_index.py`, `archive_index_test.py`, `archive_tail.py`, `archive_tail_test.py`, `transport_test.py`, `README.md`, `THIRD_PARTY_NOTICES` | `ledger-transport.yml` |
+| `tools/ledger-transport` | `transport.py` | `ledger-transport.yml` and `ledger-export.yml` |
+| `tools/ledger-export` | `inventory_completed_export.py`, `inventory_completed_export_test.py`, `README.md` | `ledger-export.yml` |
+| `tools/owned-devnet-query` | `engine_test.py`, `images_test.py`, `inputs.py`, `inputs_test.py`, `capture_test.py`, `review.py`, `review_test.py`, `README.md` | `owned-devnet-query.yml` |
 
-The archive route covers modifications to these six leaves. The raw stream and
-completed-export handoff use the R1 route below because the Go exporter's
-compiled-process controls consume the raw stream tool.
+The compiled export controls also consume `transport.py`.
+`docs/state-root-r1-intake.md` and `docs/native-roadmap.md` add
+`ledger-transport.yml` when part of a portable diff. The preparation workflow
+runs its portable controls on these events. The separate manual fixture
+experiment has its own dispatch and evidence requirements.
 
-The exact `ledger-transport.yml` Git bytes must match the selected checkout,
-working file, selected base and the pinned, three-platform workflow. The selector
-also reads a bounded complete `git ls-tree -r -z --full-tree` at the selected
-checkout. A SHA-256 pins all remaining runtime dependency records, including
-the general workflow. Only regular documentation, the six reviewed leaves and
-the selector/control source pair are excluded. Sort the retained raw records
-lexicographically and hash their concatenation, with each record's trailing NUL.
-The tree observation is capped at 2 MiB / 8,192 entries; unknown or incomplete
-observations require runtime CI.
-
-This closure pin prevents a later Go, Python, workflow, data, mode or new-file
-dependency change from silently inheriting the shortcut. Such a change disables
-the archive route until a fresh dependency review explicitly updates the pin.
-Updating the selector itself selects full runtime CI. The pin selects work; it
-does not transfer runtime, release or protocol authority from another revision.
-
-This route emits `zenon-ci-change-scope/v2`, nine complete Git command receipts,
-the additional workflow source pin, closure facts and `required_workflows`.
-Existing documentation and ordinary runtime decisions retain their v1 shape;
-historical reports and their outcomes are unchanged. An unsuccessful v2
-observation still selects the full lane and retains its refusal facts.
-
-`required_workflows` declares work, not completion. Before accepting this scoped
-delivery, reconcile the actual separate ledger-transport run, all three platform
-jobs, its source/run/platform-bound archives and actual controls. The general
-workflow alone cannot establish their success. Its skipped native/oracle groups
-produce no new Go tests, binaries, native runtime qualification or review.
-Keep the latest separately qualified native revision explicit.
-
-## R1 transport and export handoff
-
-`R1_HANDOFF_ONLY` covers mode-100644 modifications to `transport.py` and
-`transport_test.py` in `tools/ledger-transport`, and `inventory_completed_export.py`,
-`inventory_completed_export_test.py` and `README.md` in `tools/ledger-export`.
-Regular documentation may accompany those changes within a 256-record diff.
 A pull request must have the selected base as the feature commit's sole parent
-and the same feature and merge trees. A push must name its first parent as the
-selected base. This binds the eligible diff to the two dedicated workflow
-triggers. [GitHub workflow diff rules](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#git-diff-comparisons)
+and identical feature and test-merge trees. A push must name its first parent
+as the preceding main head. This binds the selected diff to the GitHub event
+that triggers the required workflows. The 256-record limit includes Markdown.
+Additions or deletions of the listed tool files, mode changes, a native change
+in the same diff, and unknown or incomplete observations select the full lane.
 
-The shared `transport.py` selects both `ledger-transport` and `ledger-export`.
-A change to the transport test selects the transport matrix. Changes to the
-completed-export wrapper, its test or its README select the export matrix.
-Changes to the R1 intake or native roadmap alongside an eligible leaf also
-select transport. Each selected matrix covers Linux, macOS and Windows.
+The selector binds the exact workflow bytes in the selected base, checkout and
+working file for each required workflow. One SHA-256 covers the remaining
+non-document Git tree, including the general and dedicated workflows, the
+dispatch controller, query profile, test driver, and all other dependencies.
+It excludes only regular Markdown, the reviewed files in the table, and the
+selector/control pair. An already integrated change to a reviewed file in one
+group leaves the closure stable for an eligible change in another group.
+The closure hashes the sorted raw `git ls-tree -r -z --full-tree` records with
+their trailing NULs. The tree is capped at 2 MiB and 8,192 records.
 
-The selector compares the required workflow blobs with the base, checkout and
-fixed workflow pins. The remaining Git-tree closure includes both workflow
-files, the general workflow, ledger inventory, the Go exporter and other
-non-document dependencies. An unmatched pin, addition, deletion, mode change,
-incomplete Git observation or additional code path requires full CI.
+Any new dependency across these workflows requires reviewing the path triggers,
+workflow mapping and closure in full CI. Changes outside the reviewed set
+invalidate the pin. Updating the policy itself selects full CI. The historical
+archive, preparation and R1 routes keep their original v2, v4 and v5 reports.
 
-The v5 report lists the selected workflows and their source pins. The output
-guard independently requires both workflows for a shared transport change.
-Before merging, verify the separate selected runs and bind each actual job and
-archive to the reviewed source. Runtime and recorded-oracle evidence stays
-bound to the revisions that ran those jobs.
-
-## Owned devnet preparation leaves
-
-`OWNED_DEVNET_PREPARATION_ONLY` selects the pinned three-platform
-`owned-devnet-query` workflow for mode-100644 modifications to four existing
-files in `tools/owned-devnet-query`. The reviewed files are `engine_test.py`,
-`images_test.py`, `inputs.py` and `inputs_test.py`. Regular documentation can
-accompany those changes within a 256-record diff. A pull request must have the
-selected base as its feature commit's sole parent and the same feature and merge
-trees, so its path-filter diff matches the selected changes. A main push uses
-the selected previous head and pushed tree.
-
-The v4 selection checks the exact workflow bytes in the base and checkout and
-binds the remaining Git tree records. Changes to the dispatch controller,
-contract, test driver, profile, workflow, native sources, or any other
-non-document dependency require the full lane. Additions, deletions, unexpected
-modes and incomplete Git observations also require full CI.
-
-Before merging an eligible change, verify the separate preparation workflow's
-Linux, macOS and Windows results and exact-source archives. The v4 report selects
-work and leaves native and manual-experiment qualification to their own evidence.
-
-For PR #350's corrected revision, the three preparation jobs used 59
-runner-seconds and produced 6,264 bytes of ZIP archives. The first general CI
-attempt used 5,286 runner-seconds, including its failed Linux linter download.
-That initial integration required full CI. Measure the new route on an eligible
-PR and its main push. [Preparation run](https://github.com/edgepillar/zenon-spv/actions/runs/42569815072)
-and [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/42569815071).
+The v6 report includes the event tree, selected paths, exact workflow union,
+source and closure pins, and the complete Git command receipts. Before accepting
+an eligible PR or main push, verify each required workflow's actual Linux,
+macOS and Windows job and exact-source artifacts. Skipped general jobs produce
+no native binary or oracle evidence. Keep their latest separately qualified
+source revisions explicit.
 
 ## Costs and verification limits
 
@@ -210,11 +158,15 @@ Each context passed all seven scheduled jobs, qualified all 37 archives and
 each. These are mechanical source/runtime observations; independent review,
 network activation and authenticated distribution remain separate gates.
 
-Keep that full-runtime revision pinned when a later eligible archive change
-selects v2. Its skipped groups supply no new native execution or binary, and its
-separate portable workflow still needs actual three-platform qualification.
-Record each real route observation against its own source, run and attempt;
-the closure pin alone does not establish completion or savings.
+Historical v2 route observations retain that source, run and attempt scope.
+The three preparation jobs on PR #350's corrected revision used 59
+runner-seconds and produced 6,264 archive bytes. That integration also ran
+the full general workflow. [Preparation run](https://github.com/edgepillar/zenon-spv/actions/runs/42569815072)
+and [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/42569815071)
+retain the original job and artifact records.
+
+Measure v6 on an eligible PR and its main push after qualifying the policy.
+The closure pin selects work. The actual runs establish cost and completion.
 
 ## Native v3 leaves and recorded oracles
 
@@ -228,7 +180,7 @@ mode-100644 **modifications** to these ten existing files below
   and `experimental_v3_retention_test.go`.
 
 This does not classify the whole Go directory. Added/deleted files, other Go
-files, Python controls, JSON data, modules, workflows, modes and mixed archive
+files, Python controls, JSON data, modules, workflows, modes and mixed portable
 changes require both native and recorded-oracle jobs. The native jobs still run
 the full root Go suite and their existing conformance, compiled consumer,
 platform and artifact steps at the new source revision. The general workflow's
@@ -246,10 +198,10 @@ The new `oracle_closure` SHA-256 covers every Git tree record except regular
 documentation, these ten leaves and the selector/control pair. It includes the
 general workflow, other workflows, all other native sources, research sources,
 wrappers and fixtures. The same bounded tree framing, modes, duplicate checks
-and deterministic NUL-terminated record encoding used by the archive route
+and deterministic NUL-terminated record encoding used by the portable route
 apply. A changed dependency, new file or unexpected mode changes the pin and
-restores the complete lane until an explicit dependency review. The older
-archive closure pin is preserved; this change does not silently refresh it.
+restores the complete lane until an explicit dependency review. The v3 pin
+remains at its separately reviewed dependency snapshot.
 
 An eligible report uses `zenon-ci-change-scope/v3`, seven complete Git command
 receipts, the exact source pins, reviewed modified paths and closure facts. It
