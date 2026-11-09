@@ -378,7 +378,7 @@ class Installer:
                     and {k: receipt["outputs"]["stdout"][k] for k in ("sha256", "bytes")}
                     == {"sha256": selected["sha256"], "bytes": selected["archive_bytes"]},
                     "node_transport_content")
-            with raw.open_stdout(selected["archive_bytes"]) as stream:
+            with raw.open_stdout_for_validation(selected["archive_bytes"]) as stream:
                 result = unpack_node(stream, selected, self.destination)
             self.recorder.seal("node-toolchain-intake.json", canonical(result.inspection))
         self.result = result

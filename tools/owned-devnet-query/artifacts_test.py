@@ -149,8 +149,14 @@ class TransportTests(unittest.TestCase):
             metadata_calls = self.calls(calls)
             self.assertEqual(len(metadata_calls), 4)
             self.assertEqual(list(recorder.directory.glob("*.zip")), [])
-            for role in artifacts.WORKFLOWS:
-                first = lane.fetch(role)
+            with mock.patch.object(owned_process.Result, "open_stdout",
+                                   side_effect=AssertionError("duplicate archive digest pass")), \
+                    mock.patch.object(artifacts.inputs, "_hash_stream",
+                                      wraps=artifacts.inputs._hash_stream) as hash_stream:
+                materialized = {role: lane.fetch(role) for role in artifacts.WORKFLOWS}
+                self.assertEqual([call.args[1] for call in hash_stream.call_args_list], [
+                    lane.contract.data["qualified_components"][role]["archive"] for role in materialized])
+            for role, first in materialized.items():
                 self.assertIs(first, lane.fetch(role))
                 self.assertEqual(first.binding["component"], role)
             transports = self.calls(calls)[4:]

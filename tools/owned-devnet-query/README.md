@@ -50,6 +50,11 @@ in-memory hit rechecks original file identities and binary contents. Incomplete
 or failed attempts are terminal for that workspace. This step does not qualify
 a new CI run or enable binary execution.
 
+On fresh intake, the ZIP and Node archive readers perform their existing
+pre-extraction SHA-256 scan on the recorded stdout descriptor. The recorder
+holds and checks the file identity around that scan and extraction. The
+compressed, decoded and selected-binary checks retain their separate pins.
+
 `node_toolchain.py` separately handles the official Node 22.23.0 Linux x64 input.
 It checks the original SHA-256/31,048,380-byte input, the decoded TAR digest and
 the 4,690-file selected manifest. The selected Node/npm/header files total
@@ -109,9 +114,32 @@ and digest. The fresh runner owns the disposal boundary.
 
 ### Review a retained result
 
-Use the original result ZIP with the byte count, SHA-256, runner revision and
-attempt-1 run ID selected from its independent run and artifact record. Use the
-matching local contract and its independently selected SHA-256.
+Before downloading, select the runner revision, attempt-1 run ID, artifact ID
+and local contract SHA-256 independently of the result ZIP. Retain the GitHub
+Actions responses for `runs/<run-id>/attempts/1`,
+`runs/<run-id>/attempts/1/jobs?per_page=10` and `artifacts/<artifact-id>` under
+`repos/edgepillar/zenon-spv/actions/`. Use an authenticated read-only acquisition
+and keep its command receipts with the three original JSON responses.
+
+```sh
+python3 -I -B tools/owned-devnet-query/review.py select-hosted \
+  --run-metadata "$RUN_METADATA" --jobs-metadata "$JOBS_METADATA" \
+  --artifact-metadata "$ARTIFACT_METADATA" --expect-artifact-id "$ARTIFACT_ID" \
+  --expect-source-revision "$RUNNER_SHA" --expect-contract-sha256 "$CONTRACT_SHA256" \
+  --expect-run-id "$RUN_ID"
+```
+
+`SELECTED_HOSTED_RESULT` binds the supplied run, completed experiment job,
+upload step and artifact metadata. The report records the three JSON pins,
+the reported conclusions and the selected archive byte count and SHA-256.
+Selection can succeed for a failed experiment with a retained upload. It uses
+up to 128 KiB per JSON input and performs no network calls. Authenticity of
+the JSON depends on its acquisition. The expected contract pin selects the
+local contract for the later archive review.
+
+Use the selected byte count and SHA-256 to fetch or reuse one original result
+ZIP under the artifact lease. Then inspect that ZIP with the same runner
+revision, run ID and contract pin.
 
 ```sh
 python3 -I -B tools/owned-devnet-query/review.py \

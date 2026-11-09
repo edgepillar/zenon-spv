@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import hashlib
 from pathlib import Path
 import re
@@ -17,7 +18,7 @@ sys.path.insert(0, str(HERE))
 import capture
 import inputs
 import model
-from artifacts import REPOSITORY, WORKFLOWS, api_json
+from artifacts import API_LIMIT, REPOSITORY, WORKFLOWS, api_json
 from model import Refused, canonical, exact_keys, require, same
 from process import FILE
 from query_checks import consumer_result
@@ -27,6 +28,93 @@ INDEX_BYTES = 512 << 10
 FILE_BYTES = 2 << 20
 MAX_FILES = 2048
 MAX_ARCHIVE = model.LIMITS["max_evidence_bytes"] + (2 << 20)
+EXECUTE_STEP = "Run the reviewed fixture and read-only query"
+UPLOAD_STEP = "Retain selected evidence and command receipts"
+TERMINAL_CONCLUSIONS = ("success", "failure", "cancelled", "timed_out")
+CONTROL_JOBS = ("controls", "controls (ubuntu-24.04, linux-amd64)",
+                "controls (macos-15-intel, darwin-amd64)", "controls (windows-latest, windows-amd64)")
+
+
+def select_hosted_result(run, jobs, artifact, source_revision, run_id, artifact_id, contract_sha256):
+    """Bind supplied Actions metadata before transporting a selected result."""
+    model.digest(source_revision, model.HEX40)
+    model.digest(contract_sha256)
+    model.uint(run_id)
+    model.uint(artifact_id)
+    selection = model.bind_owned_workflow_run(run, source_revision, run_id)
+    require(run.get("status") == "completed" and run.get("conclusion") in TERMINAL_CONCLUSIONS,
+            "hosted_run_completion")
+    repository_id = model.uint(run["repository"].get("id"))
+    same(run["head_repository"].get("id"), repository_id, "hosted_repository_identity")
+
+    rows = jobs.get("jobs")
+    require(type(rows) is list and 1 <= len(rows) <= 5
+            and all(type(row) is dict for row in rows), "hosted_job_roster")
+    same(jobs.get("total_count"), len(rows), "hosted_job_roster")
+    job_ids = {model.uint(row.get("id")) for row in rows}
+    names = [row.get("name") for row in rows]
+    require(len(job_ids) == len(rows) and all(name in (*CONTROL_JOBS, "experiment") for name in names)
+            and len(set(names)) == len(rows) and "experiment" in names, "hosted_job_roster")
+    for row in rows:
+        same(row.get("run_id"), run_id, "hosted_job_run")
+        same(row.get("run_attempt"), selection.run_attempt, "hosted_job_run")
+        require(row.get("head_sha") == source_revision and row.get("workflow_name") == "owned-devnet-query"
+                and row.get("status") == "completed", "hosted_job_source")
+        if row["name"] != "experiment":
+            require(row.get("conclusion") == "skipped" and row.get("steps") == [], "hosted_control_job")
+    experiment = rows[names.index("experiment")]
+    steps = experiment.get("steps")
+    require(experiment.get("conclusion") in TERMINAL_CONCLUSIONS and type(steps) is list
+            and len(steps) <= 32 and all(type(step) is dict for step in steps), "hosted_experiment_job")
+    selected = [step for step in steps if step.get("name") in (EXECUTE_STEP, UPLOAD_STEP)]
+    require([step["name"] for step in selected] == [EXECUTE_STEP, UPLOAD_STEP], "hosted_experiment_steps")
+    execution, upload = selected
+    require(execution.get("status") == upload.get("status") == "completed"
+            and execution.get("conclusion") in TERMINAL_CONCLUSIONS and upload.get("conclusion") == "success"
+            and model.uint(execution.get("number"), 32) < model.uint(upload.get("number"), 32),
+            "hosted_experiment_completion")
+    require((run["conclusion"] != "success" or experiment["conclusion"] == "success")
+            and (experiment["conclusion"] != "success" or execution["conclusion"] == "success"),
+            "hosted_conclusion")
+
+    name = f"owned-devnet-query-{run_id}-{selection.run_attempt}"
+    same(artifact.get("id"), artifact_id, "hosted_artifact_id")
+    require(artifact.get("name") == name and artifact.get("expired") is False, "hosted_artifact_selection")
+    owner = artifact.get("workflow_run")
+    require(type(owner) is dict and owner.get("head_sha") == source_revision
+            and owner.get("head_branch") == run["head_branch"], "hosted_artifact_source")
+    same(owner.get("id"), run_id, "hosted_artifact_run")
+    for key in ("repository_id", "head_repository_id"):
+        same(owner.get(key), repository_id, "hosted_artifact_repository")
+    timestamps = (experiment.get("started_at"), artifact.get("created_at"), experiment.get("completed_at"))
+    try:
+        start, created, end = (datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ") for value in timestamps)
+    except (TypeError, ValueError) as error:
+        raise Refused("hosted_artifact_time") from error
+    require(start <= created <= end, "hosted_artifact_time")
+    digest = artifact.get("digest")
+    require(type(digest) is str and digest.startswith("sha256:"), "hosted_artifact_digest")
+    archive = model.pin({"bytes": artifact.get("size_in_bytes"), "sha256": digest[7:]}, MAX_ARCHIVE)
+    return {"format": "owned-devnet-hosted-result-selection/v1", "status": "SELECTED_HOSTED_RESULT",
+            "repository": REPOSITORY, "repository_id": repository_id, "source_revision": source_revision,
+            "expected_contract_sha256": contract_sha256, "run_id": run_id, "run_attempt": selection.run_attempt,
+            "run_conclusion": run["conclusion"], "experiment_job_id": experiment["id"],
+            "experiment_conclusion": experiment["conclusion"], "execution_conclusion": execution["conclusion"],
+            "artifact": {"id": artifact_id, "name": name, **archive},
+            "supplied_workflow_metadata_bound": True, "artifact_payload_verified": False,
+            "new_devnet_acceptance_established": False}
+
+
+def read_hosted_metadata(path):
+    size = path.lstat().st_size
+    model.uint(size, API_LIMIT)
+
+    def read(stream):
+        raw = stream.read(size + 1)
+        require(len(raw) == size, "hosted_metadata_size")
+        return raw
+
+    return inputs._read_archive_file(path, size, read)
 
 
 class Evidence:
@@ -228,28 +316,45 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
 
 
 def main(argv=None, stdout=None, stderr=None):
-    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
-    parser.add_argument("--archive", type=Path, required=True)
-    parser.add_argument("--expect-archive-sha256", required=True)
-    parser.add_argument("--expect-archive-bytes", type=int, required=True)
+    argv = list(sys.argv[1:] if argv is None else argv)
+    select_only = argv[:1] == ["select-hosted"]
+    description = "Select an owned devnet result from retained Actions metadata." if select_only else __doc__
+    parser = argparse.ArgumentParser(description=description, allow_abbrev=False)
+    if select_only:
+        for name in ("run", "jobs", "artifact"):
+            parser.add_argument("--" + name + "-metadata", type=Path, required=True)
+        parser.add_argument("--expect-artifact-id", type=int, required=True)
+    else:
+        parser.add_argument("--archive", type=Path, required=True)
+        parser.add_argument("--expect-archive-sha256", required=True)
+        parser.add_argument("--expect-archive-bytes", type=int, required=True)
     parser.add_argument("--expect-contract-sha256", required=True)
     parser.add_argument("--expect-source-revision", required=True)
     parser.add_argument("--expect-run-id", type=int, required=True)
-    args = parser.parse_args(argv)
+    args = parser.parse_args(argv[1:] if select_only else argv)
     stdout = sys.stdout.buffer if stdout is None else stdout
     stderr = sys.stderr if stderr is None else stderr
     try:
         contract = model.read_contract(HERE / "contract.json")
         require(model.digest(args.expect_contract_sha256) == contract.sha256, "review_contract_pin")
-        archive_pin = model.pin({"sha256": args.expect_archive_sha256,
-                                 "bytes": args.expect_archive_bytes}, MAX_ARCHIVE)
-        report = inputs._read_archive_file(args.archive, archive_pin["bytes"],
-            lambda stream: review_stream(stream, archive_pin, args.expect_source_revision,
-                                         args.expect_run_id, contract, HERE.parents[1]))
+        if select_only:
+            metadata = {name: read_hosted_metadata(getattr(args, name + "_metadata"))
+                        for name in ("run", "jobs", "artifact")}
+            report = select_hosted_result(
+                api_json(metadata["run"]), api_json(metadata["jobs"]), api_json(metadata["artifact"]),
+                args.expect_source_revision, args.expect_run_id, args.expect_artifact_id, contract.sha256)
+            report["metadata_pins"] = {name: {"bytes": len(value), "sha256": hashlib.sha256(value).hexdigest()}
+                                       for name, value in metadata.items()}
+        else:
+            archive_pin = model.pin({"sha256": args.expect_archive_sha256,
+                                     "bytes": args.expect_archive_bytes}, MAX_ARCHIVE)
+            report = inputs._read_archive_file(args.archive, archive_pin["bytes"],
+                lambda stream: review_stream(stream, archive_pin, args.expect_source_revision,
+                                             args.expect_run_id, contract, HERE.parents[1]))
         raw = canonical(report)
         require(stdout.write(raw) == len(raw), "review_short_output")
         stdout.flush()
-        return 0 if report["comparison"] is not None else 1
+        return 0 if select_only or report["comparison"] is not None else 1
     except Refused as error:
         stderr.write("Evidence review refused (" + error.reason + ").\n")
     except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,

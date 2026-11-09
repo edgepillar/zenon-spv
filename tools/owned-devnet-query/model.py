@@ -355,7 +355,12 @@ def require_dispatch_metadata(contract, environment, event, run, source_revision
     require(inputs["ack_contract_sha256"] == contract.sha256
             and inputs["expected_source_revision"] == source_revision,
             "dispatch_selection_changed")
-    require(type(run.get("id")) is int and run["id"] == int(run_id)
+    return bind_owned_workflow_run(run, source_revision, int(run_id))
+
+
+def bind_owned_workflow_run(run, source_revision, run_id):
+    """Bind supplied workflow metadata to the explicitly selected attempt."""
+    require(type(run) is dict and type(run.get("id")) is int and run["id"] == run_id
             and type(run.get("run_attempt")) is int and run["run_attempt"] == 1,
             "workflow_run_binding")
     require(run.get("event") == "workflow_dispatch"
@@ -370,7 +375,7 @@ def require_dispatch_metadata(contract, environment, event, run, source_revision
             ("actor", "login", "edgepillar"), ("triggering_actor", "login", "edgepillar")):
         require(type(run.get(field)) is dict and run[field].get(key) == expected,
                 "workflow_actor_or_repository")
-    return ExecutionIdentity(source_revision, int(run_id), 1, "edgepillar")
+    return ExecutionIdentity(source_revision, run_id, 1, "edgepillar")
 
 
 @dataclass(frozen=True)
