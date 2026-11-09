@@ -173,9 +173,40 @@ completion when inventory subsequently fails, with no partial inventory result.
 A successful-looking output prefix after a short write, failed flush or
 termination does not replace the caller's actual completion check.
 
+### Check the transport manifest during the recount
+
+To verify a separately selected transport manifest in the same read, add both
+options to the recount command above.
+
+```sh
+--transport-manifest-bytes "$R1_MANIFEST_BYTES" \
+--transport-manifest-sha256 "$R1_MANIFEST_SHA256"
+```
+
+Pipe the output of `cat "$R1_MANIFEST_OBJECT" "$R1_RETAINED_PUT_STREAM"` into
+the command in place of the stdin redirection. The manifest's exact bytes must
+immediately precede the put stream. Capture the actual producer and consumer
+outcomes through the controller. A failed producer completion or manifest pin
+refuses before the helper consumes payload bytes.
+
+The selected manifest must bind the same full frontier, provenance and stream
+as the independently supplied completion pins. The helper reads the payload
+once, checking each chunk, the whole-stream digest and EOF as the independent
+inventory parses and recounts the puts. It accepts up to 4,096 chunks of at most
+64 MiB and caps the total at the selected export limit. Input requests remain
+bounded to 64 KiB. The helper streams the frame through stdin and writes only
+the result report to stdout.
+
+With both checks complete, the `zenon-completed-frontier-transport-inventory/v1`
+envelope adds `transport_verification` alongside the existing completion and
+inventory reports. A failure returns only the UNKNOWN envelope. For an unframed
+recount, feed raw puts and use the original `zenon-completed-frontier-inventory/v1`
+report.
+
 The helper creates no dataset copy, fixture, archive or output file and launches
 no child. It reuses the inventory's fixed 64 KiB input buffer and report bound;
-its combined result is capped at 148 KiB. These are logical implementation
+its combined result is capped at 148 KiB. Framed mode also reads a manifest of at
+most 512 KiB and retains bounded chunk metadata. These are logical implementation
 bounds, not total process RSS accounting. The Python helper uses the inventory's
 GPL-3.0-only license; the ordinary Go exporter is unchanged.
 

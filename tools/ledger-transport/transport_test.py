@@ -213,6 +213,31 @@ class TransportTests(unittest.TestCase):
             tool.verify(reader, len(manifest), sha(manifest), selected(raw))
         self.assertEqual(reader.position, len(frame) + 1)
 
+    def test_inspector_must_observe_eof(self):
+        raw = b"abc"
+        manifest = json_bytes(oracle_manifest(raw))
+        reader = ObservedReader(manifest + raw)
+        with self.assertRaisesRegex(tool.Refused, "stream_incomplete"):
+            tool.verify_with(reader, len(manifest), sha(manifest), selected(raw),
+                             lambda payload: payload.read(3))
+        self.assertEqual(reader.requests, [len(manifest), 3])
+
+    def test_inspector_cannot_retry_after_a_failed_eof_check(self):
+        raw = b"abc"
+        manifest = json_bytes(oracle_manifest(raw))
+        reader = ObservedReader(manifest + raw + b"x")
+
+        def inspect(payload):
+            self.assertEqual(payload.read(3), raw)
+            with self.assertRaisesRegex(tool.Refused, "trailing_input"):
+                payload.read(1)
+            with self.assertRaisesRegex(tool.Refused, "stream_refused"):
+                payload.read(1)
+
+        with self.assertRaisesRegex(tool.Refused, "stream_incomplete"):
+            tool.verify_with(reader, len(manifest), sha(manifest), selected(raw), inspect)
+        self.assertEqual(reader.requests, [len(manifest), 3, 1])
+
     def test_changed_missing_reordered_and_repeated_chunks(self):
         raw = b"abcdefgh"
         manifest = json_bytes(oracle_manifest(raw))

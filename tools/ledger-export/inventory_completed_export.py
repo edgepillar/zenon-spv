@@ -26,12 +26,18 @@ def load(name, path):
 
 COMPLETION = load("completed_export_completion", HERE / "consume_completion.py")
 INVENTORY = load("completed_export_inventory", HERE.parent / "ledger-inventory/inventory.py")
+TRANSPORT = load("completed_export_transport", HERE.parent / "ledger-transport/transport.py")
 FORMAT = "zenon-completed-frontier-inventory/v1"
+TRANSPORT_FORMAT = "zenon-completed-frontier-transport-inventory/v1"
 RECEIPT_OPTION = "--producer-receipt-json"
+MANIFEST_BYTES_OPTION = "--transport-manifest-bytes"
+MANIFEST_SHA_OPTION = "--transport-manifest-sha256"
 RESULT_BYTES = COMPLETION.REPORT_BYTES + INVENTORY.REPORT_BYTES + 4096
 USAGE = ("inventory-completed-export: require --producer-receipt-json JSON and the "
          "consume-completion selection, actual capture and optional --max-* arguments; "
-         "feed the same retained put stream on stdin\n")
+         "feed the same retained put stream on stdin. To check transport during the "
+         "recount, supply --transport-manifest-bytes and --transport-manifest-sha256 "
+         "and feed the exact manifest immediately before the put stream.\n")
 
 
 def scope():
@@ -52,26 +58,38 @@ def unknown(reason, completion=None):
 
 
 def arguments(args):
-    COMPLETION.require(type(args) in (list, tuple) and len(args) <= 34 and
+    COMPLETION.require(type(args) in (list, tuple) and len(args) <= 38 and
                        all(type(v) is str for v in args) and
                        sum(map(len, args)) <= 32 << 10, "options")
-    common, receipt, index = [], None, 0
+    common, selected, index = [], {}, 0
+    option_limits = {RECEIPT_OPTION: COMPLETION.REPORT_BYTES,
+                     MANIFEST_BYTES_OPTION: 20, MANIFEST_SHA_OPTION: 64}
     while index < len(args):
         key, separator, value = args[index].partition("=")
-        if key == RECEIPT_OPTION:
-            COMPLETION.require(receipt is None, "options")
+        if key in option_limits:
+            COMPLETION.require(key not in selected, "options")
             if not separator:
                 index += 1
                 COMPLETION.require(index < len(args), "options")
                 value = args[index]
-            COMPLETION.require(bool(value) and len(value) <= COMPLETION.REPORT_BYTES, "options")
-            receipt = value.encode("utf-8")
-            COMPLETION.require(len(receipt) <= COMPLETION.REPORT_BYTES, "options")
+            COMPLETION.require(0 < len(value) <= option_limits[key], "options")
+            selected[key] = value
         else:
             common.append(args[index])
         index += 1
-    COMPLETION.require(receipt is not None, "options")
-    return common, receipt
+    COMPLETION.require(RECEIPT_OPTION in selected, "options")
+    receipt = selected[RECEIPT_OPTION].encode("utf-8")
+    COMPLETION.require(len(receipt) <= COMPLETION.REPORT_BYTES, "options")
+    manifest = None
+    if len(selected) > 1:
+        COMPLETION.require(MANIFEST_BYTES_OPTION in selected and MANIFEST_SHA_OPTION in selected, "options")
+        size = COMPLETION.decimal(selected[MANIFEST_BYTES_OPTION])
+        digest = selected[MANIFEST_SHA_OPTION]
+        COMPLETION.require(0 < size <= TRANSPORT.MANIFEST_BYTES and COMPLETION.hex_digest(digest), "options")
+        manifest = size, digest
+    else:
+        COMPLETION.require(len(args) <= 34, "options")
+    return common, receipt, manifest
 
 
 def run(args, stream, output, diagnostics):
@@ -81,7 +99,7 @@ def run(args, stream, output, diagnostics):
             diagnostics.write(USAGE)
             result, code = unknown("help_only"), 0
         else:
-            common, receipt = arguments(args)
+            common, receipt, manifest = arguments(args)
             capture = io.StringIO()
             code = COMPLETION.run(common, io.BytesIO(receipt), capture, diagnostics)
             matched = json.loads(capture.getvalue())
@@ -90,16 +108,30 @@ def run(args, stream, output, diagnostics):
                 code = code or 2
             else:
                 completed = matched
-                report = INVENTORY.inventory(stream, matched["inventory_selection"],
-                                             matched["inventory_limits"])
+
+                def recount(payload):
+                    return INVENTORY.inventory(payload, matched["inventory_selection"], matched["inventory_limits"])
+
+                transport = None
+                if manifest is None:
+                    report = recount(stream)
+                else:
+                    pin = {**matched["inventory_selection"], **matched["selected_frontier"]}
+                    del pin["records"]  # Transport binds bytes and the full frontier, not record counts.
+                    caps = {**TRANSPORT.HARD_LIMITS, "bytes": matched["inventory_limits"]["bytes"]}
+                    transport, report = TRANSPORT.verify_with(stream, *manifest, pin, recount, caps)
                 INVENTORY.encoded(report)  # Retain the inventory's own report bound.
                 result = {"format": FORMAT, "status": "SELECTED_EXPORT_INVENTORIED", "reason": None,
                           "producer_completion_matched": True, "stream_recount_completed": True,
                           "producer_completion": matched, "stream_inventory": report,
                           "scope": scope()}
+                if transport is not None:
+                    result.update(format=TRANSPORT_FORMAT, transport_verification=transport)
                 code = 0
     except COMPLETION.Refused:
         result, code = unknown("options"), 64
+    except TRANSPORT.Refused as error:
+        result, code = unknown("transport_" + str(error), completed), 2
     except INVENTORY.Refused:
         result, code = unknown("stream_inventory_refused", completed), 2
     except (ValueError, TypeError, RecursionError, OverflowError):
