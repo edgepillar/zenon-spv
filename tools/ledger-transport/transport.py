@@ -145,24 +145,57 @@ def chunk_plan(value, pin, caps):
     return tuple(plan)
 
 
+class _ChunkStream:
+    def __init__(self, reader, pin, plan):
+        self.reader, self.expected_stream = reader, pin["sha256"]
+        self.plan = iter(plan)
+        self.whole = hashlib.sha256()
+        self.remaining, self.rows = 0, []
+        self.complete, self.failed = False, False
+
+    def read(self, size):
+        require(not self.failed, "stream_refused")
+        # An inspector cannot suppress a failed read and continue verification.
+        self.failed = True
+        require(type(size) is int and 0 < size <= READ_BYTES, "read_bound")
+        part = self._read(size)
+        self.failed = False
+        return part
+
+    def _read(self, size):
+        if self.complete:
+            return b""
+        if not self.remaining:
+            next_chunk = next(self.plan, None)
+            if next_chunk is None:
+                require(not read_part(self.reader, 1), "trailing_input")
+                require(self.whole.hexdigest() == self.expected_stream, "stream_digest")
+                self.complete = True
+                return b""
+            self.chunk_size, self.expected_chunk = next_chunk
+            self.remaining, self.chunk = self.chunk_size, hashlib.sha256()
+        part = read_part(self.reader, min(size, self.remaining))
+        require(bool(part), "stream_truncated")
+        self.whole.update(part)
+        self.chunk.update(part)
+        self.remaining -= len(part)
+        if not self.remaining:
+            actual = self.chunk.hexdigest()
+            require(self.expected_chunk is None or actual == self.expected_chunk, "chunk_digest")
+            self.rows.append({"bytes": self.chunk_size, "sha256": actual})
+        return part
+
+
+def _drain(stream):
+    while stream.read(READ_BYTES):
+        pass
+
+
 def consume(reader, pin, plan):
     """One pass, no chunk buffers or files; retain only hashes and bounded rows."""
-    whole = hashlib.sha256()
-    rows = []
-    for size, expected in plan:
-        remaining, chunk = size, hashlib.sha256()
-        while remaining:
-            part = read_part(reader, min(READ_BYTES, remaining))
-            require(bool(part), "stream_truncated")
-            whole.update(part)
-            chunk.update(part)
-            remaining -= len(part)
-        actual = chunk.hexdigest()
-        require(expected is None or actual == expected, "chunk_digest")
-        rows.append({"bytes": size, "sha256": actual})
-    require(not read_part(reader, 1), "trailing_input")
-    require(whole.hexdigest() == pin["sha256"], "stream_digest")
-    return rows
+    stream = _ChunkStream(reader, pin, plan)
+    _drain(stream)
+    return stream.rows
 
 
 def describe(reader, selected, configured_limits=None):
@@ -179,7 +212,12 @@ def describe(reader, selected, configured_limits=None):
     return value
 
 
-def verify(reader, manifest_bytes, manifest_sha256, selected, configured_limits=None):
+def verify_with(reader, manifest_bytes, manifest_sha256, selected, inspect, configured_limits=None):
+    """Return the transport report and a read-only inspector's result after EOF.
+
+    The inspector receives candidate bytes. It must not publish its result or
+    apply changes before this function returns successfully.
+    """
     caps = limits(configured_limits)
     pin = selection(selected, caps)
     require(type(manifest_bytes) is int and 0 < manifest_bytes <= MANIFEST_BYTES and
@@ -187,11 +225,19 @@ def verify(reader, manifest_bytes, manifest_sha256, selected, configured_limits=
     raw = read_exact(reader, manifest_bytes)
     require(hashlib.sha256(raw).hexdigest() == manifest_sha256, "manifest_digest")
     plan = chunk_plan(parse_manifest(raw), pin, caps)
-    consume(reader, pin, plan)
-    return {"format": RESULT_FORMAT, "status": "SELECTED_TRANSPORT_MATCHED", "reason": None,
-            "manifest": {"bytes": manifest_bytes, "sha256": manifest_sha256},
-            "selection": pin, "chunks_checked": len(plan), "stream_eof_observed": True,
-            "limits": caps, "read_request_limit_bytes": READ_BYTES, "scope": scope()}
+    stream = _ChunkStream(reader, pin, plan)
+    result = inspect(stream)
+    require(stream.complete and not stream.failed, "stream_incomplete")
+    report = {"format": RESULT_FORMAT, "status": "SELECTED_TRANSPORT_MATCHED", "reason": None,
+              "manifest": {"bytes": manifest_bytes, "sha256": manifest_sha256},
+              "selection": pin, "chunks_checked": len(plan), "stream_eof_observed": True,
+              "limits": caps, "read_request_limit_bytes": READ_BYTES, "scope": scope()}
+    return report, result
+
+
+def verify(reader, manifest_bytes, manifest_sha256, selected, configured_limits=None):
+    report, _ = verify_with(reader, manifest_bytes, manifest_sha256, selected, _drain, configured_limits)
+    return report
 
 
 def decimal(token):

@@ -44,8 +44,24 @@ class CountedReads(io.BytesIO):
         return super().read(size)
 
 
+def manifest_for(receipt, wire):
+    chunks = [wire[offset:offset + 17] for offset in range(0, len(wire), 17)]
+    return {"format": "zenon-r1-transport-manifest/v1",
+            "selection": {**receipt["selection"], "record_space": "effective-raw-ledger",
+                          "bytes": len(wire), "sha256": hashlib.sha256(wire).hexdigest()},
+            "chunk_bytes": 17, "chunks": [{"bytes": len(chunk), "sha256": hashlib.sha256(chunk).hexdigest()}
+                                         for chunk in chunks],
+            "scope": PROGRAM.TRANSPORT.scope()}
+
+
+def frame_options(value):
+    manifest = json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+    return manifest, [PROGRAM.MANIFEST_BYTES_OPTION, str(len(manifest)),
+                      PROGRAM.MANIFEST_SHA_OPTION, hashlib.sha256(manifest).hexdigest()]
+
+
 class CompletedExport(unittest.TestCase):
-    def invoke(self, receipt=None, args=None, stream=None, raw=None):
+    def invoke(self, receipt=None, args=None, stream=None, raw=None, format_name=PROGRAM.FORMAT):
         report, selected, wire = FIXTURE.fixture()
         if receipt is None:
             receipt = report
@@ -57,7 +73,7 @@ class CompletedExport(unittest.TestCase):
         code = PROGRAM.run(args + [PROGRAM.RECEIPT_OPTION, raw],
                            io.BytesIO(wire) if stream is None else stream, output, diagnostics)
         result = json.loads(output.getvalue())
-        self.assertEqual(result["format"], PROGRAM.FORMAT)
+        self.assertEqual(result["format"], format_name)
         self.assertTrue(all(value is False for value in result["scope"].values()))
         self.assertNotIn("PRIVATE_TEST_MARKER", output.getvalue() + diagnostics.getvalue())
         if code:
@@ -204,6 +220,73 @@ class CompletedExport(unittest.TestCase):
         self.assertEqual(stream.requests, [len(wire), 1])
         self.assertEqual(stream.tell(), len(wire))
 
+    def test_transport_and_inventory_share_one_pass(self):
+        receipt, args, wire = FIXTURE.fixture()
+        manifest, options = frame_options(manifest_for(receipt, wire))
+        stream = CountedReads(manifest + wire)
+        code, result = self.invoke(args=args + options, stream=stream, format_name=PROGRAM.TRANSPORT_FORMAT)
+        self.assertEqual((code, result.pop("format")), (0, PROGRAM.TRANSPORT_FORMAT))
+        transport = result.pop("transport_verification")
+        self.assertEqual(transport["status"], "SELECTED_TRANSPORT_MATCHED")
+        self.assertEqual(transport["chunks_checked"], 5)
+        self.assertTrue(transport["stream_eof_observed"])
+        self.assertEqual(transport["manifest"], {"bytes": len(manifest), "sha256": options[-1]})
+        self.assertEqual(transport["selection"]["hash"], receipt["selection"]["hash"])
+        self.assertEqual(stream.requests, [len(manifest), 17, 17, 17, 17, 15, 1])
+        self.assertEqual(stream.tell(), len(manifest) + len(wire))
+        self.assertEqual({**result, "format": PROGRAM.FORMAT}, self.invoke()[1])
+
+    def test_joined_options_and_producer_completion_precede_reads(self):
+        receipt, args, wire = FIXTURE.fixture()
+        _, options = frame_options(manifest_for(receipt, wire))
+        for extra in (options[:2], options[2:], options + options[:2],
+                      FIXTURE.changed(options, PROGRAM.MANIFEST_BYTES_OPTION, "0"),
+                      FIXTURE.changed(options, PROGRAM.MANIFEST_SHA_OPTION, "Z" * 64)):
+            with self.subTest(extra=extra):
+                self.assertEqual(self.invoke(args=args + extra, stream=NoRead())[0], 64)
+        code, result = self.invoke(args=FIXTURE.changed(args, "--producer-exit", "-9") + options,
+                                   stream=NoRead())
+        self.assertEqual((code, result["reason"]), (2, "completion_process_failure"))
+
+    def test_selected_manifest_verified_before_payload(self):
+        receipt, args, wire = FIXTURE.fixture()
+        value = manifest_for(receipt, wire)
+        manifest, options = frame_options(value)
+        wrong_digest = FIXTURE.changed(options, PROGRAM.MANIFEST_SHA_OPTION, "0" * 64)
+        value["selection"]["height"] += 1
+        wrong_frontier, wrong_options = frame_options(value)
+        for raw, extra, reason in ((manifest, wrong_digest, "transport_manifest_digest"),
+                                   (wrong_frontier, wrong_options, "transport_manifest_selection")):
+            with self.subTest(reason=reason):
+                stream = CountedReads(raw + wire)
+                code, result = self.invoke(args=args + extra, stream=stream)
+                self.assertEqual((code, result["reason"]), (2, reason))
+                self.assertEqual(stream.tell(), len(raw))
+
+    def test_failed_transport_does_not_report_partial_inventory(self):
+        receipt, args, wire = FIXTURE.fixture()
+        manifest, options = frame_options(manifest_for(receipt, wire))
+        for payload, reason in ((wire[:-1], "stream_truncated"), (wire[:-1] + b"\x01", "chunk_digest"),
+                                (wire + b"x", "trailing_input")):
+            with self.subTest(reason=reason):
+                code, result = self.invoke(args=args + options, stream=io.BytesIO(manifest + payload))
+                self.assertEqual((code, result["reason"]), (2, "transport_" + reason))
+                self.assertTrue(result["producer_completion_matched"])
+                self.assertFalse(result["stream_recount_completed"])
+                self.assertIsNone(result["stream_inventory"])
+                self.assertNotIn("transport_verification", result)
+
+    def test_matching_transport_does_not_accept_duplicate_keys(self):
+        receipt, args, wire = FIXTURE.fixture()
+        altered = wire[:-34] + b"a" + wire[-33:]
+        digest = hashlib.sha256(altered).hexdigest()
+        receipt["statistics"]["put_stream_sha256"] = digest
+        manifest, options = frame_options(manifest_for(receipt, altered))
+        code, result = self.invoke(receipt=receipt, args=FIXTURE.changed(args, "--capture-sha256", digest) + options,
+                                   stream=io.BytesIO(manifest + altered))
+        self.assertEqual((code, result["reason"]), (2, "stream_inventory_refused"))
+        self.assertIsNone(result["stream_inventory"])
+
     def test_fragmented_reads_preserve_exact_inventory(self):
         class Fragmented(io.BytesIO):
             def read(self, size):
@@ -244,17 +327,21 @@ class CompletedExport(unittest.TestCase):
 
     def test_fresh_cli_success_failure_and_help_use_no_fixture_files(self):
         receipt, args, wire = FIXTURE.fixture()
-        cases = [(args + [PROGRAM.RECEIPT_OPTION, json.dumps(receipt)], wire, 0,
-                  "SELECTED_EXPORT_INVENTORIED"),
-                 (args + [PROGRAM.RECEIPT_OPTION, json.dumps(receipt)], wire[:-1], 2, "UNKNOWN"),
-                 (["--help"], b"", 0, "UNKNOWN"), ([], b"", 64, "UNKNOWN")]
-        for selected, data, code, status in cases:
+        legacy = args + [PROGRAM.RECEIPT_OPTION, json.dumps(receipt)]
+        manifest, options = frame_options(manifest_for(receipt, wire))
+        cases = [(legacy, wire, 0, "SELECTED_EXPORT_INVENTORIED", PROGRAM.FORMAT),
+                 (legacy, wire[:-1], 2, "UNKNOWN", PROGRAM.FORMAT),
+                 (legacy + options, manifest + wire, 0, "SELECTED_EXPORT_INVENTORIED", PROGRAM.TRANSPORT_FORMAT),
+                 (legacy + options, manifest + wire + b"x", 2, "UNKNOWN", PROGRAM.FORMAT),
+                 (["--help"], b"", 0, "UNKNOWN", PROGRAM.FORMAT), ([], b"", 64, "UNKNOWN", PROGRAM.FORMAT)]
+        for selected, data, code, status, format_name in cases:
             with self.subTest(code=code, status=status):
                 completed = subprocess.run([sys.executable, "-I", "-B",
                                             str(HERE / "inventory_completed_export.py"), *selected],
                                            input=data, capture_output=True, timeout=10)
                 self.assertEqual(completed.returncode, code, completed.stderr)
-                self.assertEqual(json.loads(completed.stdout)["status"], status)
+                result = json.loads(completed.stdout)
+                self.assertEqual((result["status"], result["format"]), (status, format_name))
 
 
 if __name__ == "__main__":

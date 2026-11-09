@@ -27,8 +27,10 @@ can describe that retained stream with ordered chunk hashes and check a selected
 manifest plus transfer in one pass. It creates no chunk or reconstructed payload
 files. Manifest, whole-stream and full Momentum pins remain separately selected;
 transport integrity does not establish record syntax, data provenance, snapshot
-completeness, a reconstructed StateRoot or owner acceptance. Feed the same raw
-object without its manifest prefix to the independent inventory afterwards.
+completeness, a reconstructed StateRoot or owner acceptance. For a completed
+export, the [combined transport and inventory handoff](../tools/ledger-export/README.md#check-the-transport-manifest-during-the-recount)
+can perform both checks in one read of the retained stream. A standalone
+transport check still leaves the independent raw-stream inventory to run.
 
 The [bounded effective ledger inventory tool](../tools/ledger-inventory/README.md)
 can inspect a separately selected ordered put stream without keeping a key map
