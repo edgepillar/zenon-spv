@@ -102,12 +102,13 @@ sys.exit(row["exit"])
 
 @unittest.skipUnless(os.name == "posix", "The actual lease and process-group lane requires POSIX")
 class TransportTests(unittest.TestCase):
-    def prepare(self, root, *, run_change=None, payload_change=None, exit_code=0, guard=None):
+    def prepare(self, root, *, run_change=None, payload_change=None, exit_code=0, guard=None,
+                oracle_expired=None):
         contract, run, artifact, raw = contract_and_metadata()
         if run_change is not None:
             run.update(run_change)
         selected = contract.data["qualified_components"]["consumer"]
-        base = "repos/" + artifacts.REPOSITORY + "/actions/"
+        base = artifacts.ACTIONS
         rows = {}
         for endpoint, data, status in (
                 (base + "runs/" + str(selected["run_id"]) + "/attempts/1", model.canonical(run), 0),
@@ -115,6 +116,18 @@ class TransportTests(unittest.TestCase):
                 (base + "artifacts/" + str(selected["artifact_id"]) + "/zip",
                  raw if payload_change is None else payload_change(raw), exit_code)):
             rows[endpoint] = {"stdout": base64.b64encode(data).decode("ascii"), "exit": status}
+        if oracle_expired is not None:
+            oracle, oracle_run, oracle_metadata, oracle_raw = contract_and_metadata("parent_oracle")
+            oracle_spec = oracle.data["qualified_components"]["parent_oracle"]
+            value = contract.data
+            value["qualified_components"]["parent_oracle"] = oracle_spec
+            contract = model.decode_contract(model.canonical(value))
+            oracle_metadata["expired"] = oracle_expired
+            for endpoint, data in (
+                    (base + f"runs/{oracle_spec['run_id']}/attempts/1", model.canonical(oracle_run)),
+                    (base + f"artifacts/{oracle_spec['artifact_id']}", model.canonical(oracle_metadata)),
+                    (base + f"artifacts/{oracle_spec['artifact_id']}/zip", oracle_raw)):
+                rows[endpoint] = {"stdout": base64.b64encode(data).decode("ascii"), "exit": 0}
         configuration = root / "responses.json"
         configuration.write_bytes(model.canonical(rows))
         program = root / "local-response-fixture.py"
@@ -128,6 +141,36 @@ class TransportTests(unittest.TestCase):
 
     def calls(self, path):
         return [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
+
+    def test_preflight_binds_both_inputs_before_either_transport(self):
+        with tempfile.TemporaryDirectory(prefix="artifact-lane-control-") as temporary:
+            lane, recorder, _, calls = self.prepare(Path(temporary), oracle_expired=False)
+            lane.preflight()
+            metadata_calls = self.calls(calls)
+            self.assertEqual(len(metadata_calls), 4)
+            self.assertEqual(list(recorder.directory.glob("*.zip")), [])
+            for role in artifacts.WORKFLOWS:
+                first = lane.fetch(role)
+                self.assertIs(first, lane.fetch(role))
+                self.assertEqual(first.binding["component"], role)
+            transports = self.calls(calls)[4:]
+            self.assertEqual(len(transports), 2)
+            self.assertEqual(len(set(call[-1] for call in transports)), 2)
+            self.assertTrue(all(call[-1].endswith("/zip") for call in transports))
+            self.assertEqual(len(list(recorder.directory.glob("*.zip"))), 2)
+
+    def test_expired_second_artifact_prevents_both_transports(self):
+        with tempfile.TemporaryDirectory(prefix="artifact-lane-control-") as temporary:
+            lane, recorder, _, calls = self.prepare(Path(temporary), oracle_expired=True)
+            with self.assertRaisesRegex(model.Refused, "artifact_digest_or_expiry"):
+                lane.preflight()
+            with self.assertRaisesRegex(model.Refused, "artifact_preflight_incomplete"):
+                lane.fetch("consumer")
+            with self.assertRaisesRegex(model.Refused, "artifact_preflight_already_attempted"):
+                lane.preflight()
+            self.assertEqual(len(self.calls(calls)), 4)
+            self.assertEqual(list(recorder.directory.glob("*.zip")), [])
+            self.assertEqual(list(lane.directory.iterdir()), [])
 
     def test_one_original_archive_and_no_second_transport_on_verified_hit(self):
         with tempfile.TemporaryDirectory(prefix="artifact-lane-control-") as temporary:

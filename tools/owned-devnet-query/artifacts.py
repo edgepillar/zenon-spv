@@ -20,6 +20,7 @@ from model import Refused, canonical, require
 from process import owned_lease
 
 REPOSITORY = "edgepillar/zenon-spv"
+ACTIONS = "repos/" + REPOSITORY + "/actions/"
 WORKFLOWS = {"consumer": ".github/workflows/ci.yml",
              "parent_oracle": ".github/workflows/closed-devnet-parent-oracle.yml"}
 API_LIMIT = 128 << 10
@@ -123,6 +124,7 @@ class Artifacts:
         info = self.directory.lstat()
         self.identity = (info.st_dev, info.st_ino, info.st_uid)
         self.attempted, self.cache = set(), {}
+        self.preflight_bindings = None
 
     def check(self):
         self.recorder.check()
@@ -139,6 +141,29 @@ class Artifacts:
         with owned_lease(self.recorder, name):
             yield
 
+    def _request(self, label, endpoint, cap=API_LIMIT, stdout_name=None):
+        return self.recorder.run(label, [*self.command, "api", ACTIONS + endpoint],
+                                 self.directory, self.environment, stdout_cap=cap,
+                                 stderr_cap=128 << 10, timeout=180, stdout_name=stdout_name,
+                                 guard=self.guard)
+
+    def _select(self, role):
+        selected = self.contract.data["qualified_components"][role]
+        label = "input-" + role.replace("_", "-")
+        run = self._request(label + "-run", f"runs/{selected['run_id']}/attempts/{selected['run_attempt']}")
+        artifact = self._request(label + "-metadata", f"artifacts/{selected['artifact_id']}")
+        return bind_metadata(self.contract, role, api_json(run.stdout(API_LIMIT)),
+                             api_json(artifact.stdout(API_LIMIT)))
+
+    def preflight(self):
+        """Select the whole required input set before transporting any archive."""
+        self.check()
+        require(not self.attempted and self.preflight_bindings is None, "artifact_preflight_already_attempted")
+        # An incomplete selection is terminal for this workspace.
+        self.preflight_bindings = {}
+        self.guard()
+        self.preflight_bindings = {role: self._select(role) for role in WORKFLOWS}
+
     def fetch(self, role):
         self.check()
         require(type(role) is str and role in WORKFLOWS, "artifact_component")
@@ -147,29 +172,20 @@ class Artifacts:
             result.verify()
             return result
         require(role not in self.attempted, "artifact_attempt_already_consumed")
+        require(self.preflight_bindings is None or role in self.preflight_bindings,
+                "artifact_preflight_incomplete")
         self.attempted.add(role)
         selected = self.contract.data["qualified_components"][role]
-        label = role.replace("_", "-")
-
-        def command(suffix, endpoint, cap=API_LIMIT, stdout_name=None):
-            return self.recorder.run("input-" + label + "-" + suffix,
-                                     [*self.command, "api", endpoint], self.directory,
-                                     self.environment, stdout_cap=cap, stderr_cap=128 << 10,
-                                     timeout=180, stdout_name=stdout_name, guard=self.guard)
+        label = "input-" + role.replace("_", "-")
 
         with self.lease(selected):
             self.guard()
-            base = "repos/" + REPOSITORY + "/actions/"
-            run = command("run", base + "runs/" + str(selected["run_id"])
-                          + "/attempts/" + str(selected["run_attempt"]))
-            artifact = command("metadata", base + "artifacts/" + str(selected["artifact_id"]))
-            binding = bind_metadata(self.contract, role, api_json(run.stdout(API_LIMIT)),
-                                    api_json(artifact.stdout(API_LIMIT)))
-            self.recorder.seal("input-" + label + "-selection.json", canonical(binding))
+            binding = self._select(role) if self.preflight_bindings is None else self.preflight_bindings[role]
+            self.recorder.seal(label + "-selection.json", canonical(binding))
             # stdout is the original ZIP, not a separate log later copied to ZIP.
-            original = command("archive", base + "artifacts/" + str(selected["artifact_id"])
-                               + "/zip", selected["archive"]["bytes"],
-                               "artifact-" + str(selected["artifact_id"]) + ".zip")
+            artifact_id = selected["artifact_id"]
+            original = self._request(label + "-archive", f"artifacts/{artifact_id}/zip",
+                                     selected["archive"]["bytes"], f"artifact-{artifact_id}.zip")
             receipt = original.receipt
             require(type(receipt["actual_exit"]) is int and receipt["actual_exit"] == 0
                     and receipt["output_complete"] is True

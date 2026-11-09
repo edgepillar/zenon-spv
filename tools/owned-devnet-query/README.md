@@ -41,11 +41,14 @@ must separately establish fresh workspace ownership, free-space admission,
 actual transport completion and exact source/run/attempt/artifact binding.
 Archive equality is not authenticated distribution or a new CI qualification.
 
-`artifacts.py` binds each selected artifact to its completed source/workflow/run/
-attempt metadata before transport, holds its artifact lease, and streams stdout
-directly into the one original ZIP. A verified in-memory hit rechecks original
-file identities and binary contents. Incomplete or failed attempts are terminal
-for that workspace. It does not qualify a new CI run or enable binary execution.
+`artifacts.py` binds both required artifacts to completed source/workflow/run/
+attempt metadata before downloading either archive. An input observed expired
+or mismatched stops the workspace before archive transport. Each transfer
+holds its artifact lease and streams stdout directly into the one original ZIP,
+with the selected size and SHA-256 checked against the actual result. A verified
+in-memory hit rechecks original file identities and binary contents. Incomplete
+or failed attempts are terminal for that workspace. This step does not qualify
+a new CI run or enable binary execution.
 
 `node_toolchain.py` separately handles the official Node 22.23.0 Linux x64 input.
 It checks the original SHA-256/31,048,380-byte input, the decoded TAR digest and
@@ -67,6 +70,8 @@ The local package controls execute no package script.
 explicitly dispatched controller. It checks a fresh Linux/amd64 engine and fixed
 project absence, records complete create-returned IDs, checks configured limits,
 and stops only those owned IDs. Builder closure precedes runtime creation.
+The runner pins the selected runtime files before package scripts or image
+builds and checks them again before creating the runtime layout.
 The source-flow gate refuses extra containers before upstream discovery helpers
 can act. Graceful RPC closure remains bound to the same recorded volume and its
 `nom` subdirectory. Volume/image/network removal is not performed. Configured
