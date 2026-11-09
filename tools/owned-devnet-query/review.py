@@ -317,44 +317,61 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
 
 def main(argv=None, stdout=None, stderr=None):
     argv = list(sys.argv[1:] if argv is None else argv)
-    select_only = argv[:1] == ["select-hosted"]
-    description = "Select an owned devnet result from retained Actions metadata." if select_only else __doc__
+    hosted = bool(argv) and argv[0] in ("select-hosted", "review-hosted")
+    mode = argv.pop(0) if hosted else "review"
+    description = "Select an owned devnet result from retained Actions metadata." if mode == "select-hosted" else __doc__
     parser = argparse.ArgumentParser(description=description, allow_abbrev=False)
-    if select_only:
+    if hosted:
         for name in ("run", "jobs", "artifact"):
             parser.add_argument("--" + name + "-metadata", type=Path, required=True)
         parser.add_argument("--expect-artifact-id", type=int, required=True)
-    else:
+    if mode != "select-hosted":
         parser.add_argument("--archive", type=Path, required=True)
+    if not hosted:
         parser.add_argument("--expect-archive-sha256", required=True)
         parser.add_argument("--expect-archive-bytes", type=int, required=True)
     parser.add_argument("--expect-contract-sha256", required=True)
     parser.add_argument("--expect-source-revision", required=True)
     parser.add_argument("--expect-run-id", type=int, required=True)
-    args = parser.parse_args(argv[1:] if select_only else argv)
+    args = parser.parse_args(argv)
     stdout = sys.stdout.buffer if stdout is None else stdout
     stderr = sys.stderr if stderr is None else stderr
     try:
         contract = model.read_contract(HERE / "contract.json")
         require(model.digest(args.expect_contract_sha256) == contract.sha256, "review_contract_pin")
-        if select_only:
+        if hosted:
             metadata = {name: read_hosted_metadata(getattr(args, name + "_metadata"))
                         for name in ("run", "jobs", "artifact")}
-            report = select_hosted_result(
+            selected = select_hosted_result(
                 api_json(metadata["run"]), api_json(metadata["jobs"]), api_json(metadata["artifact"]),
                 args.expect_source_revision, args.expect_run_id, args.expect_artifact_id, contract.sha256)
-            report["metadata_pins"] = {name: {"bytes": len(value), "sha256": hashlib.sha256(value).hexdigest()}
-                                       for name, value in metadata.items()}
+            selected["metadata_pins"] = {name: {"bytes": len(value), "sha256": hashlib.sha256(value).hexdigest()}
+                                         for name, value in metadata.items()}
+            archive_pin = {key: selected["artifact"][key] for key in ("sha256", "bytes")}
         else:
             archive_pin = model.pin({"sha256": args.expect_archive_sha256,
                                      "bytes": args.expect_archive_bytes}, MAX_ARCHIVE)
+        if mode == "select-hosted":
+            report, matched = selected, True
+        else:
             report = inputs._read_archive_file(args.archive, archive_pin["bytes"],
                 lambda stream: review_stream(stream, archive_pin, args.expect_source_revision,
                                              args.expect_run_id, contract, HERE.parents[1]))
+            matched = report["comparison"] is not None
+            if mode == "review-hosted":
+                execution = selected["execution_conclusion"]
+                require(execution not in ("success", "failure") or (execution == "success") == matched,
+                        "review_hosted_execution_outcome")
+                matched = matched and selected["run_conclusion"] == "success"
+                report = {"format": "owned-devnet-hosted-result-review/v1",
+                          "status": ("HOSTED_RECORDED_CONSUMER_BYTES_MATCH" if matched
+                                     else "HOSTED_RECORDED_NON_ACCEPTING_OUTCOME"),
+                          "metadata_selection": selected, "archive_review": report,
+                          "artifact_payload_verified": True, "new_devnet_acceptance_established": False}
         raw = canonical(report)
         require(stdout.write(raw) == len(raw), "review_short_output")
         stdout.flush()
-        return 0 if select_only or report["comparison"] is not None else 1
+        return 0 if matched else 1
     except Refused as error:
         stderr.write("Evidence review refused (" + error.reason + ").\n")
     except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,
