@@ -23,6 +23,7 @@ FORMAT = "zenon-ci-change-scope/v1"
 ARCHIVE_FORMAT = "zenon-ci-change-scope/v2"
 NATIVE_FORMAT = "zenon-ci-change-scope/v3"
 PREPARATION_FORMAT = "zenon-ci-change-scope/v4"
+R1_HANDOFF_FORMAT = "zenon-ci-change-scope/v5"
 REPOSITORY = "edgepillar/zenon-spv"
 MAX_DIFF_BYTES = 256 << 10
 MAX_SOURCE_BYTES = 256 << 10
@@ -58,7 +59,18 @@ PREPARATION_FILES = frozenset("tools/owned-devnet-query/" + name for name in (
 # This route pins the other sources and the preparation workflow. The
 # contract, query profile and dispatch controller remain in the closure.
 PREPARATION_SOURCE_PIN = "a981edf8a591546886703a5dca4974937e34aaedd26673871b646975ba9df14d"
-MAX_PREPARATION_DIFF_RECORDS = 256
+R1_EXPORT_WORKFLOW = ".github/workflows/ledger-export.yml"
+R1_EXPORT_WORKFLOW_SHA256 = "5c0f8e7215bf86044f0bf44f330a48520c6a4c17187740909bc593158a26106a"
+R1_EXPORT_WORKFLOW_BYTES = 7817
+R1_SHARED_TRANSPORT = "tools/ledger-transport/transport.py"
+R1_TRANSPORT_FILES = frozenset((R1_SHARED_TRANSPORT, "tools/ledger-transport/transport_test.py"))
+R1_EXPORT_FILES = frozenset("tools/ledger-export/" + name for name in (
+    "inventory_completed_export.py", "inventory_completed_export_test.py", "README.md"))
+R1_HANDOFF_FILES = R1_TRANSPORT_FILES | R1_EXPORT_FILES
+R1_TRANSPORT_DOCS = frozenset(("docs/state-root-r1-intake.md", "docs/native-roadmap.md"))
+# Pin every other non-document dependency, including both dedicated workflows.
+R1_HANDOFF_SOURCE_PIN = "0945dfe09daef078d4758537b9e4a311094e605a0462b20d1b43543359df21db"
+MAX_FILTERED_DIFF_RECORDS = 256
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192
 TREE_RECORD = re.compile(rb"(100644|100755|120000|160000) (blob|commit) ([0-9a-f]{40})\t([^\0]+)\Z")
@@ -152,6 +164,10 @@ def oracle_fingerprint(raw):
 
 def preparation_fingerprint(raw):
     return tree_fingerprint(raw, PREPARATION_FILES | set(SOURCE_FILES[:2]))
+
+
+def r1_handoff_fingerprint(raw):
+    return tree_fingerprint(raw, R1_HANDOFF_FILES | set(SOURCE_FILES[:2]))
 
 
 def tree_fingerprint(raw, excluded_paths):
@@ -335,6 +351,17 @@ def select_scope(root, selection, runner=run_git):
             raise ScopeError(reason)
         return {"path": name, "sha256": digest, "bytes": size, "base_matches_checkout": True}
 
+    def bind_feature_tree(reason):
+        if selection["event"] == "pull_request":
+            # GitHub's path-filter diff must match the reviewed test merge.
+            raw_feature = query(["cat-file", "commit", feature], MAX_SOURCE_BYTES)
+            header, separator, _ = raw_feature.partition(b"\n\n")
+            lines = header.split(b"\n")
+            if (not separator or lines[0] != b"tree " + tree[:-1]
+                    or [line for line in lines if line.startswith(b"parent ")]
+                    != [b"parent " + base.encode("ascii")]):
+                raise ScopeError(reason)
+
     try:
         if not selection_valid(selection):
             return report
@@ -369,7 +396,7 @@ def select_scope(root, selection, runner=run_git):
             if error.reason != "outside_documentation":
                 raise
             for lane, leaves in (("archive", ARCHIVE_FILES), ("native", NATIVE_FILES),
-                                 ("preparation", PREPARATION_FILES)):
+                                 ("preparation", PREPARATION_FILES), ("r1_handoff", R1_HANDOFF_FILES)):
                 try:
                     paths = parse_diff(raw, leaves, lane + "_change")
                 except ScopeError as leaf_error:
@@ -408,22 +435,13 @@ def select_scope(root, selection, runner=run_git):
                               archive_workflow=workflow,
                               runtime_closure={**closure, "expected_sha256": RUNTIME_SOURCE_PIN,
                                                "matched": True})
-            else:
+            elif lane == "preparation":
                 # Leave room below GitHub's path-filter diff limit even when
                 # documentation changes accompany a preparation leaf.
-                if len(paths) > MAX_PREPARATION_DIFF_RECORDS:
+                if len(paths) > MAX_FILTERED_DIFF_RECORDS:
                     raise ScopeError("preparation_diff_count")
                 report["format"] = PREPARATION_FORMAT
-                if selection["event"] == "pull_request":
-                    # Read the feature's literal parent even in a shallow
-                    # checkout. Its path-filter diff must match this merge.
-                    raw_feature = query(["cat-file", "commit", feature], MAX_SOURCE_BYTES)
-                    header, separator, _ = raw_feature.partition(b"\n\n")
-                    lines = header.split(b"\n")
-                    if (not separator or lines[0] != b"tree " + tree[:-1]
-                            or [line for line in lines if line.startswith(b"parent ")]
-                            != [b"parent " + base.encode("ascii")]):
-                        raise ScopeError("preparation_event_diff")
+                bind_feature_tree("preparation_event_diff")
                 workflow = bind_workflow(PREPARATION_WORKFLOW, PREPARATION_WORKFLOW_BYTES,
                                          PREPARATION_WORKFLOW_SHA256, "preparation_workflow_pin")
                 closure = preparation_fingerprint(query(
@@ -438,6 +456,33 @@ def select_scope(root, selection, runner=run_git):
                               preparation_event_tree=report["source_tree"],
                               preparation_workflow=workflow,
                               runtime_closure={**closure, "expected_sha256": PREPARATION_SOURCE_PIN,
+                                               "matched": True})
+            else:
+                if len(paths) > MAX_FILTERED_DIFF_RECORDS:
+                    raise ScopeError("r1_handoff_diff_count")
+                if parents[0] != base:
+                    raise ScopeError("r1_handoff_event_diff")
+                report["format"] = R1_HANDOFF_FORMAT
+                bind_feature_tree("r1_handoff_event_diff")
+                names = {path["path"] for path in paths}
+                workflows = []
+                if names & (R1_TRANSPORT_FILES | R1_TRANSPORT_DOCS):
+                    workflows.append(bind_workflow(ARCHIVE_WORKFLOW, ARCHIVE_WORKFLOW_BYTES,
+                                                   ARCHIVE_WORKFLOW_SHA256, "r1_transport_workflow_pin"))
+                if R1_SHARED_TRANSPORT in names or names & R1_EXPORT_FILES:
+                    workflows.append(bind_workflow(R1_EXPORT_WORKFLOW, R1_EXPORT_WORKFLOW_BYTES,
+                                                   R1_EXPORT_WORKFLOW_SHA256, "r1_export_workflow_pin"))
+                closure = r1_handoff_fingerprint(query(
+                    ["ls-tree", "-r", "-z", "--full-tree", checkout], MAX_TREE_BYTES))
+                if closure["sha256"] != R1_HANDOFF_SOURCE_PIN:
+                    raise ScopeError("r1_handoff_source_pin")
+                handoff = [path for path in paths if path["path"] in R1_HANDOFF_FILES]
+                report.update(status="R1_HANDOFF_ONLY", run_runtime=False, reason="modified_r1_handoff_leaves",
+                              documentation_paths=[path for path in paths if path not in handoff],
+                              r1_handoff_paths=handoff, r1_handoff_event_tree=report["source_tree"],
+                              required_workflows=[workflow["path"] for workflow in workflows],
+                              r1_handoff_workflows=workflows,
+                              runtime_closure={**closure, "expected_sha256": R1_HANDOFF_SOURCE_PIN,
                                                "matched": True})
         else:
             report["documentation_paths"] = documents

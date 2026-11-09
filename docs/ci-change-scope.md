@@ -71,11 +71,9 @@ changes above:
 - `tools/ledger-transport/archive_tail.py` and `archive_tail_test.py`;
 - that directory's `README.md` and `THIRD_PARTY_NOTICES`.
 
-Additions, deletions, executable/link modes, aliases and any other code path keep
-the full lane. The raw `transport.py`/`transport_test.py`, inventory and exporter
-paths are excluded: the Go exporter's actual compiled-process controls consume
-the raw stream tool. Directory-wide tooling classification would hide that
-dependency.
+The archive route covers modifications to these six leaves. The raw stream and
+completed-export handoff use the R1 route below because the Go exporter's
+compiled-process controls consume the raw stream tool.
 
 The exact `ledger-transport.yml` Git bytes must match the selected checkout,
 working file, selected base and the pinned, three-platform workflow. The selector
@@ -105,6 +103,35 @@ jobs, its source/run/platform-bound archives and actual controls. The general
 workflow alone cannot establish their success. Its skipped native/oracle groups
 produce no new Go tests, binaries, native runtime qualification or review.
 Keep the latest separately qualified native revision explicit.
+
+## R1 transport and export handoff
+
+`R1_HANDOFF_ONLY` covers mode-100644 modifications to `transport.py` and
+`transport_test.py` in `tools/ledger-transport`, and `inventory_completed_export.py`,
+`inventory_completed_export_test.py` and `README.md` in `tools/ledger-export`.
+Regular documentation may accompany those changes within a 256-record diff.
+A pull request must have the selected base as the feature commit's sole parent
+and the same feature and merge trees. A push must name its first parent as the
+selected base. This binds the eligible diff to the two dedicated workflow
+triggers. [GitHub workflow diff rules](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#git-diff-comparisons)
+
+The shared `transport.py` selects both `ledger-transport` and `ledger-export`.
+A change to the transport test selects the transport matrix. Changes to the
+completed-export wrapper, its test or its README select the export matrix.
+Changes to the R1 intake or native roadmap alongside an eligible leaf also
+select transport. Each selected matrix covers Linux, macOS and Windows.
+
+The selector compares the required workflow blobs with the base, checkout and
+fixed workflow pins. The remaining Git-tree closure includes both workflow
+files, the general workflow, ledger inventory, the Go exporter and other
+non-document dependencies. An unmatched pin, addition, deletion, mode change,
+incomplete Git observation or additional code path requires full CI.
+
+The v5 report lists the selected workflows and their source pins. The output
+guard independently requires both workflows for a shared transport change.
+Before merging, verify the separate selected runs and bind each actual job and
+archive to the reviewed source. Runtime and recorded-oracle evidence stays
+bound to the revisions that ran those jobs.
 
 ## Owned devnet preparation leaves
 
