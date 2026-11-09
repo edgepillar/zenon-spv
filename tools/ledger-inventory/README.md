@@ -136,6 +136,65 @@ establishes selected-byte integrity, not snapshot origin or acceptance. Churn,
 rebuild/import, retention/reorg/reopen, proof service and activation still require
 their own complete input identities, actual operations and declared budgets.
 
+## Measure one ordered patch
+
+`churn.py` measures a selected adjacent pair of logical ledger snapshots. The
+input combines a small pinned plan, the ordered patch body and the earlier
+sorted put stream, in that order. Supply the later snapshot's independently
+selected byte count, record count and SHA-256 in the plan. Replay computes
+the exact canonical put-stream digest without reading that later snapshot or
+writing a derived snapshot file.
+
+The plan uses compact, key-sorted JSON followed by one newline. Select its
+exact byte count and SHA-256 independently of the streamed input.
+
+| Field | Required value |
+| --- | --- |
+| `format` | `zenon-r1-ledger-churn-plan/v1` |
+| `record_space` | `effective-raw-ledger` |
+| `provenance_sha256` | SHA-256 of the separately protected selection and consistency record |
+| `before` and `after` | Objects with `bytes`, `records`, `sha256` and `momentum`. The latter is an object with the full `height` and `hash`. The heights must be adjacent and the hashes distinct. |
+| `patch` | Object with exact `bytes`, operation `records` and `sha256` for the selected pair |
+
+The patch is the ordered canonical body of `Batch.Dump` with no journal
+header. Put records use the same format as inventory. A Delete is byte `00`,
+a minimal uvarint key length and the key bytes. Use the complete effective
+patch for the chosen pair, including any metadata writes required by the
+selection. The source operator must establish parent linkage, consistency,
+and patch completeness separately. [Selected goleveldb batch source](https://github.com/syndtr/goleveldb/blob/2ae1ddf74ef7/leveldb/batch.go)
+
+```bash
+set -o pipefail
+cat "$R1_CHURN_PLAN_OBJECT" "$R1_PATCH_OBJECT" "$R1_BEFORE_OBJECT" |
+  python3 -I -B tools/ledger-inventory/churn.py \
+    --plan-bytes "$R1_PLAN_BYTES" --plan-sha256 "$R1_PLAN_SHA256"
+```
+
+Use the approved controller and record actual pipeline exits and complete
+output. The inspector checks the plan and both input frame digests, strict
+base ordering, exact counts and final EOF. It requires the replayed byte
+count, record count and SHA-256 to match the selected after pin.
+
+The report gives before and after logical counts, key/value bytes and
+canonical put-wire bytes for each family. Operations count inserts, changed
+values, unchanged Puts, deletes of present keys and deletes of absent keys.
+Repeated-key operations count every operation after the first on that key.
+Per-key order is preserved, including Puts of empty values. Prior and supplied
+values are compared by length and SHA-256. No raw key or value is emitted.
+
+The default patch bounds are 8 MiB and 32,768 operations. Explicit
+`--max-patch-bytes` and `--max-patch-records` can raise them to 64 MiB and
+262,144 operations. The earlier and derived snapshots use the existing
+inventory bounds. Only the last Put payload and ordered length/digest
+descriptors are retained per touched key. Other base values are streamed in
+64 KiB slices. Python object overhead and transient field buffers count
+separately from logical input sizes.
+
+Exit 0 reports `SELECTED_PATCH_REPLAY_MATCHED`. A refusal emits `UNKNOWN`
+with a static reason and no partial counts. The selected adjacent pair and
+digest match remain separate from authenticated parent linkage, complete
+patch provenance, representative measurements and accepted state roots.
+
 ## Regression controls
 
 ```sh
