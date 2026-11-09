@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-only
-"""Select documentation-only, archive or native-only CI from a bounded Git diff.
+"""Select documentation-only, portable or native-only CI from a bounded Git diff.
 
 This selects work; it never qualifies an executable at a new revision. Any
 missing selection, changed source, incomplete command or unrecognized record
@@ -22,6 +22,7 @@ import time
 FORMAT = "zenon-ci-change-scope/v1"
 ARCHIVE_FORMAT = "zenon-ci-change-scope/v2"
 NATIVE_FORMAT = "zenon-ci-change-scope/v3"
+PREPARATION_FORMAT = "zenon-ci-change-scope/v4"
 REPOSITORY = "edgepillar/zenon-spv"
 MAX_DIFF_BYTES = 256 << 10
 MAX_SOURCE_BYTES = 256 << 10
@@ -49,6 +50,15 @@ NATIVE_FILES = frozenset("internal/verify/experimental_v3_" + name for name in (
 # Every other non-document tree record remains in this reviewed closure,
 # including workflows, research Go sources, Python helpers and fixture data.
 ORACLE_SOURCE_PIN = "e2c3c49e18a728ae2af500b258b4d5f12720d3461c67b518add5cd8732816129"
+PREPARATION_WORKFLOW = ".github/workflows/owned-devnet-query.yml"
+PREPARATION_WORKFLOW_SHA256 = "5d2bcf80acef2509490b36b12a2d2dfc1cec8dfaa9251862179c6acc78dd06a2"
+PREPARATION_WORKFLOW_BYTES = 3486
+PREPARATION_FILES = frozenset("tools/owned-devnet-query/" + name for name in (
+    "engine_test.py", "images_test.py", "inputs.py", "inputs_test.py"))
+# This route pins the other sources and the preparation workflow. The
+# contract, query profile and dispatch controller remain in the closure.
+PREPARATION_SOURCE_PIN = "a981edf8a591546886703a5dca4974937e34aaedd26673871b646975ba9df14d"
+MAX_PREPARATION_DIFF_RECORDS = 256
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192
 TREE_RECORD = re.compile(rb"(100644|100755|120000|160000) (blob|commit) ([0-9a-f]{40})\t([^\0]+)\Z")
@@ -85,7 +95,7 @@ def document_path(raw):
                     and part.split(".", 1)[0].upper() not in RESERVED for part in parts))
 
 
-def parse_diff(raw, include_archive=False, include_native=False):
+def parse_diff(raw, modified_paths=(), nonmodification_reason="outside_documentation"):
     if type(raw) is not bytes or len(raw) > MAX_DIFF_BYTES:
         raise ScopeError("diff_bounds")
     if not raw:
@@ -116,12 +126,10 @@ def parse_diff(raw, include_archive=False, include_native=False):
             raise ScopeError("diff_identity")
         if not document_path(path):
             name = path.decode("ascii", errors="replace")
-            archive = include_archive and name in ARCHIVE_FILES
-            native = include_native and name in NATIVE_FILES
-            if not archive and not native:
+            if name not in modified_paths:
                 raise ScopeError("outside_documentation")
             if change != b"M":
-                raise ScopeError("archive_change" if archive else "native_change")
+                raise ScopeError(nonmodification_reason)
         if path in seen:
             raise ScopeError("duplicate_path")
         if path.lower() in case_names:
@@ -140,6 +148,10 @@ def runtime_fingerprint(raw):
 def oracle_fingerprint(raw):
     """Exclude only regular reviewed native leaves, documents and selector code."""
     return tree_fingerprint(raw, NATIVE_FILES | set(SOURCE_FILES[:2]))
+
+
+def preparation_fingerprint(raw):
+    return tree_fingerprint(raw, PREPARATION_FILES | set(SOURCE_FILES[:2]))
 
 
 def tree_fingerprint(raw, excluded_paths):
@@ -315,6 +327,14 @@ def select_scope(root, selection, runner=run_git):
             "checkout_bytes": len(working), "checkout_relation": relation}
         return selected
 
+    def bind_workflow(name, size, digest, reason):
+        selected = bind_source(name, checkout)
+        previous = query(["show", base + ":" + name], MAX_SOURCE_BYTES)
+        if (selected != previous or len(selected) != size
+                or hashlib.sha256(selected).hexdigest() != digest):
+            raise ScopeError(reason)
+        return {"path": name, "sha256": digest, "bytes": size, "base_matches_checkout": True}
+
     try:
         if not selection_valid(selection):
             return report
@@ -348,14 +368,17 @@ def select_scope(root, selection, runner=run_git):
         except ScopeError as error:
             if error.reason != "outside_documentation":
                 raise
-            try:
-                paths = parse_diff(raw, include_archive=True)
-                lane = "archive"
-            except ScopeError as leaf_error:
-                if leaf_error.reason != "outside_documentation":
-                    raise
-                paths = parse_diff(raw, include_native=True)
-                lane = "native"
+            for lane, leaves in (("archive", ARCHIVE_FILES), ("native", NATIVE_FILES),
+                                 ("preparation", PREPARATION_FILES)):
+                try:
+                    paths = parse_diff(raw, leaves, lane + "_change")
+                except ScopeError as leaf_error:
+                    if leaf_error.reason != "outside_documentation":
+                        raise
+                else:
+                    break
+            else:
+                raise error
             if lane == "native":
                 report.update(format=NATIVE_FORMAT, run_recorded_oracles=True)
                 closure = oracle_fingerprint(query(
@@ -369,14 +392,11 @@ def select_scope(root, selection, runner=run_git):
                               native_paths=native,
                               oracle_closure={**closure, "expected_sha256": ORACLE_SOURCE_PIN,
                                               "matched": True})
-            else:
+            elif lane == "archive":
                 archive = [path for path in paths if path["path"] in ARCHIVE_FILES]
                 report["format"] = ARCHIVE_FORMAT
-                selected = bind_source(ARCHIVE_WORKFLOW, checkout)
-                previous = query(["show", base + ":" + ARCHIVE_WORKFLOW], MAX_SOURCE_BYTES)
-                if (selected != previous or len(selected) != ARCHIVE_WORKFLOW_BYTES
-                        or hashlib.sha256(selected).hexdigest() != ARCHIVE_WORKFLOW_SHA256):
-                    raise ScopeError("archive_workflow_pin")
+                workflow = bind_workflow(ARCHIVE_WORKFLOW, ARCHIVE_WORKFLOW_BYTES,
+                                         ARCHIVE_WORKFLOW_SHA256, "archive_workflow_pin")
                 closure = runtime_fingerprint(query(
                     ["ls-tree", "-r", "-z", "--full-tree", checkout], MAX_TREE_BYTES))
                 if closure["sha256"] != RUNTIME_SOURCE_PIN:
@@ -385,11 +405,39 @@ def select_scope(root, selection, runner=run_git):
                               run_runtime=False, reason="modified_independent_archive_leaves",
                               documentation_paths=[path for path in paths if path not in archive],
                               portable_archive_paths=archive, required_workflows=[ARCHIVE_WORKFLOW],
-                              archive_workflow={"path": ARCHIVE_WORKFLOW,
-                                                "sha256": ARCHIVE_WORKFLOW_SHA256,
-                                                "bytes": ARCHIVE_WORKFLOW_BYTES,
-                                                "base_matches_checkout": True},
+                              archive_workflow=workflow,
                               runtime_closure={**closure, "expected_sha256": RUNTIME_SOURCE_PIN,
+                                               "matched": True})
+            else:
+                # Leave room below GitHub's path-filter diff limit even when
+                # documentation changes accompany a preparation leaf.
+                if len(paths) > MAX_PREPARATION_DIFF_RECORDS:
+                    raise ScopeError("preparation_diff_count")
+                report["format"] = PREPARATION_FORMAT
+                if selection["event"] == "pull_request":
+                    # Read the feature's literal parent even in a shallow
+                    # checkout. Its path-filter diff must match this merge.
+                    raw_feature = query(["cat-file", "commit", feature], MAX_SOURCE_BYTES)
+                    header, separator, _ = raw_feature.partition(b"\n\n")
+                    lines = header.split(b"\n")
+                    if (not separator or lines[0] != b"tree " + tree[:-1]
+                            or [line for line in lines if line.startswith(b"parent ")]
+                            != [b"parent " + base.encode("ascii")]):
+                        raise ScopeError("preparation_event_diff")
+                workflow = bind_workflow(PREPARATION_WORKFLOW, PREPARATION_WORKFLOW_BYTES,
+                                         PREPARATION_WORKFLOW_SHA256, "preparation_workflow_pin")
+                closure = preparation_fingerprint(query(
+                    ["ls-tree", "-r", "-z", "--full-tree", checkout], MAX_TREE_BYTES))
+                if closure["sha256"] != PREPARATION_SOURCE_PIN:
+                    raise ScopeError("preparation_source_pin")
+                preparation = [path for path in paths if path["path"] in PREPARATION_FILES]
+                report.update(status="OWNED_DEVNET_PREPARATION_ONLY", run_runtime=False,
+                              reason="modified_independent_preparation_leaves",
+                              documentation_paths=[path for path in paths if path not in preparation],
+                              preparation_paths=preparation, required_workflows=[PREPARATION_WORKFLOW],
+                              preparation_event_tree=report["source_tree"],
+                              preparation_workflow=workflow,
+                              runtime_closure={**closure, "expected_sha256": PREPARATION_SOURCE_PIN,
                                                "matched": True})
         else:
             report["documentation_paths"] = documents

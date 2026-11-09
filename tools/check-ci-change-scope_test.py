@@ -71,6 +71,13 @@ def native_tree():
             + tree_record(b"tools/gen-state-root-vectors/testdata/candidate-patch-file.json"))
 
 
+def preparation_tree():
+    return (archive_tree()
+            + tree_record(M.PREPARATION_WORKFLOW.encode())
+            + tree_record(b"tools/owned-devnet-query/inputs.py")
+            + tree_record(b"tools/owned-devnet-query/contract.json"))
+
+
 class FixtureRunner:
     def __init__(self, selected=None, diff=None):
         self.selection = selection() if selected is None else selected
@@ -80,8 +87,9 @@ class FixtureRunner:
 
     def __call__(self, root, args, limit):
         self.calls.append((args, limit))
-        if args[0] in self.overrides:
-            raw, result = self.overrides[args[0]]
+        key = tuple(args) if tuple(args) in self.overrides else args[0]
+        if key in self.overrides:
+            raw, result = self.overrides[key]
             return raw, copy.deepcopy(result)
         s = self.selection
         if args[0] == "rev-list":
@@ -89,9 +97,11 @@ class FixtureRunner:
             raw = (s["checkout_revision"] + " " + parents + "\n").encode()
         elif args[0] == "rev-parse":
             raw = (TREE + "\n").encode()
+        elif args[0] == "cat-file":
+            raw = f"tree {TREE}\nparent {BASE}\n\nfixture\n".encode()
         elif args[0] == "show":
             raw = (ROOT / args[1].split(":", 1)[1]).read_bytes()
-            if args[1].split(":", 1)[1] == M.ARCHIVE_WORKFLOW:
+            if args[1].split(":", 1)[1] in (M.ARCHIVE_WORKFLOW, M.PREPARATION_WORKFLOW):
                 raw = raw.replace(b"\r\n", b"\n")
         elif args[0] == "diff":
             raw = self.diff
@@ -789,6 +799,77 @@ class CIChangeScopeControls(unittest.TestCase):
         self.assertTrue(report["run_recorded_oracles"])
         self.assertEqual(self.workflow_guard(self.guard_bytes(report)),
                          (None, "run_runtime=true\nrun_recorded_oracles=true\n"))
+
+    def preparation_result(self, runner):
+        raw = preparation_tree()
+        runner.overrides.setdefault("ls-tree", (raw, receipt(raw)))
+        with mock.patch.object(M, "PREPARATION_SOURCE_PIN", M.preparation_fingerprint(raw)["sha256"]):
+            return M.select_scope(ROOT, runner.selection, runner)
+
+    def test_preparation_selected_leaves_require_the_pinned_three_platform_workflow(self):
+        for event in ("pull_request", "push"):
+            for path in sorted(M.PREPARATION_FILES):
+                with self.subTest(event=event, path=path):
+                    runner = FixtureRunner(selection(event), record(path.encode()) + record())
+                    report = self.preparation_result(runner)
+                    self.assertIs(report["run_runtime"], False)
+                    self.assertEqual((report["format"], report["status"]),
+                                     (M.PREPARATION_FORMAT, "OWNED_DEVNET_PREPARATION_ONLY"))
+                    self.assertEqual(report["preparation_paths"], [{"path": path, "change": "M"}])
+                    self.assertEqual(report["required_workflows"], [M.PREPARATION_WORKFLOW])
+                    self.assertEqual(report["preparation_event_tree"], TREE)
+                    self.assertEqual(len(report["commands"]), 10 if event == "pull_request" else 9)
+                    self.assertFalse(report["runtime_qualification_transferred"])
+                    if event == "pull_request":
+                        self.assertEqual(self.workflow_guard(self.guard_bytes(report)),
+                                         (None, "run_runtime=false\nrun_recorded_oracles=false\n"))
+
+    def test_preparation_other_source_paths_modes_and_large_diffs_keep_full_lane(self):
+        path = b"tools/owned-devnet-query/inputs.py"
+        rows = [record(path, b"A", b"000000"), record(path, b"D", new_mode=b"000000"),
+                record(path, old_mode=b"100755", new_mode=b"100755"), record(path) + record(path.upper()),
+                record(path) + b"".join(record(f"docs/d{i}.md".encode())
+                                         for i in range(M.MAX_PREPARATION_DIFF_RECORDS))]
+        for unrelated in (M.PREPARATION_WORKFLOW, "tools/owned-devnet-query/contract.json",
+                          "tools/owned-devnet-query/controls.py", "tools/owned-devnet-query/runner.py",
+                          "internal/testdata/conformance/prepared-devnet-query-profile.json",
+                          "tools/ledger-transport/archive_tail.py", "internal/verify/experimental_v3_state.go"):
+            rows.append(record(path) + record(unrelated.encode()))
+        for index, raw in enumerate(rows):
+            with self.subTest(case=index):
+                report = self.preparation_result(FixtureRunner(diff=raw))
+                self.assertTrue(report["run_runtime"])
+                self.assertEqual(report["status"], "RUNTIME_REQUIRED")
+
+    def test_preparation_parent_tree_workflow_and_dependency_drift_require_full_lane(self):
+        path = b"tools/owned-devnet-query/inputs.py"
+        workflow = (ROOT / M.PREPARATION_WORKFLOW).read_bytes().replace(b"\r\n", b"\n")
+        cases = (
+            ("cat-file", f"tree {TREE}\nparent {FEATURE}\n\n".encode(), "preparation_event_diff"),
+            ("cat-file", f"tree {FEATURE}\nparent {BASE}\n\n".encode(), "preparation_event_diff"),
+            (("show", BASE + ":" + M.PREPARATION_WORKFLOW), workflow + b"\n", "preparation_workflow_pin"),
+            ("ls-tree", preparation_tree() + tree_record(b"tools/other.py"), "preparation_source_pin"),
+        )
+        for command, raw, reason in cases:
+            with self.subTest(command=command, reason=reason):
+                runner = FixtureRunner(diff=record(path))
+                runner.overrides[command] = raw, receipt(raw)
+                report = self.preparation_result(runner)
+                self.assertTrue(report["run_runtime"])
+                self.assertEqual(report["reason"], reason)
+                self.assertEqual(self.workflow_guard(self.guard_bytes(report)),
+                                 (None, "run_runtime=true\nrun_recorded_oracles=true\n"))
+
+    def test_preparation_workflow_guard_requires_event_binding_and_complete_selection(self):
+        runner = FixtureRunner(diff=record(b"tools/owned-devnet-query/inputs.py"))
+        report = self.preparation_result(runner)
+        for key, value in (("required_workflows", []), ("preparation_event_tree", FEATURE),
+                           ("preparation_workflow", {"path": M.PREPARATION_WORKFLOW}),
+                           ("preparation_paths", [{"path": "tools/owned-devnet-query/runner.py", "change": "M"}]),
+                           ("commands", report["commands"][:-1])):
+            with self.subTest(key=key):
+                changed = {**report, key: value}
+                self.assertIsNotNone(self.workflow_guard(self.guard_bytes(changed))[0])
 
 
 class ControlResult(unittest.TextTestResult):
