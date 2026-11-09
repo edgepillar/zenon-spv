@@ -178,7 +178,7 @@ class HostBoundaryTests(unittest.TestCase):
     def test_invalid_runtime_files_refuse_before_package_or_image_preparation(self):
         execution = model.ExecutionIdentity("a" * 40, 1, 1, "edgepillar")
         with tempfile.TemporaryDirectory(prefix="owned-runtime-input-control-") as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve(strict=True)
             with mock.patch.multiple(runner, dispatch=mock.DEFAULT, Budget=mock.DEFAULT,
                                      Engine=mock.DEFAULT, Artifacts=mock.DEFAULT, Installer=mock.DEFAULT,
                                      Sources=mock.DEFAULT, Packages=mock.DEFAULT, Builder=mock.DEFAULT,
