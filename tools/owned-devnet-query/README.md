@@ -102,6 +102,39 @@ header, oracle, provider and consumer evidence. The original downloads remain
 single files in the transport directory. The upload selects evidence by name
 and digest. The fresh runner owns the disposal boundary.
 
+### Review a retained result
+
+Use the original result ZIP with the byte count, SHA-256, runner revision and
+attempt-1 run ID selected from its independent run and artifact record. Use the
+matching local contract and its independently selected SHA-256.
+
+```sh
+python3 -I -B tools/owned-devnet-query/review.py \
+  --archive "$RESULT_ZIP" --expect-archive-bytes "$ARCHIVE_BYTES" \
+  --expect-archive-sha256 "$ARCHIVE_SHA256" --expect-source-revision "$RUNNER_SHA" \
+  --expect-contract-sha256 "$CONTRACT_SHA256" --expect-run-id "$RUN_ID"
+```
+
+The reader checks the archive framing, exact indexed file set and all member
+digests in place. For a recorded successful consumer, it checks the selected
+binary transport receipts, the H2/H3 boundary, the captured H/hash and tip,
+the reported closed RPC container and oracle receipts, and the derived query
+inputs. It recomputes the three membership proofs, decodes the typed rows and
+compares the 17 stored fields with the recorded gateway response and CLI result.
+
+Exit 0 reports `RECORDED_CONSUMER_BYTES_MATCH`. This is agreement among the
+retained records and independently recomputed bytes. The original run identity,
+native signature verification, producer authority and any selected-network
+acceptance retain their own evidence requirements. Exit 1 reports an intact
+archive with a recorded failure, refusal or unknown outcome. Exit 2 reports a
+refused or incomplete inspection.
+
+The reader opens only the original ZIP and the local contract/profile files.
+The limits are 2,048 ZIP members, a 512 KiB index, 2 MiB per indexed file and
+64 MiB expanded in total. It streams the remaining indexed members in 64 KiB
+blocks. Review creates zero extracted bytes and reuses the original recorded
+consumer output. Preserve the original archive and run metadata as evidence.
+
 The regular-file controls can be run with Python's standard library:
 
 ```sh
@@ -117,6 +150,7 @@ python3 -I -B tools/owned-devnet-query/images_test.py
 python3 -I -B tools/owned-devnet-query/budget_test.py
 python3 -I -B tools/owned-devnet-query/query_checks_test.py
 python3 -I -B tools/owned-devnet-query/capture_test.py
+python3 -I -B tools/owned-devnet-query/review_test.py
 ```
 
 Use the approved task-storage manager for local qualification, with its owned
