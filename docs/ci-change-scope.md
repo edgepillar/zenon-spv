@@ -1,4 +1,4 @@
-# Documentation, archive leaves and native CI scope
+# Documentation, portable leaves and native CI scope
 
 The general workflow first selects the exact Git change scope with
 `tools/check-ci-change-scope.py`. A nonempty diff containing only regular
@@ -105,6 +105,34 @@ jobs, its source/run/platform-bound archives and actual controls. The general
 workflow alone cannot establish their success. Its skipped native/oracle groups
 produce no new Go tests, binaries, native runtime qualification or review.
 Keep the latest separately qualified native revision explicit.
+
+## Owned devnet preparation leaves
+
+`OWNED_DEVNET_PREPARATION_ONLY` selects the pinned three-platform
+`owned-devnet-query` workflow for mode-100644 modifications to four existing
+files in `tools/owned-devnet-query`. The reviewed files are `engine_test.py`,
+`images_test.py`, `inputs.py` and `inputs_test.py`. Regular documentation can
+accompany those changes within a 256-record diff. A pull request must have the
+selected base as its feature commit's sole parent and the same feature and merge
+trees, so its path-filter diff matches the selected changes. A main push uses
+the selected previous head and pushed tree.
+
+The v4 selection checks the exact workflow bytes in the base and checkout and
+binds the remaining Git tree records. Changes to the dispatch controller,
+contract, test driver, profile, workflow, native sources, or any other
+non-document dependency require the full lane. Additions, deletions, unexpected
+modes and incomplete Git observations also require full CI.
+
+Before merging an eligible change, verify the separate preparation workflow's
+Linux, macOS and Windows results and exact-source archives. The v4 report selects
+work and leaves native and manual-experiment qualification to their own evidence.
+
+For PR #350's corrected revision, the three preparation jobs used 59
+runner-seconds and produced 6,264 bytes of ZIP archives. The first general CI
+attempt used 5,286 runner-seconds, including its failed Linux linter download.
+That initial integration required full CI. Measure the new route on an eligible
+PR and its main push. [Preparation run](https://github.com/edgepillar/zenon-spv/actions/runs/42569815072)
+and [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/42569815071).
 
 ## Costs and verification limits
 
