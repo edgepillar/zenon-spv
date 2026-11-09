@@ -103,9 +103,12 @@ to the captured range. H2 is the scoped trust anchor. The observed v3 range
 supplies the schedule entries.
 
 The offline `zenon-spv` consumer receives the independently encoded header
-and query context pins. The controller compares the exact H and tip, all three
-proofs and typed rows, selected source semantics and all 17 stored BatchEntry
-fields from the frontier DTO. It records a gateway mismatch separately.
+and query context pins. The controller checks the complete header acceptance
+record, the detached context settings and the configured anchor, profile and
+producer-schedule trust list. It refuses a checkpoint input or output on this
+anchor-replay path. It then compares the exact H and tip, all three proofs and
+typed rows, selected source semantics and all 17 stored BatchEntry fields from
+the frontier DTO. It records a gateway mismatch separately.
 
 The workflow retains a file manifest, actual command receipts, and the selected
 header, oracle, provider and consumer evidence. The original downloads remain

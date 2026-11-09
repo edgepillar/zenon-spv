@@ -193,7 +193,7 @@ class QueryCheckTests(unittest.TestCase):
         witnesses = self.witnesses()
         checked = q.witness_rows(config["query_profile"], request["batch_id"], root, witnesses)
         pins = self.unit["expected"]
-        context = {"fingerprint": pins["context"]}
+        header, context = q.consumer_context_diagnostics(config, pins)
         scope = "EXPERIMENTAL_CONFIGURED_HEADER_THREE_ROW_MEMBERSHIP"
 
         def encode(row):
@@ -204,15 +204,16 @@ class QueryCheckTests(unittest.TestCase):
         gateway = {key[0].lower() + key[1:]: value for key, value in fields.items()}
         gateway.update(domainId=1, batchId=0, isFinalized=False)
         result = {"scope": scope, "request": request, "query_fingerprint": pins["query"],
-                  "root": root, "context": context}
+                  "root": root, "context": context, "header_trust": list(q.OWNED_HEADER_TRUST)}
         result.update({name: encode(value) for name, value in checked["decoded"].items()})
         for name, kind in (("batch_membership", "batch_entry"), ("record_membership", "domain_record"),
                            ("config_membership", "domain_config")):
             result[name] = encode(checked["memberships"][kind])
         report = {"schema_version": 1, "command": "query-experimental-batch-context", "status": "matched",
             "scope": scope, "exit_code": 0, "error": None, "production_state_value_guarantee": False,
-            "persistence": "read_only", "rpc_requests": 0, "headers": {"outcome": "ACCEPT"},
-            "header_context": {"fingerprint": pins["header_context"]}, "query_context": context,
+            "persistence": "read_only", "rpc_requests": 0,
+            "headers": {"outcome": "ACCEPT", "reason": "ReasonOK", "failed_at": -1},
+            "header_context": header, "query_context": context,
             "gateway_comparison_requested": True, "result": result, "gateway_comparison": {
                 "stored_fields_match": True, "frontier_is_finalized_hint": False,
                 "frontier_identity_authenticated": False}}
@@ -223,6 +224,19 @@ class QueryCheckTests(unittest.TestCase):
                         dict(report, result=dict(result, request=dict(request, batch_id=False))),
                         dict(report, result=dict(result, root="1" * 64))):
             with self.assertRaises(model.Refused):
+                q.consumer_result(altered, config, request, provider, root)
+        for altered, reason in (
+                (dict(report, state_input={"trust": "trusted_local_provenance_required"}),
+                 "consumer_anchor_replay_scope"),
+                (dict(report, state_output=None), "consumer_anchor_replay_scope"),
+                (dict(report, headers=dict(report["headers"], failed_at=0)), "consumer_headers_not_accepted"),
+                (dict(report, header_context=dict(header, schedule_hash="1" * 64)), "consumer_header_context"),
+                (dict(report, query_context=dict(context, require_canonical=False)), "consumer_query_context"),
+                (dict(report, result=dict(result, context=dict(context, require_present=False))),
+                 "consumer_result_context"),
+                (dict(report, result=dict(result, header_trust=["TRUST_PERSISTED_STATE"])),
+                 "consumer_header_trust")):
+            with self.subTest(reason=reason), self.assertRaisesRegex(model.Refused, reason):
                 q.consumer_result(altered, config, request, provider, root)
         gateway["executorPillar"] += "Changed"
         with self.assertRaisesRegex(model.Refused, "consumer_gateway_comparison"):

@@ -17,6 +17,13 @@ from model import require, same
 
 H = lambda raw: hashlib.sha3_256(raw).digest()
 CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
+MAX_HEADER_JSON_BYTES = 8192
+MAX_RETAINED_STATE_BYTES = 8 << 20
+ENTRY_CONTEXT_SCHEMA = "zenon-settlement-batch-entry-17/v1"
+RECORD_CONTEXT_SCHEMA = "zenon-settlement-domain-record-12/v1"
+CONFIG_CONTEXT_SCHEMA = "zenon-settlement-domain-config-2/v1"
+OWNED_HEADER_TRUST = ("TRUST_CONFIGURED_ANCHOR", "TRUST_EXTERNAL_PROTOCOL_PROFILE",
+                      "TRUST_EXTERNAL_PRODUCER_SCHEDULE")
 WIRE_FIELDS = frozenset(("version", "chainIdentifier", "hash", "previousHash", "height", "timestamp",
     "data", "content", "changesHash", "publicKey", "signature", "nextFusionPrice", "nextWorkPrice", "stateRoot", "producer"))
 ENTRY_SCHEMA = (("ProtocolVersion", 16), ("FirstInputSeq", 64), ("LastInputSeq", 64),
@@ -151,7 +158,8 @@ def fingerprints(config, request=None):
     for anchor in (selected["genesis"], selected["anchor"]):
         header += word(anchor["chain_id"]) + word(anchor["height"]) + hex_bytes(anchor["header_hash"], 32)
     header += b"".join(word(n) for n in (selected["version"], selected["first_v3_height"], selected["valid_through"],
-        policy["w"], policy["retain_headers"], policy["max_batch_headers"], 8192, 8 << 20))
+        policy["w"], policy["retain_headers"], policy["max_batch_headers"],
+        MAX_HEADER_JSON_BYTES, MAX_RETAINED_STATE_BYTES))
     header += hex_bytes(selected["node_revision"], 20) + s
     entry = p["entry"]
     version = uint(p["version"], 8)
@@ -159,7 +167,7 @@ def fingerprints(config, request=None):
     require((version == 1 and "source_rule" not in entry) or
             (version == 2 and entry.get("source_rule") == "zenon-phase1-batch-fields/v1"),
             "independent_query_source_rule")
-    schema = b"zenon-settlement-batch-entry-17/v1"
+    schema = ENTRY_CONTEXT_SCHEMA.encode("ascii")
     legacy = b"ZENON-EXPERIMENTAL-BATCH-ENTRY\0" + bytes([version]) + word(version) + H(header)
     legacy += hex_bytes(selected["node_revision"], 20)
     legacy += hex_bytes(model.SOURCE_PINS["executor"][1], 20) + hex_bytes(model.SOURCE_PINS["contract_sdk"][1], 20)
@@ -173,7 +181,7 @@ def fingerprints(config, request=None):
         rule = entry["source_rule"].encode("ascii")
         legacy += word(len(rule)) + rule
     context = b"ZENON-EXPERIMENTAL-BATCH-CONTEXT\0" + bytes([version]) + H(legacy) + word(version)
-    for text in ("zenon-settlement-domain-record-12/v1", "zenon-settlement-domain-config-2/v1", p["domain_rule"]):
+    for text in (RECORD_CONTEXT_SCHEMA, CONFIG_CONTEXT_SCHEMA, p["domain_rule"]):
         encoded = text.encode("ascii")
         context += word(len(encoded)) + encoded
     record, cfg, limits = p["domain_record"], p["domain_config"], p["limits"]
@@ -325,6 +333,23 @@ def witness_rows(profile, batch, header_root, witnesses):
     return {"decoded": decode_rows(profile, values), "memberships": members, "totals": totals}
 
 
+def consumer_context_diagnostics(config, pins):
+    """Project the selected settings into the native command's detached contexts."""
+    header = {key: value for key, value in config["header_profile"].items() if key != "source"}
+    header.update(layout="zenon-experimental-momentum-v3-sha3-208", policy=config["header_policy"],
+                  schedule_hash=pins["schedule_hash"], max_header_bytes=MAX_HEADER_JSON_BYTES,
+                  max_state_bytes=MAX_RETAINED_STATE_BYTES, fingerprint=pins["header_context"])
+    profile = config["query_profile"]
+    entry = {key: value for key, value in profile["entry"].items() if key != "source"}
+    entry.update(header=header, schema=ENTRY_CONTEXT_SCHEMA, executor_revision=model.SOURCE_PINS["executor"][1],
+                 sdk_revision=model.SOURCE_PINS["contract_sdk"][1], require_canonical=True,
+                 fingerprint=pins["entry_context"])
+    query = dict(profile, entry=entry, domain_record_schema=RECORD_CONTEXT_SCHEMA,
+                 domain_config_schema=CONFIG_CONTEXT_SCHEMA, require_canonical=True,
+                 require_present=True, fingerprint=pins["context"])
+    return header, query
+
+
 def consumer_result(report, config, request, provider, header_root, descriptor=None):
     """Compare actual CLI output bytes; its successful receipt is checked outside."""
     pins = fingerprints(config, request)
@@ -336,16 +361,20 @@ def consumer_result(report, config, request, provider, header_root, descriptor=N
             "consumer_report_status_or_scope")
     same(report.get("schema_version"), 1, "consumer_schema_version")
     same(report.get("rpc_requests"), 0, "consumer_rpc_requests")
+    require("state_input" not in report and "state_output" not in report, "consumer_anchor_replay_scope")
     scope = "EXPERIMENTAL_CONFIGURED_HEADER_THREE_ROW_MEMBERSHIP"
-    require(report.get("scope") == scope and report.get("headers", {}).get("outcome") == "ACCEPT",
-            "consumer_headers_not_accepted")
-    require(report.get("header_context", {}).get("fingerprint") == pins["header_context"]
-            and report.get("query_context", {}).get("fingerprint") == pins["context"],
-            "consumer_context_pins")
+    require(report.get("scope") == scope, "consumer_report_status_or_scope")
+    same(report.get("headers"), {"outcome": "ACCEPT", "reason": "ReasonOK", "failed_at": -1},
+         "consumer_headers_not_accepted")
+    header, query = consumer_context_diagnostics(config, pins)
+    same(report.get("header_context"), header, "consumer_header_context")
+    same(report.get("query_context"), query, "consumer_query_context")
     actual = report.get("result")
     require(type(actual) is dict and actual.get("scope") == scope
-            and actual.get("query_fingerprint") == pins["query"] and actual.get("root") == header_root
-            and actual.get("context", {}).get("fingerprint") == pins["context"], "consumer_result_binding")
+            and actual.get("query_fingerprint") == pins["query"] and actual.get("root") == header_root,
+            "consumer_result_binding")
+    same(actual.get("context"), query, "consumer_result_context")
+    same(actual.get("header_trust"), list(OWNED_HEADER_TRUST), "consumer_header_trust")
     same(actual.get("request"), request, "consumer_request_identity")
     checked = witness_rows(config["query_profile"], request["batch_id"], header_root, provider["witnesses"])
     if descriptor is not None:

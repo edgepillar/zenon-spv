@@ -200,16 +200,17 @@ def accepted_files():
         **{key[0].lower() + key[1:]: value for key, value in encoded(typed["entry"]).items()}}}
     members = checks.witness_rows(profile, 0, root.hex(), witnesses)["memberships"]
     scope = "EXPERIMENTAL_CONFIGURED_HEADER_THREE_ROW_MEMBERSHIP"
-    context = {"fingerprint": pins["context"]}
+    header, context = checks.consumer_context_diagnostics(config, pins)
     result = {"scope": scope, "context": context, "request": request, "root": root.hex(),
               "query_fingerprint": pins["query"], **{k: encoded(v) for k, v in typed.items()},
+              "header_trust": list(checks.OWNED_HEADER_TRUST),
               "batch_membership": encoded(members["batch_entry"]),
               "record_membership": encoded(members["domain_record"]),
               "config_membership": encoded(members["domain_config"])}
     cli = {"schema_version": 1, "command": "query-experimental-batch-context", "scope": scope,
            "status": "matched", "exit_code": 0, "error": None, "persistence": "read_only",
-           "rpc_requests": 0, "production_state_value_guarantee": False,
-           "headers": {"outcome": "ACCEPT"}, "header_context": {"fingerprint": pins["header_context"]},
+           "rpc_requests": 0, "production_state_value_guarantee": False, "header_context": header,
+           "headers": {"outcome": "ACCEPT", "reason": "ReasonOK", "failed_at": -1},
            "query_context": context, "result": result, "gateway_comparison_requested": True,
            "gateway_comparison": {"stored_fields_match": True, "frontier_is_finalized_hint": False,
                                   "frontier_identity_authenticated": False}}
@@ -412,6 +413,19 @@ class ReviewTests(unittest.TestCase):
         receipt["outputs"]["stdout"]["sha256"] = "a" * 64
         files[name] = canonical(receipt)
         with self.assertRaisesRegex(Refused, "review_recorded_command_stdout"):
+            self.review(make_archive(files))
+
+    def test_retained_result_refuses_changed_header_trust_with_rebound_stdout(self):
+        files = dict(self.files)
+        report_path = "evidence/consume-query.stdout"
+        report = json.loads(files[report_path])
+        report["result"]["header_trust"].append("TRUST_PERSISTED_STATE")
+        files[report_path] = canonical(report)
+        receipt_path = "evidence/consume-query.complete.json"
+        receipt = json.loads(files[receipt_path])
+        receipt["outputs"]["stdout"].update(pin(files[report_path]))
+        files[receipt_path] = canonical(receipt)
+        with self.assertRaisesRegex(Refused, "consumer_header_trust"):
             self.review(make_archive(files))
 
     def test_changed_proof_refused_even_with_updated_archive_and_stdout_pins(self):
