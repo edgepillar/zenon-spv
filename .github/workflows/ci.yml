@@ -47,8 +47,7 @@ jobs:
           assert len(raw) <= 1 << 20
           value = json.loads(raw)
           assert (json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False) + '\n').encode() == raw
-          assert value['format'] in ('zenon-ci-change-scope/v1', 'zenon-ci-change-scope/v2',
-              'zenon-ci-change-scope/v3', 'zenon-ci-change-scope/v4', 'zenon-ci-change-scope/v5')
+          assert value['format'] in ('zenon-ci-change-scope/v1', 'zenon-ci-change-scope/v3', 'zenon-ci-change-scope/v6')
           assert value['selection'] == {'repository': os.environ['GITHUB_REPOSITORY'], 'event': os.environ['GITHUB_EVENT_NAME'],
               'base_revision': os.environ['CI_SCOPE_BASE'], 'feature_revision': os.environ['CI_SCOPE_FEATURE'],
               'checkout_revision': os.environ['GITHUB_SHA'], 'run_id': int(os.environ['GITHUB_RUN_ID']),
@@ -67,47 +66,25 @@ jobs:
               if value['format'] == 'zenon-ci-change-scope/v1':
                   assert value['status'] == 'DOCUMENTATION_ONLY' and value['reason'] == 'regular_markdown_only'
                   assert value['documentation_paths'] and len(value['commands']) == 6
-              elif value['format'] in ('zenon-ci-change-scope/v2', 'zenon-ci-change-scope/v4'):
-                  if value['format'] == 'zenon-ci-change-scope/v2':
-                      workflow = '.github/workflows/ledger-transport.yml'
-                      digest, size, commands = '3101f06e85bd6bd6d74fe89e86e06a04cce38a26aad7d945f5371880250e49b0', 7894, 9
-                      assert value['status'] == 'PORTABLE_ARCHIVE_ONLY' and value['reason'] == 'modified_independent_archive_leaves'
-                      allowed = {'tools/ledger-transport/' + name for name in ('archive_index.py', 'archive_index_test.py',
-                          'archive_tail.py', 'archive_tail_test.py', 'README.md', 'THIRD_PARTY_NOTICES')}
-                      paths, binding = value['portable_archive_paths'], value['archive_workflow']
-                  else:
-                      workflow = '.github/workflows/owned-devnet-query.yml'
-                      digest, size = '5d2bcf80acef2509490b36b12a2d2dfc1cec8dfaa9251862179c6acc78dd06a2', 3486
-                      commands = 10 if value['selection']['event'] == 'pull_request' else 9
-                      assert value['status'] == 'OWNED_DEVNET_PREPARATION_ONLY'
-                      assert value['reason'] == 'modified_independent_preparation_leaves'
-                      assert re.fullmatch('[0-9a-f]{40}', value['source_tree']) and value['source_tree'] != '0' * 40
-                      assert value['preparation_event_tree'] == value['source_tree']
-                      allowed = {'tools/owned-devnet-query/' + name for name in (
-                          'engine_test.py', 'images_test.py', 'inputs.py', 'inputs_test.py')}
-                      paths, binding = value['preparation_paths'], value['preparation_workflow']
-                      assert len(paths) + len(value['documentation_paths']) <= 256
-                  assert value['required_workflows'] == [workflow] and len(value['commands']) == commands
-                  assert type(paths) is list and 0 < len(paths) <= len(allowed)
-                  assert all(set(path) == {'path', 'change'} and path['path'] in allowed and path['change'] == 'M' for path in paths)
-                  assert len({path['path'] for path in paths}) == len(paths)
-                  assert type(value['documentation_paths']) is list
-                  assert binding == {'path': workflow, 'sha256': digest, 'bytes': size, 'base_matches_checkout': True}
-                  pins.add(workflow)
-                  assert value['source_pins'][workflow]['git_sha256'] == digest
-                  assert value['source_pins'][workflow]['git_bytes'] == size
-              elif value['format'] == 'zenon-ci-change-scope/v5':
-                  assert value['status'] == 'R1_HANDOFF_ONLY' and value['reason'] == 'modified_r1_handoff_leaves'
+              elif value['format'] == 'zenon-ci-change-scope/v6':
+                  assert value['status'] == 'PORTABLE_WORKFLOWS_ONLY'
+                  assert value['reason'] == 'modified_reviewed_portable_leaves'
                   assert re.fullmatch('[0-9a-f]{40}', value['source_tree']) and value['source_tree'] != '0' * 40
-                  assert value['r1_handoff_event_tree'] == value['source_tree']
+                  assert value['portable_event_tree'] == value['source_tree']
                   shared = 'tools/ledger-transport/transport.py'
-                  transport = {shared, 'tools/ledger-transport/transport_test.py'}
+                  transport = {'tools/ledger-transport/' + name for name in (
+                      'archive_index.py', 'archive_index_test.py', 'archive_tail.py', 'archive_tail_test.py',
+                      'transport.py', 'transport_test.py', 'README.md', 'THIRD_PARTY_NOTICES')}
                   exporter = {'tools/ledger-export/' + name for name in (
                       'inventory_completed_export.py', 'inventory_completed_export_test.py', 'README.md')}
-                  paths, documents = value['r1_handoff_paths'], value['documentation_paths']
+                  preparation = {'tools/owned-devnet-query/' + name for name in (
+                      'engine_test.py', 'images_test.py', 'inputs.py', 'inputs_test.py',
+                      'capture_test.py', 'review.py', 'review_test.py', 'README.md')}
+                  allowed = transport | exporter | preparation
+                  paths, documents = value['portable_paths'], value['documentation_paths']
                   assert type(paths) is list and type(documents) is list
-                  assert 0 < len(paths) <= len(transport | exporter) and len(paths) + len(documents) <= 256
-                  assert all(set(row) == {'path', 'change'} and row['path'] in transport | exporter
+                  assert 0 < len(paths) <= len(allowed) and len(paths) + len(documents) <= 256
+                  assert all(set(row) == {'path', 'change'} and row['path'] in allowed
                              and row['change'] == 'M' for row in paths)
                   document = re.compile(r'README\.md|docs/(?:[A-Za-z0-9][A-Za-z0-9._-]*/)*[A-Za-z0-9][A-Za-z0-9._-]*\.md')
                   assert all(set(row) == {'path', 'change'} and row['change'] in ('A', 'M', 'D')
@@ -123,16 +100,26 @@ jobs:
                   if shared in names or names & exporter:
                       required['.github/workflows/ledger-export.yml'] = (
                           '5c0f8e7215bf86044f0bf44f330a48520c6a4c17187740909bc593158a26106a', 7817)
+                  if names & preparation:
+                      required['.github/workflows/owned-devnet-query.yml'] = (
+                          '5d2bcf80acef2509490b36b12a2d2dfc1cec8dfaa9251862179c6acc78dd06a2', 3486)
                   assert value['required_workflows'] == list(required)
-                  commands = 7 + 2 * len(required) + (value['selection']['event'] == 'pull_request')
-                  assert len(value['commands']) == commands
-                  assert value['r1_handoff_workflows'] == [
+                  assert value['portable_workflows'] == [
                       {'path': path, 'sha256': digest, 'bytes': size, 'base_matches_checkout': True}
                       for path, (digest, size) in required.items()]
+                  selected = value['selection']
+                  git_arguments = []
+                  if selected['event'] == 'pull_request':
+                      git_arguments.append(['cat-file', 'commit', selected['feature_revision']])
                   for path, (digest, size) in required.items():
                       pins.add(path)
                       assert value['source_pins'][path]['git_sha256'] == digest
                       assert value['source_pins'][path]['git_bytes'] == size
+                      git_arguments.extend([
+                          ['show', selected['checkout_revision'] + ':' + path],
+                          ['show', selected['base_revision'] + ':' + path]])
+                  git_arguments.append(['ls-tree', '-r', '-z', '--full-tree', selected['checkout_revision']])
+                  assert [command['git_arguments'] for command in value['commands'][6:]] == git_arguments
               else:
                   assert value['status'] == 'NATIVE_RUNTIME_ONLY' and value['reason'] == 'modified_native_v3_leaves'
                   assert len(value['commands']) == 7 and type(value['documentation_paths']) is list

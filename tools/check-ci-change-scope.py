@@ -20,10 +20,8 @@ import threading
 import time
 
 FORMAT = "zenon-ci-change-scope/v1"
-ARCHIVE_FORMAT = "zenon-ci-change-scope/v2"
 NATIVE_FORMAT = "zenon-ci-change-scope/v3"
-PREPARATION_FORMAT = "zenon-ci-change-scope/v4"
-R1_HANDOFF_FORMAT = "zenon-ci-change-scope/v5"
+PORTABLE_FORMAT = "zenon-ci-change-scope/v6"
 REPOSITORY = "edgepillar/zenon-spv"
 MAX_DIFF_BYTES = 256 << 10
 MAX_SOURCE_BYTES = 256 << 10
@@ -33,15 +31,6 @@ MAX_RECORDS = 512
 GIT_TIMEOUT = 10
 SOURCE_FILES = ("tools/check-ci-change-scope.py",
                 "tools/check-ci-change-scope_test.py", ".github/workflows/ci.yml")
-ARCHIVE_WORKFLOW = ".github/workflows/ledger-transport.yml"
-ARCHIVE_WORKFLOW_SHA256 = "3101f06e85bd6bd6d74fe89e86e06a04cce38a26aad7d945f5371880250e49b0"
-ARCHIVE_WORKFLOW_BYTES = 7894
-ARCHIVE_FILES = frozenset("tools/ledger-transport/" + name for name in (
-    "archive_index.py", "archive_index_test.py", "archive_tail.py",
-    "archive_tail_test.py", "README.md", "THIRD_PARTY_NOTICES"))
-# Selected after the dependency audit; changing the selector itself requires
-# the complete lane. Never silently refresh this pin after a source change.
-RUNTIME_SOURCE_PIN = "9330e4977842420f031554693c66bd3435e8d0ac2aeba31a3f3d7d12df7ddb44"
 # These existing Go leaves are exercised by the native jobs, not by the
 # recorded Python oracle job. New files and other Go paths are not eligible.
 NATIVE_FILES = frozenset("internal/verify/experimental_v3_" + name for name in (
@@ -51,25 +40,28 @@ NATIVE_FILES = frozenset("internal/verify/experimental_v3_" + name for name in (
 # Every other non-document tree record remains in this reviewed closure,
 # including workflows, research Go sources, Python helpers and fixture data.
 ORACLE_SOURCE_PIN = "e2c3c49e18a728ae2af500b258b4d5f12720d3461c67b518add5cd8732816129"
-PREPARATION_WORKFLOW = ".github/workflows/owned-devnet-query.yml"
-PREPARATION_WORKFLOW_SHA256 = "5d2bcf80acef2509490b36b12a2d2dfc1cec8dfaa9251862179c6acc78dd06a2"
-PREPARATION_WORKFLOW_BYTES = 3486
-PREPARATION_FILES = frozenset("tools/owned-devnet-query/" + name for name in (
-    "engine_test.py", "images_test.py", "inputs.py", "inputs_test.py"))
-# This route pins the other sources and the preparation workflow. The
-# contract, query profile and dispatch controller remain in the closure.
-PREPARATION_SOURCE_PIN = "a981edf8a591546886703a5dca4974937e34aaedd26673871b646975ba9df14d"
-R1_EXPORT_WORKFLOW = ".github/workflows/ledger-export.yml"
-R1_EXPORT_WORKFLOW_SHA256 = "5c0f8e7215bf86044f0bf44f330a48520c6a4c17187740909bc593158a26106a"
-R1_EXPORT_WORKFLOW_BYTES = 7817
-R1_SHARED_TRANSPORT = "tools/ledger-transport/transport.py"
-R1_TRANSPORT_FILES = frozenset((R1_SHARED_TRANSPORT, "tools/ledger-transport/transport_test.py"))
-R1_EXPORT_FILES = frozenset("tools/ledger-export/" + name for name in (
+SHARED_TRANSPORT = "tools/ledger-transport/transport.py"
+TRANSPORT_FILES = frozenset("tools/ledger-transport/" + name for name in (
+    "archive_index.py", "archive_index_test.py", "archive_tail.py", "archive_tail_test.py",
+    "transport.py", "transport_test.py", "README.md", "THIRD_PARTY_NOTICES"))
+EXPORT_FILES = frozenset("tools/ledger-export/" + name for name in (
     "inventory_completed_export.py", "inventory_completed_export_test.py", "README.md"))
-R1_HANDOFF_FILES = R1_TRANSPORT_FILES | R1_EXPORT_FILES
-R1_TRANSPORT_DOCS = frozenset(("docs/state-root-r1-intake.md", "docs/native-roadmap.md"))
-# Pin every other non-document dependency, including both dedicated workflows.
-R1_HANDOFF_SOURCE_PIN = "0945dfe09daef078d4758537b9e4a311094e605a0462b20d1b43543359df21db"
+PREPARATION_FILES = frozenset("tools/owned-devnet-query/" + name for name in (
+    "engine_test.py", "images_test.py", "inputs.py", "inputs_test.py",
+    "capture_test.py", "review.py", "review_test.py", "README.md"))
+PORTABLE_FILES = TRANSPORT_FILES | EXPORT_FILES | PREPARATION_FILES
+TRANSPORT_DOCS = frozenset(("docs/state-root-r1-intake.md", "docs/native-roadmap.md"))
+PORTABLE_WORKFLOWS = (
+    (".github/workflows/ledger-transport.yml", TRANSPORT_FILES | TRANSPORT_DOCS, 7894,
+     "3101f06e85bd6bd6d74fe89e86e06a04cce38a26aad7d945f5371880250e49b0"),
+    (".github/workflows/ledger-export.yml", EXPORT_FILES | {SHARED_TRANSPORT}, 7817,
+     "5c0f8e7215bf86044f0bf44f330a48520c6a4c17187740909bc593158a26106a"),
+    (".github/workflows/owned-devnet-query.yml", PREPARATION_FILES, 3486,
+     "5d2bcf80acef2509490b36b12a2d2dfc1cec8dfaa9251862179c6acc78dd06a2"),
+)
+# Keep every remaining non-document dependency, including all workflows.
+# Refresh only after reviewing dependencies and selecting full runtime CI.
+PORTABLE_SOURCE_PIN = "0e46dacff651fb6248abaa4b93aa3f4807487d5588849da87091a0863d52d852"
 MAX_FILTERED_DIFF_RECORDS = 256
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192
@@ -152,22 +144,13 @@ def parse_diff(raw, modified_paths=(), nonmodification_reason="outside_documenta
     return paths
 
 
-def runtime_fingerprint(raw):
-    """Commit every non-document dependency except the reviewed leaf/policy set."""
-    return tree_fingerprint(raw, ARCHIVE_FILES | set(SOURCE_FILES[:2]))
-
-
 def oracle_fingerprint(raw):
     """Exclude only regular reviewed native leaves, documents and selector code."""
     return tree_fingerprint(raw, NATIVE_FILES | set(SOURCE_FILES[:2]))
 
 
-def preparation_fingerprint(raw):
-    return tree_fingerprint(raw, PREPARATION_FILES | set(SOURCE_FILES[:2]))
-
-
-def r1_handoff_fingerprint(raw):
-    return tree_fingerprint(raw, R1_HANDOFF_FILES | set(SOURCE_FILES[:2]))
+def portable_fingerprint(raw):
+    return tree_fingerprint(raw, PORTABLE_FILES | set(SOURCE_FILES[:2]))
 
 
 def tree_fingerprint(raw, excluded_paths):
@@ -343,15 +326,17 @@ def select_scope(root, selection, runner=run_git):
             "checkout_bytes": len(working), "checkout_relation": relation}
         return selected
 
-    def bind_workflow(name, size, digest, reason):
+    def bind_workflow(name, size, digest):
         selected = bind_source(name, checkout)
         previous = query(["show", base + ":" + name], MAX_SOURCE_BYTES)
         if (selected != previous or len(selected) != size
                 or hashlib.sha256(selected).hexdigest() != digest):
-            raise ScopeError(reason)
+            raise ScopeError("portable_workflow_pin")
         return {"path": name, "sha256": digest, "bytes": size, "base_matches_checkout": True}
 
-    def bind_feature_tree(reason):
+    def bind_portable_event():
+        if parents[0] != base:
+            raise ScopeError("portable_event_diff")
         if selection["event"] == "pull_request":
             # GitHub's path-filter diff must match the reviewed test merge.
             raw_feature = query(["cat-file", "commit", feature], MAX_SOURCE_BYTES)
@@ -360,7 +345,7 @@ def select_scope(root, selection, runner=run_git):
             if (not separator or lines[0] != b"tree " + tree[:-1]
                     or [line for line in lines if line.startswith(b"parent ")]
                     != [b"parent " + base.encode("ascii")]):
-                raise ScopeError(reason)
+                raise ScopeError("portable_event_diff")
 
     try:
         if not selection_valid(selection):
@@ -390,100 +375,46 @@ def select_scope(root, selection, runner=run_git):
         raw = query(["diff", "--raw", "-z", "--no-abbrev", "--no-renames",
                      "--no-ext-diff", "--no-textconv", "--ignore-submodules=none",
                      base, checkout, "--"], MAX_DIFF_BYTES)
-        try:
-            documents = parse_diff(raw)
-        except ScopeError as error:
-            if error.reason != "outside_documentation":
-                raise
-            for lane, leaves in (("archive", ARCHIVE_FILES), ("native", NATIVE_FILES),
-                                 ("preparation", PREPARATION_FILES), ("r1_handoff", R1_HANDOFF_FILES)):
-                try:
-                    paths = parse_diff(raw, leaves, lane + "_change")
-                except ScopeError as leaf_error:
-                    if leaf_error.reason != "outside_documentation":
-                        raise
-                else:
-                    break
-            else:
-                raise error
-            if lane == "native":
-                report.update(format=NATIVE_FORMAT, run_recorded_oracles=True)
-                closure = oracle_fingerprint(query(
-                    ["ls-tree", "-r", "-z", "--full-tree", checkout], MAX_TREE_BYTES))
-                if closure["sha256"] != ORACLE_SOURCE_PIN:
-                    raise ScopeError("oracle_source_pin")
-                native = [path for path in paths if path["path"] in NATIVE_FILES]
-                report.update(status="NATIVE_RUNTIME_ONLY", run_runtime=True,
-                              run_recorded_oracles=False, reason="modified_native_v3_leaves",
-                              documentation_paths=[path for path in paths if path not in native],
-                              native_paths=native,
-                              oracle_closure={**closure, "expected_sha256": ORACLE_SOURCE_PIN,
-                                              "matched": True})
-            elif lane == "archive":
-                archive = [path for path in paths if path["path"] in ARCHIVE_FILES]
-                report["format"] = ARCHIVE_FORMAT
-                workflow = bind_workflow(ARCHIVE_WORKFLOW, ARCHIVE_WORKFLOW_BYTES,
-                                         ARCHIVE_WORKFLOW_SHA256, "archive_workflow_pin")
-                closure = runtime_fingerprint(query(
-                    ["ls-tree", "-r", "-z", "--full-tree", checkout], MAX_TREE_BYTES))
-                if closure["sha256"] != RUNTIME_SOURCE_PIN:
-                    raise ScopeError("runtime_source_pin")
-                report.update(format=ARCHIVE_FORMAT, status="PORTABLE_ARCHIVE_ONLY",
-                              run_runtime=False, reason="modified_independent_archive_leaves",
-                              documentation_paths=[path for path in paths if path not in archive],
-                              portable_archive_paths=archive, required_workflows=[ARCHIVE_WORKFLOW],
-                              archive_workflow=workflow,
-                              runtime_closure={**closure, "expected_sha256": RUNTIME_SOURCE_PIN,
-                                               "matched": True})
-            elif lane == "preparation":
-                # Leave room below GitHub's path-filter diff limit even when
-                # documentation changes accompany a preparation leaf.
-                if len(paths) > MAX_FILTERED_DIFF_RECORDS:
-                    raise ScopeError("preparation_diff_count")
-                report["format"] = PREPARATION_FORMAT
-                bind_feature_tree("preparation_event_diff")
-                workflow = bind_workflow(PREPARATION_WORKFLOW, PREPARATION_WORKFLOW_BYTES,
-                                         PREPARATION_WORKFLOW_SHA256, "preparation_workflow_pin")
-                closure = preparation_fingerprint(query(
-                    ["ls-tree", "-r", "-z", "--full-tree", checkout], MAX_TREE_BYTES))
-                if closure["sha256"] != PREPARATION_SOURCE_PIN:
-                    raise ScopeError("preparation_source_pin")
-                preparation = [path for path in paths if path["path"] in PREPARATION_FILES]
-                report.update(status="OWNED_DEVNET_PREPARATION_ONLY", run_runtime=False,
-                              reason="modified_independent_preparation_leaves",
-                              documentation_paths=[path for path in paths if path not in preparation],
-                              preparation_paths=preparation, required_workflows=[PREPARATION_WORKFLOW],
-                              preparation_event_tree=report["source_tree"],
-                              preparation_workflow=workflow,
-                              runtime_closure={**closure, "expected_sha256": PREPARATION_SOURCE_PIN,
-                                               "matched": True})
-            else:
-                if len(paths) > MAX_FILTERED_DIFF_RECORDS:
-                    raise ScopeError("r1_handoff_diff_count")
-                if parents[0] != base:
-                    raise ScopeError("r1_handoff_event_diff")
-                report["format"] = R1_HANDOFF_FORMAT
-                bind_feature_tree("r1_handoff_event_diff")
-                names = {path["path"] for path in paths}
-                workflows = []
-                if names & (R1_TRANSPORT_FILES | R1_TRANSPORT_DOCS):
-                    workflows.append(bind_workflow(ARCHIVE_WORKFLOW, ARCHIVE_WORKFLOW_BYTES,
-                                                   ARCHIVE_WORKFLOW_SHA256, "r1_transport_workflow_pin"))
-                if R1_SHARED_TRANSPORT in names or names & R1_EXPORT_FILES:
-                    workflows.append(bind_workflow(R1_EXPORT_WORKFLOW, R1_EXPORT_WORKFLOW_BYTES,
-                                                   R1_EXPORT_WORKFLOW_SHA256, "r1_export_workflow_pin"))
-                closure = r1_handoff_fingerprint(query(
-                    ["ls-tree", "-r", "-z", "--full-tree", checkout], MAX_TREE_BYTES))
-                if closure["sha256"] != R1_HANDOFF_SOURCE_PIN:
-                    raise ScopeError("r1_handoff_source_pin")
-                handoff = [path for path in paths if path["path"] in R1_HANDOFF_FILES]
-                report.update(status="R1_HANDOFF_ONLY", run_runtime=False, reason="modified_r1_handoff_leaves",
-                              documentation_paths=[path for path in paths if path not in handoff],
-                              r1_handoff_paths=handoff, r1_handoff_event_tree=report["source_tree"],
-                              required_workflows=[workflow["path"] for workflow in workflows],
-                              r1_handoff_workflows=workflows,
-                              runtime_closure={**closure, "expected_sha256": R1_HANDOFF_SOURCE_PIN,
-                                               "matched": True})
+        reviewed = PORTABLE_FILES | NATIVE_FILES
+        paths = parse_diff(raw, reviewed, "reviewed_leaf_change")
+        native = [row for row in paths if row["path"] in NATIVE_FILES]
+        portable = [row for row in paths if row["path"] in PORTABLE_FILES]
+        documents = [row for row in paths if row["path"] not in reviewed]
+        if native and portable:
+            raise ScopeError("mixed_runtime_leaves")
+        if native:
+            report.update(format=NATIVE_FORMAT, run_recorded_oracles=True)
+            closure = oracle_fingerprint(query(
+                ["ls-tree", "-r", "-z", "--full-tree", checkout], MAX_TREE_BYTES))
+            if closure["sha256"] != ORACLE_SOURCE_PIN:
+                raise ScopeError("oracle_source_pin")
+            report.update(status="NATIVE_RUNTIME_ONLY", run_runtime=True,
+                          run_recorded_oracles=False, reason="modified_native_v3_leaves",
+                          documentation_paths=documents, native_paths=native,
+                          oracle_closure={**closure, "expected_sha256": ORACLE_SOURCE_PIN,
+                                          "matched": True})
+        elif portable:
+            # Leave room below GitHub's path-filter diff limit, including docs.
+            if len(paths) > MAX_FILTERED_DIFF_RECORDS:
+                raise ScopeError("portable_diff_count")
+            report["format"] = PORTABLE_FORMAT
+            bind_portable_event()
+            names = {row["path"] for row in paths}
+            workflows = [bind_workflow(name, size, digest)
+                         for name, triggers, size, digest in PORTABLE_WORKFLOWS
+                         if names & triggers]
+            closure = portable_fingerprint(query(
+                ["ls-tree", "-r", "-z", "--full-tree", checkout], MAX_TREE_BYTES))
+            if closure["sha256"] != PORTABLE_SOURCE_PIN:
+                raise ScopeError("portable_source_pin")
+            report.update(status="PORTABLE_WORKFLOWS_ONLY", run_runtime=False,
+                          reason="modified_reviewed_portable_leaves",
+                          documentation_paths=documents, portable_paths=portable,
+                          portable_event_tree=report["source_tree"],
+                          required_workflows=[workflow["path"] for workflow in workflows],
+                          portable_workflows=workflows,
+                          runtime_closure={**closure, "expected_sha256": PORTABLE_SOURCE_PIN,
+                                           "matched": True})
         else:
             report["documentation_paths"] = documents
             report.update(status="DOCUMENTATION_ONLY", run_runtime=False, reason="regular_markdown_only")
