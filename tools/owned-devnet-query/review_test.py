@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-only
-"""Synthetic archive controls. No devnet, binaries, or external RPC is used."""
+"""Synthetic hosted metadata and archive controls with no external service."""
 import base64
 import hashlib
 import importlib.util
@@ -25,10 +25,112 @@ import review
 
 SOURCE = "6" * 40
 RUN = 1001
+ARTIFACT = 7001
 
 
 def pin(raw):
     return {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+
+
+def hosted_metadata():
+    repository = {"full_name": "edgepillar/zenon-spv", "id": 101}
+    run = {"id": RUN, "run_attempt": 1, "event": "workflow_dispatch",
+           "path": ".github/workflows/owned-devnet-query.yml", "head_sha": SOURCE, "head_branch": "main",
+           "repository": repository, "head_repository": dict(repository),
+           "actor": {"login": "edgepillar"}, "triggering_actor": {"login": "edgepillar"},
+           "status": "completed", "conclusion": "success"}
+    job = {"run_id": RUN, "run_attempt": 1, "head_sha": SOURCE, "workflow_name": "owned-devnet-query",
+           "status": "completed"}
+    experiment = {**job, "name": "experiment", "id": 501, "conclusion": "success",
+                  "started_at": "2026-11-09T10:00:00Z", "completed_at": "2026-11-09T10:20:00Z",
+                  "steps": [{"name": name, "number": number, "status": "completed", "conclusion": "success"}
+                            for name, number in ((review.EXECUTE_STEP, 3), (review.UPLOAD_STEP, 4))]}
+    controls = {**job, "name": "controls", "id": 502, "conclusion": "skipped", "steps": []}
+    jobs = {"total_count": 2, "jobs": [experiment, controls]}
+    artifact = {"id": ARTIFACT, "name": f"owned-devnet-query-{RUN}-1", "expired": False,
+                "size_in_bytes": 128, "digest": "sha256:" + "b" * 64,
+                "created_at": "2026-11-09T10:19:00Z",
+                "workflow_run": {"id": RUN, "repository_id": repository["id"],
+                                 "head_repository_id": repository["id"], "head_sha": SOURCE, "head_branch": "main"}}
+    return run, jobs, artifact
+
+
+class HostedSelectionTests(unittest.TestCase):
+    def select(self, run, jobs, artifact):
+        return review.select_hosted_result(run, jobs, artifact, SOURCE, RUN, ARTIFACT, CONTRACT.sha256)
+
+    def test_cli_binds_the_three_metadata_inputs_without_reading_a_zip(self):
+        out, error = io.BytesIO(), io.StringIO()
+        expected_pins = {}
+        args = ["select-hosted", "--expect-source-revision", SOURCE, "--expect-run-id", str(RUN),
+                "--expect-artifact-id", str(ARTIFACT), "--expect-contract-sha256", CONTRACT.sha256]
+        with tempfile.TemporaryDirectory(prefix="owned-hosted-metadata-") as root:
+            for name, row in zip(("run", "jobs", "artifact"), hosted_metadata()):
+                path = Path(root) / (name + ".json")
+                raw = canonical(row)
+                path.write_bytes(raw)
+                args.extend(["--" + name + "-metadata", str(path)])
+                expected_pins[name] = pin(raw)
+            with patch.object(review, "review_stream", side_effect=AssertionError):
+                self.assertEqual(review.main(args, out, error), 0, error.getvalue())
+            self.assertEqual(sorted(path.name for path in Path(root).iterdir()),
+                             ["artifact.json", "jobs.json", "run.json"])
+        result = json.loads(out.getvalue())
+        self.assertEqual(result["status"], "SELECTED_HOSTED_RESULT")
+        self.assertEqual(result["metadata_pins"], expected_pins)
+        self.assertEqual(result["artifact"], {"id": ARTIFACT, "name": f"owned-devnet-query-{RUN}-1",
+                                              "bytes": 128, "sha256": "b" * 64})
+        self.assertEqual(result["expected_contract_sha256"], CONTRACT.sha256)
+        self.assertTrue(result["supplied_workflow_metadata_bound"])
+        self.assertFalse(result["artifact_payload_verified"])
+        self.assertFalse(result["new_devnet_acceptance_established"])
+
+    def test_selects_retained_failure_but_requires_consistent_completion(self):
+        run, jobs, artifact = hosted_metadata()
+        experiment = jobs["jobs"][0]
+        run["conclusion"] = experiment["conclusion"] = experiment["steps"][0]["conclusion"] = "failure"
+        result = self.select(run, jobs, artifact)
+        self.assertEqual(result["run_conclusion"], "failure")
+        self.assertEqual(result["execution_conclusion"], "failure")
+        self.assertFalse(result["new_devnet_acceptance_established"])
+        run["conclusion"] = "success"
+        with self.assertRaisesRegex(Refused, "hosted_conclusion"):
+            self.select(run, jobs, artifact)
+
+    def test_refuses_wrong_run_job_step_and_archive_metadata(self):
+        for part, key, value, reason in (
+                ("run", "event", "push", "workflow_source_binding"),
+                ("run", "event", "pull_request", "workflow_source_binding"),
+                ("run", "run_attempt", 2, "workflow_run_binding"),
+                ("run", "actor", {"login": "another"}, "workflow_actor_or_repository"),
+                ("run", "head_sha", "7" * 40, "workflow_source_binding"),
+                ("head_repository", "id", 102, "hosted_repository_identity"),
+                ("jobs", "total_count", 3, "hosted_job_roster"),
+                ("experiment", "id", 502, "hosted_job_roster"),
+                ("experiment", "name", "controls", "hosted_job_roster"),
+                ("experiment", "run_id", RUN + 1, "hosted_job_run"),
+                ("experiment", "run_attempt", 2, "hosted_job_run"),
+                ("experiment", "conclusion", "skipped", "hosted_experiment_job"),
+                ("controls", "conclusion", "success", "hosted_control_job"),
+                ("upload", "conclusion", "skipped", "hosted_experiment_completion"),
+                ("upload", "number", 2, "hosted_experiment_completion"),
+                ("artifact", "id", ARTIFACT + 1, "hosted_artifact_id"),
+                ("artifact", "name", f"owned-devnet-query-{RUN}-2", "hosted_artifact_selection"),
+                ("artifact", "expired", True, "hosted_artifact_selection"),
+                ("artifact", "created_at", "2026-11-09T09:59:59Z", "hosted_artifact_time"),
+                ("artifact", "digest", "sha256:invalid", "digest_format"),
+                ("artifact", "size_in_bytes", review.MAX_ARCHIVE + 1, "integer_bounds"),
+                ("owner", "repository_id", 102, "hosted_artifact_repository"),
+                ("owner", "head_sha", "7" * 40, "hosted_artifact_source")):
+            with self.subTest(part=part, key=key, value=value):
+                run, jobs, artifact = hosted_metadata()
+                experiment, controls = jobs["jobs"]
+                parts = {"run": run, "head_repository": run["head_repository"], "jobs": jobs,
+                         "experiment": experiment, "controls": controls, "upload": experiment["steps"][1],
+                         "artifact": artifact, "owner": artifact["workflow_run"]}
+                parts[part][key] = value
+                with self.assertRaisesRegex(Refused, reason):
+                    self.select(run, jobs, artifact)
 
 
 def make_archive(files, *, flat=False, override=None, extra=None):
