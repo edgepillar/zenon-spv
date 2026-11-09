@@ -26,7 +26,7 @@ import runner
 CONTRACT = model.read_contract(HERE / "contract.json")
 
 
-def synthetic_window(last=4):
+def synthetic_window(last=4, state_root=bytes([77]) * 32):
     rows = []
     chain = CONTRACT.data["selection"]["chain_id"]
     previous = bytes(32)
@@ -35,7 +35,7 @@ def synthetic_window(last=4):
     for height in range(1, last + 1):
         version = 1 if height < 3 else 3
         timestamp = 1739923200 + height * 10
-        root = bytes([77]) * 32 if version == 3 else bytes(32)
+        root = state_root if version == 3 else bytes(32)
         encoded = struct.pack(">QQ", version, chain) + previous + struct.pack(">QQ", height, timestamp)
         encoded += empty + empty + bytes(32)
         if version == 3:

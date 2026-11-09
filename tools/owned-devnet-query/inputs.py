@@ -52,7 +52,7 @@ def _hash_stream(stream, expected):
     stream.seek(0)
 
 
-def _zip_preflight(stream, expected_size):
+def _zip_preflight(stream, expected_size, *, max_members=MAX_MEMBERS):
     # Reject ZIP64/multipart/comments/trailing data before ZipFile allocates its
     # central-directory objects. The pinned input archives need none of these.
     require(expected_size >= 22, "zip_size")
@@ -61,9 +61,27 @@ def _zip_preflight(stream, expected_size):
     require(len(raw) == 22, "zip_end")
     signature, disk, directory_disk, count_disk, count, size, offset, comment = (
         struct.unpack("<4s4H2IH", raw))
+    directory_end = expected_size - 22
     require(signature == b"PK\x05\x06" and disk == directory_disk == comment == 0
-            and 0 < count == count_disk <= MAX_MEMBERS
-            and offset + size == expected_size - 22, "zip_directory")
+            and 0 < count == count_disk <= max_members
+            and 46 * count <= size <= (46 + 4096) * count
+            and 4 <= offset and offset + size == directory_end, "zip_directory")
+    stream.seek(directory_end - 20)
+    require(stream.read(4) != b"PK\x06\x07", "zip64_locator")
+    # The advertised count is not a bound on the objects ZipFile will parse.
+    # Walk the physical records and bound metadata before giving it the stream.
+    position = offset
+    for _ in range(count):
+        require(position + 46 <= directory_end, "zip_directory_record")
+        stream.seek(position)
+        record = stream.read(46)
+        require(len(record) == 46 and record[:4] == b"PK\x01\x02",
+                "zip_directory_record")
+        name, extra, note, disk_start = struct.unpack_from("<4H", record, 28)
+        require(0 < name and name + extra + note <= 4096 and disk_start == 0,
+                "zip_directory_record")
+        position += 46 + name + extra + note
+    require(position == directory_end, "zip_directory_record_count")
     stream.seek(0)
     require(stream.read(4) == b"PK\x03\x04", "zip_prefix")
     stream.seek(0)
@@ -379,22 +397,27 @@ def verify_binaries(stream, kind, specification):
     return _consume_archive(stream, kind, specification, _VerifiedPins)
 
 
-def _verify_archive_file(path, kind, specification):
+def _read_archive_file(path, expected_size, inspect):
     initial = path.lstat()
     require(stat.S_ISREG(initial.st_mode) and initial.st_nlink == 1
-            and initial.st_size == specification["archive"]["bytes"], "archive_file_type_or_size")
+            and initial.st_size == expected_size, "archive_file_type_or_size")
     flags = (os.O_RDONLY | getattr(os, "O_BINARY", 0)
              | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
     with os.fdopen(os.open(path, flags), "rb") as stream:
         opened = os.fstat(stream.fileno())
         require(stat.S_ISREG(opened.st_mode) and opened.st_nlink == 1
                 and os.path.samestat(initial, opened), "archive_file_identity")
-        result = verify_binaries(stream, kind, specification)
+        result = inspect(stream)
         after, final = os.fstat(stream.fileno()), path.lstat()
         require(_identity(after) == _identity(opened) and _identity(final) == _identity(initial)
                 and stat.S_ISREG(final.st_mode) and after.st_nlink == final.st_nlink == 1,
                 "archive_file_changed")
     return result
+
+
+def _verify_archive_file(path, kind, specification):
+    return _read_archive_file(path, specification["archive"]["bytes"],
+                              lambda stream: verify_binaries(stream, kind, specification))
 
 
 def main(argv=None, stdout=None, stderr=None):
