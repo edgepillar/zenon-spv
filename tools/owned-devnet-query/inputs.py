@@ -9,6 +9,7 @@ No command, network, engine, signing or deployment operation is performed here.
 
 from __future__ import annotations
 
+import argparse
 from dataclasses import dataclass
 import hashlib
 import json
@@ -17,10 +18,14 @@ import os
 from pathlib import Path
 import stat
 import struct
+import sys
 import tarfile
 import zipfile
 
-from model import Refused, canonical, exact_keys, pin, relative_name, require, uint
+if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from model import Refused, canonical, exact_keys, pin, read_contract, relative_name, require, uint
 
 CHUNK = 65536
 MAX_ARCHIVE = 64 << 20
@@ -150,6 +155,24 @@ class VerifiedBinaries:
         self.verify()
 
 
+def _stream_binary(stream, expected, write=None):
+    sha, size, prefix = hashlib.sha256(), 0, bytearray()
+    while size < expected["bytes"]:
+        chunk = stream.read(min(CHUNK, expected["bytes"] - size))
+        require(bool(chunk), "binary_truncated")
+        size += len(chunk)
+        require(size <= expected["bytes"], "binary_size")
+        prefix.extend(chunk[:max(0, 64 - len(prefix))])
+        if write is not None:
+            require(write(chunk) == len(chunk), "binary_short_write")
+        sha.update(chunk)
+    require(stream.read(1) == b"", "binary_size")
+    digest = sha.hexdigest()
+    require(digest == expected["sha256"], "binary_digest")
+    _elf64(prefix)
+    return {"sha256": digest, "bytes": size}
+
+
 class _Outputs:
     def __init__(self, destination):
         self.directory = Path(destination)
@@ -167,23 +190,12 @@ class _Outputs:
         path = self.directory / name
         descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL
                              | getattr(os, "O_NOFOLLOW", 0), 0o600)
-        sha, size, prefix = hashlib.sha256(), 0, bytearray()
         with os.fdopen(descriptor, "wb", buffering=0) as out:
-            while size < expected["bytes"]:
-                chunk = stream.read(min(CHUNK, expected["bytes"] - size))
-                require(bool(chunk), "binary_truncated")
-                size += len(chunk)
-                require(size <= expected["bytes"], "binary_size")
-                prefix.extend(chunk[:max(0, 64 - len(prefix))])
-                require(out.write(chunk) == len(chunk), "binary_short_write")
-                sha.update(chunk)
-            require(stream.read(1) == b"", "binary_size")
-            require(sha.hexdigest() == expected["sha256"], "binary_digest")
-            _elf64(prefix)
+            verified = _stream_binary(stream, expected, out.write)
             os.fsync(out.fileno())
         path.chmod(0o400)
         value = path.lstat()
-        self.binaries.append(Binary(name, sha.hexdigest(), size, _identity(value)))
+        self.binaries.append(Binary(name, verified["sha256"], verified["bytes"], _identity(value)))
 
     def finish(self):
         result = VerifiedBinaries(self.directory, self.identity, tuple(self.binaries))
@@ -290,13 +302,18 @@ def _tar(decoded, selected, outputs):
     decoded.finish()
 
 
-def unpack_binaries(stream, kind, specification, destination):
-    """Read one seekable original ZIP; create only the selected regular files.
+class _VerifiedPins:
+    def __init__(self):
+        self.pins = {}
 
-    The caller separately verifies the real transport exit and selected source,
-    workflow, run, attempt and artifact metadata. No synthetic successful command
-    receipt or CI-qualification claim is created by this codec.
-    """
+    def write(self, name, stream, expected):
+        self.pins[name] = _stream_binary(stream, expected)
+
+    def finish(self):
+        return self.pins
+
+
+def _consume_archive(stream, kind, specification, make_output):
     require(kind in SELECTED, "binary_component")
     specification = json.loads(canonical(specification))
     keys = {"archive", "artifact_id", "binaries", "run_attempt", "run_id"}
@@ -324,14 +341,14 @@ def unpack_binaries(stream, kind, specification, destination):
                 require(len(rows) == 1 and rows[0].filename == payload["filename"]
                         and rows[0].compress_type == zipfile.ZIP_STORED
                         and rows[0].file_size == payload["bytes"], "consumer_zip_closure")
-                outputs = _Outputs(destination)
+                outputs = make_output()
                 with archive.open(rows[0]) as encoded:
                     _tar(_XZ(encoded, payload, specification["decoded_tar"]),
                          specification["binaries"], outputs)
             else:
                 names = {row.filename for row in rows}
                 require(SELECTED[kind].issubset(names), "helper_binary_missing")
-                outputs = _Outputs(destination)
+                outputs = make_output()
                 for row in rows:
                     with archive.open(row) as value:
                         if row.filename in SELECTED[kind]:
@@ -347,3 +364,70 @@ def unpack_binaries(stream, kind, specification, destination):
     except (zipfile.BadZipFile, lzma.LZMAError, tarfile.TarError,
             EOFError, UnicodeError, struct.error) as error:
         raise Refused("binary_archive_encoding") from error
+
+
+def unpack_binaries(stream, kind, specification, destination):
+    """Read one seekable original ZIP and materialize the selected binaries.
+
+    The caller binds the archive to its selected source, workflow, run and artifact.
+    """
+    return _consume_archive(stream, kind, specification, lambda: _Outputs(destination))
+
+
+def verify_binaries(stream, kind, specification):
+    """Stream the selected archive and return binary pins without writing files."""
+    return _consume_archive(stream, kind, specification, _VerifiedPins)
+
+
+def _verify_archive_file(path, kind, specification):
+    initial = path.lstat()
+    require(stat.S_ISREG(initial.st_mode) and initial.st_nlink == 1
+            and initial.st_size == specification["archive"]["bytes"], "archive_file_type_or_size")
+    flags = (os.O_RDONLY | getattr(os, "O_BINARY", 0)
+             | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+    with os.fdopen(os.open(path, flags), "rb") as stream:
+        opened = os.fstat(stream.fileno())
+        require(stat.S_ISREG(opened.st_mode) and opened.st_nlink == 1
+                and os.path.samestat(initial, opened), "archive_file_identity")
+        result = verify_binaries(stream, kind, specification)
+        after, final = os.fstat(stream.fileno()), path.lstat()
+        require(_identity(after) == _identity(opened) and _identity(final) == _identity(initial)
+                and stat.S_ISREG(final.st_mode) and after.st_nlink == final.st_nlink == 1,
+                "archive_file_changed")
+    return result
+
+
+def main(argv=None, stdout=None, stderr=None):
+    parser = argparse.ArgumentParser(
+        description="Verify one selected CI archive without extracting binaries.", allow_abbrev=False)
+    parser.add_argument("--component", choices=tuple(SELECTED), required=True)
+    parser.add_argument("--archive", type=Path, required=True)
+    args = parser.parse_args(argv)
+    stdout = sys.stdout.buffer if stdout is None else stdout
+    stderr = sys.stderr if stderr is None else stderr
+    try:
+        contract = read_contract(Path(__file__).with_name("contract.json"))
+        components = contract.data["qualified_components"]
+        specification = components[args.component]
+        binaries = _verify_archive_file(args.archive, args.component, specification)
+        report = canonical({
+            "format": "owned-devnet-archive-inspection/v1", "status": "VERIFIED",
+            "component": args.component, "contract_sha256": contract.sha256,
+            "binary_source_revision": components["source_revision"],
+            "run_id": specification["run_id"], "run_attempt": specification["run_attempt"],
+            "artifact_id": specification["artifact_id"], "archive": specification["archive"],
+            "binaries": binaries, "materialized_binary_bytes": 0,
+            "ci_metadata_verified": False, "native_binary_executed": False,
+        })
+        require(stdout.write(report) == len(report), "inspection_short_output")
+        stdout.flush()
+        return 0
+    except Refused as error:
+        stderr.write("Archive inspection refused (" + error.reason + ").\n")
+    except (OSError, TypeError, ValueError):
+        stderr.write("Archive inspection could not complete.\n")
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

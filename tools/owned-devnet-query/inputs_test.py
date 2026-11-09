@@ -13,6 +13,7 @@ import sys
 import tarfile
 import tempfile
 import unittest
+from unittest import mock
 import warnings
 import zipfile
 
@@ -292,6 +293,63 @@ class IntakeTests(unittest.TestCase):
         selected = json.loads(json.dumps(specification))
         selected["binaries"]["other-binary"] = pin(elf())
         self.refusal(raw, selected, "parent_oracle", "binary_selection")
+
+
+    def test_read_only_intake_checks_both_components_without_output_objects(self):
+        raw_consumer, consumer_spec, _ = consumer()
+        raw_helper, helper_spec = helper()
+        with mock.patch.object(inputs, "_Outputs", side_effect=AssertionError("unexpected materialization")):
+            for kind, raw, selected in (("consumer", raw_consumer, consumer_spec),
+                                        ("parent_oracle", raw_helper, helper_spec)):
+                with self.subTest(kind=kind):
+                    self.assertEqual(inputs.verify_binaries(io.BytesIO(raw), kind, selected),
+                                     selected["binaries"])
+                    with self.assertRaisesRegex(model.Refused, "archive_size|archive_digest"):
+                        inputs.verify_binaries(io.BytesIO(raw[:-1]), kind, selected)
+
+    def test_read_only_intake_checks_the_selected_binary_pin(self):
+        raw, selected = helper()
+        selected["binaries"]["spv-closed-parent-oracle.exe"]["sha256"] = "a" * 64
+        with self.assertRaisesRegex(model.Refused, "binary_digest"):
+            inputs.verify_binaries(io.BytesIO(raw), "parent_oracle", selected)
+
+    def test_read_only_cli_emits_bound_pins_and_keeps_only_the_original_zip(self):
+        raw, selected = helper()
+        contract = model.Contract(model.canonical({"qualified_components": {
+            "source_revision": "a" * 40, "parent_oracle": selected}}), "b" * 64)
+        with tempfile.TemporaryDirectory(prefix="owned-input-control-") as root:
+            archive = Path(root) / "source.zip"
+            archive.write_bytes(raw)
+            args = ["--component", "parent_oracle", "--archive", str(archive)]
+            output, error = io.BytesIO(), io.StringIO()
+            with mock.patch.object(inputs, "read_contract", return_value=contract):
+                self.assertEqual(inputs.main(args, stdout=output, stderr=error), 0)
+                report = json.loads(output.getvalue())
+                self.assertEqual(report["contract_sha256"], contract.sha256)
+                self.assertEqual(report["artifact_id"], selected["artifact_id"])
+                self.assertEqual(report["binaries"], selected["binaries"])
+                self.assertEqual(report["materialized_binary_bytes"], 0)
+                self.assertFalse(report["ci_metadata_verified"])
+                self.assertEqual(error.getvalue(), "")
+                self.assertEqual(list(Path(root).iterdir()), [archive])
+                archive.write_bytes(raw[:-1])
+                refused = io.BytesIO()
+                self.assertEqual(inputs.main(args, stdout=refused, stderr=error), 2)
+                self.assertEqual(refused.getvalue(), b"")
+                self.assertNotIn(str(archive), error.getvalue())
+
+    def test_read_only_intake_refuses_equal_bytes_under_a_replaced_path(self):
+        raw, selected = helper()
+        with tempfile.TemporaryDirectory(prefix="owned-input-control-") as root:
+            archive = Path(root) / "source.zip"
+            replacement = Path(root) / "replacement.zip"
+            archive.write_bytes(raw)
+            replacement.write_bytes(raw)
+            identities = [archive.lstat(), replacement.lstat()]
+            self.assertFalse(os.path.samestat(*identities))
+            with mock.patch.object(Path, "lstat", side_effect=identities):
+                with self.assertRaisesRegex(model.Refused, "archive_file_changed"):
+                    inputs._verify_archive_file(archive, "parent_oracle", selected)
 
 
 def main():
