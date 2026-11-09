@@ -20,6 +20,9 @@ HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location("ledger_inventory", HERE / "inventory.py")
 INV = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(INV)
+spec = importlib.util.spec_from_file_location("ledger_churn", HERE / "churn.py")
+CHURN = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(CHURN)
 PROVENANCE = hashlib.sha256(b"synthetic owner intake, not authenticated").hexdigest()
 MEASUREMENTS = {}
 
@@ -614,6 +617,219 @@ class LedgerInventoryTests(unittest.TestCase):
         self.assertIn(b"effective raw-ledger", result.stdout)
 
 
+def put_delete(operations):
+    return b"".join(b"\x00" + varint(len(key)) + key if value is None else dump([(key, value)])
+                    for key, value in operations)
+
+
+def stream_pin(raw, records):
+    return {"bytes": len(raw), "records": records, "sha256": hashlib.sha256(raw).hexdigest()}
+
+
+def replay_plan(before, patch, after):
+    return {"format": "zenon-r1-ledger-churn-plan/v1", "record_space": "effective-raw-ledger",
+            "provenance_sha256": PROVENANCE,
+            "before": {**before, "momentum": {"height": 100, "hash": "ab" * 32}},
+            "patch": patch,
+            "after": {**after, "momentum": {"height": 101, "hash": "cd" * 32}}}
+
+
+def replay_case(before, operations, after):
+    old, patch, new = dump(before), put_delete(operations), dump(after)
+    plan = replay_plan(stream_pin(old, len(before)), stream_pin(patch, len(operations)),
+                       stream_pin(new, len(after)))
+    return plan, patch, old
+
+
+class LedgerChurnTests(unittest.TestCase):
+    def check(self, plan, patch, before, *, reader=io.BytesIO, **options):
+        raw = INV.encoded(plan)
+        return CHURN.inspect(reader(raw + patch + before), len(raw), hashlib.sha256(raw).hexdigest(), **options)
+
+    def test_replays_ordered_puts_deletes_empty_values_and_repeated_keys(self):
+        account = b"\x03" + b"A" * 20
+        balance = account + b"\x03" + b"B" * 10
+        storage = account + b"\x04key"
+        plasma = account + b"\x05"
+        absent = b"\x04" + b"M" * 20
+        previous = [(b"", b"private-value"), (balance, b""), (plasma, b"old"), (b"\xfe", b"same")]
+        operations = [(balance, b""), (storage, b"x"), (plasma, None), (storage, b"y"),
+                      (absent, None), (balance, bytes(32)), (balance, None), (storage, None),
+                      (storage, b""), (balance, b""), (storage, b"")]
+        expected = [(b"", b"private-value"), (balance, b""), (storage, b""), (b"\xfe", b"same")]
+        plan, patch, old = replay_case(previous, operations, expected)
+        report = self.check(plan, patch, old, reader=ShortReads)
+        self.assertEqual(report["status"], "SELECTED_PATCH_REPLAY_MATCHED")
+        self.assertEqual(report["selection"], plan)
+        self.assertEqual(report["operations"], {"inserted": 3, "changed": 2, "deleted": 3,
+                         "unchanged_puts": 2, "absent_deletes": 1, "touched_keys": 4,
+                         "repeated_key_operations": 7})
+        self.assertEqual(report["families"]["typed_balance"]["after"]["raw_value_bytes"], 0)
+        self.assertEqual(report["families"]["typed_balance"]["operations"]["changed"], 1)
+        self.assertEqual(report["families"]["contract_storage"]["after"]["records"], 1)
+        self.assertEqual(report["families"]["plasma"]["after"]["records"], 0)
+        self.assertEqual(report["families"]["mailbox"]["operations"]["absent_deletes"], 1)
+        for name, rows in (("before", previous), ("after", expected)):
+            self.assertEqual(report[name + "_totals"], {"records": len(rows),
+                "key_bytes": sum(len(key) for key, _ in rows),
+                "raw_value_bytes": sum(len(value) for _, value in rows),
+                "put_wire_bytes": len(dump(rows))})
+        self.assertEqual((report["after_snapshot_bytes_read"], report["derived_snapshot_bytes_written"]), (0, 0))
+        self.assertTrue(report["end_of_stream_observed"])
+        self.assertFalse(report["scope"]["momentum_parent_link_authenticated"])
+        self.assertFalse(report["scope"]["complete_ordered_patch_authenticated"])
+        self.assertNotIn(b"private-value", INV.encoded(report))
+
+    def test_interleaved_updates_match_an_independent_sequential_model(self):
+        import random
+        rng = random.Random(4951)
+        keys = [b"", *[index.to_bytes(2, "big") * width for index in range(20) for width in (1, 64)]]
+        before = sorted((key, bytes([i]) * (i % 6)) for i, key in enumerate(keys[1::3]))
+        values = [None, b"", b"a", b"b" * 127, b"c" * 128, b"d" * 16384]
+        operations = [(rng.choice(keys), rng.choice(values)) for _ in range(160)]
+        selected = dict(before)
+        counts = dict.fromkeys(("inserted", "changed", "deleted", "unchanged_puts", "absent_deletes"), 0)
+        for key, value in operations:
+            if value is None:
+                if key in selected:
+                    del selected[key]
+                    counts["deleted"] += 1
+                else:
+                    counts["absent_deletes"] += 1
+            else:
+                if key not in selected:
+                    counts["inserted"] += 1
+                elif selected[key] == value:
+                    counts["unchanged_puts"] += 1
+                else:
+                    counts["changed"] += 1
+                selected[key] = value
+        touched = len({key for key, _ in operations})
+        expected = sorted(selected.items())
+        report = self.check(*replay_case(before, operations, expected))
+        self.assertEqual(report["operations"], {**counts, "touched_keys": touched,
+                                                "repeated_key_operations": len(operations) - touched})
+        self.assertEqual(report["after_totals"]["put_wire_bytes"], len(dump(expected)))
+
+    def test_empty_patch_empty_snapshot_and_edge_insertions(self):
+        for before, operations, after in (
+                ([], [], []), ([(b"m", b"")], [], [(b"m", b"")]),
+                ([], [(b"", b"")], [(b"", b"")]),
+                ([(b"m", b"v")], [(b"z", b"z"), (b"a", b"a")], [(b"a", b"a"), (b"m", b"v"), (b"z", b"z")]),
+                ([(b"", b"")], [(b"", None)], [])):
+            with self.subTest(before=len(before), operations=len(operations), after=len(after)):
+                report = self.check(*replay_case(before, operations, after))
+                self.assertEqual(report["before_totals"]["records"], len(before))
+                self.assertEqual(report["after_totals"]["records"], len(after))
+
+    def test_bad_plan_pins_order_and_caps_refuse_before_payload(self):
+        plan, patch, before = replay_case([(b"a", b"v")], [(b"b", b"t")], [(b"a", b"v"), (b"b", b"t")])
+        original = INV.encoded(plan)
+        malformed = [b'{"format":"duplicate",' + original[1:], original + b"\n",
+                     INV.encoded({**plan, "record_space": "derived-node-tree"}),
+                     INV.encoded({**plan, "patch": {**plan["patch"], "records": True}}),
+                     INV.encoded({**plan, "after": {**plan["after"], "momentum": {"height": 102, "hash": "cd" * 32}}}),
+                     INV.encoded({**plan, "after": {**plan["after"], "momentum": {"height": 101, "hash": "ab" * 32}}})]
+        cases = [(raw, hashlib.sha256(raw).hexdigest(), {}) for raw in malformed]
+        cases += [(original, "00" * 32, {}), (original, hashlib.sha256(original).hexdigest(), {"max_patch_bytes": 1})]
+        for raw, selected_sha, options in cases:
+            with self.subTest(plan_bytes=len(raw), options=options):
+                stream = CountedReads(raw + patch + before)
+                with self.assertRaises(CHURN.inventory.Refused):
+                    CHURN.inspect(stream, len(raw), selected_sha, **options)
+                self.assertEqual(stream.tell(), len(raw))
+        blocked = mock.Mock()
+        for options in ({"max_patch_bytes": 0}, {"max_patch_records": CHURN.HARD_PATCH_RECORDS + 1}):
+            with self.assertRaises(CHURN.inventory.Refused):
+                CHURN.inspect(blocked, len(original), hashlib.sha256(original).hexdigest(), **options)
+        blocked.read.assert_not_called()
+
+    def test_all_three_stream_pins_and_actual_eof_are_required(self):
+        plan, patch, before = replay_case([(b"a", b"v")], [(b"a", b"t")], [(b"a", b"t")])
+        for frame, reason in (("patch", "patch_digest"), ("before", "before_digest"), ("after", "after_digest")):
+            with self.subTest(frame=frame):
+                corrupt = {**plan, frame: {**plan[frame], "sha256": "00" * 32}}
+                with self.assertRaisesRegex(CHURN.inventory.Refused, reason):
+                    self.check(corrupt, patch, before)
+        with self.assertRaisesRegex(CHURN.inventory.Refused, "trailing_input"):
+            self.check(plan, patch, before + b"x")
+        with self.assertRaises(CHURN.inventory.Refused):
+            self.check(plan, patch, before[:-1])
+        bad_after = {**plan, "after": {**plan["after"], "records": 0}}
+        with self.assertRaisesRegex(CHURN.inventory.Refused, "after_size_or_records"):
+            self.check(bad_after, patch, before)
+
+    def test_invalid_patch_records_and_unsorted_or_duplicate_base_refuse(self):
+        before = dump([(b"a", b"v")])
+        for patch in (b"\x02\x00", b"\x00\x80\x00", b"\x01\x00\x01", b"\x00\x02k",
+                      b"\x00" + varint(1 << 21)):
+            with self.subTest(patch=patch.hex()):
+                plan = replay_plan(stream_pin(before, 1), stream_pin(patch, 1), stream_pin(before, 1))
+                with self.assertRaises(CHURN.inventory.Refused):
+                    self.check(plan, patch, before)
+        for before in (dump([(b"a", b"1"), (b"a", b"2")]), dump([(b"b", b"1"), (b"a", b"2")])):
+            plan = replay_plan(stream_pin(before, 2), stream_pin(b"", 0), stream_pin(before, 2))
+            with self.assertRaisesRegex(CHURN.inventory.Refused, "key_order"):
+                self.check(plan, b"", before)
+
+    def test_actual_cli_emits_one_bounded_report_and_refuses_without_partial_counts(self):
+        plan, patch, before = replay_case([(b"a", b"private-v")], [(b"z", b"private-t")],
+                                         [(b"a", b"private-v"), (b"z", b"private-t")])
+        raw = INV.encoded(plan)
+        command = [sys.executable, "-I", "-B", str(HERE / "churn.py"),
+                   "--plan-bytes", str(len(raw)), "--plan-sha256", hashlib.sha256(raw).hexdigest()]
+        for payload, code in ((raw + patch + before, 0), (raw + patch + before + b"x", 1)):
+            result = subprocess.run(command, input=payload, capture_output=True, timeout=10)
+            self.assertEqual(result.returncode, code, result.stderr)
+            self.assertEqual(result.stderr, b"")
+            self.assertLessEqual(len(result.stdout), INV.REPORT_BYTES)
+            self.assertNotIn(b"private-", result.stdout)
+            report = json.loads(result.stdout)
+            self.assertEqual(report["status"], "SELECTED_PATCH_REPLAY_MATCHED" if code == 0 else "UNKNOWN")
+            if code:
+                self.assertNotIn("families", report)
+
+    def test_large_untouched_value_is_read_once_without_an_after_stream(self):
+        size = 16 << 20
+        value = VirtualValue(size)
+        digest = hashlib.sha256(value.prefix)
+        for _ in range(size // INV.CHUNK_BYTES):
+            digest.update(b"\x7f" * INV.CHUNK_BYTES)
+        patch = dump([(b"z", b"added")])
+        after = digest.copy()
+        after.update(patch)
+        length = len(value.prefix) + size
+        plan = replay_plan({"bytes": length, "records": 1, "sha256": digest.hexdigest()}, stream_pin(patch, 1),
+                           {"bytes": length + len(patch), "records": 2, "sha256": after.hexdigest()})
+        raw = INV.encoded(plan)
+        prefix = CountedReads(raw + patch)
+
+        class Stream:
+            def read(self, requested):
+                return prefix.read(requested) if prefix.tell() < len(raw) + len(patch) else value.read(requested)
+
+        tracemalloc.start()
+        started = time.perf_counter()
+        try:
+            report = CHURN.inspect(Stream(), len(raw), hashlib.sha256(raw).hexdigest(),
+                                   dict(INV.DEFAULT_LIMITS, value_bytes=size))
+            _, peak = tracemalloc.get_traced_memory()
+            elapsed = time.perf_counter() - started
+        finally:
+            tracemalloc.stop()
+        self.assertLess(peak, 2 << 20)
+        self.assertEqual(report["input_bytes"], prefix.tell() + value.offset)
+        self.assertEqual(value.offset, length)
+        self.assertEqual(value.max_request, 64 << 10)
+        self.assertEqual((report["after_snapshot_bytes_read"], report["derived_snapshot_bytes_written"]), (0, 0))
+        self.assertEqual(report["operations"]["inserted"], 1)
+        MEASUREMENTS["churn_replay"] = {"before_snapshot_bytes_read": value.offset, "patch_bytes_read": len(patch),
+            "after_snapshot_bytes_read": 0, "derived_snapshot_bytes_written": 0, "max_read_request_bytes": value.max_request,
+            "traced_python_peak_bytes": peak, "wall_seconds": elapsed,
+            "scope": "one in-memory replay call, excludes fixture pin construction", "fixture_files_created": 0,
+            "representative_workload": False}
+
+
 class RecordedResult(unittest.TextTestResult):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -634,17 +850,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.source_revision is not None and not (len(args.source_revision) == 40 and all(c in "0123456789abcdef" for c in args.source_revision)):
         parser.error("invalid source revision")
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(LedgerInventoryTests)
+    suite = unittest.defaultTestLoader.loadTestsFromModule(sys.modules[__name__])
     result = unittest.TextTestRunner(verbosity=1, resultclass=RecordedResult).run(suite)
     success = (result.wasSuccessful() and not result.skipped and not result.expectedFailures
                and result.attempted_names == result.passed_names
-               and set(MEASUREMENTS) == {"generated_value", "generated_records", "buffered_records"})
+               and set(MEASUREMENTS) == {"generated_value", "generated_records", "buffered_records", "churn_replay"})
     print(json.dumps({"kind": "bounded-ledger-inventory-controls", "status": "PASS" if success else "FAIL",
                       "tests": result.testsRun, "passed_names": result.passed_names,
                       "attempted_names": result.attempted_names, "skipped": len(result.skipped),
                       "source_revision": args.source_revision,
                       "source_pins": {name: hashlib.sha256((HERE / name).read_bytes()).hexdigest()
-                                      for name in ("inventory.py", "inventory_test.py")},
+                                      for name in ("inventory.py", "inventory_test.py", "churn.py")},
                       "large_value_is_generated_in_memory": True, "large_fixture_files_created": False,
                       "measurements": MEASUREMENTS,
                       "representative_dataset_collected": False, "state_value_acceptance_enabled": False}, sort_keys=True))
