@@ -42,6 +42,8 @@ def zip_bytes(rows, compression=zipfile.ZIP_STORED, comment=b""):
         with zipfile.ZipFile(out, "w", compression=compression) as archive:
             for name, raw, mode in rows:
                 entry = zipfile.ZipInfo(name)
+                # Keep malformed separators and NULs in the serialized fixture.
+                entry.filename = name
                 entry.create_system = 3
                 entry.external_attr = mode << 16
                 entry.compress_type = compression
@@ -198,6 +200,7 @@ class IntakeTests(unittest.TestCase):
 
     def test_zip_paths_aliases_and_nonregular_metadata_are_refused_in_memory(self):
         for name, mode in (("../outside", stat.S_IFREG), ("a\\b", stat.S_IFREG),
+                           ("truncated\0suffix", stat.S_IFREG),
                            ("/absolute", stat.S_IFREG), ("a:b", stat.S_IFREG),
                            ("alias", stat.S_IFLNK), ("pipe", stat.S_IFIFO),
                            ("socket", stat.S_IFSOCK), ("dir/", stat.S_IFDIR),

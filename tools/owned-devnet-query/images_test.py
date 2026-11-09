@@ -199,7 +199,7 @@ class ImageRecorder(FixtureRecorder):
             identity = "sha256:" + ("1" if role == "node" else "2") * 64
             self.images[identity] = {"Id": identity, "Os": "linux", "Architecture": "amd64",
                 "Config": {"Labels": labels}, "RepoDigests": []}
-            Path(args[args.index("--iidfile") + 1]).write_text(identity + "\n")
+            Path(args[args.index("--iidfile") + 1]).write_bytes((identity + "\n").encode("ascii"))
             Path(args[args.index("--metadata-file") + 1]).write_bytes(model.canonical(
                 {"containerimage.config.digest": "sha256:" + "f" * 64 if self.changed_metadata else identity}))
             raw = b"synthetic build response\n"

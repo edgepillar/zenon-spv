@@ -284,9 +284,14 @@ class LifecycleTests(unittest.TestCase):
                 zip(("executor", "gateway", "fixture"), paths)}
         files = engine.RuntimeFiles(*paths, model.canonical(pins),
                                     tuple(engine._file_identity(path.stat()) for path in paths))
-        for role in model.SERVICES:
-            client.create(role, "sha256:" + "c" * 64, files)
-            client.start(role)
+        # Validate the real fixture files on this host and serialize the
+        # simulated Linux daemon's bind paths in its own path syntax.
+        mount = engine._mount
+        with mock.patch.object(engine, "_mount", side_effect=lambda path, target:
+                               mount(PurePosixPath("/fixture-runtime", path.name), target)):
+            for role in model.SERVICES:
+                client.create(role, "sha256:" + "c" * 64, files)
+                client.start(role)
 
     def test_builder_closes_before_six_services_and_rpc_freezes_to_its_own_nom(self):
         with tempfile.TemporaryDirectory(prefix="engine-regular-control-") as temporary:

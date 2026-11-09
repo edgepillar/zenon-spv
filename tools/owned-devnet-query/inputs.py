@@ -69,7 +69,8 @@ def _zip_members(archive, count):
     rows, names, total = archive.infolist(), set(), 0
     require(len(rows) == count, "zip_member_count")
     for row in rows:
-        name = relative_name(row.filename)
+        name = relative_name(row.orig_filename)
+        require(row.filename == name, "zip_member_name")
         mode = row.external_attr >> 16
         require(not row.is_dir() and not row.flag_bits & 0x41
                 and row.compress_type in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED)
