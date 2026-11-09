@@ -1,0 +1,95 @@
+name: owned-devnet-query
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/owned-devnet-query.yml'
+      - 'tools/owned-devnet-query/**'
+      - 'internal/testdata/conformance/prepared-devnet-*.json'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/owned-devnet-query.yml'
+      - 'tools/owned-devnet-query/**'
+      - 'internal/testdata/conformance/prepared-devnet-*.json'
+  workflow_dispatch:
+    inputs:
+      execute_owned_fixture:
+        description: Run the isolated public-fixture experiment
+        type: boolean
+        default: false
+        required: true
+      ack_contract_sha256:
+        description: SHA-256 of the reviewed contract.json
+        type: string
+        required: true
+      expected_source_revision:
+        description: Full commit of the reviewed runner source
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  controls:
+    if: github.repository == 'edgepillar/zenon-spv' && github.event_name != 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - {runner: ubuntu-24.04, label: linux-amd64}
+          - {runner: macos-15-intel, label: darwin-amd64}
+          - {runner: windows-latest, label: windows-amd64}
+    runs-on: ${{ matrix.platform.runner }}
+    timeout-minutes: 7
+    defaults:
+      run:
+        shell: bash
+    env:
+      SPV_SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ env.SPV_SOURCE_REVISION }}
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Run preparation controls
+        run: python -I -B tools/owned-devnet-query/controls.py --source-revision "$SPV_SOURCE_REVISION" --report "$RUNNER_TEMP/spv-owned-devnet-controls.json"
+      - name: Retain source and platform report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: owned-devnet-controls-${{ matrix.platform.label }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/spv-owned-devnet-controls.json
+          if-no-files-found: error
+          retention-days: 14
+
+  experiment:
+    if: github.repository == 'edgepillar/zenon-spv' && github.event_name == 'workflow_dispatch' && github.actor == 'edgepillar' && inputs.execute_owned_fixture
+    permissions:
+      contents: read
+      actions: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Run the reviewed fixture and read-only query
+        id: experiment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: /usr/bin/python3 -I -B tools/owned-devnet-query/runner.py
+      - name: Retain selected evidence and command receipts
+        if: always() && steps.experiment.outputs.evidence_paths != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: owned-devnet-query-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.experiment.outputs.evidence_paths }}
+          if-no-files-found: error
+          retention-days: 14
