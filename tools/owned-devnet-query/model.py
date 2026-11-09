@@ -298,6 +298,13 @@ def read_contract(path):
     return decode_contract(raw)
 
 
+def host_minimums(limits):
+    return {"available_memory_bytes": limits["min_available_memory_bytes"],
+            "effective_cpu_count": limits["min_effective_cpus"],
+            "free_bytes": sum(limits[key] for key in (
+                "min_free_bytes", "expected_allocation_bytes", "safety_margin_bytes"))}
+
+
 def admit_host(contract, observations):
     exact_keys(observations, {"system", "machine", "available_memory_bytes",
                "effective_cpu_count", "free_bytes"}, "host_observation_fields")
@@ -305,12 +312,10 @@ def admit_host(contract, observations):
             and observations["system"] == "Linux" and observations["machine"] in
             {"x86_64", "amd64"}, "native_linux_host_required")
     limits = contract.data["limits"]
-    uint(observations["available_memory_bytes"], minimum=limits["min_available_memory_bytes"])
-    uint(observations["effective_cpu_count"], minimum=limits["min_effective_cpus"])
-    required_free = sum(limits[k] for k in (
-        "min_free_bytes", "expected_allocation_bytes", "safety_margin_bytes"))
-    uint(observations["free_bytes"], minimum=required_free)
-    return {"minimum_free_bytes_with_allocation_and_margin": required_free,
+    minimums = host_minimums(limits)
+    for name, minimum in minimums.items():
+        uint(observations[name], minimum=minimum)
+    return {"minimum_free_bytes_with_allocation_and_margin": minimums["free_bytes"],
             "runtime_memory_limit_sum": 4 * limits["node_memory_bytes"]
             + limits["executor_memory_bytes"] + limits["gateway_memory_bytes"],
             "OS_aggregate_quota_or_runtime_enforcement_proven": False}
@@ -495,8 +500,7 @@ def preparation_report(contract, source_revision=None):
     return {"format": "owned-devnet-query-preparation/v1", "status": "PLAN_ONLY",
             "source_revision": source_revision, "contract_sha256": contract.sha256,
             "project": PROJECT, "services": list(SERVICES),
-            "required_free_bytes": sum(contract.data["limits"][k] for k in (
-                "min_free_bytes", "expected_allocation_bytes", "safety_margin_bytes")),
+            "required_free_bytes": host_minimums(contract.data["limits"])["free_bytes"],
             "runtime_memory_limit_sum": 4 * LIMITS["node_memory_bytes"]
             + LIMITS["executor_memory_bytes"] + LIMITS["gateway_memory_bytes"],
             "qualified_component_revision": QUALIFIED_COMPONENT_REVISION,

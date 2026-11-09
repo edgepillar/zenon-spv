@@ -54,6 +54,13 @@ jobs:
         with:
           ref: ${{ env.SPV_SOURCE_REVISION }}
           persist-credentials: false
+      - name: Measure host admission before preparation
+        id: host_admission
+        if: matrix.platform.label == 'linux-amd64'
+        run: |
+          /usr/bin/python3 -I -B tools/owned-devnet-query/budget.py \
+            --source-revision "$SPV_SOURCE_REVISION" --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" --report "$RUNNER_TEMP/spv-owned-devnet-host-admission.json"
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.13'
@@ -65,6 +72,14 @@ jobs:
         with:
           name: owned-devnet-controls-${{ matrix.platform.label }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/spv-owned-devnet-controls.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Retain host admission sample
+        if: always() && matrix.platform.label == 'linux-amd64' && steps.host_admission.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: owned-devnet-host-admission-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/spv-owned-devnet-host-admission.json
           if-no-files-found: error
           retention-days: 14
 

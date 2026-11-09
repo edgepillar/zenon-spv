@@ -15,6 +15,42 @@ import model
 from process import Recorder
 
 
+class HostAdmissionSampleTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.contract = model.read_contract(HERE / "contract.json")
+
+    def test_sample_uses_the_exact_runtime_admission_thresholds(self):
+        observations = {"system": "Linux", "machine": "x86_64", "available_memory_bytes": 12 << 30,
+                        "effective_cpu_count": 4, "free_bytes": 19 << 30}
+        for field in (None, "available_memory_bytes", "effective_cpu_count", "free_bytes"):
+            with self.subTest(field=field):
+                sample = dict(observations)
+                if field is not None:
+                    sample[field] -= 1
+                report = budget.preparation_admission_report(
+                    self.contract, HERE, "a" * 40, 100, 2, observe=lambda _: sample)
+                self.assertEqual(report["observations"], sample)
+                self.assertEqual(report["minimums"], {key: value for key, value in observations.items()
+                                                      if type(value) is int})
+                self.assertEqual((report["source_revision"], report["run_id"], report["run_attempt"],
+                                  report["contract_sha256"]), ("a" * 40, 100, 2, self.contract.sha256))
+                self.assertEqual((report["status"], report["reason"]),
+                                 ("MEETS_THRESHOLDS", None) if field is None else ("REFUSED", "integer_bounds"))
+                self.assertFalse(report["engine_contacted"])
+                self.assertFalse(report["experiment_executed"])
+                self.assertFalse(report["OS_aggregate_quota_or_runtime_enforcement_proven"])
+
+    def test_observation_failure_is_retained_without_host_details(self):
+        def unreadable(_):
+            raise OSError("private failure details")
+
+        report = budget.preparation_admission_report(self.contract, HERE, "a" * 40, 100, 1, observe=unreadable)
+        self.assertEqual((report["status"], report["reason"], report["observations"]),
+                         ("UNAVAILABLE", "observation_failed", None))
+        self.assertNotIn(b"private", model.canonical(report))
+
+
 @unittest.skipUnless(os.name == "posix", "POSIX recorder fixture; actual runner requires Linux")
 class BudgetTests(unittest.TestCase):
     @classmethod

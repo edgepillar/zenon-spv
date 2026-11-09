@@ -87,6 +87,14 @@ The controller samples free space and retained evidence during work and reserves
 five minutes for owned process closure. The 19 GiB admission requirement includes
 a 10 GiB free-space floor, 8 GiB expected allocation and 1 GiB margin.
 
+The Linux preparation job samples the runner's free space, available memory
+and effective CPU count before Python setup or tests. It uses the same
+`ubuntu-24.04` label and the experiment's admission thresholds. The separate
+`owned-devnet-host-admission-<attempt>` artifact binds the sample to its
+source revision, contract, run and attempt. Its outcome records
+`MEETS_THRESHOLDS`, `REFUSED` or `UNAVAILABLE`. The experiment repeats
+admission on its own workspace and checks the engine filesystem separately.
+
 The controller observes the selected H1 and the H2-to-H3 transition before
 configuration. After the fixture deposit it selects H and waits for one successor.
 It stops the producers and clients, records the RPC frontier, and uses the
