@@ -164,6 +164,7 @@ def execute(environment, workspace, checkout):
         stage = "inputs"
         artifacts = Artifacts(contract, transport, workspace / "binaries", ["/usr/bin/gh"],
                               gh_environment, guard)
+        artifacts.preflight()
         consumer = artifacts.fetch("consumer").binaries
         oracle = artifacts.fetch("parent_oracle").binaries
         node = Installer(contract, transport, workspace / "node-toolchain",
@@ -174,13 +175,15 @@ def execute(environment, workspace, checkout):
         stage = "sources"
         sources = Sources(contract, record, workspace / "source", ["/usr/bin/git"],
                           tool_environment, guard).prepare()
+        stage = "runtime-inputs"
+        files = engine.prepare_files(sources)
         stage = "packages"
         prepared = Packages(contract, record, sources, node, workspace / "packages",
                             tool_environment, guard).prepare()
         stage = "images"
         images = Builder(contract, engine, sources, workspace / "images").prepare()
-        files = engine.prepare_files(sources)
         stage = "nodes"
+        files.verify()
         engine.create_layout()
         for role in model.SERVICES[:4]:
             engine.create(role, images.image_for(role), files)

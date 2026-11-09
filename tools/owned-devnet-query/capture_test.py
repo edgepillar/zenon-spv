@@ -12,6 +12,7 @@ import struct
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -174,6 +175,30 @@ class CaptureTests(unittest.TestCase):
 
 @unittest.skipUnless(os.name == "posix", "POSIX descriptor and recorder controls")
 class HostBoundaryTests(unittest.TestCase):
+    def test_invalid_runtime_files_refuse_before_package_or_image_preparation(self):
+        execution = model.ExecutionIdentity("a" * 40, 1, 1, "edgepillar")
+        with tempfile.TemporaryDirectory(prefix="owned-runtime-input-control-") as temporary:
+            root = Path(temporary)
+            with mock.patch.multiple(runner, dispatch=mock.DEFAULT, Budget=mock.DEFAULT,
+                                     Engine=mock.DEFAULT, Artifacts=mock.DEFAULT, Installer=mock.DEFAULT,
+                                     Sources=mock.DEFAULT, Packages=mock.DEFAULT, Builder=mock.DEFAULT,
+                                     publish_paths=mock.DEFAULT) as dependencies:
+                dependencies["dispatch"].return_value = CONTRACT, execution
+                dependencies["Budget"].return_value.report.return_value = {}
+                engine = dependencies["Engine"].return_value
+                engine.docker_root = CONTRACT.data["runtime"]["closed_oracle_readonly_docker_root"]
+                engine.prepare_files.side_effect = model.Refused("fixture_source_default")
+                engine.cleanup.return_value = []
+                env = {"GH_TOKEN": "unused-test-value", "GITHUB_OUTPUT": str(root / "output")}
+                self.assertEqual(runner.execute(env, root, HERE.parents[1]), 1)
+                dependencies["Artifacts"].return_value.preflight.assert_called_once_with()
+                dependencies["Packages"].assert_not_called()
+                dependencies["Builder"].assert_not_called()
+                engine.create_layout.assert_not_called()
+            terminal = json.loads((root / "evidence/terminal.json").read_bytes())
+            self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),
+                             ("runtime-inputs", "REFUSED", "fixture_source_default"))
+
     def test_cancelled_reader_exits_after_anonymous_pipe_eof(self):
         command = [sys.executable, "-I", "-B", "-c",
             "import sys; sys.stdout.write('ready\\n'); sys.stdout.flush(); sys.stdin.buffer.read()"]

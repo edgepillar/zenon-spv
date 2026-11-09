@@ -61,7 +61,7 @@ PORTABLE_WORKFLOWS = (
 )
 # Keep every remaining non-document dependency, including all workflows.
 # Refresh only after reviewing dependencies and selecting full runtime CI.
-PORTABLE_SOURCE_PIN = "ecb2c788d7c35d81c8762ab1db275b72c6ba5c94ec3f0b8cc0f20a5b42b7cba8"
+PORTABLE_SOURCE_PIN = "be828a4276c9c4dace9f255496d13a6391b8bf63e95c2ac0a8118c408bc7121d"
 MAX_FILTERED_DIFF_RECORDS = 256
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192
