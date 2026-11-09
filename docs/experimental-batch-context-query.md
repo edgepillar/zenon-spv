@@ -172,7 +172,14 @@ same buffer is SHA-256 checked and strictly decoded through
 header layouts, root-bound hashes, signatures, finite producer authorization and
 links are rechecked. A matching digest is content identity, not authentication:
 trusted local provenance is still required for evicted ancestry and file origin.
-The persisted v4 format and existing trusted file loader are unchanged.
+Both trusted loaders consume the existing v4 format.
+
+The v4 object decoder now consumes `retained_headers` one header at a time.
+The selected file bytes, decoded headers and individual JSON values still
+occupy memory. The [retained-state benchmark](streamed-state-window.md) compares
+direct array consumption with the prior whole-array buffer at the retained
+header cap. It measures the structural parser, excluding file reads, digest
+selection, signature verification and the consumer query.
 
 The provider can contain an empty `momentums` array when all query/tip headers
 are already retained, or only the bounded immediate successors of the saved tip.
