@@ -395,15 +395,37 @@ func TestExperimentalBatchCLIStrictConfigurationAndBundle(t *testing.T) {
 			t.Fatal("header count cap")
 		}
 	}
-	for _, name := range []string{"coverage", "entries"} {
-		for _, count := range []int{verify.MaxExperimentalV3ScheduleEntries, verify.MaxExperimentalV3ScheduleEntries + 1} {
-			rows := bytes.Repeat([]byte("{},"), count)
-			rows = append(rows[:len(rows)-1], ']')
-			raw := append([]byte("{\""+name+"\":["), rows...)
-			raw = append(raw, '}')
-			if (boundExperimentalCLISchedule(raw) == nil) != (count == verify.MaxExperimentalV3ScheduleEntries) {
-				t.Fatal("experimental schedule row bound")
-			}
+	// Use a dense, valid native schedule with both arrays at the
+	// experimental limit. Each array is capped independently.
+	limit := verify.MaxExperimentalV3ScheduleEntries
+	coverage := make([]verify.ProducerCoverage, limit)
+	entries := make([]verify.ProducerEntry, limit)
+	for i := range entries {
+		height := uint64(i) + 12
+		coverage[i] = verify.ProducerCoverage{FromHeight: height, ThroughHeight: height}
+		entries[i] = verify.ProducerEntry{Height: height}
+	}
+	atLimit, err := verify.NewProducerSchedule(100, coverage, entries, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.config["producer_schedule"] = atLimit
+	got, err := decodeExperimentalCLIConfig(experimentalCLIJSON(t, f.config))
+	if err != nil || got.Schedule == nil || len(got.Schedule.Coverage) != limit || len(got.Schedule.Entries) != limit || got.Schedule.ScheduleHash != atLimit.ScheduleHash {
+		t.Fatalf("experimental schedule at row limit: %v", err)
+	}
+	nextHeight := entries[limit-1].Height + 1
+	overCoverage, overEntries := *atLimit, *atLimit
+	overCoverage.Coverage = append(overCoverage.Coverage, verify.ProducerCoverage{FromHeight: nextHeight, ThroughHeight: nextHeight})
+	overEntries.Entries = append(overEntries.Entries, verify.ProducerEntry{Height: nextHeight})
+	for _, oversized := range []*verify.ProducerSchedule{&overCoverage, &overEntries} {
+		var native verify.ProducerSchedule
+		if err := json.Unmarshal(experimentalCLIJSON(t, oversized), &native); err != nil {
+			t.Fatalf("native schedule JSON must retain its larger row limit: %v", err)
+		}
+		f.config["producer_schedule"] = oversized
+		if got, err := decodeExperimentalCLIConfig(experimentalCLIJSON(t, f.config)); err == nil || !reflect.DeepEqual(got, experimentalCLIConfig{}) {
+			t.Fatal("experimental schedule exceeded its row limit")
 		}
 	}
 }

@@ -361,42 +361,6 @@ func decodeProducerSchedule(r io.Reader, maxBytes int64) (*ProducerSchedule, err
 	return &s, nil
 }
 
-// Tiny JSON objects can expand into much larger structs. Stop array decoding
-// at the count cap rather than allocating every row before Validate runs.
-type boundedScheduleRows[T any] []T
-
-func (rows *boundedScheduleRows[T]) UnmarshalJSON(raw []byte) error {
-	d := json.NewDecoder(bytes.NewReader(raw))
-	d.DisallowUnknownFields()
-	first, err := d.Token()
-	if err != nil {
-		return err
-	}
-	if first == nil {
-		*rows = nil
-		return nil
-	}
-	if first != json.Delim('[') {
-		return errors.New("producer schedule: expected an array")
-	}
-	decoded := make([]T, 0)
-	for d.More() {
-		if len(decoded) == MaxProducerScheduleEntries {
-			return ErrProducerScheduleTooLarge
-		}
-		var row T
-		if err := d.Decode(&row); err != nil {
-			return err
-		}
-		decoded = append(decoded, row)
-	}
-	if _, err := d.Token(); err != nil {
-		return err
-	}
-	*rows = decoded
-	return nil
-}
-
 // NewProducerSchedule builds a schedule from raw components, computes
 // the ScheduleHash, and validates the result. Intended for the
 // derivation tool; production callers use LoadProducerSchedule.

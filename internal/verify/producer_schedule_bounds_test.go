@@ -140,10 +140,18 @@ func TestProducerScheduleJSONCountLimit(t *testing.T) {
 	// million fully populated signed-authority rows. Empty authority rows are
 	// now structurally invalid and fail before the count cap is reached.
 	raw := `[` + strings.Repeat(`{},`, MaxProducerScheduleEntries) + `{}]`
-	var rows boundedScheduleRows[struct{}]
-	err := json.Unmarshal([]byte(raw), &rows)
+	var rows []struct{}
+	d := json.NewDecoder(strings.NewReader(raw))
+	err := decodeScheduleRows(d, &rows, "entries", MaxProducerScheduleEntries)
 	if rows != nil || !errors.Is(err, ErrProducerScheduleTooLarge) {
 		t.Fatalf("JSON entry limit: published=%t err=%v", rows != nil, err)
+	}
+
+	// The first row outside the limit must never reach the row decoder.
+	d = json.NewDecoder(strings.NewReader(`[{},false]`))
+	err = decodeScheduleRows(d, &rows, "entries", 1)
+	if rows != nil || !errors.Is(err, ErrProducerScheduleTooLarge) {
+		t.Fatalf("JSON row decoded beyond limit: published=%t err=%v", rows != nil, err)
 	}
 }
 

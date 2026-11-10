@@ -26,7 +26,12 @@ func decodeExperimentalContextCLIConfig(raw []byte) (experimentalContextCLIConfi
 	if len(raw) > maxExperimentalConfigBytes || decodeExperimentalCLIObject(raw, map[string]any{
 		"version": &next.Version, "header_profile": &next.HeaderProfile, "header_policy": &next.HeaderPolicy,
 		"producer_schedule": &schedule, "query_profile": &next.QueryProfile,
-	}) != nil || next.Version != 1 || boundExperimentalCLISchedule(schedule) != nil || json.Unmarshal(schedule, &next.Schedule) != nil {
+	}) != nil || next.Version != 1 {
+		return experimentalContextCLIConfig{}, errExperimentalCLIInput
+	}
+	var err error
+	next.Schedule, err = verify.DecodeExperimentalV3Schedule(schedule)
+	if err != nil {
 		return experimentalContextCLIConfig{}, errExperimentalCLIInput
 	}
 	return next, nil
