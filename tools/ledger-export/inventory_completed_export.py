@@ -6,6 +6,7 @@ The caller selects the frontier, provenance, limits and actual producer capture
 through a protected channel. No database, network, child or output file is opened.
 This joins existing checks; it does not authenticate the caller or ledger state.
 """
+import hashlib
 import importlib.util
 import io
 import json
@@ -30,10 +31,12 @@ TRANSPORT = load("completed_export_transport", HERE.parent / "ledger-transport/t
 PROJECTION = load("completed_export_projection", HERE / "snapshot_projection.py")
 FORMAT = "zenon-completed-frontier-inventory/v1"
 TRANSPORT_FORMAT = "zenon-completed-frontier-transport-inventory/v1"
+DESCRIPTION_FORMAT = "zenon-completed-frontier-inventory-description/v1"
 PROJECTION_FORMAT = "zenon-completed-frontier-transport-projection/v1"
 RECEIPT_OPTION = "--producer-receipt-json"
 MANIFEST_BYTES_OPTION = "--transport-manifest-bytes"
 MANIFEST_SHA_OPTION = "--transport-manifest-sha256"
+DESCRIPTION_CHUNK_OPTION = "--describe-transport-chunk-bytes"
 PROJECTION_PROFILE_OPTION = "--projection-profile"
 PROJECTION_ROOT_OPTION = "--expect-candidate-root"
 PROJECTION_LIMIT_OPTION = "--max-projected-leaves"
@@ -44,7 +47,8 @@ USAGE = ("inventory-completed-export: require --producer-receipt-json JSON and t
          "recount, supply --transport-manifest-bytes and --transport-manifest-sha256 "
          "and feed the exact manifest immediately before the put stream. Framed mode "
          "also accepts --projection-profile zenon-l1-balance-storage-sha3/v1 and "
-         "--expect-candidate-root HEX for a root-only comparison.\n")
+         "--expect-candidate-root HEX for a root-only comparison. To create a manifest "
+         "during an unframed recount, supply --describe-transport-chunk-bytes N.\n")
 
 
 def scope():
@@ -71,6 +75,7 @@ def arguments(args):
     common, selected, index = [], {}, 0
     option_limits = {RECEIPT_OPTION: COMPLETION.REPORT_BYTES,
                      MANIFEST_BYTES_OPTION: 20, MANIFEST_SHA_OPTION: 64,
+                     DESCRIPTION_CHUNK_OPTION: 20,
                      PROJECTION_PROFILE_OPTION: 64, PROJECTION_ROOT_OPTION: 64,
                      PROJECTION_LIMIT_OPTION: 20}
     while index < len(args):
@@ -89,13 +94,16 @@ def arguments(args):
     COMPLETION.require(RECEIPT_OPTION in selected, "options")
     receipt = selected[RECEIPT_OPTION].encode("utf-8")
     COMPLETION.require(len(receipt) <= COMPLETION.REPORT_BYTES, "options")
-    manifest = projection = None
+    manifest = projection = describe_chunk = None
     if MANIFEST_BYTES_OPTION in selected or MANIFEST_SHA_OPTION in selected:
         COMPLETION.require(MANIFEST_BYTES_OPTION in selected and MANIFEST_SHA_OPTION in selected, "options")
         size = COMPLETION.decimal(selected[MANIFEST_BYTES_OPTION])
         digest = selected[MANIFEST_SHA_OPTION]
         COMPLETION.require(0 < size <= TRANSPORT.MANIFEST_BYTES and COMPLETION.hex_digest(digest), "options")
         manifest = size, digest
+    if DESCRIPTION_CHUNK_OPTION in selected:
+        describe_chunk = COMPLETION.decimal(selected[DESCRIPTION_CHUNK_OPTION])
+        COMPLETION.require(manifest is None and 0 < describe_chunk <= TRANSPORT.HARD_LIMITS["chunk_bytes"], "options")
     if {PROJECTION_PROFILE_OPTION, PROJECTION_ROOT_OPTION, PROJECTION_LIMIT_OPTION} & selected.keys():
         root = selected.get(PROJECTION_ROOT_OPTION)
         limit = COMPLETION.decimal(selected.get(PROJECTION_LIMIT_OPTION, str(PROJECTION.DEFAULT_LEAVES)))
@@ -103,10 +111,10 @@ def arguments(args):
                            and COMPLETION.hex_digest(root) and 0 < limit <= PROJECTION.MAX_LEAVES, "options")
         projection = root, limit
     elif manifest is None:
-        COMPLETION.require(len(args) <= 34, "options")
+        COMPLETION.require(len(args) <= (36 if describe_chunk is not None else 34), "options")
     else:
         COMPLETION.require(len(args) <= 38, "options")
-    return common, receipt, manifest, projection
+    return common, receipt, manifest, projection, describe_chunk
 
 
 def run(args, stream, output, diagnostics):
@@ -116,7 +124,7 @@ def run(args, stream, output, diagnostics):
             diagnostics.write(USAGE)
             result, code = unknown("help_only"), 0
         else:
-            common, receipt, manifest, projection = arguments(args)
+            common, receipt, manifest, projection, describe_chunk = arguments(args)
             capture = io.StringIO()
             code = COMPLETION.run(common, io.BytesIO(receipt), capture, diagnostics)
             matched = json.loads(capture.getvalue())
@@ -132,14 +140,18 @@ def run(args, stream, output, diagnostics):
                     return INVENTORY.inventory(payload, matched["inventory_selection"], matched["inventory_limits"],
                                                read_value=projector.read_value if projector is not None else None)
 
-                transport = None
-                if manifest is None:
+                transport = description = None
+                if manifest is None and describe_chunk is None:
                     report = recount(stream)
                 else:
                     pin = {**matched["inventory_selection"], **matched["selected_frontier"]}
                     del pin["records"]  # Transport binds bytes and the full frontier, not record counts.
                     caps = {**TRANSPORT.HARD_LIMITS, "bytes": matched["inventory_limits"]["bytes"]}
-                    transport, report = TRANSPORT.verify_with(stream, *manifest, pin, recount, caps)
+                    if manifest is not None:
+                        transport, report = TRANSPORT.verify_with(stream, *manifest, pin, recount, caps)
+                    else:
+                        caps["chunk_bytes"] = describe_chunk
+                        description, report = TRANSPORT.describe_with(stream, pin, recount, caps)
                 INVENTORY.encoded(report)  # Retain the inventory's own report bound.
                 result = {"format": FORMAT, "status": "SELECTED_EXPORT_INVENTORIED", "reason": None,
                           "producer_completion_matched": True, "stream_recount_completed": True,
@@ -147,6 +159,12 @@ def run(args, stream, output, diagnostics):
                           "scope": scope()}
                 if transport is not None:
                     result.update(format=TRANSPORT_FORMAT, transport_verification=transport)
+                if description is not None:
+                    raw_manifest = TRANSPORT.encoded(description)
+                    result.update(format=DESCRIPTION_FORMAT, status="SELECTED_EXPORT_INVENTORIED_AND_DESCRIBED",
+                                  transport_description={"manifest": description,
+                                      "pin": {"bytes": len(raw_manifest),
+                                              "sha256": hashlib.sha256(raw_manifest).hexdigest()}})
                 if projector is not None:
                     result.update(format=PROJECTION_FORMAT, status="SELECTED_CANDIDATE_PROJECTION_MATCHED",
                                   candidate_projection=projector.finish())
@@ -166,7 +184,8 @@ def run(args, stream, output, diagnostics):
     except KeyboardInterrupt:
         result, code = unknown("cancelled", completed), 130
     raw = json.dumps(result, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
-    if len(raw.encode("utf-8")) > RESULT_BYTES:
+    limit = RESULT_BYTES + (TRANSPORT.MANIFEST_BYTES if result["format"] == DESCRIPTION_FORMAT else 0)
+    if len(raw.encode("utf-8")) > limit:
         raw = json.dumps(unknown("result_size"), sort_keys=True, separators=(",", ":")) + "\n"
         code = 70
     try:
