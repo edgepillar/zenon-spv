@@ -83,15 +83,16 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 		return refuse(ReasonProducerSetUnknown, err.Error()), state
 	}
 
-	// Work on a copy so a REJECT mid-loop leaves caller's state
-	// unmodified. Capacity is preserved.
-	working := HeaderState{
-		ProtocolProfile: cloneProtocolProfile(state.ProtocolProfile),
-		Genesis:         state.Genesis,
-		Capacity:        state.Capacity,
-		RetainHeaders:   state.RetainHeaders,
-		RetainedWindow:  append(make([]chain.Header, 0, state.Capacity), state.RetainedWindow...),
-	}
+	// Reserve only the final window. A full window no longer shifts for
+	// each new header. Even headers outside the suffix must pass every check.
+	oldWindow := state.RetainedWindow
+	newCount := min(len(headers), state.Capacity)
+	oldCount := min(len(oldWindow), state.Capacity-newCount)
+	firstKept := len(headers) - newCount
+	working := state
+	working.ProtocolProfile = cloneProtocolProfile(state.ProtocolProfile)
+	working.RetainedWindow = make([]chain.Header, oldCount+newCount, state.Capacity)
+	copy(working.RetainedWindow, oldWindow[len(oldWindow)-oldCount:])
 
 	// Embedded checkpoints apply only to mainnet (chain_id=1). Other
 	// networks (testnet, devnet, custom checkpoints supplied via
@@ -106,7 +107,7 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 		prevHash   chain.Hash
 		prevHeight uint64
 	)
-	if tip, ok := working.Tip(); ok {
+	if tip, ok := state.Tip(); ok {
 		prevHash = tip.HeaderHash
 		prevHeight = tip.Height
 	} else {
@@ -173,7 +174,7 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 		if opts.ProducerAuth.Mode == ProducerAuthRequired {
 			switch decision := opts.ProducerAuth.Authorizer.Authorize(h.Height, h.TimestampUnix, h.PublicKey); decision {
 			case ProducerAuthorized:
-				// fall through to Append
+				// Continue to retention below.
 			case ProducerUnauthorized:
 				return reject(ReasonUnauthorizedProducer, i,
 					fmt.Sprintf("producer not authorized for height=%d timestamp=%d",
@@ -187,7 +188,9 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 			}
 		}
 
-		working.Append(h)
+		if i >= firstKept {
+			working.RetainedWindow[oldCount+(i-firstKept)] = h
+		}
 		prevHash = h.HeaderHash
 		prevHeight = h.Height
 	}

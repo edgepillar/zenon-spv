@@ -1,7 +1,9 @@
 package verify
 
 import (
+	"bytes"
 	"crypto/ed25519"
+	"slices"
 	"testing"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
@@ -13,7 +15,7 @@ var fixtureSeed = make([]byte, ed25519.SeedSize) // all zeros
 
 // buildChain returns a (genesis, headers) pair for n contiguous
 // signed headers extending genesis. All fields are deterministic.
-func buildChain(t *testing.T, n int) (GenesisTrustRoot, []chain.Header, ed25519.PrivateKey) {
+func buildChain(t testing.TB, n int) (GenesisTrustRoot, []chain.Header, ed25519.PrivateKey) {
 	t.Helper()
 	priv := ed25519.NewKeyFromSeed(fixtureSeed)
 	pub := priv.Public().(ed25519.PublicKey)
@@ -200,6 +202,61 @@ func TestVerifyHeaders_StateUnchangedOnReject(t *testing.T) {
 	}
 	if len(newState.RetainedWindow) != 0 {
 		t.Fatalf("expected unchanged empty state, got %d retained", len(newState.RetainedWindow))
+	}
+}
+
+func TestVerifyHeaders_RetainsBatchSuffixTransactionally(t *testing.T) {
+	const k = 8
+	genesis, headers, _ := buildChain(t, 2*k+3)
+	policy := Policy{W: 6, RetainHeaders: k}
+	result, seed := VerifyHeaders(headers[:k], NewHeaderState(genesis, policy), policy)
+	if result.Outcome != OutcomeAccept {
+		t.Fatal(result)
+	}
+
+	for _, end := range []int{k + 3, 2 * k, len(headers)} {
+		result, next := VerifyHeaders(headers[k:end], seed, policy)
+		want := headers[end-k : end]
+		if result.Outcome != OutcomeAccept || !slices.EqualFunc(next.RetainedWindow, want, sequenceHeadersEqual) {
+			t.Fatalf("wrong window after extending through header %d: %s", end, result)
+		}
+		if &next.RetainedWindow[0] == &want[0] || &next.RetainedWindow[0] == &seed.RetainedWindow[0] ||
+			!slices.EqualFunc(seed.RetainedWindow, headers[:k], sequenceHeadersEqual) {
+			t.Fatal("accepted batch shared or modified the predecessor window or input array")
+		}
+	}
+
+	batch := headers[k:]
+	for _, index := range []int{1, len(batch) - 1} {
+		invalid := slices.Clone(batch)
+		invalid[index].Signature = bytes.Clone(invalid[index].Signature)
+		invalid[index].Signature[0] ^= 1
+		result, unchanged := VerifyHeaders(invalid, seed, policy)
+		if result.Outcome != OutcomeReject || result.Reason != ReasonInvalidSignature ||
+			result.FailedAt != index || len(result.Proven) != 0 {
+			t.Fatalf("invalid header %d escaped whole-batch verification: %s", index, result)
+		}
+		if !slices.EqualFunc(unchanged.RetainedWindow, headers[:k], sequenceHeadersEqual) ||
+			&unchanged.RetainedWindow[0] != &seed.RetainedWindow[0] {
+			t.Fatal("rejected batch published a partial window")
+		}
+	}
+}
+
+func BenchmarkVerifyHeadersReplaceFullWindow(b *testing.B) {
+	const k = MaxRetainHeaders
+	genesis, headers, _ := buildChain(b, 2*k)
+	policy := Policy{W: 6, RetainHeaders: k}
+	result, seed := VerifyHeaders(headers[:k], NewHeaderState(genesis, policy), policy)
+	if result.Outcome != OutcomeAccept {
+		b.Fatal(result)
+	}
+	b.ReportAllocs()
+	for b.Loop() {
+		result, next := VerifyHeaders(headers[k:], seed, policy)
+		if result.Outcome != OutcomeAccept || len(next.RetainedWindow) != k {
+			b.Fatal(result)
+		}
 	}
 }
 
