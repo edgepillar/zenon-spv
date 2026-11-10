@@ -195,11 +195,13 @@ def family(key):
     return "other_namespace"
 
 
-def inventory(stream, selected, configured_limits=None):
+def inventory(stream, selected, configured_limits=None, *, read_value=None):
     """Inventory once with O(max_key_bytes + CHUNK_BYTES) retained input memory.
 
     Pins and limits are copied before reading. Present-empty records stay
     present. No dictionary of keys, values, addresses or tokens is accumulated.
+    A cooperating value reader may consume a field in place and return the
+    same raw-zero32 observation. Publish its result only after a complete read.
     """
     caps = limits(configured_limits)
     pin = selection(selected, caps)
@@ -221,7 +223,12 @@ def inventory(stream, selected, configured_limits=None):
         require(previous is None or key > previous, "key_order")
         value_size = reader.length()
         require(value_size <= caps["value_bytes"], "value_size")
-        zero32 = reader.value(value_size)
+        if read_value is None:
+            zero32 = reader.value(value_size)
+        else:
+            value_end = reader.position + value_size
+            zero32 = read_value(reader, key, value_size)
+            require(reader.position == value_end and type(zero32) is bool, "value_reader")
         name = family(key)
         if key:
             top_prefixes[key[0]] += 1

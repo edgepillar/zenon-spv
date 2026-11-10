@@ -31,6 +31,11 @@ completeness, a reconstructed StateRoot or owner acceptance. For a completed
 export, the [combined transport and inventory handoff](../tools/ledger-export/README.md#check-the-transport-manifest-during-the-recount)
 can perform both checks in one read of the retained stream. A standalone
 transport check still leaves the independent raw-stream inventory to run.
+The same framed handoff can also
+[compare a selected candidate L1 projection root](../tools/ledger-export/README.md#compare-the-candidate-l1-projection-during-the-recount)
+without a second payload scan. The projection compares the raw frontier record
+and derives the balance/storage root as `MATH_ONLY`. Accepted-header binding,
+excluded-state provenance and production import remain separate gates.
 
 After an interrupted transfer, the [selected-range commands](../tools/ledger-transport/README.md#verify-only-the-missing-range)
 derive offsets from the same pinned manifest and verify replacement chunks

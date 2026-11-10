@@ -54,14 +54,14 @@ TRANSPORT_DOCS = frozenset(("docs/state-root-r1-intake.md", "docs/native-roadmap
 PORTABLE_WORKFLOWS = (
     (".github/workflows/ledger-transport.yml", TRANSPORT_FILES | TRANSPORT_DOCS, 7894,
      "3101f06e85bd6bd6d74fe89e86e06a04cce38a26aad7d945f5371880250e49b0"),
-    (".github/workflows/ledger-export.yml", EXPORT_FILES | {SHARED_TRANSPORT}, 7817,
-     "5c0f8e7215bf86044f0bf44f330a48520c6a4c17187740909bc593158a26106a"),
+    (".github/workflows/ledger-export.yml", EXPORT_FILES | {SHARED_TRANSPORT}, 8084,
+     "8fab1803332f60cac43a20b8940988b19c38b8dd0359f005f605dcc55dcb98fb"),
     (".github/workflows/owned-devnet-query.yml", PREPARATION_FILES, 4354,
      "fa7e5e9397ef0621770f9ad944acaeb04722ce890c61cd2d78344d90f9f1d1d1"),
 )
 # Keep every remaining non-document dependency, including all workflows.
 # Refresh only after reviewing dependencies and selecting full runtime CI.
-PORTABLE_SOURCE_PIN = "892c0769cbd0131fb1b09392141ffa178a8fea265baa48e51364f8a978ad4626"
+PORTABLE_SOURCE_PIN = "51cc79fc75e0d3d612af0f6d07adf11dea2bd0c73e4ede0e8a543411548afe2f"
 MAX_FILTERED_DIFF_RECORDS = 256
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192

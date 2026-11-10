@@ -27,17 +27,24 @@ def load(name, path):
 COMPLETION = load("completed_export_completion", HERE / "consume_completion.py")
 INVENTORY = load("completed_export_inventory", HERE.parent / "ledger-inventory/inventory.py")
 TRANSPORT = load("completed_export_transport", HERE.parent / "ledger-transport/transport.py")
+PROJECTION = load("completed_export_projection", HERE / "snapshot_projection.py")
 FORMAT = "zenon-completed-frontier-inventory/v1"
 TRANSPORT_FORMAT = "zenon-completed-frontier-transport-inventory/v1"
+PROJECTION_FORMAT = "zenon-completed-frontier-transport-projection/v1"
 RECEIPT_OPTION = "--producer-receipt-json"
 MANIFEST_BYTES_OPTION = "--transport-manifest-bytes"
 MANIFEST_SHA_OPTION = "--transport-manifest-sha256"
+PROJECTION_PROFILE_OPTION = "--projection-profile"
+PROJECTION_ROOT_OPTION = "--expect-candidate-root"
+PROJECTION_LIMIT_OPTION = "--max-projected-leaves"
 RESULT_BYTES = COMPLETION.REPORT_BYTES + INVENTORY.REPORT_BYTES + 4096
 USAGE = ("inventory-completed-export: require --producer-receipt-json JSON and the "
          "consume-completion selection, actual capture and optional --max-* arguments; "
          "feed the same retained put stream on stdin. To check transport during the "
          "recount, supply --transport-manifest-bytes and --transport-manifest-sha256 "
-         "and feed the exact manifest immediately before the put stream.\n")
+         "and feed the exact manifest immediately before the put stream. Framed mode "
+         "also accepts --projection-profile zenon-l1-balance-storage-sha3/v1 and "
+         "--expect-candidate-root HEX for a root-only comparison.\n")
 
 
 def scope():
@@ -58,12 +65,14 @@ def unknown(reason, completion=None):
 
 
 def arguments(args):
-    COMPLETION.require(type(args) in (list, tuple) and len(args) <= 38 and
+    COMPLETION.require(type(args) in (list, tuple) and len(args) <= 44 and
                        all(type(v) is str for v in args) and
                        sum(map(len, args)) <= 32 << 10, "options")
     common, selected, index = [], {}, 0
     option_limits = {RECEIPT_OPTION: COMPLETION.REPORT_BYTES,
-                     MANIFEST_BYTES_OPTION: 20, MANIFEST_SHA_OPTION: 64}
+                     MANIFEST_BYTES_OPTION: 20, MANIFEST_SHA_OPTION: 64,
+                     PROJECTION_PROFILE_OPTION: 64, PROJECTION_ROOT_OPTION: 64,
+                     PROJECTION_LIMIT_OPTION: 20}
     while index < len(args):
         key, separator, value = args[index].partition("=")
         if key in option_limits:
@@ -80,16 +89,24 @@ def arguments(args):
     COMPLETION.require(RECEIPT_OPTION in selected, "options")
     receipt = selected[RECEIPT_OPTION].encode("utf-8")
     COMPLETION.require(len(receipt) <= COMPLETION.REPORT_BYTES, "options")
-    manifest = None
-    if len(selected) > 1:
+    manifest = projection = None
+    if MANIFEST_BYTES_OPTION in selected or MANIFEST_SHA_OPTION in selected:
         COMPLETION.require(MANIFEST_BYTES_OPTION in selected and MANIFEST_SHA_OPTION in selected, "options")
         size = COMPLETION.decimal(selected[MANIFEST_BYTES_OPTION])
         digest = selected[MANIFEST_SHA_OPTION]
         COMPLETION.require(0 < size <= TRANSPORT.MANIFEST_BYTES and COMPLETION.hex_digest(digest), "options")
         manifest = size, digest
-    else:
+    if {PROJECTION_PROFILE_OPTION, PROJECTION_ROOT_OPTION, PROJECTION_LIMIT_OPTION} & selected.keys():
+        root = selected.get(PROJECTION_ROOT_OPTION)
+        limit = COMPLETION.decimal(selected.get(PROJECTION_LIMIT_OPTION, str(PROJECTION.DEFAULT_LEAVES)))
+        COMPLETION.require(manifest is not None and selected.get(PROJECTION_PROFILE_OPTION) == PROJECTION.PROFILE
+                           and COMPLETION.hex_digest(root) and 0 < limit <= PROJECTION.MAX_LEAVES, "options")
+        projection = root, limit
+    elif manifest is None:
         COMPLETION.require(len(args) <= 34, "options")
-    return common, receipt, manifest
+    else:
+        COMPLETION.require(len(args) <= 38, "options")
+    return common, receipt, manifest, projection
 
 
 def run(args, stream, output, diagnostics):
@@ -99,7 +116,7 @@ def run(args, stream, output, diagnostics):
             diagnostics.write(USAGE)
             result, code = unknown("help_only"), 0
         else:
-            common, receipt, manifest = arguments(args)
+            common, receipt, manifest, projection = arguments(args)
             capture = io.StringIO()
             code = COMPLETION.run(common, io.BytesIO(receipt), capture, diagnostics)
             matched = json.loads(capture.getvalue())
@@ -108,9 +125,12 @@ def run(args, stream, output, diagnostics):
                 code = code or 2
             else:
                 completed = matched
+                projector = (PROJECTION.Projector(*projection, matched["selected_frontier"])
+                             if projection is not None else None)
 
                 def recount(payload):
-                    return INVENTORY.inventory(payload, matched["inventory_selection"], matched["inventory_limits"])
+                    return INVENTORY.inventory(payload, matched["inventory_selection"], matched["inventory_limits"],
+                                               read_value=projector.read_value if projector is not None else None)
 
                 transport = None
                 if manifest is None:
@@ -127,11 +147,16 @@ def run(args, stream, output, diagnostics):
                           "scope": scope()}
                 if transport is not None:
                     result.update(format=TRANSPORT_FORMAT, transport_verification=transport)
+                if projector is not None:
+                    result.update(format=PROJECTION_FORMAT, status="SELECTED_CANDIDATE_PROJECTION_MATCHED",
+                                  candidate_projection=projector.finish())
                 code = 0
     except COMPLETION.Refused:
         result, code = unknown("options"), 64
     except TRANSPORT.Refused as error:
         result, code = unknown("transport_" + str(error), completed), 2
+    except PROJECTION.Refused as error:
+        result, code = unknown(str(error), completed), 2
     except INVENTORY.Refused:
         result, code = unknown("stream_inventory_refused", completed), 2
     except (ValueError, TypeError, RecursionError, OverflowError):
