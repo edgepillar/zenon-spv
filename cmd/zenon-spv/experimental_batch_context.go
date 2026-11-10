@@ -137,13 +137,14 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 	if err != nil {
 		return finish(70, "configuration", "invalid_configuration")
 	}
-	headerContext, err := verify.ExperimentalV3ContextFor(config.HeaderProfile, config.HeaderPolicy, config.Schedule)
+	prepared, err := verify.PrepareExperimentalV3Configuration(config.HeaderProfile, config.HeaderPolicy, config.Schedule)
 	if err != nil {
 		return finish(70, "configuration", "unsupported_configuration")
 	}
+	headerContext := prepared.Context()
 	// Inspection can construct only an empty handle to obtain the typed
 	// diagnostic. It never extends headers or constructs a query handle.
-	empty, err := verify.NewExperimentalV3State(config.HeaderProfile, config.HeaderPolicy, config.Schedule, headerContext.Fingerprint)
+	empty, err := prepared.NewState(headerContext.Fingerprint)
 	if err != nil {
 		return finish(70, "configuration", "invalid_configuration")
 	}
@@ -174,7 +175,7 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 		if err != nil {
 			return finish(70, "state_input", "invalid_input")
 		}
-		state, err = verify.DecodePinnedTrustedExperimentalV3State(raw, config.HeaderProfile, config.HeaderPolicy, config.Schedule, *selectedHeader, [32]byte(*selectedCheckpoint))
+		state, err = empty.DecodePinnedTrustedCheckpoint(raw, [32]byte(*selectedCheckpoint))
 		if errors.Is(err, verify.ErrExperimentalV3CheckpointDigest) {
 			return finish(1, "state_input", "digest_mismatch")
 		}

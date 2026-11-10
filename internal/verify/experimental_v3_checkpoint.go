@@ -22,15 +22,33 @@ var ErrExperimentalV3CheckpointDigest = errors.New("experimental v3 checkpoint S
 // promoted to that trust class by copying its digest. The caller must not mutate
 // raw concurrently while it is read. No input bytes are retained.
 func DecodePinnedTrustedExperimentalV3State(raw []byte, profile ExperimentalV3Profile, policy ExperimentalV3Policy, schedule *ProducerSchedule, expectedContext chain.Hash, expectedSHA256 [sha256.Size]byte) (ExperimentalV3State, error) {
-	if int64(len(raw)) > MaxExperimentalV3StateBytes {
-		return ExperimentalV3State{}, ErrStateFileTooLarge
-	}
-	if expectedSHA256 == ([sha256.Size]byte{}) || sha256.Sum256(raw) != expectedSHA256 {
-		return ExperimentalV3State{}, ErrExperimentalV3CheckpointDigest
+	if err := checkExperimentalV3CheckpointBytes(raw, expectedSHA256); err != nil {
+		return ExperimentalV3State{}, err
 	}
 	selected, err := NewExperimentalV3State(profile, policy, schedule, expectedContext)
 	if err != nil {
 		return ExperimentalV3State{}, err
 	}
 	return decodeTrustedExperimentalV3State(raw, selected)
+}
+
+// DecodePinnedTrustedCheckpoint returns a separate state using the receiver's
+// selected context and frozen producer schedule. It rechecks the checkpoint
+// digest and all retained headers. The caller must select trusted local bytes
+// and avoid mutating them concurrently.
+func (s ExperimentalV3State) DecodePinnedTrustedCheckpoint(raw []byte, expectedSHA256 [sha256.Size]byte) (ExperimentalV3State, error) {
+	if err := checkExperimentalV3CheckpointBytes(raw, expectedSHA256); err != nil {
+		return ExperimentalV3State{}, err
+	}
+	return decodeTrustedExperimentalV3State(raw, s)
+}
+
+func checkExperimentalV3CheckpointBytes(raw []byte, expectedSHA256 [sha256.Size]byte) error {
+	if int64(len(raw)) > MaxExperimentalV3StateBytes {
+		return ErrStateFileTooLarge
+	}
+	if expectedSHA256 == ([sha256.Size]byte{}) || sha256.Sum256(raw) != expectedSHA256 {
+		return ErrExperimentalV3CheckpointDigest
+	}
+	return nil
 }
