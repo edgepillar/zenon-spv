@@ -14,20 +14,36 @@ var errInvalidScheduleJSON = errors.New("invalid producer schedule JSON")
 // Substantive fields are required; audit metadata remains optional and does
 // not authenticate the schedule. A failed decode leaves the receiver intact.
 func (s *ProducerSchedule) UnmarshalJSON(raw []byte) error {
+	return s.unmarshalJSON(raw, MaxProducerScheduleEntries)
+}
+
+// DecodeExperimentalV3Schedule decodes the shared schedule schema with the
+// experimental row limit. The caller still validates and pins the schedule.
+func DecodeExperimentalV3Schedule(raw []byte) (*ProducerSchedule, error) {
+	var schedule ProducerSchedule
+	if err := schedule.unmarshalJSON(raw, MaxExperimentalV3ScheduleEntries); err != nil {
+		return nil, err
+	}
+	return &schedule, nil
+}
+
+func (s *ProducerSchedule) unmarshalJSON(raw []byte, maxRows int) error {
 	if len(raw) > MaxProducerScheduleFileBytes {
 		return ErrProducerScheduleTooLarge
 	}
 	var next ProducerSchedule
-	var coverage boundedScheduleRows[ProducerCoverage]
-	var entries boundedScheduleRows[ProducerEntry]
 	fields := []struct {
 		name     string
 		target   any
 		required bool
 	}{
 		{"chain_id", &next.ChainID, true},
-		{"coverage", &coverage, true},
-		{"entries", &entries, true},
+		{"coverage", func(d *json.Decoder) error {
+			return decodeScheduleRows(d, &next.Coverage, "coverage", maxRows)
+		}, true},
+		{"entries", func(d *json.Decoder) error {
+			return decodeScheduleRows(d, &next.Entries, "entries", maxRows)
+		}, true},
 		{"schedule_hash", &next.ScheduleHash, true},
 		{"generated_at", &next.GeneratedAt, false},
 		{"source_peers", &next.SourcePeers, false},
@@ -59,6 +75,12 @@ func (s *ProducerSchedule) UnmarshalJSON(raw []byte) error {
 		}
 		seen[index] = true
 		field := fields[index]
+		if readRows, ok := field.target.(func(*json.Decoder) error); ok {
+			if err := readRows(d); err != nil {
+				return err
+			}
+			continue
+		}
 		var value json.RawMessage
 		if err := d.Decode(&value); err != nil {
 			return fmt.Errorf("%w: malformed field value", errInvalidScheduleJSON)
@@ -67,9 +89,6 @@ func (s *ProducerSchedule) UnmarshalJSON(raw []byte) error {
 			return fmt.Errorf("%w: %s must be non-null", errInvalidScheduleJSON, field.name)
 		}
 		if err := json.Unmarshal(value, field.target); err != nil {
-			if errors.Is(err, ErrProducerScheduleTooLarge) {
-				return err
-			}
 			// Only fixed schema names are safe in ordinary diagnostics.
 			return fmt.Errorf("%w: invalid %s", errInvalidScheduleJSON, field.name)
 		}
@@ -85,8 +104,38 @@ func (s *ProducerSchedule) UnmarshalJSON(raw []byte) error {
 			return fmt.Errorf("%w: missing %s", errInvalidScheduleJSON, field.name)
 		}
 	}
-	next.Coverage, next.Entries = coverage, entries
 	*s = next
+	return nil
+}
+
+// Decode array rows directly from the schedule decoder so the selected count
+// limit applies before decoding the next row or growing the result.
+func decodeScheduleRows[T any](d *json.Decoder, target *[]T, name string, maxRows int) error {
+	first, err := d.Token()
+	if err != nil {
+		return fmt.Errorf("%w: malformed field value", errInvalidScheduleJSON)
+	}
+	if first == nil {
+		return fmt.Errorf("%w: %s must be non-null", errInvalidScheduleJSON, name)
+	}
+	if first != json.Delim('[') {
+		return fmt.Errorf("%w: invalid %s", errInvalidScheduleJSON, name)
+	}
+	rows := make([]T, 0)
+	for d.More() {
+		if len(rows) == maxRows {
+			return ErrProducerScheduleTooLarge
+		}
+		var row T
+		if err := d.Decode(&row); err != nil {
+			return fmt.Errorf("%w: invalid %s", errInvalidScheduleJSON, name)
+		}
+		rows = append(rows, row)
+	}
+	if end, err := d.Token(); err != nil || end != json.Delim(']') {
+		return fmt.Errorf("%w: invalid %s", errInvalidScheduleJSON, name)
+	}
+	*target = rows
 	return nil
 }
 

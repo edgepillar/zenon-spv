@@ -30,7 +30,12 @@ func decodeExperimentalSnapshotConfig(raw []byte) (experimentalSnapshotConfig, e
 	if len(raw) > maxExperimentalConfigBytes || decodeExperimentalCLIObject(raw, map[string]any{
 		"version": &next.Version, "header_profile": &next.Profile,
 		"header_policy": &next.Policy, "producer_schedule": &schedule,
-	}) != nil || next.Version != 1 || boundExperimentalCLISchedule(schedule) != nil || json.Unmarshal(schedule, &next.Schedule) != nil {
+	}) != nil || next.Version != 1 {
+		return experimentalSnapshotConfig{}, errExperimentalCLIInput
+	}
+	var err error
+	next.Schedule, err = verify.DecodeExperimentalV3Schedule(schedule)
+	if err != nil {
 		return experimentalSnapshotConfig{}, errExperimentalCLIInput
 	}
 	return next, nil

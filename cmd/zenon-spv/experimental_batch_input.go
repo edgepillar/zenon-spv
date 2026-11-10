@@ -82,50 +82,12 @@ func decodeExperimentalCLIConfig(raw []byte) (experimentalCLIConfig, error) {
 	}) != nil || config.Version != 1 {
 		return experimentalCLIConfig{}, errExperimentalCLIInput
 	}
-	if boundExperimentalCLISchedule(schedule) != nil || json.Unmarshal(schedule, &config.Schedule) != nil {
+	var err error
+	config.Schedule, err = verify.DecodeExperimentalV3Schedule(schedule)
+	if err != nil {
 		return experimentalCLIConfig{}, errExperimentalCLIInput
 	}
 	return config, nil
-}
-
-// The reusable native schedule decoder permits a much larger sidecar. Stop
-// experimental row counts before asking that decoder to allocate its slices.
-// Its existing strict schema/row/hash validation remains authoritative.
-func boundExperimentalCLISchedule(raw []byte) error {
-	d := json.NewDecoder(bytes.NewReader(raw))
-	if token, err := d.Token(); err != nil || token != json.Delim('{') {
-		return errExperimentalCLIInput
-	}
-	for d.More() {
-		token, err := d.Token()
-		name, ok := token.(string)
-		if err != nil || !ok {
-			return errExperimentalCLIInput
-		}
-		if name != "coverage" && name != "entries" {
-			if d.Decode(new(json.RawMessage)) != nil {
-				return errExperimentalCLIInput
-			}
-			continue
-		}
-		if token, err := d.Token(); err != nil || token != json.Delim('[') {
-			return errExperimentalCLIInput
-		}
-		count := 0
-		for d.More() {
-			if count == verify.MaxExperimentalV3ScheduleEntries || d.Decode(new(json.RawMessage)) != nil {
-				return errExperimentalCLIInput
-			}
-			count++
-		}
-		if token, err := d.Token(); err != nil || token != json.Delim(']') {
-			return errExperimentalCLIInput
-		}
-	}
-	if token, err := d.Token(); err != nil || token != json.Delim('}') || d.Decode(new(any)) != io.EOF {
-		return errExperimentalCLIInput
-	}
-	return nil
 }
 
 type experimentalCLIBundle struct {
