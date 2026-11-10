@@ -10,6 +10,7 @@ from pathlib import Path
 import subprocess
 import sys
 import unittest
+from unittest import mock
 
 
 sys.dont_write_bytecode = True
@@ -44,12 +45,12 @@ class CountedReads(io.BytesIO):
         return super().read(size)
 
 
-def manifest_for(receipt, wire):
-    chunks = [wire[offset:offset + 17] for offset in range(0, len(wire), 17)]
+def manifest_for(receipt, wire, chunk_bytes=17):
+    chunks = [wire[offset:offset + chunk_bytes] for offset in range(0, len(wire), chunk_bytes)]
     return {"format": "zenon-r1-transport-manifest/v1",
             "selection": {**receipt["selection"], "record_space": "effective-raw-ledger",
                           "bytes": len(wire), "sha256": hashlib.sha256(wire).hexdigest()},
-            "chunk_bytes": 17, "chunks": [{"bytes": len(chunk), "sha256": hashlib.sha256(chunk).hexdigest()}
+            "chunk_bytes": chunk_bytes, "chunks": [{"bytes": len(chunk), "sha256": hashlib.sha256(chunk).hexdigest()}
                                          for chunk in chunks],
             "scope": PROGRAM.TRANSPORT.scope()}
 
@@ -58,6 +59,48 @@ def frame_options(value):
     manifest = json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
     return manifest, [PROGRAM.MANIFEST_BYTES_OPTION, str(len(manifest)),
                       PROGRAM.MANIFEST_SHA_OPTION, hashlib.sha256(manifest).hexdigest()]
+
+
+ACCOUNT = b"\x03" + b"A" * 20
+PROJECTION_ROOT = "8236700379edfe10683f1cce9a35b797879d23499d94e4850fa2a25696a93f68"
+PROJECTION_MAP = "b6076a59c3c13ee8de2d3229471eb8b26e247b3f54acfdbe2eaeb09b25f7fde7"
+PROJECTION_ROWS = ((ACCOUNT + b"\x03", b"wide-prefix"),
+                   (ACCOUNT + b"\x03" + b"Z" * 10, bytes(32)),
+                   (ACCOUNT + b"\x04empty", b""), (ACCOUNT + b"\x04value", b"V" * 33),
+                   (ACCOUNT + b"\x05", b"PRIVATE_TEST_MARKER"),
+                   (b"\x04" + b"B" * 20, b"mailbox"))
+
+
+def projection_options(root=PROJECTION_ROOT):
+    return [PROGRAM.PROJECTION_PROFILE_OPTION, PROGRAM.PROJECTION.PROFILE,
+            PROGRAM.PROJECTION_ROOT_OPTION, root]
+
+
+def projection_fixture(rows=PROJECTION_ROWS, frontier=None, chunk_bytes=17, height=3000, hash_hex="11" * 32):
+    receipt, args, literal = FIXTURE.fixture(height)
+    receipt["selection"]["hash"] = hash_hex
+    args = FIXTURE.changed(args, "--expect-hash", hash_hex)
+    if frontier is None:
+        frontier = [(b"\0", literal[4:8] + bytes.fromhex(hash_hex) + literal[40:4 + literal[3]])]
+    records = sorted([*frontier, *rows])
+
+    def length(value):
+        out = []
+        while value >= 128:
+            value, low = divmod(value, 128)
+            out.append(128 + low)
+        return bytes([*out, value])
+
+    wire = b"".join(b"\x01" + length(len(key)) + key + length(len(value)) + value
+                    for key, value in records)
+    pin = hashlib.sha256(wire).hexdigest()
+    receipt["statistics"].update(records=len(records), put_wire_bytes=len(wire),
+        scanned_records=len(records), scanned_key_and_encoded_value_bytes=sum(
+            len(key) + len(value) + 2 for key, value in records), physical_tombstones_omitted=0,
+        present_empty_values=sum(not value for _, value in records), put_stream_sha256=pin)
+    args = FIXTURE.changed(FIXTURE.changed(args, "--capture-bytes", str(len(wire))), "--capture-sha256", pin)
+    manifest, options = frame_options(manifest_for(receipt, wire, chunk_bytes))
+    return receipt, args + options, manifest, wire
 
 
 class CompletedExport(unittest.TestCase):
@@ -236,6 +279,128 @@ class CompletedExport(unittest.TestCase):
         self.assertEqual(stream.tell(), len(manifest) + len(wire))
         self.assertEqual({**result, "format": PROGRAM.FORMAT}, self.invoke()[1])
 
+    def test_projection_joins_transport_and_exact_inventory_in_one_pass(self):
+        receipt, args, manifest, wire = projection_fixture()
+        stream = CountedReads(manifest + wire)
+        code, result = self.invoke(receipt=receipt, args=args + projection_options(), stream=stream,
+                                   format_name=PROGRAM.PROJECTION_FORMAT)
+        self.assertEqual((code, result["status"]), (0, "SELECTED_CANDIDATE_PROJECTION_MATCHED"))
+        self.assertEqual(result["candidate_projection"], {
+            "profile": PROGRAM.PROJECTION.PROFILE, "qualification": "MATH_ONLY",
+            "expected_root": PROJECTION_ROOT, "computed_root": PROJECTION_ROOT,
+            "mapping_sha256": PROJECTION_MAP, "leaves": 3, "balance_prefix_leaves": 2,
+            "contract_storage_leaves": 1, "empty_folded_records": 1,
+            "max_leaves": PROGRAM.PROJECTION.DEFAULT_LEAVES, "value_files_written": 0,
+            "raw_frontier_metadata_matched": True, "accepted_header_binding": False,
+            "excluded_state_authenticated": False})
+        transport_only = self.invoke(receipt=receipt, args=args, stream=io.BytesIO(manifest + wire),
+                                     format_name=PROGRAM.TRANSPORT_FORMAT)[1]
+        for name in ("producer_completion", "transport_verification", "stream_inventory"):
+            self.assertEqual(result[name], transport_only[name])
+        self.assertEqual(result["stream_inventory"]["families"]["typed_balance"]["raw_zero32_values"], 1)
+        self.assertEqual(stream.tell(), len(manifest) + len(wire))
+        self.assertEqual(stream.requests, [len(manifest)] + [17] * (len(wire) // 17)
+                         + ([len(wire) % 17] if len(wire) % 17 else []) + [1])
+
+    def test_projection_checks_options_before_consuming_input(self):
+        receipt, args, _, _ = projection_fixture()
+        for selected in (args[:-4] + projection_options(), args + projection_options()[:2],
+                         args + projection_options("A" * 64), args + projection_options() + [
+                             PROGRAM.PROJECTION_LIMIT_OPTION, str(PROGRAM.PROJECTION.MAX_LEAVES + 1)],
+                         args + [PROGRAM.PROJECTION_PROFILE_OPTION, "other/v1",
+                                 PROGRAM.PROJECTION_ROOT_OPTION, PROJECTION_ROOT]):
+            with self.subTest(options=len(selected)):
+                code, result = self.invoke(receipt=receipt, args=selected, stream=NoRead())
+                self.assertEqual((code, result["reason"]), (64, "options"))
+
+    def test_projection_wrong_root_or_leaf_limit_has_no_partial_result(self):
+        receipt, args, manifest, wire = projection_fixture()
+        for selected, reason in (
+                (projection_options("00" * 32), "projection_root_mismatch"),
+                (projection_options() + [PROGRAM.PROJECTION_LIMIT_OPTION, "2"], "projection_leaf_limit")):
+            with self.subTest(reason=reason):
+                code, result = self.invoke(receipt=receipt, args=args + selected,
+                                           stream=io.BytesIO(manifest + wire))
+                self.assertEqual((code, result["reason"]), (2, reason))
+                self.assertNotIn("candidate_projection", result)
+                self.assertNotIn("transport_verification", result)
+
+    def test_projection_binds_raw_frontier_even_when_transport_matches(self):
+        wrong = b"\x0a\x22\x0a\x20" + b"\x12" * 32 + b"\x10\xb8\x17"
+        for frontier, reason in (([(b"\0", wrong)], "projection_frontier_mismatch"),
+                                 ([], "projection_frontier_missing")):
+            with self.subTest(reason=reason):
+                receipt, args, manifest, wire = projection_fixture(frontier=frontier)
+                code, result = self.invoke(receipt=receipt, args=args + projection_options(),
+                                           stream=io.BytesIO(manifest + wire))
+                self.assertEqual((code, result["reason"]), (2, reason))
+                self.assertNotIn("candidate_projection", result)
+
+    def test_projection_does_not_fold_tree_before_transport_eof(self):
+        receipt, args, manifest, wire = projection_fixture()
+        with mock.patch.object(PROGRAM.PROJECTION.Projector, "finish",
+                               side_effect=AssertionError("premature projection result")):
+            code, result = self.invoke(receipt=receipt, args=args + projection_options(),
+                                       stream=io.BytesIO(manifest + wire + b"x"))
+        self.assertEqual((code, result["reason"]), (2, "transport_trailing_input"))
+        self.assertNotIn("candidate_projection", result)
+
+    def test_projection_hashes_large_raw_value_across_chunks(self):
+        rows = ((ACCOUNT + b"\x04stream", b"\x7f" * (128 * 1024 + 7)),)
+        expected = "5ef03ee44645659923cfecb2e724d53e5b2d3f57422e2249c886a39f97e8cb9a"
+        receipt, args, manifest, wire = projection_fixture(rows, chunk_bytes=64 << 10)
+        stream = CountedReads(manifest + wire)
+        code, result = self.invoke(receipt=receipt, args=args + projection_options(expected),
+                                   stream=stream, format_name=PROGRAM.PROJECTION_FORMAT)
+        self.assertEqual(code, 0)
+        self.assertEqual(result["candidate_projection"]["mapping_sha256"],
+                         "e48b82aff7d74e2f938bef9f8a368cd3b7c8f24df6207f86ee0bb291f28ca401")
+        self.assertEqual(result["transport_verification"]["chunks_checked"], 3)
+        self.assertEqual(stream.tell(), len(manifest) + len(wire))
+        self.assertEqual(max(stream.requests), 64 << 10)
+
+    def test_root_fold_handles_shared_prefixes_and_path_collision(self):
+        paths = (0, 1, (1 << 128) - 1, 1 << 255, (1 << 256) - 1)
+        leaves = [(path, bytes([index]) * 32) for index, path in enumerate(paths, 1)]
+        self.assertEqual(PROGRAM.PROJECTION.root_from_digests(leaves[::-1]).hex(),
+                         "6302da4a5b709630fbe236a1952eb572d0bcf92979e7ff933746d3363915bda2")
+        self.assertEqual(PROGRAM.PROJECTION.root_from_digests([]), bytes(32))
+        with self.assertRaisesRegex(PROGRAM.PROJECTION.Refused, "projection_path_collision"):
+            PROGRAM.PROJECTION.root_from_digests([leaves[0], leaves[0]])
+
+    def test_projection_matches_seven_recorded_nodetree_roots(self):
+        fixture = HERE.parent / "gen-state-root-vectors/testdata/candidate-l1-applier.json"
+        with fixture.open("rb") as stream:
+            raw = stream.read(56 << 10)
+        self.assertEqual(len(raw), 55336)
+        self.assertEqual(hashlib.sha256(raw).hexdigest(),
+                         "08eeda1a69331109c50918f5f2a13eac2b0a9f52605d95dda1349fa1ac2e297e")
+        recorded = json.loads(raw)
+        self.assertEqual(recorded["source"]["revision"], "56ce2c384966f2f1940967257a0788d3998a5eef")
+        self.assertEqual(recorded["backend"], "NodeTree")
+        self.assertEqual(len(recorded["checkpoints"]), 7)
+        self.assertEqual(sum(len(row["input"]) for row in recorded["checkpoints"]), 88)
+        ledger = {}
+        for row in recorded["checkpoints"]:
+            with self.subTest(height=row["height"]):
+                # Replay raw ledger Puts and Deletes. The projection itself
+                # decides which keys and present-empty values reach the SMT.
+                for event in row["input"]:
+                    key = bytes.fromhex(event["key"])
+                    if event["kind"] == "delete":
+                        ledger.pop(key, None)
+                    else:
+                        self.assertEqual(event["kind"], "put")
+                        ledger[key] = bytes.fromhex(event["value"])
+                receipt, args, manifest, wire = projection_fixture(
+                    ledger.items(), height=row["height"], hash_hex=row["hash"])
+                code, result = self.invoke(receipt=receipt, args=args + projection_options(row["root"]),
+                                           stream=io.BytesIO(manifest + wire),
+                                           format_name=PROGRAM.PROJECTION_FORMAT)
+                self.assertEqual(code, 0)
+                self.assertEqual(result["candidate_projection"]["computed_root"], row["root"])
+                self.assertTrue(result["candidate_projection"]["raw_frontier_metadata_matched"])
+
     def test_joined_options_and_producer_completion_precede_reads(self):
         receipt, args, wire = FIXTURE.fixture()
         _, options = frame_options(manifest_for(receipt, wire))
@@ -332,6 +497,8 @@ class CompletedExport(unittest.TestCase):
         cases = [(legacy, wire, 0, "SELECTED_EXPORT_INVENTORIED", PROGRAM.FORMAT),
                  (legacy, wire[:-1], 2, "UNKNOWN", PROGRAM.FORMAT),
                  (legacy + options, manifest + wire, 0, "SELECTED_EXPORT_INVENTORIED", PROGRAM.TRANSPORT_FORMAT),
+                 (legacy + options + projection_options("00" * 32), manifest + wire, 0,
+                  "SELECTED_CANDIDATE_PROJECTION_MATCHED", PROGRAM.PROJECTION_FORMAT),
                  (legacy + options, manifest + wire + b"x", 2, "UNKNOWN", PROGRAM.FORMAT),
                  (["--help"], b"", 0, "UNKNOWN", PROGRAM.FORMAT), ([], b"", 64, "UNKNOWN", PROGRAM.FORMAT)]
         for selected, data, code, status, format_name in cases:

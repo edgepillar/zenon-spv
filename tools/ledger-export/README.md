@@ -225,6 +225,56 @@ individual command remain distinct preserved records. This extends the finite
 [source-genesis workflow comparison](../../docs/source-genesis-ledger-export.md);
 it supplies no representative R1 dataset or network acceptance.
 
+### Compare the candidate L1 projection during the recount
+
+Add these options to the framed command above. Select the expected root
+independently before opening the transfer.
+
+```sh
+--projection-profile zenon-l1-balance-storage-sha3/v1 \
+--expect-candidate-root "$R1_EXPECTED_CANDIDATE_ROOT" \
+--max-projected-leaves 32768
+```
+
+The projection checks the raw logical frontier record against the selected
+height/hash in the exporter layout. It follows the pinned candidate L1 fold
+for account-store balance and contract storage prefixes with a minimum key
+length of 22 bytes. Empty values contribute no leaf. A present 32-byte zero
+value contributes its full value. The prefix rule also includes balance keys
+whose width differs from the typed balance query. [Candidate fold](https://github.com/digitalSloth/go-zenon/blob/9c71ae82fc983e16f914ae085d4034030c8ebe3b/common/trie/momentum_fold.go)
+
+Each included value is streamed into its SHA3-256 leaf hash, using the
+SHA3-256 key path. After the completion, chunk, whole-stream, inventory and EOF
+checks pass, the helper sorts the retained path/digest pairs and folds the
+full-depth binary tree with constant-zero empty subtrees. It keeps no raw
+value map, tree database or secondary payload. The projected-leaf cap defaults
+to 32,768 and can be set up to 100,000. The existing input byte, record, key,
+value and read bounds still apply. [Candidate hash rules](https://github.com/digitalSloth/go-zenon/blob/9c71ae82fc983e16f914ae085d4034030c8ebe3b/common/trie/hash.go)
+
+On success, `zenon-completed-frontier-transport-projection/v1` adds
+`candidate_projection` to the completion, transport and inventory reports.
+It records the computed and expected roots and a separate SHA-256 mapping
+digest. The latter hashes selected records in raw key order as
+`u64be(key length) || key || u64be(value length) || value`. Refused metadata,
+caps, transport or root comparisons return UNKNOWN without a partial
+projection or inventory report. The original command and report formats apply
+when projection options are absent.
+
+The result is `MATH_ONLY`. Header/context acceptance, complete snapshot
+authentication, excluded-state provenance, node import and restart require
+their own evidence. The same handoff controls replay 88 ordered events as raw
+ledger snapshots and compare seven roots against the retained NodeTree
+observations for synthetic checkpoints. [NodeTree observation fixture](../gen-state-root-vectors/testdata/candidate-l1-applier.json)
+
+One local macOS ARM64 run with Python 3.9.6 streamed a generated frame sized
+to the source-genesis record counts. It read 103,824 records and 11,745,449
+put bytes in 12 chunks and folded 19,257 projected leaves. The separate
+sparse-layer oracle matched the root and mapping. The command took 2.08
+seconds with 24.2 MiB peak consumer RSS, including the Python process. Fixture
+generation and the reference calculation were outside the measurement. No
+fixture files were written. The finite result carries no representative
+throughput or hardware budget.
+
 ## Exact record space and bounds
 
 The selected view is the physical frontier prefix `55`. Physical empty values
