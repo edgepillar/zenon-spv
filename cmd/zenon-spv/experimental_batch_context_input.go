@@ -5,7 +5,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
 	"github.com/0x3639/zenon-spv/internal/fetch"
@@ -72,25 +71,9 @@ func decodeExperimentalContextCLIBundle(raw []byte, maxHeaders uint32, compare b
 		}
 		*hint.target = value
 	}
-	d := json.NewDecoder(bytes.NewReader(rows))
-	if token, err := d.Token(); err != nil || token != json.Delim('[') {
-		return experimentalContextCLIBundle{}, errExperimentalCLIInput
-	}
-	for d.More() {
-		if len(next.Headers) >= int(maxHeaders) {
-			return experimentalContextCLIBundle{}, errExperimentalCLIInput
-		}
-		var row json.RawMessage
-		if d.Decode(&row) != nil {
-			return experimentalContextCLIBundle{}, errExperimentalCLIInput
-		}
-		h, err := fetch.DecodeCandidateV3Momentum(row)
-		if err != nil {
-			return experimentalContextCLIBundle{}, errExperimentalCLIInput
-		}
-		next.Headers = append(next.Headers, h.Header)
-	}
-	if token, err := d.Token(); err != nil || token != json.Delim(']') || d.Decode(new(any)) != io.EOF {
+	var err error
+	next.Headers, err = decodeExperimentalCLIHeaders(rows, maxHeaders)
+	if err != nil {
 		return experimentalContextCLIBundle{}, errExperimentalCLIInput
 	}
 	if compare {

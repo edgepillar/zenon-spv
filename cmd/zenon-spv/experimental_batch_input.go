@@ -134,6 +134,35 @@ type experimentalCLIBundle struct {
 	Gateway *proof.CandidateSettlementBatch
 }
 
+func decodeExperimentalCLIHeaders(raw []byte, maxHeaders uint32) ([]chain.CandidateV3Header, error) {
+	if len(raw) > maxExperimentalBundleBytes || maxHeaders == 0 || maxHeaders > verify.MaxRetainHeaders {
+		return nil, errExperimentalCLIInput
+	}
+	d := json.NewDecoder(bytes.NewReader(raw))
+	if token, err := d.Token(); err != nil || token != json.Delim('[') {
+		return nil, errExperimentalCLIInput
+	}
+	var headers []chain.CandidateV3Header
+	for d.More() {
+		if len(headers) >= int(maxHeaders) {
+			return nil, errExperimentalCLIInput
+		}
+		var row json.RawMessage
+		if d.Decode(&row) != nil {
+			return nil, errExperimentalCLIInput
+		}
+		candidate, err := fetch.DecodeCandidateV3Momentum(row)
+		if err != nil {
+			return nil, errExperimentalCLIInput
+		}
+		headers = append(headers, candidate.Header)
+	}
+	if token, err := d.Token(); err != nil || token != json.Delim(']') || d.Decode(new(any)) != io.EOF {
+		return nil, errExperimentalCLIInput
+	}
+	return headers, nil
+}
+
 // Request/configuration are separate local inputs, never members of a provider
 // bundle. Gateway presence is selected by the command, not by this document.
 func decodeExperimentalCLIBundle(raw []byte, maxHeaders uint32, compare bool) (experimentalCLIBundle, error) {
@@ -149,32 +178,14 @@ func decodeExperimentalCLIBundle(raw []byte, maxHeaders uint32, compare bool) (e
 	if decodeExperimentalCLIObject(raw, fields, "witness", "gateway") != nil || version != 1 {
 		return experimentalCLIBundle{}, errExperimentalCLIInput
 	}
-	d := json.NewDecoder(bytes.NewReader(rows))
-	if token, err := d.Token(); err != nil || token != json.Delim('[') {
+	headers, err := decodeExperimentalCLIHeaders(rows, maxHeaders)
+	if err != nil {
 		return experimentalCLIBundle{}, errExperimentalCLIInput
 	}
-	var next experimentalCLIBundle
-	for d.More() {
-		if len(next.Headers) >= int(maxHeaders) {
-			return experimentalCLIBundle{}, errExperimentalCLIInput
-		}
-		var row json.RawMessage
-		if d.Decode(&row) != nil {
-			return experimentalCLIBundle{}, errExperimentalCLIInput
-		}
-		candidate, err := fetch.DecodeCandidateV3Momentum(row)
-		if err != nil {
-			return experimentalCLIBundle{}, errExperimentalCLIInput
-		}
-		next.Headers = append(next.Headers, candidate.Header)
-	}
-	if token, err := d.Token(); err != nil || token != json.Delim(']') || d.Decode(new(any)) != io.EOF {
-		return experimentalCLIBundle{}, errExperimentalCLIInput
-	}
+	next := experimentalCLIBundle{Headers: headers}
 	if int64(len(witness)) > fetch.MaxCandidateStateResponseBytes || compare && int64(len(gateway)) > fetch.MaxCandidateStateResponseBytes {
 		return experimentalCLIBundle{}, errExperimentalCLIInput
 	}
-	var err error
 	if next.Witness, err = fetch.DecodeCandidateStateWitness(witness); err != nil {
 		return experimentalCLIBundle{}, err
 	}

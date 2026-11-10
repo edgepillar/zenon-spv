@@ -782,6 +782,21 @@ jobs:
           candidate_directory="${{ runner.temp }}/tested-candidate"
           report_sha256="$(python -I -B -c 'import json,sys; source=open(sys.argv[1],"rb"); raw=source.read(262145); source.close(); assert 0<len(raw)<=262144; print(json.loads(raw)["report"]["sha256"])' "$candidate_directory/manifest.json")"
           python -I -B tools/check-scenario-inventory.py --source . --report "$candidate_directory/offline-pilot.json" --expect-report-sha256 "$report_sha256" --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)" --require-skip-ledger
+      - name: Verify compiled snapshot header comparison
+        id: snapshot_header_controls
+        shell: bash
+        run: |
+          candidate_directory="${{ runner.temp }}/tested-candidate"
+          executable_suffix="$(go env GOEXE)"
+          python -I -B tools/check-snapshot-header-binding.py --verifier "$candidate_directory/zenon-spv$executable_suffix" --candidate-manifest "$candidate_directory/manifest.json" --source-revision "${{ github.sha }}" > "${{ runner.temp }}/snapshot-header-controls.json"
+      - name: Upload snapshot header controls
+        if: ${{ !cancelled() && steps.snapshot_header_controls.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: snapshot-header-controls-linux
+          path: ${{ runner.temp }}/snapshot-header-controls.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Independent node consumer workflow
         shell: bash
         run: |
@@ -1529,6 +1544,21 @@ jobs:
           candidate_directory="${{ runner.temp }}/tested-candidate"
           report_sha256="$(python -I -B -c 'import json,sys; source=open(sys.argv[1],"rb"); raw=source.read(262145); source.close(); assert 0<len(raw)<=262144; print(json.loads(raw)["report"]["sha256"])' "$candidate_directory/manifest.json")"
           python -I -B tools/check-scenario-inventory.py --source . --report "$candidate_directory/offline-pilot.json" --expect-report-sha256 "$report_sha256" --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)" --require-skip-ledger
+      - name: Verify compiled snapshot header comparison
+        id: snapshot_header_controls
+        shell: bash
+        run: |
+          candidate_directory="${{ runner.temp }}/tested-candidate"
+          executable_suffix="$(go env GOEXE)"
+          python -I -B tools/check-snapshot-header-binding.py --verifier "$candidate_directory/zenon-spv$executable_suffix" --candidate-manifest "$candidate_directory/manifest.json" --source-revision "${{ github.sha }}" > "${{ runner.temp }}/snapshot-header-controls.json"
+      - name: Upload snapshot header controls
+        if: ${{ !cancelled() && steps.snapshot_header_controls.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: snapshot-header-controls-${{ matrix.os }}
+          path: ${{ runner.temp }}/snapshot-header-controls.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Independent node consumer workflow
         shell: bash
         run: |

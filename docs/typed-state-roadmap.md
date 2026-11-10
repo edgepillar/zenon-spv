@@ -403,6 +403,45 @@ Acceptance exits:
 - Excluded state carries explicit trust or a qualified reconstruction/completeness rule; partial-root match never authenticates a full node snapshot.
 - Import tree/frontier identities match and restart/reorg/retention/readiness behavior is qualified on the selected node. Do not promise one-field-only implementation effort.
 
+#### Experimental snapshot root comparison
+
+The read-only verifier accepts the selected v3 headers from a configured anchor
+before selecting a retained root. Supply a version-1 configuration with
+`header_profile`, `header_policy` and `producer_schedule`, and a JSON array of
+v3 momentum responses. Select the context fingerprint, height and full hash
+independently of the provider and of the export report.
+
+```sh
+zenon-spv inspect-experimental-snapshot-root \
+  --config "$HEADER_CONFIG" --expect-header-context "$HEADER_CONTEXT" \
+  --expect-height "$SNAPSHOT_HEIGHT" --expect-header-hash "$SNAPSHOT_HASH" \
+  "$MOMENTUMS"
+```
+
+Use the successful report's `header.state_root` as the expected root for the
+[framed export projection](../tools/ledger-export/README.md#compare-the-candidate-l1-projection-during-the-recount).
+To independently check a retained projection report against the selected
+header, add `--projection-report "$PROJECTION_REPORT"` and
+`--expect-projection-sha256 "$PROJECTION_REPORT_SHA256"` before the momentum
+array path. The comparison checks the selected report's byte identity,
+frontier, payload and manifest bindings and reported candidate root. A shared
+root at another height or hash is rejected. The JSON includes the accepted tip
+and the selected header context, including the depth policy and schedule hash.
+The native comparison reads the report while the projection tool reads the
+ledger stream in one pass.
+
+The two pinned node revisions share the L1 fold, SMT hash and compute blobs.
+Both use a 20-byte address in that fold. This supports comparison under the
+selected experimental profile and the balance/storage projection. The
+recorded old-node executions keep their original source labels. [Historical fold](https://github.com/digitalSloth/go-zenon/blob/9c71ae82fc983e16f914ae085d4034030c8ebe3b/common/trie/momentum_fold.go) · [Selected v3 fold](https://github.com/digitalSloth/go-zenon/blob/938fca3b7787da86827a5eb63371509b36e14761/common/trie/momentum_fold.go)
+
+Keep the original projection execution, capture completion and digest
+selection under trusted local provenance. The verifier establishes a
+configured-header comparison of the supplied report. Excluded-state
+provenance, complete snapshot validation, node import and production
+acceptance remain separate gates. Compiled controls reuse the existing CI
+verifier binary and the recorded header and node-derived value fixtures.
+
 ### X1: Historical/read-only native inclusion adapter for x402
 
 **Proposed owner:** Native consumer/facilitator owner + SPV integrator.
