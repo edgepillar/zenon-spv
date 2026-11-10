@@ -5,21 +5,30 @@ and exercises six actual directory/preflight cases. Its wide fixture grows to
 32,769 empty files. The complete root-module suite already runs this test.
 Repeating it in a later CI step builds and populates the fixture again.
 
-The ordinary-parent macOS and Windows lanes now request the fixed
-`compiled-source-enumeration/v1` root group during the existing complete suite.
-Their named control step independently checks that evidence instead of starting
-another Go test process. Linux retains its separate ordinary-parent control:
-its complete suite uses race/coverage instrumentation, so the parent execution
-is a distinct observation. No complete-suite arguments, packages, model cells,
-cryptographic checks, consumer scenarios or benchmarks are removed.
+The ordinary-parent macOS and Windows lanes request
+`compiled-native-observers/v1` in the existing complete suite. The independent
+receipt checker requires the group before uploading the checked receipt.
+Each root must pass with its complete fixed subtest inventory.
 
-This is an opt-in `zenon-root-suite/v4` receipt. Without `--suite-root-group`,
-the producer keeps its v3 shape; the verifier still supports v1/v2/v3. A caller
-cannot request arbitrary roots, group names or dynamic labels. The one compiled
-group requires `TestCompiledPilotSourceEnumeration` in the root module's
-`tools/offline-pilot` package, a passed root, six passed subtest completions and
-zero skipped/failed children. Missing roots, incorrect counts, unfinished
-children, incomplete streams and failed processes cannot satisfy the group.
+| Source package | Test root | Passed subtests |
+| --- | --- | ---: |
+| `internal/conformance` | `TestCompiledAdvancingBlockObserver` | 9 |
+| `internal/conformance` | `TestCompiledNodeAccountBasicObserver` | 58 |
+| `internal/conformance` | `TestCompiledNodeAccountReceiveObserver` | 52 |
+| `tools/offline-pilot` | `TestCompiledPilotSourceEnumeration` | 6 |
+
+The group replaces three repeated compiled-observer invocations per native
+runner. Linux runs the separate ordinary-parent controls alongside its
+race/coverage suite. Dedicated observation steps for persistence, PoW and
+grouped builds still emit their detailed reports. Complete-suite packages,
+timeouts, independent byte checks, benchmarks and consumer builds are exercised
+under their original settings.
+
+The existing opt-in `zenon-root-suite/v4` schema supports both fixed groups.
+Historical `compiled-source-enumeration/v1` receipts keep their original
+one-root contract. The default producer emits v3 and the verifier also supports
+v1 and v2. Each group requires the exact package, root, child count and passed
+outcome, with zero skipped, failed or unfinished children.
 
 The group lives inside the receipt that binds the exact source inputs, complete
 Go event-stream digest/byte count, selected report digest, package inventory,
@@ -39,11 +48,15 @@ savings. Each new native revision avoids two duplicate Go processes and two
 large directory fixtures on the ordinary-parent lanes. Hosted CI must still
 qualify the actual source, receipts, artifacts and unchanged real test.
 
-Local collector controls cover synthetic lifecycle mutations and a small actual
-Go JSON-event fixture. That helper models one root and six subtests; it does not
-run the real directory-enumeration workload or establish its source provenance.
-The complete hosted suites run the unchanged real enumeration test. Existing
-platform skips outside this fixed portable group remain explicit.
+The baseline native jobs spent 27 seconds on the three affected macOS steps
+and 18 seconds on Windows. Those totals include the two ordinary advancing unit
+controls that still run separately. Runner timing varies with caches and load.
+[Baseline CI run](https://github.com/edgepillar/zenon-spv/actions/runs/42773701808)
+
+Local collector controls cover both group shapes, fixed root identity and
+subtest counts. The complete hosted suites exercise the real enumeration,
+advancing and node-derived account observer tests and bind their outcomes to
+the actual platform and source.
 
 Consistent unsigned receipts do not authenticate execution by themselves. This
 change establishes no real-network acceptance, canonicality, consensus finality,

@@ -126,19 +126,65 @@ class RootSuiteControls(unittest.TestCase):
                     CHECKER.check_receipt(receipt, report, True, True, "10m0s", "30m0s", "darwin",
                                           "compiled-source-enumeration/v1")
 
+    def test_compiled_native_observers_require_every_fixed_root(self):
+        receipt, report = source_root_fixture()
+        group = "compiled-native-observers/v1"
+        source_roots = receipt["source_root_controls"]
+        source_roots["group"] = group
+        source_roots["roots"][0:0] = [
+            {"package": CHECKER.MODULE + "/internal/conformance", "test": name, "status": "pass",
+             "passed_subtests": count, "skipped_subtests": 0, "failed_subtests": 0}
+            for name, count in [("TestCompiledAdvancingBlockObserver", 9),
+                                ("TestCompiledNodeAccountBasicObserver", 58),
+                                ("TestCompiledNodeAccountReceiveObserver", 52)]
+        ]
+        receipt["tests"].update(root_tests=8, subtests=133, passed=140)
+        receipt["timings"].update(completed_roots=8, missing_elapsed=5)
+
+        def check(value, required_group=group, selected=report):
+            return CHECKER.check_receipt(value, selected, True, True, "10m0s", "30m0s", "darwin", required_group)
+
+        self.assertEqual(check(receipt), {"group": group, "roots": 4, "passed_subtests": 125, "skipped_subtests": 0})
+        for old_group in ("compiled-source-enumeration/v1", "PRIVATE"):
+            with self.assertRaises(CHECKER.Rejected):
+                check(receipt, old_group)
+        with self.assertRaises(CHECKER.Rejected):
+            check(source_root_fixture()[0])
+        overlap = copy.deepcopy(report)
+        overlap["cases"][0]["test"] = "TestCompiledNodeAccountBasicObserver"
+        with self.assertRaises(CHECKER.Rejected):
+            check(receipt, selected=overlap)
+
+        for change in (
+            lambda rows: rows.pop(1),
+            lambda rows: rows.reverse(),
+            lambda rows: rows.__setitem__(1, rows[0]),
+            lambda rows: rows[1].update(test="TestUnselectedObserver"),
+            lambda rows: rows[1].update(package=CHECKER.MODULE + "/tools/offline-pilot"),
+            lambda rows: rows[1].update(passed_subtests=57, skipped_subtests=1),
+            lambda rows: rows[1].update(passed_subtests=59),
+            lambda rows: rows[1].update(status="missing"),
+        ):
+            changed = copy.deepcopy(receipt)
+            change(changed["source_root_controls"]["roots"])
+            with self.assertRaises(CHECKER.Rejected):
+                check(changed)
+
     def test_source_root_reuse_preserves_parent_instrumentation_and_complete_suite(self):
         workflow = (HERE.parent / ".github/workflows/ci.yml").read_text()
         linux, matrix = workflow.split("\n  native-platform:\n", 1)
         matrix = matrix.split("\n  recorded-oracles:\n", 1)[0]
-        command = "-run '^TestCompiledPilotSourceEnumeration$'"
-        self.assertIn(command, linux)
-        self.assertNotIn(command, matrix)
+        for root in ("TestCompiledPilotSourceEnumeration", "TestCompiledAdvancingBlockObserver",
+                     "TestCompiledNodeAccountBasicObserver", "TestCompiledNodeAccountReceiveObserver"):
+            command = "-run '^" + root + "$'"
+            self.assertIn(command, linux)
+            self.assertNotIn(command, matrix)
         self.assertIn("--full-suite --timeout 30m --package-timeout 10m --race --coverage", linux)
-        self.assertIn("--full-suite --timeout 30m --package-timeout 10m --suite-root-group compiled-source-enumeration/v1", matrix)
-        self.assertIn("--require-source-root-group compiled-source-enumeration/v1", matrix)
-        steps = re.findall(r"^      - name: (.+)$", matrix, re.M)
-        self.assertLess(steps.index("Upload root suite receipt"), steps.index("Compiled pilot source enumeration controls"))
-        self.assertLess(steps.index("Compiled pilot source enumeration controls"), steps.index("Bounded ledger inventory controls"))
+        self.assertIn("--full-suite --timeout 30m --package-timeout 10m --suite-root-group compiled-native-observers/v1", matrix)
+        check, _ = matrix.split("      - name: Upload root suite receipt\n", 1)
+        self.assertIn("--expect-race false --expect-coverage false", check)
+        self.assertIn("--require-source-root-group compiled-native-observers/v1", check)
+        self.assertEqual(matrix.count('> "$RUNNER_TEMP/root-suite-check.json"'), 1)
 
     def test_observer_resources_are_complete_and_platform_bound(self):
         for platform in ("linux", "darwin", "windows"):
