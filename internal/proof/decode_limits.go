@@ -64,48 +64,43 @@ type bundleRows[T any] struct {
 	limit  int
 	budget *rowBudget
 	decode func(*json.Decoder, *T) error
+	// Set only on a field reached through complete JSON syntax validation.
+	decodeValidated func(*bundleRows[T], []byte) error
 	// An optional private storage hint cannot authorize rows or consume budget.
 	capacityHint func(contents []byte, ceiling int) int
 }
 
 func (rows *bundleRows[T]) UnmarshalJSON(raw []byte) error {
-	d := json.NewDecoder(bytes.NewReader(raw))
+	if rows.decodeValidated != nil {
+		return rows.decodeValidated(rows, raw)
+	}
+	return rows.decodeJSONRows(json.NewDecoder(bytes.NewReader(raw)), raw, nil)
+}
+
+func (rows *bundleRows[T]) decodeJSONRows(d *json.Decoder, raw []byte, decoded []T) error {
 	first, err := d.Token()
 	if err != nil {
 		return err
 	}
-	var decoded []T
-	if first != nil {
+	if first == nil {
+		decoded = nil
+	} else {
 		if first != json.Delim('[') {
 			return fmt.Errorf("bundle %s must be an array or null", rows.field)
 		}
-		capacity := 0
-		if rows.capacityHint != nil {
-			ceiling := int(^uint(0) >> 1)
-			if rows.limit > 0 {
-				ceiling = rows.limit
-			}
-			if rows.budget != nil {
-				ceiling = min(ceiling, rows.budget.remaining)
-			}
-			capacity = max(0, min(ceiling, rows.capacityHint(raw[d.InputOffset():], ceiling)))
+		if decoded == nil {
+			decoded = make([]T, 0, rows.initialCapacity(raw[d.InputOffset():]))
 		}
-		decoded = make([]T, 0, capacity)
 		decode := rows.decode
 		if decode == nil {
 			decode = func(d *json.Decoder, row *T) error { return d.Decode(row) }
 		}
 		for d.More() {
-			if rows.limit > 0 && len(decoded) >= rows.limit {
-				return &BundleCountLimitError{Field: rows.field, Limit: rows.limit}
-			}
-			if rows.budget != nil && rows.budget.remaining == 0 {
-				return &BundleCountLimitError{Field: rows.budget.field, Limit: rows.budget.limit}
+			if err := rows.checkRowLimit(len(decoded)); err != nil {
+				return err
 			}
 			var row T
-			// Decode into a fresh owned slice slot instead of making each row
-			// escape separately through the callback. Neither the slice nor a
-			// partially decoded slot reaches the receiver on failure.
+			// Each callback decodes into a fresh slot of the private slice.
 			decoded = append(decoded, row)
 			if err := decode(d, &decoded[len(decoded)-1]); err != nil {
 				return err
@@ -123,6 +118,30 @@ func (rows *bundleRows[T]) UnmarshalJSON(raw []byte) error {
 	}
 	*rows.target = decoded
 	return nil
+}
+
+func (rows *bundleRows[T]) checkRowLimit(count int) error {
+	if rows.limit > 0 && count >= rows.limit {
+		return &BundleCountLimitError{Field: rows.field, Limit: rows.limit}
+	}
+	if rows.budget != nil && rows.budget.remaining == 0 {
+		return &BundleCountLimitError{Field: rows.budget.field, Limit: rows.budget.limit}
+	}
+	return nil
+}
+
+func (rows *bundleRows[T]) initialCapacity(contents []byte) int {
+	if rows.capacityHint == nil {
+		return 0
+	}
+	ceiling := int(^uint(0) >> 1)
+	if rows.limit > 0 {
+		ceiling = rows.limit
+	}
+	if rows.budget != nil {
+		ceiling = min(ceiling, rows.budget.remaining)
+	}
+	return max(0, min(ceiling, rows.capacityHint(contents, ceiling)))
 }
 
 const flatCapacityMaxRows = 100_000
