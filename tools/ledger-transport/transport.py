@@ -201,24 +201,33 @@ def _drain(stream):
         pass
 
 
-def consume(reader, pin, plan):
-    """One pass, no chunk buffers or files; retain only hashes and bounded rows."""
+def _inspect_stream(reader, pin, plan, inspect):
     stream = _ChunkStream(reader, plan, pin["sha256"])
-    _drain(stream)
-    return stream.rows
+    result = inspect(stream)
+    require(stream.complete and not stream.failed, "stream_incomplete")
+    return stream.rows, result
 
 
-def describe(reader, selected, configured_limits=None):
+def describe_with(reader, selected, inspect, configured_limits=None):
+    """Describe selected bytes during a read-only inspection through EOF.
+
+    The inspector must withhold results until the complete stream matches.
+    """
     caps = limits(configured_limits)
     pin = selection(selected, caps)
     size = caps["chunk_bytes"]
     count = (pin["bytes"] + size - 1) // size
     require(count <= caps["chunks"], "chunk_count")
     plan = tuple((min(size, pin["bytes"] - index * size), None) for index in range(count))
-    rows = consume(reader, pin, plan)
+    rows, result = _inspect_stream(reader, pin, plan, inspect)
     value = {"format": MANIFEST_FORMAT, "selection": pin, "chunk_bytes": size,
              "chunks": rows, "scope": scope()}
     encoded(value)  # Bound final metadata before reporting successful creation.
+    return value, result
+
+
+def describe(reader, selected, configured_limits=None):
+    value, _ = describe_with(reader, selected, _drain, configured_limits)
     return value
 
 
@@ -241,9 +250,7 @@ def verify_with(reader, manifest_bytes, manifest_sha256, selected, inspect, conf
     caps = limits(configured_limits)
     pin = selection(selected, caps)
     _, plan = _read_manifest(reader, manifest_bytes, manifest_sha256, pin, caps)
-    stream = _ChunkStream(reader, plan, pin["sha256"])
-    result = inspect(stream)
-    require(stream.complete and not stream.failed, "stream_incomplete")
+    _, result = _inspect_stream(reader, pin, plan, inspect)
     report = {"format": RESULT_FORMAT, "status": "SELECTED_TRANSPORT_MATCHED", "reason": None,
               "manifest": {"bytes": manifest_bytes, "sha256": manifest_sha256},
               "selection": pin, "chunks_checked": len(plan), "stream_eof_observed": True,

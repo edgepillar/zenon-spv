@@ -279,6 +279,63 @@ class CompletedExport(unittest.TestCase):
         self.assertEqual(stream.tell(), len(manifest) + len(wire))
         self.assertEqual({**result, "format": PROGRAM.FORMAT}, self.invoke()[1])
 
+    def test_description_and_inventory_share_one_pass(self):
+        receipt, args, wire = FIXTURE.fixture()
+        stream = CountedReads(wire)
+        code, result = self.invoke(args=args + [PROGRAM.DESCRIPTION_CHUNK_OPTION, "17"],
+                                   stream=stream, format_name=PROGRAM.DESCRIPTION_FORMAT)
+        self.assertEqual((code, result["status"]), (0, "SELECTED_EXPORT_INVENTORIED_AND_DESCRIBED"))
+        expected = manifest_for(receipt, wire)
+        raw, _ = frame_options(expected)
+        raw += b"\n"  # Standalone manifest encoding ends in LF.
+        pin = {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+        self.assertEqual(result["transport_description"], {"manifest": expected, "pin": pin})
+        self.assertNotIn("transport_verification", result)
+        self.assertEqual(result["stream_inventory"], self.invoke()[1]["stream_inventory"])
+        self.assertEqual(stream.requests, [17, 17, 17, 17, 15, 1])
+        self.assertEqual(stream.tell(), len(wire))
+        frame = [PROGRAM.MANIFEST_BYTES_OPTION, str(pin["bytes"]), PROGRAM.MANIFEST_SHA_OPTION, pin["sha256"]]
+        checked, verified = self.invoke(args=args + frame, stream=io.BytesIO(raw + wire),
+                                        format_name=PROGRAM.TRANSPORT_FORMAT)
+        self.assertEqual((checked, verified["transport_verification"]["status"]),
+                         (0, "SELECTED_TRANSPORT_MATCHED"))
+
+    def test_description_selects_bounds_and_completion_before_reads(self):
+        receipt, args, wire = FIXTURE.fixture()
+        _, frame = frame_options(manifest_for(receipt, wire))
+        selected = [PROGRAM.DESCRIPTION_CHUNK_OPTION, "17"]
+        for extra in ([PROGRAM.DESCRIPTION_CHUNK_OPTION, "0"], [PROGRAM.DESCRIPTION_CHUNK_OPTION, "017"],
+                      [PROGRAM.DESCRIPTION_CHUNK_OPTION, str((64 << 20) + 1)],
+                      selected + selected, selected + frame, selected + projection_options()):
+            with self.subTest(extra=extra):
+                self.assertEqual(self.invoke(args=args + extra, stream=NoRead())[0], 64)
+        code, result = self.invoke(args=FIXTURE.changed(args, "--producer-exit", "-9") + selected,
+                                   stream=NoRead())
+        self.assertEqual((code, result["reason"]), (2, "completion_process_failure"))
+        too_many = PROGRAM.TRANSPORT.HARD_LIMITS["chunks"] + 1
+        receipt["statistics"].update(put_wire_bytes=too_many, scanned_key_and_encoded_value_bytes=too_many)
+        code, result = self.invoke(receipt=receipt, args=FIXTURE.changed(args, "--capture-bytes", str(too_many)) +
+                                   [PROGRAM.DESCRIPTION_CHUNK_OPTION, "1"], stream=NoRead())
+        self.assertEqual((code, result["reason"]), (2, "transport_chunk_count"))
+
+    def test_description_withholds_manifest_on_transport_or_inventory_failure(self):
+        receipt, args, wire = FIXTURE.fixture()
+        selected = [PROGRAM.DESCRIPTION_CHUNK_OPTION, "17"]
+        for raw, reason in ((wire[:-1], "transport_stream_truncated"),
+                            (wire[:-1] + b"\x01", "transport_stream_digest"),
+                            (wire + b"x", "transport_trailing_input")):
+            with self.subTest(reason=reason):
+                code, result = self.invoke(args=args + selected, stream=io.BytesIO(raw))
+                self.assertEqual((code, result["reason"]), (2, reason))
+                self.assertNotIn("transport_description", result)
+        duplicate = wire[:-34] + b"a" + wire[-33:]
+        digest = hashlib.sha256(duplicate).hexdigest()
+        receipt["statistics"]["put_stream_sha256"] = digest
+        code, result = self.invoke(receipt=receipt, args=FIXTURE.changed(args, "--capture-sha256", digest) +
+                                   selected, stream=io.BytesIO(duplicate))
+        self.assertEqual((code, result["reason"]), (2, "stream_inventory_refused"))
+        self.assertNotIn("transport_description", result)
+
     def test_projection_joins_transport_and_exact_inventory_in_one_pass(self):
         receipt, args, manifest, wire = projection_fixture()
         stream = CountedReads(manifest + wire)
@@ -495,6 +552,8 @@ class CompletedExport(unittest.TestCase):
         legacy = args + [PROGRAM.RECEIPT_OPTION, json.dumps(receipt)]
         manifest, options = frame_options(manifest_for(receipt, wire))
         cases = [(legacy, wire, 0, "SELECTED_EXPORT_INVENTORIED", PROGRAM.FORMAT),
+                 (legacy + [PROGRAM.DESCRIPTION_CHUNK_OPTION, "17"], wire, 0,
+                  "SELECTED_EXPORT_INVENTORIED_AND_DESCRIBED", PROGRAM.DESCRIPTION_FORMAT),
                  (legacy, wire[:-1], 2, "UNKNOWN", PROGRAM.FORMAT),
                  (legacy + options, manifest + wire, 0, "SELECTED_EXPORT_INVENTORIED", PROGRAM.TRANSPORT_FORMAT),
                  (legacy + options + projection_options("00" * 32), manifest + wire, 0,

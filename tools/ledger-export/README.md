@@ -173,6 +173,27 @@ completion when inventory subsequently fails, with no partial inventory result.
 A successful-looking output prefix after a short write, failed flush or
 termination does not replace the caller's actual completion check.
 
+### Create a transport manifest during the recount
+
+For an initial description of a retained export, add
+`--describe-transport-chunk-bytes 16777216` to the unframed recount above.
+The same read supplies the inventory and the ordered chunk hashes. Choose a
+positive fixed chunk size up to 64 MiB. The helper checks the implied 4,096
+chunk limit against the selected capture length before reading any payload.
+
+Require actual exit **0**, complete output and
+`status: SELECTED_EXPORT_INVENTORIED_AND_DESCRIBED`. The
+`zenon-completed-frontier-inventory-description/v1` report adds
+`transport_description.manifest` and its byte count and SHA-256 in
+`transport_description.pin`. To recover the standalone manifest, serialize
+that object as UTF-8 JSON with sorted keys, compact separators and one
+trailing LF. Verify the resulting bytes against the pin. Retain the metadata
+and the original export by reference.
+
+The inventory still checks record syntax, order, count, digest and EOF.
+Any refusal withholds both outputs. For a later transfer, independently select
+the retained manifest pin and use the framed verification below.
+
 ### Check the transport manifest during the recount
 
 To verify a separately selected transport manifest in the same read, add both
