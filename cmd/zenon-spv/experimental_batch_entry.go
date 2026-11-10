@@ -106,13 +106,14 @@ func runExperimentalBatch(command string, args []string, stdout, stderr io.Write
 	if err != nil {
 		return finish(70, "configuration", "invalid_configuration")
 	}
-	headerContext, err := verify.ExperimentalV3ContextFor(config.HeaderProfile, config.HeaderPolicy, config.Schedule)
+	prepared, err := verify.PrepareExperimentalV3Configuration(config.HeaderProfile, config.HeaderPolicy, config.Schedule)
 	if err != nil {
 		return finish(70, "configuration", "unsupported_configuration")
 	}
+	headerContext := prepared.Context()
 	// Inspection can construct only an empty handle to obtain the typed
 	// diagnostic. It never extends headers or constructs a query handle.
-	empty, err := verify.NewExperimentalV3State(config.HeaderProfile, config.HeaderPolicy, config.Schedule, headerContext.Fingerprint)
+	empty, err := prepared.NewState(headerContext.Fingerprint)
 	if err != nil {
 		return finish(70, "configuration", "invalid_configuration")
 	}

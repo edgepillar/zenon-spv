@@ -67,6 +67,55 @@ func TestExperimentalV3PinnedCheckpointQuery(t *testing.T) {
 	}
 }
 
+func TestExperimentalV3CheckpointReusesPreparedSelection(t *testing.T) {
+	f := newBatchContextFixture(t)
+	raw := batchCheckpointBytes(t, f)
+	pin := f.state.data.config.context.Fingerprint
+	settings, err := PrepareExperimentalV3Configuration(f.Config.HeaderProfile, f.Config.HeaderPolicy, f.Config.Schedule)
+	if err != nil || settings.Context() != f.state.data.config.context {
+		t.Fatal("prepared context differs from the original selection", err)
+	}
+	badPin := pin
+	badPin[0] ^= 1
+	for _, refused := range []chain.Hash{{}, badPin} {
+		if state, err := settings.NewState(refused); !errors.Is(err, ErrContextFingerprintMismatch) || state.data != nil {
+			t.Fatal("prepared settings accepted an unselected context", err)
+		}
+	}
+	if state, err := (ExperimentalV3Configuration{}).NewState(pin); !errors.Is(err, ErrContextFingerprintMismatch) || state.data != nil {
+		t.Fatal("unprepared settings created a state", err)
+	}
+
+	// Changes after preparation must not affect a later state or its resume.
+	f.Config.Schedule.Entries[0].TimestampUnix++
+	f.Config.Schedule.Coverage[0].ThroughHeight--
+	selected, err := settings.NewState(pin)
+	if err != nil || !selected.Empty() {
+		t.Fatal("prepared selection did not start empty", err)
+	}
+	digest := sha256.Sum256(raw)
+	resumed, err := selected.DecodePinnedTrustedCheckpoint(raw, digest)
+	if err != nil || resumed.data == nil || !resumed.data.trustedLocal || !selected.Empty() ||
+		resumed.data.config.schedule != selected.data.config.schedule ||
+		!reflect.DeepEqual(resumed.data.headers, f.state.data.headers) {
+		t.Fatal("resume failed to reuse the selected settings and recheck the retained tail", err)
+	}
+	digest[0] ^= 1
+	if state, err := selected.DecodePinnedTrustedCheckpoint(raw, digest); !errors.Is(err, ErrExperimentalV3CheckpointDigest) || state.data != nil {
+		t.Fatal("prepared resume accepted a different digest", err)
+	}
+
+	var file experimentalV3File
+	if err := json.Unmarshal(raw, &file); err != nil {
+		t.Fatal(err)
+	}
+	file.Headers[0].Header.Signature[0] ^= 1
+	raw = experimentalV3JSON(t, file)
+	if state, err := selected.DecodePinnedTrustedCheckpoint(raw, sha256.Sum256(raw)); !errors.Is(err, ErrExperimentalV3StateFile) || state.data != nil {
+		t.Fatal("prepared resume accepted a corrupt retained signature", err)
+	}
+}
+
 func TestExperimentalV3PinnedCheckpointFailures(t *testing.T) {
 	f := newBatchContextFixture(t)
 	raw := batchCheckpointBytes(t, f)

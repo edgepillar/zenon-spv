@@ -171,7 +171,9 @@ type ExperimentalV3Context struct {
 	Fingerprint    chain.Hash           `json:"fingerprint"`
 }
 
-type experimentalV3Config struct {
+// ExperimentalV3Configuration holds validated settings and a private, read-only
+// copy of the producer schedule. It contains no accepted headers.
+type ExperimentalV3Configuration struct {
 	profile  ExperimentalV3Profile
 	policy   ExperimentalV3Policy
 	schedule *ProducerSchedule
@@ -181,28 +183,30 @@ type experimentalV3Config struct {
 // ExperimentalV3ContextFor validates and snapshots the selected configuration.
 // It returns diagnostic data. Only header verification can populate owned state.
 func ExperimentalV3ContextFor(profile ExperimentalV3Profile, policy ExperimentalV3Policy, schedule *ProducerSchedule) (ExperimentalV3Context, error) {
-	c, err := freezeExperimentalV3Config(profile, policy, schedule)
+	c, err := PrepareExperimentalV3Configuration(profile, policy, schedule)
 	if err != nil {
 		return ExperimentalV3Context{}, err
 	}
-	return c.context, nil
+	return c.Context(), nil
 }
 
-func freezeExperimentalV3Config(profile ExperimentalV3Profile, policy ExperimentalV3Policy, schedule *ProducerSchedule) (experimentalV3Config, error) {
+// PrepareExperimentalV3Configuration validates and captures one configuration
+// for diagnostic context, empty state construction and read-only checkpoint use.
+func PrepareExperimentalV3Configuration(profile ExperimentalV3Profile, policy ExperimentalV3Policy, schedule *ProducerSchedule) (ExperimentalV3Configuration, error) {
 	if err := profile.Validate(); err != nil {
-		return experimentalV3Config{}, err
+		return ExperimentalV3Configuration{}, err
 	}
 	if err := policy.Validate(); err != nil {
-		return experimentalV3Config{}, err
+		return ExperimentalV3Configuration{}, err
 	}
 	if schedule == nil || schedule.ChainID != profile.Genesis.ChainID ||
 		len(schedule.Entries) == 0 || len(schedule.Entries) > MaxExperimentalV3ScheduleEntries || len(schedule.Coverage) > MaxExperimentalV3ScheduleEntries {
-		return experimentalV3Config{}, ErrExperimentalV3Schedule
+		return ExperimentalV3Configuration{}, ErrExperimentalV3Schedule
 	}
 	frozen := &ProducerSchedule{ChainID: schedule.ChainID, ScheduleHash: schedule.ScheduleHash,
 		Coverage: append([]ProducerCoverage(nil), schedule.Coverage...), Entries: append([]ProducerEntry(nil), schedule.Entries...)}
 	if frozen.Validate() != nil {
-		return experimentalV3Config{}, ErrExperimentalV3Schedule
+		return ExperimentalV3Configuration{}, ErrExperimentalV3Schedule
 	}
 	c := ExperimentalV3Context{Version: 1, Layout: ExperimentalV3Layout, Genesis: profile.Genesis, Anchor: profile.Anchor,
 		FirstV3Height: profile.FirstV3Height, ValidThrough: profile.ValidThrough, NodeRevision: profile.NodeRevision,
@@ -222,5 +226,8 @@ func freezeExperimentalV3Config(profile ExperimentalV3Profile, policy Experiment
 	b.Write(node)
 	b.Write(c.ScheduleHash[:])
 	c.Fingerprint = chain.Hash(sha3.Sum256(b.Bytes()))
-	return experimentalV3Config{profile: profile, policy: policy, schedule: frozen, context: c}, nil
+	return ExperimentalV3Configuration{profile: profile, policy: policy, schedule: frozen, context: c}, nil
 }
+
+// Context returns detached diagnostic data for the prepared settings.
+func (c ExperimentalV3Configuration) Context() ExperimentalV3Context { return c.context }

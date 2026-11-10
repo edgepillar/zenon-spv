@@ -20,7 +20,7 @@ var errExperimentalV3Opaque = errors.New("use experimental v3 Save or LoadTruste
 type ExperimentalV3State struct{ data *experimentalV3StateData }
 
 type experimentalV3StateData struct {
-	config       experimentalV3Config
+	config       ExperimentalV3Configuration
 	headers      []chain.CandidateV3Header
 	trustedLocal bool
 }
@@ -32,10 +32,16 @@ func (s *ExperimentalV3State) UnmarshalJSON([]byte) error  { return errExperimen
 // context pin. Matching a pin does not authenticate its independent selection.
 // The result is empty: it supplies no root until Extend succeeds.
 func NewExperimentalV3State(profile ExperimentalV3Profile, policy ExperimentalV3Policy, schedule *ProducerSchedule, expected chain.Hash) (ExperimentalV3State, error) {
-	c, err := freezeExperimentalV3Config(profile, policy, schedule)
+	c, err := PrepareExperimentalV3Configuration(profile, policy, schedule)
 	if err != nil {
 		return ExperimentalV3State{}, err
 	}
+	return c.NewState(expected)
+}
+
+// NewState starts an empty state under the prepared settings and the
+// independently selected context fingerprint.
+func (c ExperimentalV3Configuration) NewState(expected chain.Hash) (ExperimentalV3State, error) {
 	if expected.IsZero() || expected != c.context.Fingerprint {
 		return ExperimentalV3State{}, ErrContextFingerprintMismatch
 	}
@@ -96,7 +102,7 @@ func (s ExperimentalV3State) Extend(headers []chain.CandidateV3Header) (Result, 
 	return next.acceptedEnvelope(), next
 }
 
-func validateExperimentalV3Header(h chain.CandidateV3Header, c experimentalV3Config, index int) Result {
+func validateExperimentalV3Header(h chain.CandidateV3Header, c ExperimentalV3Configuration, index int) Result {
 	b := h.Header
 	if b.Version != chain.CandidateMomentumVersion3 {
 		return refuse(ReasonUnsupportedHeaderVersion, "experimental v3 state requires exactly version 3")
