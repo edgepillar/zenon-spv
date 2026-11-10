@@ -353,6 +353,81 @@ func TestFlatRowCapacityIntegration(t *testing.T) {
 	}
 }
 
+func TestCompactFlatAccountHeaderJSONParity(t *testing.T) {
+	want := chain.AccountHeader{Address: chain.Address{0xab, 0xcd}, Hash: chain.Hash{0xde, 0xf0}}
+	var wire []byte
+	for _, height := range []uint64{0, 1, 10, 100000, ^uint64(0)} {
+		want.Height = height
+		raw, err := json.Marshal(want)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got, consumed := parseCompactFlatAccountHeader(raw); consumed != len(raw) || got != want {
+			t.Fatal("standard compact encoding did not take the direct path")
+		}
+		wire = raw
+	}
+
+	check := func(raw []byte) {
+		t.Helper()
+		for _, prefix := range [][]byte{nil, wire} {
+			array := []byte{'['}
+			if prefix != nil {
+				array = append(array, prefix...)
+				array = append(array, ',')
+			}
+			array = append(array, raw...)
+			array = append(array, ']')
+			var want, got []chain.AccountHeader
+			old := bundleRows[chain.AccountHeader]{target: &want, field: "sorted_headers", limit: 2}
+			fast := bundleRows[chain.AccountHeader]{target: &got, field: "sorted_headers", limit: 2, decodeValidated: decodeFlatAccountHeaderRows}
+			wantErr := json.Unmarshal(array, &old)
+			gotErr := json.Unmarshal(array, &fast)
+			if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(gotErr, wantErr) {
+				t.Fatal("compact or fallback rows diverged from the standard decoder")
+			}
+			if compact, consumed := parseCompactFlatAccountHeader(raw); consumed > 0 && consumed == len(raw) &&
+				(wantErr != nil || len(want) == 0 || compact != want[len(want)-1]) {
+				t.Fatal("direct projection accepted a different row")
+			}
+		}
+	}
+	for _, raw := range []string{
+		string(wire),
+		strings.ReplaceAll(string(wire), "abcd", "ABCD"),
+		strings.Replace(string(wire), `"address":"`, `"address":"0x`, 1),
+		strings.Replace(string(wire), `"address"`, `"\u0061ddress"`, 1),
+		strings.Replace(string(wire), `"height":`, `"HEIGHT": `, 1),
+		strings.Replace(string(wire), "18446744073709551615", "18446744073709551616", 1),
+		strings.Replace(string(wire), "18446744073709551615", "00", 1),
+		strings.Replace(string(wire), "18446744073709551615", "-1", 1),
+		strings.Replace(string(wire), "18446744073709551615", "1e1", 1),
+		string(wire[:len(wire)-1]) + `,"HEIGHT":8,"hash":null,"extra":[0]}`,
+		`{"hash":true,"height":null,"address":9}`, `{"height":"7"}`,
+		`{"height":8,"address":"bad","hash":"bad"}`, `{"height":1,`,
+		`{"height":5}`, `{}`, `null`, `true`, `[]`, `"unexpected"`,
+	} {
+		check([]byte(raw))
+	}
+	for i := range wire {
+		for _, mutation := range []byte{'0', '9', 'x', '"', ',', '\\', '}', 0xff} {
+			raw := bytes.Clone(wire)
+			raw[i] = mutation
+			check(raw)
+		}
+	}
+
+	// Mix direct and fallback rows in repeated fields with a shared allowance.
+	for _, raw := range []string{
+		`{"sorted_headers":[` + string(wire) + `,{}],"SORTED_HEADERS":[null]}`,
+		`{"sorted_headers":[` + string(wire) + `],"sorted_headers":[{"height":"late type error"}]}`,
+	} {
+		for _, total := range []int{0, 1, 3} {
+			compareFlatCapacityEvidence(t, []byte(raw), 2, total, false)
+		}
+	}
+}
+
 var flatHintAllocationSink int
 
 func TestFlatRowCapacityGuards(t *testing.T) {
@@ -419,9 +494,8 @@ func FuzzFlatRowCapacityHint(f *testing.F) {
 	})
 }
 
-// Complete synthetic arrays isolate backing-storage growth. Encoding and a
-// full projection check are outside timing. No proof, peak RSS, production
-// budget or whole-CI timing claim follows from these allocation observations.
+// Complete synthetic arrays compare backing storage and compact row decoding.
+// Encoding and a full projection check are outside timing.
 func BenchmarkFlatRowCapacity(b *testing.B) {
 	for _, members := range []int{1000, 100000} {
 		want := make([]chain.AccountHeader, members)
@@ -432,21 +506,24 @@ func BenchmarkFlatRowCapacity(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		for _, mode := range []string{"growing_reference", "hinted"} {
+		for _, mode := range []string{"growing_reference", "hinted", "compact"} {
 			b.Run(fmt.Sprintf("members_%d/%s", members, mode), func(b *testing.B) {
 				decode := func() ([]chain.AccountHeader, error) {
 					var got []chain.AccountHeader
 					rows := bundleRows[chain.AccountHeader]{target: &got, field: "flat.sorted_headers", limit: members, capacityHint: flatRowsCapacityHint}
 					var target json.Unmarshaler = &rows
-					if mode == "growing_reference" {
+					switch mode {
+					case "growing_reference":
 						old := growingBundleRowsReference[chain.AccountHeader](rows)
 						target = &old
+					case "compact":
+						rows.decodeValidated = decodeFlatAccountHeaderRows
 					}
 					err := json.Unmarshal(raw, target)
 					return got, err
 				}
 				got, err := decode()
-				if err != nil || !reflect.DeepEqual(got, want) || (mode == "hinted" && cap(got) != members) {
+				if err != nil || !reflect.DeepEqual(got, want) || (mode != "growing_reference" && cap(got) != members) {
 					b.Fatal("capacity benchmark projection or reservation differs", err)
 				}
 				capacity := cap(got)
