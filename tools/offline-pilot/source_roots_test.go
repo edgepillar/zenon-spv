@@ -18,7 +18,10 @@ import (
 )
 
 func sourceRootEvents(children int) []testEvent {
-	pkg, root := sourceEnumerationPackage, sourceEnumerationTest
+	return namedSourceRootEvents(sourceEnumerationPackage, sourceEnumerationTest, children)
+}
+
+func namedSourceRootEvents(pkg, root string, children int) []testEvent {
 	events := []testEvent{{Action: "start", Package: pkg}, {Action: "run", Package: pkg, Test: root},
 		{Action: "output", Package: pkg, Test: root, Output: "PRIVATE_OUTPUT /PRIVATE/PATH"}}
 	for i := 0; i < children; i++ {
@@ -30,15 +33,16 @@ func sourceRootEvents(children int) []testEvent {
 	return append(events, testEvent{Action: "pass", Package: pkg, Test: root}, testEvent{Action: "pass", Package: pkg})
 }
 
-func sourceRootCollect(t *testing.T, events []testEvent, enabled bool) (*suiteCollector, []byte, error) {
+func sourceRootCollect(t *testing.T, events []testEvent, group string, packages ...string) (*suiteCollector, []byte, error) {
 	t.Helper()
-	collector, err := newSuiteCollector(newCollector(nil), []string{sourceEnumerationPackage})
+	if len(packages) == 0 {
+		packages = []string{sourceEnumerationPackage}
+	}
+	collector, err := newSuiteCollector(newCollector(nil), packages)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if enabled {
-		collector.sourceRoots = newSourceRootCollector()
-	}
+	collector.sourceRoots = newSourceRootCollector(group)
 	var stream bytes.Buffer
 	for _, event := range events {
 		if err := json.NewEncoder(&stream).Encode(event); err != nil {
@@ -50,7 +54,7 @@ func sourceRootCollect(t *testing.T, events []testEvent, enabled bool) (*suiteCo
 }
 
 func TestSourceRootEvidenceCompleteBoundAndPrivate(t *testing.T) {
-	collector, raw, err := sourceRootCollect(t, sourceRootEvents(6), true)
+	collector, raw, err := sourceRootCollect(t, sourceRootEvents(6), sourceEnumerationGroup)
 	if err != nil || collector.finish(true) != "passed" {
 		t.Fatal("complete source-root execution refused", err)
 	}
@@ -78,7 +82,7 @@ func TestSourceRootEvidenceCompleteBoundAndPrivate(t *testing.T) {
 
 func TestSourceRootEvidenceCannotUseTotalsMissingRootsOrSkips(t *testing.T) {
 	for _, count := range []int{0, 5, 7} {
-		collector, _, err := sourceRootCollect(t, sourceRootEvents(count), true)
+		collector, _, err := sourceRootCollect(t, sourceRootEvents(count), sourceEnumerationGroup)
 		if err != nil || collector.finish(true) != "incomplete" || collector.sourceRoots.snapshot().Status != "incomplete" {
 			t.Fatal("wrong subtest count completed the required group", count, err)
 		}
@@ -91,7 +95,7 @@ func TestSourceRootEvidenceCannotUseTotalsMissingRootsOrSkips(t *testing.T) {
 				break
 			}
 		}
-		collector, _, err := sourceRootCollect(t, events, true)
+		collector, _, err := sourceRootCollect(t, events, sourceEnumerationGroup)
 		if err != nil || collector.finish(true) == "passed" || collector.sourceRoots.snapshot().Status != "incomplete" {
 			t.Fatal("skipped or failed subtest became a required pass", action, err)
 		}
@@ -100,7 +104,7 @@ func TestSourceRootEvidenceCannotUseTotalsMissingRootsOrSkips(t *testing.T) {
 	for i := range events {
 		events[i].Test = strings.ReplaceAll(events[i].Test, sourceEnumerationTest, "TestOther")
 	}
-	collector, _, err := sourceRootCollect(t, events, true)
+	collector, _, err := sourceRootCollect(t, events, sourceEnumerationGroup)
 	if err != nil || collector.counts.Passed != 7 || collector.finish(true) != "incomplete" || collector.sourceRoots.snapshot().Roots[0].Status != "missing" {
 		t.Fatal("aggregate passing totals supplied a missing required root", err)
 	}
@@ -115,7 +119,7 @@ func TestSourceRootEvidenceLifecycleAndCompleteness(t *testing.T) {
 		append(slices.Clone(base[:3]), append([]testEvent{base[len(base)-2]}, base[3:]...)...),
 	}
 	for i, events := range cases {
-		collector, _, err := sourceRootCollect(t, events, true)
+		collector, _, err := sourceRootCollect(t, events, sourceEnumerationGroup)
 		if err == nil && collector.finish(true) == "passed" {
 			t.Fatal("invalid or incomplete lifecycle accepted", i)
 		}
@@ -123,10 +127,10 @@ func TestSourceRootEvidenceLifecycleAndCompleteness(t *testing.T) {
 	// A root cannot pass before an actually running child completes.
 	events := slices.Clone(base)
 	events[4], events[len(events)-2] = events[len(events)-2], events[4]
-	if _, _, err := sourceRootCollect(t, events, true); err == nil {
+	if _, _, err := sourceRootCollect(t, events, sourceEnumerationGroup); err == nil {
 		t.Fatal("premature required-root completion was accepted")
 	}
-	collector, _, err := sourceRootCollect(t, base, true)
+	collector, _, err := sourceRootCollect(t, base, sourceEnumerationGroup)
 	if err != nil || collector.finish(false) != "failed" {
 		t.Fatal("successful counters replaced the actual failed process")
 	}
@@ -136,8 +140,44 @@ func TestSourceRootEvidenceLifecycleAndCompleteness(t *testing.T) {
 	}
 }
 
+func TestCompiledNativeObserverRootEvidence(t *testing.T) {
+	const conformance = modulePath + "/internal/conformance"
+	want := []sourceRootResult{
+		{Package: conformance, Test: "TestCompiledAdvancingBlockObserver", Status: "pass", Passed: 9},
+		{Package: conformance, Test: "TestCompiledNodeAccountBasicObserver", Status: "pass", Passed: 58},
+		{Package: conformance, Test: "TestCompiledNodeAccountReceiveObserver", Status: "pass", Passed: 52},
+		{Package: sourceEnumerationPackage, Test: sourceEnumerationTest, Status: "pass", Passed: 6},
+	}
+	for _, substitute := range []bool{false, true} {
+		events := []testEvent{{Action: "start", Package: conformance}, {Action: "start", Package: sourceEnumerationPackage}}
+		for i := len(want) - 1; i >= 0; i-- {
+			row := want[i]
+			if substitute && i == 1 {
+				row.Test = "TestUnselectedObserver"
+			}
+			root := namedSourceRootEvents(row.Package, row.Test, row.Passed)
+			events = append(events, root[1:len(root)-1]...)
+		}
+		events = append(events, testEvent{Action: "pass", Package: conformance},
+			testEvent{Action: "pass", Package: sourceEnumerationPackage})
+		collector, _, err := sourceRootCollect(t, events, compiledNativeObserverGroup, conformance, sourceEnumerationPackage)
+		if err != nil || collector.counts != (suiteCounts{RootTests: 4, Subtests: 125, Passed: 129}) {
+			t.Fatal("compiled native observer stream totals differ", err)
+		}
+		evidence := collector.sourceRoots.snapshot()
+		if substitute {
+			if collector.finish(true) != "incomplete" || evidence.Status != "incomplete" || evidence.Roots[1].Status != "missing" {
+				t.Fatal("unselected observer satisfied the required root")
+			}
+		} else if collector.finish(true) != "passed" || evidence.Status != "complete" ||
+			evidence.Group != compiledNativeObserverGroup || !reflect.DeepEqual(evidence.Roots, want) {
+			t.Fatal("compiled native observer roots did not retain their own completions")
+		}
+	}
+}
+
 func TestSourceRootEvidenceOptInAndLegacyShape(t *testing.T) {
-	collector, _, err := sourceRootCollect(t, sourceRootEvents(6), false)
+	collector, _, err := sourceRootCollect(t, sourceRootEvents(6), "")
 	if err != nil || collector.finish(true) != "passed" || collector.sourceRoots.snapshot() != nil {
 		t.Fatal("default whole-suite behavior changed", err)
 	}
@@ -148,6 +188,8 @@ func TestSourceRootEvidenceOptInAndLegacyShape(t *testing.T) {
 	for _, args := range [][]string{
 		{"--suite-root-group", "PRIVATE"}, {"--suite-root-group", ""},
 		{"--suite-root-group", sourceEnumerationGroup},
+		{"--suite-root-group", compiledNativeObserverGroup},
+		{"--suite-root-group", sourceEnumerationGroup, "--suite-root-group", compiledNativeObserverGroup},
 		{"--suite-root-group", sourceEnumerationGroup, "--suite-root-group", sourceEnumerationGroup},
 	} {
 		var out, diagnostic bytes.Buffer
@@ -194,7 +236,7 @@ func TestCompiledPilotSourceEnumeration(t *testing.T) {
 	if err != nil {
 		t.Fatal("cannot initialize fixture collector")
 	}
-	collector.sourceRoots = newSourceRootCollector()
+	collector.sourceRoots = newSourceRootCollector(sourceEnumerationGroup)
 	if cmd.Start() != nil {
 		t.Fatal("cannot start native event fixture")
 	}
@@ -204,7 +246,7 @@ func TestCompiledPilotSourceEnumeration(t *testing.T) {
 		t.Fatal("actual native event stream did not complete its bounded group")
 	}
 	raw, err := json.Marshal(collector.sourceRoots.snapshot())
-	if err != nil || bytes.Contains(raw, []byte("PRIVATE")) || collector.sourceRoots.result.Passed != 6 {
+	if err != nil || bytes.Contains(raw, []byte("PRIVATE")) || collector.sourceRoots.snapshot().Roots[0].Passed != 6 {
 		t.Fatal("native event fixture leaked labels or lost subtest completions")
 	}
 }

@@ -6,9 +6,28 @@ import (
 )
 
 const sourceEnumerationGroup = "compiled-source-enumeration/v1"
+const compiledNativeObserverGroup = "compiled-native-observers/v1"
 const sourceEnumerationTest = "TestCompiledPilotSourceEnumeration"
 const sourceEnumerationPackage = modulePath + "/tools/offline-pilot"
 const sourceEnumerationSubtests = 6
+
+type sourceRootSpec struct {
+	packageName string
+	test        string
+	subtests    int
+}
+
+var sourceEnumerationRoot = sourceRootSpec{sourceEnumerationPackage, sourceEnumerationTest, sourceEnumerationSubtests}
+
+var sourceRootGroups = map[string][]sourceRootSpec{
+	sourceEnumerationGroup: {sourceEnumerationRoot},
+	compiledNativeObserverGroup: {
+		{modulePath + "/internal/conformance", "TestCompiledAdvancingBlockObserver", 9},
+		{modulePath + "/internal/conformance", "TestCompiledNodeAccountBasicObserver", 58},
+		{modulePath + "/internal/conformance", "TestCompiledNodeAccountReceiveObserver", 52},
+		sourceEnumerationRoot,
+	},
+}
 
 type sourceRootResult struct {
 	Package string `json:"package"`
@@ -29,62 +48,91 @@ type sourceRootEvidence struct {
 	Roots  []sourceRootResult `json:"roots"`
 }
 
-type sourceRootCollector struct {
-	result  sourceRootResult
-	pending int
+type sourceRootObservation struct {
+	result   sourceRootResult
+	expected int
+	pending  int
 }
 
-func newSourceRootCollector() *sourceRootCollector {
-	return &sourceRootCollector{result: sourceRootResult{
-		Package: sourceEnumerationPackage, Test: sourceEnumerationTest, Status: "missing",
-	}}
+type sourceRootCollector struct {
+	group string
+	roots []sourceRootObservation
+}
+
+func newSourceRootCollector(group string) *sourceRootCollector {
+	specs, ok := sourceRootGroups[group]
+	if !ok {
+		return nil
+	}
+	collector := &sourceRootCollector{group: group, roots: make([]sourceRootObservation, len(specs))}
+	for i, spec := range specs {
+		collector.roots[i] = sourceRootObservation{
+			result:   sourceRootResult{Package: spec.packageName, Test: spec.test, Status: "missing"},
+			expected: spec.subtests,
+		}
+	}
+	return collector
 }
 
 // The suite collector validates event lifecycle, package inventory and complete
 // input before these counters can contribute to a successful receipt. A root
 // completion cannot be inferred from aggregate test counts or a compiled file.
 func (c *sourceRootCollector) event(e testEvent) error {
-	if c == nil || e.Package != sourceEnumerationPackage {
+	if c == nil {
 		return nil
 	}
 	root, _, nested := strings.Cut(e.Test, "/")
-	if root != sourceEnumerationTest {
-		return nil
+	for i := range c.roots {
+		row := &c.roots[i]
+		if e.Package == row.result.Package && root == row.result.Test {
+			return row.observe(e.Action, nested)
+		}
 	}
+	return nil
+}
+
+func (o *sourceRootObservation) observe(action string, nested bool) error {
 	if !nested {
-		switch e.Action {
+		switch action {
 		case "run":
-			c.result.Status = "running"
+			o.result.Status = "running"
 		case "pass", "fail", "skip":
-			if c.pending != 0 {
+			if o.pending != 0 {
 				return errors.New("source root completed before its subtests")
 			}
-			c.result.Status = e.Action
+			o.result.Status = action
 		}
 		return nil
 	}
-	if c.result.Status != "running" {
+	if o.result.Status != "running" {
 		return errors.New("source subtest outside its root execution")
 	}
-	switch e.Action {
+	switch action {
 	case "run":
-		c.pending++
+		o.pending++
 	case "pass":
-		c.pending--
-		c.result.Passed++
+		o.pending--
+		o.result.Passed++
 	case "skip":
-		c.pending--
-		c.result.Skipped++
+		o.pending--
+		o.result.Skipped++
 	case "fail":
-		c.pending--
-		c.result.Failed++
+		o.pending--
+		o.result.Failed++
 	}
 	return nil
 }
 
 func (c *sourceRootCollector) complete() bool {
-	return c == nil || c.pending == 0 && c.result.Status == "pass" && c.result.Passed == sourceEnumerationSubtests &&
-		c.result.Skipped == 0 && c.result.Failed == 0
+	if c != nil {
+		for _, row := range c.roots {
+			if row.pending != 0 || row.result.Status != "pass" || row.result.Passed != row.expected ||
+				row.result.Skipped != 0 || row.result.Failed != 0 {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (c *sourceRootCollector) snapshot() *sourceRootEvidence {
@@ -95,6 +143,9 @@ func (c *sourceRootCollector) snapshot() *sourceRootEvidence {
 	if c.complete() {
 		status = "complete"
 	}
-	return &sourceRootEvidence{Format: "zenon-source-root-controls/v1", Group: sourceEnumerationGroup,
-		Status: status, Roots: []sourceRootResult{c.result}}
+	roots := make([]sourceRootResult, len(c.roots))
+	for i, row := range c.roots {
+		roots[i] = row.result
+	}
+	return &sourceRootEvidence{Format: "zenon-source-root-controls/v1", Group: c.group, Status: status, Roots: roots}
 }

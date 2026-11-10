@@ -50,12 +50,15 @@ func run(args []string, stdout, stderr io.Writer) int {
 	packageTimeout := fs.Duration("package-timeout", 0, "explicit per-package deadline for full-suite mode")
 	suiteReceiptPath := fs.String("suite-receipt", "", "new absolute receipt outside the checkout and candidate directory")
 	coverage := fs.Bool("coverage", false, "write coverage.out in full-suite mode")
-	sourceRoots := false
+	var sourceRoots *sourceRootCollector
 	fs.Func("suite-root-group", "fixed source-owned full-suite root group", func(value string) error {
-		if sourceRoots || value != sourceEnumerationGroup {
+		if sourceRoots != nil {
 			return errors.New("invalid suite root group")
 		}
-		sourceRoots = true
+		sourceRoots = newSourceRootCollector(value)
+		if sourceRoots == nil {
+			return errors.New("invalid suite root group")
+		}
 		return nil
 	})
 	var exportDir string
@@ -68,14 +71,14 @@ func run(args []string, stdout, stderr io.Writer) int {
 	})
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
-			return writeReport(stdout, stderr, []byte("Usage: offline-pilot [--race] [--timeout 10m] [--export-binaries ABSOLUTE_NEW_DIRECTORY]\nFull root module: add --full-suite --package-timeout 10m --suite-receipt ABSOLUTE_NEW_FILE [--coverage] [--suite-failure-diagnostics] [--suite-root-group compiled-source-enumeration/v1].\nRun from the repository root with dependencies already cached.\n"), 0)
+			return writeReport(stdout, stderr, []byte("Usage: offline-pilot [--race] [--timeout 10m] [--export-binaries ABSOLUTE_NEW_DIRECTORY]\nFull root module: add --full-suite --package-timeout 10m --suite-receipt ABSOLUTE_NEW_FILE [--coverage] [--suite-failure-diagnostics] [--suite-root-group compiled-source-enumeration/v1|compiled-native-observers/v1].\nRun from the repository root with dependencies already cached.\n"), 0)
 		}
 		_, _ = fmt.Fprintln(stderr, "offline-pilot: invalid arguments; use --help")
 		return 64
 	}
 	if fs.NArg() != 0 || *timeout <= 0 || *timeout > time.Hour ||
 		(*fullSuite && (*packageTimeout <= 0 || *packageTimeout > *timeout || *suiteReceiptPath == "" || len(*suiteReceiptPath) > 4096 || !filepath.IsAbs(*suiteReceiptPath))) ||
-		(!*fullSuite && (*packageTimeout != 0 || *suiteReceiptPath != "" || *coverage || *suiteFailureDiagnostics || sourceRoots)) {
+		(!*fullSuite && (*packageTimeout != 0 || *suiteReceiptPath != "" || *coverage || *suiteFailureDiagnostics || sourceRoots != nil)) {
 		_, _ = fmt.Fprintln(stderr, "offline-pilot: invalid arguments; use --help")
 		return 64
 	}
@@ -147,9 +150,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 			if err != nil {
 				processError = errorCategory("suite_inventory")
 			} else {
-				if sourceRoots {
-					suite.sourceRoots = newSourceRootCollector()
-				}
+				suite.sourceRoots = sourceRoots
 				profile := ""
 				if *coverage {
 					profile = "coverage.out"
@@ -215,12 +216,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 			receipt.Timings = suite.timingSnapshot()
 			receipt.ObserverResources = suite.observer.snapshot()
 		}
-		if sourceRoots {
+		if sourceRoots != nil {
 			receipt.Format = "zenon-root-suite/v4"
-			receipt.SourceRoots = newSourceRootCollector().snapshot()
-			if suite != nil {
-				receipt.SourceRoots = suite.sourceRoots.snapshot()
-			}
+			receipt.SourceRoots = sourceRoots.snapshot()
 		}
 		if err := writeSuiteReceipt(receiptFile, receipt); err != nil {
 			_, _ = fmt.Fprintln(stderr, "offline-pilot: suite receipt output failed")
