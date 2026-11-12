@@ -18,11 +18,12 @@ import (
 )
 
 const (
-	ExperimentalV3NodeRevision             = "938fca3b7787da86827a5eb63371509b36e14761"
-	ExperimentalV3Layout                   = "zenon-experimental-momentum-v3-sha3-208"
-	MaxExperimentalV3ProfileBytes          = 16 * 1024
-	MaxExperimentalV3ScheduleEntries       = 4096
-	MaxExperimentalV3StateBytes      int64 = 8 * 1024 * 1024
+	ExperimentalV3NodeRevision                   = "938fca3b7787da86827a5eb63371509b36e14761"
+	ExperimentalV3ReferenceGasNodeRevision       = "2835c436b197fece5c76adf4ba8dc1decca2e3ea"
+	ExperimentalV3Layout                         = "zenon-experimental-momentum-v3-sha3-208"
+	MaxExperimentalV3ProfileBytes                = 16 * 1024
+	MaxExperimentalV3ScheduleEntries             = 4096
+	MaxExperimentalV3StateBytes            int64 = 8 * 1024 * 1024
 )
 
 var (
@@ -52,7 +53,7 @@ func (p ExperimentalV3Profile) Validate() error {
 		p.Genesis.ChainID == MainnetChainID || p.Anchor.Validate() != nil ||
 		p.Anchor.ChainID != p.Genesis.ChainID || p.FirstV3Height < 2 ||
 		p.Anchor.Height < p.FirstV3Height-1 || p.ValidThrough <= p.Anchor.Height ||
-		p.NodeRevision != ExperimentalV3NodeRevision || len(p.Source) > 1024 ||
+		(p.NodeRevision != ExperimentalV3NodeRevision && p.NodeRevision != ExperimentalV3ReferenceGasNodeRevision) || len(p.Source) > 1024 ||
 		strings.TrimSpace(p.Source) == "" || !utf8.ValidString(p.Source) {
 		return ErrExperimentalV3Profile
 	}
