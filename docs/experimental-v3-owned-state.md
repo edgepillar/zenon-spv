@@ -22,9 +22,12 @@ height is at least 2, and the anchor is at or after its preceding height. This
 v3-only path starts after an explicitly trusted anchor; it does not invent the
 intervening v1/v2 history or a genesis-to-checkpoint proof.
 
-Mainnet chain ID 1 and unknown schemas/revisions are refused. The selected node
-revision is `938fca3b7787da86827a5eb63371509b36e14761`; it selects the known
-208-byte v3 encoding. Neither this pin nor a Source label authenticates a live
+Mainnet chain ID 1 and unknown schemas/revisions are refused. The two supported
+node revisions are `938fca3b7787da86827a5eb63371509b36e14761` and
+`2835c436b197fece5c76adf4ba8dc1decca2e3ea`; both select the known 208-byte v3
+encoding. The [reference-gas cohort record](reference-gas-source-cohort.md)
+documents their source comparison and distinct contexts. Neither a source pin
+nor a Source label authenticates a live
 network or the operator's activation assertion. First-v3 height is distinct
 from a spork enforcement height and is never inferred from a peer response.
 

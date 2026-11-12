@@ -18,11 +18,12 @@ import (
 )
 
 const (
-	ExperimentalBatchEntrySchema           = "zenon-settlement-batch-entry-17/v1"
-	ExperimentalBatchEntryExecutorRevision = "caeaf764270b1489a53c860c6006026af208f924"
-	ExperimentalBatchEntrySDKRevision      = "bc1548d75473797f24bb3eb79f5594969c596e39"
-	ExperimentalBatchEntrySettlementHex    = "01b3b6e5adcb4d0cad7fcef33598c6318c6318c0"
-	MaxExperimentalBatchEntryProfileBytes  = 16 * 1024
+	ExperimentalBatchEntrySchema                       = "zenon-settlement-batch-entry-17/v1"
+	ExperimentalBatchEntryExecutorRevision             = "caeaf764270b1489a53c860c6006026af208f924"
+	ExperimentalBatchEntryReferenceGasExecutorRevision = "a14bf0e08dad8eabeb1a0e0add9bbaf1e2adac9f"
+	ExperimentalBatchEntrySDKRevision                  = "bc1548d75473797f24bb3eb79f5594969c596e39"
+	ExperimentalBatchEntrySettlementHex                = "01b3b6e5adcb4d0cad7fcef33598c6318c6318c0"
+	MaxExperimentalBatchEntryProfileBytes              = 16 * 1024
 )
 
 var (
@@ -227,11 +228,19 @@ func ExperimentalBatchEntryContextFor(state ExperimentalV3State, p ExperimentalB
 	if err != nil {
 		return ExperimentalBatchEntryContext{}, err
 	}
-	if header.NodeRevision != ExperimentalV3NodeRevision {
+	// Select a reviewed source pair; neither revision is an alias for the other
+	// cohort. The exact node and executor identities enter the query fingerprint.
+	var executorRevision string
+	switch header.NodeRevision {
+	case ExperimentalV3NodeRevision:
+		executorRevision = ExperimentalBatchEntryExecutorRevision
+	case ExperimentalV3ReferenceGasNodeRevision:
+		executorRevision = ExperimentalBatchEntryReferenceGasExecutorRevision
+	default:
 		return ExperimentalBatchEntryContext{}, ErrExperimentalBatchEntryProfile
 	}
 	c := ExperimentalBatchEntryContext{Version: p.Version, Header: header, Schema: ExperimentalBatchEntrySchema,
-		ExecutorRevision: ExperimentalBatchEntryExecutorRevision, SDKRevision: ExperimentalBatchEntrySDKRevision,
+		ExecutorRevision: executorRevision, SDKRevision: ExperimentalBatchEntrySDKRevision,
 		Settlement: p.Settlement, DomainID: p.DomainID, RuntimeIdentity: p.RuntimeIdentity,
 		MaxProofBytes: p.MaxProofBytes, MaxSiblings: p.MaxSiblings, Limits: p.Limits, RequireCanonical: true, SourceRule: p.SourceRule}
 	var b bytes.Buffer

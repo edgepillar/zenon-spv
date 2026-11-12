@@ -39,8 +39,11 @@ provenance text and do not affect the fingerprint. The per-query fingerprint
 additionally binds H/hash, exact tip height/hash and the local batch ID. No
 provider field changes those identities.
 
-The selected pins are the [query contract cohort](batch-entry-query-contract.md),
-with schema `zenon-settlement-batch-entry-17/v1` and raw Settlement address
+The supported source pairs are the original
+[query contract cohort](batch-entry-query-contract.md) and the explicit
+[reference-gas cohort](reference-gas-source-cohort.md). The header profile's exact
+node revision selects the matching executor revision; their context pins are
+distinct. Both use schema `zenon-settlement-batch-entry-17/v1` and raw Settlement address
 `01b3b6e5adcb4d0cad7fcef33598c6318c6318c0`. A different source schema or
 Settlement contract needs an explicit new profile implementation.
 

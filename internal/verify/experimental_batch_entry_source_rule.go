@@ -11,7 +11,8 @@ import (
 )
 
 // ExperimentalBatchEntrySourceRule selects a bounded subset of the phase1
-// source rules at ExperimentalV3NodeRevision. It does not verify submission
+// source rules shared by the two supported experimental node revisions.
+// It does not verify submission
 // authorization, state transitions, execution, registration or finality.
 const ExperimentalBatchEntrySourceRule = "zenon-phase1-batch-fields/v1"
 
