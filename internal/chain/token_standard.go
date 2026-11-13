@@ -3,7 +3,6 @@ package chain
 import (
 	"encoding/hex"
 	"errors"
-	"strings"
 )
 
 // TokenStandardSize matches types.ZenonTokenStandardSize at
@@ -23,19 +22,24 @@ func (t TokenStandard) Bytes() []byte { return t[:] }
 
 // MarshalText emits TokenStandard as a lowercase hex string.
 func (t TokenStandard) MarshalText() ([]byte, error) {
-	return []byte(hex.EncodeToString(t[:])), nil
+	text := make([]byte, 2*TokenStandardSize)
+	hex.Encode(text, t[:])
+	return text, nil
 }
 
 // UnmarshalText accepts a hex string with optional 0x prefix.
 func (t *TokenStandard) UnmarshalText(text []byte) error {
-	s := strings.TrimPrefix(string(text), "0x")
-	if len(s) != 2*TokenStandardSize {
+	if len(text) >= 2 && text[0] == '0' && text[1] == 'x' {
+		text = text[2:]
+	}
+	if len(text) != 2*TokenStandardSize {
 		return errors.New("chain.TokenStandard: invalid hex length")
 	}
-	b, err := hex.DecodeString(s)
-	if err != nil {
+	// Commit only a complete value; hex.Decode may write before failing.
+	var decoded TokenStandard
+	if _, err := hex.Decode(decoded[:], text); err != nil {
 		return err
 	}
-	copy(t[:], b)
+	*t = decoded
 	return nil
 }

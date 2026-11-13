@@ -49,7 +49,7 @@ func addressTextReferenceUnmarshal(a *Address, text []byte) error {
 }
 
 type chainTextValue interface {
-	~[AddressSize]byte | ~[HashSize]byte
+	~[AddressSize]byte | ~[HashSize]byte | ~[NonceSize]byte | ~[TokenStandardSize]byte
 }
 
 // Do not call the production encoder or encoding/hex for expected bytes.

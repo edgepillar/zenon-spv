@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"math/big"
-	"strings"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -28,20 +27,25 @@ type Nonce [NonceSize]byte
 
 // MarshalText emits Nonce as lowercase hex.
 func (n Nonce) MarshalText() ([]byte, error) {
-	return []byte(hex.EncodeToString(n[:])), nil
+	text := make([]byte, 2*NonceSize)
+	hex.Encode(text, n[:])
+	return text, nil
 }
 
 // UnmarshalText accepts hex (optional 0x prefix).
 func (n *Nonce) UnmarshalText(text []byte) error {
-	s := strings.TrimPrefix(string(text), "0x")
-	if len(s) != 2*NonceSize {
+	if len(text) >= 2 && text[0] == '0' && text[1] == 'x' {
+		text = text[2:]
+	}
+	if len(text) != 2*NonceSize {
 		return errors.New("chain.Nonce: invalid hex length")
 	}
-	b, err := hex.DecodeString(s)
-	if err != nil {
+	// Keep a failed decode from exposing a partially written nonce.
+	var decoded Nonce
+	if _, err := hex.Decode(decoded[:], text); err != nil {
 		return err
 	}
-	copy(n[:], b)
+	*n = decoded
 	return nil
 }
 

@@ -283,9 +283,9 @@ jobs:
       - name: Retained model header comparison observations
         run: go test -run '^$' -bench '^BenchmarkSequenceHeaderEquality$' -benchtime=20000x -benchmem -cpu=1 -count=3 ./internal/verify
       - name: Chain text hex controls
-        run: go test -v -count=1 -run '^TestChainTextHexContract$' ./internal/chain
+        run: go test -v -count=1 -run '^Test(Chain|Account)TextHexContract$' ./internal/chain
       - name: Chain text hex allocation observations
-        run: go test -run '^$' -bench '^BenchmarkChainTextHex$' -benchtime=20000x -benchmem -cpu=1 -count=3 ./internal/chain
+        run: go test -run '^$' -bench '^Benchmark(Chain|Account)TextHex$' -benchtime=20000x -benchmem -cpu=1 -count=3 ./internal/chain
       - name: Proof bundle row ownership controls
         run: go test -v -count=1 -run '^TestBundleRowOwnedSlots' ./internal/proof
       - name: Proof bundle row allocation observations
@@ -1055,9 +1055,9 @@ jobs:
       - name: Retained model header comparison observations
         run: go test -run '^$' -bench '^BenchmarkSequenceHeaderEquality$' -benchtime=20000x -benchmem -cpu=1 -count=3 ./internal/verify
       - name: Chain text hex controls
-        run: go test -v -count=1 -run '^TestChainTextHexContract$' ./internal/chain
+        run: go test -v -count=1 -run '^Test(Chain|Account)TextHexContract$' ./internal/chain
       - name: Chain text hex allocation observations
-        run: go test -run '^$' -bench '^BenchmarkChainTextHex$' -benchtime=20000x -benchmem -cpu=1 -count=3 ./internal/chain
+        run: go test -run '^$' -bench '^Benchmark(Chain|Account)TextHex$' -benchtime=20000x -benchmem -cpu=1 -count=3 ./internal/chain
       - name: Proof bundle row ownership controls
         run: go test -v -count=1 -run '^TestBundleRowOwnedSlots' ./internal/proof
       - name: Proof bundle row allocation observations
