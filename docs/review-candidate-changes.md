@@ -12,6 +12,118 @@ human acceptance or authenticated distribution.
 ## Current qualified runtime baseline
 
 Evidence cut: **13 November 2026**. The ledger-selected runtime is
+[`e143ade8507a45a1f125de7bc15b92541036ef85`](https://github.com/edgepillar/zenon-spv/tree/e143ade8507a45a1f125de7bc15b92541036ef85),
+tree `0cfe07a72796b985e4d51483807c7a168d16c2e3`, from the local merge of
+[PR #385](https://github.com/edgepillar/zenon-spv/pull/385). Both author and
+committer are `edgepillar`. Its own
+[general main CI](https://github.com/edgepillar/zenon-spv/actions/runs/43472323191)
+passed all seven jobs on attempt 1; its separate
+[transport main CI](https://github.com/edgepillar/zenon-spv/actions/runs/43472322970)
+passed all three platform jobs on attempt 1.
+
+| Context | Feature revision | Actual checkout revision | General run | Transport run |
+| --- | --- | --- | --- | --- |
+| PR #385 | `652398428ecbc0bd266232bbf99d1b5e5b6a2a0e` | `123923cba7036661e813e95f91f73398e025e604` | [43466376012](https://github.com/edgepillar/zenon-spv/actions/runs/43466376012) | [43466375992](https://github.com/edgepillar/zenon-spv/actions/runs/43466375992) |
+| Main | `e143ade8507a45a1f125de7bc15b92541036ef85` | `e143ade8507a45a1f125de7bc15b92541036ef85` | [43472323191](https://github.com/edgepillar/zenon-spv/actions/runs/43472323191) | [43472322970](https://github.com/edgepillar/zenon-spv/actions/runs/43472322970) |
+
+Each context retains its own run, archive and binary bindings despite equal file
+trees. General qualification selects 19 archives: three tested candidates,
+three complete root-suite receipts, three scope-control reports, three ledger
+inventories, three snapshot/header-binding reports, three recorded-oracle
+selection manifests and one change-scope archive. The candidate readers check
+all 21 native binary/source/platform bindings. Three transport archives add
+81 bounded controls per platform. These are 22 primary archives per context.
+
+The other 21 general-workflow archives per context were separately accounted
+for by exact run/source/platform selection, archive SHA-256, ZIP CRC and bounded
+JSON/JSONL readback. The separate offline-pilot payload matches the already
+qualified selected-report digest. This supplemental inventory does not
+independently requalify diagnostic semantics or resource measurements. Embedded
+historical source labels keep their original meaning; workflow association
+does not turn an earlier record into new native execution. Across
+PR and main, all **86 archive IDs** are accounted for: 44 primary qualification
+archives and 42 supplemental integrity/readback archives. No second stdout/ZIP
+copy, extraction tree or new native execution was needed for these readers.
+
+The complete root suites cover 16 root-module packages. Counts below apply to
+each context separately; skipped tests are included in inventory totals, and
+the selected-scenario skip ledger is not added again.
+
+| Platform | Root tests | Subtests | PASS events | SKIP events | Failures |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Linux amd64 | 987 | 6,412 | 7,399 | 0 | 0 |
+| macOS Intel amd64 | 987 | 6,412 | 7,399 | 0 | 0 |
+| Windows amd64 | 983 | 6,495 | 7,462 | 16 | 0 |
+
+Native job logs separately bind the five new candidate-hash benchmark cases
+per platform and context to the existing three-iteration recipe. The
+[hash-input observations](candidate-rpc-hash-inputs.md) retain their local
+Darwin ARM64 baseline/current samples and final-predicate checks. Hosted values
+are not replaced with that local table. Finite function allocation savings do
+not establish whole-process RSS, general latency or representative budgets.
+The first [PR CI revision](https://github.com/edgepillar/zenon-spv/actions/runs/43461462004)
+at `e784ea72a65826560f1b0c1e30dfb566e052ec3f` remains FAILURE at Linux lint;
+its completed native jobs were not interrupted. The original local assertion
+failure and completed benchmark samples also remain retained. The corrected
+revision has its own qualification, rather than relabeling either failed attempt.
+
+The owned-experiment preparation, closed-parent oracle and ledger-export
+workflows did not execute at this runtime revision. Their earlier qualifications
+keep their original sources. The separately authorized
+[first fixture run](owned-devnet-attempt-2026-11-13.md) at `4a1d03e` remains
+refused before chain startup. The frozen runner ref, selected `7493c59`
+consumer/oracle inputs and reviewed `834d551` follow-up packet are not replaced
+by the current runtime selection. The follow-up remains unexecuted and needs
+its own source-specific authorization. Current CI supplies no selected-network
+BatchEntry consumer acceptance, independent human review or authenticated
+release. Production state proofs and irreversible settlement remain NO-GO.
+
+### Source and review scope
+
+Fresh comparisons read the exact revisions' Git blobs. The frozen-review to
+`e143ade` pair contains **550 changed tracked paths**, **226 selected-input
+changes** and **130 root-module Go paths**: 59 implementation/driver files and
+71 tests. Root `go.mod` and `go.sum` are unchanged. The frozen source has six
+nested modules and the current source has seven; ownership is determined
+independently at each revision, after checking path existence.
+
+The preceding ledger runtime `5caa58d` to `e143ade` pair contains **24 changed
+tracked paths**, **three selected-input changes** and **three root-module Go
+paths**: one implementation file and two tests. The Go paths are
+`internal/fetch/candidate_v3.go`, `candidate_rpc_hash_test.go` and
+`candidate_rpc_hash_bench_test.go` in that same directory. The complete pair
+also changes the owned-builder diagnostic/shutdown Python path, the joint
+retention qualification controller, workflow/selector source pins and their
+documentation. Those paths remain outside the Go/module/JSON input selector
+and require their own review. Unchanged module files and selected-input
+comparisons do not qualify that Python/workflow delta.
+
+The [fingerprint table](#recomputable-input-fingerprints) retains all historical
+rows and adds the current 747-input identity: 36,055,705 content bytes with
+framed SHA-256 `074fa8d0cdb5c0dddd7d5fcb0c5945998d8ff400c67f56d7ca8da270fce24672`.
+Independent framing agrees with the exporter at the actual PR checkout and
+main. A source digest is not native execution or independent acceptance.
+
+```sh
+git diff --name-status --no-renames 6ecc2310538d511e3b26bea4c658082853266a11 e143ade8507a45a1f125de7bc15b92541036ef85
+git diff 6ecc2310538d511e3b26bea4c658082853266a11 e143ade8507a45a1f125de7bc15b92541036ef85 -- cmd internal tools go.mod go.sum
+git diff --name-status --no-renames 5caa58d43a452714f044c081e00ec69388894c08 e143ade8507a45a1f125de7bc15b92541036ef85
+```
+
+This ledger update runs no native workload and transfers no human review.
+Later documentation-only heads retain runtime qualification at `e143ade`;
+scope-only CI does not qualify a new executable. Earlier ledger sections retain
+their original revision pairs, results, failures and meanings of "current".
+
+## Historical source-specific records
+
+The following records preserve their original revisions and meanings of
+"current". They do not replace the runtime selection above or the frozen
+human-review selection at the start of this document.
+
+### Earlier runtime selection: `5caa58d`
+
+Evidence cut: **13 November 2026**. The ledger-selected runtime is
 [`5caa58d43a452714f044c081e00ec69388894c08`](https://github.com/edgepillar/zenon-spv/tree/5caa58d43a452714f044c081e00ec69388894c08),
 tree `35beac2f0ca30286927be6483f8eed551cca1607`, from the local merge of
 [PR #380](https://github.com/edgepillar/zenon-spv/pull/380). Both author and
@@ -76,12 +188,6 @@ This ledger update runs no native workload and transfers no human review.
 Later documentation-only heads retain runtime qualification at `5caa58d`;
 scope-only CI does not qualify a new executable. Earlier ledger sections retain
 their original revision pairs, results, failures and meanings of "current".
-
-## Historical source-specific records
-
-The following records preserve their original revisions and meanings of
-"current". They do not replace the runtime selection above or the frozen
-human-review selection at the start of this document.
 
 ### Earlier runtime selection: `2092095`
 
@@ -1059,6 +1165,7 @@ length framing.
 | `fdd17be9d3c9a7b0a98068a72b44bb2b10eb253e` | 1,305 | 727 | 35,919,134 | `60c9c9cbfb5d86d7acded963a8b81d4ce1ed4915ba6dec6bcbdf70aa08e4e012` |
 | `2092095126ca6f3243b99b9d8b34c4661f5d6934` | 1,308 | 729 | 35,931,304 | `2a3a789e1567bf1a92ff1c0e9fbbd7de458716b0588724ee31dbc467afcb9398` |
 | `5caa58d43a452714f044c081e00ec69388894c08` | 1,374 | 745 | 36,047,656 | `fd96e0ed20776a936b156be09f7a0ea6b058703e554f3d1ebbfa35334b2962eb` |
+| `e143ade8507a45a1f125de7bc15b92541036ef85` | 1,384 | 747 | 36,055,705 | `074fa8d0cdb5c0dddd7d5fcb0c5945998d8ff400c67f56d7ca8da270fce24672` |
 
 The historical frozen-to-`879fbce` comparison contains 204 tracked-file changes
 and 59 selected-input changes. Those historical counts remain valid for that
@@ -1081,7 +1188,7 @@ module ownership separately in each revision: exclude a Go file beneath a
 directory containing that revision's nested `go.mod`. Test existence before
 module ownership; a new nested module must not turn its new files into apparent
 root-module additions in the other revision. There are six nested modules in
-the frozen and historical revisions, and seven in the current source. The new
+the frozen source and seven at both `5caa58d` and `e143ade`. The
 `tools/ledger-export` module's ten Go files are outside the root-module table.
 
 ## CI infrastructure outside the Go input selector
