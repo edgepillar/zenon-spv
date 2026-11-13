@@ -130,13 +130,11 @@ func decodeCandidateRPCObjectNullable(raw []byte, fields map[string]any, nullabl
 			return ErrCandidateV3Momentum
 		}
 		if hash, ok := target.(*chain.Hash); ok {
-			var text string
-			if err := json.Unmarshal(value, &text); err != nil || len(text) != 2*chain.HashSize {
+			decoded, err := decodeCandidateRPCHash(value)
+			if err != nil {
 				return ErrCandidateV3Momentum
 			}
-			if _, err := hex.Decode(hash[:], []byte(text)); err != nil || hex.EncodeToString(hash[:]) != text {
-				return ErrCandidateV3Momentum
-			}
+			*hash = decoded
 		} else if err := json.Unmarshal(value, target); err != nil {
 			return ErrCandidateV3Momentum
 		}
@@ -148,6 +146,31 @@ func decodeCandidateRPCObjectNullable(raw []byte, fields map[string]any, nullabl
 		return ErrCandidateV3Momentum
 	}
 	return nil
+}
+
+// A valid hash has 64 ASCII digits. JSON may spell each digit with a six-byte
+// Unicode escape, so this bound preserves escaped values while refusing large
+// tokens before json.Unmarshal allocates their decoded string. Keep decoding
+// the original bytes: trimming non-JSON Unicode whitespace must not admit it.
+func decodeCandidateRPCHash(raw []byte) (chain.Hash, error) {
+	const digits = 2 * chain.HashSize
+	if len(bytes.TrimSpace(raw)) > 2+6*digits {
+		return chain.Hash{}, ErrCandidateV3Momentum
+	}
+	var text string
+	if json.Unmarshal(raw, &text) != nil || len(text) != digits {
+		return chain.Hash{}, ErrCandidateV3Momentum
+	}
+	for i := range text {
+		if c := text[i]; !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f') {
+			return chain.Hash{}, ErrCandidateV3Momentum
+		}
+	}
+	var decoded chain.Hash
+	if _, err := hex.Decode(decoded[:], []byte(text)); err != nil {
+		return chain.Hash{}, ErrCandidateV3Momentum
+	}
+	return decoded, nil
 }
 
 func decodeCandidateRPCBytes(raw []byte, minimum, maximum int) ([]byte, error) {

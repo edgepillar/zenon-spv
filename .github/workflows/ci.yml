@@ -848,8 +848,8 @@ jobs:
           compression-level: 0
           if-no-files-found: error
           retention-days: 14
-      - name: RPC envelope allocation observations
-        run: go test -run '^$' -bench '^BenchmarkRPCEnvelopeExtensions$' -benchtime=3x -benchmem ./internal/fetch
+      - name: RPC envelope and candidate hash allocation observations
+        run: go test -run '^$' -bench '^(BenchmarkRPCEnvelopeExtensions|BenchmarkCandidateRPCHashObject)$' -benchtime=3x -benchmem ./internal/fetch
       - name: RPC error-data allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCErrorData$' -benchtime=3x -benchmem ./internal/fetch
       - name: Proof account amount allocation observations
@@ -1599,8 +1599,8 @@ jobs:
           compression-level: 0
           if-no-files-found: error
           retention-days: 14
-      - name: RPC envelope allocation observations
-        run: go test -run '^$' -bench '^BenchmarkRPCEnvelopeExtensions$' -benchtime=3x -benchmem ./internal/fetch
+      - name: RPC envelope and candidate hash allocation observations
+        run: go test -run '^$' -bench '^(BenchmarkRPCEnvelopeExtensions|BenchmarkCandidateRPCHashObject)$' -benchtime=3x -benchmem ./internal/fetch
       - name: RPC error-data allocation observations
         run: go test -run '^$' -bench '^BenchmarkRPCErrorData$' -benchtime=3x -benchmem ./internal/fetch
       - name: Proof account amount allocation observations
