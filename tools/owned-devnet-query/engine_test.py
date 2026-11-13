@@ -252,6 +252,7 @@ class FixtureRecorder:
         else:
             raise AssertionError("unexpected fixture request")
         result = FixtureResult(raw, complete)
+        result.receipt["label"] = label
         if options.get("check", True) and not complete:
             raise CommandFailed(result)
         return result

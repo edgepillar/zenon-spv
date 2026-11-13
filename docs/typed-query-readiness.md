@@ -46,19 +46,23 @@ does not supply a public API or host integration.
 
 | Delivery | Existing implementation/evidence | Remaining acceptance exit |
 | --- | --- | --- |
-| D0 | Two exact contract selections; fixed chain 69, Settlement/domain 1/batch 0 selectors; prepared profile and independent context framing; [source and input pins](reference-gas-owned-contract.md). | Operator review/authorization of the concrete execution pack. Actual H2 hash, captured range and finite schedule come from the selected owned run, with their provenance retained. No alternative batch is selected after absence. |
+| D0 | Two exact contract selections; fixed chain 69, Settlement/domain 1/batch 0 selectors; prepared profile and independent context framing; [source and input pins](reference-gas-owned-contract.md); first exact-source attempt authorized and recorded. | A new fixture attempt needs a new reviewed source and approval. Actual H2 hash, captured range and finite schedule remain unobserved; retain their provenance when available. No alternative batch is selected after absence. |
 | D1 | Original-node 18-case root/proof/path controls and executor applier comparisons; [reference-gas conformance](reference-gas-source-cohort.md), [H1 and manager reopen](reference-gas-genesis.md), earlier isolated [first-v3 boundary](first-v3-node-boundary.md). | Observe the actual selected chain-69 H2/H3 transition and qualify its finite authorization. H1 execution and chain-100 fixtures do not establish that observation. |
 | D2 | [Owned v3 headers](experimental-v3-owned-state.md), explicit source/profile/context, producer authorization, immutable views and trusted-local checkpoint controls. | Accept the actual captured range under the selected experiment contract. The one-run anchor replay has no checkpoint input/output; broader node recovery and supported migration retain separate gates. |
-| D3 | [Three-row query](experimental-batch-context-query.md), header-derived root, local keys, bounded proofs, strict ABI and all 17 stored gateway fields; [owned controller and evidence reviewer](../tools/owned-devnet-query/README.md). | One actual selected BatchEntry must reach the native CLI and retained successful completion. No owned workflow dispatch or selected-network consumer acceptance is recorded at this cut. |
+| D3 | [Three-row query](experimental-batch-context-query.md), header-derived root, local keys, bounded proofs, strict ABI and all 17 stored gateway fields; [owned controller and evidence reviewer](../tools/owned-devnet-query/README.md). | One actual selected BatchEntry must reach the native CLI and retained successful completion. The [first authorized dispatch](owned-devnet-attempt-2026-11-13.md) refused at builder closure, before chain startup; selected-network consumer acceptance remains open. |
 | D4 | Separate [candidate proof primitives](candidate-smt-proof.md) and path/absence controls exist. | Choose one actual L2 read after D3 and demand; receipts, outbox, DA and processed/release/receive policy need their own contracts and consumers. |
 | D5 | Existing native CLI and compiled recorded/synthetic workflows; source-selected context/checkpoint controls. | The chosen host must consume the actual selected query. Compilation and controlled replay do not complete this exit. Browser/WASI acceptance is outside the selected scope. |
 | D6 | Source/run/platform and binary/report bindings for the selected runtime; separate fixed human-review candidate and historical SHA mapping. | Applicable independent review, update/rollback and authenticated distribution. Native inclusion, experimental preview and production state proofs retain different eligibility rules. No release is created by this ledger. |
 
-The next primary action is the reviewed owned experiment, subject to its
-explicit execution authorization. It uses public fixture accounts for domain
-configuration, vault setup and one test-ZNN deposit, then performs read-only
-capture and offline consumption. These startup steps include signed fixture transactions.
-The selected deposit flow does not select a withdrawal or release operation.
+The [first authorized owned experiment](owned-devnet-attempt-2026-11-13.md)
+completed with a retained non-accepting result at image-builder closure. Its
+single-attempt authorization is consumed. The next primary action is to retain
+the missing stopped-state diagnostics without weakening closure policy, then
+review the next exact source before requesting any new execution authorization.
+The selected flow uses public fixture accounts for domain configuration, vault
+setup and one test-ZNN deposit before read-only capture and offline consumption.
+Those signed fixture steps were not reached in the first attempt. The selected
+deposit flow does not select a withdrawal or release operation.
 
 The bounded plan allows one fresh GitHub-hosted Linux attempt: 50-minute
 workflow timeout, 2,700-second controller budget with a 300-second closure
@@ -96,7 +100,7 @@ remain deferred when their path is not part of the selected query.
 
 | Gate | State / concrete remaining evidence |
 | --- | --- |
-| G0: scope/source/query | Prepared decision pack exists; concrete execution authorization and actual run-derived anchor/range remain open. |
+| G0: scope/source/query | The first exact-source execution was authorized and recorded as refused before chain startup. Its one-attempt authorization is consumed; any new fixture run needs a new explicit approval. Actual run-derived anchor/range remain open. |
 | G1: conformance/profile | New-source bounded conformance and H1 lifecycle are recorded; actual first-v3 range/authorization and applicable profile review remain open. |
 | G2: actual typed consumer | **OPEN:** the real selected three-row capture and completed native consumer. Green CI and retained-result mathematics do not close it. |
 | G3: integrated node/profile | General identity/recovery and agreed supported profile behavior remain open; a narrow owned devnet success would not close every node lifecycle path. |

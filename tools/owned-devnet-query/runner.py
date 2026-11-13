@@ -15,7 +15,7 @@ sys.path.insert(0, str(HERE))
 from artifacts import API_LIMIT, Artifacts, api_json
 from budget import Budget, evidence_bytes
 import capture
-from engine import Engine, NODE_ROLES
+from engine import Engine, NODE_ROLES, STOP_STATE_FILE
 from images import Builder
 import model
 from model import Refused, canonical, require, same
@@ -27,6 +27,7 @@ from sources import Preparer as Sources
 SYSTEM = {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "LANG": "C",
           "GOTOOLCHAIN": "local", "GOMAXPROCS": "2", "PYTHONDONTWRITEBYTECODE": "1"}
 REVIEW_FILES = {"dispatch-selection.json", "engine-admission.json", "image-preparation.json",
+    "image-build-node.json", "image-build-executor.json",
     "selected-sources.json", "runtime-layout.json", "runtime-input-pins.json", "package-preparation.json",
     "selected-query-header.json", "selected-capture-frontier.json", "closed-ledger-provenance.json",
     "query-config.json", "query-request.json", "query-context-pins.json", "consumer-comparison.json",
@@ -106,6 +107,8 @@ def evidence_index(recorders, extra):
     for recorder in recorders:
         recorder.check()
         allowed = set(REVIEW_FILES)
+        if recorder.directory.name == "evidence":
+            allowed.update(name for name in recorder.names if STOP_STATE_FILE.fullmatch(name) is not None)
         for record in recorder.records:
             for field in ("launch", "started", "receipt"):
                 if record[field] is not None:

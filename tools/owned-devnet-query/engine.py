@@ -39,6 +39,31 @@ INSPECT_FORMAT = ('{"Id":{{json .Id}},"Image":{{json .Image}},'
                   '"RestartCount":{{json .RestartCount}},"Config":{"Labels":{{json .Config.Labels}},"User":{{json .Config.User}}},'
                   '"State":{{json .State}},"HostConfig":{{json .HostConfig}},'
                   '"Mounts":{{json .Mounts}}}')
+STOP_STATE_FILE = re.compile(
+    r"docker-[0-9]{3,6}-inspect-(?:buildkit|pillar|pillar2|pillar3|rpc|executor|gateway)-stop-state\.json\Z")
+
+
+def stop_state_summary(value):
+    """Keep bounded state diagnostics without exporting arbitrary inspect text."""
+    state = value.get("State")
+    fields, unavailable = {}, []
+    checks = {name: lambda v: type(v) is bool
+              for name in ("Running", "Restarting", "Dead", "OOMKilled", "Paused")}
+    checks.update(Pid=lambda v: type(v) is int and 0 <= v <= 2 ** 31 - 1,
+                  ExitCode=lambda v: type(v) is int and -1 <= v <= 255,
+                  Status=lambda v: type(v) is str and v in (
+                      "created", "running", "paused", "restarting", "removing", "exited", "dead"))
+    for name, valid in checks.items():
+        if type(state) is dict and name in state and valid(state[name]):
+            fields[name] = state[name]
+        else:
+            unavailable.append(name)
+    error = "missing"
+    if type(state) is dict and "Error" in state:
+        error = (("empty" if state["Error"] == "" else "nonempty")
+                 if type(state["Error"]) is str else "invalid")
+    return {"state_is_object": type(state) is dict, "fields": fields,
+            "unavailable_fields": sorted(unavailable), "error_class": error}
 
 
 def docker_environment(base, configuration):
@@ -284,13 +309,23 @@ class Engine:
             "preexisting_containers": 0, "preexisting_project_resources": 0}))
         return self.admission
 
-    def _inspect(self, owned, cleanup=False):
+    def _inspect(self, owned, cleanup=False, retain_stop=False):
         require(self.admission is not None, "engine_not_admitted")
         self._info(cleanup=cleanup)
         result = self._run("inspect-" + owned.service,
             ["container", "inspect", "--format", INSPECT_FORMAT, owned.identity], cleanup=cleanup)
-        value = api_json(result.stdout(128 << 10))
+        raw = result.stdout(128 << 10)
+        value = api_json(raw)
         model.require_owned_container(self.admission, owned, self.admission.engine_id, value)
+        if retain_stop:
+            name = result.receipt["label"] + "-stop-state.json"
+            require(STOP_STATE_FILE.fullmatch(name) is not None, "stop_state_filename")
+            self.recorder.seal(name, canonical({"format": "owned-devnet-stop-state/v1",
+                "service": owned.service, "container_id": owned.identity,
+                "inspection_command": result.receipt["label"],
+                "inspection_stdout": {"sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)},
+                "cleanup": cleanup, "state": stop_state_summary(value),
+                "diagnostic_only": True, "runtime_acceptance_established": False}))
         if not cleanup:
             require(value.get("Image") == self.expected_images[owned.service], "container_image_changed")
         return value
@@ -396,7 +431,7 @@ class Engine:
         self._inspect(owned, cleanup=cleanup)
         self._run("stop-" + role, ["container", "stop", "--time", str(GRACE[role]), owned.identity],
                   timeout=GRACE[role] + 15, cleanup=cleanup)
-        value = self._inspect(owned, cleanup=cleanup)
+        value = self._inspect(owned, cleanup=cleanup, retain_stop=True)
         model.require_stopped_container(self.admission, owned, self.admission.engine_id, value)
         require_configured_limits(self.contract, self.admission, owned, value)
         return value
