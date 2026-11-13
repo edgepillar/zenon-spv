@@ -11,6 +11,80 @@ human acceptance or authenticated distribution.
 
 ## Current qualified runtime baseline
 
+Evidence cut: **13 November 2026**. The ledger-selected runtime is
+[`5caa58d43a452714f044c081e00ec69388894c08`](https://github.com/edgepillar/zenon-spv/tree/5caa58d43a452714f044c081e00ec69388894c08),
+tree `35beac2f0ca30286927be6483f8eed551cca1607`, from the local merge of
+[PR #380](https://github.com/edgepillar/zenon-spv/pull/380). Both author and
+committer are `edgepillar`. Its own
+[main CI](https://github.com/edgepillar/zenon-spv/actions/runs/43377831318)
+passed all seven jobs on attempt 1. Qualification covers 19 selected archives:
+three tested candidates, three root-suite receipts, three scope-control reports,
+three ledger-inventory reports, three snapshot/header-binding reports, three
+recorded-oracle selection manifests and one change-scope archive. The candidate
+readers checked all 21 native binary/source/platform bindings. Archive counts
+and older gate records retain their source-specific meanings.
+
+The complete root suites cover 16 root-module packages. Linux and macOS each
+record 983 root tests and 6,377 subtests: 7,360 PASS events, zero skips/failures.
+Windows records 979 root tests and 6,460 subtests: 7,423 PASS and 16 explicit
+platform SKIP events, zero failures. Inventory counts include skipped tests;
+the separate selected-scenario skip ledger is not added to these totals.
+
+The [PR CI](https://github.com/edgepillar/zenon-spv/actions/runs/43372986044)
+qualifies feature `02487f9a8ea4bbd388582214d95a4589f810380c` at actual test-merge
+checkout `a8a88d528858c18fcbf4296d1f7748f5b1d0422e`. It has its own seven-job,
+19-archive qualification. PR and main have the same file tree and selected-input
+fingerprint, but each retains its own source/run/platform evidence. Across the
+two contexts, all 38 archive selections and 42 binary bindings were checked.
+Seventy-two same-process account-codec benchmark samples per context record
+nonce/token decode allocation reductions; they do not establish whole-CI latency,
+peak memory, production resource limits or measured physical disk savings.
+
+The separate owned-experiment preparation, closed-parent oracle, ledger-export
+and ledger-transport workflows did not execute at this runtime revision. Keep
+their earlier source/run qualification attached to the original revisions.
+The [typed-query readiness ledger](typed-query-readiness.md) distinguishes the
+current runtime, frozen runner `4a1d03e`, selected consumer/oracle source
+`7493c59`, original/reference-gas contracts and the unchanged human-review
+candidate. No owned experiment dispatch or selected-network BatchEntry consumer
+acceptance is recorded at this cut. Production state proofs and irreversible
+settlement remain NO-GO.
+
+### Source and review scope
+
+Recomputed directly from each revision's Git blobs, the frozen-review-to-current
+pair contains **540 changed tracked paths**, **224 selected-input changes** and
+**128 root-module Go paths**: 59 implementation/driver files and 69 tests. Root
+`go.mod` and `go.sum` are unchanged. The frozen source has six nested modules;
+the current source has seven. Determine module ownership independently at each
+revision before counting a changed Go path.
+
+The preceding ledger runtime `2092095` to current `5caa58d` pair contains 128
+changed tracked paths, 47 selected-input changes and 40 root-module Go paths:
+25 implementation/driver files and 15 tests. The selected input stream includes
+nested research modules; it is not a claim that every selected input belongs to
+the root module. Python, workflow and other excluded paths require their own
+review. The full [fingerprint table](#recomputable-input-fingerprints) preserves
+all earlier rows and adds the current source's 745-input identity.
+
+```sh
+git diff --name-status --no-renames 6ecc2310538d511e3b26bea4c658082853266a11 5caa58d43a452714f044c081e00ec69388894c08
+git diff 6ecc2310538d511e3b26bea4c658082853266a11 5caa58d43a452714f044c081e00ec69388894c08 -- cmd internal tools go.mod go.sum
+```
+
+This ledger update runs no native workload and transfers no human review.
+Later documentation-only heads retain runtime qualification at `5caa58d`;
+scope-only CI does not qualify a new executable. Earlier ledger sections retain
+their original revision pairs, results, failures and meanings of "current".
+
+## Historical source-specific records
+
+The following records preserve their original revisions and meanings of
+"current". They do not replace the runtime selection above or the frozen
+human-review selection at the start of this document.
+
+### Earlier runtime selection: `2092095`
+
 The runtime baseline selected by this ledger is
 [`2092095126ca6f3243b99b9d8b34c4661f5d6934`](https://github.com/edgepillar/zenon-spv/tree/2092095126ca6f3243b99b9d8b34c4661f5d6934),
 tree `98790a73fa06e16bf602147b38ef0c10e4657cd4`, following the local merge of
@@ -126,12 +200,6 @@ The [D0-D6 contract](typed-state-roadmap.md) still requires the selected real
 network/query/profile/anchor/producer authorization and actual consumer capture,
 representative R1 data, independent release review and authenticated distribution.
 Production state proofs and irreversible settlement remain NO-GO.
-
-## Historical source-specific records
-
-The following records preserve their original revisions and meanings of
-"current". They do not replace the runtime selection above or the frozen
-human-review selection at the start of this document.
 
 ### Earlier runtime selection: `fdd17be`
 
@@ -990,6 +1058,7 @@ length framing.
 | `762ae9ac8c735cdf8747b7dd73824bb50c1514b4` | 1,303 | 726 | 35,905,702 | `19e3a45a6d55e9bfc591dbbd3bfd4dfa2cc1be40e47c4936bb37ed731b5add01` |
 | `fdd17be9d3c9a7b0a98068a72b44bb2b10eb253e` | 1,305 | 727 | 35,919,134 | `60c9c9cbfb5d86d7acded963a8b81d4ce1ed4915ba6dec6bcbdf70aa08e4e012` |
 | `2092095126ca6f3243b99b9d8b34c4661f5d6934` | 1,308 | 729 | 35,931,304 | `2a3a789e1567bf1a92ff1c0e9fbbd7de458716b0588724ee31dbc467afcb9398` |
+| `5caa58d43a452714f044c081e00ec69388894c08` | 1,374 | 745 | 36,047,656 | `fd96e0ed20776a936b156be09f7a0ea6b058703e554f3d1ebbfa35334b2962eb` |
 
 The historical frozen-to-`879fbce` comparison contains 204 tracked-file changes
 and 59 selected-input changes. Those historical counts remain valid for that

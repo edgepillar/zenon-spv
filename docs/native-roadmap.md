@@ -32,9 +32,10 @@ and the completed `d85aff12dd0de8b2d1bd8db46e0e4e727c7e60ff` pipeline. It
 preserves the historical 18-file root-module delta through `da04d418` and selects
 the separately qualified `2092095` runtime baseline in its
 [current qualification record](review-candidate-changes.md#current-qualified-runtime-baseline).
-The frozen-to-current comparison now contains 107 root-module Go paths; the
-historical table and all earlier pipeline observations retain their original
-revision pairs. The ledger also distinguishes original review revisions from
+The frozen-to-`2092095` comparison retains its 107 root-module Go paths. The
+current `5caa58d` comparison contains 128: 59 implementation/driver files and 69
+tests. The historical table and all earlier pipeline observations retain their
+original revision pairs. The ledger also distinguishes original review revisions from
 their identity-normalized counterparts. A later documentation-only workflow
 supplies no new native
 execution; retain the latest runtime-qualified revision explicitly. These source
@@ -55,6 +56,9 @@ The [current D0-D6 plan](typed-state-roadmap.md) is the planning baseline.
 Track delivery in [#293](https://github.com/edgepillar/zenon-spv/issues/293).
 Historical M0-M5 records below and in the research appendix retain their original
 sources and outcomes; the plan includes an explicit milestone mapping.
+The [13 November readiness ledger](typed-query-readiness.md) maps implemented
+controls, C01-C15 and G0-G7 to the actual remaining exits. Preparation, source
+qualification and actual selected-network acceptance retain separate states.
 
 | Delivery | Current state and required exit |
 | --- | --- |
@@ -65,6 +69,10 @@ sources and outcomes; the plan includes an explicit milestone mapping.
 | D4: selected L2 reads | After D3 and actual demand. Add one state path, then receipt/outbox paths with separate identity, temporal and availability controls. |
 | D5: functional host integration | After D3. Run the chosen Go/CLI consumer; browser or WASI needs its actual host, not compilation alone. |
 | D6: scoped reviewed distribution | Open, scope-dependent. Native inclusion, experimental devnet preview and production state proofs have separate prerequisites; no fixed release date. |
+
+These delivery states describe acceptance exits. The readiness ledger records
+the later D0-D3 implementation and qualification; none of the rows claims that
+the selected real experiment has already completed.
 
 Native M1 inclusion and its historical/read-only x402 adapter (X1) do not depend
 on D3 or Zeno activation. A second operator is not a prerequisite for an explicitly
@@ -80,14 +88,18 @@ does not wait for a complete mainnet inventory, and does not close representativ
 production budgets or node recovery/activation gates.
 
 The latest ledger-selected runtime baseline is
-[`2092095126ca6f3243b99b9d8b34c4661f5d6934`](https://github.com/edgepillar/zenon-spv/tree/2092095126ca6f3243b99b9d8b34c4661f5d6934).
-Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/41988312888)
-passed all seven jobs on attempt 1. All 37 archives and 21 native binary
-bindings were reconciled, including complete root-suite receipts. Linux and
-macOS have zero skips; Windows retains separate full-suite (16) and selected
-scenario (five) skip ledgers. The counts are not additive.
+[`5caa58d43a452714f044c081e00ec69388894c08`](https://github.com/edgepillar/zenon-spv/tree/5caa58d43a452714f044c081e00ec69388894c08),
+tree `35beac2f0ca30286927be6483f8eed551cca1607`.
+Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/43377831318)
+passed all seven jobs on attempt 1. All 19 selected archives and 21 native binary
+bindings were reconciled, including complete 16-package root-suite receipts.
+Linux/macOS record 7,360 PASS events and zero skips; Windows records 7,423 PASS
+and 16 explicit SKIP events. Separate scenario skip ledgers are not added to
+full-suite counts.
 This follows the local `edgepillar` author/committer merge of
-[PR #343](https://github.com/edgepillar/zenon-spv/pull/343).
+[PR #380](https://github.com/edgepillar/zenon-spv/pull/380). Its PR checkout has
+separate CI/archive qualification. Documentation-only successors do not advance
+this runtime selection or the fixed human-review candidate.
 
 The [fixed source-enumeration receipt](source-root-control-reuse.md) lets macOS
 and Windows verify the actual complete-suite root and its six passed children
@@ -98,7 +110,7 @@ v1/v2/v3 verification is retained. No package/model or cryptographic check is
 removed. Avoiding two Go processes and two 32,769-entry fixtures per native
 revision is not a controlled whole-CI latency or physical-disk-saving claim.
 
-The candidate's first hosted attempt remains FAILURE after two macOS
+The historical `2092095` candidate's first hosted attempt remains FAILURE after two macOS
 `CreateArtifact` `ENOTFOUND` errors. Its 34 available archives and job log were
 retained. One macOS-only recovery completed the selected 37-archive candidate
 gate; the six successful jobs were not requested again. The
@@ -115,7 +127,8 @@ source-field policy, independent ABI vectors and version 1 compatibility remain
 covered. The preceding runtime record and all failed/interrupted outcomes remain
 preserved with their original source identities.
 
-The separate exporter/transport workflows did not run at this runtime revision;
+The separate owned-experiment preparation, closed-parent oracle and
+exporter/transport workflows did not run at `5caa58d`;
 their earlier qualifications remain pinned to their original sources.
 The frozen human-review candidate remains unchanged. The planning pins
 `df1cc52` and `1b8a33f` retain their original meanings. Later
