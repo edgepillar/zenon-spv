@@ -58,7 +58,7 @@ jobs:
           python-version: '3.13'
       - name: Qualification driver boundary controls
         run: python -I -B tools/gen-state-root-vectors/qualify_closed_parent_oracle_test.py -v
-      - name: Prepare exact owned node source and local helpers
+      - name: Prepare exact reference-gas node source and local helpers
         run: python -I -B tools/gen-state-root-vectors/qualify_closed_parent_oracle.py --mode prepare --platform '${{ matrix.platform }}' --workspace "$RUNNER_TEMP/spv-closed-parent-work" --evidence "$RUNNER_TEMP/spv-closed-parent-evidence"
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
@@ -75,7 +75,7 @@ jobs:
           with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as stream:
               stream.write('GOTELEMETRYDIR=' + str(path) + '\n')
           PY
-      - name: Native read-only source H1 controls and command build
+      - name: Complete native read-only source H1 controls and command build
         run: python -I -B tools/gen-state-root-vectors/qualify_closed_parent_oracle.py --mode qualify --platform '${{ matrix.platform }}' --workspace "$RUNNER_TEMP/spv-closed-parent-work" --evidence "$RUNNER_TEMP/spv-closed-parent-evidence"
       - name: Preserve bounded actual command evidence
         if: always()

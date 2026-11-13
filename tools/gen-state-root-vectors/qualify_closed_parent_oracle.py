@@ -23,9 +23,20 @@ import threading
 import time
 
 NODE_REPOSITORY = "https://github.com/digitalSloth/go-zenon.git"
-NODE_REVISION = "938fca3b7787da86827a5eb63371509b36e14761"
-NODE_TREE = "f3b7947d2267ebdb806f18ff0c02bba5bffae9c4"
+NODE_REVISION = "2835c436b197fece5c76adf4ba8dc1decca2e3ea"
+NODE_TREE = "f89d645c7f5be85dfe10dc7a510d80df7965d22f"
 GENESIS_SHA256 = "0dd33b18b147f70b3d3d5f07199a2b45311f6e9b84a98b3f86d8f6c6b45f419a"
+H1_BASELINE = "internal/testdata/conformance/selected-parent-slots.json"
+H1_BASELINE_SHA256 = "7fbc24c4f9ba19fce5ee01856cd567e9f9c45625cc595fb5ec24f41b7709c45a"
+NATIVE_PACKAGE = "github.com/zenon-network/go-zenon/cmd/spv-closed-parent-oracle"
+NATIVE_ROOTS = frozenset(("TestClosedParentOracleRequestBoundaries", "TestClosedParentOracleRegularInput",
+                          "TestClosedParentOracleReadOnlySourceH1"))
+NATIVE_REQUEST_CASES = frozenset(("unknown-field", "duplicate-version", "duplicate-targets", "missing-version",
+    "second-document", "trailing-space", "no-final-newline", "null-document", "empty-document", "request-byte-limit",
+    "null-targets", "empty-targets", "genesis-frontier", "genesis-target", "after-frontier", "repeated-height",
+    "reversed-height", "missing-successor", "zero-frontier-hash", "zero-target-hash", "uppercase-hash", "short-hash",
+    "prefixed-hash", "unknown-version", "too-many-targets"))
+NATIVE_FLAGS = ("-mod=readonly", "-p=2", "-tags", "devnet", "-trimpath", "-buildvcs=false")
 GIB = 1 << 30
 FREE_FLOOR = 10 * GIB
 EXPECTED_ALLOCATION = GIB
@@ -175,16 +186,18 @@ def capture(argv, cwd, *, cap=MAX_STREAM, timeout=600, env=None):
     return raw, record
 
 
-def command(output, label, argv, cwd, records, *, cap=MAX_STREAM, timeout=600, env=None):
+def command(output, label, argv, cwd, records, *, cap=MAX_STREAM, timeout=600, env=None, expected_exit=0):
     require(re.fullmatch(r"[a-z][a-z0-9-]{0,63}", label) is not None, "command_label")
+    require(type(expected_exit) is int and expected_exit in (0, 1), "selected_command_exit")
     raw, receipt = capture(argv, cwd, cap=cap, timeout=timeout, env=env)
     receipt["label"] = label
+    receipt["expected_exit"] = expected_exit
     receipt["outputs"] = {name: {"file": label + "." + name,
                                   **seal(output / (label + "." + name), value)}
                           for name, value in raw.items()}
     receipt_ref = seal(output / (label + ".json"), encoded(receipt))
     records.append({"label": label, "receipt": receipt_ref, "file": label + ".json"})
-    require(receipt["actual_exit"] == 0 and type(receipt["actual_exit"]) is int
+    require(receipt["actual_exit"] == expected_exit and type(receipt["actual_exit"]) is int
             and receipt["output_complete"], "command_incomplete_or_failed")
     return raw["stdout"]
 
@@ -234,13 +247,122 @@ def source_inventory(node, index):
     return result
 
 
+def selected_inputs():
+    inputs = {name: regular(ROOT / name, MAX_SOURCE_FILE) for name in INPUTS}
+    helper = inputs["tools/gen-state-root-vectors/closed-devnet-parent-oracle.go.txt"]
+    require(re.findall(rb'^const selectedNodeRevision = "([a-f0-9]{40})"$', helper, re.M)
+            == [NODE_REVISION.encode("ascii")], "helper_node_revision")
+    require(digest(inputs[H1_BASELINE]) == {"sha256": H1_BASELINE_SHA256, "bytes": 8640},
+            "historical_H1_baseline")
+    return inputs
+
+
 def installed_inputs(node):
     result = {}
-    for source, target in INPUTS.items():
-        raw = regular(ROOT / source, MAX_SOURCE_FILE)
+    for source, raw in selected_inputs().items():
+        target = INPUTS[source]
         require(regular(node / target, MAX_SOURCE_FILE) == raw, "added_source_changed")
         result[source] = {"added_path": target, **digest(raw)}
     return result
+
+
+def native_controls(raw):
+    """Check the complete selected test stream before promoting a built helper."""
+    require(type(raw) is bytes and 0 < len(raw) <= MAX_STREAM and raw.endswith(b"\n"),
+            "native_test_stream")
+    lines = raw.splitlines()
+    require(len(lines) <= 4096, "native_test_events")
+
+    def pairs(values):
+        result = {}
+        for key, value in values:
+            require(key not in result, "native_test_duplicate_field")
+            result[key] = value
+        return result
+
+    def invalid_number(_):
+        raise Refused("native_test_number")
+
+    def decode(value):
+        try:
+            return json.loads(value, object_pairs_hook=pairs, parse_constant=invalid_number)
+        except (ValueError, UnicodeError) as error:
+            raise Refused("native_test_json") from error
+
+    started, passed = set(), set()
+    outputs, output_sizes = {}, {}
+    package_started = package_passed = False
+    for line in lines:
+        require(not package_passed, "native_test_after_package_pass")
+        event = decode(line)
+        require(type(event) is dict and event.get("Package") == NATIVE_PACKAGE, "native_test_package")
+        action, name = event.get("Action"), event.get("Test")
+        require(action in ("start", "run", "pause", "cont", "output", "pass"), "native_test_outcome")
+        if name is not None:
+            require(type(name) is str and len(name) <= 160 and name.split("/", 1)[0] in NATIVE_ROOTS,
+                    "native_test_selection")
+            if action == "run":
+                require(name not in started and not package_passed, "native_test_repeated_run")
+                started.add(name)
+            else:
+                require(name in started and name not in passed, "native_test_order")
+            if action == "pass":
+                passed.add(name)
+        elif action == "start":
+            require(not package_started and not started, "native_package_start")
+            package_started = True
+        elif action == "pass":
+            require(package_started and not package_passed and started == passed, "native_package_pass")
+            package_passed = True
+        else:
+            require(action == "output", "native_package_event")
+        output = event.get("Output", "")
+        require(type(output) is str, "native_test_output")
+        if output:
+            require(action == "output", "native_test_output_action")
+            try:
+                output_size = len(output.encode("utf-8"))
+            except UnicodeError as error:
+                raise Refused("native_test_output_encoding") from error
+            output_sizes[name] = output_sizes.get(name, 0) + output_size
+            require(output_sizes[name] <= 64 << 10, "native_test_output_bound")
+            outputs.setdefault(name, []).append(output)
+    roots = {name for name in started if "/" not in name}
+    expected = NATIVE_ROOTS | {"TestClosedParentOracleRequestBoundaries/" + name for name in NATIVE_REQUEST_CASES}
+    require(package_started and package_passed and started == passed and roots == NATIVE_ROOTS
+            and started == expected, "native_test_completion")
+    # test2json can split one log line into several Output events, including
+    # within the marker or a JSON token. Reassemble each test's own stream;
+    # output from another test or the package cannot complete the H1 record.
+    marker = "SPV_CLOSED_PARENT_ORACLE_H1 "
+    h1_name = "TestClosedParentOracleReadOnlySourceH1"
+    text = "".join(outputs.get(h1_name, ()))
+    require(text.endswith("\n") and text.count(marker) == 1, "native_H1_event")
+    require(all(marker not in "".join(chunks) for name, chunks in outputs.items() if name != h1_name),
+            "native_H1_foreign_output")
+    line, = [line for line in text.splitlines() if marker in line]
+    try:
+        trace_raw = line.split(marker, 1)[1].strip().encode("ascii")
+    except UnicodeError as error:
+        raise Refused("native_H1_encoding") from error
+    trace, trace_pin = decode(trace_raw), digest(trace_raw)
+    require(type(trace) is dict and set(trace) == {"format", "node_revision", "snapshot", "baseline_sha256",
+            "raw_ledger_files", "raw_ledger_names_and_content_unchanged", "source_H1_only",
+            "Chain_Init_in_reader", "Chain_Start", "consensus_Start", "accepting_schedule", "actual_devnet_query"},
+            "native_H1_fields")
+    require(trace["format"] == "zenon-read-only-source-H1-slots-control/v1"
+            and trace["node_revision"] == NODE_REVISION and trace["baseline_sha256"] == H1_BASELINE_SHA256,
+            "native_H1_source")
+    baseline = decode(selected_inputs()[H1_BASELINE])
+    require(trace["snapshot"] == baseline["trace"]["snapshot"]
+            and type(trace["raw_ledger_files"]) is int and 0 < trace["raw_ledger_files"] <= 2048
+            and trace["raw_ledger_names_and_content_unchanged"] is True and trace["source_H1_only"] is True
+            and all(trace[name] is False for name in ("Chain_Init_in_reader", "Chain_Start", "consensus_Start",
+                                                      "accepting_schedule", "actual_devnet_query")), "native_H1_scope")
+    return {"root_tests": len(roots), "subtests": len(started) - len(roots), "failed": 0, "skipped": 0,
+            "attempted_names": sorted(started), "passed_names": sorted(passed), "source_node_revision": NODE_REVISION,
+            "source_H1_trace": trace_pin, "historical_baseline_sha256": H1_BASELINE_SHA256,
+            "raw_ledger_files": trace["raw_ledger_files"], "actual_devnet_consumer_qualified": False}
 
 
 def require_toolchain(go, platform):
@@ -302,6 +424,7 @@ def stage(work, output, selected, records):
             "fresh_workspace_required")
     require(work.parent.is_dir() and output.parent.is_dir() and work != output
             and work not in output.parents and output not in work.parents, "workspace_separation")
+    source_inputs = selected_inputs()
     allocation = space(work.parent)
     work.mkdir(mode=0o700)
     output.mkdir(mode=0o700)
@@ -320,14 +443,16 @@ def stage(work, output, selected, records):
     index = git(output, "node-index", ["ls-files", "--stage", "-z"], node, records)
     original = source_inventory(node, index)
     require(original["docker/devnet/genesis.json"] == {"sha256": GENESIS_SHA256, "bytes": 8137}, "genesis_source_pin")
-    for source, target in INPUTS.items():
+    for source, raw in source_inputs.items():
+        target = INPUTS[source]
         destination = node / target
         require(not destination.exists() and not destination.is_symlink(), "added_path_exists")
         destination.parent.mkdir(parents=True, exist_ok=True)
         with destination.open("xb") as stream:
-            stream.write(regular(ROOT / source, MAX_SOURCE_FILE))
+            stream.write(raw)
     inputs = installed_inputs(node)
     marker = {"format": "owned-closed-parent-oracle-work/v1", "context": selected,
+              "node_revision": NODE_REVISION, "node_tree": NODE_TREE,
               "work_identity": [work.stat().st_dev, work.stat().st_ino],
               "output_identity": [output.stat().st_dev, output.stat().st_ino],
               "node_identity": [node.stat().st_dev, node.stat().st_ino],
@@ -346,6 +471,8 @@ def qualify(work, output, selected, records):
     node = work / "node"
     require(marker["format"] == "owned-closed-parent-oracle-work/v1" and marker["context"] == selected,
             "owned_stage_context")
+    require(marker.get("node_revision") == NODE_REVISION and marker.get("node_tree") == NODE_TREE,
+            "owned_stage_node_selection")
     for path, key in ((work, "work_identity"), (output, "output_identity"), (node, "node_identity")):
         require(not path.is_symlink() and [path.stat().st_dev, path.stat().st_ino] == marker[key], "owned_stage_identity")
     require(installed_inputs(node) == marker["inputs"], "input_stage_changed")
@@ -356,11 +483,16 @@ def qualify(work, output, selected, records):
     go = json.loads(go_raw)
     require_toolchain(go, selected["platform"])
     command(output, "c-compiler-version", [go["CC"], "--version"], node, records, cap=64 << 10, timeout=30)
-    command(output, "native-test", ["go", "test", "-mod=readonly", "-p=2", "-tags", "devnet", "-json", "-count=1",
-                                    "-timeout=90s", "./cmd/spv-closed-parent-oracle"], node, records)
+    native_raw = command(output, "native-test", ["go", "test", *NATIVE_FLAGS, "-json", "-count=1",
+                                               "-timeout=90s", "./cmd/spv-closed-parent-oracle"], node, records)
+    controls = native_controls(native_raw)
     binary = output / "spv-closed-parent-oracle.exe"
-    command(output, "native-build", ["go", "build", "-mod=readonly", "-p=2", "-tags", "devnet", "-trimpath", "-buildvcs=false",
+    command(output, "native-build", ["go", "build", *NATIVE_FLAGS,
                                      "-o", str(binary), "./cmd/spv-closed-parent-oracle"], node, records)
+    refused = command(output, "compiled-request-refusal", [str(binary)], output, records,
+                      cap=64 << 10, timeout=15, expected_exit=1)
+    require(refused == b"" and regular(output / "compiled-request-refusal.stderr", 64 << 10)
+            == b"closed devnet parent-slot capture refused\n", "compiled_request_refusal")
     module_raw = command(output, "binary-module-info", ["go", "version", "-m", binary.name], output, records, cap=128 << 10)
     # Use a relative binary name so the raw stream has no owned workspace path.
     module_rows = module_raw.decode().splitlines()[1:]
@@ -402,6 +534,8 @@ def qualify(work, output, selected, records):
                 "node_revision": NODE_REVISION, "node_tree": NODE_TREE, "source_files": public_files,
                 "working_sources": working_sources,
                 "node_original_files": len(marker["original_sources"]), "node_original_sources_unchanged": True,
+                "native_controls": controls,
+                "compiled_empty_request_refused": True,
                 "go": go, "binary": {"name": binary.name, **digest(regular(binary, MAX_BINARY))},
                 "binary_module_info": module_rows, "commands": records, "allocation_admission": allocation,
                 "scope": {"source_H1_fixture": True, "complete_positive_command_on_real_devnet": False,

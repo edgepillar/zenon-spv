@@ -7,10 +7,16 @@ Passing source-H1 controls supplies neither an accepting SPV schedule nor a
 selected-network consumer result.
 
 The command reads an existing, consistent, closed raw ledger from the pinned
-node at `938fca3b7787da86827a5eb63371509b36e14761`. For a bounded, explicitly
+node at `2835c436b197fece5c76adf4ba8dc1decca2e3ea`. For a bounded, explicitly
 selected header range it asks the original consensus implementation for each
 producer at that header's exact parent snapshot. It does not copy the producer
 field into its oracle result or replace the election with genesis membership.
+
+This selects the [reference-gas source cohort](reference-gas-source-cohort.md)
+for new oracle builds. The original node's slot recording and previously
+qualified binaries retain their original source identities. The existing
+owned-runner contract still selects those older binaries; adopting new oracle
+and consumer artifacts together is a separate coherent contract update.
 
 ## Read path and allocation
 
@@ -35,7 +41,7 @@ the source construction alone does not establish a resource budget.
 ## Build input
 
 Use a newly owned, verified copy of the exact node revision and original tree
-`f3b7947d2267ebdb806f18ff0c02bba5bffae9c4`. Preserve all original source bytes.
+`f89d645c7f5be85dfe10dc7a510d80df7965d22f`. Preserve all original source bytes.
 Add only these files:
 
 | Repository input | Added path in the owned node copy |
@@ -54,7 +60,7 @@ applicable license obligations if distributed.
 Native qualification, before any real ledger use, includes:
 
 ```text
-go test -mod=readonly -p=2 -tags devnet -json -count=1 -timeout=90s ./cmd/spv-closed-parent-oracle
+go test -mod=readonly -p=2 -tags devnet -trimpath -buildvcs=false -json -count=1 -timeout=90s ./cmd/spv-closed-parent-oracle
 go build -mod=readonly -p=2 -tags devnet -trimpath -buildvcs=false -o <owned-output> ./cmd/spv-closed-parent-oracle
 ```
 
@@ -69,6 +75,11 @@ the new harness.
 Its source-H1 controls do not qualify an evolving devnet or the full positive
 command path; the latter still requires an actual closed selected ledger.
 
+The retained original-node slot recording remains an independent comparison
+input. New native execution must match its complete H1 ordering and proof
+context while reporting the new node revision. Equal observations do not
+transfer the original recording's execution identity to the new source.
+
 ## Hosted qualification lane
 
 The path-scoped `closed-devnet-parent-oracle` workflow runs Linux, macOS and
@@ -79,6 +90,10 @@ the complete original Git tree and every tracked file's blob identity, adds
 the four declared inputs, then runs the selected native tests and builds one
 ordinary command. A local line-ending setting applies only to that new node
 copy; no existing checkout or global Git configuration is rewritten.
+Before workspace creation the driver checks the helper's declared node pin
+and the unchanged historical fixture digest. Staged ownership also pins the
+exact node revision/tree; a foreign or missing pair is refused before any
+native command.
 The complete node dependency closure requires CGO. The lane selects
 `CGO_ENABLED=1`, uses the runner's native gcc or clang, and retains the actual
 compiler version output with the Go environment. It does not replace or patch
@@ -90,6 +105,51 @@ packets inside them. After execution it rechecks original source bytes, node
 revision/tree/index, the exact added-file set and the selected SPV input blobs.
 Compiled/interpreted inputs must be exact; only workflow YAML may have a
 separately recorded CRLF checkout spelling.
+
+An exit-zero test command alone is insufficient. The driver checks the complete
+Go JSON stream: all three selected roots and 25 named request subtests must run
+and pass exactly once, without failures/skips or unfinished tests. One H1 trace
+must name the selected node, match the original slot snapshot and report
+unchanged raw-ledger files with no service, accepting-schedule or consumer
+claim. Missing, repeated, foreign or post-terminal events refuse the build.
+Long log lines are reassembled from bounded per-test Output fragments; another
+test's or the package's output cannot complete the selected H1 trace.
+The existing three native jobs remain the only node build lane; no second
+cohort matrix or repeated node test is added.
+After building, the driver executes the actual binary without request arguments.
+It requires empty stdout, the fixed refusal diagnostic and a complete actual
+exit of 1. That expected refusal keeps its nonzero exit in the command receipt;
+it is not relabeled as an exit-zero command or a positive devnet query.
+
+Native tests and the command build use the same `-trimpath -buildvcs=false`
+settings so dependency compilation can share the same Go build-cache keys.
+This removes an avoidable configuration mismatch; actual savings and peak
+resource use require measurement and are not inferred from the flags.
+
+### Local reference-gas observation
+
+An actual Go 1.25.14 darwin/arm64 CGO execution completed all three roots and
+25 request subtests with exit zero and complete output. The source-H1 reader
+reported five raw-ledger files with unchanged names/content, and its six slot
+lookups matched the retained original-node snapshot. All 484 original node
+files and four helper inputs were rechecked after the command. Twenty-five
+retained module ZIP/directory h1 pairs matched the selected node's go.sum;
+the full historical module graph remains NOT_ESTABLISHED.
+
+The exact native stdout is 31,304 bytes, SHA-256
+`2bc6f7c947f2855b6df9aa8c36582b74752ee9c927d2e2034e9c688d82d18cbf`.
+The surrounding local controller did not complete: its first reader mistook
+a fragmented test2json log for one complete JSON value, and the storage
+observer subsequently stopped it during cleanup. Its actual -9 exit and
+incomplete output remain separate from the completed native command. The
+observer's generic resource/refusal label does not establish a quota excess.
+The corrected reader checks the retained native stream without rerunning the
+node test. Regression controls include split markers/tokens, missing tails,
+duplicate traces and output from another test or the package.
+
+No standalone local binary result is claimed from that interrupted attempt.
+The hosted lane must perform its own tests and command build with the common
+compiler settings; local replay does not qualify a new CI revision or platform.
 
 Each command has bounded stdout/stderr, actual exit and EOF/completeness
 receipts. Failure and launch/timeout uncertainty are retained without invented
