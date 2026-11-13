@@ -526,3 +526,11 @@ successor corpus and recorded genesis evidence keep their own source and hash
 bindings. No table cache, new node process, native measurement or state-value
 acceptance is introduced. The original 27-control default remains available;
 exact-source CI, artifacts and independent production gates remain required.
+
+### Candidate RPC hash input bounds
+
+The [candidate hash decoder](candidate-rpc-hash-inputs.md) bounds the encoded
+fixed-width scalar before JSON string allocation and preserves valid escaped
+hashes, lowercase policy and recorded header bytes. Function observations cover
+normal inputs and large refusals; they do not qualify whole-response memory,
+representative workloads or the actual selected-network typed consumer.
