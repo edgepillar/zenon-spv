@@ -9,6 +9,13 @@ Delivery and gate states below are planning states. This documentation change
 does not execute a devnet, enable runtime v3/state-value acceptance, authenticate
 network activation or publish a release. Historical source/report identities remain fixed.
 
+For the **13 November 2026** implementation/evidence cut, use the
+[typed-query readiness ledger](typed-query-readiness.md). It separates the
+current qualified runtime, frozen execution-review source, selected binary
+inputs and human-review candidate, and maps C01-C15/G0-G7 to the remaining
+acceptance exits. The original planning and adoption records below retain
+their original pins and meanings.
+
 ## First consumer and independent native track
 
 Deliver a reusable resource-bounded native verifier, first consumed through one header-bound Zeno BatchEntry query on an explicitly selected experimental devnet profile, while retaining an independent native inclusion consumer and coordinating measured node/snapshot work.
