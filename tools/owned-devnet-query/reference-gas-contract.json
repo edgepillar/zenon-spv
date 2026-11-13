@@ -1,0 +1,339 @@
+{
+  "format": "owned-devnet-batch-query-contract/v2",
+  "images": {
+    "buildkit": "moby/buildkit@sha256:97719ccb2ac86fb44fd36f330a6d302f63dddd5326f3ada24f9c05ccac0d9098",
+    "node_build": "golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f",
+    "runtime": "alpine:3.22@sha256:5291449c3df73caf6ed85e649dec1b9e818b39a5d8c871e97afc13e9cd5e8fa8"
+  },
+  "limits": {
+    "builder_cpu_millis": 2000,
+    "builder_memory_bytes": 4294967296,
+    "executor_cpu_millis": 2000,
+    "executor_memory_bytes": 1610612736,
+    "expected_allocation_bytes": 8589934592,
+    "gateway_cpu_millis": 2000,
+    "gateway_memory_bytes": 3221225472,
+    "header_depth": 1,
+    "log_file_bytes": 4194304,
+    "log_files": 2,
+    "max_elapsed_seconds": 2700,
+    "max_evidence_bytes": 67108864,
+    "max_header_targets": 512,
+    "max_new_disk_bytes": 8589934592,
+    "max_source_tree_records": 16384,
+    "max_source_worktree_bytes": 268435456,
+    "min_available_memory_bytes": 12884901888,
+    "min_effective_cpus": 4,
+    "min_free_bytes": 10737418240,
+    "node_cpu_millis": 500,
+    "node_memory_bytes": 805306368,
+    "oracle_targets_per_call": 64,
+    "pids_per_service": 256,
+    "safety_margin_bytes": 1073741824,
+    "stderr_bytes": 2097152,
+    "stdout_bytes": 2097152
+  },
+  "node_toolchain": {
+    "archive_bytes": 31048380,
+    "archive_url": "https://nodejs.org/dist/v22.23.0/node-v22.23.0-linux-x64.tar.xz",
+    "decoded_tar": {
+      "bytes": 202117120,
+      "sha256": "f3d201f6dfca57448c17d30fd5aa023aee110baacadf18037a64507b7bcf6087"
+    },
+    "filename": "node-v22.23.0-linux-x64.tar.xz",
+    "max_archive_bytes": 67108864,
+    "max_selected_regular_bytes": 268435456,
+    "node_binary": {
+      "bytes": 124835408,
+      "sha256": "b587d8a062552ab52ecae2a7b0bcd079351d1dc61cf2555fd5994f558274ae58"
+    },
+    "npm_version": "10.9.8",
+    "selected_manifest": {
+      "bytes": 1070757,
+      "sha256": "acb84491f51aee53487fad603e709eaddabf62ff80771fe70d209d80abc31f7e"
+    },
+    "selected_regular_bytes": 194624701,
+    "selected_regular_count": 4690,
+    "sha256": "14d7de44f235534799f8b171a4050d9a6a4bc99c87e053a25d3d54afa580aa20",
+    "version": "22.23.0"
+  },
+  "qualified_components": {
+    "consumer": {
+      "archive": {
+        "bytes": 19655620,
+        "sha256": "b786f833e84205e5202995e8b233efa0134bee335a0ddf9b6a454c4ac5bff98f"
+      },
+      "artifact_id": 14005638937,
+      "binaries": {
+        "fetch-bundle": {
+          "bytes": 9515633,
+          "sha256": "39f3304c0cfb29228c95926eb1976f38e6c0f0af0724a7bdc193120ef64670ad"
+        },
+        "zenon-spv": {
+          "bytes": 10244016,
+          "sha256": "99d27b7558995f3dadd08a162277b6e6a7b59e60f3bb1dbef1e7bb0b97773fb6"
+        }
+      },
+      "decoded_tar": {
+        "bytes": 55521280,
+        "sha256": "512de59e645973cf109156fe8ce5d516c71849aa36ed81cc5b3ea13745acf204"
+      },
+      "payload": {
+        "bytes": 19655468,
+        "filename": "candidate-v1.tar.xz",
+        "sha256": "44d27e9e96a74492b3c03295eed266fcc08f0d02e16be02853c9833b95f2b0b6"
+      },
+      "run_attempt": 1,
+      "run_id": 43355485323
+    },
+    "parent_oracle": {
+      "archive": {
+        "bytes": 9581482,
+        "sha256": "d624ba3af4bc437b12e6891e1c1011eafd0c10d42051de4a0949f5de18333566"
+      },
+      "artifact_id": 14006370285,
+      "binaries": {
+        "spv-closed-parent-oracle.exe": {
+          "bytes": 20282896,
+          "sha256": "9df137f4ceeb1f77d765b384fbf1ffa35370a8ae02cede317edb96be3a6d4bd2"
+        }
+      },
+      "run_attempt": 1,
+      "run_id": 43355485426
+    },
+    "source_revision": "7493c5929c7dbcfb29f94be521f7533d90a1a687"
+  },
+  "runtime": {
+    "builder_host_port": 12340,
+    "builder_stopped_before_runtime": true,
+    "closed_oracle_private_mount_and_network": true,
+    "closed_oracle_readonly_docker_root": "/var/lib/docker",
+    "closed_oracle_supervisor_timeout_seconds": 100,
+    "executor_root_privileged_private_cgroup_required": true,
+    "fresh_github_hosted_runner_required": true,
+    "host_docker_socket_mounted_into_containers": false,
+    "host_ports": [
+      35991,
+      35997,
+      35998,
+      35999
+    ],
+    "manual_volume_or_image_removal": false,
+    "platform": "linux/amd64",
+    "project": "zeno-devnet",
+    "publish_address": "127.0.0.1",
+    "runner": "ubuntu-24.04",
+    "services": [
+      "pillar",
+      "pillar2",
+      "pillar3",
+      "rpc",
+      "executor",
+      "gateway"
+    ]
+  },
+  "scope": {
+    "actual_devnet_already_qualified": false,
+    "authenticated_distribution": false,
+    "authenticated_election_or_fork_choice": false,
+    "execution_requires_explicit_dispatch": true,
+    "experimental_only": true,
+    "finality_or_funds_release": false,
+    "production_qualified": false,
+    "public_fixture_accounts_only": true
+  },
+  "selection": {
+    "anchor_height": 2,
+    "batch_id_decimal": "0",
+    "chain_id": 69,
+    "choose_another_batch_on_absence": false,
+    "descriptor_sha256": "d77cca86d4624e691917ee0d2b94dc70c4bf0e29f87316ea89513c72209a6b48",
+    "domain_id": 1,
+    "genesis_file_bytes": 8137,
+    "genesis_file_sha256": "0dd33b18b147f70b3d3d5f07199a2b45311f6e9b84a98b3f86d8f6c6b45f419a",
+    "genesis_h1_hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+    "query_profile_sha256": "ff7706d01201c50c9f2401e59ab0f6e73e044b1977bbd4ccd111b6d1ce8acbb3",
+    "settlement_hex": "01b3b6e5adcb4d0cad7fcef33598c6318c6318c0",
+    "source_expected_first_v3_height": 3
+  },
+  "source_files": [
+    {
+      "bytes": 3515,
+      "git_blob": "2e8dc37a1de3836ca2a1b810b8d2c70dabc1c442",
+      "path": "docker-compose.yml",
+      "role": "devnet",
+      "sha256": "a48342b6cd5dc39651c57561f9d431a3b9016635370d039309cccbc54590694f"
+    },
+    {
+      "bytes": 977,
+      "git_blob": "65dc9fd718cb3db98b9c2e0b982ddf8316d9712d",
+      "path": "flows/deposit.ts",
+      "role": "devnet",
+      "sha256": "3045d3fca9e73dd65eb3887298f8120dd3b1518237cfb0670f25b0c0bda81938"
+    },
+    {
+      "bytes": 24841,
+      "git_blob": "5763389d6a7a4d1afd44805422e50d88e691a65f",
+      "path": "flows/lib.ts",
+      "role": "devnet",
+      "sha256": "e70394b06701bfa56eb124d671412880f36b0cdb23605624f781117fd79ce0ba"
+    },
+    {
+      "bytes": 31235,
+      "git_blob": "ae4bcfc0ba42ec60448a2d2bfa320dad7239ddba",
+      "path": "package-lock.json",
+      "role": "devnet",
+      "sha256": "028fb109b1cfdab3a212b4a95ee32c9b78d5d03c05bbe050dc928a7adc34eeeb"
+    },
+    {
+      "bytes": 1382,
+      "git_blob": "36a88d3c64b5d9e46642ac12ff676e98c7d6319c",
+      "path": "package.json",
+      "role": "devnet",
+      "sha256": "d03116dad080855b1574c5687adf1a72ed75fe7d7e7d44f5007b113dec8216ac"
+    },
+    {
+      "bytes": 798,
+      "git_blob": "683cfa9dd4217b8f88f6b592389fc83f8b98caf8",
+      "path": "sources.txt",
+      "role": "devnet",
+      "sha256": "b7bc3390c794bee15a0798f651abd7e0e5dc7a1e3e227841e53aad6752c9da27"
+    },
+    {
+      "bytes": 6818,
+      "git_blob": "2793c6c2990012a722eca656f917f1ed23ef500a",
+      "path": "src/cli.ts",
+      "role": "devnet",
+      "sha256": "a5d82aee0d5420ee9bf1a8c160d8c96f891387d207f0ff18216e6b76b0304b8e"
+    },
+    {
+      "bytes": 9230,
+      "git_blob": "e73b01b9dfe3c06d5fb662bec265f350f15aee13",
+      "path": "src/devnet.ts",
+      "role": "devnet",
+      "sha256": "16b86fb256e90d6bf3b2375995b88ede24103d6c4f9526d1a9fc30c722669525"
+    },
+    {
+      "bytes": 316,
+      "git_blob": "78f96c262c230f1d94d2cecd97027e0319baf6c4",
+      "path": "examples/vault/artifacts/vault.hashes.json",
+      "role": "contract_sdk",
+      "sha256": "120f959bcccffd922f385225accca0e8ac196dcc6ce5482523c64d997a7c1ecb"
+    },
+    {
+      "bytes": 4419,
+      "git_blob": "94e2dcc3ccf11e25da9099834cfdcfa6f06e3c26",
+      "path": "examples/vault/artifacts/vault.interface.json",
+      "role": "contract_sdk",
+      "sha256": "26f4d8c1b1d1cbf9dcf2ed4d99fcbc4b8e81af5bfb476c756bfd99b759fefba9"
+    },
+    {
+      "bytes": 13086,
+      "git_blob": "8442e486b419a65ae6b98eae481d0f45ad5ecea6",
+      "path": "examples/vault/artifacts/vault.wasm",
+      "role": "contract_sdk",
+      "sha256": "03a69b05e5f04d8755f6ca837eb7e795406ab18c500265d712253f504ef5344f"
+    },
+    {
+      "bytes": 546,
+      "git_blob": "1ab2956f2fc69c48864268805b92cd08effd3803",
+      "path": "config/executor.json",
+      "role": "devnet",
+      "sha256": "6c8d8da04028595b9dfa5e315e305a0321f1194c0cce3503d2aed08a522ec3f9"
+    },
+    {
+      "bytes": 458,
+      "git_blob": "f6fd820cb2e0d2d38f862cd3e6f552160545bce3",
+      "path": "config/gateway.json",
+      "role": "devnet",
+      "sha256": "fcd4fb9d0d611bde024b338ee45beb59f0fc91fb1c83949ba78b35ebbc1c227f"
+    },
+    {
+      "bytes": 693,
+      "git_blob": "eb8d397f3824ca8996ec7e260e532997ccceba56",
+      "path": "Dockerfile",
+      "role": "executor",
+      "sha256": "3b25908d539f2bf8cac138e5944f523668baddbd3c9abd769d5278639b0da97d"
+    },
+    {
+      "bytes": 3695,
+      "git_blob": "b0222df529a6d1991f215b180fc88509af118d7b",
+      "path": "docker-compose.yml",
+      "role": "node",
+      "sha256": "c1ff0161c574d728ceb10e0d655826ec6a5ca9e8465ba7fba1e4d7fc8c32d67a"
+    },
+    {
+      "bytes": 1224,
+      "git_blob": "bb739d5c5b66fc72d512596ba65e2b78767954c9",
+      "path": "docker/devnet/Dockerfile",
+      "role": "node",
+      "sha256": "6d3155d88f042aa0acb0a5c5fb95372fbfb1d2ab351e007c6f71b82e1e11ab27"
+    },
+    {
+      "bytes": 815,
+      "git_blob": "e2c2517b0738fa603db51aec00f5f0ef365d756b",
+      "path": "docker/devnet/entrypoint.sh",
+      "role": "node",
+      "sha256": "2a2ceddd9ce2e1eae111e9ee6a8ab68bf4442f310e99fb32cf9b0e7b012e14a0"
+    },
+    {
+      "bytes": 1748,
+      "git_blob": "ce113969c59a4a7a63eb9c7123fe7b314a49b2d6",
+      "path": "docker/devnet/rpc/config.json",
+      "role": "node",
+      "sha256": "ed9b22f187c7472daa7427231ab67ad17ef311eca530e002768ea1e1093ae3e3"
+    },
+    {
+      "bytes": 8137,
+      "git_blob": "0f158f4414d165075c85a5ba3bde48a9eff792e4",
+      "path": "docker/devnet/genesis.json",
+      "role": "node",
+      "sha256": "0dd33b18b147f70b3d3d5f07199a2b45311f6e9b84a98b3f86d8f6c6b45f419a"
+    },
+    {
+      "bytes": 8668,
+      "git_blob": "743a7f5683b7099d9148b93a5b3a2b11ae7e2803",
+      "path": "scripts/devnet.sh",
+      "role": "devnet",
+      "sha256": "aa5a906f5469f167f32047ac2fa7955d7439284f93c6b1fe925583949d573a17"
+    }
+  ],
+  "sources": {
+    "contract_sdk": {
+      "fetch": "git",
+      "repository": "Zeno-L2/zeno-contract-sdk-rs",
+      "revision": "bc1548d75473797f24bb3eb79f5594969c596e39"
+    },
+    "devnet": {
+      "fetch": "git",
+      "repository": "Zeno-L2/zeno-devnet",
+      "revision": "cf1c9c0e0f0ca3b257bdbd019c5589c2c27f748f"
+    },
+    "executor": {
+      "fetch": "git",
+      "repository": "Zeno-L2/zeno-executor",
+      "revision": "a14bf0e08dad8eabeb1a0e0add9bbaf1e2adac9f"
+    },
+    "node": {
+      "fetch": "git",
+      "repository": "digitalSloth/go-zenon",
+      "revision": "2835c436b197fece5c76adf4ba8dc1decca2e3ea"
+    },
+    "typescript_client": {
+      "fetch": "npm-lock",
+      "repository": "Zeno-L2/zeno-client-ts",
+      "revision": "e9e02d8b12fa4053b8d19b1a4d6257d933bfdc0a"
+    },
+    "typescript_sdk": {
+      "fetch": "npm-lock",
+      "repository": "digitalSloth/znn-typescript-sdk",
+      "revision": "75cd2565bd388c1df6b441bfcc1670e8da483c77"
+    }
+  },
+  "vault_module": {
+    "Rust_rebuild_required": false,
+    "bytes": 13086,
+    "code_hash_sha3_256": "f7de3e6f84434ce1ade0c45d91c0720c36d2892db3eef80c1e742717753569ff",
+    "sha256": "03a69b05e5f04d8755f6ca837eb7e795406ab18c500265d712253f504ef5344f"
+  }
+}

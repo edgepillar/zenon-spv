@@ -103,6 +103,10 @@ authentication of runtime identity or execution. The consumer executable and
 its CI/artifact provenance must be pinned separately.
 
 The profile selects the phase-1 source-field rule and explicit work ceilings.
+The separate [reference-gas selection](reference-gas-owned-contract.md) retains
+these query and trust boundaries while selecting the new exact source pair,
+matching qualified binaries and a distinct descriptor/profile identity. The
+original descriptor, profile, runner contract and recorded inputs stay fixed.
 Its positive one-byte proofData work cap does not relax the versioned source
 rule requiring an empty proofData value. The source configuration declares an
 STF spec hash ending in 01, withdrawal delay 30 and runtime-upgrade delay

@@ -425,11 +425,12 @@ def main(argv=None, stdout=None, stderr=None):
         description="Verify one selected CI archive without extracting binaries.", allow_abbrev=False)
     parser.add_argument("--component", choices=tuple(SELECTED), required=True)
     parser.add_argument("--archive", type=Path, required=True)
+    parser.add_argument("--contract", type=Path, default=Path(__file__).with_name("contract.json"))
     args = parser.parse_args(argv)
     stdout = sys.stdout.buffer if stdout is None else stdout
     stderr = sys.stderr if stderr is None else stderr
     try:
-        contract = read_contract(Path(__file__).with_name("contract.json"))
+        contract = read_contract(args.contract)
         components = contract.data["qualified_components"]
         specification = components[args.component]
         binaries = _verify_archive_file(args.archive, args.component, specification)

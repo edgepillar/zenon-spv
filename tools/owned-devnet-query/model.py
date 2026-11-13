@@ -18,6 +18,9 @@ import stat
 import sys
 
 FORMAT = "owned-devnet-batch-query-contract/v1"
+REFERENCE_GAS_FORMAT = "owned-devnet-batch-query-contract/v2"
+CONTRACT_FILES = (("contract.json", FORMAT),
+                  ("reference-gas-contract.json", REFERENCE_GAS_FORMAT))
 MAX_CONTRACT_BYTES = 64 << 10
 HEX40 = re.compile(r"[0-9a-f]{40}\Z")
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
@@ -37,6 +40,14 @@ SOURCE_PINS = {
     "typescript_sdk": ("digitalSloth/znn-typescript-sdk", "e3b75183440f8e6543511f7a55e6c66e5736014e", "npm-lock"),
 }
 QUALIFIED_COMPONENT_REVISION = "8b5deaa16fd0a26249b385946501f088bffef607"
+REFERENCE_GAS_SOURCE_PINS = dict(SOURCE_PINS, **{
+    "devnet": ("Zeno-L2/zeno-devnet", "cf1c9c0e0f0ca3b257bdbd019c5589c2c27f748f", "git"),
+    "node": ("digitalSloth/go-zenon", "2835c436b197fece5c76adf4ba8dc1decca2e3ea", "git"),
+    "executor": ("Zeno-L2/zeno-executor", "a14bf0e08dad8eabeb1a0e0add9bbaf1e2adac9f", "git"),
+    "typescript_sdk": ("digitalSloth/znn-typescript-sdk", "75cd2565bd388c1df6b441bfcc1670e8da483c77", "npm-lock"),
+})
+REFERENCE_GAS_COMPONENT_REVISION = "7493c5929c7dbcfb29f94be521f7533d90a1a687"
+REFERENCE_GAS_COMPONENTS_SHA256 = "79b92606afbb0e78ddfcaf4b884fc4c81bb1827a9ec0735d0434dca6953e9efb"
 SELECTION = {
     "chain_id": 69, "domain_id": 1, "batch_id_decimal": "0",
     "settlement_hex": "01b3b6e5adcb4d0cad7fcef33598c6318c6318c0",
@@ -48,6 +59,9 @@ SELECTION = {
     "query_profile_sha256": "667fb607cd644f3851c491482d30d49034b86fb06442df1d5c78576016aefcd2",
     "choose_another_batch_on_absence": False,
 }
+REFERENCE_GAS_SELECTION = dict(SELECTION,
+    descriptor_sha256="d77cca86d4624e691917ee0d2b94dc70c4bf0e29f87316ea89513c72209a6b48",
+    query_profile_sha256="ff7706d01201c50c9f2401e59ab0f6e73e044b1977bbd4ccd111b6d1ce8acbb3")
 LIMITS = {
     "min_free_bytes": 10 << 30, "expected_allocation_bytes": 8 << 30,
     "safety_margin_bytes": 1 << 30, "min_available_memory_bytes": 12 << 30,
@@ -197,24 +211,46 @@ class Contract:
         return json.loads(self.raw)
 
 
+def query_source_pair(node_revision):
+    """Select the exact API pair; an unknown node never inherits old semantics."""
+    for sources in (SOURCE_PINS, REFERENCE_GAS_SOURCE_PINS):
+        if node_revision == sources["node"][1]:
+            return sources["executor"][1], sources["contract_sdk"][1]
+    raise Refused("selected_query_node_revision")
+
+
+def metadata_files(contract):
+    version = contract.data["format"]
+    require(version in (FORMAT, REFERENCE_GAS_FORMAT), "contract_version")
+    prefix = "prepared-devnet-" + ("reference-gas-" if version == REFERENCE_GAS_FORMAT else "")
+    return ((prefix + "consumer-selection.json", "descriptor_sha256"),
+            (prefix + "query-profile.json", "query_profile_sha256"))
+
+
 def decode_contract(raw):
     value = parse(raw)
     exact_keys(value, TOP, "contract_fields")
-    require(value["format"] == FORMAT, "contract_version")
-    same(value["selection"], SELECTION, "selected_query_changed")
+    require(value["format"] in (FORMAT, REFERENCE_GAS_FORMAT), "contract_version")
+    reference_gas = value["format"] == REFERENCE_GAS_FORMAT
+    source_pins = REFERENCE_GAS_SOURCE_PINS if reference_gas else SOURCE_PINS
+    selection = REFERENCE_GAS_SELECTION if reference_gas else SELECTION
+    component_revision = REFERENCE_GAS_COMPONENT_REVISION if reference_gas else QUALIFIED_COMPONENT_REVISION
+    runs = {"consumer": 43355485323, "parent_oracle": 43355485426} if reference_gas else {
+        "consumer": 42113991642, "parent_oracle": 42113991877}
+    same(value["selection"], selection, "selected_query_changed")
     same(value["limits"], LIMITS, "resource_policy_changed")
     same(value["scope"], SCOPE, "scope_changed")
     same(value["runtime"], RUNTIME, "runtime_changed")
     same(value["images"], IMAGES, "build_image_changed")
     expected_sources = {name: {"repository": repo, "revision": revision, "fetch": fetch}
-                        for name, (repo, revision, fetch) in SOURCE_PINS.items()}
+                        for name, (repo, revision, fetch) in source_pins.items()}
     same(value["sources"], expected_sources, "source_cohort_changed")
     files = value["source_files"]
     require(type(files) is list and 20 <= len(files) <= 128, "source_file_count")
     seen = set()
     for row in files:
         exact_keys(row, {"role", "path", "git_blob", "sha256", "bytes"}, "source_file_fields")
-        require(type(row["role"]) is str and row["role"] in SOURCE_PINS, "source_file_role")
+        require(type(row["role"]) is str and row["role"] in source_pins, "source_file_role")
         name = relative_name(row["path"])
         key = (row["role"], name)
         require(key not in seen, "duplicate_source_file")
@@ -234,14 +270,17 @@ def decode_contract(raw):
             "missing_vault_input")
     genesis = next(row for row in files if row["role"] == "node"
                    and row["path"] == "docker/devnet/genesis.json")
-    require(genesis["sha256"] == SELECTION["genesis_file_sha256"]
-            and genesis["bytes"] == SELECTION["genesis_file_bytes"], "genesis_source_binding")
+    require(genesis["sha256"] == selection["genesis_file_sha256"]
+            and genesis["bytes"] == selection["genesis_file_bytes"], "genesis_source_binding")
     components = value["qualified_components"]
     exact_keys(components, {"source_revision", "consumer", "parent_oracle"}, "component_fields")
-    require(components["source_revision"] == QUALIFIED_COMPONENT_REVISION, "component_revision")
+    require(components["source_revision"] == component_revision, "component_revision")
+    if reference_gas:
+        require(hashlib.sha256(canonical(components)).hexdigest() == REFERENCE_GAS_COMPONENTS_SHA256,
+                "component_selection")
     for name, expected_run, expected_binaries in (
-            ("consumer", 42113991642, {"fetch-bundle", "zenon-spv"}),
-            ("parent_oracle", 42113991877, {"spv-closed-parent-oracle.exe"})):
+            ("consumer", runs["consumer"], {"fetch-bundle", "zenon-spv"}),
+            ("parent_oracle", runs["parent_oracle"], {"spv-closed-parent-oracle.exe"})):
         item = components[name]
         keys = {"run_id", "run_attempt", "artifact_id", "archive", "binaries"}
         if name == "consumer":
@@ -296,6 +335,19 @@ def read_contract(path):
             and opened.st_mtime_ns == after.st_mtime_ns == final.st_mtime_ns,
             "contract_file_changed")
     return decode_contract(raw)
+
+
+def read_selected_contract(directory, expected_sha256):
+    """Resolve an explicit digest among the two reviewed local contracts."""
+    digest(expected_sha256)
+    matches = []
+    for name, version in CONTRACT_FILES:
+        contract = read_contract(Path(directory) / name)
+        require(contract.data["format"] == version, "contract_file_cohort")
+        if contract.sha256 == expected_sha256:
+            matches.append(contract)
+    require(len(matches) == 1, "selected_contract_digest")
+    return matches[0]
 
 
 def host_minimums(limits):
@@ -503,7 +555,7 @@ def preparation_report(contract, source_revision=None):
             "required_free_bytes": host_minimums(contract.data["limits"])["free_bytes"],
             "runtime_memory_limit_sum": 4 * LIMITS["node_memory_bytes"]
             + LIMITS["executor_memory_bytes"] + LIMITS["gateway_memory_bytes"],
-            "qualified_component_revision": QUALIFIED_COMPONENT_REVISION,
+            "qualified_component_revision": contract.data["qualified_components"]["source_revision"],
             "execution_authorized": False, "engine_contacted": False,
             "wallet_or_signing_started": False, "actual_devnet_query_executed": False,
             "production_qualified": False}

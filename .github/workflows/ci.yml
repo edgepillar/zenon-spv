@@ -102,7 +102,7 @@ jobs:
                           '8fab1803332f60cac43a20b8940988b19c38b8dd0359f005f605dcc55dcb98fb', 8084)
                   if names & preparation:
                       required['.github/workflows/owned-devnet-query.yml'] = (
-                          'fa7e5e9397ef0621770f9ad944acaeb04722ce890c61cd2d78344d90f9f1d1d1', 4354)
+                          'cf4ddd4e2c7a5388af336e42e5d47ce43ca112ed2c699731d4b8cd2137977d66', 4453)
                   assert value['required_workflows'] == list(required)
                   assert value['portable_workflows'] == [
                       {'path': path, 'sha256': digest, 'bytes': size, 'base_matches_checkout': True}

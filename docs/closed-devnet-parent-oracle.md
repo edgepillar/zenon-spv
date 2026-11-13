@@ -15,8 +15,10 @@ field into its oracle result or replace the election with genesis membership.
 This selects the [reference-gas source cohort](reference-gas-source-cohort.md)
 for new oracle builds. The original node's slot recording and previously
 qualified binaries retain their original source identities. The existing
-owned-runner contract still selects those older binaries; adopting new oracle
-and consumer artifacts together is a separate coherent contract update.
+original owned-runner contract still selects those older binaries. The separate
+[reference-gas contract](reference-gas-owned-contract.md) explicitly selects
+the new qualified oracle and matching consumer; it does not dispatch a devnet
+or supply positive selected-ledger evidence.
 
 ## Read path and allocation
 

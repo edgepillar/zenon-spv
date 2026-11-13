@@ -275,8 +275,7 @@ def selected_profile(contract, checkout):
     selection = contract.data["selection"]
     directory = Path(checkout) / "internal/testdata/conformance"
     values = []
-    for name, key in (("prepared-devnet-consumer-selection.json", "descriptor_sha256"),
-                      ("prepared-devnet-query-profile.json", "query_profile_sha256")):
+    for name, key in model.metadata_files(contract):
         path = directory / name
         pin = regular_pin(path, 16 << 10)
         with path.open("rb") as stream:

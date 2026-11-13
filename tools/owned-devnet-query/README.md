@@ -2,12 +2,18 @@
 
 The manual workflow selects one chain-69, domain-1, batch-0 experiment on a
 fresh GitHub-hosted Ubuntu runner. A dispatch requires the reviewed runner
-commit, the SHA-256 of `contract.json` and an affirmative fixture input. Its
+commit, the SHA-256 of one reviewed contract and an affirmative fixture input. Its
 runtime action starts the owned services, configures the selected public
 fixture and submits the pinned upstream deposit flow. Preparation controls run
 separately on Linux, macOS and Windows.
 
-`contract.json` selects the source cohort, previously qualified Linux inputs,
+`contract.json` preserves the original source cohort and inputs. The separate
+`reference-gas-contract.json` selects the matching new source and qualified
+Linux consumer/oracle pair; see the
+[reference-gas contract](../../docs/reference-gas-owned-contract.md).
+The acknowledged digest selects exactly one of these reviewed files before
+transport or engine contact. Neither file migrates the other's context pins.
+Each contract selects the source cohort, previously qualified Linux inputs,
 query identity, six-service scope and resource budget. `model.py` checks those
 inputs and models explicit dispatch metadata and container ownership. A matching
 contract digest is configuration identity, not operator authorization.
@@ -200,6 +206,7 @@ consumer output. Preserve the original archive and run metadata as evidence.
 The regular-file controls can be run with Python's standard library:
 
 ```sh
+python3 -I -B tools/owned-devnet-query/reference_gas_test.py
 python3 -I -B tools/owned-devnet-query/model_test.py
 python3 -I -B tools/owned-devnet-query/process_test.py
 python3 -I -B tools/owned-devnet-query/inputs_test.py

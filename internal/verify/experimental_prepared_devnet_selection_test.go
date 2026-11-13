@@ -36,7 +36,12 @@ func preparedDevnetObject(t *testing.T, value map[string]any, key string) map[st
 
 func preparedDevnetInputs(t *testing.T) ([]byte, map[string]any, verify.ExperimentalBatchContextProfile) {
 	t.Helper()
-	raw := preparedDevnetFile(t, "prepared-devnet-consumer-selection.json")
+	return preparedDevnetNamedInputs(t, "prepared-devnet-")
+}
+
+func preparedDevnetNamedInputs(t *testing.T, prefix string) ([]byte, map[string]any, verify.ExperimentalBatchContextProfile) {
+	t.Helper()
+	raw := preparedDevnetFile(t, prefix+"consumer-selection.json")
 	reader := json.NewDecoder(bytes.NewReader(raw))
 	reader.UseNumber()
 	var value map[string]any
@@ -50,11 +55,65 @@ func preparedDevnetInputs(t *testing.T) ([]byte, map[string]any, verify.Experime
 		t.Fatal("prepared metadata must be canonical, unique-key JSON")
 	}
 	profile, err := verify.DecodeExperimentalBatchContextProfile(
-		preparedDevnetFile(t, "prepared-devnet-query-profile.json"))
+		preparedDevnetFile(t, prefix+"query-profile.json"))
 	if err != nil {
 		t.Fatal("prepared query profile did not pass the public decoder")
 	}
 	return raw, value, profile
+}
+
+func TestPreparedReferenceGasDevnetConsumerProfile(t *testing.T) {
+	oldRaw, oldSelection, oldProfile := preparedDevnetInputs(t)
+	raw, selection, profile := preparedDevnetNamedInputs(t, "prepared-devnet-reference-gas-")
+	digest := sha256.Sum256(raw)
+	if hex.EncodeToString(digest[:]) != "d77cca86d4624e691917ee0d2b94dc70c4bf0e29f87316ea89513c72209a6b48" ||
+		!bytes.Equal(profile.Entry.RuntimeIdentity[:], digest[:]) || bytes.Equal(oldRaw, raw) ||
+		profile.Entry.RuntimeIdentity == oldProfile.Entry.RuntimeIdentity {
+		t.Fatal("reference-gas metadata did not select a new, exact runtime metadata identity")
+	}
+	for _, key := range []string{"format", "network", "consumer", "source_profile", "authority"} {
+		before, err := json.Marshal(oldSelection[key])
+		if err != nil {
+			t.Fatal(err)
+		}
+		after, err := json.Marshal(selection[key])
+		if err != nil || !bytes.Equal(before, after) {
+			t.Fatal("reference-gas selection changed the query, semantic expectations or trust scope")
+		}
+	}
+	cohort := preparedDevnetObject(t, selection, "source_cohort")
+	expected := map[string]string{
+		"devnet":            "cf1c9c0e0f0ca3b257bdbd019c5589c2c27f748f",
+		"node":              verify.ExperimentalV3ReferenceGasNodeRevision,
+		"node_tree":         "f89d645c7f5be85dfe10dc7a510d80df7965d22f",
+		"executor":          verify.ExperimentalBatchEntryReferenceGasExecutorRevision,
+		"contract_sdk":      verify.ExperimentalBatchEntrySDKRevision,
+		"typescript_client": "e9e02d8b12fa4053b8d19b1a4d6257d933bfdc0a",
+		"typescript_sdk":    "75cd2565bd388c1df6b441bfcc1670e8da483c77",
+	}
+	if len(cohort) != len(expected) {
+		t.Fatal("reference-gas source cohort is incomplete")
+	}
+	for key, revision := range expected {
+		if cohort[key] != revision {
+			t.Fatal("reference-gas source pair changed")
+		}
+	}
+	configuration := preparedDevnetObject(t, selection, "devnet_configuration")
+	if configuration["revision"] != expected["devnet"] {
+		t.Fatal("reference-gas metadata retained the original devnet label")
+	}
+	profile.Entry.RuntimeIdentity, profile.Entry.Source = oldProfile.Entry.RuntimeIdentity, oldProfile.Entry.Source
+	before, err := json.Marshal(oldProfile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	after, err := json.Marshal(profile)
+	if err != nil || !bytes.Equal(before, after) {
+		t.Fatal("reference-gas metadata changed canonical rules or work ceilings")
+	}
+	// This is native profile decoding and source selection, not a devnet capture,
+	// accepted header, finite producer authorization or proof of runtime execution.
 }
 
 func TestPreparedDevnetConsumerProfile(t *testing.T) {
