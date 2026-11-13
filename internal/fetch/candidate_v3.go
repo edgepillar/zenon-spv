@@ -162,7 +162,7 @@ func decodeCandidateRPCHash(raw []byte) (chain.Hash, error) {
 		return chain.Hash{}, ErrCandidateV3Momentum
 	}
 	for i := range text {
-		if c := text[i]; !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f') {
+		if c := text[i]; (c < '0' || c > '9') && (c < 'a' || c > 'f') {
 			return chain.Hash{}, ErrCandidateV3Momentum
 		}
 	}

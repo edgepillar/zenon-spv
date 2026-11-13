@@ -56,6 +56,10 @@ measurement-source digests are retained separately with actual process results.
 | Invalid 128-KiB literal | 793,344 | 662,112 | 28 | 25 |
 | Invalid 32,768-character escaped token | 965,378 | 727,649 | 29 | 25 |
 
+Three additional 100-iteration samples of the final current implementation
+confirmed these byte and allocation counts. The completed baseline observations
+were retained rather than rerun.
+
 These cases save 128 bytes on the small object paths, about 128.16 KiB for the
 large literal and about 232.16 KiB for the large escaped token. Object-level
 figures still include JSON decoder buffers and RawMessage copies. The scalar
