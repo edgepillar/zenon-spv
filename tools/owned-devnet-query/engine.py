@@ -432,18 +432,24 @@ class Engine:
         self._run("stop-" + role, ["container", "stop", "--time", str(GRACE[role]), owned.identity],
                   timeout=GRACE[role] + 15, cleanup=cleanup)
         value = self._inspect(owned, cleanup=cleanup, retain_stop=True)
-        model.require_stopped_container(self.admission, owned, self.admission.engine_id, value)
+        stopped = model.require_stopped_builder if role == "buildkit" else model.require_stopped_container
+        stopped(self.admission, owned, self.admission.engine_id, value)
         require_configured_limits(self.contract, self.admission, owned, value)
         return value
 
     def close_builder(self):
         require("buildkit" in self.started and not self.builder_closed, "builder_close_scope")
-        self.stop("buildkit")
+        stopped = self.stop("buildkit")
         owned = self.owned["buildkit"]
-        model.require_stopped_container(self.admission, owned, self.admission.engine_id, self._inspect(owned))
+        value = self._inspect(owned, retain_stop=True)
+        model.require_stopped_builder(self.admission, owned, self.admission.engine_id, value)
+        require_configured_limits(self.contract, self.admission, owned, value)
+        require(value["State"]["ExitCode"] == stopped["State"]["ExitCode"], "builder_stop_observation_changed")
         self._run("remove-buildkit", ["container", "rm", owned.identity])
         del self.owned["buildkit"]
         self.builder_closed = True
+        return {"policy": "owned-buildkit-quiescence/v1", "exit_code": value["State"]["ExitCode"],
+                "runtime_ledger_closure_established": False}
 
     def stop_producers_and_clients(self):
         require(set(model.SERVICES) <= self.started, "runtime_was_not_fully_started")

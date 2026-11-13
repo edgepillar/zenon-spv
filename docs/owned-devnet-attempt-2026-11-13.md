@@ -65,3 +65,17 @@ original contract bytes remain unchanged. The one-attempt authorization is
 consumed; another fixture execution or rerun needs a new reviewed source and
 explicit approval. D0-D3 actual-network exits, representative R1 input,
 independent review and applicable release/production gates remain open.
+
+## Subsequent builder compatibility review
+
+The preceding record describes the original attempt and the diagnostic-only
+follow-up. It remains unchanged. A later review of the pinned image's publisher
+metadata and declared BuildKit source found a requested-signal path that can
+return exit 1. The [builder-only shutdown policy](owned-builder-shutdown.md)
+therefore gives the disposable cache builder its own strict quiescence check;
+the six runtime services retain the original zero-exit requirement.
+
+This source-supported compatibility fix does not identify the missing field in
+run 43394208316, establish its exit code, or reclassify its result. Its regression
+controls start no actual builder or chain. Another fixture execution still
+requires a separately reviewed exact source and explicit authorization.

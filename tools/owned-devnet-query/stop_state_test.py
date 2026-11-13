@@ -51,18 +51,18 @@ class StopStateTests(unittest.TestCase):
         return {name: json.loads(raw) for name, raw in recorder.seals.items()
                 if engine.STOP_STATE_FILE.fullmatch(name) is not None}
 
-    def test_nonzero_builder_exit_is_preserved_and_still_refuses_runtime(self):
+    def test_forced_builder_exit_is_preserved_and_still_refuses_runtime(self):
         with tempfile.TemporaryDirectory(prefix="stop-state-regular-control-") as temporary:
             client, recorder = self.prepare(Path(temporary))
-            with self.alter_stop(recorder, {"ExitCode": 1, "OOMKilled": False, "Status": "exited", "Error": ""}):
-                with self.assertRaisesRegex(model.Refused, "container_not_gracefully_stopped"):
+            with self.alter_stop(recorder, {"ExitCode": 137, "OOMKilled": True, "Status": "exited", "Error": ""}):
+                with self.assertRaisesRegex(model.Refused, "builder_not_quiescent_after_stop"):
                     client.close_builder()
                 self.assertFalse(client.builder_closed)
                 with self.assertRaisesRegex(model.Refused, "builder_must_stop_before_runtime"):
                     client.create("pillar", "sha256:" + "c" * 64)
                 first = next(iter(self.reports(recorder).values()))
-                self.assertEqual(first["state"]["fields"]["ExitCode"], 1)
-                self.assertIs(first["state"]["fields"]["OOMKilled"], False)
+                self.assertEqual(first["state"]["fields"]["ExitCode"], 137)
+                self.assertIs(first["state"]["fields"]["OOMKilled"], True)
                 self.assertEqual(first["state"]["error_class"], "empty")
                 self.assertFalse(first["cleanup"])
                 self.assertFalse(first["runtime_acceptance_established"])
@@ -80,7 +80,7 @@ class StopStateTests(unittest.TestCase):
             with self.subTest(changes=changes), tempfile.TemporaryDirectory(prefix="stop-state-regular-control-") as temporary:
                 client, recorder = self.prepare(Path(temporary))
                 with self.alter_stop(recorder, changes):
-                    with self.assertRaisesRegex(model.Refused, "container_not_gracefully_stopped"):
+                    with self.assertRaisesRegex(model.Refused, "builder_not_quiescent_after_stop"):
                         client.close_builder()
                 report = next(iter(self.reports(recorder).values()))
                 self.assertEqual(report["state"], engine.stop_state_summary(
@@ -98,7 +98,7 @@ class StopStateTests(unittest.TestCase):
             self.assertEqual(report["service"], "buildkit")
             self.assertEqual(report["state"]["fields"]["ExitCode"], 0)
             inspection = deepcopy(client.inspected_at_create["buildkit"])
-            inspection["State"].update(Running=False, Pid=0, ExitCode=0)
+            inspection["State"].update(Running=False, Pid=0, ExitCode=0, Status="exited")
             raw = model.canonical(inspection)
             self.assertEqual(report["inspection_stdout"], {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()})
 

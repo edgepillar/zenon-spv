@@ -136,7 +136,12 @@ running/restarting/dead/OOM/paused flags, PID, exit code and a known status.
 Missing or invalid fields are listed without coercion. An engine error is
 classified as empty/nonempty/missing/invalid; its text, mounts, labels and other
 inspect values are not exported. Normal work and cleanup keep separate records.
-A diagnostic does not establish closure or relax the zero-exit requirement.
+A diagnostic does not establish closure. The
+[builder-only shutdown policy](../../docs/owned-builder-shutdown.md) accepts
+exit 0 or 1 for the cache builder under strict owned/quiescent-state checks;
+the six runtime services retain their original zero-exit requirement. The
+post-stop and final builder observations must agree before non-force removal.
+The image report records the observed exit code and establishes no ledger closure.
 Only the declared service names and bounded command-number filenames enter the
 upload. Completed per-image reports also survive a later builder-close refusal.
 

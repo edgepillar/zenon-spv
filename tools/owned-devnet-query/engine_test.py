@@ -25,7 +25,8 @@ def fixture(contract, role="rpc"):
     memory, cpu = engine.resource_values(contract, role)
     value = {"Id": "b" * 64, "Image": "sha256:" + "c" * 64,
              "Config": {"Labels": labels, "User": "0:0" if role == "executor" else "9999:9999" if role == "gateway" else ""}, "RestartCount": 0,
-             "State": {"Running": False, "Restarting": False, "Dead": False, "Pid": 0, "ExitCode": 0},
+             "State": {"Running": False, "Restarting": False, "Dead": False, "Pid": 0, "ExitCode": 0,
+                       "Paused": False, "OOMKilled": False, "Status": "exited", "Error": ""},
              "HostConfig": {"Memory": memory, "MemorySwap": memory, "NanoCpus": cpu * 1_000_000,
                 "PidsLimit": 256, "RestartPolicy": {"Name": "no"}, "AutoRemove": False,
                 "Privileged": role in ("executor", "buildkit"), "CgroupnsMode": "private",
@@ -191,6 +192,7 @@ class FixtureRecorder:
         self.containers, self.volumes, self.extra_ids = {}, set(), set()
         self.next_id = 1
         self.incomplete_create = self.bad_limits = False
+        self.stop_exit_codes = {}
 
     def check(self):
         pass
@@ -226,6 +228,7 @@ class FixtureRecorder:
             identity = f"{self.next_id:064x}"
             self.next_id += 1
             value["Id"], value["Config"]["Labels"] = identity, labels
+            value["State"]["Status"] = "created"
             if role == "rpc":
                 volume = "spv-" + labels[model.LABEL_OWNER] + "-rpc-data"
                 value["Mounts"][0].update(Name=volume, Source="/fixture-volumes/" + volume + "/_data")
@@ -240,11 +243,12 @@ class FixtureRecorder:
             raw = model.canonical(self.containers[arguments[-1]])
         elif arguments[:2] == ["container", "start"]:
             value = self.containers[arguments[-1]]
-            value["State"].update(Running=True, Pid=123)
+            value["State"].update(Running=True, Pid=123, Status="running")
             raw = (arguments[-1] + "\n").encode()
         elif arguments[:2] == ["container", "stop"]:
             value = self.containers[arguments[-1]]
-            value["State"].update(Running=False, Pid=0, ExitCode=0)
+            role = value["Config"]["Labels"][model.LABEL_SERVICE]
+            value["State"].update(Running=False, Pid=0, ExitCode=self.stop_exit_codes.get(role, 0), Status="exited")
             raw = (arguments[-1] + "\n").encode()
         elif arguments[:2] == ["container", "rm"]:
             del self.containers[arguments[-1]]
