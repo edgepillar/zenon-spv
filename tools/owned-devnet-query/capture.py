@@ -112,8 +112,10 @@ class LocalRpc:
         return opening_headers(self.contract, rows)
 
     def _wait(self, read, ready, *, starting):
-        # Preserve every actual attempt. Only startup connection failures may
-        # be transient. Invalid data and incomplete command output are terminal.
+        # Preserve every actual attempt. A freshly published loopback port can
+        # accept and then close a request before RPC initialization completes.
+        # Retry only a complete, quiescent startup failure with no response
+        # bytes; malformed data, partial responses and later read failures stop.
         until = time.monotonic() + 90
         for _ in range(30):
             self.guard()
@@ -122,8 +124,12 @@ class LocalRpc:
                 value = read()
             except CommandFailed as error:
                 receipt = error.result.receipt
+                stdout_bytes = receipt["outputs"]["stdout"]["bytes"]
                 if not (starting and receipt["output_complete"] is True
-                        and receipt["actual_exit"] in (7, 28)):
+                        and receipt["launch_outcome"] == "STARTED"
+                        and receipt["process_group_quiescent"] is True and receipt["reason"] is None
+                        and type(receipt["actual_exit"]) is int and receipt["actual_exit"] in (7, 28, 56)
+                        and type(stdout_bytes) is int and stdout_bytes == 0):
                     raise
             else:
                 if ready(value):

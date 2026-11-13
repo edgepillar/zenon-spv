@@ -20,7 +20,7 @@ sys.path.insert(0, str(HERE))
 import capture
 import closed_reader
 import model
-from process import Recorder, capture as capture_process
+from process import CommandFailed, Recorder, capture as capture_process
 import query_checks
 import runner
 
@@ -173,8 +173,180 @@ class CaptureTests(unittest.TestCase):
         self.assertNotEqual(pins["context"], pins["header_context"])
 
 
+class ReadinessTests(unittest.TestCase):
+    def setUp(self):
+        self.recorder = mock.Mock()
+        self.guard = mock.Mock()
+        self.rpc = capture.LocalRpc(CONTRACT, self.recorder, HERE, "unused-curl", {}, self.guard)
+
+    @staticmethod
+    def failure(code=56, **changes):
+        receipt = {"actual_exit": code, "output_complete": True, "launch_outcome": "STARTED",
+                   "process_group_quiescent": True, "reason": None, "outputs": {"stdout": {"bytes": 0}}}
+        receipt.update(changes)
+        return CommandFailed(mock.Mock(receipt=receipt))
+
+    @staticmethod
+    def response(row, request_id):
+        return mock.Mock(stdout=mock.Mock(return_value=model.canonical(
+            {"jsonrpc": "2.0", "id": request_id, "result": row})))
+
+    def test_empty_startup_receive_failure_keeps_its_receipt_and_next_request_identity(self):
+        _, rows, _ = synthetic_window()
+        failure = self.failure()
+        before = deepcopy(failure.result.receipt)
+        self.recorder.run.side_effect = [failure, self.response(rows[-1], 2)]
+        with mock.patch.object(capture.time, "sleep") as sleep:
+            header = self.rpc.wait_height(3, starting=True)
+        self.assertEqual(header.height, 4)
+        self.assertEqual(failure.result.receipt, before)
+        self.assertEqual([call.args[0] for call in self.recorder.run.call_args_list], ["rpc-01", "rpc-02"])
+        requests = [json.loads(call.args[1]) for call in self.recorder.seal.call_args_list]
+        self.assertEqual([row["id"] for row in requests], [1, 2])
+        self.assertEqual([row["method"] for row in requests], ["ledger.getFrontierMomentum"] * 2)
+        self.assertEqual(self.rpc.calls, 2)
+        sleep.assert_called_once_with(3)
+
+    def test_empty_startup_connect_and_timeout_failures_remain_bounded_candidates(self):
+        for code in (7, 28):
+            with self.subTest(code=code), mock.patch.object(capture.time, "sleep") as sleep:
+                read = mock.Mock(side_effect=[self.failure(code), "ready"])
+                self.assertEqual(self.rpc._wait(read, lambda value: value == "ready", starting=True), "ready")
+                self.assertEqual(read.call_count, 2)
+                sleep.assert_called_once_with(3)
+
+    def test_gateway_uses_the_same_empty_response_startup_boundary(self):
+        self.recorder.run.side_effect = [self.failure(), self.response({"status": "OK"}, 2)]
+        with mock.patch.object(capture.time, "sleep") as sleep:
+            self.assertEqual(self.rpc.wait_gateway(), {"status": "OK"})
+        for call in self.recorder.run.call_args_list:
+            self.assertEqual(call.args[1][-1], capture.GATEWAY_URL)
+        sleep.assert_called_once_with(3)
+
+    def test_transport_failures_outside_startup_are_terminal(self):
+        for code in (7, 28, 56):
+            with self.subTest(code=code), mock.patch.object(capture.time, "sleep") as sleep:
+                failure = self.failure(code)
+                read = mock.Mock(side_effect=failure)
+                with self.assertRaises(CommandFailed) as observed:
+                    self.rpc._wait(read, lambda _: True, starting=False)
+                self.assertIs(observed.exception, failure)
+                read.assert_called_once_with()
+                sleep.assert_not_called()
+
+    def test_other_exits_partial_responses_and_uncertain_captures_never_retry(self):
+        failures = [self.failure(code) for code in (0, 22, 23, 52, 137, -9, None, False)]
+        failures.extend(self.failure(**change) for change in (
+            {"output_complete": False}, {"output_complete": 1}, {"launch_outcome": "UNKNOWN"},
+            {"process_group_quiescent": False}, {"process_group_quiescent": None},
+            {"reason": "guard_refused"}, {"reason": "timeout"},
+            {"outputs": {"stdout": {"bytes": 1}}}, {"outputs": {"stdout": {"bytes": False}}}))
+        failures.extend(self.failure(code, outputs={"stdout": {"bytes": 1}}) for code in (7, 28))
+        for failure in failures:
+            with self.subTest(receipt=failure.result.receipt), mock.patch.object(capture.time, "sleep") as sleep:
+                read = mock.Mock(side_effect=failure)
+                with self.assertRaises(CommandFailed) as observed:
+                    self.rpc._wait(read, lambda _: True, starting=True)
+                self.assertIs(observed.exception, failure)
+                read.assert_called_once_with()
+                sleep.assert_not_called()
+
+    def test_invalid_successful_response_is_terminal_without_another_read(self):
+        _, rows, _ = synthetic_window()
+        changed = deepcopy(rows[-1])
+        changed["chainIdentifier"] += 1
+        for raw in (b"{", b'{"jsonrpc":"2.0","id":1,"result":null}',
+                    b'{"jsonrpc":"2.0","id":2,"result":{}}',
+                    model.canonical({"jsonrpc": "2.0", "id": 1, "result": changed})):
+            with self.subTest(raw=raw), mock.patch.object(capture.time, "sleep") as sleep:
+                recorder = mock.Mock()
+                recorder.run.return_value.stdout.return_value = raw
+                rpc = capture.LocalRpc(CONTRACT, recorder, HERE, "unused-curl", {}, self.guard)
+                with self.assertRaises(model.Refused):
+                    rpc.wait_height(3, starting=True)
+                self.assertEqual(recorder.run.call_count, 1)
+                sleep.assert_not_called()
+
+    def test_persistent_empty_receive_failures_exhaust_the_existing_attempt_bound(self):
+        failure = self.failure()
+        read = mock.Mock(side_effect=failure)
+        with mock.patch.object(capture.time, "monotonic", return_value=0), \
+                mock.patch.object(capture.time, "sleep") as sleep:
+            with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
+                self.rpc._wait(read, lambda _: True, starting=True)
+        self.assertEqual(read.call_count, 30)
+        self.assertEqual(sleep.call_count, 30)
+        self.assertEqual(self.guard.call_count, 30)
+
+    def test_expired_deadline_and_guard_refusal_launch_no_read(self):
+        read = mock.Mock()
+        with mock.patch.object(capture.time, "monotonic", side_effect=[0, 90]), \
+                mock.patch.object(capture.time, "sleep") as sleep:
+            with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
+                self.rpc._wait(read, lambda _: True, starting=True)
+        read.assert_not_called()
+        sleep.assert_not_called()
+        self.guard.side_effect = model.Refused("test_budget_refusal")
+        with self.assertRaisesRegex(model.Refused, "test_budget_refusal"):
+            self.rpc._wait(read, lambda _: True, starting=True)
+        read.assert_not_called()
+
+    def test_retry_cannot_bypass_a_later_budget_refusal(self):
+        read = mock.Mock(side_effect=self.failure())
+        self.guard.side_effect = [None, model.Refused("test_budget_refusal")]
+        with mock.patch.object(capture.time, "sleep") as sleep:
+            with self.assertRaisesRegex(model.Refused, "test_budget_refusal"):
+                self.rpc._wait(read, lambda _: True, starting=True)
+        read.assert_called_once_with()
+        sleep.assert_called_once_with(3)
+
+    def test_valid_low_height_still_waits_for_the_selected_height(self):
+        read = mock.Mock(side_effect=[2, 3])
+        with mock.patch.object(capture.time, "sleep") as sleep:
+            self.assertEqual(self.rpc._wait(read, lambda height: height >= 3, starting=False), 3)
+        self.assertEqual(read.call_count, 2)
+        sleep.assert_called_once_with(3)
+
+    def test_startup_failure_does_not_reset_the_shared_rpc_call_budget(self):
+        self.rpc.calls = 95
+        self.recorder.run.side_effect = self.failure()
+        with mock.patch.object(capture.time, "sleep") as sleep:
+            with self.assertRaisesRegex(model.Refused, "owned_rpc_call_bound"):
+                self.rpc.wait_height(3, starting=True)
+        self.assertEqual(self.rpc.calls, 97)
+        self.assertEqual(self.recorder.run.call_count, 1)
+        sleep.assert_called_once_with(3)
+
+
 @unittest.skipUnless(os.name == "posix", "POSIX descriptor and recorder controls")
 class HostBoundaryTests(unittest.TestCase):
+    def test_real_process_receive_failure_receipt_survives_a_synthetic_startup_recovery(self):
+        _, rows, _ = synthetic_window()
+        with tempfile.TemporaryDirectory(prefix="owned-rpc-regular-control-") as temporary:
+            root = Path(temporary).resolve(strict=True)
+            record = Recorder(root / "evidence")
+            actual_run = record.run
+            attempt = 0
+
+            def simulated_transport(label, argv, cwd, environment, **options):
+                nonlocal attempt
+                attempt += 1
+                request = json.loads(argv[argv.index("--data-binary") + 1])
+                code = "raise SystemExit(56)" if attempt == 1 else "print(" + repr(
+                    model.canonical({"jsonrpc": "2.0", "id": request["id"], "result": rows[-1]}).decode()) + ")"
+                return actual_run(label, [sys.executable, "-I", "-B", "-c", code], cwd, {}, **options)
+
+            rpc = capture.LocalRpc(CONTRACT, record, root, "unused-curl", {}, lambda: None)
+            with mock.patch.object(record, "run", side_effect=simulated_transport), \
+                    mock.patch.object(capture.time, "sleep"):
+                self.assertEqual(rpc.wait_height(3, starting=True).height, 4)
+            receipts = [json.loads((root / "evidence" / f"rpc-{index:02d}.complete.json").read_bytes())
+                        for index in (1, 2)]
+            self.assertEqual([row["actual_exit"] for row in receipts], [56, 0])
+            self.assertTrue(all(row["output_complete"] and row["process_group_quiescent"] for row in receipts))
+            self.assertEqual(receipts[0]["outputs"]["stdout"]["bytes"], 0)
+            self.assertEqual([row["outcome"] for row in record.records], ["FAILURE", "SUCCESS"])
+
     def test_invalid_runtime_files_refuse_before_package_or_image_preparation(self):
         execution = model.ExecutionIdentity("a" * 40, 1, 1, "edgepillar")
         with tempfile.TemporaryDirectory(prefix="owned-runtime-input-control-") as temporary:

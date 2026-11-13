@@ -150,6 +150,16 @@ stopped at builder closure before node startup. Its original artifact preserves
 the failed result; these additional diagnostics cannot reconstruct missing state
 from that historical run. A new execution requires a new exact-source approval.
 
+The [second authorized attempt](../../docs/owned-devnet-startup-attempt-2026-11-13.md)
+built both images, closed the owned builder and started four node containers, then
+failed on the first loopback RPC read with exit 56 and zero response bytes. It
+reached no signed fixture operation or consumer acceptance. Startup waits now
+admit only completed, quiescent curl exits 7, 28 or 56 with zero stdout bytes.
+They retain each failed command and the existing time, attempt and shared RPC-call
+bounds. Partial responses, invalid RPC data, incomplete captures and failures
+outside startup remain terminal. This behavior does not establish the cause of
+the recorded receive failure or authorize another signed attempt.
+
 ### Review a retained result
 
 Before downloading, select the runner revision, attempt-1 run ID, artifact ID
