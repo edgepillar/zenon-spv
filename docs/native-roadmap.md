@@ -515,3 +515,15 @@ original console fingerprints, source/exit/recipe checks and restored test-local
 dispatch. Single local suite observations fall from about 20 seconds to about
 4–5 seconds; whole-CI, RSS and production budgets remain unqualified. No Go/node
 measurement, representative R1 data or state-value acceptance is introduced.
+
+### Qualification cost: repeated recorded retention tables
+
+The [bounded table-byte reuse scope](recorded-retention-table-reuse.md) retains
+all 27 original controls, the complete reader and its 32,768-height replay.
+Complete typed metadata and ordered root strings key only immutable expanded
+bytes; payload hashes, roots, proofs and process rows are still checked by the
+unchanged reader. Four local whole-program comparisons preserve the exact
+original output, with medians of 12.27 seconds direct and 10.57 seconds bounded
+and about 8.38 MiB more peak child RSS. There is no disk cache or new node
+workload. Source-bound CI and artifact gates remain required; whole-CI and
+production resource budgets remain unqualified.

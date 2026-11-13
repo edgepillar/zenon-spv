@@ -603,8 +603,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_default_retention_test.py -v
       - name: Joint retention qualification controls
         run: python -I -B tools/gen-state-root-vectors/run_default_retention_checks_test.py -v
+      - name: Recorded retention table reuse controls
+        run: python -I -B tools/conformance_table_reuse_test.py -v
+      - name: Recorded retention table-mode controls
+        run: python -I -B tools/gen-state-root-vectors/run_default_retention_tables_test.py -v
       - name: Recorded source-default retention controls and observations
-        run: python -I -B tools/gen-state-root-vectors/run_default_retention_checks.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_default_retention_checks.py --reuse-tables --source-revision "${{ github.sha }}"
       - name: Candidate disk lifecycle exit controls
         run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle_test.py
       - name: Independent candidate disk lifecycle roots and retention
@@ -1370,8 +1374,12 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/check_default_retention_test.py -v
       - name: Joint retention qualification controls
         run: python -I -B tools/gen-state-root-vectors/run_default_retention_checks_test.py -v
+      - name: Recorded retention table reuse controls
+        run: python -I -B tools/conformance_table_reuse_test.py -v
+      - name: Recorded retention table-mode controls
+        run: python -I -B tools/gen-state-root-vectors/run_default_retention_tables_test.py -v
       - name: Recorded source-default retention controls and observations
-        run: python -I -B tools/gen-state-root-vectors/run_default_retention_checks.py --source-revision "${{ github.sha }}"
+        run: python -I -B tools/gen-state-root-vectors/run_default_retention_checks.py --reuse-tables --source-revision "${{ github.sha }}"
       - name: Candidate disk lifecycle exit controls
         run: python -I -B tools/gen-state-root-vectors/check_disk_lifecycle_test.py
       - name: Independent candidate disk lifecycle roots and retention

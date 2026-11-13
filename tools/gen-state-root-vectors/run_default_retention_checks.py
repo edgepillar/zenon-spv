@@ -142,12 +142,23 @@ def execute(module, revision=None, runner=None):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-revision")
+    parser.add_argument("--reuse-tables", action="store_true",
+                        help="reuse exact immutable table bytes within these complete controls")
     args = parser.parse_args(argv)
     if args.source_revision is not None and re.fullmatch("[0-9a-f]{40}", args.source_revision) is None:
         parser.error("source revision must be a lowercase 40-character Git identity")
     try:
         module = load_controls()
-        text, receipt = execute(module, args.source_revision)
+        if args.reuse_tables:
+            helper_path = HERE.parent / "conformance_table_reuse.py"
+            spec = importlib.util.spec_from_file_location("retention_joint_table_reuse", helper_path)
+            helper = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(helper)
+            with helper.reuse(module.C) as reused:
+                text, receipt = execute(module, args.source_revision)
+            receipt["table_reuse"] = reused.report()
+        else:
+            text, receipt = execute(module, args.source_revision)
         pinned_sources()  # Detect source/corpus replacement during the controls.
         print("recorded-retention-joint " + json.dumps(receipt, sort_keys=True), file=sys.stderr)
         print(text, end="")
