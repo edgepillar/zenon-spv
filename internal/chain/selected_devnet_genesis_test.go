@@ -42,6 +42,37 @@ func TestCandidateV3HeaderSelectedDevnetGenesis(t *testing.T) {
 	}
 }
 
+func TestCandidateV3HeaderReferenceGasGenesis(t *testing.T) {
+	// This separate native capture records H1 construction and two Init/Stop
+	// cycles at the new source. Identical unsigned bytes select no live trust.
+	raw := nodeBoundaryBytes(t, "internal/testdata/conformance/reference-gas-devnet-genesis.json", 4124,
+		"8fe43fb1e46bc80957c44ad09deabba0c09380a2e015aa63c9e66602786e7d13")
+	var recorded struct {
+		Source struct {
+			Revision string `json:"revision"`
+		} `json:"source"`
+		Trace struct {
+			Header json.RawMessage `json:"header"`
+		} `json:"trace"`
+	}
+	if err := json.Unmarshal(raw, &recorded); err != nil || recorded.Source.Revision != "2835c436b197fece5c76adf4ba8dc1decca2e3ea" {
+		t.Fatal("reference-gas source-genesis recording differs", err)
+	}
+	var header chain.Header
+	var root struct {
+		StateRoot chain.Hash `json:"stateRoot"`
+	}
+	if json.Unmarshal(recorded.Trace.Header, &header) != nil || json.Unmarshal(recorded.Trace.Header, &root) != nil {
+		t.Fatal("reference-gas H1 projection encoding differs")
+	}
+	original := selectedDevnetGenesisHeader(t)
+	if header.HeaderHash != original.HeaderHash || header.ComputeHash() != original.ComputeHash() ||
+		header.Version != 1 || header.Height != 1 || header.ChainIdentifier != 69 ||
+		len(header.PublicKey) != 0 || len(header.Signature) != 0 || !root.StateRoot.IsZero() {
+		t.Fatal("new source H1 replay differs from the original source identity")
+	}
+}
+
 func TestCandidateV3HeaderSelectedDevnetGenesisFields(t *testing.T) {
 	original := selectedDevnetGenesisHeader(t)
 	for _, tc := range []struct {

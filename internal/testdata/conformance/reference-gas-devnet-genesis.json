@@ -1,0 +1,110 @@
+{
+  "execution": {
+    "actual_exit": 0,
+    "capture_controller_outcome": "FAILURE",
+    "cgo_enabled": true,
+    "full_module_graph_go_mod_verify": "NOT_ESTABLISHED",
+    "gate_sha256": "59550d5f45f770525aecbfd4b02d3399e5902e175f755a9aaef6dca12251a647",
+    "go": "go1.25.14",
+    "native_execution_repeated_for_publication": false,
+    "native_result_reconciled_without_rerun": true,
+    "native_test": "TestSPVSelectedDevnetGenesisLifecycle",
+    "output_bytes": 23716,
+    "output_complete": true,
+    "output_sha256": "8f552843b9647cf43b405de5ca95d674e08fbe01c344d9a8d02b6128da88b6cc",
+    "platform": "darwin/arm64",
+    "record_sha256": "19d6164025ef9489f3d638f7f1fbe507793fb9ef5f71e5236a304a821478c7fa",
+    "used_modules_verified": 25
+  },
+  "format": "zenon-recorded-selected-devnet-genesis/v1",
+  "genesis_config": {
+    "bytes": 8137,
+    "git_blob": "0f158f4414d165075c85a5ba3bde48a9eff792e4",
+    "path": "internal/testdata/conformance/selected-devnet-genesis-config.json",
+    "sha256": "0dd33b18b147f70b3d3d5f07199a2b45311f6e9b84a98b3f86d8f6c6b45f419a",
+    "source_path": "docker/devnet/genesis.json"
+  },
+  "harness": {
+    "bytes": 4458,
+    "path": "tools/gen-state-root-vectors/selected-devnet-genesis-lifecycle_test.go.txt",
+    "sha256": "1f2eb54d60b777ed73e6cebd1d1bcdff28a8a7536aa0f1617bad7fb36a3ee542"
+  },
+  "scope": {
+    "Chain_Start_called": false,
+    "accepted_SPV_header": false,
+    "anchor_selected": false,
+    "consensus_finality": false,
+    "first_incoming_v3_captured": false,
+    "network_execution": false,
+    "network_identity_authenticated": false,
+    "producer_schedule_authenticated": false,
+    "production_qualified": false,
+    "profile_agreed": false,
+    "real_manager_Init_Stop_reopen_cycles": 2,
+    "source_genesis_H1_only": true,
+    "state_value_accepted": false
+  },
+  "source": {
+    "archive_sha256": "76d974ab3588518dddf9ea5eb4032b43228f9a732d14006330477037a905884a",
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "2835c436b197fece5c76adf4ba8dc1decca2e3ea",
+    "tree": "f89d645c7f5be85dfe10dc7a510d80df7965d22f"
+  },
+  "trace": {
+    "Chain_Start_called": false,
+    "cycles": [
+      {
+        "cycle": 1,
+        "hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+        "height": 1,
+        "version": 1
+      },
+      {
+        "cycle": 2,
+        "hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+        "height": 1,
+        "version": 1
+      }
+    ],
+    "first_incoming_v3_executed": false,
+    "format": "selected-node-source-genesis-lifecycle/v1",
+    "header": {
+      "chainIdentifier": 69,
+      "changesHash": "0c18fe329bce4b4d14a4f4a99d5fd40fac586d7d9d850b5d635d08a7b6789c16",
+      "contentHash": "3b92b3c85d00020c25b2e6dc6de112195d5f2c3ece2d7981ecd7329a57f23ca3",
+      "dataHash": "adba8026eac7d31d73e3b722918cb75a4c46c2b4098e2803471adfabffb2c92e",
+      "hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+      "height": 1,
+      "nextFusionPrice": 0,
+      "nextWorkPrice": 0,
+      "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "publicKey": null,
+      "signature": null,
+      "stateRoot": "0000000000000000000000000000000000000000000000000000000000000000",
+      "timestamp": 1739923200,
+      "version": 1
+    },
+    "scope": "LOCAL_GENESIS_H1_RESTART_NOT_NETWORK_IDENTITY",
+    "source_genesis_sha256": "0dd33b18b147f70b3d3d5f07199a2b45311f6e9b84a98b3f86d8f6c6b45f419a",
+    "sporks": [
+      {
+        "activated": true,
+        "enforcement_height": 0,
+        "id": "0000000000000000000000000000000000000000000000000000000000000002",
+        "name": "dynamic-plasma"
+      },
+      {
+        "activated": true,
+        "enforcement_height": 0,
+        "id": "0000000000000000000000000000000000000000000000000000000000000003",
+        "name": "merkle-state-root"
+      },
+      {
+        "activated": true,
+        "enforcement_height": 0,
+        "id": "0000000000000000000000000000000000000000000000000000000000000004",
+        "name": "offchain-execution"
+      }
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Replay one recorded source-genesis H1 header with independent SHA3 bytes.
+"""Replay selected source-genesis H1 recordings with independent SHA3 bytes.
 
 This reader does not execute the genesis VM or managers, observe a network,
 authenticate a trust input, or select an accepting SPV profile.
@@ -17,6 +17,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "internal/testdata/conformance/selected-devnet-genesis.json"
+REFERENCE_GAS_CORPUS = ROOT / "internal/testdata/conformance/reference-gas-devnet-genesis.json"
 CONFIG_PATH = "internal/testdata/conformance/selected-devnet-genesis-config.json"
 HARNESS_PATH = "tools/gen-state-root-vectors/selected-devnet-genesis-lifecycle_test.go.txt"
 GENESIS_HASH = "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9"
@@ -46,6 +47,26 @@ EXECUTION = {
     "output_bytes": 23745, "used_modules_verified": 25,
     "full_module_graph_go_mod_verify": "NOT_ESTABLISHED",
     "native_execution_repeated_for_publication": False,
+}
+REFERENCE_GAS_SOURCE = {
+    "repository": "https://github.com/digitalSloth/go-zenon",
+    "revision": "2835c436b197fece5c76adf4ba8dc1decca2e3ea",
+    "tree": "f89d645c7f5be85dfe10dc7a510d80df7965d22f",
+    "archive_sha256": "76d974ab3588518dddf9ea5eb4032b43228f9a732d14006330477037a905884a",
+}
+REFERENCE_GAS_EXECUTION = {
+    "native_test": "TestSPVSelectedDevnetGenesisLifecycle", "go": "go1.25.14",
+    "platform": "darwin/arm64", "cgo_enabled": True,
+    "actual_exit": 0, "output_complete": True,
+    "record_sha256": "19d6164025ef9489f3d638f7f1fbe507793fb9ef5f71e5236a304a821478c7fa",
+    "gate_sha256": "59550d5f45f770525aecbfd4b02d3399e5902e175f755a9aaef6dca12251a647",
+    "output_sha256": "8f552843b9647cf43b405de5ca95d674e08fbe01c344d9a8d02b6128da88b6cc",
+    "output_bytes": 23716,
+    "used_modules_verified": 25,
+    "full_module_graph_go_mod_verify": "NOT_ESTABLISHED",
+    "native_execution_repeated_for_publication": False,
+    "capture_controller_outcome": "FAILURE",
+    "native_result_reconciled_without_rerun": True,
 }
 SCOPE = {
     "source_genesis_H1_only": True, "real_manager_Init_Stop_reopen_cycles": 2,
@@ -107,12 +128,21 @@ def read_regular(path, limit):
         return raw
 
 
-def check_corpus(value, config_raw, harness_raw):
+def selected_recording(cohort):
+    if cohort == "original":
+        return CORPUS, SOURCE, EXECUTION
+    if cohort == "reference-gas":
+        return REFERENCE_GAS_CORPUS, REFERENCE_GAS_SOURCE, REFERENCE_GAS_EXECUTION
+    raise ValueError("unsupported source-genesis recording")
+
+
+def check_corpus(value, config_raw, harness_raw, *, cohort="original"):
+    _, source, execution = selected_recording(cohort)
     require(type(value) is dict and set(value) == {
         "format", "source", "genesis_config", "harness", "execution", "scope", "trace"})
     exact(value["format"], "zenon-recorded-selected-devnet-genesis/v1")
-    for key, expected in (("source", SOURCE), ("genesis_config", CONFIG),
-                          ("harness", HARNESS), ("execution", EXECUTION), ("scope", SCOPE)):
+    for key, expected in (("source", source), ("genesis_config", CONFIG),
+                          ("harness", HARNESS), ("execution", execution), ("scope", SCOPE)):
         exact(value[key], expected)
     require(type(config_raw) is bytes and len(config_raw) == CONFIG["bytes"] and
             hashlib.sha256(config_raw).hexdigest() == CONFIG_SHA256)
@@ -164,31 +194,47 @@ def check_corpus(value, config_raw, harness_raw):
     require(len(preimage) == 160)
     exact(hashlib.sha3_256(preimage).hexdigest(), GENESIS_HASH)
     exact(header["hash"], GENESIS_HASH)
-    return {"format": "zenon-selected-devnet-genesis-byte-check/v1", "chain_id": 69,
+    report = {"format": "zenon-selected-devnet-genesis-byte-check/v1", "chain_id": 69,
             "height": 1, "version": 1, "genesis_hash": GENESIS_HASH,
             "preimage_bytes": len(preimage), "preimage_sha256": hashlib.sha256(preimage).hexdigest(),
             "recorded_manager_cycles": 2, "genesis_VM_or_managers_executed_by_reader": False,
             "network_identity_authenticated": False, "first_incoming_v3_captured": False,
             "anchor_or_accepting_profile_selected": False, "state_value_accepted": False}
+    if cohort == "reference-gas":
+        report.update(format="zenon-reference-gas-devnet-genesis-byte-check/v1",
+                      node_revision=source["revision"])
+    return report
 
 
-def check():
-    raw = read_regular(CORPUS, 16 << 10)
+def check(cohort="original"):
+    corpus, _, _ = selected_recording(cohort)
+    raw = read_regular(corpus, 16 << 10)
     report = check_corpus(parse(raw, 16 << 10), read_regular(ROOT / CONFIG_PATH, 16 << 10),
-                          read_regular(ROOT / HARNESS_PATH, 8 << 10))
+                          read_regular(ROOT / HARNESS_PATH, 8 << 10), cohort=cohort)
     report["corpus_sha256"] = hashlib.sha256(raw).hexdigest()
     return report
 
 
 def main(argv):
     revision = None
-    if argv:
-        if len(argv) != 2 or argv[0] != "--source-revision" or re.fullmatch("[0-9a-f]{40}", argv[1]) is None:
+    cohort = "original"
+    options = {}
+    if len(argv) > 4 or len(argv) % 2:
+        print("selected-devnet-genesis: invalid command syntax", file=sys.stderr)
+        return 64
+    for key, value in zip(argv[::2], argv[1::2]):
+        if key not in ("--source-revision", "--cohort") or key in options:
             print("selected-devnet-genesis: invalid command syntax", file=sys.stderr)
             return 64
-        revision = argv[1]
+        options[key] = value
+    revision = options.get("--source-revision")
+    cohort = options.get("--cohort", "original")
+    if ((revision is not None and re.fullmatch("[0-9a-f]{40}", revision) is None)
+            or cohort not in ("original", "reference-gas")):
+        print("selected-devnet-genesis: invalid command syntax", file=sys.stderr)
+        return 64
     try:
-        report = check()
+        report = check() if cohort == "original" else check(cohort)
         report["source_revision"] = revision
         print(json.dumps(report, sort_keys=True, allow_nan=False))
     except (ValueError, OSError, KeyError, TypeError, OverflowError, RecursionError):
