@@ -128,6 +128,30 @@ scope decision, actual skipped job records and small artifact qualification
 before claiming a measured reduction in native execution or archive transport.
 No projected savings are representative node or consumer performance evidence.
 
+### Planning-only transport trigger qualification
+
+The trigger adjustment is qualified at
+[`21a33fa66d52a26f16aad146f3277cf329bfed51`](https://github.com/edgepillar/zenon-spv/commit/21a33fa66d52a26f16aad146f3277cf329bfed51).
+Its [PR general CI](https://github.com/edgepillar/zenon-spv/actions/runs/43491116602)
+and [main general CI](https://github.com/edgepillar/zenon-spv/actions/runs/43499704633)
+each passed all seven jobs, including the 64 scope controls on the native
+platforms. Its [PR transport CI](https://github.com/edgepillar/zenon-spv/actions/runs/43491116626)
+and [main transport CI](https://github.com/edgepillar/zenon-spv/actions/runs/43499705146)
+each passed 81 controls on Linux, macOS Intel and Windows.
+
+Reconciliation covers 43 archives and 21 native binary bindings per context:
+44 primary archives in total, plus integrity/source readback of the remaining
+42 supplemental archives. The new source revisions used their own runs;
+unchanged native input bytes did not transfer earlier CI qualification.
+The frozen human-review candidate and selected consumer pins remain separate.
+
+This qualifies the policy implementation. A later planning-only update still
+needs its actual source-bound scope report, provider job records and artifact
+checks. A successful documentation-only run provides no new native binary or
+selected-network consumer result.
+
+### Earlier documentation route observations
+
 The real [documentation PR #284](https://github.com/edgepillar/zenon-spv/pull/284)
 and its actual main push now have separately reconciled scope decisions,
 all six Git stdout hashes, provider-skipped job records and archive digests:
