@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Build only in an owned copy of node revision 938fca3 with the separately
+// Build only in an owned copy of node revision 2835c43 with the separately
 // pinned parent-schedule adapter. This is an offline source oracle, not an SPV
 // acceptance API. It never calls Chain.Init, Chain.Start or consensus.Start.
 package main
@@ -25,6 +25,7 @@ import (
 const maxRequestBytes = 32 << 10
 const maxReportBytes = 256 << 10
 const maxTargets = 64
+const selectedNodeRevision = "2835c436b197fece5c76adf4ba8dc1decca2e3ea"
 const selectedGenesisHash = "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9"
 const selectedGenesisSHA256 = "0dd33b18b147f70b3d3d5f07199a2b45311f6e9b84a98b3f86d8f6c6b45f419a"
 
@@ -210,7 +211,7 @@ func capture(ledgerPath string, config *genesis.GenesisConfig, selected request,
 		return nil, errRefused
 	}
 	sum := sha256.Sum256(requestRaw)
-	return &report{Format: "zenon-closed-devnet-parent-slots/v1", NodeRevision: "938fca3b7787da86827a5eb63371509b36e14761",
+	return &report{Format: "zenon-closed-devnet-parent-slots/v1", NodeRevision: selectedNodeRevision,
 		Genesis: first.Identifier(), Frontier: frontier.Identifier(), RequestSHA256: hex.EncodeToString(sum[:]),
 		Rows: rows, ReadOnlyLedger: true, FrontierUnchanged: true}, nil
 }

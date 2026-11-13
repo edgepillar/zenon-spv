@@ -242,7 +242,7 @@ func TestClosedParentOracleReadOnlySourceH1(t *testing.T) {
 		t.Fatal("missing read-only ledger path was created")
 	}
 	trace, err := json.Marshal(map[string]any{
-		"format": "zenon-read-only-source-H1-slots-control/v1", "snapshot": oracle,
+		"format": "zenon-read-only-source-H1-slots-control/v1", "snapshot": oracle, "node_revision": selectedNodeRevision,
 		"baseline_sha256": hex.EncodeToString(recordedSum[:]), "raw_ledger_files": len(before),
 		"raw_ledger_names_and_content_unchanged": true, "source_H1_only": true,
 		"Chain_Init_in_reader": false, "Chain_Start": false, "consensus_Start": false,

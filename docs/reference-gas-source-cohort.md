@@ -102,8 +102,12 @@ retention assumptions remain explicit.
 
 The [owned experiment contract](../tools/owned-devnet-query/contract.json)
 still selects the original cohort and original qualified binaries. Updating
-that contract, its closed-parent oracle, source-specific artifacts and actual
-devnet capture requires a separate coherent selection. Existing maintainer
+that contract, its source-specific artifacts and actual devnet capture
+requires a separate coherent selection. The
+[closed-parent oracle build lane](closed-devnet-parent-oracle.md) now selects
+the reference-gas node and checks complete native H1 controls before building.
+Its new binary still needs its own source/platform qualification before
+selection alongside a matching consumer. Existing maintainer
 feedback remains attached to its original sources. This implementation does
 not dispatch an experiment, start services, sign inputs or migrate old data.
 
