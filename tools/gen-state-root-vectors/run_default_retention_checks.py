@@ -31,6 +31,17 @@ PINS = {
     "testdata/candidate-default-retention.json": (
         8 << 20, "e18cf0c0ba4669233cf42d67381da50c0ae15c1229a1f3a18f52e0c8d53f59b3"),
 }
+SUCCESSOR_PINS = {
+    "check_default_retention_successor_corpus.py": (
+        64 << 10, "f2f344a1c8131548db4768b58232fc24dde0c55dc45556ca000e0d5707bae018"),
+    "check_default_retention_successor_corpus_test.py": (
+        64 << 10, "c0a1b01b42ad4c47795d5a66842a16f74682e1f0cec71f67dd05aced4edc808a"),
+    "testdata/successor-default-retention.json": (
+        8 << 20, "da7f26c8d99aea2f14b3d3950d8dd3fecf2798cf99aa6aaa3114cbebd002f0a1"),
+    "testdata/successor-genesis-input-execution.json": (
+        64 << 10, "8d80a7160bf0e7ff4fcae8bc4c18ca40b64dd65200c8fd1de5dca8fc16f8c0f0"),
+}
+SUCCESSOR_TEST_COUNT = 13
 REFUSAL = "Recorded retention joint qualification refused; preserve original evidence."
 FALSE_FIELDS = (
     "native_reference_node_or_CGO_execution", "new_resource_measurements",
@@ -44,9 +55,11 @@ def require(value):
         raise ValueError(REFUSAL)
 
 
-def pinned_sources():
+def pinned_sources(cohort="original"):
+    require(type(cohort) is str and cohort in ("original", "successor"))
     result = {}
-    for relative, (limit, digest) in PINS.items():
+    selected = PINS if cohort == "original" else SUCCESSOR_PINS
+    for relative, (limit, digest) in selected.items():
         path = HERE / relative
         fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
         with os.fdopen(fd, "rb") as stream:
@@ -61,10 +74,13 @@ def pinned_sources():
     return result
 
 
-def load_controls():
-    raw = pinned_sources()["check_default_retention_corpus_test.py"]
-    path = HERE / "check_default_retention_corpus_test.py"
-    spec = importlib.util.spec_from_file_location("retention_joint_original_controls", path)
+def load_controls(cohort="original"):
+    require(type(cohort) is str and cohort in ("original", "successor"))
+    name = ("check_default_retention_corpus_test.py" if cohort == "original"
+            else "check_default_retention_successor_corpus_test.py")
+    raw = pinned_sources(cohort)[name]
+    path = HERE / name
+    spec = importlib.util.spec_from_file_location("retention_joint_" + cohort + "_controls", path)
     module = importlib.util.module_from_spec(spec)
     exec(compile(raw, str(path), "exec"), module.__dict__)
     return module
@@ -78,27 +94,42 @@ def cache_info(cache):
     return value
 
 
-def execute(module, revision=None, runner=None):
+def execute(module, revision=None, runner=None, cohort="original"):
+    require(type(cohort) is str and cohort in ("original", "successor"))
+    count = TEST_COUNT if cohort == "original" else SUCCESSOR_TEST_COUNT
+    pins = PINS if cohort == "original" else SUCCESSOR_PINS
+    corpus = ("testdata/candidate-default-retention.json" if cohort == "original"
+              else "testdata/successor-default-retention.json")
+    kind = ("recorded-source-default-retention-background-check" if cohort == "original"
+            else "recorded-successor-source-default-retention-background-check")
+    false_fields = (FALSE_FIELDS if cohort == "original" else
+                    ("new_reference_node_or_CGO_execution", *FALSE_FIELDS[1:]))
     reader = module.C
     cache = reader.expected_from_presealed_witnesses
     initial = cache_info(cache)
     require((initial.hits, initial.misses, initial.currsize) == (0, 0, 0))
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(module)
-    require(not loader.errors and suite.countTestCases() == TEST_COUNT)
+    require(not loader.errors and suite.countTestCases() == count)
     runner = runner or unittest.TextTestRunner(verbosity=2)
     test_output = io.StringIO()
     with contextlib.redirect_stdout(test_output):
         result = runner.run(suite)
-    require(type(result.testsRun) is int and result.testsRun == TEST_COUNT)
+    require(type(result.testsRun) is int and result.testsRun == count)
     require(result.wasSuccessful() is True and result.shouldStop is False)
     for field in ("failures", "errors", "skipped", "expectedFailures", "unexpectedSuccesses"):
         require(type(getattr(result, field)) is list and not getattr(result, field))
     require(test_output.getvalue() == "" and reader.expected_from_presealed_witnesses is cache)
 
     # Reread the pinned corpus and seal the entire cached graph after all tests.
-    raw, document = reader.read_corpus(HERE / "testdata/candidate-default-retention.json")
-    require(hashlib.sha256(raw).hexdigest() == PINS["testdata/candidate-default-retention.json"][1])
+    if cohort == "original":
+        raw, document = reader.read_corpus(HERE / corpus)
+    else:
+        # Match the successor reader's own strict byte/JSON path; never relabel
+        # historical corpus or genesis evidence through the original reader.
+        raw = reader.M.P.read_regular(HERE / corpus, 8 << 20)
+        document = json.loads(raw, object_pairs_hook=reader.M.P.pairs)
+    require(hashlib.sha256(raw).hexdigest() == pins[corpus][1])
     base = reader.M.encoded(document["presealed_expectations_without_history"])
     require(hashlib.sha256(base).hexdigest() == reader.BASE_SHA256)
     warm = cache_info(cache)
@@ -118,17 +149,17 @@ def execute(module, revision=None, runner=None):
     text = output.getvalue()
     require(0 < len(text.encode()) <= 64 << 10)
     report = json.loads(text)
-    require(type(report) is dict and report.get("kind") ==
-            "recorded-source-default-retention-background-check")
+    require(type(report) is dict and report.get("kind") == kind)
     require(report.get("consumer_result") == "REFUSED" and
-            report.get("corpus_sha256") == PINS["testdata/candidate-default-retention.json"][1])
-    require(all(report.get(field) is False for field in FALSE_FIELDS))
+            report.get("corpus_sha256") == pins[corpus][1])
+    require(all(report.get(field) is False for field in false_fields))
     if revision is None:
         require("source_revision" not in report)
     else:
         require(report.get("source_revision") == revision)
     return text, {
-        "format": "recorded-retention-joint-controls/v1", "original_tests_run": TEST_COUNT,
+        "format": ("recorded-retention-joint-controls/v1" if cohort == "original" else
+                   "recorded-successor-retention-joint-controls/v1"), "original_tests_run": count,
         "failures": 0, "errors": 0, "skipped": 0, "fresh_single_entry_cache_required": True,
         "cached_graph_sha256": reader.EXPECTED_SHA256,
         "comparison_cache_hits": final.hits - admitted.hits,
@@ -142,24 +173,19 @@ def execute(module, revision=None, runner=None):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-revision")
-    parser.add_argument("--reuse-tables", action="store_true",
-                        help="reuse exact immutable table bytes within these complete controls")
+    parser.add_argument("--cohort", choices=("original", "successor"), default="original")
     args = parser.parse_args(argv)
     if args.source_revision is not None and re.fullmatch("[0-9a-f]{40}", args.source_revision) is None:
         parser.error("source revision must be a lowercase 40-character Git identity")
     try:
-        module = load_controls()
-        if args.reuse_tables:
-            helper_path = HERE.parent / "conformance_table_reuse.py"
-            spec = importlib.util.spec_from_file_location("retention_joint_table_reuse", helper_path)
-            helper = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(helper)
-            with helper.reuse(module.C) as reused:
-                text, receipt = execute(module, args.source_revision)
-            receipt["table_reuse"] = reused.report()
-        else:
+        if args.cohort == "original":
+            module = load_controls()
             text, receipt = execute(module, args.source_revision)
-        pinned_sources()  # Detect source/corpus replacement during the controls.
+            pinned_sources()  # Preserve the original entry point and receipt.
+        else:
+            module = load_controls(args.cohort)
+            text, receipt = execute(module, args.source_revision, cohort=args.cohort)
+            pinned_sources(args.cohort)  # Includes the recorded genesis evidence.
         print("recorded-retention-joint " + json.dumps(receipt, sort_keys=True), file=sys.stderr)
         print(text, end="")
     except (OSError, ValueError, TypeError, KeyError, IndexError, AssertionError, RecursionError):
