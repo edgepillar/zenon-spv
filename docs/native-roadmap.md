@@ -515,3 +515,14 @@ original console fingerprints, source/exit/recipe checks and restored test-local
 dispatch. Single local suite observations fall from about 20 seconds to about
 4–5 seconds; whole-CI, RSS and production budgets remain unqualified. No Go/node
 measurement, representative R1 data or state-value acceptance is introduced.
+
+### Qualification cost: repeated successor history derivation
+
+The [joint successor qualification](successor-retention-joint-qualification.md)
+executes all 13 unchanged recording controls and their complete independent
+reader in one fresh process. It reuses only the reader's existing exact-byte,
+single-entry model cache, sealed again before and after the comparison. The
+successor corpus and recorded genesis evidence keep their own source and hash
+bindings. No table cache, new node process, native measurement or state-value
+acceptance is introduced. The original 27-control default remains available;
+exact-source CI, artifacts and independent production gates remain required.

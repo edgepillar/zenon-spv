@@ -431,10 +431,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/prepare_default_retention_successor_test.py -v
       - name: Successor default retention observation controls
         run: python -I -B tools/gen-state-root-vectors/check_default_retention_successor_test.py -v
-      - name: Successor default retention recorded controls
-        run: python -I -B tools/gen-state-root-vectors/check_default_retention_successor_corpus_test.py -v
-      - name: Independent successor default retention observations
-        run: python -I -B tools/gen-state-root-vectors/check_default_retention_successor_corpus.py --source-revision "${{ github.sha }}"
+      - name: Successor joint retention qualification controls
+        run: python -I -B tools/gen-state-root-vectors/run_successor_retention_checks_test.py -v
+      - name: Joint successor default retention controls and observations
+        run: python -I -B tools/gen-state-root-vectors/run_default_retention_checks.py --cohort successor --source-revision "${{ github.sha }}"
       - name: Successor offline rebuild source controls
         run: python -I -B tools/gen-state-root-vectors/prepare_offline_rebuild_successor_test.py -v
       - name: Successor offline rebuild observation controls
@@ -1198,10 +1198,10 @@ jobs:
         run: python -I -B tools/gen-state-root-vectors/prepare_default_retention_successor_test.py -v
       - name: Successor default retention observation controls
         run: python -I -B tools/gen-state-root-vectors/check_default_retention_successor_test.py -v
-      - name: Successor default retention recorded controls
-        run: python -I -B tools/gen-state-root-vectors/check_default_retention_successor_corpus_test.py -v
-      - name: Independent successor default retention observations
-        run: python -I -B tools/gen-state-root-vectors/check_default_retention_successor_corpus.py --source-revision "${{ github.sha }}"
+      - name: Successor joint retention qualification controls
+        run: python -I -B tools/gen-state-root-vectors/run_successor_retention_checks_test.py -v
+      - name: Joint successor default retention controls and observations
+        run: python -I -B tools/gen-state-root-vectors/run_default_retention_checks.py --cohort successor --source-revision "${{ github.sha }}"
       - name: Successor offline rebuild source controls
         run: python -I -B tools/gen-state-root-vectors/prepare_offline_rebuild_successor_test.py -v
       - name: Successor offline rebuild observation controls
