@@ -49,7 +49,9 @@ def dispatch(recorder, environment, gh_environment, checkout, workspace):
     revision = model.digest(environment["GITHUB_SHA"], model.HEX40)
     run_id = environment["GITHUB_RUN_ID"]
     require(re.fullmatch(r"[1-9][0-9]{0,19}", run_id) is not None, "dispatch_run_id")
-    contract = model.read_contract(HERE / "contract.json")
+    inputs = event.get("inputs")
+    require(type(inputs) is dict and "ack_contract_sha256" in inputs, "dispatch_inputs")
+    contract = model.read_selected_contract(HERE, inputs["ack_contract_sha256"])
     # Check exact inputs before any artifact transport or Docker operation.
     result = recorder.run("dispatch-api", ["/usr/bin/gh", "api", "--method", "GET",
         f"repos/edgepillar/zenon-spv/actions/runs/{run_id}/attempts/1"], workspace,

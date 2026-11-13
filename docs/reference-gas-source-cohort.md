@@ -100,14 +100,17 @@ framing gives distinct header, single-row and three-row golden fingerprints.
 Trusted-local checkpoint provenance, finite producer authorization and W/K
 retention assumptions remain explicit.
 
-The [owned experiment contract](../tools/owned-devnet-query/contract.json)
-still selects the original cohort and original qualified binaries. Updating
-that contract, its source-specific artifacts and actual devnet capture
-requires a separate coherent selection. The
+The [original owned experiment contract](../tools/owned-devnet-query/contract.json)
+keeps the original cohort and qualified binaries. The separate
+[reference-gas owned contract](reference-gas-owned-contract.md) now selects the
+new source pair, metadata identities and matching qualified Linux inputs.
+It is selected explicitly by its acknowledged digest; actual devnet capture
+and the positive consumer remain open. The
 [closed-parent oracle build lane](closed-devnet-parent-oracle.md) now selects
 the reference-gas node and checks complete native H1 controls before building.
-Its new binary still needs its own source/platform qualification before
-selection alongside a matching consumer. Existing maintainer
+Its new binary has separate source/platform qualification at
+`7493c5929c7dbcfb29f94be521f7533d90a1a687` before selection alongside that
+source's consumer. Existing maintainer
 feedback remains attached to its original sources. This implementation does
 not dispatch an experiment, start services, sign inputs or migrate old data.
 

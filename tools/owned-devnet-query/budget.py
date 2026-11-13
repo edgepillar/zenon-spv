@@ -174,6 +174,7 @@ def main(argv=None):
     parser.add_argument("--run-id", type=int, required=True)
     parser.add_argument("--run-attempt", type=int, required=True)
     parser.add_argument("--report", type=Path, required=True)
+    parser.add_argument("--contract", type=Path, default=HERE / "contract.json")
     args = parser.parse_args(argv)
     try:
         def git(*arguments):
@@ -183,7 +184,7 @@ def main(argv=None):
         revision = git("rev-parse", "HEAD").decode("ascii").strip()
         require(revision == args.source_revision and not git("status", "--porcelain=v1", "-z",
                 "--untracked-files=all"), "host_sample_source_revision")
-        contract = model.read_contract(HERE / "contract.json")
+        contract = model.read_contract(args.contract)
         report = preparation_admission_report(contract, args.report.parent, revision, args.run_id, args.run_attempt)
         with args.report.open("xb") as output:
             output.write(model.canonical(report))

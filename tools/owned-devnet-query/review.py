@@ -331,13 +331,14 @@ def main(argv=None, stdout=None, stderr=None):
         parser.add_argument("--expect-archive-sha256", required=True)
         parser.add_argument("--expect-archive-bytes", type=int, required=True)
     parser.add_argument("--expect-contract-sha256", required=True)
+    parser.add_argument("--contract", type=Path, default=HERE / "contract.json")
     parser.add_argument("--expect-source-revision", required=True)
     parser.add_argument("--expect-run-id", type=int, required=True)
     args = parser.parse_args(argv)
     stdout = sys.stdout.buffer if stdout is None else stdout
     stderr = sys.stderr if stderr is None else stderr
     try:
-        contract = model.read_contract(HERE / "contract.json")
+        contract = model.read_contract(args.contract)
         require(model.digest(args.expect_contract_sha256) == contract.sha256, "review_contract_pin")
         if hosted:
             metadata = {name: read_hosted_metadata(getattr(args, name + "_metadata"))

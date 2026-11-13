@@ -21,7 +21,7 @@ on:
         default: false
         required: true
       ack_contract_sha256:
-        description: SHA-256 of the reviewed contract.json
+        description: SHA-256 of the reviewed original or reference-gas contract
         type: string
         required: true
       expected_source_revision:
@@ -59,6 +59,7 @@ jobs:
         if: matrix.platform.label == 'linux-amd64'
         run: |
           /usr/bin/python3 -I -B tools/owned-devnet-query/budget.py \
+            --contract tools/owned-devnet-query/reference-gas-contract.json \
             --source-revision "$SPV_SOURCE_REVISION" --run-id "$GITHUB_RUN_ID" \
             --run-attempt "$GITHUB_RUN_ATTEMPT" --report "$RUNNER_TEMP/spv-owned-devnet-host-admission.json"
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0

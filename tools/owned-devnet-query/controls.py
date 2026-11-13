@@ -25,11 +25,16 @@ def main():
     observed = subprocess.check_output(["git", "--no-optional-locks", "rev-parse", "HEAD"],
                                       cwd=HERE, timeout=10).decode("ascii").strip()
     model.require(observed == revision, "controls_source_revision")
-    paths = sorted([*HERE.glob("*.py"), HERE / "contract.json"])
-    pins = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
+    paths = {path.name: path for path in
+             [*HERE.glob("*.py"), *(HERE / name for name, _ in model.CONTRACT_FILES)]}
+    for name, _ in model.CONTRACT_FILES:
+        for filename, _ in model.metadata_files(model.read_contract(HERE / name)):
+            relative = "internal/testdata/conformance/" + filename
+            paths[relative] = HERE.parents[1] / relative
+    pins = {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in paths.items()}
     suite = unittest.defaultTestLoader.discover(str(HERE), pattern="*_test.py")
     result = unittest.TextTestRunner(stream=sys.stderr, verbosity=2).run(suite)
-    model.require(pins == {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in paths},
+    model.require(pins == {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in paths.items()},
                   "controls_source_changed")
     report = {"format": "owned-devnet-preparation-controls/v1", "source_revision": revision,
         "platform": platform.system(), "machine": platform.machine(), "python": platform.python_version(),

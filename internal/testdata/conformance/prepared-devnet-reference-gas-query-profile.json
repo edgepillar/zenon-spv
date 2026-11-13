@@ -1,0 +1,39 @@
+{
+  "domain_config": {
+    "max_proof_bytes": 8359,
+    "max_siblings": 256
+  },
+  "domain_record": {
+    "max_chain_binding_bytes": 1,
+    "max_dynamic_bytes": 2,
+    "max_profile_config_bytes": 1,
+    "max_proof_bytes": 12391,
+    "max_siblings": 256,
+    "max_value_bytes": 4096
+  },
+  "domain_rule": "zenon-phase1-domain-record/v1",
+  "entry": {
+    "domain_id": 1,
+    "limits": {
+      "max_asset_flow_summary_bytes": 1540,
+      "max_dynamic_bytes": 1580,
+      "max_executor_pillar_bytes": 40,
+      "max_proof_data_bytes": 1,
+      "max_value_bytes": 4096,
+      "string_rule": 2
+    },
+    "max_proof_bytes": 12391,
+    "max_siblings": 256,
+    "runtime_identity": "d77cca86d4624e691917ee0d2b94dc70c4bf0e29f87316ea89513c72209a6b48",
+    "settlement": "01b3b6e5adcb4d0cad7fcef33598c6318c6318c0",
+    "source": "Owned reference-gas chain-69 domain-1 BatchEntry-0 source-cohort metadata; no runtime or network authority",
+    "source_rule": "zenon-phase1-batch-fields/v1",
+    "version": 2
+  },
+  "limits": {
+    "max_total_proof_bytes": 33141,
+    "max_total_siblings": 768,
+    "max_total_value_bytes": 8256
+  },
+  "version": 2
+}

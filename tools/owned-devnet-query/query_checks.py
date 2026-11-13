@@ -170,7 +170,8 @@ def fingerprints(config, request=None):
     schema = ENTRY_CONTEXT_SCHEMA.encode("ascii")
     legacy = b"ZENON-EXPERIMENTAL-BATCH-ENTRY\0" + bytes([version]) + word(version) + H(header)
     legacy += hex_bytes(selected["node_revision"], 20)
-    legacy += hex_bytes(model.SOURCE_PINS["executor"][1], 20) + hex_bytes(model.SOURCE_PINS["contract_sdk"][1], 20)
+    executor, sdk = model.query_source_pair(selected["node_revision"])
+    legacy += hex_bytes(executor, 20) + hex_bytes(sdk, 20)
     legacy += word(len(schema)) + schema + hex_bytes(entry["settlement"], 20)
     legacy += struct.pack(">I", uint(entry["domain_id"], 32)) + hex_bytes(entry["runtime_identity"], 32)
     abi = entry["limits"]
@@ -341,8 +342,9 @@ def consumer_context_diagnostics(config, pins):
                   max_state_bytes=MAX_RETAINED_STATE_BYTES, fingerprint=pins["header_context"])
     profile = config["query_profile"]
     entry = {key: value for key, value in profile["entry"].items() if key != "source"}
-    entry.update(header=header, schema=ENTRY_CONTEXT_SCHEMA, executor_revision=model.SOURCE_PINS["executor"][1],
-                 sdk_revision=model.SOURCE_PINS["contract_sdk"][1], require_canonical=True,
+    executor, sdk = model.query_source_pair(header["node_revision"])
+    entry.update(header=header, schema=ENTRY_CONTEXT_SCHEMA, executor_revision=executor,
+                 sdk_revision=sdk, require_canonical=True,
                  fingerprint=pins["entry_context"])
     query = dict(profile, entry=entry, domain_record_schema=RECORD_CONTEXT_SCHEMA,
                  domain_config_schema=CONFIG_CONTEXT_SCHEMA, require_canonical=True,
