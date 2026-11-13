@@ -110,7 +110,7 @@ class Controls(unittest.TestCase):
             root = Path(temporary)
             records = []
             result = Q.command(root, "expected-refusal", [sys.executable, "-I", "-B", "-c",
-                "import sys; sys.stderr.write('fixture refused\\n'); sys.exit(1)"], HERE, records, expected_exit=1)
+                "import sys; sys.stderr.buffer.write(b'fixture refused\\n'); sys.exit(1)"], HERE, records, expected_exit=1)
             receipt = json.loads((root / "expected-refusal.json").read_bytes())
             self.assertEqual(result, b"")
             self.assertEqual(receipt["actual_exit"], 1)
