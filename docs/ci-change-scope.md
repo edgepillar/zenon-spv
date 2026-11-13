@@ -75,8 +75,13 @@ files. Regular Markdown may accompany the changes.
 | `tools/owned-devnet-query` | `engine_test.py`, `images_test.py`, `inputs.py`, `inputs_test.py`, `capture_test.py`, `review.py`, `review_test.py`, `README.md` | `owned-devnet-query.yml` |
 
 The compiled export controls also consume `transport.py`.
-`docs/state-root-r1-intake.md` and `docs/native-roadmap.md` add
-`ledger-transport.yml` when part of a portable diff. The preparation workflow
+`docs/state-root-r1-intake.md` adds `ledger-transport.yml` when part of a portable
+diff. The general `docs/native-roadmap.md` is an evidence metadata input, not a
+transport execution dependency: its changes alone do not trigger that workflow
+or add it to the portable workflow union. Transport code, the intake contract,
+the inventory dependency, the transport workflow and license changes retain
+their dedicated triggers. When transport work does run, its evidence still pins
+the roadmap bytes at that exact checkout. The preparation workflow
 runs its portable controls on these events. The separate manual fixture
 experiment has its own dispatch and evidence requirements.
 

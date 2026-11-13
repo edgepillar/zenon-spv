@@ -4,9 +4,11 @@
 No Git repository, archive, large fixture file, network or runtime binary is
 created. Graph/diff fixtures are literal; Git source bytes are read separately.
 """
+import ast
 import contextlib
 import copy
 import hashlib
+import fnmatch
 import importlib.util
 import io
 import json
@@ -647,7 +649,7 @@ class CIChangeScopeControls(unittest.TestCase):
                     self.assertEqual(self.workflow_guard(self.guard_bytes(result), selected),
                                      (None, "run_runtime=false\nrun_recorded_oracles=false\n"))
 
-    def test_portable_mixed_diff_selects_the_union_including_transport_docs(self):
+    def test_portable_mixed_diff_selects_the_union(self):
         archive = record(b"tools/ledger-transport/archive_tail.py")
         exporter = record(b"tools/ledger-export/inventory_completed_export.py")
         preparation = record(b"tools/owned-devnet-query/review.py")
@@ -659,11 +661,74 @@ class CIChangeScopeControls(unittest.TestCase):
                 report = self.portable_result(FixtureRunner(diff=paths))
                 self.assertEqual(report["required_workflows"], required)
                 self.assertEqual(self.workflow_guard(self.guard_bytes(report))[0], None)
-        for document in (b"docs/state-root-r1-intake.md", b"docs/native-roadmap.md"):
-            removed = record(document, b"D", new_mode=b"000000")
-            report = self.portable_result(FixtureRunner(diff=removed + preparation))
-            self.assertEqual(report["required_workflows"], [TRANSPORT, PREPARATION])
-            self.assertEqual(self.workflow_guard(self.guard_bytes(report))[0], None)
+
+    def test_roadmap_mixed_portable_changes_require_only_the_selected_tool_workflows(self):
+        leaves = ((b"tools/owned-devnet-query/review.py", [PREPARATION]),
+                  (b"tools/ledger-export/inventory_completed_export.py", [EXPORT]),
+                  (b"tools/ledger-transport/archive_tail.py", [TRANSPORT]),
+                  (b"tools/ledger-transport/transport.py", [TRANSPORT, EXPORT]))
+        for event in ("pull_request", "push"):
+            for change, old_mode, new_mode in ((b"A", b"000000", b"100644"),
+                                               (b"M", b"100644", b"100644"),
+                                               (b"D", b"100644", b"000000")):
+                document = record(b"docs/native-roadmap.md", change, old_mode, new_mode)
+                for path, required in leaves:
+                    with self.subTest(event=event, change=change, path=path):
+                        selected = selection(event)
+                        report = self.portable_result(FixtureRunner(selected, document + record(path)))
+                        self.assertFalse(report["run_runtime"])
+                        self.assertEqual(report["required_workflows"], required)
+                        self.assertEqual(self.workflow_guard(self.guard_bytes(report), selected),
+                                         (None, "run_runtime=false\nrun_recorded_oracles=false\n"))
+
+    def test_intake_mixed_portable_changes_still_require_transport(self):
+        for event in ("pull_request", "push"):
+            for change, old_mode, new_mode in ((b"A", b"000000", b"100644"),
+                                               (b"M", b"100644", b"100644"),
+                                               (b"D", b"100644", b"000000")):
+                for path, required in ((b"tools/owned-devnet-query/review.py", [TRANSPORT, PREPARATION]),
+                                       (b"tools/ledger-export/inventory_completed_export.py", [TRANSPORT, EXPORT])):
+                    with self.subTest(event=event, change=change, path=path):
+                        selected = selection(event)
+                        document = record(b"docs/state-root-r1-intake.md", change, old_mode, new_mode)
+                        report = self.portable_result(FixtureRunner(selected, document + record(path)))
+                        self.assertFalse(report["run_runtime"])
+                        self.assertEqual(report["required_workflows"], required)
+                        self.assertEqual(self.workflow_guard(self.guard_bytes(report), selected),
+                                         (None, "run_runtime=false\nrun_recorded_oracles=false\n"))
+
+    def test_roadmap_alone_selects_documentation_without_transferred_runtime(self):
+        for event in ("pull_request", "push"):
+            selected = selection(event)
+            report = M.select_scope(ROOT, selected, FixtureRunner(selected, record(b"docs/native-roadmap.md")))
+            self.assertEqual(report["status"], "DOCUMENTATION_ONLY")
+            self.assertNotIn("required_workflows", report)
+            self.assertFalse(report["runtime_qualification_transferred"])
+            self.assertEqual(self.workflow_guard(self.guard_bytes(report), selected),
+                             (None, "run_runtime=false\nrun_recorded_oracles=false\n"))
+
+    def test_transport_event_filters_preserve_the_execution_dependencies(self):
+        lines = (ROOT / TRANSPORT).read_text(encoding="utf-8").splitlines()
+        expected = ["tools/ledger-transport/**", "tools/ledger-inventory/inventory.py",
+                    TRANSPORT, "docs/state-root-r1-intake.md", "LICENSE",
+                    "tools/gen-state-root-vectors/LICENSE"]
+        for event in ("push", "pull_request"):
+            start = lines.index("  " + event + ":") + 1
+            end = next(index for index in range(start, len(lines))
+                       if lines[index] and not lines[index].startswith("    "))
+            block = lines[start:end]
+            self.assertIn("    branches: [main]", block)
+            self.assertIn("    paths:", block)
+            filters = [ast.literal_eval(line.strip()[2:]) for line in block
+                       if line.startswith("      - ")]
+            self.assertEqual(filters, expected)
+            self.assertFalse(any(fnmatch.fnmatchcase("docs/native-roadmap.md", path) for path in filters))
+            for name in ("tools/ledger-transport/archive_tail.py", "tools/ledger-inventory/inventory.py",
+                         TRANSPORT, "docs/state-root-r1-intake.md", "LICENSE",
+                         "tools/gen-state-root-vectors/LICENSE"):
+                self.assertTrue(any(fnmatch.fnmatchcase(name, path) for path in filters), name)
+        # The file remains part of transport evidence when that workflow runs.
+        self.assertIn("                   'docs/native-roadmap.md', 'LICENSE', 'tools/ledger-transport/THIRD_PARTY_NOTICES',", lines)
 
     def test_portable_events_require_the_exact_path_filter_comparison(self):
         raw = record(b"tools/ledger-transport/archive_tail.py")
