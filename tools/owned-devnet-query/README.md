@@ -129,6 +129,22 @@ header, oracle, provider and consumer evidence. The original downloads remain
 single files in the transport directory. The upload selects evidence by name
 and digest. The fresh runner owns the disposal boundary.
 
+Post-stop inspections retain a separate `owned-devnet-stop-state/v1` diagnostic
+before the existing stopped-container checks run. It binds the owned ID, service,
+inspection command and original stdout digest to allowlisted typed state fields:
+running/restarting/dead/OOM/paused flags, PID, exit code and a known status.
+Missing or invalid fields are listed without coercion. An engine error is
+classified as empty/nonempty/missing/invalid; its text, mounts, labels and other
+inspect values are not exported. Normal work and cleanup keep separate records.
+A diagnostic does not establish closure or relax the zero-exit requirement.
+Only the declared service names and bounded command-number filenames enter the
+upload. Completed per-image reports also survive a later builder-close refusal.
+
+The [first authorized attempt](../../docs/owned-devnet-attempt-2026-11-13.md)
+stopped at builder closure before node startup. Its original artifact preserves
+the failed result; these additional diagnostics cannot reconstruct missing state
+from that historical run. A new execution requires a new exact-source approval.
+
 ### Review a retained result
 
 Before downloading, select the runner revision, attempt-1 run ID, artifact ID
