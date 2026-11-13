@@ -1,7 +1,7 @@
 # Typed-query readiness and acceptance ledger
 
 Evidence cut: **13 November 2026**, runtime source
-[`5caa58d43a452714f044c081e00ec69388894c08`](https://github.com/edgepillar/zenon-spv/tree/5caa58d43a452714f044c081e00ec69388894c08).
+[`e143ade8507a45a1f125de7bc15b92541036ef85`](https://github.com/edgepillar/zenon-spv/tree/e143ade8507a45a1f125de7bc15b92541036ef85).
 This reconciles the [D0-D6 plan](typed-state-roadmap.md) with implemented controls
 and the remaining execution and external gates. The planning document retains
 its dated pins and original delivery states. A documentation-only head does
@@ -25,8 +25,9 @@ an older batch. Native v1/v2 inclusion remains an independent delivery track.
 | Role | Pinned source or input | Meaning |
 | --- | --- | --- |
 | Frozen human-review candidate | `6ecc2310538d511e3b26bea4c658082853266a11` | Its original review/handoff scope remains fixed. Later source and CI do not inherit human acceptance. |
-| Current ledger-selected runtime | `5caa58d43a452714f044c081e00ec69388894c08`, tree `35beac2f0ca30286927be6483f8eed551cca1607` | Own-main Linux/macOS/Windows CI and archive qualification; see the [runtime ledger](review-candidate-changes.md#current-qualified-runtime-baseline). |
+| Current ledger-selected runtime | `e143ade8507a45a1f125de7bc15b92541036ef85`, tree `0cfe07a72796b985e4d51483807c7a168d16c2e3` | Own-main Linux/macOS/Windows CI and archive qualification; see the [runtime ledger](review-candidate-changes.md#current-qualified-runtime-baseline). |
 | Prepared owned-runner ref | `codex/owned-devnet-query-runner` at `4a1d03e06c848edebcf611e964e84967d85679d1` | Frozen execution-review source. Recheck this exact ref before any authorized dispatch; do not substitute a newer main implicitly. |
+| Reviewed follow-up packet | `834d551fc285bb2ec0cc7617e0164caa0023eadf` | Locally reviewed builder-compatibility follow-up, unexecuted and awaiting separate source-specific authorization. The frozen runner ref is not moved by this ledger. |
 | Selected Linux consumer/oracle inputs | `7493c5929c7dbcfb29f94be521f7533d90a1a687` | The [reference-gas contract](reference-gas-owned-contract.md) pins their own qualified runs, artifact IDs, archive and binary hashes. They are not binaries built from the later runner or documentation head. |
 | Original experiment contract | `owned-devnet-batch-query-contract/v1`, SHA-256 `1178cb1161d8e21a3f6e657aa2519900c8a0d4dbe6d207ecb667edf473cfe93e` | Original cohort and prepared metadata keep their byte identity. |
 | Prepared reference-gas contract | `owned-devnet-batch-query-contract/v2`, SHA-256 `6f67a35cf6db1e2fd91a529880b9fa555461a4687ed0a76d9a27c900ca6b6f31` | Explicit separate source selection; a matching digest supplies no execution permission or network authority. |
@@ -60,9 +61,11 @@ single-attempt authorization is consumed. Stopped-state diagnostics are now
 retained. The [builder-only compatibility fix](owned-builder-shutdown.md)
 separates disposable cache shutdown from runtime-ledger closure, with synthetic
 regression controls; actual builder/chain execution remains unqualified. The
-next primary action is to review the exact source and obtain separate execution
-authorization before any new fixture attempt. A prior source's approval does
-not authorize a newer runner implicitly.
+reviewed follow-up packet selects `834d551` and remains pending separate
+source-specific execution authorization. Selecting runtime `e143ade` does not
+replace that packet, move the frozen runner ref or replace the selected
+`7493c59` consumer/oracle inputs. A prior source's approval does not authorize a
+newer runner implicitly.
 The selected flow uses public fixture accounts for domain configuration, vault
 setup and one test-ZNN deposit before read-only capture and offline consumption.
 Those signed fixture steps were not reached in the first attempt. The selected

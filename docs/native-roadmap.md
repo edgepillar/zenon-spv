@@ -29,11 +29,12 @@ Later changes include executable code and tests, as well as documentation and
 research. The [frozen-to-baseline change ledger](review-candidate-changes.md)
 retains the historical `879fbce33dd77f483f7aba18994fb037f248e842` observations
 and the completed `d85aff12dd0de8b2d1bd8db46e0e4e727c7e60ff` pipeline. It
-preserves the historical 18-file root-module delta through `da04d418` and selects
-the separately qualified `2092095` runtime baseline in its
-[current qualification record](review-candidate-changes.md#current-qualified-runtime-baseline).
+preserves the historical 18-file root-module delta through `da04d418` and the
+separately qualified `2092095` runtime record. Its
+[current qualification record](review-candidate-changes.md#current-qualified-runtime-baseline)
+selects `e143ade`.
 The frozen-to-`2092095` comparison retains its 107 root-module Go paths. The
-current `5caa58d` comparison contains 128: 59 implementation/driver files and 69
+current `e143ade` comparison contains 130: 59 implementation/driver files and 71
 tests. The historical table and all earlier pipeline observations retain their
 original revision pairs. The ledger also distinguishes original review revisions from
 their identity-normalized counterparts. A later documentation-only workflow
@@ -88,18 +89,23 @@ does not wait for a complete mainnet inventory, and does not close representativ
 production budgets or node recovery/activation gates.
 
 The latest ledger-selected runtime baseline is
-[`5caa58d43a452714f044c081e00ec69388894c08`](https://github.com/edgepillar/zenon-spv/tree/5caa58d43a452714f044c081e00ec69388894c08),
-tree `35beac2f0ca30286927be6483f8eed551cca1607`.
-Its own main [general CI](https://github.com/edgepillar/zenon-spv/actions/runs/43377831318)
-passed all seven jobs on attempt 1. All 19 selected archives and 21 native binary
-bindings were reconciled, including complete 16-package root-suite receipts.
-Linux/macOS record 7,360 PASS events and zero skips; Windows records 7,423 PASS
+[`e143ade8507a45a1f125de7bc15b92541036ef85`](https://github.com/edgepillar/zenon-spv/tree/e143ade8507a45a1f125de7bc15b92541036ef85),
+tree `0cfe07a72796b985e4d51483807c7a168d16c2e3`, following the local
+`edgepillar` author/committer merge of
+[PR #385](https://github.com/edgepillar/zenon-spv/pull/385). Its own main
+[general CI](https://github.com/edgepillar/zenon-spv/actions/runs/43472323191)
+passed all seven jobs, and
+[transport CI](https://github.com/edgepillar/zenon-spv/actions/runs/43472322970)
+passed all three platform jobs, on attempt 1. Each of PR and main has 22 primary
+qualification archives plus 21 supplemental integrity/readback archives; the
+[runtime ledger](review-candidate-changes.md#current-qualified-runtime-baseline)
+accounts for all 86 IDs and distinguishes those scopes. Each context has its
+own 21 native binary bindings and complete 16-package root-suite receipts.
+Linux/macOS record 7,399 PASS events and zero skips; Windows records 7,462 PASS
 and 16 explicit SKIP events. Separate scenario skip ledgers are not added to
-full-suite counts.
-This follows the local `edgepillar` author/committer merge of
-[PR #380](https://github.com/edgepillar/zenon-spv/pull/380). Its PR checkout has
-separate CI/archive qualification. Documentation-only successors do not advance
-this runtime selection or the fixed human-review candidate.
+full-suite counts. Documentation-only successors do not advance this runtime
+selection or the fixed human-review candidate. The `5caa58d` record is retained
+verbatim in the historical runtime ledger.
 
 The [fixed source-enumeration receipt](source-root-control-reuse.md) lets macOS
 and Windows verify the actual complete-suite root and its six passed children
@@ -128,8 +134,9 @@ covered. The preceding runtime record and all failed/interrupted outcomes remain
 preserved with their original source identities.
 
 The separate owned-experiment preparation, closed-parent oracle and
-exporter/transport workflows did not run at `5caa58d`;
-their earlier qualifications remain pinned to their original sources.
+ledger-export workflows did not run at `e143ade`; their earlier qualifications
+remain pinned to their original sources. The frozen execution ref and reviewed
+`834d551` follow-up packet remain separate from this runtime selection.
 The frozen human-review candidate remains unchanged. The planning pins
 `df1cc52` and `1b8a33f` retain their original meanings. Later
 documentation-only heads do not advance runtime qualification. Selected-network
