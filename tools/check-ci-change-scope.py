@@ -39,7 +39,7 @@ NATIVE_FILES = frozenset("internal/verify/experimental_v3_" + name for name in (
     "retention_test.go"))
 # Every other non-document tree record remains in this reviewed closure,
 # including workflows, research Go sources, Python helpers and fixture data.
-ORACLE_SOURCE_PIN = "526841c891a3f9a9cf2b81598ff8246d1ec24d8cce5b4aae614ecef3dac12303"
+ORACLE_SOURCE_PIN = "50c3e881bdd5f60390b0c05eab09309a32a7c5219f07662f19fc8211fd966bba"
 SHARED_TRANSPORT = "tools/ledger-transport/transport.py"
 TRANSPORT_FILES = frozenset("tools/ledger-transport/" + name for name in (
     "archive_index.py", "archive_index_test.py", "archive_tail.py", "archive_tail_test.py",
@@ -50,10 +50,12 @@ PREPARATION_FILES = frozenset("tools/owned-devnet-query/" + name for name in (
     "engine_test.py", "images_test.py", "inputs.py", "inputs_test.py",
     "capture_test.py", "review.py", "review_test.py", "README.md"))
 PORTABLE_FILES = TRANSPORT_FILES | EXPORT_FILES | PREPARATION_FILES
-TRANSPORT_DOCS = frozenset(("docs/state-root-r1-intake.md", "docs/native-roadmap.md"))
+# The intake is the tool contract. The general roadmap is metadata only and
+# must not add an unrelated three-platform workflow to a portable tool change.
+TRANSPORT_DOCS = frozenset(("docs/state-root-r1-intake.md",))
 PORTABLE_WORKFLOWS = (
-    (".github/workflows/ledger-transport.yml", TRANSPORT_FILES | TRANSPORT_DOCS, 7894,
-     "3101f06e85bd6bd6d74fe89e86e06a04cce38a26aad7d945f5371880250e49b0"),
+    (".github/workflows/ledger-transport.yml", TRANSPORT_FILES | TRANSPORT_DOCS, 7828,
+     "ed2edac4230468ec912fa18c1eb377b4006b970eeb052670abc1f57eb9803a24"),
     (".github/workflows/ledger-export.yml", EXPORT_FILES | {SHARED_TRANSPORT}, 8084,
      "8fab1803332f60cac43a20b8940988b19c38b8dd0359f005f605dcc55dcb98fb"),
     (".github/workflows/owned-devnet-query.yml", PREPARATION_FILES, 4453,
@@ -61,7 +63,7 @@ PORTABLE_WORKFLOWS = (
 )
 # Keep every remaining non-document dependency, including all workflows.
 # Refresh only after reviewing dependencies and selecting full runtime CI.
-PORTABLE_SOURCE_PIN = "7a78eb3a2d852cb62de58d41fc606497a569306f683156a493422e3402c53253"
+PORTABLE_SOURCE_PIN = "931c84f8bc60f16d547bd5114839279c03c5a6c287fd6db1110d6a243ca19aab"
 MAX_FILTERED_DIFF_RECORDS = 256
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192

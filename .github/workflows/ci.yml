@@ -94,9 +94,9 @@ jobs:
                   names = {row['path'] for row in paths + documents}
                   assert len({name.lower() for name in names}) == len(paths) + len(documents)
                   required = {}
-                  if names & (transport | {'docs/state-root-r1-intake.md', 'docs/native-roadmap.md'}):
+                  if names & (transport | {'docs/state-root-r1-intake.md'}):
                       required['.github/workflows/ledger-transport.yml'] = (
-                          '3101f06e85bd6bd6d74fe89e86e06a04cce38a26aad7d945f5371880250e49b0', 7894)
+                          'ed2edac4230468ec912fa18c1eb377b4006b970eeb052670abc1f57eb9803a24', 7828)
                   if shared in names or names & exporter:
                       required['.github/workflows/ledger-export.yml'] = (
                           '8fab1803332f60cac43a20b8940988b19c38b8dd0359f005f605dcc55dcb98fb', 8084)
