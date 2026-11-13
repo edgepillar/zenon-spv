@@ -17,9 +17,12 @@ spec.loader.exec_module(C)
 
 
 class SelectedGenesisTests(unittest.TestCase):
+    cohort = "original"
+    corpus_sha256 = "e11aa64274d4af0b6fd7995cf55ea2a49fdd4ca1ba6f8747acdde84467773805"
+
     @classmethod
     def setUpClass(cls):
-        cls.raw = C.read_regular(C.CORPUS, 16 << 10)
+        cls.raw = C.read_regular(C.selected_recording(cls.cohort)[0], 16 << 10)
         cls.value = C.parse(cls.raw, 16 << 10)
         cls.config = C.read_regular(C.ROOT / C.CONFIG_PATH, 16 << 10)
         cls.harness = C.read_regular(C.ROOT / C.HARNESS_PATH, 8 << 10)
@@ -27,7 +30,7 @@ class SelectedGenesisTests(unittest.TestCase):
     def check(self, value=None, config=None, harness=None):
         return C.check_corpus(self.value if value is None else value,
                               self.config if config is None else config,
-                              self.harness if harness is None else harness)
+                              self.harness if harness is None else harness, cohort=self.cohort)
 
     def bad(self, mutate):
         value = copy.deepcopy(self.value)
@@ -42,7 +45,7 @@ class SelectedGenesisTests(unittest.TestCase):
         self.assertFalse(report["genesis_VM_or_managers_executed_by_reader"])
         self.assertFalse(report["network_identity_authenticated"])
         self.assertFalse(report["state_value_accepted"])
-        self.assertEqual(C.check()["corpus_sha256"], "e11aa64274d4af0b6fd7995cf55ea2a49fdd4ca1ba6f8747acdde84467773805")
+        self.assertEqual(C.check(self.cohort)["corpus_sha256"], self.corpus_sha256)
 
     def test_source_config_and_harness_pins(self):
         for section in ("source", "genesis_config", "harness", "execution"):
@@ -120,7 +123,7 @@ class SelectedGenesisTests(unittest.TestCase):
 
     def test_cli_records_source_revision_without_executing_node(self):
         with patch.object(sys, "stdout", new_callable=io.StringIO) as output:
-            self.assertEqual(C.main(["--source-revision", "a" * 40]), 0)
+            self.assertEqual(C.main(["--source-revision", "a" * 40, "--cohort", self.cohort]), 0)
         report = json.loads(output.getvalue())
         self.assertEqual(report["source_revision"], "a" * 40)
         self.assertFalse(report["genesis_VM_or_managers_executed_by_reader"])
@@ -136,6 +139,51 @@ class SelectedGenesisTests(unittest.TestCase):
             self.assertEqual(C.main([]), 1)
             self.assertEqual(output.getvalue(), "")
             self.assertNotIn("PRIVATE_PATH", error.getvalue())
+
+
+class ReferenceGasGenesisTests(SelectedGenesisTests):
+    cohort = "reference-gas"
+    corpus_sha256 = "8fe43fb1e46bc80957c44ad09deabba0c09380a2e015aa63c9e66602786e7d13"
+
+    def test_identical_H1_cannot_transfer_another_sources_execution(self):
+        original = C.parse(C.read_regular(C.CORPUS, 16 << 10), 16 << 10)
+        self.assertEqual(original["trace"], self.value["trace"])
+        with self.assertRaises(ValueError):
+            C.check_corpus(original, self.config, self.harness, cohort=self.cohort)
+        with self.assertRaises(ValueError):
+            C.check_corpus(self.value, self.config, self.harness)
+        for section in ("source", "execution"):
+            self.bad(lambda v: v.__setitem__(section, copy.deepcopy(original[section])))
+
+    def test_reconciled_native_pass_does_not_relabel_controller_failure(self):
+        self.assertEqual(self.value["execution"]["actual_exit"], 0)
+        self.assertEqual(self.value["execution"]["capture_controller_outcome"], "FAILURE")
+        self.bad(lambda v: v["execution"].update(capture_controller_outcome="SUCCESS"))
+        self.bad(lambda v: v["execution"].update(native_result_reconciled_without_rerun=False))
+
+    def test_explicit_cohort_and_default_output_remain_distinct(self):
+        for argv in ([], ["--cohort", "original"], ["--cohort", self.cohort],
+                     ["--cohort", self.cohort, "--source-revision", "a" * 40]):
+            with patch.object(sys, "stdout", new_callable=io.StringIO) as output:
+                self.assertEqual(C.main(argv), 0)
+            report = json.loads(output.getvalue())
+            if self.cohort in argv:
+                self.assertEqual(report["node_revision"], C.REFERENCE_GAS_SOURCE["revision"])
+                self.assertEqual(report["format"], "zenon-reference-gas-devnet-genesis-byte-check/v1")
+            else:
+                self.assertNotIn("node_revision", report)
+                self.assertEqual(report["format"], "zenon-selected-devnet-genesis-byte-check/v1")
+
+    def test_unknown_or_repeated_selector_refuses_before_reading(self):
+        for argv in (["--cohort", "PRIVATE_INPUT"], ["--cohort", self.cohort, "--cohort", self.cohort],
+                     ["--source-revision", "a" * 40, "--source-revision", "a" * 40],
+                     ["--cohort"], ["--cohort", self.cohort, "--other", "PRIVATE_INPUT"]):
+            with patch.object(C, "check") as check, patch.object(sys, "stderr", new_callable=io.StringIO) as error:
+                self.assertEqual(C.main(argv), 64)
+                check.assert_not_called()
+                self.assertNotIn("PRIVATE_INPUT", error.getvalue())
+        with self.assertRaises(ValueError):
+            C.selected_recording("PRIVATE_INPUT")
 
 
 if __name__ == "__main__":

@@ -80,6 +80,11 @@ new first-v3 boundary or qualify a selected devnet lifecycle.
 
 ## Context separation and remaining work
 
+The separate [reference-gas genesis/lifecycle execution](reference-gas-genesis.md)
+now constructs H1 and completes two real manager reopen cycles at the new node
+revision. Its matching H1 bytes retain their own new execution identity; they
+do not supply the anchor or an executed first-v3 transition.
+
 `ExperimentalV3ReferenceGasNodeRevision` is an additional exact opt-in value.
 It selects `ExperimentalBatchEntryReferenceGasExecutorRevision` for the query
 context. The original exported constants keep the original source pair.
