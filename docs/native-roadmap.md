@@ -541,3 +541,16 @@ fixed-width scalar before JSON string allocation and preserves valid escaped
 hashes, lowercase policy and recorded header bytes. Function observations cover
 normal inputs and large refusals; they do not qualify whole-response memory,
 representative workloads or the actual selected-network typed consumer.
+
+### Qualification cost: planning-only transport jobs
+
+Broad roadmap edits previously dispatched the unchanged three-platform transport
+suite in both PR and main. [PR #387](https://github.com/edgepillar/zenon-spv/pull/387)
+narrows those event triggers and the corresponding portable workflow union.
+Transport code, the inventory dependency, the intake contract, workflow and
+license changes retain their triggers. The roadmap stays an exact-source
+metadata input when transport work runs. The
+[CI selection record](ci-change-scope.md#planning-only-transport-trigger-qualification)
+binds the policy's own complete PR/main qualification. A later documentation-only
+update still needs its actual scope, skipped-job and artifact reconciliation;
+the policy change alone is not a whole-CI timing benchmark.
