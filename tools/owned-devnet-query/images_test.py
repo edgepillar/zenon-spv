@@ -272,6 +272,41 @@ class BuildLifecycleTests(unittest.TestCase):
             with self.assertRaisesRegex(model.Refused, "image_build_already_attempted"):
                 builder.prepare()
 
+    def test_normal_builder_signal_exit_returns_only_completed_verified_images(self):
+        with tempfile.TemporaryDirectory(prefix="image-regular-control-") as temporary:
+            client, recorder, builder = self.prepare(Path(temporary))
+            recorder.stop_exit_codes["buildkit"] = 1
+            prepared = builder.prepare()
+            self.assertTrue(client.builder_closed)
+            self.assertEqual(recorder.containers, {})
+            self.assertEqual(prepared.image_for("pillar"), "sha256:" + "1" * 64)
+            self.assertEqual(prepared.image_for("executor"), "sha256:" + "2" * 64)
+            report = json.loads(recorder.seals["image-preparation.json"])
+            self.assertEqual(report["builder_shutdown"], {"policy": "owned-buildkit-quiescence/v1",
+                "exit_code": 1, "runtime_ledger_closure_established": False})
+            self.assertIn("image-build-node.json", recorder.seals)
+            self.assertIn("image-build-executor.json", recorder.seals)
+            removed = [call for call in recorder.calls if call[:2] == ["container", "rm"]]
+            self.assertEqual(len(removed), 1)
+            self.assertEqual(len(removed[0]), 3)
+
+    def test_signal_exit_cannot_promote_an_incomplete_or_mismatched_build(self):
+        for failure in ("executor", "metadata"):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory(prefix="image-regular-control-") as temporary:
+                client, recorder, builder = self.prepare(Path(temporary))
+                recorder.stop_exit_codes["buildkit"] = 1
+                recorder.fail_role = "executor" if failure == "executor" else None
+                recorder.changed_metadata = failure == "metadata"
+                with self.assertRaises(model.Refused):
+                    builder.prepare()
+                self.assertFalse(client.builder_closed)
+                self.assertNotIn("image-preparation.json", recorder.seals)
+                self.assertFalse(any(call[:2] == ["container", "rm"] for call in recorder.calls))
+                closure = client.cleanup()
+                self.assertTrue(closure[0]["observed_closed"])
+                self.assertFalse(client.builder_closed)
+                self.assertNotIn("image-preparation.json", recorder.seals)
+
     def test_mismatched_build_metadata_cannot_return_a_runtime_image(self):
         with tempfile.TemporaryDirectory(prefix="image-regular-control-") as temporary:
             client, recorder, builder = self.prepare(Path(temporary))

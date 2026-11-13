@@ -524,6 +524,25 @@ def require_stopped_container(admission, owned, current_engine_id, value):
     return owned.identity
 
 
+def require_stopped_builder(admission, owned, current_engine_id, value):
+    """The disposable builder may return 1 for its normal SIGTERM shutdown.
+
+    This is not a ledger-close predicate. All six runtime services retain the
+    separate zero-exit policy in require_stopped_container.
+    """
+    require_owned_container(admission, owned, current_engine_id, value)
+    require(owned.service == "buildkit", "builder_stop_scope")
+    state = value.get("State")
+    require(type(state) is dict and state.get("Running") is False
+            and state.get("Restarting") is False and state.get("Dead") is False
+            and state.get("Paused") is False and state.get("OOMKilled") is False
+            and state.get("Status") == "exited" and state.get("Error") == ""
+            and type(state.get("Pid")) is int and state["Pid"] == 0
+            and type(state.get("ExitCode")) is int and state["ExitCode"] in (0, 1),
+            "builder_not_quiescent_after_stop")
+    return owned.identity
+
+
 def require_runtime_closure(admission, owned, current_engine_id, inspected):
     require(type(owned) is list and type(inspected) is list
             and len(owned) == len(inspected) == len(SERVICES), "runtime_container_count")

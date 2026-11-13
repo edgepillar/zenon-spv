@@ -204,10 +204,11 @@ class Builder:
                 "additional_node_context": role == "executor"}
             self.engine.recorder.seal("image-build-" + role + ".json", canonical(reports[role]))
         # Resource closure precedes returning images, even after both builds.
-        self.engine.close_builder()
+        shutdown = self.engine.close_builder()
         report = {"format": "owned-devnet-image-preparation/v1", "images": reports,
             "buildkit_distribution": reference, "buildkit_image_id": buildkit,
             "builder_closed_before_runtime": True, "shared_images_built": 2,
+            "builder_shutdown": shutdown,
             "image_archive_written": False, "independently_reproduced_images": False,
             "manual_volume_or_image_removal_performed": False}
         self.engine.recorder.seal("image-preparation.json", canonical(report))

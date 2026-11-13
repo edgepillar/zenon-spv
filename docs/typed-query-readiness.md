@@ -56,9 +56,13 @@ does not supply a public API or host integration.
 
 The [first authorized owned experiment](owned-devnet-attempt-2026-11-13.md)
 completed with a retained non-accepting result at image-builder closure. Its
-single-attempt authorization is consumed. The next primary action is to retain
-the missing stopped-state diagnostics without weakening closure policy, then
-review the next exact source before requesting any new execution authorization.
+single-attempt authorization is consumed. Stopped-state diagnostics are now
+retained. The [builder-only compatibility fix](owned-builder-shutdown.md)
+separates disposable cache shutdown from runtime-ledger closure, with synthetic
+regression controls; actual builder/chain execution remains unqualified. The
+next primary action is to review the exact source and obtain separate execution
+authorization before any new fixture attempt. A prior source's approval does
+not authorize a newer runner implicitly.
 The selected flow uses public fixture accounts for domain configuration, vault
 setup and one test-ZNN deposit before read-only capture and offline consumption.
 Those signed fixture steps were not reached in the first attempt. The selected
