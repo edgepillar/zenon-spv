@@ -297,6 +297,17 @@ def recorded_frontiers(evidence, contract):
     return rows
 
 
+def diagnostic_receipt(evidence, label, reason):
+    if "evidence/" + label + ".complete.json" not in evidence.pins:
+        return None
+    receipt = evidence.json(label + ".complete.json")
+    require(receipt.get("format") == "owned-devnet-command-capture/v1"
+            and receipt.get("label") == label
+            and (receipt.get("actual_exit") is None or type(receipt.get("actual_exit")) is int)
+            and type(receipt.get("output_complete")) is bool, reason)
+    return receipt
+
+
 def recorded_startup_sync(evidence, terminal):
     path = "evidence/" + capture.SYNC_REPORT
     bodies = {name for name in evidence.pins if name.endswith(".sync-info.json")}
@@ -328,14 +339,8 @@ def recorded_startup_sync(evidence, terminal):
     label = f"rpc-{request_id:02d}"
     same(evidence.json(label + ".request.json"), {"jsonrpc": "2.0", "id": request_id,
          "method": "stats.syncInfo", "params": []}, "review_sync_request")
-    receipt_name = "evidence/" + label + ".complete.json"
-    receipt = None
-    if receipt_name in evidence.pins:
-        receipt = evidence.json(label + ".complete.json")
-        require(receipt.get("format") == "owned-devnet-command-capture/v1"
-                and receipt.get("label") == label
-                and (receipt.get("actual_exit") is None or type(receipt.get("actual_exit")) is int)
-                and type(receipt.get("output_complete")) is bool, "review_sync_command")
+    receipt = diagnostic_receipt(evidence, label, "review_sync_command")
+    if receipt is not None:
         result.update(actual_exit=receipt["actual_exit"], output_complete=receipt["output_complete"])
     if status == "OBSERVED":
         response = label + ".sync-info.json"
@@ -352,6 +357,62 @@ def recorded_startup_sync(evidence, terminal):
                     "review_sync_failure")
         if status == "UNKNOWN" and reason == "command_incomplete":
             require(receipt is not None and receipt["output_complete"] is False, "review_sync_incomplete")
+    return result
+
+
+def recorded_post_sync_frontier(evidence, terminal, startup_sync, frontiers):
+    if "evidence/" + capture.POST_SYNC_REPORT not in evidence.pins:
+        return None
+    summary = evidence.json(capture.POST_SYNC_REPORT, 4096)
+    exact_keys(summary, {"format", "after_sync_request_id", "status", "reason", "request_id",
+                        "response_file", "accepted_header_authority", "production_qualified"},
+               "review_post_sync_fields")
+    status, reason = summary["status"], summary["reason"]
+    require(summary["format"] == "owned-devnet-post-sync-frontier/v1"
+            and terminal["stage"] == "nodes" and terminal["outcome"] != "DEVNET_CONSUMER_ACCEPTED"
+            and startup_sync is not None and startup_sync["status"] == "OBSERVED"
+            and summary["accepted_header_authority"] is False and summary["production_qualified"] is False
+            and type(status) is str and status in capture.SYNC_REASONS
+            and (reason is None or type(reason) is str) and reason in capture.SYNC_REASONS[status],
+            "review_post_sync_scope")
+    after = model.uint(summary["after_sync_request_id"], 96)
+    same(after, startup_sync["request_id"], "review_post_sync_parent")
+    if reason == "shared_call_limit":
+        require(status == "NOT_ATTEMPTED" and after == 96, "review_post_sync_call_limit")
+    request_id = summary["request_id"]
+    later = [row for row in frontiers if row["request_id"] > after]
+    result = {"status": status, "reason": reason, "after_sync_request_id": after,
+              "request_id": request_id, "observation": None, "actual_exit": None,
+              "output_complete": None, "accepted_header_authority": False,
+              "production_qualified": False, "atomic_with_sync_observation": False}
+    if request_id is None:
+        require((status in ("NOT_ATTEMPTED", "REFUSED")
+                 or status == "UNKNOWN" and reason == "capture_interrupted")
+                and summary["response_file"] is None and not later, "review_post_sync_missing_request")
+        return result
+    model.uint(request_id, 96)
+    require(request_id == after + 1 and status != "NOT_ATTEMPTED", "review_post_sync_request_scope")
+    label = f"rpc-{request_id:02d}"
+    same(evidence.json(label + ".request.json"), {"jsonrpc": "2.0", "id": request_id,
+         "method": "ledger.getFrontierMomentum", "params": []}, "review_post_sync_request")
+    receipt = diagnostic_receipt(evidence, label, "review_post_sync_command")
+    if receipt is not None:
+        result.update(actual_exit=receipt["actual_exit"], output_complete=receipt["output_complete"])
+    if status == "OBSERVED":
+        require(summary["response_file"] == label + ".frontier.json" and len(later) == 1
+                and later[0]["request_id"] == request_id, "review_post_sync_response")
+        # recorded_frontiers already checked the exact body, request and complete
+        # started-command binding. These two RPC reads are not an atomic view.
+        result["observation"] = later[0]
+    else:
+        require(summary["response_file"] is None and not later, "review_post_sync_response")
+        if status == "FAILURE":
+            require(receipt is not None and type(receipt["actual_exit"]) is int
+                    and receipt["actual_exit"] != 0 and receipt["output_complete"] is True,
+                    "review_post_sync_failure")
+        if status == "UNKNOWN" and reason == "command_incomplete":
+            require(receipt is not None and receipt["output_complete"] is False,
+                    "review_post_sync_incomplete")
     return result
 
 
@@ -381,6 +442,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         if binding_present:
             same(recorded, selection, "review_terminal_binding")
         startup_sync = recorded_startup_sync(evidence, terminal)
+        frontiers = recorded_frontiers(evidence, contract)
+        post_sync = recorded_post_sync_frontier(evidence, terminal, startup_sync, frontiers)
         matched = None
         if reported == "DEVNET_CONSUMER_ACCEPTED":
             require(binding_present and terminal["stage"] == "consumer" and terminal["reason"] is None
@@ -388,7 +451,6 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             matched = recorded_consumer(evidence, contract, checkout, selection)
         else:
             require(binding_present or terminal["stage"] == "dispatch", "review_terminal_binding")
-        frontiers = recorded_frontiers(evidence, contract)
         evidence.verify_remaining()
         report = {"format": "owned-devnet-evidence-review/v1",
                 "status": "RECORDED_CONSUMER_BYTES_MATCH" if matched else "RECORDED_NON_ACCEPTING_OUTCOME",
@@ -401,6 +463,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["candidate_frontier_observations"] = frontiers
         if startup_sync is not None:
             report["startup_sync_diagnostic"] = startup_sync
+        if post_sync is not None:
+            report["post_sync_frontier_diagnostic"] = post_sync
         return report
 
 

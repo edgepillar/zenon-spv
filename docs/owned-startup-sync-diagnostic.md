@@ -28,14 +28,21 @@ and a uint64 target height including zero. Booleans, strings, additional fields
 and larger integers are refused. The DTO itself has no chain ID or header hash.
 No trust input or selected header is derived from it.
 
-## One optional read, followed by the original refusal
+## Bounded diagnostic reads, followed by the original refusal
 
 The controller invokes the capture only after its initial selected-height
 readiness call refuses with `owned_rpc_readiness_deadline`. It preserves that
 failure and performs at most one diagnostic read before owned cleanup. There is
-no retry or fixture-configuration transition even if the diagnostic reports a
+no retry or fixture-configuration transition even if a diagnostic reports a
 height above the requested threshold. Other failure reasons, successful startup
 and gateway readiness do not select this extension.
+
+A valid sync observation permits one later `ledger.getFrontierMomentum` read.
+It uses the next shared request ID, a fresh budget check and the existing 128 KiB
+frontier bound. This captures a candidate hash alongside the later height report.
+An unavailable sync observation selects no follow-up. Both reads keep their
+five-second HTTP / seven-second command bounds and share the unchanged 96-call
+cap. They provide sequential observations rather than an atomic snapshot.
 
 The checked 90-second / 30-attempt readiness policy, shared 96-call cap, total
 evidence bound and resource guard remain. The diagnostic has an 8 KiB response
@@ -51,7 +58,7 @@ Its header-authority and production flags must be false. Selection is limited
 to that summary and at most one matching `rpc-NN.request.json` /
 `rpc-NN.sync-info.json` pair for IDs `1..96`.
 
-For `OBSERVED`, the reader requires the exact empty-parameter `stats.syncInfo`
+For sync `OBSERVED`, the reader requires the exact empty-parameter `stats.syncInfo`
 request, original response ID/bytes, bounded DTO and complete successful
 quiescent command with its matching started record. An orphan response, mismatched
 request/receipt or diagnostic attached to a completed consumer is refused.
@@ -69,6 +76,19 @@ The accepted-header path, explicit anchor/profile/schedule/context pins,
 header-derived root and three-proof native consumer remain separate. Legacy
 archives without the optional diagnostic retain their report shape. The original
 non-accepting archives and their failure records are unchanged.
+
+The optional `owned-devnet-post-sync-frontier/v1` summary binds the observed sync
+request to the next frontier request. Its body follows the ordinary validated
+frontier export path. The reader requires that exact request/response/command
+binding and one later candidate. Failed or incomplete reads preserve the actual
+receipt without exporting the unsuccessful body. A shared-call refusal must
+refer to sync request 96. The original refusal remains, including when the later
+candidate has already reached H3 or higher. This observation cannot populate an
+anchor, producer authorization or context pin.
+
+The [source-b8bae80 attempt](owned-devnet-sync-attempt-2026-11-14.md) retained the
+original single-read format. Its later reported height of two has no captured
+matching header hash. Existing archives receive no backfilled observation.
 
 ## Controls and remaining execution gate
 
