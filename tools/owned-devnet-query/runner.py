@@ -102,6 +102,17 @@ def fixture_flow(contract, recorder, engine, sources, node, prepared, phase, gua
     engine.require_running_closure(NODE_ROLES if phase == "configure" else model.SERVICES)
 
 
+def frontier_evidence_files(rpc):
+    """Select each validated frontier together with its exact request."""
+    selected = set()
+    for name in rpc.retained_frontiers:
+        require(type(name) is str and re.fullmatch(
+            r"rpc-(?:0[1-9]|[1-8][0-9]|9[0-6])\.frontier\.json", name) is not None,
+            "retained_frontier_selection")
+        selected.update((name, name[:-len(".frontier.json")] + ".request.json"))
+    return selected
+
+
 def evidence_index(recorders, extra):
     entries = []
     for recorder in recorders:
@@ -259,7 +270,7 @@ def execute(environment, workspace, checkout):
             "run_attempt": execution.run_attempt if execution else None,
             "production_qualified": False, "consensus_finality_or_funds_release": False}))
         if rpc is not None:
-            extra.update(rpc.retained_frontiers)
+            extra.update(frontier_evidence_files(rpc))
         entries = evidence_index((record, transport), {"evidence": extra})
         index = canonical({"format": "owned-devnet-evidence-index/v1",
             "files": entries, "transport_archive_copies": 0,
