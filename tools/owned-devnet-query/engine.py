@@ -20,6 +20,7 @@ import time
 
 from artifacts import api_json
 import model
+import node_diagnostics as node_diag
 from model import Refused, canonical, require
 from process import CommandFailed, regular_pin
 from sources import PreparedSources
@@ -255,6 +256,7 @@ class Engine:
         self.probe_attempted = False
         self.layout_attempted = False
         self.cleanup_deadline = None
+        self.startup_diagnostics_attempted = False
 
     def _run(self, label, arguments, *, timeout=60, cleanup=False, check=True,
              stdout_cap=128 << 10, stderr_cap=128 << 10):
@@ -450,6 +452,83 @@ class Engine:
         self.builder_closed = True
         return {"policy": "owned-buildkit-quiescence/v1", "exit_code": value["State"]["ExitCode"],
                 "runtime_ledger_closure_established": False}
+
+    def capture_startup_diagnostics(self):
+        """Observe owned nodes once before cleanup, preserving readiness refusal."""
+        require(not self.startup_diagnostics_attempted and self.cleanup_deadline is None
+                and self.admission is not None, "startup_nodes_scope")
+        self.startup_diagnostics_attempted = True
+        report = {"format": "owned-devnet-startup-nodes/v1", "trigger": "owned_rpc_readiness_deadline",
+            "status": "UNKNOWN", "reason": "capture_interrupted", "engine_probe": node_diag.empty_phase(),
+            "engine_identity_verified": False, "observed_before_cleanup": True, "atomic_snapshot": False,
+            "accepted_header_authority": False, "production_qualified": False, "raw_logs_exported": False,
+            "nodes": [{"service": role, "inspection": node_diag.empty_phase(), "logs": node_diag.empty_phase()}
+                      for role in node_diag.ROLES]}
+
+        def observe(phase, label, arguments, parse, stdout_cap, stderr_cap):
+            phase.update(status="UNKNOWN", reason="capture_interrupted")
+            try:
+                result = self._run(label, arguments, timeout=5,
+                                   stdout_cap=stdout_cap, stderr_cap=stderr_cap)
+                node_diag.complete_command(phase, result)
+                phase["data"] = parse(result)
+            except CommandFailed as error:
+                node_diag.failed_command(phase, error)
+            except (Refused, OSError, ValueError, KeyError, TypeError, AttributeError):
+                phase.update(status="REFUSED", reason="capture_refused", data=None)
+            else:
+                phase.update(status="OBSERVED", reason=None)
+
+        try:
+            try:
+                self.guard()
+            except Refused:
+                report.update(status="NOT_ATTEMPTED", reason="budget_refused")
+                return
+
+            def probe(result):
+                value = api_json(result.stdout(16 << 10))
+                require(value.get("ID") == self.admission.engine_id and value.get("OSType") == "linux"
+                        and value.get("Architecture") in ("amd64", "x86_64"), "startup_engine_changed")
+                return None
+
+            observe(report["engine_probe"], "startup-engine-info", ["info", "--format", INFO_FORMAT],
+                    probe, 16 << 10, 4096)
+            if report["engine_probe"]["status"] != "OBSERVED":
+                report.update(status="UNKNOWN", reason="incomplete_diagnostics")
+                return
+            report["engine_identity_verified"] = True
+            for row in report["nodes"]:
+                role = row["service"]
+                if role not in self.owned or role not in self.started:
+                    row["inspection"].update(status="REFUSED", reason="capture_refused")
+                    continue
+                owned = self.owned[role]
+
+                def state(result, owned=owned, role=role):
+                    value = api_json(result.stdout(16 << 10))
+                    model.require_owned_container(self.admission, owned, self.admission.engine_id, value)
+                    require(value.get("Image") == self.expected_images[role], "startup_node_image_changed")
+                    require_configured_limits(self.contract, self.admission, owned, value)
+                    return stop_state_summary(value)
+
+                observe(row["inspection"], "startup-inspect-" + role,
+                        ["container", "inspect", "--format", INSPECT_FORMAT, owned.identity],
+                        state, 16 << 10, 4096)
+                if row["inspection"]["status"] != "OBSERVED":
+                    continue
+                observe(row["logs"], "startup-logs-" + role,
+                        ["container", "logs", "--tail", str(node_diag.LOG_LINES), owned.identity],
+                        lambda result: node_diag.log_summary(result.stdout(node_diag.LOG_BYTES),
+                                                            result.stderr(node_diag.LOG_BYTES)),
+                        node_diag.LOG_BYTES, node_diag.LOG_BYTES)
+            phases = [report["engine_probe"], *(phase for row in report["nodes"]
+                                               for phase in (row["inspection"], row["logs"]))]
+            complete = all(phase["status"] == "OBSERVED" for phase in phases)
+            report.update(status="OBSERVED" if complete else "UNKNOWN",
+                          reason=None if complete else "incomplete_diagnostics")
+        finally:
+            self.recorder.seal(node_diag.REPORT, canonical(report))
 
     def stop_producers_and_clients(self):
         require(set(model.SERVICES) <= self.started, "runtime_was_not_fully_started")

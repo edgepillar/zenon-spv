@@ -230,6 +230,36 @@ captured `SyncDone` at reported height two after 29 H1 frontier responses. The
 follow-up read addresses its missing candidate hash; the original archive keeps
 its original bytes and report shape.
 
+The [source-f09006d attempt](../../docs/owned-devnet-startup-nodes-2026-11-14.md)
+retained both reads: `SyncDone` at current/target height one, followed by another
+v1 H1 frontier. It reached no fixture configuration or native consumer result.
+Its after-stop nonzero exits cannot establish when or why a producer stopped.
+
+### Observe owned node state before cleanup
+
+After that same initial readiness refusal, `startup-node-diagnostics.json`
+optionally records a fresh engine identity probe and the four owned nodes'
+state and bounded log summaries. There are at most nine read-only Docker
+commands, each limited to five seconds and the existing resource guard. Logs
+require the owned container identity, expected image and configured limits.
+Each log command selects 128 tail lines and caps stdout/stderr at 32 KiB each.
+
+Only bounded typed state, fixed event counters and allowlisted relative
+source-file/line pairs enter the public summary. Raw inspection/log streams,
+arbitrary panic messages, arguments, peer addresses and private configuration
+remain outside the index. Actual failures and incomplete capture keep their
+own receipt fields; the first readiness refusal remains non-accepting.
+
+The reader binds the command and stream pins, requires successful original
+start/completion records for observed phases, checks command ordering before
+cleanup and refuses raw streams in this extension's index. Its result explicitly
+marks the summaries as diagnostic assertions: excluded raw text is not
+independently replayed. The observation is sequential, supplies no accepted
+header authority and never retries readiness or advances to configuration.
+Command records without the optional summary, or alongside a claim that no
+diagnostic was attempted, are refused rather than silently ignored.
+Archives without this optional summary preserve their existing report shape.
+
 ### Review a retained result
 
 Before downloading, select the runner revision, attempt-1 run ID, artifact ID
