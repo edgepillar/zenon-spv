@@ -19,6 +19,11 @@ from query_checks import address_bytes, consumer_result, fingerprints, header_fa
 RPC_URL = "http://127.0.0.1:35997"
 GATEWAY_URL = "http://127.0.0.1:35999"
 ORACLE_REPORT_BYTES = 256 << 10
+SYNC_INFO_BYTES = 8 << 10
+SYNC_REPORT = "startup-sync.json"
+SYNC_REASONS = {"OBSERVED": {None}, "NOT_ATTEMPTED": {"shared_call_limit", "budget_refused"},
+    "FAILURE": {"command_failed"}, "UNKNOWN": {"command_incomplete", "capture_interrupted"},
+    "REFUSED": {"capture_refused"}}
 ORACLE_TRUE = {"read_only_ledger", "frontier_unchanged", "manager_stop_succeeded"}
 ORACLE_FALSE = {"Chain_Init_called", "Chain_Start_called", "consensus_Start_called",
     "header_signature_checked", "accepting_schedule_created",
@@ -38,6 +43,14 @@ def rpc_result(raw, request_id, limit):
             and envelope["id"] == request_id and type(envelope["result"]) is dict,
             "owned_rpc_result_identity")
     return envelope["result"]
+
+
+def sync_info(row):
+    """Validate the source-pinned stats DTO without assigning chain authority."""
+    exact_keys(row, {"state", "currentHeight", "targetHeight"}, "startup_sync_fields")
+    return {"state": uint(row["state"], 3, minimum=0),
+            "current_height": uint(row["currentHeight"]),
+            "target_height": uint(row["targetHeight"], minimum=0)}
 
 
 @dataclass(frozen=True)
@@ -77,12 +90,14 @@ def opening_headers(contract, rows):
 
 
 class LocalRpc:
-    """The three fixed read methods of the loopback-owned RPC service."""
+    """Bounded read methods of the selected loopback-owned services."""
     def __init__(self, contract, recorder, directory, curl, environment, guard):
         self.contract, self.recorder, self.directory = contract, recorder, Path(directory)
         self.curl, self.environment, self.guard = curl, environment, guard
         self.calls = 0
         self.retained_frontiers = set()
+        self.startup_sync_evidence = set()
+        self.startup_sync_attempted = False
 
     def _read(self, method, parameters, cap, *, stdout_name=None):
         self.calls += 1
@@ -117,6 +132,48 @@ class LocalRpc:
         require(type(result.get("count")) is int and result["count"] >= 3,
                 "opening_frontier_count")
         return opening_headers(self.contract, rows)
+
+    def capture_startup_sync(self):
+        """One diagnostic after node readiness fails; never retry readiness."""
+        require(not self.startup_sync_attempted, "startup_sync_already_attempted")
+        self.startup_sync_attempted = True
+        report = {"format": "owned-devnet-startup-sync/v1", "trigger": "owned_rpc_readiness_deadline",
+            "status": "NOT_ATTEMPTED", "reason": "shared_call_limit", "request_id": None,
+            "response_file": None, "accepted_header_authority": False, "production_qualified": False}
+        request_id = self.calls + 1
+        label, response = f"rpc-{request_id:02d}", f"rpc-{request_id:02d}.sync-info.json"
+        try:
+            if self.calls >= 96:
+                return
+            report.update(status="UNKNOWN", reason="capture_interrupted")
+            try:
+                self.guard()
+            except Refused:
+                report.update(status="NOT_ATTEMPTED", reason="budget_refused")
+                return
+            try:
+                sync_info(self._read("stats.syncInfo", [], SYNC_INFO_BYTES, stdout_name=response))
+            except CommandFailed as error:
+                receipt = error.result.receipt
+                if receipt.get("reason") == "interrupted":
+                    raise KeyboardInterrupt from error
+                complete_failure = (receipt["output_complete"] is True
+                    and type(receipt["actual_exit"]) is int and receipt["actual_exit"] != 0)
+                report.update(status="FAILURE" if complete_failure else "UNKNOWN",
+                              reason="command_failed" if complete_failure else "command_incomplete")
+            except Refused:
+                report.update(status="REFUSED", reason="capture_refused")
+            else:
+                report.update(status="OBSERVED", reason=None, response_file=response)
+        finally:
+            request = label + ".request.json"
+            if request in self.recorder.names:
+                report["request_id"] = request_id
+                self.startup_sync_evidence.add(request)
+            if report["status"] == "OBSERVED":
+                self.startup_sync_evidence.add(response)
+            self.recorder.seal(SYNC_REPORT, canonical(report))
+            self.startup_sync_evidence.add(SYNC_REPORT)
 
     def _wait(self, read, ready, *, starting):
         # Preserve every actual attempt. A freshly published loopback port can

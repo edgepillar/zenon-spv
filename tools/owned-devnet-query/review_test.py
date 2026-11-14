@@ -384,6 +384,136 @@ class FrontierReviewTests(unittest.TestCase):
         result = self.review(contract, {"evidence/terminal.json": files["evidence/terminal.json"]})
         self.assertEqual(result["status"], "RECORDED_NON_ACCEPTING_OUTCOME")
         self.assertNotIn("candidate_frontier_observations", result)
+        self.assertNotIn("startup_sync_diagnostic", result)
+
+
+class StartupSyncReviewTests(unittest.TestCase):
+    @staticmethod
+    def files(raw=None):
+        contract, files = FrontierReviewTests.files()
+        del files["evidence/rpc-02.frontier.json"]
+        if raw is None:
+            raw = canonical({"jsonrpc": "2.0", "id": 2,
+                "result": {"state": 3, "currentHeight": 1, "targetHeight": 0}})
+        files["evidence/rpc-02.sync-info.json"] = raw
+        files["evidence/rpc-02.request.json"] = canonical({"jsonrpc": "2.0", "id": 2,
+            "method": "stats.syncInfo", "params": []})
+        receipt = json.loads(files["evidence/rpc-02.complete.json"])
+        receipt["outputs"]["stdout"] = {"file": "rpc-02.sync-info.json", **pin(raw)}
+        files["evidence/rpc-02.complete.json"] = canonical(receipt)
+        files["evidence/startup-sync.json"] = canonical({"format": "owned-devnet-startup-sync/v1",
+            "trigger": "owned_rpc_readiness_deadline", "status": "OBSERVED", "reason": None,
+            "request_id": 2, "response_file": "rpc-02.sync-info.json",
+            "accepted_header_authority": False, "production_qualified": False})
+        return contract, files
+
+    @staticmethod
+    def review(contract, files):
+        return FrontierReviewTests.review(contract, files)
+
+    def test_node_reported_sync_state_is_bound_without_readiness_or_header_acceptance(self):
+        contract, files = self.files()
+        result = self.review(contract, files)
+        sync = result["startup_sync_diagnostic"]
+        self.assertEqual(sync["observation"], {"state": 3, "current_height": 1, "target_height": 0})
+        self.assertEqual((sync["actual_exit"], sync["output_complete"]), (0, True))
+        self.assertEqual(result["recorded_terminal_outcome"], "REFUSED")
+        self.assertEqual(result["status"], "RECORDED_NON_ACCEPTING_OUTCOME")
+        self.assertFalse(sync["accepted_header_authority"])
+        self.assertFalse(result["new_devnet_acceptance_established"])
+        self.assertIsNone(result["comparison"])
+
+    def test_summary_requires_fixed_scope_status_request_and_false_authority(self):
+        for field, value in (("format", "another/v1"), ("trigger", "unselected"),
+                             ("status", "READY"), ("status", True), ("reason", []),
+                             ("reason", "private text"), ("request_id", None),
+                             ("request_id", True), ("request_id", 0), ("request_id", 97),
+                             ("response_file", "rpc-03.sync-info.json"),
+                             ("accepted_header_authority", True), ("production_qualified", True)):
+            with self.subTest(field=field, value=value):
+                contract, files = self.files()
+                summary = json.loads(files["evidence/startup-sync.json"])
+                summary[field] = value
+                files["evidence/startup-sync.json"] = canonical(summary)
+                with self.assertRaises(Refused):
+                    self.review(contract, files)
+
+    def test_observation_requires_exact_request_and_complete_matching_command(self):
+        for change in ("missing_request", "wrong_method", "wrong_parameters", "wrong_id", "missing_start",
+                       "missing_receipt", "failed_exit", "incomplete", "wrong_stdout", "wrong_group"):
+            with self.subTest(change=change):
+                contract, files = self.files()
+                if change.startswith("missing_"):
+                    suffix = {"missing_request": "request", "missing_start": "started", "missing_receipt": "complete"}[change]
+                    del files[f"evidence/rpc-02.{suffix}.json"]
+                elif change.startswith("wrong_") and change not in ("wrong_stdout", "wrong_group"):
+                    request = json.loads(files["evidence/rpc-02.request.json"])
+                    request[{"wrong_method": "method", "wrong_parameters": "params", "wrong_id": "id"}[change]] = {
+                        "wrong_method": "another.read", "wrong_parameters": [1], "wrong_id": 3}[change]
+                    files["evidence/rpc-02.request.json"] = canonical(request)
+                else:
+                    receipt = json.loads(files["evidence/rpc-02.complete.json"])
+                    if change == "failed_exit": receipt["actual_exit"] = 7
+                    elif change == "incomplete": receipt["output_complete"] = False
+                    elif change == "wrong_stdout": receipt["outputs"]["stdout"]["sha256"] = "f" * 64
+                    else: receipt["process_group"] = 43
+                    files["evidence/rpc-02.complete.json"] = canonical(receipt)
+                with self.assertRaises(Refused):
+                    self.review(contract, files)
+
+    def test_malformed_unbounded_or_private_extra_fields_are_refused(self):
+        for raw in (b"{", canonical({"jsonrpc": "2.0", "id": True, "result": {}}),
+                    canonical({"jsonrpc": "2.0", "id": 2, "result": {
+                        "state": 3, "currentHeight": 1, "targetHeight": 0, "peers": []}}),
+                    canonical({"jsonrpc": "2.0", "id": 2, "result": {
+                        "state": 4, "currentHeight": 1, "targetHeight": 0}}),
+                    b" " * (capture.SYNC_INFO_BYTES + 1)):
+            with self.subTest(bytes=len(raw)):
+                contract, files = self.files(raw)
+                with self.assertRaises(Refused):
+                    self.review(contract, files)
+
+    def test_failed_incomplete_and_unlaunched_diagnostics_invent_no_observation(self):
+        for status, reason, actual_exit, complete in (("FAILURE", "command_failed", 7, True),
+                ("UNKNOWN", "command_incomplete", -15, False), ("REFUSED", "capture_refused", 0, True),
+                ("NOT_ATTEMPTED", "shared_call_limit", None, None),
+                ("NOT_ATTEMPTED", "budget_refused", None, None),
+                ("UNKNOWN", "capture_interrupted", None, None)):
+            with self.subTest(status=status, reason=reason):
+                contract, files = self.files()
+                del files["evidence/rpc-02.sync-info.json"]
+                summary = json.loads(files["evidence/startup-sync.json"])
+                summary.update(status=status, reason=reason, response_file=None)
+                if complete is None:
+                    summary["request_id"] = None
+                    for suffix in ("request", "started", "complete"):
+                        del files[f"evidence/rpc-02.{suffix}.json"]
+                else:
+                    receipt = json.loads(files["evidence/rpc-02.complete.json"])
+                    receipt.update(actual_exit=actual_exit, output_complete=complete)
+                    files["evidence/rpc-02.complete.json"] = canonical(receipt)
+                files["evidence/startup-sync.json"] = canonical(summary)
+                result = self.review(contract, files)["startup_sync_diagnostic"]
+                self.assertEqual((result["status"], result["reason"]), (status, reason))
+                self.assertEqual((result["actual_exit"], result["output_complete"]), (actual_exit, complete))
+                self.assertIsNone(result["observation"])
+
+    def test_orphan_multiple_or_successful_consumer_diagnostics_are_not_accepted(self):
+        contract, files = self.files()
+        del files["evidence/startup-sync.json"]
+        with self.assertRaisesRegex(Refused, "review_sync_summary_missing"):
+            self.review(contract, files)
+        contract, files = self.files()
+        files["evidence/rpc-03.sync-info.json"] = files["evidence/rpc-02.sync-info.json"]
+        with self.assertRaisesRegex(Refused, "review_sync_response_selection"):
+            self.review(contract, files)
+        contract, accepted = accepted_files()
+        _, extra = self.files()
+        for name, raw in extra.items():
+            if name != "evidence/terminal.json":
+                accepted[name] = raw
+        with self.assertRaisesRegex(Refused, "review_sync_summary_scope"):
+            self.review(contract, accepted)
 
 
 class ReviewTests(unittest.TestCase):

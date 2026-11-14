@@ -32,6 +32,197 @@ import runner
 CONTRACT = model.read_contract(HERE / "contract.json")
 
 
+def review_exported(root, index, execution):
+    packed = io.BytesIO()
+    with zipfile.ZipFile(packed, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for entry in index["files"]:
+            archive.writestr(entry["path"], (root / entry["path"]).read_bytes())
+        archive.writestr(review.INDEX, model.canonical(index))
+    packed.seek(0)
+    raw = packed.getvalue()
+    return review.review_stream(packed,
+        {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()},
+        execution.source_revision, execution.run_id, CONTRACT, HERE.parents[1])
+
+
+class StartupSyncTests(unittest.TestCase):
+    def setUp(self):
+        self.payloads = {}
+        self.recorder = mock.Mock(names=set())
+        self.guard = mock.Mock()
+        self.raw = model.canonical({"jsonrpc": "2.0", "id": 1,
+            "result": {"state": 3, "currentHeight": 1, "targetHeight": 0}})
+
+        def seal(name, raw):
+            self.assertNotIn(name, self.payloads)
+            self.payloads[name] = raw
+            self.recorder.names.add(name)
+
+        def transport(label, argv, cwd, environment, **options):
+            self.recorder.names.add(options["stdout_name"])
+            self.payloads[options["stdout_name"]] = self.raw
+            return mock.Mock(stdout=lambda cap: self.raw)
+
+        self.recorder.seal.side_effect = seal
+        self.recorder.run.side_effect = transport
+        self.rpc = capture.LocalRpc(CONTRACT, self.recorder, Path("unused"),
+                                    "unused-curl", {}, self.guard)
+
+    def summary(self):
+        return json.loads(self.payloads[capture.SYNC_REPORT])
+
+    def test_sync_dto_accepts_three_bounded_integer_fields(self):
+        for state in range(4):
+            with self.subTest(state=state):
+                self.assertEqual(capture.sync_info({"state": state, "currentHeight": 1, "targetHeight": 0}),
+                    {"state": state, "current_height": 1, "target_height": 0})
+        self.assertEqual(capture.sync_info({"state": 2, "currentHeight": (1 << 64) - 1,
+                                         "targetHeight": (1 << 64) - 1})["target_height"], (1 << 64) - 1)
+
+    def test_sync_dto_refuses_unknown_fields_and_coerced_or_unbounded_integers(self):
+        original = {"state": 3, "currentHeight": 1, "targetHeight": 0}
+        bad = [[], {}, {**original, "private": "unselected"}]
+        for field, values in (("state", (-1, 4, True, "3")),
+                              ("currentHeight", (0, -1, True, "1", 1 << 64)),
+                              ("targetHeight", (-1, True, "0", 1 << 64))):
+            bad.extend({**original, field: value} for value in values)
+        for row in bad:
+            with self.subTest(row=row), self.assertRaises(model.Refused):
+                capture.sync_info(row)
+
+    def test_one_fixed_request_preserves_original_bytes_and_cannot_be_repeated(self):
+        self.rpc.capture_startup_sync()
+        argv = self.recorder.run.call_args.args[1]
+        options = self.recorder.run.call_args.kwargs
+        self.assertEqual(json.loads(argv[argv.index("--data-binary") + 1]),
+            {"jsonrpc": "2.0", "id": 1, "method": "stats.syncInfo", "params": []})
+        self.assertEqual(argv[-1], capture.RPC_URL)
+        self.assertEqual((options["timeout"], options["stdout_cap"], options["stderr_cap"]), (7, 8192, 4096))
+        self.assertEqual(self.payloads["rpc-01.sync-info.json"], self.raw)
+        self.assertEqual(self.summary()["status"], "OBSERVED")
+        self.assertFalse(self.summary()["accepted_header_authority"])
+        self.assertEqual(runner.startup_sync_evidence_files(self.rpc),
+            {capture.SYNC_REPORT, "rpc-01.request.json", "rpc-01.sync-info.json"})
+        before = dict(self.payloads)
+        with self.assertRaisesRegex(model.Refused, "startup_sync_already_attempted"):
+            self.rpc.capture_startup_sync()
+        self.assertEqual(self.recorder.run.call_count, 1)
+        self.assertEqual(self.payloads, before)
+
+    def test_final_shared_call_slot_is_used_without_reset(self):
+        self.rpc.calls = 95
+        self.raw = self.raw.replace(b'"id": 1', b'"id": 96')
+        self.rpc.capture_startup_sync()
+        self.assertEqual(self.rpc.calls, 96)
+        self.assertEqual(self.summary()["request_id"], 96)
+        self.assertIn("rpc-96.request.json", runner.startup_sync_evidence_files(self.rpc))
+
+    def test_exhausted_shared_limit_and_budget_refusal_launch_no_command(self):
+        for exhausted in (True, False):
+            with self.subTest(exhausted=exhausted):
+                self.setUp()
+                if exhausted:
+                    self.rpc.calls = 96
+                else:
+                    self.guard.side_effect = model.Refused("unit_budget_refusal")
+                self.rpc.capture_startup_sync()
+                self.recorder.run.assert_not_called()
+                self.assertEqual(self.summary()["status"], "NOT_ATTEMPTED")
+                self.assertEqual(self.summary()["reason"], "shared_call_limit" if exhausted else "budget_refused")
+                self.assertIsNone(self.summary()["request_id"])
+                self.assertEqual(runner.startup_sync_evidence_files(self.rpc), {capture.SYNC_REPORT})
+
+    def test_failed_incomplete_and_interrupted_commands_keep_honest_status(self):
+        for actual_exit, complete, reason, status in ((7, True, None, "FAILURE"),
+                (0, False, "timeout", "UNKNOWN"), (None, False, "launch_failed", "UNKNOWN"),
+                (-15, False, "interrupted", "UNKNOWN")):
+            with self.subTest(actual_exit=actual_exit, reason=reason):
+                self.setUp()
+                receipt = {"actual_exit": actual_exit, "output_complete": complete, "reason": reason}
+                self.recorder.run.side_effect = CommandFailed(mock.Mock(receipt=receipt))
+                if reason == "interrupted":
+                    with self.assertRaises(KeyboardInterrupt):
+                        self.rpc.capture_startup_sync()
+                else:
+                    self.rpc.capture_startup_sync()
+                self.assertEqual(self.summary()["status"], status)
+                self.assertIsNone(self.summary()["response_file"])
+                self.assertEqual(runner.startup_sync_evidence_files(self.rpc),
+                                 {capture.SYNC_REPORT, "rpc-01.request.json"})
+
+    def test_invalid_identity_fields_or_oversize_body_are_not_exported(self):
+        for raw in (b"{", self.raw.replace(b'"id": 1', b'"id": 2'),
+                    self.raw.replace(b'"targetHeight": 0', b'"targetHeight": true'),
+                    model.canonical({"jsonrpc": "2.0", "id": 1, "result": {
+                        "state": 3, "currentHeight": 1, "targetHeight": 0, "private": "unselected"}}),
+                    b" " * (capture.SYNC_INFO_BYTES + 1)):
+            with self.subTest(bytes=len(raw)):
+                self.setUp()
+                self.raw = raw
+                self.rpc.capture_startup_sync()
+                self.assertEqual((self.summary()["status"], self.summary()["reason"]), ("REFUSED", "capture_refused"))
+                self.assertEqual(runner.startup_sync_evidence_files(self.rpc),
+                                 {capture.SYNC_REPORT, "rpc-01.request.json"})
+
+    def test_interruption_before_sealing_a_request_remains_unknown(self):
+        self.guard.side_effect = KeyboardInterrupt
+        with self.assertRaises(KeyboardInterrupt):
+            self.rpc.capture_startup_sync()
+        self.recorder.run.assert_not_called()
+        self.assertEqual((self.summary()["status"], self.summary()["reason"]), ("UNKNOWN", "capture_interrupted"))
+        self.assertIsNone(self.summary()["request_id"])
+
+    def test_diagnostic_selection_requires_one_bounded_matching_pair(self):
+        for selected in (set(), {capture.SYNC_REPORT}, {capture.SYNC_REPORT, "rpc-96.request.json"},
+                         {capture.SYNC_REPORT, "rpc-96.request.json", "rpc-96.sync-info.json"}):
+            self.assertEqual(runner.startup_sync_evidence_files(mock.Mock(startup_sync_evidence=selected)), selected)
+        for selected in ({"rpc-01.request.json"}, {capture.SYNC_REPORT, "rpc-01.sync-info.json"},
+                         {capture.SYNC_REPORT, "rpc-01.request.json", "rpc-02.sync-info.json"},
+                         {capture.SYNC_REPORT, "rpc-00.request.json"},
+                         {capture.SYNC_REPORT, "rpc-97.request.json"}, {capture.SYNC_REPORT, "../private.json"},
+                         {capture.SYNC_REPORT, 1}):
+            with self.subTest(selected=selected), self.assertRaises(model.Refused):
+                runner.startup_sync_evidence_files(mock.Mock(startup_sync_evidence=selected))
+
+    def test_only_initial_readiness_deadline_allows_one_diagnostic(self):
+        rpc = mock.Mock()
+        value = object()
+        rpc.wait_height.return_value = value
+        self.assertIs(runner.wait_for_initial_height(rpc, 3), value)
+        rpc.wait_height.assert_called_once_with(3, starting=True)
+        rpc.capture_startup_sync.assert_not_called()
+        for reason in ("observed_chain", "owned_rpc_call_bound", "unit_budget_refusal",
+                       "owned_rpc_readiness_deadline"):
+            with self.subTest(reason=reason):
+                rpc = mock.Mock()
+                error = model.Refused(reason)
+                rpc.wait_height.side_effect = error
+                with self.assertRaises(model.Refused) as observed:
+                    runner.wait_for_initial_height(rpc, 3)
+                self.assertIs(observed.exception, error)
+                self.assertEqual(rpc.capture_startup_sync.call_count,
+                                 1 if reason == "owned_rpc_readiness_deadline" else 0)
+
+    def test_probe_interruption_is_not_hidden_by_the_initial_refusal(self):
+        rpc = mock.Mock()
+        rpc.wait_height.side_effect = model.Refused("owned_rpc_readiness_deadline")
+        rpc.capture_startup_sync.side_effect = KeyboardInterrupt
+        with self.assertRaises(KeyboardInterrupt):
+            runner.wait_for_initial_height(rpc, 3)
+        rpc.capture_startup_sync.assert_called_once_with()
+
+    def test_frontier_export_rejects_names_outside_the_bounded_rpc_selection(self):
+        self.assertEqual(runner.frontier_evidence_files(mock.Mock(retained_frontiers=set())), set())
+        self.assertEqual(runner.frontier_evidence_files(mock.Mock(
+            retained_frontiers={"rpc-01.frontier.json", "rpc-96.frontier.json"})),
+            {"rpc-01.frontier.json", "rpc-01.request.json",
+             "rpc-96.frontier.json", "rpc-96.request.json"})
+        for name in ("rpc-00.frontier.json", "rpc-97.frontier.json", "rpc-1.frontier.json",
+                     "../rpc-01.frontier.json", "rpc-01.request.json", "private.json", 1):
+            with self.subTest(name=name), self.assertRaises(model.Refused):
+                runner.frontier_evidence_files(mock.Mock(retained_frontiers={name}))
+
+
 def synthetic_window(last=4, state_root=bytes([77]) * 32):
     rows = []
     chain = CONTRACT.data["selection"]["chain_id"]
@@ -502,12 +693,18 @@ class HostBoundaryTests(unittest.TestCase):
             actual_run = record.run
 
             def local_transport(label, argv, cwd, env, **options):
-                raw = model.canonical({"jsonrpc": "2.0", "id": 1, "result": rows[1]})
+                request = json.loads(argv[argv.index("--data-binary") + 1])
+                result = rows[1] if request["method"] == "ledger.getFrontierMomentum" else {
+                    "state": 2, "currentHeight": 99, "targetHeight": 99}
+                self.assertIn(request["method"], ("ledger.getFrontierMomentum", "stats.syncInfo"))
+                raw = model.canonical({"jsonrpc": "2.0", "id": request["id"], "result": result})
                 return actual_run(label, [sys.executable, "-I", "-B", "-c",
                     "import sys; sys.stdout.write(" + repr(raw.decode()) + ")"], cwd, {}, **options)
 
-            with mock.patch.object(record, "run", side_effect=local_transport):
-                rpc.frontier()
+            patch = mock.patch.object(record, "run", side_effect=local_transport)
+            patch.start()
+            self.addCleanup(patch.stop)
+            rpc.frontier()
             record.seal("rpc-95.request.json", b'{"unselected":"fixture-only"}\n')
             rpc.wait_height = mock.Mock(side_effect=model.Refused("owned_rpc_readiness_deadline"))
             return rpc
@@ -537,19 +734,13 @@ class HostBoundaryTests(unittest.TestCase):
             self.assertIn("evidence/rpc-01.complete.json", names)
             self.assertNotIn("evidence/rpc-95.request.json", names)
             self.assertNotIn("evidence/rpc-01.stderr", names)
+            self.assertIn("evidence/startup-sync.json", names)
+            self.assertIn("evidence/rpc-02.request.json", names)
+            self.assertIn("evidence/rpc-02.sync-info.json", names)
             self.assertFalse(index["raw_service_logs_or_private_configuration_exported"])
             # Inspect exactly the exported index, not the wider recorder directory.
             # The real reader must be able to find the request after a refusal.
-            packed = io.BytesIO()
-            with zipfile.ZipFile(packed, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-                for entry in index["files"]:
-                    archive.writestr(entry["path"], (root / entry["path"]).read_bytes())
-                archive.writestr(review.INDEX, model.canonical(index))
-            packed.seek(0)
-            raw = packed.getvalue()
-            checked = review.review_stream(packed,
-                {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()},
-                execution.source_revision, execution.run_id, CONTRACT, HERE.parents[1])
+            checked = review_exported(root, index, execution)
             self.assertEqual(checked["status"], "RECORDED_NON_ACCEPTING_OUTCOME")
             self.assertEqual(checked["recorded_terminal_outcome"], "REFUSED")
             self.assertEqual(checked["indexed_files"], len(index["files"]))
@@ -557,22 +748,49 @@ class HostBoundaryTests(unittest.TestCase):
             self.assertIsNone(checked["comparison"])
             self.assertFalse(checked["native_consumer_reexecuted"])
             self.assertFalse(checked["new_devnet_acceptance_established"])
+            self.assertEqual(checked["startup_sync_diagnostic"]["observation"],
+                             {"state": 2, "current_height": 99, "target_height": 99})
             observed = checked["candidate_frontier_observations"]
             self.assertEqual(len(observed), 1)
             self.assertEqual(observed[0]["request_id"], 1)
             self.assertEqual(observed[0]["candidate_header"]["height"], 2)
             self.assertFalse(observed[0]["accepted_header_authority"])
 
-    def test_frontier_export_rejects_names_outside_the_bounded_rpc_selection(self):
-        self.assertEqual(runner.frontier_evidence_files(mock.Mock(retained_frontiers=set())), set())
-        self.assertEqual(runner.frontier_evidence_files(mock.Mock(
-            retained_frontiers={"rpc-01.frontier.json", "rpc-96.frontier.json"})),
-            {"rpc-01.frontier.json", "rpc-01.request.json",
-             "rpc-96.frontier.json", "rpc-96.request.json"})
-        for name in ("rpc-00.frontier.json", "rpc-97.frontier.json", "rpc-1.frontier.json",
-                     "../rpc-01.frontier.json", "rpc-01.request.json", "private.json", 1):
-            with self.subTest(name=name), self.assertRaises(model.Refused):
-                runner.frontier_evidence_files(mock.Mock(retained_frontiers={name}))
+    def test_unavailable_sync_keeps_real_exit_and_excludes_unvalidated_body(self):
+        for complete in (True, False):
+            with self.subTest(complete=complete), tempfile.TemporaryDirectory(
+                    prefix="owned-sync-regular-control-") as temporary:
+                root = Path(temporary).resolve(strict=True)
+                record = Recorder(root / "evidence")
+                actual_run = record.run
+
+                def local_transport(label, argv, cwd, env, **options):
+                    code = "import sys; sys.stdout.write('unvalidated diagnostic bytes'); sys.stdout.flush(); "
+                    code += "raise SystemExit(7)" if complete else "import time; time.sleep(5)"
+                    options["timeout"] = 3 if complete else 0.1
+                    return actual_run(label, [sys.executable, "-I", "-B", "-c", code], cwd, {}, **options)
+
+                rpc = capture.LocalRpc(CONTRACT, record, root, "unused-curl", {}, lambda: None)
+                with mock.patch.object(record, "run", side_effect=local_transport):
+                    rpc.capture_startup_sync()
+                execution = model.ExecutionIdentity("a" * 40, 1, 1, "edgepillar")
+                record.seal("terminal.json", model.canonical({"format": "owned-devnet-query-terminal/v1",
+                    "outcome": "REFUSED", "stage": "nodes", "reason": "owned_rpc_readiness_deadline",
+                    "source_revision": execution.source_revision, "contract_sha256": CONTRACT.sha256,
+                    "run_id": 1, "run_attempt": 1, "owned_runtime_observed_closed": False,
+                    "production_qualified": False, "consensus_finality_or_funds_release": False}))
+                entries = runner.evidence_index((record,), {"evidence": runner.startup_sync_evidence_files(rpc)})
+                index = {"format": "owned-devnet-evidence-index/v1", "files": entries,
+                         "transport_archive_copies": 0, "raw_service_logs_or_private_configuration_exported": False}
+                self.assertNotIn("evidence/rpc-01.sync-info.json", {row["path"] for row in entries})
+                checked = review_exported(root, index, execution)
+                diagnostic = checked["startup_sync_diagnostic"]
+                receipt = json.loads((root / "evidence/rpc-01.complete.json").read_bytes())
+                self.assertEqual(diagnostic["status"], "FAILURE" if complete else "UNKNOWN")
+                self.assertEqual(diagnostic["actual_exit"], receipt["actual_exit"])
+                self.assertEqual(diagnostic["output_complete"], complete)
+                self.assertIsNone(diagnostic["observation"])
+                self.assertEqual(checked["recorded_terminal_outcome"], "REFUSED")
 
     def test_cancelled_reader_exits_after_anonymous_pipe_eof(self):
         command = [sys.executable, "-I", "-B", "-c",

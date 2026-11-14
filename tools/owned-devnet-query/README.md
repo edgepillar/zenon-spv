@@ -183,6 +183,38 @@ request files and failed-response bodies are not added to the export. The
 recorder-to-index-to-reader control checks this exact selection in memory,
 without writing a second ZIP to disk.
 
+### Capture the node's sync state after a startup refusal
+
+Only an initial selected-height `owned_rpc_readiness_deadline` permits one
+additional `stats.syncInfo` read from the same fixed owned RPC endpoint. The
+30 readiness attempts and checked 90-second deadline remain; the observation
+does not retry readiness or advance to fixture configuration. Successful
+readiness, malformed headers, other refusals and later gateway waits do not
+trigger this read. The existing 96-call budget is shared, never reset.
+
+The response cap is 8 KiB, with the existing five-second HTTP / seven-second
+command limits and a fresh budget guard. Only the three bounded integer fields
+`state`, `currentHeight` and `targetHeight` are allowed. Peer IDs, addresses,
+service logs and private configuration are not requested by this extension.
+
+`startup-sync.json` records the original trigger and the diagnostic's own
+`OBSERVED`, `FAILURE`, `UNKNOWN`, `REFUSED` or `NOT_ATTEMPTED` outcome. An exhausted
+call budget or refused budget guard starts no diagnostic command. Only a checked
+response is exported as `rpc-NN.sync-info.json`, alongside its exact request,
+started record and successful complete/quiescent receipt. Failed, invalid and
+partial response bodies remain excluded; their actual command receipts and the
+fixed non-sensitive request are retained when available. A missing command
+receipt supplies no invented exit or completion result.
+
+The reader replays the request, receipt, envelope and DTO checks for an observed
+response. It exposes unavailable/interrupted outcomes separately, preserving the
+recorded exit and completeness. A refused DTO's excluded body is not independently
+revalidated. The original readiness refusal remains non-accepting; an interrupted
+controller remains `UNKNOWN`. A node reporting `SyncDone` or a higher current
+height supplies no accepted header, anchor, producer schedule, StateRoot,
+canonicality or completed consumer. Older archives without this optional record
+keep their report shape. See the [source and scope record](../../docs/owned-startup-sync-diagnostic.md).
+
 ### Review a retained result
 
 Before downloading, select the runner revision, attempt-1 run ID, artifact ID
