@@ -19,6 +19,7 @@ import capture
 import inputs
 import model
 import node_diagnostics as node_diag
+import node_file_logs
 from artifacts import API_LIMIT, REPOSITORY, WORKFLOWS, api_json
 from model import Refused, canonical, exact_keys, require, same
 from process import FILE
@@ -563,6 +564,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         frontiers = recorded_frontiers(evidence, contract)
         post_sync = recorded_post_sync_frontier(evidence, terminal, startup_sync, frontiers)
         startup_nodes = recorded_startup_nodes(evidence, terminal)
+        file_logs = node_file_logs.recorded(evidence, terminal, startup_nodes, diagnostic_receipt)
         matched = None
         if reported == "DEVNET_CONSUMER_ACCEPTED":
             require(binding_present and terminal["stage"] == "consumer" and terminal["reason"] is None
@@ -586,6 +588,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["post_sync_frontier_diagnostic"] = post_sync
         if startup_nodes is not None:
             report["startup_node_diagnostics"] = startup_nodes
+        if file_logs is not None:
+            report["startup_file_log_diagnostics"] = file_logs
         return report
 
 

@@ -260,6 +260,36 @@ Command records without the optional summary, or alongside a claim that no
 diagnostic was attempted, are refused rather than silently ignored.
 Archives without this optional summary preserve their existing report shape.
 
+### Read the node's actual log files
+
+The [source-4f0b9f7 attempt and file-log contract](../../docs/owned-startup-file-logs.md)
+show why Docker stdout is incomplete: the pinned node writes generation errors
+and VM panic details to two files under its selected data directory. The optional
+`startup-file-logs.json` extension observes those two fixed paths for each
+previously inspected owned node, using at most eight additional Docker API copy
+requests to stdout. There is no shell, container helper or host destination.
+
+Each request has a five-second deadline, a 64 KiB archive-stdout cap, 4 KiB stderr
+cap and a 32 KiB decoded-file cap. The memory-only TAR reader admits one exact
+regular basename and rejects other paths, links, sparse/special files, malformed
+framing and excess data. Whole files that do not fit remain unavailable. The
+readiness, resource, cleanup and shared RPC bounds remain unchanged.
+
+The exported data contains only a file-content pin, the existing bounded log
+summary, and fixed source-derived counters. Additional source-file/line pairs
+are selected only from known VM panic records. Unknown text is excluded.
+Each file has its own counters; the configured
+handlers can record an error in both files. Raw archives, log text and private
+configuration stay outside the public index. Copy/parse failures and interruptions
+retain their actual exit/completeness without supplying parsed data.
+
+The reader binds these assertions to the original command receipts and prior
+startup inspection, enforcing role/kind, source bounds and order before cleanup.
+It does not independently replay omitted TAR/text, infer an atomic snapshot,
+retry readiness or confer accepted-header authority. Older archives keep their
+existing report shape. New controls, hosted CI and actual fixture execution remain
+separate qualification steps.
+
 ### Review a retained result
 
 Before downloading, select the runner revision, attempt-1 run ID, artifact ID
@@ -351,6 +381,8 @@ python3 -I -B tools/owned-devnet-query/budget_test.py
 python3 -I -B tools/owned-devnet-query/query_checks_test.py
 python3 -I -B tools/owned-devnet-query/capture_test.py
 python3 -I -B tools/owned-devnet-query/review_test.py
+python3 -I -B tools/owned-devnet-query/node_diagnostics_test.py
+python3 -I -B tools/owned-devnet-query/node_file_logs_test.py
 ```
 
 Use the approved task-storage manager for local qualification, with its owned

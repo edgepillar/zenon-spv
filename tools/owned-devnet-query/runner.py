@@ -21,6 +21,7 @@ import model
 from model import Refused, canonical, require, same
 from node_toolchain import Installer
 import node_diagnostics
+import node_file_logs
 from packages import Preparer as Packages, installed_entries
 from process import CommandFailed, Recorder, regular_pin
 from sources import Preparer as Sources
@@ -318,6 +319,8 @@ def execute(environment, workspace, checkout):
             extra.update(post_sync_frontier_evidence_files(rpc))
         if node_diagnostics.REPORT in record.names:
             extra.add(node_diagnostics.REPORT)
+        if node_file_logs.REPORT in record.names:
+            extra.add(node_file_logs.REPORT)
         entries = evidence_index((record, transport), {"evidence": extra})
         index = canonical({"format": "owned-devnet-evidence-index/v1",
             "files": entries, "transport_archive_copies": 0,

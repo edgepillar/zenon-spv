@@ -3,10 +3,12 @@
 from copy import deepcopy
 from dataclasses import replace
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
 import sys
+import tarfile
 import tempfile
 import unittest
 from unittest import mock
@@ -18,9 +20,19 @@ import engine
 import engine_test
 import model
 import node_diagnostics as diag
+import node_file_logs
 import process
 import review_test
 import runner
+
+
+def file_archive(kind="run", payload=b'msg="failed to generate momentum" reason="private-marker"\n'):
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w") as archive:
+        entry = tarfile.TarInfo(dict(node_file_logs.FILES)[kind].rsplit("/", 1)[-1])
+        entry.size = len(payload)
+        archive.addfile(entry, io.BytesIO(payload))
+    return buffer.getvalue()
 
 
 class LogSummaryTests(unittest.TestCase):
@@ -171,6 +183,9 @@ class StartupNodeCaptureTests(unittest.TestCase):
 
         def run(label, arguments, **options):
             calls.append((label, arguments, options))
+            if arguments[:2] == ["container", "cp"]:
+                client.guard();client.counter += 1
+                return MemoryResult(f"docker-{client.counter:03d}-{label}", file_archive(label.rsplit("-", 1)[-1]))
             if arguments[:2] == ["container", "logs"]:
                 client.guard();client.counter += 1
                 return MemoryResult(f"docker-{client.counter:03d}-{label}", b"Producing momentum ...\n",
@@ -187,7 +202,7 @@ class StartupNodeCaptureTests(unittest.TestCase):
                 with self.assertRaises(model.Refused):client.capture_startup_diagnostics()
             row = json.loads(recorder.seals[diag.REPORT])
             self.assertEqual(row["status"], "OBSERVED")
-            self.assertEqual(len(calls), 9)
+            self.assertEqual(len(calls), 17)
             self.assertTrue(all(c[2]["timeout"] == 5 for c in calls))
             self.assertEqual([n["service"] for n in row["nodes"]], list(diag.ROLES))
             for node in row["nodes"]:
@@ -197,7 +212,7 @@ class StartupNodeCaptureTests(unittest.TestCase):
             self.assertTrue(row["observed_before_cleanup"])
             self.assertFalse(row["atomic_snapshot"])
             self.assertFalse(row["accepted_header_authority"])
-            self.assertTrue(all(c[1][:2] in (["container", "inspect"], ["container", "logs"])
+            self.assertTrue(all(c[1][:2] in (["container", "inspect"], ["container", "logs"], ["container", "cp"])
                                 or c[1][:1] == ["info"] for c in calls))
 
     def test_budget_refusal_launches_nothing_and_cannot_be_retried(self):
@@ -282,6 +297,8 @@ class StartupNodeCaptureTests(unittest.TestCase):
                     err = b""
                 elif arguments[:2] == ["container", "inspect"]:
                     raw, err = model.canonical(fixture.containers[arguments[-1]]), b""
+                elif arguments[:2] == ["container", "cp"]:
+                    raw, err = file_archive(label.rsplit("-", 1)[-1]), b""
                 else:
                     raw = b"Producing momentum ...\n"
                     err = b'panic: private-marker /Users/private-marker\n\t/app/pillar/worker.go:100 +0xab\n'
@@ -291,7 +308,7 @@ class StartupNodeCaptureTests(unittest.TestCase):
                     stdout_cap=options["stdout_cap"], stderr_cap=options["stderr_cap"])
 
             with mock.patch.object(client, "_run", side_effect=run):client.capture_startup_diagnostics()
-            entries = runner.evidence_index((recorder,), {"evidence": {diag.REPORT}})
+            entries = runner.evidence_index((recorder,), {"evidence": {diag.REPORT, node_file_logs.REPORT}})
             selected = {row["path"] for row in entries}
             self.assertIn("evidence/" + diag.REPORT, selected)
             self.assertFalse(any(name.endswith((".stdout", ".stderr")) for name in selected))
@@ -299,6 +316,12 @@ class StartupNodeCaptureTests(unittest.TestCase):
             self.assertNotIn(b"private-marker", summary)
             self.assertNotIn(b"/Users/", summary)
             self.assertEqual(json.loads(summary)["status"], "OBSERVED")
+            file_summary = (recorder.directory / node_file_logs.REPORT).read_bytes()
+            self.assertIn("evidence/" + node_file_logs.REPORT, selected)
+            self.assertNotIn(b"private-marker", file_summary)
+            self.assertNotIn(b"/Users/", file_summary)
+            self.assertEqual(json.loads(file_summary)["status"], "OBSERVED")
+            self.assertEqual(len(recorder.records), 17)
 
 
 class StartupNodeRunnerTests(unittest.TestCase):
