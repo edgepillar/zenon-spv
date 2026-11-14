@@ -267,7 +267,18 @@ class ReadinessTests(unittest.TestCase):
                 with self.assertRaises(model.Refused):
                     rpc.wait_height(3, starting=True)
                 self.assertEqual(recorder.run.call_count, 1)
+                self.assertEqual(rpc.retained_frontiers, set())
                 sleep.assert_not_called()
+
+    def test_a_valid_low_frontier_remains_available_after_the_deadline(self):
+        _, rows, _ = synthetic_window()
+        self.recorder.run.return_value = self.response(rows[1], 1)
+        with mock.patch.object(capture.time, "monotonic", side_effect=[0, 0, 90]), \
+                mock.patch.object(capture.time, "sleep"):
+            with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
+                self.rpc.wait_height(3, starting=True)
+        self.assertEqual(self.rpc.retained_frontiers, {"rpc-01.frontier.json"})
+        self.assertEqual(self.rpc.calls, 1)
 
     def test_persistent_empty_receive_failures_exhaust_the_existing_attempt_bound(self):
         failure = self.failure()
@@ -409,12 +420,18 @@ class HostBoundaryTests(unittest.TestCase):
             self.assertTrue(all(row["output_complete"] and row["process_group_quiescent"] for row in receipts))
             self.assertEqual(receipts[0]["outputs"]["stdout"]["bytes"], 0)
             self.assertEqual([row["outcome"] for row in record.records], ["FAILURE", "SUCCESS"])
+            names = {row["path"] for row in runner.evidence_index(
+                (record,), {"evidence": rpc.retained_frontiers})}
+            self.assertIn("evidence/rpc-02.frontier.json", names)
+            self.assertNotIn("evidence/rpc-01.frontier.json", names)
+            self.assertEqual((root / "evidence/rpc-02.frontier.json").read_bytes(),
+                             model.canonical({"jsonrpc": "2.0", "id": 2, "result": rows[-1]}))
             if os.environ.get("SPV_RECORD_LOOPBACK_CONTROL") == "1":
                 # The qualification caller retains this bounded stdout report;
                 # ordinary preparation controls keep their usual output.
                 report = {"format": "owned-loopback-startup-control/v1", "requests": requests,
                           "receipts": receipts, "actual_stdout": [
-                              (root / "evidence" / f"rpc-{index:02d}.stdout").read_text()
+                              (root / "evidence" / f"rpc-{index:02d}.frontier.json").read_text()
                               for index in (1, 2)], "owned_server_thread_joined": True,
                           "real_node_or_state_acceptance": False}
                 sys.stdout.write(model.canonical(report).decode("ascii"))
@@ -469,6 +486,50 @@ class HostBoundaryTests(unittest.TestCase):
             terminal = json.loads((root / "evidence/terminal.json").read_bytes())
             self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),
                              ("runtime-inputs", "REFUSED", "fixture_source_default"))
+
+    def test_runner_refusal_exports_the_valid_frontier_without_other_command_streams(self):
+        _, rows, _ = synthetic_window()
+        execution = model.ExecutionIdentity("a" * 40, 1, 1, "edgepillar")
+        actual_rpc = capture.LocalRpc
+
+        def rpc_factory(contract, record, root, curl, environment, guard):
+            rpc = actual_rpc(contract, record, root, curl, environment, guard)
+            actual_run = record.run
+
+            def local_transport(label, argv, cwd, env, **options):
+                raw = model.canonical({"jsonrpc": "2.0", "id": 1, "result": rows[1]})
+                return actual_run(label, [sys.executable, "-I", "-B", "-c",
+                    "import sys; sys.stdout.write(" + repr(raw.decode()) + ")"], cwd, {}, **options)
+
+            with mock.patch.object(record, "run", side_effect=local_transport):
+                rpc.frontier()
+            rpc.wait_height = mock.Mock(side_effect=model.Refused("owned_rpc_readiness_deadline"))
+            return rpc
+
+        with tempfile.TemporaryDirectory(prefix="owned-frontier-export-control-") as temporary:
+            root = Path(temporary).resolve(strict=True)
+            with mock.patch.multiple(runner, dispatch=mock.DEFAULT, Budget=mock.DEFAULT,
+                                     Engine=mock.DEFAULT, Artifacts=mock.DEFAULT, Installer=mock.DEFAULT,
+                                     Sources=mock.DEFAULT, Packages=mock.DEFAULT, Builder=mock.DEFAULT,
+                                     publish_paths=mock.DEFAULT) as dependencies, \
+                    mock.patch.object(capture, "LocalRpc", side_effect=rpc_factory):
+                dependencies["dispatch"].return_value = CONTRACT, execution
+                dependencies["Budget"].return_value.report.return_value = {}
+                engine = dependencies["Engine"].return_value
+                engine.docker_root = CONTRACT.data["runtime"]["closed_oracle_readonly_docker_root"]
+                engine.cleanup.return_value = []
+                env = {"GH_TOKEN": "unused-test-value", "GITHUB_OUTPUT": str(root / "output")}
+                self.assertEqual(runner.execute(env, root, HERE.parents[1]), 1)
+                engine.cleanup.assert_called_once_with()
+            terminal = json.loads((root / "evidence/terminal.json").read_bytes())
+            self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),
+                             ("nodes", "REFUSED", "owned_rpc_readiness_deadline"))
+            index = json.loads((root / "evidence/evidence-index.json").read_bytes())
+            names = {row["path"] for row in index["files"]}
+            self.assertIn("evidence/rpc-01.frontier.json", names)
+            self.assertIn("evidence/rpc-01.complete.json", names)
+            self.assertNotIn("evidence/rpc-01.stderr", names)
+            self.assertFalse(index["raw_service_logs_or_private_configuration_exported"])
 
     def test_cancelled_reader_exits_after_anonymous_pipe_eof(self):
         command = [sys.executable, "-I", "-B", "-c",

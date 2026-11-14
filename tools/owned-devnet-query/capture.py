@@ -82,6 +82,7 @@ class LocalRpc:
         self.contract, self.recorder, self.directory = contract, recorder, Path(directory)
         self.curl, self.environment, self.guard = curl, environment, guard
         self.calls = 0
+        self.retained_frontiers = set()
 
     def _read(self, method, parameters, cap, *, stdout_name=None):
         self.calls += 1
@@ -100,8 +101,14 @@ class LocalRpc:
         return rpc_result(result.stdout(cap), request_id, cap)
 
     def frontier(self):
-        return Header.read(self._read("ledger.getFrontierMomentum", [], 128 << 10),
-                           self.contract.data["selection"]["chain_id"])
+        name = f"rpc-{self.calls + 1:02d}.frontier.json"
+        header = Header.read(self._read("ledger.getFrontierMomentum", [], 128 << 10,
+                                       stdout_name=name),
+                             self.contract.data["selection"]["chain_id"])
+        # Retain the original response only after envelope/header parsing.
+        # Readiness is a candidate observation, never accepted-header authority.
+        self.retained_frontiers.add(name)
+        return header
 
     def opening(self):
         result = self._read("ledger.getMomentumsByHeight", [1, 3], 384 << 10,

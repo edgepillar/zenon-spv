@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-only
 """Synthetic hosted metadata and archive controls with no external service."""
 import base64
+from copy import deepcopy
 import hashlib
 import importlib.util
 import io
@@ -274,6 +275,115 @@ def accepted_files():
         "schedule_hash": schedule["schedule_hash"], "ledger_copied": False, "ledger_opened_read_only": True,
         "rpc_container_id": containers["rpc"]})
     return contract, files
+
+
+class FrontierReviewTests(unittest.TestCase):
+    """Candidate frontier bytes cannot replace the completed consumer path."""
+    @staticmethod
+    def files(request_id=2, *, raw=None):
+        contract, rows, _ = synthetic_window()
+        label = f"rpc-{request_id:02d}"
+        name = label + ".frontier.json"
+        if raw is None:
+            raw = json.dumps({"jsonrpc": "2.0", "id": request_id, "result": rows[1]},
+                             separators=(",", ":")).encode() + b"\n"
+        final = terminal("REFUSED", contract)
+        final.update(stage="nodes", reason="owned_rpc_readiness_deadline")
+        files = {"evidence/terminal.json": canonical(final), "evidence/" + name: raw,
+            "evidence/" + label + ".request.json": canonical({"jsonrpc": "2.0", "id": request_id,
+                "method": "ledger.getFrontierMomentum", "params": []}),
+            "evidence/" + label + ".started.json": canonical({"format": "owned-devnet-command-started/v1",
+                "label": label, "pid": 42, "process_group": 42, "new_session_requested": True}),
+            "evidence/" + label + ".complete.json": canonical({"format": "owned-devnet-command-capture/v1",
+                "label": label, "launch_outcome": "STARTED", "actual_exit": 0,
+                "output_complete": True, "reason": None, "process_group": 42,
+                "process_group_quiescent": True, "outputs": {"stdout": {"file": name, **pin(raw)}}})}
+        return contract, files
+
+    @staticmethod
+    def review(contract, files):
+        raw = make_archive(files)
+        return review.review_stream(io.BytesIO(raw), pin(raw), SOURCE, RUN, contract, ROOT)
+
+    def test_retains_exact_candidate_bytes_after_refusal_without_accepting_a_header(self):
+        contract, files = self.files()
+        result = self.review(contract, files)
+        observed = result["candidate_frontier_observations"]
+        self.assertEqual(result["status"], "RECORDED_NON_ACCEPTING_OUTCOME")
+        self.assertEqual(result["recorded_terminal_outcome"], "REFUSED")
+        self.assertIsNone(result["comparison"])
+        self.assertFalse(result["new_devnet_acceptance_established"])
+        self.assertFalse(result["production_qualified"])
+        self.assertEqual(len(observed), 1)
+        self.assertEqual(observed[0]["candidate_header"]["height"], 2)
+        self.assertEqual(observed[0]["request_id"], 2)
+        self.assertEqual(observed[0]["response"], pin(files["evidence/rpc-02.frontier.json"]))
+        self.assertFalse(observed[0]["accepted_header_authority"])
+
+    def test_a_frontier_cannot_hide_failed_incomplete_or_mismatched_command_evidence(self):
+        for field, value in (("actual_exit", 56), ("actual_exit", False),
+                             ("output_complete", False), ("process_group_quiescent", False),
+                             ("launch_outcome", "UNKNOWN"), ("reason", "timeout"),
+                             ("process_group", 43)):
+            with self.subTest(field=field, value=value):
+                contract, files = self.files()
+                name = "evidence/rpc-02.complete.json"
+                receipt = json.loads(files[name])
+                receipt[field] = value
+                files[name] = canonical(receipt)
+                with self.assertRaises(Refused):
+                    self.review(contract, files)
+        contract, files = self.files()
+        name = "evidence/rpc-02.complete.json"
+        receipt = json.loads(files[name])
+        receipt["outputs"]["stdout"]["sha256"] = "b" * 64
+        files[name] = canonical(receipt)
+        with self.assertRaisesRegex(Refused, "review_recorded_command_stdout"):
+            self.review(contract, files)
+
+    def test_frontier_request_method_parameters_and_identity_are_checked(self):
+        for field, value in (("method", "another.read"), ("params", [1]),
+                             ("id", 3), ("id", True), ("jsonrpc", "1.0")):
+            with self.subTest(field=field, value=value):
+                contract, files = self.files()
+                name = "evidence/rpc-02.request.json"
+                request = json.loads(files[name])
+                request[field] = value
+                files[name] = canonical(request)
+                with self.assertRaisesRegex(Refused, "review_frontier_request"):
+                    self.review(contract, files)
+
+    def test_frontier_response_identity_chain_and_size_stay_bounded(self):
+        _, rows, _ = synthetic_window()
+        wrong_chain = deepcopy(rows[1])
+        wrong_chain["chainIdentifier"] += 1
+        for raw in (b"{", canonical({"jsonrpc": "2.0", "id": 3, "result": rows[1]}),
+                    canonical({"jsonrpc": "2.0", "id": 2, "result": wrong_chain}),
+                    b" " * ((128 << 10) + 1)):
+            with self.subTest(bytes=len(raw)):
+                contract, files = self.files(raw=raw)
+                with self.assertRaises((Refused, ValueError)):
+                    self.review(contract, files)
+
+    def test_missing_receipts_or_unbounded_call_names_are_refused(self):
+        for name in ("evidence/rpc-02.request.json", "evidence/rpc-02.started.json",
+                     "evidence/rpc-02.complete.json"):
+            with self.subTest(missing=name):
+                contract, files = self.files()
+                del files[name]
+                with self.assertRaises(Refused):
+                    self.review(contract, files)
+        for request_id in (0, 97, 100):
+            with self.subTest(request_id=request_id):
+                contract, files = self.files(request_id)
+                with self.assertRaises(Refused):
+                    self.review(contract, files)
+
+    def test_legacy_failure_without_frontier_bytes_keeps_its_report_shape(self):
+        contract, files = self.files()
+        result = self.review(contract, {"evidence/terminal.json": files["evidence/terminal.json"]})
+        self.assertEqual(result["status"], "RECORDED_NON_ACCEPTING_OUTCOME")
+        self.assertNotIn("candidate_frontier_observations", result)
 
 
 class ReviewTests(unittest.TestCase):

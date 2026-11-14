@@ -26,8 +26,8 @@ an older batch. Native v1/v2 inclusion remains an independent delivery track.
 | --- | --- | --- |
 | Frozen human-review candidate | `6ecc2310538d511e3b26bea4c658082853266a11` | Its original review/handoff scope remains fixed. Later source and CI do not inherit human acceptance. |
 | Current ledger-selected runtime | `e143ade8507a45a1f125de7bc15b92541036ef85`, tree `0cfe07a72796b985e4d51483807c7a168d16c2e3` | Own-main Linux/macOS/Windows CI and archive qualification; see the [runtime ledger](review-candidate-changes.md#current-qualified-runtime-baseline). |
-| Executed owned-runner ref | `codex/owned-devnet-query-runner` at `834d551fc285bb2ec0cc7617e0164caa0023eadf` | The separately authorized second attempt completed with a retained startup failure. Its authorization is consumed. The first attempt remains pinned to `4a1d03e06c848edebcf611e964e84967d85679d1` in its original record. |
-| Reviewed startup follow-up | `747fcf0293a7a341fed34393cac5afa0a96e5f1e` | Merged bounded empty-response readiness repair with its own main CI and artifact qualification. No fixture has executed this source. This ledger does not move the execution ref or authorize another attempt. |
+| Executed owned-runner ref | `codex/owned-devnet-query-runner` at `747fcf0293a7a341fed34393cac5afa0a96e5f1e` | The separately authorized third attempt recovered from the initial transport failure, then refused at the readiness deadline. Its authorization is consumed. The second source is preserved at `codex/owned-devnet-query-second-attempt-834d551`; the first remains fixed in its original record. |
+| Qualified startup repair | `747fcf0293a7a341fed34393cac5afa0a96e5f1e` | Merged bounded empty-response readiness repair with its own main CI and artifact qualification. The third fixture executed this source without reaching the selected height or consumer. Later diagnostic changes need their own source qualification and execution permission. |
 | Selected Linux consumer/oracle inputs | `7493c5929c7dbcfb29f94be521f7533d90a1a687` | The [reference-gas contract](reference-gas-owned-contract.md) pins their own qualified runs, artifact IDs, archive and binary hashes. They are not binaries built from the later runner or documentation head. |
 | Original experiment contract | `owned-devnet-batch-query-contract/v1`, SHA-256 `1178cb1161d8e21a3f6e657aa2519900c8a0d4dbe6d207ecb667edf473cfe93e` | Original cohort and prepared metadata keep their byte identity. |
 | Prepared reference-gas contract | `owned-devnet-batch-query-contract/v2`, SHA-256 `6f67a35cf6db1e2fd91a529880b9fa555461a4687ed0a76d9a27c900ca6b6f31` | Explicit separate source selection; a matching digest supplies no execution permission or network authority. |
@@ -47,10 +47,10 @@ does not supply a public API or host integration.
 
 | Delivery | Existing implementation/evidence | Remaining acceptance exit |
 | --- | --- | --- |
-| D0 | Two exact contract selections; fixed chain 69, Settlement/domain 1/batch 0 selectors; prepared profile and independent context framing; [source and input pins](reference-gas-owned-contract.md); two separately authorized exact-source attempts recorded as non-accepting. | A new fixture attempt needs a new reviewed source and approval. Actual H2 hash, captured range and finite schedule remain unobserved; retain their provenance when available. No alternative batch is selected after absence. |
+| D0 | Two exact contract selections; fixed chain 69, Settlement/domain 1/batch 0 selectors; prepared profile and independent context framing; [source and input pins](reference-gas-owned-contract.md); three separately authorized exact-source attempts recorded as non-accepting. | A new fixture attempt needs a new reviewed source and approval. Actual H2 hash, captured range and finite schedule remain unobserved; retain their provenance when available. No alternative batch is selected after absence. |
 | D1 | Original-node 18-case root/proof/path controls and executor applier comparisons; [reference-gas conformance](reference-gas-source-cohort.md), [H1 and manager reopen](reference-gas-genesis.md), earlier isolated [first-v3 boundary](first-v3-node-boundary.md). | Observe the actual selected chain-69 H2/H3 transition and qualify its finite authorization. H1 execution and chain-100 fixtures do not establish that observation. |
 | D2 | [Owned v3 headers](experimental-v3-owned-state.md), explicit source/profile/context, producer authorization, immutable views and trusted-local checkpoint controls. | Accept the actual captured range under the selected experiment contract. The one-run anchor replay has no checkpoint input/output; broader node recovery and supported migration retain separate gates. |
-| D3 | [Three-row query](experimental-batch-context-query.md), header-derived root, local keys, bounded proofs, strict ABI and all 17 stored gateway fields; [owned controller and evidence reviewer](../tools/owned-devnet-query/README.md). | One actual selected BatchEntry must reach the native CLI and retained successful completion. The [first dispatch](owned-devnet-attempt-2026-11-13.md) refused at builder closure; the [second](owned-devnet-startup-attempt-2026-11-13.md) failed at the first node RPC read. Selected-network consumer acceptance remains open. |
+| D3 | [Three-row query](experimental-batch-context-query.md), header-derived root, local keys, bounded proofs, strict ABI and all 17 stored gateway fields; [owned controller and evidence reviewer](../tools/owned-devnet-query/README.md). | One actual selected BatchEntry must reach the native CLI and retained successful completion. The [first dispatch](owned-devnet-attempt-2026-11-13.md) refused at builder closure; the [second](owned-devnet-startup-attempt-2026-11-13.md) failed at the first node RPC read; the [third](owned-devnet-readiness-attempt-2026-11-14.md) recovered transport but refused at the selected-height deadline. Selected-network consumer acceptance remains open. |
 | D4 | Separate [candidate proof primitives](candidate-smt-proof.md) and path/absence controls exist. | Choose one actual L2 read after D3 and demand; receipts, outbox, DA and processed/release/receive policy need their own contracts and consumers. |
 | D5 | Existing native CLI and compiled recorded/synthetic workflows; source-selected context/checkpoint controls. | The chosen host must consume the actual selected query. Compilation and controlled replay do not complete this exit. Browser/WASI acceptance is outside the selected scope. |
 | D6 | Source/run/platform and binary/report bindings for the selected runtime; separate fixed human-review candidate and historical SHA mapping. | Applicable independent review, update/rollback and authenticated distribution. Native inclusion, experimental preview and production state proofs retain different eligibility rules. No release is created by this ledger. |
@@ -66,13 +66,22 @@ opening-header capture, closed-ledger oracle or native consumer result. Its
 budget observed about 2.81 GiB peak new disk use, without establishing an OS
 aggregate quota or the cause of the RPC failure.
 
-Both one-attempt authorizations are consumed. The bounded startup repair at
-`747fcf0` does not reclassify either run or dispatch a replacement. Its own main
+The separately authorized [third attempt](owned-devnet-readiness-attempt-2026-11-14.md)
+at `747fcf0` retained the initial curl exit 56 and 29 subsequent completed
+frontier commands, then recorded `REFUSED` at `owned_rpc_readiness_deadline`.
+Its 591 indexed files and original 277,053-byte ZIP were verified in place.
+No signed fixture step or consumer result was reached. The original response
+bodies were not selected for upload, so their pins do not establish the exact
+stalled height. All four runtime containers were observed closed.
+
+All three one-attempt authorizations are consumed. The bounded startup repair
+does not reclassify any prior run or authorize a replacement. Its own main
 CI and artifact qualification are complete. Selecting the native
 runtime `e143ade` does not replace this runner selection or the contract's
 `7493c59` consumer/oracle inputs. A new signed fixture needs a reviewed exact
 source and explicit approval; a matching contract digest supplies no permission.
-The current execution ref remains at the already executed `834d551` source.
+The current execution ref remains at the already executed `747fcf0` source;
+the previous `834d551` ref and evidence are preserved separately.
 
 For `747fcf0`, [main general CI](https://github.com/edgepillar/zenon-spv/actions/runs/43529102244)
 passed all seven jobs. [Main preparation CI](https://github.com/edgepillar/zenon-spv/actions/runs/43529102221)
@@ -88,7 +97,7 @@ consumer/oracle inputs.
 
 The selected flow uses public fixture accounts for domain configuration, vault
 setup and one test-ZNN deposit before read-only capture and offline consumption.
-Neither attempt reached those signed fixture steps. The selected
+None of the three attempts reached those signed fixture steps. The selected
 deposit flow does not select a withdrawal or release operation.
 
 The bounded plan allows one fresh GitHub-hosted Linux attempt: 50-minute
@@ -127,7 +136,7 @@ remain deferred when their path is not part of the selected query.
 
 | Gate | State / concrete remaining evidence |
 | --- | --- |
-| G0: scope/source/query | Two separately authorized exact-source executions are retained as non-accepting: first at builder closure, second at the first node RPC read. Both authorizations are consumed; a new fixture run needs a new explicit approval. Actual run-derived anchor/range remain open. |
+| G0: scope/source/query | Three separately authorized exact-source executions are retained as non-accepting: builder closure, first node RPC read, then selected-height readiness deadline. All three authorizations are consumed; a new fixture run needs a new explicit approval. Actual run-derived anchor/range remain open. |
 | G1: conformance/profile | New-source bounded conformance and H1 lifecycle are recorded; actual first-v3 range/authorization and applicable profile review remain open. |
 | G2: actual typed consumer | **OPEN:** the real selected three-row capture and completed native consumer. Green CI and retained-result mathematics do not close it. |
 | G3: integrated node/profile | General identity/recovery and agreed supported profile behavior remain open; a narrow owned devnet success would not close every node lifecycle path. |

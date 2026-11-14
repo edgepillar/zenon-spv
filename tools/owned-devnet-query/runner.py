@@ -145,7 +145,7 @@ def execute(environment, workspace, checkout):
     gh_environment = dict(tool_environment, GH_TOKEN=environment["GH_TOKEN"],
         GH_HOST="github.com", GH_CONFIG_DIR=str(private / "gh"), GH_PROMPT_DISABLED="1",
         GH_NO_UPDATE_NOTIFIER="1", GH_NO_EXTENSION_UPDATE_NOTIFIER="1")
-    engine = budget = execution = contract = None
+    engine = budget = execution = contract = rpc = None
     stage, outcome, reason = "dispatch", "UNKNOWN", None
     extra = set()
     try:
@@ -258,6 +258,8 @@ def execute(environment, workspace, checkout):
             "run_id": execution.run_id if execution else None,
             "run_attempt": execution.run_attempt if execution else None,
             "production_qualified": False, "consensus_finality_or_funds_release": False}))
+        if rpc is not None:
+            extra.update(rpc.retained_frontiers)
         entries = evidence_index((record, transport), {"evidence": extra})
         index = canonical({"format": "owned-devnet-evidence-index/v1",
             "files": entries, "transport_archive_copies": 0,

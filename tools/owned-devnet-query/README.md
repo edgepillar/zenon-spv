@@ -160,6 +160,24 @@ bounds. Partial responses, invalid RPC data, incomplete captures and failures
 outside startup remain terminal. This behavior does not establish the cause of
 the recorded receive failure or authorize another signed attempt.
 
+The [third authorized attempt](../../docs/owned-devnet-readiness-attempt-2026-11-14.md)
+recovered from that empty receive failure, then refused at the unchanged
+readiness deadline after 29 completed frontier commands. It reached no signed
+fixture step. Its original archive has response pins without the raw frontier
+bytes, so the exact stalled height cannot be independently recovered from it.
+
+Subsequent captures retain the original `rpc-NN.frontier.json` stdout only
+after successful envelope and selected-chain/header parsing. The existing
+128 KiB response cap, shared 96-call bound and total evidence bound still apply.
+The final index includes these checked responses even after a later refusal;
+failed or invalid response files, stderr, service logs and private configuration
+remain outside this extension. The reader checks each response against its
+successful complete/quiescent command, started record, exact frontier request,
+response ID and chain. It reports candidate observations with
+`accepted_header_authority: false`. These bytes cannot supply the anchor,
+producer schedule, accepted StateRoot or a completed consumer result.
+Older archives without these optional files keep their existing report shape.
+
 ### Review a retained result
 
 Before downloading, select the runner revision, attempt-1 run ID, artifact ID
@@ -256,7 +274,10 @@ python3 -I -B tools/owned-devnet-query/review_test.py
 Use the approved task-storage manager for local qualification, with its owned
 scratch directory supplied as `TMPDIR`. The tests use synthetic archives,
 regular temporary files and benign child processes with anonymous pipes. They
-create no on-disk FIFO, symlink or socket fixtures. POSIX process-group tests
+also exercise system curl against a two-request synthetic TCP server on an
+OS-selected loopback port, joining its owned thread before completion. It
+contacts no node or external endpoint and creates no on-disk FIFO, symlink or
+socket fixture. POSIX process-group tests
 report their unsupported Windows cases explicitly. Runtime and privileged-reader
 qualification require an actual completed manual experiment on the selected
 source.
