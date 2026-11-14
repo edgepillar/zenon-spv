@@ -273,6 +273,30 @@ def recorded_consumer(evidence, contract, checkout, selection):
     return matched
 
 
+def recorded_frontiers(evidence, contract):
+    """Read optional candidate observations without creating header authority."""
+    rows = []
+    for path in sorted(evidence.pins):
+        if not path.endswith(".frontier.json"):
+            continue
+        match = re.fullmatch(r"evidence/rpc-([0-9]{2})\.frontier\.json", path)
+        require(match is not None, "review_frontier_filename")
+        request_id = model.uint(int(match[1]), 96)
+        label, name = f"rpc-{request_id:02d}", path.split("/")[1]
+        same(evidence.json(label + ".request.json"), {"jsonrpc": "2.0", "id": request_id,
+             "method": "ledger.getFrontierMomentum", "params": []}, "review_frontier_request")
+        # The receipt binds these exact bytes to a completed successful command;
+        # the response ID/chain/header checks remain independent of its exit.
+        recorded_output(evidence, label, name)
+        raw = evidence.bytes(path, 128 << 10)
+        header = capture.Header.read(capture.rpc_result(raw, request_id, 128 << 10),
+                                     contract.data["selection"]["chain_id"])
+        rows.append({"request_id": request_id, "response": evidence.pins[path],
+                     "candidate_header": header.identifier(), "version": header.version,
+                     "timestamp": header.timestamp, "accepted_header_authority": False})
+    return rows
+
+
 def review_stream(stream, archive_pin, source_revision, run_id, contract, checkout):
     model.pin(archive_pin, MAX_ARCHIVE)
     model.digest(source_revision, model.HEX40)
@@ -305,14 +329,18 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             matched = recorded_consumer(evidence, contract, checkout, selection)
         else:
             require(binding_present or terminal["stage"] == "dispatch", "review_terminal_binding")
+        frontiers = recorded_frontiers(evidence, contract)
         evidence.verify_remaining()
-        return {"format": "owned-devnet-evidence-review/v1",
+        report = {"format": "owned-devnet-evidence-review/v1",
                 "status": "RECORDED_CONSUMER_BYTES_MATCH" if matched else "RECORDED_NON_ACCEPTING_OUTCOME",
                 "archive": archive_pin, "selection": selection, "recorded_terminal_outcome": reported,
                 "recorded_run_binding_present": binding_present, "indexed_files": len(evidence.pins),
                 "comparison": matched, "materialized_bytes": 0, "native_consumer_reexecuted": False,
                 "hosted_run_provenance_checked": False, "new_devnet_acceptance_established": False,
                 "production_qualified": False}
+        if frontiers:
+            report["candidate_frontier_observations"] = frontiers
+        return report
 
 
 def main(argv=None, stdout=None, stderr=None):
