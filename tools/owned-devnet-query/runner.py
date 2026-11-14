@@ -102,6 +102,15 @@ def fixture_flow(contract, recorder, engine, sources, node, prepared, phase, gua
     engine.require_running_closure(NODE_ROLES if phase == "configure" else model.SERVICES)
 
 
+def wait_for_initial_height(rpc, height):
+    try:
+        return rpc.wait_height(height, starting=True)
+    except Refused as error:
+        if error.reason == "owned_rpc_readiness_deadline":
+            rpc.capture_startup_sync()
+        raise
+
+
 def frontier_evidence_files(rpc):
     """Select each validated frontier together with its exact request."""
     selected = set()
@@ -110,6 +119,22 @@ def frontier_evidence_files(rpc):
             r"rpc-(?:0[1-9]|[1-8][0-9]|9[0-6])\.frontier\.json", name) is not None,
             "retained_frontier_selection")
         selected.update((name, name[:-len(".frontier.json")] + ".request.json"))
+    return selected
+
+
+def startup_sync_evidence_files(rpc):
+    selected = set(rpc.startup_sync_evidence)
+    if not selected:
+        return selected
+    require(capture.SYNC_REPORT in selected and len(selected) <= 3, "startup_sync_selection")
+    labels, responses, requests = set(), set(), set()
+    for name in selected - {capture.SYNC_REPORT}:
+        require(type(name) is str, "startup_sync_selection")
+        match = re.fullmatch(r"(rpc-(?:0[1-9]|[1-8][0-9]|9[0-6]))\.(request|sync-info)\.json", name)
+        require(match is not None, "startup_sync_selection")
+        labels.add(match[1])
+        (requests if match[2] == "request" else responses).add(match[1])
+    require(len(labels) <= 1 and responses <= requests, "startup_sync_selection")
     return selected
 
 
@@ -205,7 +230,7 @@ def execute(environment, workspace, checkout):
             engine.create(role, images.image_for(role), files)
             engine.start(role)
         rpc = capture.LocalRpc(contract, record, workspace, "/usr/bin/curl", tool_environment, guard)
-        rpc.wait_height(contract.data["selection"]["source_expected_first_v3_height"], starting=True)
+        wait_for_initial_height(rpc, contract.data["selection"]["source_expected_first_v3_height"])
         opening = rpc.opening()
         extra.add("opening-momentums.json")
         stage = "fixture-configuration"
@@ -271,6 +296,7 @@ def execute(environment, workspace, checkout):
             "production_qualified": False, "consensus_finality_or_funds_release": False}))
         if rpc is not None:
             extra.update(frontier_evidence_files(rpc))
+            extra.update(startup_sync_evidence_files(rpc))
         entries = evidence_index((record, transport), {"evidence": extra})
         index = canonical({"format": "owned-devnet-evidence-index/v1",
             "files": entries, "transport_archive_copies": 0,
