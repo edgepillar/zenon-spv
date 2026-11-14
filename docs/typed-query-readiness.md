@@ -1,5 +1,10 @@
 # Typed-query readiness and acceptance ledger
 
+The [15 November source/execution supplement](typed-query-evidence-2026-11-15.md)
+records the later qualified runner and retained H1 diagnostic. The dated ledger
+below preserves its original sources, attempt counts and outcomes; it is not an
+exhaustive count of later executions or a transfer of acceptance to later code.
+
 Evidence cut: **14 November 2026**, ledger-selected native runtime source
 [`e143ade8507a45a1f125de7bc15b92541036ef85`](https://github.com/edgepillar/zenon-spv/tree/e143ade8507a45a1f125de7bc15b92541036ef85).
 This reconciles the [D0-D6 plan](typed-state-roadmap.md) with implemented controls

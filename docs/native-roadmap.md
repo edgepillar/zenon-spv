@@ -57,7 +57,7 @@ The [current D0-D6 plan](typed-state-roadmap.md) is the planning baseline.
 Track delivery in [#293](https://github.com/edgepillar/zenon-spv/issues/293).
 Historical M0-M5 records below and in the research appendix retain their original
 sources and outcomes; the plan includes an explicit milestone mapping.
-The [13 November readiness ledger](typed-query-readiness.md) maps implemented
+The [dated readiness ledger](typed-query-readiness.md) maps implemented
 controls, C01-C15 and G0-G7 to the actual remaining exits. Preparation, source
 qualification and actual selected-network acceptance retain separate states.
 
