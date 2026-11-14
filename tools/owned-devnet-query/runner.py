@@ -107,7 +107,9 @@ def wait_for_initial_height(rpc, height):
         return rpc.wait_height(height, starting=True)
     except Refused as error:
         if error.reason == "owned_rpc_readiness_deadline":
-            rpc.capture_startup_sync()
+            observation = rpc.capture_startup_sync()
+            if type(observation) is dict and observation.get("status") == "OBSERVED":
+                rpc.capture_post_sync_frontier(observation["request_id"])
         raise
 
 
@@ -135,6 +137,18 @@ def startup_sync_evidence_files(rpc):
         labels.add(match[1])
         (requests if match[2] == "request" else responses).add(match[1])
     require(len(labels) <= 1 and responses <= requests, "startup_sync_selection")
+    return selected
+
+
+def post_sync_frontier_evidence_files(rpc):
+    selected = set(rpc.post_sync_evidence)
+    if not selected:
+        return selected
+    require(capture.POST_SYNC_REPORT in selected and len(selected) <= 2, "post_sync_frontier_selection")
+    for name in selected - {capture.POST_SYNC_REPORT}:
+        require(type(name) is str and re.fullmatch(
+            r"rpc-(?:0[1-9]|[1-8][0-9]|9[0-6])\.request\.json", name) is not None,
+            "post_sync_frontier_selection")
     return selected
 
 
@@ -297,6 +311,7 @@ def execute(environment, workspace, checkout):
         if rpc is not None:
             extra.update(frontier_evidence_files(rpc))
             extra.update(startup_sync_evidence_files(rpc))
+            extra.update(post_sync_frontier_evidence_files(rpc))
         entries = evidence_index((record, transport), {"evidence": extra})
         index = canonical({"format": "owned-devnet-evidence-index/v1",
             "files": entries, "transport_archive_copies": 0,

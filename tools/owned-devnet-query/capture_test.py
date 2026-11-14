@@ -223,6 +223,148 @@ class StartupSyncTests(unittest.TestCase):
                 runner.frontier_evidence_files(mock.Mock(retained_frontiers={name}))
 
 
+class PostSyncFrontierTests(unittest.TestCase):
+    def setUp(self):
+        StartupSyncTests.setUp(self)
+        self.sync = self.rpc.capture_startup_sync()
+        self.raw = model.canonical({"jsonrpc": "2.0", "id": 2, "result": synthetic_window()[1][3]})
+
+    def summary(self):
+        return json.loads(self.payloads[capture.POST_SYNC_REPORT])
+
+    def test_one_later_frontier_is_bounded_and_keeps_the_original_body(self):
+        self.rpc.capture_post_sync_frontier(1)
+        args = self.recorder.run.call_args.args[1]
+        options = self.recorder.run.call_args.kwargs
+        self.assertEqual(json.loads(args[args.index("--data-binary") + 1]),
+            {"jsonrpc": "2.0", "id": 2, "method": "ledger.getFrontierMomentum", "params": []})
+        self.assertEqual((options["timeout"], options["stdout_cap"], args[-1]),
+                         (7, 128 << 10, capture.RPC_URL))
+        self.assertEqual(self.payloads["rpc-02.frontier.json"], self.raw)
+        self.assertEqual(self.summary()["status"], "OBSERVED")
+        self.assertEqual(self.summary()["after_sync_request_id"], 1)
+        self.assertFalse(self.summary()["accepted_header_authority"])
+        self.assertEqual(runner.post_sync_frontier_evidence_files(self.rpc),
+                         {capture.POST_SYNC_REPORT, "rpc-02.request.json"})
+        self.assertEqual(runner.frontier_evidence_files(self.rpc),
+                         {"rpc-02.request.json", "rpc-02.frontier.json"})
+        with self.assertRaisesRegex(model.Refused, "post_sync_frontier_scope"):
+            self.rpc.capture_post_sync_frontier(1)
+        self.assertEqual(self.recorder.run.call_count, 2)
+
+    def test_only_the_last_successfully_observed_sync_request_can_select_the_read(self):
+        for value in (True, 0, 2, 97):
+            with self.subTest(value=value), self.assertRaises(model.Refused):
+                self.rpc.capture_post_sync_frontier(value)
+        self.rpc.startup_sync_observed_request = None
+        with self.assertRaises(model.Refused):
+            self.rpc.capture_post_sync_frontier(1)
+        self.assertNotIn(capture.POST_SYNC_REPORT, self.payloads)
+        self.assertEqual(self.recorder.run.call_count, 1)
+
+    def test_budget_refusal_and_final_sync_slot_launch_no_frontier_command(self):
+        for exhausted in (False, True):
+            with self.subTest(exhausted=exhausted):
+                StartupSyncTests.setUp(self)
+                if exhausted:
+                    self.rpc.calls = 95
+                    self.raw = self.raw.replace(b'"id": 1', b'"id": 96')
+                sync = self.rpc.capture_startup_sync()
+                self.guard.side_effect = model.Refused("unit_budget_refusal")
+                self.rpc.capture_post_sync_frontier(sync["request_id"])
+                self.assertEqual(self.recorder.run.call_count, 1)
+                self.assertEqual(self.summary()["status"], "NOT_ATTEMPTED")
+                self.assertEqual(self.summary()["reason"], "shared_call_limit" if exhausted else "budget_refused")
+                self.assertIsNone(self.summary()["request_id"])
+                self.assertEqual(runner.post_sync_frontier_evidence_files(self.rpc), {capture.POST_SYNC_REPORT})
+                self.guard.side_effect = None
+                with self.assertRaisesRegex(model.Refused, "post_sync_frontier_scope"):
+                    self.rpc.capture_post_sync_frontier(sync["request_id"])
+                self.assertEqual(self.recorder.run.call_count, 1)
+
+    def test_failed_incomplete_and_interrupted_frontier_commands_keep_their_status(self):
+        for actual_exit, complete, reason in ((7, True, None), (-15, False, "timeout"),
+                                            (None, False, "launch_failed"), (-15, False, "interrupted")):
+            with self.subTest(actual_exit=actual_exit, reason=reason):
+                self.setUp()
+                receipt = {"actual_exit": actual_exit, "output_complete": complete, "reason": reason}
+                self.recorder.run.side_effect = CommandFailed(mock.Mock(receipt=receipt))
+                if reason == "interrupted":
+                    with self.assertRaises(KeyboardInterrupt):
+                        self.rpc.capture_post_sync_frontier(1)
+                else:
+                    self.rpc.capture_post_sync_frontier(1)
+                self.assertEqual(self.summary()["status"], "FAILURE" if complete else "UNKNOWN")
+                self.assertIsNone(self.summary()["response_file"])
+                self.assertEqual(runner.post_sync_frontier_evidence_files(self.rpc),
+                                 {capture.POST_SYNC_REPORT, "rpc-02.request.json"})
+                self.assertEqual(self.rpc.retained_frontiers, set())
+
+    def test_unvalidated_or_oversized_frontier_bodies_are_excluded(self):
+        for raw in (b"{", self.raw.replace(b'"id": 2', b'"id": 3'), b" " * ((128 << 10) + 1)):
+            with self.subTest(bytes=len(raw)):
+                self.setUp()
+                self.raw = raw
+                self.rpc.capture_post_sync_frontier(1)
+                self.assertEqual(self.summary()["status"], "REFUSED")
+                self.assertIsNone(self.summary()["response_file"])
+                self.assertFalse(runner.frontier_evidence_files(self.rpc))
+
+    def test_prelaunch_interruption_retains_unknown_without_a_request(self):
+        self.guard.side_effect = KeyboardInterrupt
+        with self.assertRaises(KeyboardInterrupt):
+            self.rpc.capture_post_sync_frontier(1)
+        self.assertEqual((self.summary()["status"], self.summary()["reason"]), ("UNKNOWN", "capture_interrupted"))
+        self.assertIsNone(self.summary()["request_id"])
+        self.assertEqual(self.recorder.run.call_count, 1)
+
+    def test_followup_can_use_the_last_shared_slot_without_resetting_the_counter(self):
+        StartupSyncTests.setUp(self)
+        self.rpc.calls = 94
+        self.raw = self.raw.replace(b'"id": 1', b'"id": 95')
+        sync = self.rpc.capture_startup_sync()
+        self.raw = model.canonical({"jsonrpc": "2.0", "id": 96, "result": synthetic_window()[1][3]})
+        self.rpc.capture_post_sync_frontier(sync["request_id"])
+        self.assertEqual(self.rpc.calls, 96)
+        self.assertEqual(self.summary()["request_id"], 96)
+        self.assertIn("rpc-96.frontier.json", self.rpc.retained_frontiers)
+
+    def test_selection_allows_only_one_bounded_request_and_the_fixed_summary(self):
+        for selected in (set(), {capture.POST_SYNC_REPORT}, {capture.POST_SYNC_REPORT, "rpc-96.request.json"}):
+            self.assertEqual(runner.post_sync_frontier_evidence_files(mock.Mock(post_sync_evidence=selected)), selected)
+        for selected in ({"rpc-01.request.json"}, {capture.POST_SYNC_REPORT, "rpc-00.request.json"},
+                         {capture.POST_SYNC_REPORT, "rpc-97.request.json"},
+                         {capture.POST_SYNC_REPORT, "rpc-01.frontier.json"},
+                         {capture.POST_SYNC_REPORT, "rpc-01.request.json", "rpc-02.request.json"},
+                         {capture.POST_SYNC_REPORT, "../private.json"}, {capture.POST_SYNC_REPORT, 1}):
+            with self.subTest(selected=selected), self.assertRaises(model.Refused):
+                runner.post_sync_frontier_evidence_files(mock.Mock(post_sync_evidence=selected))
+
+    def test_only_an_observed_sync_allows_the_followup_and_the_original_refusal_wins(self):
+        for sync in (None, {"status": "FAILURE"}, {"status": "NOT_ATTEMPTED"},
+                     {"status": "OBSERVED", "request_id": 31}):
+            with self.subTest(sync=sync):
+                rpc = mock.Mock()
+                error = model.Refused("owned_rpc_readiness_deadline")
+                rpc.wait_height.side_effect = error
+                rpc.capture_startup_sync.return_value = sync
+                with self.assertRaises(model.Refused) as observed:
+                    runner.wait_for_initial_height(rpc, 3)
+                self.assertIs(observed.exception, error)
+                self.assertEqual(rpc.capture_post_sync_frontier.call_count,
+                                 1 if sync is not None and sync["status"] == "OBSERVED" else 0)
+                if sync is not None and sync["status"] == "OBSERVED":
+                    rpc.capture_post_sync_frontier.assert_called_once_with(31)
+
+    def test_followup_interruption_keeps_controller_interruption_visible(self):
+        rpc = mock.Mock()
+        rpc.wait_height.side_effect = model.Refused("owned_rpc_readiness_deadline")
+        rpc.capture_startup_sync.return_value = {"status": "OBSERVED", "request_id": 31}
+        rpc.capture_post_sync_frontier.side_effect = KeyboardInterrupt
+        with self.assertRaises(KeyboardInterrupt):
+            runner.wait_for_initial_height(rpc, 3)
+
+
 def synthetic_window(last=4, state_root=bytes([77]) * 32):
     rows = []
     chain = CONTRACT.data["selection"]["chain_id"]
@@ -694,8 +836,9 @@ class HostBoundaryTests(unittest.TestCase):
 
             def local_transport(label, argv, cwd, env, **options):
                 request = json.loads(argv[argv.index("--data-binary") + 1])
-                result = rows[1] if request["method"] == "ledger.getFrontierMomentum" else {
-                    "state": 2, "currentHeight": 99, "targetHeight": 99}
+                result = (rows[1] if request["id"] == 1 else rows[3]) \
+                    if request["method"] == "ledger.getFrontierMomentum" else {
+                        "state": 2, "currentHeight": 99, "targetHeight": 99}
                 self.assertIn(request["method"], ("ledger.getFrontierMomentum", "stats.syncInfo"))
                 raw = model.canonical({"jsonrpc": "2.0", "id": request["id"], "result": result})
                 return actual_run(label, [sys.executable, "-I", "-B", "-c",
@@ -737,6 +880,9 @@ class HostBoundaryTests(unittest.TestCase):
             self.assertIn("evidence/startup-sync.json", names)
             self.assertIn("evidence/rpc-02.request.json", names)
             self.assertIn("evidence/rpc-02.sync-info.json", names)
+            self.assertIn("evidence/" + capture.POST_SYNC_REPORT, names)
+            self.assertIn("evidence/rpc-03.request.json", names)
+            self.assertIn("evidence/rpc-03.frontier.json", names)
             self.assertFalse(index["raw_service_logs_or_private_configuration_exported"])
             # Inspect exactly the exported index, not the wider recorder directory.
             # The real reader must be able to find the request after a refusal.
@@ -751,10 +897,15 @@ class HostBoundaryTests(unittest.TestCase):
             self.assertEqual(checked["startup_sync_diagnostic"]["observation"],
                              {"state": 2, "current_height": 99, "target_height": 99})
             observed = checked["candidate_frontier_observations"]
-            self.assertEqual(len(observed), 1)
+            self.assertEqual(len(observed), 2)
             self.assertEqual(observed[0]["request_id"], 1)
             self.assertEqual(observed[0]["candidate_header"]["height"], 2)
             self.assertFalse(observed[0]["accepted_header_authority"])
+            post = checked["post_sync_frontier_diagnostic"]
+            self.assertEqual(post["observation"]["candidate_header"]["height"], 4)
+            self.assertEqual((post["after_sync_request_id"], post["request_id"]), (2, 3))
+            self.assertFalse(post["atomic_with_sync_observation"])
+            self.assertFalse(post["accepted_header_authority"])
 
     def test_unavailable_sync_keeps_real_exit_and_excludes_unvalidated_body(self):
         for complete in (True, False):
@@ -791,6 +942,53 @@ class HostBoundaryTests(unittest.TestCase):
                 self.assertEqual(diagnostic["output_complete"], complete)
                 self.assertIsNone(diagnostic["observation"])
                 self.assertEqual(checked["recorded_terminal_outcome"], "REFUSED")
+
+    def test_post_sync_failure_keeps_real_exit_and_excludes_unvalidated_body(self):
+        for complete in (True, False):
+            with self.subTest(complete=complete), tempfile.TemporaryDirectory(
+                    prefix="owned-post-sync-child-control-") as temporary:
+                root = Path(temporary).resolve(strict=True)
+                record = Recorder(root / "evidence")
+                actual_run = record.run
+
+                def transport(label, argv, cwd, env, **options):
+                    request = json.loads(argv[argv.index("--data-binary") + 1])
+                    if request["method"] == "stats.syncInfo":
+                        raw = model.canonical({"jsonrpc": "2.0", "id": request["id"],
+                            "result": {"state": 2, "currentHeight": 2, "targetHeight": 2}})
+                        code = "import sys; sys.stdout.write(" + repr(raw.decode()) + ")"
+                    else:
+                        self.assertEqual(request["method"], "ledger.getFrontierMomentum")
+                        code = "import sys; sys.stdout.write('unvalidated candidate bytes'); sys.stdout.flush(); "
+                        code += "raise SystemExit(7)" if complete else "import time; time.sleep(5)"
+                        options["timeout"] = 3 if complete else 0.1
+                    return actual_run(label, [sys.executable, "-I", "-B", "-c", code], cwd, {}, **options)
+
+                rpc = capture.LocalRpc(CONTRACT, record, root, "unused-curl", {}, lambda: None)
+                with mock.patch.object(record, "run", side_effect=transport):
+                    sync = rpc.capture_startup_sync()
+                    rpc.capture_post_sync_frontier(sync["request_id"])
+                execution = model.ExecutionIdentity("a" * 40, 1, 1, "edgepillar")
+                record.seal("terminal.json", model.canonical({"format": "owned-devnet-query-terminal/v1",
+                    "outcome": "REFUSED", "stage": "nodes", "reason": "owned_rpc_readiness_deadline",
+                    "source_revision": execution.source_revision, "contract_sha256": CONTRACT.sha256,
+                    "run_id": 1, "run_attempt": 1, "owned_runtime_observed_closed": False,
+                    "production_qualified": False, "consensus_finality_or_funds_release": False}))
+                selected = (runner.startup_sync_evidence_files(rpc)
+                            | runner.post_sync_frontier_evidence_files(rpc) | runner.frontier_evidence_files(rpc))
+                entries = runner.evidence_index((record,), {"evidence": selected})
+                index = {"format": "owned-devnet-evidence-index/v1", "files": entries,
+                         "transport_archive_copies": 0, "raw_service_logs_or_private_configuration_exported": False}
+                self.assertNotIn("evidence/rpc-02.frontier.json", {row["path"] for row in entries})
+                checked = review_exported(root, index, execution)
+                post = checked["post_sync_frontier_diagnostic"]
+                receipt = json.loads((root / "evidence/rpc-02.complete.json").read_bytes())
+                self.assertEqual(post["status"], "FAILURE" if complete else "UNKNOWN")
+                self.assertEqual(post["actual_exit"], receipt["actual_exit"])
+                self.assertEqual(post["output_complete"], complete)
+                self.assertIsNone(post["observation"])
+                self.assertEqual(checked["recorded_terminal_outcome"], "REFUSED")
+                self.assertIsNone(checked["comparison"])
 
     def test_cancelled_reader_exits_after_anonymous_pipe_eof(self):
         command = [sys.executable, "-I", "-B", "-c",

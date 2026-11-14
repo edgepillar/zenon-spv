@@ -21,6 +21,7 @@ GATEWAY_URL = "http://127.0.0.1:35999"
 ORACLE_REPORT_BYTES = 256 << 10
 SYNC_INFO_BYTES = 8 << 10
 SYNC_REPORT = "startup-sync.json"
+POST_SYNC_REPORT = "startup-post-sync-frontier.json"
 SYNC_REASONS = {"OBSERVED": {None}, "NOT_ATTEMPTED": {"shared_call_limit", "budget_refused"},
     "FAILURE": {"command_failed"}, "UNKNOWN": {"command_incomplete", "capture_interrupted"},
     "REFUSED": {"capture_refused"}}
@@ -51,6 +52,16 @@ def sync_info(row):
     return {"state": uint(row["state"], 3, minimum=0),
             "current_height": uint(row["currentHeight"]),
             "target_height": uint(row["targetHeight"], minimum=0)}
+
+
+def diagnostic_failure(report, error):
+    receipt = error.result.receipt
+    if receipt.get("reason") == "interrupted":
+        raise KeyboardInterrupt from error
+    failed = (receipt["output_complete"] is True
+              and type(receipt["actual_exit"]) is int and receipt["actual_exit"] != 0)
+    report.update(status="FAILURE" if failed else "UNKNOWN",
+                  reason="command_failed" if failed else "command_incomplete")
 
 
 @dataclass(frozen=True)
@@ -98,6 +109,9 @@ class LocalRpc:
         self.retained_frontiers = set()
         self.startup_sync_evidence = set()
         self.startup_sync_attempted = False
+        self.startup_sync_observed_request = None
+        self.post_sync_evidence = set()
+        self.post_sync_attempted = False
 
     def _read(self, method, parameters, cap, *, stdout_name=None):
         self.calls += 1
@@ -154,17 +168,12 @@ class LocalRpc:
             try:
                 sync_info(self._read("stats.syncInfo", [], SYNC_INFO_BYTES, stdout_name=response))
             except CommandFailed as error:
-                receipt = error.result.receipt
-                if receipt.get("reason") == "interrupted":
-                    raise KeyboardInterrupt from error
-                complete_failure = (receipt["output_complete"] is True
-                    and type(receipt["actual_exit"]) is int and receipt["actual_exit"] != 0)
-                report.update(status="FAILURE" if complete_failure else "UNKNOWN",
-                              reason="command_failed" if complete_failure else "command_incomplete")
+                diagnostic_failure(report, error)
             except Refused:
                 report.update(status="REFUSED", reason="capture_refused")
             else:
                 report.update(status="OBSERVED", reason=None, response_file=response)
+                self.startup_sync_observed_request = request_id
         finally:
             request = label + ".request.json"
             if request in self.recorder.names:
@@ -174,6 +183,44 @@ class LocalRpc:
                 self.startup_sync_evidence.add(response)
             self.recorder.seal(SYNC_REPORT, canonical(report))
             self.startup_sync_evidence.add(SYNC_REPORT)
+        return report
+
+    def capture_post_sync_frontier(self, after_request_id):
+        """Retain one later candidate hash without restarting readiness."""
+        uint(after_request_id, 96)
+        require(after_request_id == self.calls == self.startup_sync_observed_request
+                and not self.post_sync_attempted, "post_sync_frontier_scope")
+        self.post_sync_attempted = True
+        report = {"format": "owned-devnet-post-sync-frontier/v1", "after_sync_request_id": after_request_id,
+            "status": "NOT_ATTEMPTED", "reason": "shared_call_limit", "request_id": None,
+            "response_file": None, "accepted_header_authority": False, "production_qualified": False}
+        request_id = self.calls + 1
+        label, response = f"rpc-{request_id:02d}", f"rpc-{request_id:02d}.frontier.json"
+        try:
+            if self.calls >= 96:
+                return
+            report.update(status="UNKNOWN", reason="capture_interrupted")
+            try:
+                self.guard()
+            except Refused:
+                report.update(status="NOT_ATTEMPTED", reason="budget_refused")
+                return
+            try:
+                self.frontier()
+            except CommandFailed as error:
+                diagnostic_failure(report, error)
+            except Refused:
+                report.update(status="REFUSED", reason="capture_refused")
+            else:
+                report.update(status="OBSERVED", reason=None, response_file=response)
+        finally:
+            request = label + ".request.json"
+            if request in self.recorder.names:
+                report["request_id"] = request_id
+                self.post_sync_evidence.add(request)
+            # The validated body is already selected by retained_frontiers.
+            self.recorder.seal(POST_SYNC_REPORT, canonical(report))
+            self.post_sync_evidence.add(POST_SYNC_REPORT)
 
     def _wait(self, read, ready, *, starting):
         # Preserve every actual attempt. A freshly published loopback port can

@@ -385,6 +385,7 @@ class FrontierReviewTests(unittest.TestCase):
         self.assertEqual(result["status"], "RECORDED_NON_ACCEPTING_OUTCOME")
         self.assertNotIn("candidate_frontier_observations", result)
         self.assertNotIn("startup_sync_diagnostic", result)
+        self.assertNotIn("post_sync_frontier_diagnostic", result)
 
 
 class StartupSyncReviewTests(unittest.TestCase):
@@ -514,6 +515,150 @@ class StartupSyncReviewTests(unittest.TestCase):
                 accepted[name] = raw
         with self.assertRaisesRegex(Refused, "review_sync_summary_scope"):
             self.review(contract, accepted)
+
+
+class PostSyncFrontierReviewTests(unittest.TestCase):
+    @staticmethod
+    def files():
+        contract, files = StartupSyncReviewTests.files()
+        _, post = FrontierReviewTests.files(3)
+        files.update({name: raw for name, raw in post.items() if name != "evidence/terminal.json"})
+        files["evidence/" + capture.POST_SYNC_REPORT] = canonical({
+            "format": "owned-devnet-post-sync-frontier/v1", "after_sync_request_id": 2,
+            "status": "OBSERVED", "reason": None, "request_id": 3,
+            "response_file": "rpc-03.frontier.json", "accepted_header_authority": False,
+            "production_qualified": False})
+        return contract, files
+
+    @staticmethod
+    def review(contract, files):
+        return FrontierReviewTests.review(contract, files)
+
+    def test_later_candidate_is_distinct_from_sync_and_never_completes_the_consumer(self):
+        contract, files = self.files()
+        result = self.review(contract, files)
+        post = result["post_sync_frontier_diagnostic"]
+        self.assertEqual((post["after_sync_request_id"], post["request_id"]), (2, 3))
+        self.assertEqual(post["observation"]["candidate_header"]["height"], 2)
+        self.assertEqual((post["actual_exit"], post["output_complete"]), (0, True))
+        self.assertFalse(post["atomic_with_sync_observation"])
+        self.assertFalse(post["accepted_header_authority"])
+        self.assertEqual(result["recorded_terminal_outcome"], "REFUSED")
+        self.assertIsNone(result["comparison"])
+        self.assertFalse(result["new_devnet_acceptance_established"])
+
+    def test_summary_requires_an_observed_parent_and_one_next_bounded_request(self):
+        for field, value in (("format", "another/v1"), ("after_sync_request_id", True),
+                ("after_sync_request_id", 1), ("after_sync_request_id", 97),
+                ("status", True), ("status", "READY"), ("reason", []),
+                ("request_id", None), ("request_id", True), ("request_id", 2),
+                ("request_id", 4), ("request_id", 97), ("response_file", "rpc-04.frontier.json"),
+                ("accepted_header_authority", True), ("production_qualified", True)):
+            with self.subTest(field=field, value=value):
+                contract, files = self.files()
+                name = "evidence/" + capture.POST_SYNC_REPORT
+                summary = json.loads(files[name]);summary[field] = value
+                files[name] = canonical(summary)
+                with self.assertRaises(Refused):self.review(contract, files)
+        contract, files = self.files()
+        del files["evidence/startup-sync.json"]
+        with self.assertRaises(Refused):self.review(contract, files)
+
+    def test_response_request_receipt_and_single_later_body_are_bound(self):
+        for change in ("missing_request", "missing_start", "missing_receipt", "wrong_method",
+                       "wrong_params", "wrong_id", "failed", "incomplete", "digest", "extra_later"):
+            with self.subTest(change=change):
+                contract, files = self.files()
+                if change.startswith("missing_"):
+                    suffix = {"missing_request": "request", "missing_start": "started", "missing_receipt": "complete"}[change]
+                    del files[f"evidence/rpc-03.{suffix}.json"]
+                elif change.startswith("wrong_"):
+                    request = json.loads(files["evidence/rpc-03.request.json"])
+                    key, value = {"wrong_method": ("method", "stats.syncInfo"),
+                                  "wrong_params": ("params", [1]), "wrong_id": ("id", 4)}[change]
+                    request[key] = value;files["evidence/rpc-03.request.json"] = canonical(request)
+                elif change == "extra_later":
+                    _, extra = FrontierReviewTests.files(4)
+                    files.update({name: raw for name, raw in extra.items() if name != "evidence/terminal.json"})
+                else:
+                    receipt = json.loads(files["evidence/rpc-03.complete.json"])
+                    if change == "failed":receipt["actual_exit"] = 7
+                    elif change == "incomplete":receipt["output_complete"] = False
+                    else:receipt["outputs"]["stdout"]["sha256"] = "f" * 64
+                    files["evidence/rpc-03.complete.json"] = canonical(receipt)
+                with self.assertRaises(Refused):self.review(contract, files)
+
+    def test_failure_incomplete_and_unlaunched_outcomes_invent_no_candidate(self):
+        for status, reason, actual_exit, complete in (("FAILURE", "command_failed", 7, True),
+                ("UNKNOWN", "command_incomplete", -15, False), ("REFUSED", "capture_refused", 0, True),
+                ("NOT_ATTEMPTED", "budget_refused", None, None),
+                ("UNKNOWN", "capture_interrupted", None, None)):
+            with self.subTest(status=status, reason=reason):
+                contract, files = self.files()
+                del files["evidence/rpc-03.frontier.json"]
+                name = "evidence/" + capture.POST_SYNC_REPORT
+                summary = json.loads(files[name]);summary.update(status=status, reason=reason, response_file=None)
+                if complete is None:
+                    summary["request_id"] = None
+                    for suffix in ("request", "started", "complete"):del files[f"evidence/rpc-03.{suffix}.json"]
+                else:
+                    receipt = json.loads(files["evidence/rpc-03.complete.json"])
+                    receipt.update(actual_exit=actual_exit, output_complete=complete)
+                    files["evidence/rpc-03.complete.json"] = canonical(receipt)
+                files[name] = canonical(summary)
+                result = self.review(contract, files)["post_sync_frontier_diagnostic"]
+                self.assertEqual((result["actual_exit"], result["output_complete"]), (actual_exit, complete))
+                self.assertIsNone(result["observation"])
+
+    def test_nonobserved_sync_cannot_authorize_a_followup(self):
+        contract, files = self.files()
+        summary = json.loads(files["evidence/startup-sync.json"])
+        summary.update(status="REFUSED", reason="capture_refused", response_file=None)
+        files["evidence/startup-sync.json"] = canonical(summary)
+        del files["evidence/rpc-02.sync-info.json"]
+        with self.assertRaisesRegex(Refused, "review_post_sync_scope"):self.review(contract, files)
+
+    def test_legacy_sync_archive_keeps_its_report_shape(self):
+        contract, files = StartupSyncReviewTests.files()
+        result = self.review(contract, files)
+        self.assertIn("startup_sync_diagnostic", result)
+        self.assertNotIn("post_sync_frontier_diagnostic", result)
+
+    def test_exhausted_slot_requires_the_actual_final_sync_request(self):
+        contract, files = self.files()
+        for suffix in ("frontier", "request", "started", "complete"):
+            del files[f"evidence/rpc-03.{suffix}.json"]
+        summary = json.loads(files["evidence/" + capture.POST_SYNC_REPORT])
+        summary.update(status="NOT_ATTEMPTED", reason="shared_call_limit", request_id=None, response_file=None)
+        files["evidence/" + capture.POST_SYNC_REPORT] = canonical(summary)
+        with self.assertRaisesRegex(Refused, "review_post_sync_call_limit"):
+            self.review(contract, files)
+        moved = {}
+        for name, raw in files.items():
+            value = json.loads(raw)
+            def shift(row):
+                if isinstance(row, dict):
+                    return {k: (96 if k in ("id", "request_id", "after_sync_request_id") and v == 2
+                                else shift(v)) for k, v in row.items()}
+                if isinstance(row, list):return [shift(v) for v in row]
+                if isinstance(row, str):return row.replace("rpc-02", "rpc-96")
+                return row
+            value = shift(value)
+            # The renamed original stdout is still bound to its exact bytes.
+            moved[name.replace("rpc-02", "rpc-96")] = canonical(value)
+        body = moved["evidence/rpc-96.sync-info.json"]
+        receipt = json.loads(moved["evidence/rpc-96.complete.json"])
+        receipt["outputs"]["stdout"] = {"file": "rpc-96.sync-info.json", **pin(body)}
+        moved["evidence/rpc-96.complete.json"] = canonical(receipt)
+        result = self.review(contract, moved)["post_sync_frontier_diagnostic"]
+        self.assertEqual(result["after_sync_request_id"], 96)
+        self.assertIsNone(result["request_id"])
+
+    def test_post_summary_cannot_be_attached_to_an_accepted_consumer(self):
+        contract, files = accepted_files()
+        _, extra = self.files()
+        files.update({name: raw for name, raw in extra.items() if name != "evidence/terminal.json"})
+        with self.assertRaises(Refused):self.review(contract, files)
 
 
 class ReviewTests(unittest.TestCase):

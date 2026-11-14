@@ -186,7 +186,7 @@ without writing a second ZIP to disk.
 ### Capture the node's sync state after a startup refusal
 
 Only an initial selected-height `owned_rpc_readiness_deadline` permits one
-additional `stats.syncInfo` read from the same fixed owned RPC endpoint. The
+`stats.syncInfo` read from the same fixed owned RPC endpoint. The
 30 readiness attempts and checked 90-second deadline remain; the observation
 does not retry readiness or advance to fixture configuration. Successful
 readiness, malformed headers, other refusals and later gateway waits do not
@@ -214,6 +214,21 @@ controller remains `UNKNOWN`. A node reporting `SyncDone` or a higher current
 height supplies no accepted header, anchor, producer schedule, StateRoot,
 canonicality or completed consumer. Older archives without this optional record
 keep their report shape. See the [source and scope record](../../docs/owned-startup-sync-diagnostic.md).
+
+An observed sync response also permits one next candidate frontier read, with a
+fresh budget check, the existing 128 KiB bound and the same shared 96-call cap.
+Its optional `startup-post-sync-frontier.json` summary binds the two sequential
+request IDs. Validated frontier bytes and their exact request are retained;
+failed or partial bodies are excluded. The reader reports
+`post_sync_frontier_diagnostic` with false header authority and an explicit
+`atomic_with_sync_observation: false`. The initial refusal still ends execution,
+even when this later candidate has reached the requested height. A shared-call
+or budget refusal launches no follow-up command.
+
+The [source-b8bae80 attempt](../../docs/owned-devnet-sync-attempt-2026-11-14.md)
+captured `SyncDone` at reported height two after 29 H1 frontier responses. The
+follow-up read addresses its missing candidate hash; the original archive keeps
+its original bytes and report shape.
 
 ### Review a retained result
 
