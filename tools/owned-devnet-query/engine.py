@@ -534,11 +534,11 @@ class Engine:
             self.recorder.seal(node_diag.REPORT, canonical(report))
 
     def _capture_startup_file_logs(self, startup, observe):
-        """Copy only the two fixed log paths to bounded stdout, never to a host path."""
+        """Read byte tails from two fixed paths using the owned image's BusyBox."""
         require(not self.startup_file_logs_attempted and self.startup_diagnostics_attempted
                 and self.cleanup_deadline is None and self.admission is not None, "startup_file_scope")
         self.startup_file_logs_attempted = True
-        report = {"format": "owned-devnet-startup-file-logs/v1", "trigger": "owned_rpc_readiness_deadline",
+        report = {"format": "owned-devnet-startup-file-logs/v2", "trigger": "owned_rpc_readiness_deadline",
             "status": "UNKNOWN", "reason": "capture_interrupted", "observed_before_cleanup": True,
             "atomic_snapshot": False, "accepted_header_authority": False, "production_qualified": False,
             "raw_logs_exported": False, "nodes": [{"service": row["service"],
@@ -553,10 +553,10 @@ class Engine:
                 owned = self.owned[row["service"]]
                 for item, (kind, path) in zip(row["files"], file_logs.FILES):
                     observe(item["phase"], "startup-file-" + row["service"] + "-" + kind,
-                            ["container", "cp", owned.identity + ":" + path, "-"],
-                            lambda result, kind=kind: file_logs.archive_summary(
-                                result.stdout(file_logs.ARCHIVE_BYTES), kind),
-                            file_logs.ARCHIVE_BYTES, 4096)
+                            ["container", "exec", owned.identity, "/bin/busybox", "tail", "-c",
+                             str(file_logs.TAIL_BYTES), "--", path],
+                            lambda result: file_logs.tail_summary(result.stdout(file_logs.TAIL_BYTES)),
+                            file_logs.TAIL_BYTES, 4096)
             complete = all(item["phase"]["status"] == "OBSERVED"
                            for row in report["nodes"] for item in row["files"])
             report.update(status="OBSERVED" if complete else "UNKNOWN",

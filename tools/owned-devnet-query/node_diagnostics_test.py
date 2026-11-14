@@ -35,6 +35,10 @@ def file_archive(kind="run", payload=b'msg="failed to generate momentum" reason=
     return buffer.getvalue()
 
 
+def file_tail():
+    return b'private-marker possible leading fragment\nmsg="failed to generate momentum" reason="private-marker"\n'
+
+
 class LogSummaryTests(unittest.TestCase):
     def test_events_and_source_frames_exclude_arguments_and_unclassified_text(self):
         raw = (b'Producing momentum ...\nmsg="momentum producer triggered" event="private-marker"\n'
@@ -183,9 +187,9 @@ class StartupNodeCaptureTests(unittest.TestCase):
 
         def run(label, arguments, **options):
             calls.append((label, arguments, options))
-            if arguments[:2] == ["container", "cp"]:
+            if arguments[:2] == ["container", "exec"]:
                 client.guard();client.counter += 1
-                return MemoryResult(f"docker-{client.counter:03d}-{label}", file_archive(label.rsplit("-", 1)[-1]))
+                return MemoryResult(f"docker-{client.counter:03d}-{label}", file_tail())
             if arguments[:2] == ["container", "logs"]:
                 client.guard();client.counter += 1
                 return MemoryResult(f"docker-{client.counter:03d}-{label}", b"Producing momentum ...\n",
@@ -212,7 +216,7 @@ class StartupNodeCaptureTests(unittest.TestCase):
             self.assertTrue(row["observed_before_cleanup"])
             self.assertFalse(row["atomic_snapshot"])
             self.assertFalse(row["accepted_header_authority"])
-            self.assertTrue(all(c[1][:2] in (["container", "inspect"], ["container", "logs"], ["container", "cp"])
+            self.assertTrue(all(c[1][:2] in (["container", "inspect"], ["container", "logs"], ["container", "exec"])
                                 or c[1][:1] == ["info"] for c in calls))
 
     def test_budget_refusal_launches_nothing_and_cannot_be_retried(self):
@@ -297,8 +301,8 @@ class StartupNodeCaptureTests(unittest.TestCase):
                     err = b""
                 elif arguments[:2] == ["container", "inspect"]:
                     raw, err = model.canonical(fixture.containers[arguments[-1]]), b""
-                elif arguments[:2] == ["container", "cp"]:
-                    raw, err = file_archive(label.rsplit("-", 1)[-1]), b""
+                elif arguments[:2] == ["container", "exec"]:
+                    raw, err = file_tail(), b""
                 else:
                     raw = b"Producing momentum ...\n"
                     err = b'panic: private-marker /Users/private-marker\n\t/app/pillar/worker.go:100 +0xab\n'

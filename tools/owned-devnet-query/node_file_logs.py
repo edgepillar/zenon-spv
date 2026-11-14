@@ -11,6 +11,7 @@ import node_diagnostics as nodes
 
 REPORT = "startup-file-logs.json"
 ARCHIVE_BYTES = 64 << 10
+TAIL_BYTES = nodes.LOG_BYTES
 FILES = (("run", "/root/.znn/log/zenon.log"),
          ("error", "/root/.znn/log/error/zenon.error.log"))
 COMMAND_FILE = re.compile(
@@ -57,13 +58,15 @@ def field_pattern(key, text):
 
 EVENT_PATTERNS = {key: field_pattern("msg", text) for key, text in EVENTS.items()}
 REASON_PATTERNS = {key: field_pattern("reason", text) for key, text in REASONS.items()}
+TAIL_REASON_PATTERNS = {**REASON_PATTERNS, "late_production": field_pattern("reason", "too-late")}
 
 
-def classify(payload):
-    events, reasons, locations = dict.fromkeys(EVENTS, 0), dict.fromkeys(REASONS, 0), set()
+def classify(payload, *, tail=False):
+    patterns = TAIL_REASON_PATTERNS if tail else REASON_PATTERNS
+    events, reasons, locations = dict.fromkeys(EVENTS, 0), dict.fromkeys(patterns, 0), set()
     for line in payload.decode("utf-8", errors="replace").splitlines():
         for key, pattern in EVENT_PATTERNS.items():events[key] += int(pattern.search(line) is not None)
-        for key, pattern in REASON_PATTERNS.items():reasons[key] += int(pattern.search(line) is not None)
+        for key, pattern in patterns.items():reasons[key] += int(pattern.search(line) is not None)
         if EVENT_PATTERNS["vm_panic"].search(line) and re.search(r"(?:^|\s)stack=", line):
             for match in SOURCE_LOCATION.finditer(line):locations.add((match[1], int(match[2])))
     ordered = sorted(locations)
@@ -104,8 +107,24 @@ def archive_summary(raw, kind):
             "log": nodes.log_summary(payload, b""), "classification": classify(payload)}
 
 
-def check_data(data):
-    exact_keys(data, {"content", "log", "classification"}, "review_file_log_data")
+def tail_summary(raw):
+    """Classify only complete lines inside a bounded, non-atomic byte tail."""
+    require(type(raw) is bytes and len(raw) <= TAIL_BYTES, "startup_file_tail_bound")
+    first = raw.find(b"\n")
+    start = len(raw) if first < 0 else first + 1
+    end = max(start, raw.rfind(b"\n") + 1)
+    selected = raw[start:end]
+    return {"content": {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()},
+            "window": {"scope": "bounded-complete-lines", "whole_file_coverage": False,
+                       "leading_discarded_bytes": start, "trailing_discarded_bytes": len(raw) - end,
+                       "classified_bytes": len(selected)},
+            "log": nodes.log_summary(selected, b""), "classification": classify(selected, tail=True)}
+
+
+def check_data(data, *, tail=False):
+    require(type(tail) is bool, "review_file_log_mode")
+    exact_keys(data, {"content", "log", "classification"} | ({"window"} if tail else set()),
+               "review_file_log_data")
     exact_keys(data["content"], {"bytes", "sha256"}, "review_file_log_content")
     uint(data["content"]["bytes"], nodes.LOG_BYTES, minimum=0)
     model.digest(data["content"]["sha256"])
@@ -114,7 +133,7 @@ def check_data(data):
     row = data["classification"]
     exact_keys(row, {"events", "reasons", "source_locations", "source_locations_truncated"},
                "review_file_log_classification")
-    for name, codes in (("events", EVENTS), ("reasons", REASONS)):
+    for name, codes in (("events", EVENTS), ("reasons", TAIL_REASON_PATTERNS if tail else REASONS)):
         exact_keys(row[name], set(codes), "review_file_log_class_codes")
         for value in row[name].values():uint(value, data["log"]["total_lines"], minimum=0)
     require(type(row["source_locations"]) is list and len(row["source_locations"]) <= nodes.MAX_FRAMES
@@ -126,6 +145,17 @@ def check_data(data):
                 "review_file_log_source_file")
         locations.append((location["file"], uint(location["line"], 99999)))
     require(locations == sorted(set(locations)), "review_file_log_location_order")
+    if tail:
+        window = data["window"]
+        exact_keys(window, {"scope", "whole_file_coverage", "leading_discarded_bytes",
+                           "trailing_discarded_bytes", "classified_bytes"}, "review_file_log_window")
+        require(window["scope"] == "bounded-complete-lines" and window["whole_file_coverage"] is False,
+                "review_file_log_window_scope")
+        leading, trailing, selected = (uint(window[k], TAIL_BYTES, minimum=0) for k in (
+            "leading_discarded_bytes", "trailing_discarded_bytes", "classified_bytes"))
+        require(leading + trailing + selected == data["content"]["bytes"]
+                and (leading > 0) == (data["content"]["bytes"] > 0)
+                and data["log"]["total_lines"] <= selected, "review_file_log_window_accounting")
 
 
 def recorded(evidence, terminal, startup, receipt_reader):
@@ -141,7 +171,8 @@ def recorded(evidence, terminal, startup, receipt_reader):
     exact_keys(summary, {"format", "trigger", "status", "reason", "observed_before_cleanup",
                         "atomic_snapshot", "accepted_header_authority", "production_qualified",
                         "raw_logs_exported", "nodes"}, "review_file_log_fields")
-    require(summary["format"] == "owned-devnet-startup-file-logs/v1"
+    tail = summary["format"] == "owned-devnet-startup-file-logs/v2"
+    require(summary["format"] in ("owned-devnet-startup-file-logs/v1", "owned-devnet-startup-file-logs/v2")
             and summary["trigger"] == "owned_rpc_readiness_deadline" and terminal["stage"] == "nodes"
             and terminal["outcome"] != "DEVNET_CONSUMER_ACCEPTED" and summary["observed_before_cleanup"] is True
             and summary["atomic_snapshot"] is False and summary["accepted_header_authority"] is False
@@ -191,7 +222,7 @@ def recorded(evidence, terminal, startup, receipt_reader):
             for key in ("actual_exit", "output_complete"):
                 model.same(phase[key], receipt[key], "review_file_log_receipt_binding")
             exact_keys(phase["outputs"], {"stdout", "stderr"}, "review_file_log_outputs")
-            for channel, limit in (("stdout", ARCHIVE_BYTES), ("stderr", 4096)):
+            for channel, limit in (("stdout", TAIL_BYTES if tail else ARCHIVE_BYTES), ("stderr", 4096)):
                 pin = phase["outputs"][channel]
                 exact_keys(pin, {"bytes", "sha256"}, "review_file_log_pin")
                 uint(pin["bytes"], limit, minimum=0);model.digest(pin["sha256"])
@@ -207,11 +238,15 @@ def recorded(evidence, terminal, startup, receipt_reader):
                 model.same(evidence.json(label + ".started.json"), {"format": "owned-devnet-command-started/v1",
                     "label": label, "pid": group, "process_group": group, "new_session_requested": True},
                     "review_file_log_start")
-                check_data(phase["data"])
+                check_data(phase["data"], tail=tail)
                 size = phase["outputs"]["stdout"]["bytes"]
-                require(size >= 1536 and size % 512 == 0
-                        and phase["data"]["content"]["bytes"] <= size - 1536,
-                        "review_file_log_tar_bound")
+                if tail:
+                    model.same(phase["data"]["content"], phase["outputs"]["stdout"],
+                               "review_file_log_tail_pin")
+                else:
+                    require(size >= 1536 and size % 512 == 0
+                            and phase["data"]["content"]["bytes"] <= size - 1536,
+                            "review_file_log_tar_bound")
             else:
                 require(phase["data"] is None, "review_file_log_unvalidated")
                 if status == "FAILURE":
