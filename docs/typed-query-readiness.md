@@ -1,6 +1,6 @@
 # Typed-query readiness and acceptance ledger
 
-Evidence cut: **13 November 2026**, runtime source
+Evidence cut: **14 November 2026**, ledger-selected native runtime source
 [`e143ade8507a45a1f125de7bc15b92541036ef85`](https://github.com/edgepillar/zenon-spv/tree/e143ade8507a45a1f125de7bc15b92541036ef85).
 This reconciles the [D0-D6 plan](typed-state-roadmap.md) with implemented controls
 and the remaining execution and external gates. The planning document retains
@@ -26,8 +26,8 @@ an older batch. Native v1/v2 inclusion remains an independent delivery track.
 | --- | --- | --- |
 | Frozen human-review candidate | `6ecc2310538d511e3b26bea4c658082853266a11` | Its original review/handoff scope remains fixed. Later source and CI do not inherit human acceptance. |
 | Current ledger-selected runtime | `e143ade8507a45a1f125de7bc15b92541036ef85`, tree `0cfe07a72796b985e4d51483807c7a168d16c2e3` | Own-main Linux/macOS/Windows CI and archive qualification; see the [runtime ledger](review-candidate-changes.md#current-qualified-runtime-baseline). |
-| Prepared owned-runner ref | `codex/owned-devnet-query-runner` at `4a1d03e06c848edebcf611e964e84967d85679d1` | Frozen execution-review source. Recheck this exact ref before any authorized dispatch; do not substitute a newer main implicitly. |
-| Reviewed follow-up packet | `834d551fc285bb2ec0cc7617e0164caa0023eadf` | Locally reviewed builder-compatibility follow-up, unexecuted and awaiting separate source-specific authorization. The frozen runner ref is not moved by this ledger. |
+| Executed owned-runner ref | `codex/owned-devnet-query-runner` at `834d551fc285bb2ec0cc7617e0164caa0023eadf` | The separately authorized second attempt completed with a retained startup failure. Its authorization is consumed. The first attempt remains pinned to `4a1d03e06c848edebcf611e964e84967d85679d1` in its original record. |
+| Reviewed startup follow-up | `747fcf0293a7a341fed34393cac5afa0a96e5f1e` | Merged bounded empty-response readiness repair with its own main CI and artifact qualification. No fixture has executed this source. This ledger does not move the execution ref or authorize another attempt. |
 | Selected Linux consumer/oracle inputs | `7493c5929c7dbcfb29f94be521f7533d90a1a687` | The [reference-gas contract](reference-gas-owned-contract.md) pins their own qualified runs, artifact IDs, archive and binary hashes. They are not binaries built from the later runner or documentation head. |
 | Original experiment contract | `owned-devnet-batch-query-contract/v1`, SHA-256 `1178cb1161d8e21a3f6e657aa2519900c8a0d4dbe6d207ecb667edf473cfe93e` | Original cohort and prepared metadata keep their byte identity. |
 | Prepared reference-gas contract | `owned-devnet-batch-query-contract/v2`, SHA-256 `6f67a35cf6db1e2fd91a529880b9fa555461a4687ed0a76d9a27c900ca6b6f31` | Explicit separate source selection; a matching digest supplies no execution permission or network authority. |
@@ -47,28 +47,48 @@ does not supply a public API or host integration.
 
 | Delivery | Existing implementation/evidence | Remaining acceptance exit |
 | --- | --- | --- |
-| D0 | Two exact contract selections; fixed chain 69, Settlement/domain 1/batch 0 selectors; prepared profile and independent context framing; [source and input pins](reference-gas-owned-contract.md); first exact-source attempt authorized and recorded. | A new fixture attempt needs a new reviewed source and approval. Actual H2 hash, captured range and finite schedule remain unobserved; retain their provenance when available. No alternative batch is selected after absence. |
+| D0 | Two exact contract selections; fixed chain 69, Settlement/domain 1/batch 0 selectors; prepared profile and independent context framing; [source and input pins](reference-gas-owned-contract.md); two separately authorized exact-source attempts recorded as non-accepting. | A new fixture attempt needs a new reviewed source and approval. Actual H2 hash, captured range and finite schedule remain unobserved; retain their provenance when available. No alternative batch is selected after absence. |
 | D1 | Original-node 18-case root/proof/path controls and executor applier comparisons; [reference-gas conformance](reference-gas-source-cohort.md), [H1 and manager reopen](reference-gas-genesis.md), earlier isolated [first-v3 boundary](first-v3-node-boundary.md). | Observe the actual selected chain-69 H2/H3 transition and qualify its finite authorization. H1 execution and chain-100 fixtures do not establish that observation. |
 | D2 | [Owned v3 headers](experimental-v3-owned-state.md), explicit source/profile/context, producer authorization, immutable views and trusted-local checkpoint controls. | Accept the actual captured range under the selected experiment contract. The one-run anchor replay has no checkpoint input/output; broader node recovery and supported migration retain separate gates. |
-| D3 | [Three-row query](experimental-batch-context-query.md), header-derived root, local keys, bounded proofs, strict ABI and all 17 stored gateway fields; [owned controller and evidence reviewer](../tools/owned-devnet-query/README.md). | One actual selected BatchEntry must reach the native CLI and retained successful completion. The [first authorized dispatch](owned-devnet-attempt-2026-11-13.md) refused at builder closure, before chain startup; selected-network consumer acceptance remains open. |
+| D3 | [Three-row query](experimental-batch-context-query.md), header-derived root, local keys, bounded proofs, strict ABI and all 17 stored gateway fields; [owned controller and evidence reviewer](../tools/owned-devnet-query/README.md). | One actual selected BatchEntry must reach the native CLI and retained successful completion. The [first dispatch](owned-devnet-attempt-2026-11-13.md) refused at builder closure; the [second](owned-devnet-startup-attempt-2026-11-13.md) failed at the first node RPC read. Selected-network consumer acceptance remains open. |
 | D4 | Separate [candidate proof primitives](candidate-smt-proof.md) and path/absence controls exist. | Choose one actual L2 read after D3 and demand; receipts, outbox, DA and processed/release/receive policy need their own contracts and consumers. |
 | D5 | Existing native CLI and compiled recorded/synthetic workflows; source-selected context/checkpoint controls. | The chosen host must consume the actual selected query. Compilation and controlled replay do not complete this exit. Browser/WASI acceptance is outside the selected scope. |
 | D6 | Source/run/platform and binary/report bindings for the selected runtime; separate fixed human-review candidate and historical SHA mapping. | Applicable independent review, update/rollback and authenticated distribution. Native inclusion, experimental preview and production state proofs retain different eligibility rules. No release is created by this ledger. |
 
 The [first authorized owned experiment](owned-devnet-attempt-2026-11-13.md)
-completed with a retained non-accepting result at image-builder closure. Its
-single-attempt authorization is consumed. Stopped-state diagnostics are now
-retained. The [builder-only compatibility fix](owned-builder-shutdown.md)
-separates disposable cache shutdown from runtime-ledger closure, with synthetic
-regression controls; actual builder/chain execution remains unqualified. The
-reviewed follow-up packet selects `834d551` and remains pending separate
-source-specific execution authorization. Selecting runtime `e143ade` does not
-replace that packet, move the frozen runner ref or replace the selected
-`7493c59` consumer/oracle inputs. A prior source's approval does not authorize a
-newer runner implicitly.
+remains `REFUSED` at image-builder closure. The separately authorized
+[`834d551` attempt](owned-devnet-startup-attempt-2026-11-13.md) completed both
+image builds and the [builder-only compatibility handoff](owned-builder-shutdown.md),
+then failed on the first loopback RPC command with exit 56 and zero response
+bytes. Both original non-accepting archives remain intact. The second run
+retained four runtime containers observed closed with exit 0; it produced no
+opening-header capture, closed-ledger oracle or native consumer result. Its
+budget observed about 2.81 GiB peak new disk use, without establishing an OS
+aggregate quota or the cause of the RPC failure.
+
+Both one-attempt authorizations are consumed. The bounded startup repair at
+`747fcf0` does not reclassify either run or dispatch a replacement. Its own main
+CI and artifact qualification are complete. Selecting the native
+runtime `e143ade` does not replace this runner selection or the contract's
+`7493c59` consumer/oracle inputs. A new signed fixture needs a reviewed exact
+source and explicit approval; a matching contract digest supplies no permission.
+The current execution ref remains at the already executed `834d551` source.
+
+For `747fcf0`, [main general CI](https://github.com/edgepillar/zenon-spv/actions/runs/43529102244)
+passed all seven jobs. [Main preparation CI](https://github.com/edgepillar/zenon-spv/actions/runs/43529102221)
+reported 226 controls on each platform, with 44 platform skips on Windows and
+none on Linux or macOS. Each context of [PR #389](https://github.com/edgepillar/zenon-spv/pull/389)
+and its main push has 44 retained, source/run/platform-bound archives: 23 primary
+archives and 21 supplemental integrity/readback archives. The latter do not
+independently requalify their diagnostic or resource semantics. Independent Git
+blob framing also matched the Go/module/JSON input fingerprint in each context;
+it creates no new native execution or selected-network acceptance. These source
+and archive controls do not execute another signed fixture or replace the fixed
+consumer/oracle inputs.
+
 The selected flow uses public fixture accounts for domain configuration, vault
 setup and one test-ZNN deposit before read-only capture and offline consumption.
-Those signed fixture steps were not reached in the first attempt. The selected
+Neither attempt reached those signed fixture steps. The selected
 deposit flow does not select a withdrawal or release operation.
 
 The bounded plan allows one fresh GitHub-hosted Linux attempt: 50-minute
@@ -107,7 +127,7 @@ remain deferred when their path is not part of the selected query.
 
 | Gate | State / concrete remaining evidence |
 | --- | --- |
-| G0: scope/source/query | The first exact-source execution was authorized and recorded as refused before chain startup. Its one-attempt authorization is consumed; any new fixture run needs a new explicit approval. Actual run-derived anchor/range remain open. |
+| G0: scope/source/query | Two separately authorized exact-source executions are retained as non-accepting: first at builder closure, second at the first node RPC read. Both authorizations are consumed; a new fixture run needs a new explicit approval. Actual run-derived anchor/range remain open. |
 | G1: conformance/profile | New-source bounded conformance and H1 lifecycle are recorded; actual first-v3 range/authorization and applicable profile review remain open. |
 | G2: actual typed consumer | **OPEN:** the real selected three-row capture and completed native consumer. Green CI and retained-result mathematics do not close it. |
 | G3: integrated node/profile | General identity/recovery and agreed supported profile behavior remain open; a narrow owned devnet success would not close every node lifecycle path. |
