@@ -21,6 +21,7 @@ import time
 from artifacts import api_json
 import model
 import node_diagnostics as node_diag
+import node_file_logs as file_logs
 from model import Refused, canonical, require
 from process import CommandFailed, regular_pin
 from sources import PreparedSources
@@ -257,6 +258,7 @@ class Engine:
         self.layout_attempted = False
         self.cleanup_deadline = None
         self.startup_diagnostics_attempted = False
+        self.startup_file_logs_attempted = False
 
     def _run(self, label, arguments, *, timeout=60, cleanup=False, check=True,
              stdout_cap=128 << 10, stderr_cap=128 << 10):
@@ -527,8 +529,40 @@ class Engine:
             complete = all(phase["status"] == "OBSERVED" for phase in phases)
             report.update(status="OBSERVED" if complete else "UNKNOWN",
                           reason=None if complete else "incomplete_diagnostics")
+            self._capture_startup_file_logs(report, observe)
         finally:
             self.recorder.seal(node_diag.REPORT, canonical(report))
+
+    def _capture_startup_file_logs(self, startup, observe):
+        """Copy only the two fixed log paths to bounded stdout, never to a host path."""
+        require(not self.startup_file_logs_attempted and self.startup_diagnostics_attempted
+                and self.cleanup_deadline is None and self.admission is not None, "startup_file_scope")
+        self.startup_file_logs_attempted = True
+        report = {"format": "owned-devnet-startup-file-logs/v1", "trigger": "owned_rpc_readiness_deadline",
+            "status": "UNKNOWN", "reason": "capture_interrupted", "observed_before_cleanup": True,
+            "atomic_snapshot": False, "accepted_header_authority": False, "production_qualified": False,
+            "raw_logs_exported": False, "nodes": [{"service": row["service"],
+                "inspection_command": row["inspection"]["command"]
+                    if row["inspection"]["status"] == "OBSERVED" else None,
+                "files": [{"kind": kind, "phase": node_diag.empty_phase()} for kind, _ in file_logs.FILES]}
+                for row in startup["nodes"]]}
+        try:
+            for row in report["nodes"]:
+                if row["inspection_command"] is None:
+                    continue
+                owned = self.owned[row["service"]]
+                for item, (kind, path) in zip(row["files"], file_logs.FILES):
+                    observe(item["phase"], "startup-file-" + row["service"] + "-" + kind,
+                            ["container", "cp", owned.identity + ":" + path, "-"],
+                            lambda result, kind=kind: file_logs.archive_summary(
+                                result.stdout(file_logs.ARCHIVE_BYTES), kind),
+                            file_logs.ARCHIVE_BYTES, 4096)
+            complete = all(item["phase"]["status"] == "OBSERVED"
+                           for row in report["nodes"] for item in row["files"])
+            report.update(status="OBSERVED" if complete else "UNKNOWN",
+                          reason=None if complete else "incomplete_diagnostics")
+        finally:
+            self.recorder.seal(file_logs.REPORT, canonical(report))
 
     def stop_producers_and_clients(self):
         require(set(model.SERVICES) <= self.started, "runtime_was_not_fully_started")
