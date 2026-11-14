@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-only
-"""Synthetic capture and closure counterexamples. No Docker or RPC executes."""
+"""Synthetic headers, process closure and isolated loopback transport controls."""
 from __future__ import annotations
 
 import base64
@@ -8,9 +8,11 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import socket
 import struct
 import sys
 import tempfile
+import threading
 import unittest
 from unittest import mock
 
@@ -320,6 +322,103 @@ class ReadinessTests(unittest.TestCase):
 
 @unittest.skipUnless(os.name == "posix", "POSIX descriptor and recorder controls")
 class HostBoundaryTests(unittest.TestCase):
+    def test_system_curl_preserves_a_reset_failure_before_loopback_startup_recovery(self):
+        # Kernel TCP sockets only: no filesystem socket or fixed/shared port.
+        # The server returns synthetic headers and never contacts a chain node.
+        curl = Path("/usr/bin/curl")
+        self.assertTrue(curl.is_file() and os.access(curl, os.X_OK))
+        _, rows, _ = synthetic_window()
+        requests, errors = [], []
+        with tempfile.TemporaryDirectory(prefix="owned-curl-regular-control-") as temporary, \
+                socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+            root = Path(temporary).resolve(strict=True)
+            record = Recorder(root / "evidence")
+            listener.bind(("127.0.0.1", 0))
+            listener.listen(2)
+            listener.settimeout(5)
+            endpoint = "http://127.0.0.1:" + str(listener.getsockname()[1])
+
+            def serve():
+                try:
+                    for index in (1, 2):
+                        connection, _ = listener.accept()
+                        with connection:
+                            connection.settimeout(2)
+                            raw = bytearray()
+                            while b"\r\n\r\n" not in raw:
+                                part = connection.recv(4096)
+                                self.assertTrue(part)
+                                raw.extend(part)
+                                self.assertLessEqual(len(raw), 8192)
+                            head, body = bytes(raw).split(b"\r\n\r\n", 1)
+                            lines = head.split(b"\r\n")
+                            self.assertEqual(lines[0], b"POST / HTTP/1.1")
+                            headers = {}
+                            for line in lines[1:]:
+                                name, value = line.split(b":", 1)
+                                self.assertNotIn(name.lower(), headers)
+                                headers[name.lower()] = value.strip()
+                            self.assertEqual(headers[b"content-type"], b"application/json")
+                            length = int(headers[b"content-length"])
+                            self.assertTrue(0 < length <= 4096)
+                            while len(body) < length:
+                                part = connection.recv(length - len(body))
+                                self.assertTrue(part)
+                                body += part
+                            self.assertEqual(len(body), length)
+                            request = json.loads(body)
+                            self.assertEqual(request, {"jsonrpc": "2.0", "id": index,
+                                "method": "ledger.getFrontierMomentum", "params": []})
+                            requests.append(request)
+                            if index == 1:
+                                # Abort only this accepted, fully read test request.
+                                connection.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER,
+                                                      struct.pack("ii", 1, 0))
+                            else:
+                                payload = model.canonical({"jsonrpc": "2.0", "id": index,
+                                                           "result": rows[-1]})
+                                connection.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+                                    b"Connection: close\r\nContent-Length: " + str(len(payload)).encode("ascii")
+                                    + b"\r\n\r\n" + payload)
+                except BaseException as error:
+                    errors.append(type(error).__name__ + ": " + str(error))
+
+            server = threading.Thread(target=serve, name="owned-loopback-control")
+            server.start()
+            try:
+                rpc = capture.LocalRpc(CONTRACT, record, root, str(curl), {},
+                                       lambda: self.assertEqual(errors, []))
+                with mock.patch.object(capture, "RPC_URL", endpoint):
+                    self.assertEqual(rpc.wait_height(3, starting=True).height, 4)
+            except BaseException:
+                # Preserve actual command/stream evidence in the enclosing test
+                # capture before TemporaryDirectory removes this test's files.
+                diagnostic = {path.name: path.read_text() for path in (root / "evidence").iterdir()
+                              if path.name.endswith((".complete.json", ".stderr"))}
+                sys.stderr.write("Loopback transport diagnostics: " + json.dumps(diagnostic) + "\n")
+                raise
+            finally:
+                listener.close()
+                server.join(timeout=6)
+                self.assertFalse(server.is_alive(), "owned loopback server did not stop")
+            self.assertEqual(errors, [])
+            self.assertEqual([row["id"] for row in requests], [1, 2])
+            receipts = [json.loads((root / "evidence" / f"rpc-{index:02d}.complete.json").read_bytes())
+                        for index in (1, 2)]
+            self.assertEqual([row["actual_exit"] for row in receipts], [56, 0])
+            self.assertTrue(all(row["output_complete"] and row["process_group_quiescent"] for row in receipts))
+            self.assertEqual(receipts[0]["outputs"]["stdout"]["bytes"], 0)
+            self.assertEqual([row["outcome"] for row in record.records], ["FAILURE", "SUCCESS"])
+            if os.environ.get("SPV_RECORD_LOOPBACK_CONTROL") == "1":
+                # The qualification caller retains this bounded stdout report;
+                # ordinary preparation controls keep their usual output.
+                report = {"format": "owned-loopback-startup-control/v1", "requests": requests,
+                          "receipts": receipts, "actual_stdout": [
+                              (root / "evidence" / f"rpc-{index:02d}.stdout").read_text()
+                              for index in (1, 2)], "owned_server_thread_joined": True,
+                          "real_node_or_state_acceptance": False}
+                sys.stdout.write(model.canonical(report).decode("ascii"))
+
     def test_real_process_receive_failure_receipt_survives_a_synthetic_startup_recovery(self):
         _, rows, _ = synthetic_window()
         with tempfile.TemporaryDirectory(prefix="owned-rpc-regular-control-") as temporary:
