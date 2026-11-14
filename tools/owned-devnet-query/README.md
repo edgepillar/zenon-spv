@@ -169,7 +169,8 @@ bytes, so the exact stalled height cannot be independently recovered from it.
 Subsequent captures retain the original `rpc-NN.frontier.json` stdout only
 after successful envelope and selected-chain/header parsing. The existing
 128 KiB response cap, shared 96-call bound and total evidence bound still apply.
-The final index includes these checked responses even after a later refusal;
+The final index includes these checked responses and their paired
+`rpc-NN.request.json` records even after a later refusal;
 failed or invalid response files, stderr, service logs and private configuration
 remain outside this extension. The reader checks each response against its
 successful complete/quiescent command, started record, exact frontier request,
@@ -177,6 +178,10 @@ response ID and chain. It reports candidate observations with
 `accepted_header_authority: false`. These bytes cannot supply the anchor,
 producer schedule, accepted StateRoot or a completed consumer result.
 Older archives without these optional files keep their existing report shape.
+Only requests paired with a validated frontier response are selected. Unrelated
+request files and failed-response bodies are not added to the export. The
+recorder-to-index-to-reader control checks this exact selection in memory,
+without writing a second ZIP to disk.
 
 ### Review a retained result
 

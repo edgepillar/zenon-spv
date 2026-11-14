@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 from copy import deepcopy
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -15,6 +16,7 @@ import tempfile
 import threading
 import unittest
 from unittest import mock
+import zipfile
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -24,6 +26,7 @@ import closed_reader
 import model
 from process import CommandFailed, Recorder, capture as capture_process
 import query_checks
+import review
 import runner
 
 CONTRACT = model.read_contract(HERE / "contract.json")
@@ -421,9 +424,11 @@ class HostBoundaryTests(unittest.TestCase):
             self.assertEqual(receipts[0]["outputs"]["stdout"]["bytes"], 0)
             self.assertEqual([row["outcome"] for row in record.records], ["FAILURE", "SUCCESS"])
             names = {row["path"] for row in runner.evidence_index(
-                (record,), {"evidence": rpc.retained_frontiers})}
+                (record,), {"evidence": runner.frontier_evidence_files(rpc)})}
             self.assertIn("evidence/rpc-02.frontier.json", names)
+            self.assertIn("evidence/rpc-02.request.json", names)
             self.assertNotIn("evidence/rpc-01.frontier.json", names)
+            self.assertNotIn("evidence/rpc-01.request.json", names)
             self.assertEqual((root / "evidence/rpc-02.frontier.json").read_bytes(),
                              model.canonical({"jsonrpc": "2.0", "id": 2, "result": rows[-1]}))
             if os.environ.get("SPV_RECORD_LOOPBACK_CONTROL") == "1":
@@ -503,6 +508,7 @@ class HostBoundaryTests(unittest.TestCase):
 
             with mock.patch.object(record, "run", side_effect=local_transport):
                 rpc.frontier()
+            record.seal("rpc-95.request.json", b'{"unselected":"fixture-only"}\n')
             rpc.wait_height = mock.Mock(side_effect=model.Refused("owned_rpc_readiness_deadline"))
             return rpc
 
@@ -527,9 +533,46 @@ class HostBoundaryTests(unittest.TestCase):
             index = json.loads((root / "evidence/evidence-index.json").read_bytes())
             names = {row["path"] for row in index["files"]}
             self.assertIn("evidence/rpc-01.frontier.json", names)
+            self.assertIn("evidence/rpc-01.request.json", names)
             self.assertIn("evidence/rpc-01.complete.json", names)
+            self.assertNotIn("evidence/rpc-95.request.json", names)
             self.assertNotIn("evidence/rpc-01.stderr", names)
             self.assertFalse(index["raw_service_logs_or_private_configuration_exported"])
+            # Inspect exactly the exported index, not the wider recorder directory.
+            # The real reader must be able to find the request after a refusal.
+            packed = io.BytesIO()
+            with zipfile.ZipFile(packed, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+                for entry in index["files"]:
+                    archive.writestr(entry["path"], (root / entry["path"]).read_bytes())
+                archive.writestr(review.INDEX, model.canonical(index))
+            packed.seek(0)
+            raw = packed.getvalue()
+            checked = review.review_stream(packed,
+                {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()},
+                execution.source_revision, execution.run_id, CONTRACT, HERE.parents[1])
+            self.assertEqual(checked["status"], "RECORDED_NON_ACCEPTING_OUTCOME")
+            self.assertEqual(checked["recorded_terminal_outcome"], "REFUSED")
+            self.assertEqual(checked["indexed_files"], len(index["files"]))
+            self.assertEqual(checked["materialized_bytes"], 0)
+            self.assertIsNone(checked["comparison"])
+            self.assertFalse(checked["native_consumer_reexecuted"])
+            self.assertFalse(checked["new_devnet_acceptance_established"])
+            observed = checked["candidate_frontier_observations"]
+            self.assertEqual(len(observed), 1)
+            self.assertEqual(observed[0]["request_id"], 1)
+            self.assertEqual(observed[0]["candidate_header"]["height"], 2)
+            self.assertFalse(observed[0]["accepted_header_authority"])
+
+    def test_frontier_export_rejects_names_outside_the_bounded_rpc_selection(self):
+        self.assertEqual(runner.frontier_evidence_files(mock.Mock(retained_frontiers=set())), set())
+        self.assertEqual(runner.frontier_evidence_files(mock.Mock(
+            retained_frontiers={"rpc-01.frontier.json", "rpc-96.frontier.json"})),
+            {"rpc-01.frontier.json", "rpc-01.request.json",
+             "rpc-96.frontier.json", "rpc-96.request.json"})
+        for name in ("rpc-00.frontier.json", "rpc-97.frontier.json", "rpc-1.frontier.json",
+                     "../rpc-01.frontier.json", "rpc-01.request.json", "private.json", 1):
+            with self.subTest(name=name), self.assertRaises(model.Refused):
+                runner.frontier_evidence_files(mock.Mock(retained_frontiers={name}))
 
     def test_cancelled_reader_exits_after_anonymous_pipe_eof(self):
         command = [sys.executable, "-I", "-B", "-c",
