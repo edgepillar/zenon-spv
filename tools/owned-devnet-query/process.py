@@ -314,20 +314,21 @@ class Result:
     stderr_name: str
     receipt_raw: bytes
     stdout_identity: tuple
+    stderr_identity: tuple | None = None
 
     @property
     def receipt(self):
         return json.loads(self.receipt_raw)
 
     @contextmanager
-    def open_stdout_for_validation(self, limit):
-        """Hold the recorded stdout inode for a reader that checks the selected digest."""
-        expected = self.receipt["outputs"]["stdout"]
+    def _open_output_for_validation(self, name, expected, identity, limit):
+        """Hold an original captured inode while validating its selected bytes."""
+        require(identity is not None, "command_result_identity")
         require(expected["bytes"] <= limit, "command_result_read_bound")
-        path = self.directory / self.stdout_name
+        path = self.directory / name
         before = path.lstat()
         require(stat.S_ISREG(before.st_mode) and before.st_nlink == 1
-                and _file_identity(before) == self.stdout_identity, "command_result_changed")
+                and _file_identity(before) == identity, "command_result_changed")
         descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
         with os.fdopen(descriptor, "rb") as stream:
             opened = os.fstat(stream.fileno())
@@ -339,12 +340,29 @@ class Result:
                 final = path.lstat()
                 require(stat.S_ISREG(final.st_mode) and final.st_nlink == 1
                         and _file_identity(opened) == _file_identity(after)
-                        == _file_identity(final) == self.stdout_identity,
+                        == _file_identity(final) == identity,
                         "command_result_changed")
+
+    @contextmanager
+    def open_stdout_for_validation(self, limit):
+        """Hold the recorded stdout inode for a reader that checks its digest."""
+        with self._open_output_for_validation(self.stdout_name, self.receipt["outputs"]["stdout"],
+                                             self.stdout_identity, limit) as stream:
+            yield stream
 
     def stdout(self, limit=2 << 20):
         expected = self.receipt["outputs"]["stdout"]
         with self.open_stdout_for_validation(limit) as stream:
+            raw = stream.read(limit + 1)
+            require(len(raw) == expected["bytes"]
+                    and hashlib.sha256(raw).hexdigest() == expected["sha256"],
+                    "command_result_changed")
+        return raw
+
+    def stderr(self, limit=2 << 20):
+        """Read stderr only when its original inode and complete bytes still match."""
+        expected = self.receipt["outputs"]["stderr"]
+        with self._open_output_for_validation(self.stderr_name, expected, self.stderr_identity, limit) as stream:
             raw = stream.read(limit + 1)
             require(len(raw) == expected["bytes"]
                     and hashlib.sha256(raw).hexdigest() == expected["sha256"],
@@ -460,7 +478,7 @@ class Recorder:
             elif receipt["output_complete"] is True:
                 entry["outcome"] = "SUCCESS"
         result = Result(self.directory, stdout_name, stderr_name, canonical(receipt),
-                        _file_identity(out_path.lstat()))
+                        _file_identity(out_path.lstat()), _file_identity(err_path.lstat()))
         if check and not (type(receipt["actual_exit"]) is int and receipt["actual_exit"] == 0
                           and receipt["output_complete"] is True):
             raise CommandFailed(result)

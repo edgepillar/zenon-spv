@@ -18,6 +18,7 @@ sys.path.insert(0, str(HERE))
 import capture
 import inputs
 import model
+import node_diagnostics as node_diag
 from artifacts import API_LIMIT, REPOSITORY, WORKFLOWS, api_json
 from model import Refused, canonical, exact_keys, require, same
 from process import FILE
@@ -416,6 +417,123 @@ def recorded_post_sync_frontier(evidence, terminal, startup_sync, frontiers):
     return result
 
 
+def recorded_startup_nodes(evidence, terminal):
+    command_files = {name for name in evidence.pins if name.startswith("evidence/")
+                     and node_diag.COMMAND_FILE.fullmatch(name[len("evidence/"):])}
+    require(not any(name.endswith((".stdout", ".stderr")) for name in command_files),
+            "review_startup_node_raw_stream")
+    if "evidence/" + node_diag.REPORT not in evidence.pins:
+        require(not command_files, "review_startup_nodes_summary_missing")
+        return None
+    summary = evidence.json(node_diag.REPORT, 32 << 10)
+    exact_keys(summary, {"format", "trigger", "status", "reason", "engine_probe", "engine_identity_verified",
+                        "observed_before_cleanup", "atomic_snapshot", "accepted_header_authority",
+                        "production_qualified", "raw_logs_exported", "nodes"}, "review_startup_nodes_fields")
+    require(summary["format"] == "owned-devnet-startup-nodes/v1"
+            and summary["trigger"] == "owned_rpc_readiness_deadline" and terminal["stage"] == "nodes"
+            and terminal["outcome"] != "DEVNET_CONSUMER_ACCEPTED"
+            and summary["observed_before_cleanup"] is True and summary["atomic_snapshot"] is False
+            and summary["accepted_header_authority"] is False and summary["production_qualified"] is False
+            and summary["raw_logs_exported"] is False and type(summary["engine_identity_verified"]) is bool,
+            "review_startup_nodes_scope")
+    reasons = {"OBSERVED": {None}, "NOT_ATTEMPTED": {"budget_refused"},
+               "UNKNOWN": {"capture_interrupted", "incomplete_diagnostics"}}
+    require(type(summary["status"]) is str and summary["status"] in reasons
+            and (summary["reason"] is None or type(summary["reason"]) is str)
+            and summary["reason"] in reasons[summary["status"]], "review_startup_nodes_status")
+    rows = summary["nodes"]
+    require(type(rows) is list and len(rows) == len(node_diag.ROLES), "review_startup_nodes_count")
+    phases, counters = [], []
+
+    def phase(value, suffix, kind):
+        exact_keys(value, set(node_diag.empty_phase()), "review_startup_node_phase_fields")
+        status, reason = value["status"], value["reason"]
+        require(type(status) is str and status in node_diag.PHASE_REASONS
+                and (reason is None or type(reason) is str) and reason in node_diag.PHASE_REASONS[status],
+                "review_startup_node_phase_status")
+        phases.append(value)
+        label = value["command"]
+        if label is None:
+            require(status not in ("OBSERVED", "FAILURE") and reason != "command_incomplete"
+                    and value["actual_exit"] is None and value["output_complete"] is None
+                    and value["outputs"] is None and value["data"] is None, "review_startup_node_no_command")
+            return
+        require(status != "NOT_ATTEMPTED", "review_startup_node_started_status")
+        require(type(label) is str and re.fullmatch(r"docker-([0-9]{3,6})-" + re.escape(suffix), label),
+                "review_startup_node_command_scope")
+        counters.append(model.uint(int(label.split("-", 2)[1]), 999999))
+        receipt = diagnostic_receipt(evidence, label, "review_startup_node_receipt")
+        require(receipt is not None, "review_startup_node_missing_receipt")
+        same(value["actual_exit"], receipt["actual_exit"], "review_startup_node_exit")
+        same(value["output_complete"], receipt["output_complete"], "review_startup_node_completeness")
+        require(type(value["actual_exit"]) is int or value["actual_exit"] is None,
+                "review_startup_node_exit_type")
+        require(type(value["output_complete"]) is bool, "review_startup_node_completeness_type")
+        exact_keys(value["outputs"], {"stdout", "stderr"}, "review_startup_node_outputs")
+        require(type(receipt.get("outputs")) is dict and {"stdout", "stderr"} <= set(receipt["outputs"]),
+                "review_startup_node_receipt_streams")
+        for channel in ("stdout", "stderr"):
+            pin = value["outputs"][channel]
+            exact_keys(pin, {"sha256", "bytes"}, "review_startup_node_stream_fields")
+            model.digest(pin["sha256"])
+            limit = node_diag.LOG_BYTES if kind == "logs" else (16 << 10 if channel == "stdout" else 4096)
+            model.uint(pin["bytes"], limit, minimum=0)
+            recorded = receipt["outputs"][channel]
+            same(pin, {key: recorded[key] for key in pin}, "review_startup_node_stream_binding")
+            require(type(recorded["file"]) is str and FILE.fullmatch(recorded["file"])
+                    and "evidence/" + recorded["file"] not in evidence.pins, "review_startup_node_raw_stream")
+        if status == "OBSERVED":
+            require(value["actual_exit"] == 0 and value["output_complete"] is True
+                    and receipt.get("launch_outcome") == "STARTED" and receipt.get("reason") is None
+                    and receipt.get("process_group_quiescent") is True, "review_startup_node_success")
+            group = model.uint(receipt.get("process_group"))
+            same(evidence.json(label + ".started.json"), {"format": "owned-devnet-command-started/v1",
+                 "label": label, "pid": group, "process_group": group, "new_session_requested": True},
+                 "review_startup_node_start")
+            if kind == "inspection":
+                node_diag.check_state_summary(value["data"])
+            elif kind == "logs":
+                node_diag.check_log_summary(value["data"])
+            else:
+                require(value["data"] is None, "review_startup_node_probe_data")
+        else:
+            require(value["data"] is None, "review_startup_node_unvalidated_data")
+            if status == "FAILURE":
+                require(type(value["actual_exit"]) is int and value["actual_exit"] != 0
+                        and value["output_complete"] is True, "review_startup_node_failure")
+            if reason == "command_incomplete":
+                require(value["output_complete"] is False, "review_startup_node_incomplete")
+
+    phase(summary["engine_probe"], "startup-engine-info", "probe")
+    for role, row in zip(node_diag.ROLES, rows):
+        exact_keys(row, {"service", "inspection", "logs"}, "review_startup_node_row")
+        same(row["service"], role, "review_startup_node_role")
+        phase(row["inspection"], "startup-inspect-" + role, "inspection")
+        phase(row["logs"], "startup-logs-" + role, "logs")
+        require(row["inspection"]["status"] == "OBSERVED" or row["logs"]["status"] == "NOT_ATTEMPTED",
+                "review_startup_node_log_scope")
+    require(counters == sorted(set(counters)), "review_startup_node_command_order")
+    stops = [int(match[1]) for name in evidence.pins if (match := re.fullmatch(
+        r"evidence/docker-([0-9]{3,6})-(?:inspect-(?:pillar|pillar2|pillar3|rpc)-stop-state\.json"
+        r"|stop-(?:pillar|pillar2|pillar3|rpc)\.(?:started|complete)\.json)", name))]
+    require(not counters or not stops or max(counters) < min(stops), "review_startup_node_cleanup_order")
+    if summary["engine_identity_verified"]:
+        require(summary["engine_probe"]["status"] == "OBSERVED", "review_startup_node_engine")
+    if any(p["command"] is not None for p in phases[1:]):
+        require(summary["engine_identity_verified"], "review_startup_node_engine")
+    if summary["status"] == "OBSERVED":
+        require(summary["engine_identity_verified"] and all(p["status"] == "OBSERVED" for p in phases),
+                "review_startup_nodes_complete")
+    if summary["status"] == "NOT_ATTEMPTED":
+        require(not summary["engine_identity_verified"]
+                and not command_files and all(p["status"] == "NOT_ATTEMPTED" for p in phases),
+                "review_startup_nodes_unlaunched")
+    if summary["reason"] == "incomplete_diagnostics":
+        require(any(p["status"] != "OBSERVED" for p in phases), "review_startup_nodes_incomplete")
+    return {"summary": summary, "diagnostic_assertions_only": True,
+            "original_log_text_independently_rechecked": False, "accepted_header_authority": False}
+
+
 def review_stream(stream, archive_pin, source_revision, run_id, contract, checkout):
     model.pin(archive_pin, MAX_ARCHIVE)
     model.digest(source_revision, model.HEX40)
@@ -444,6 +562,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         startup_sync = recorded_startup_sync(evidence, terminal)
         frontiers = recorded_frontiers(evidence, contract)
         post_sync = recorded_post_sync_frontier(evidence, terminal, startup_sync, frontiers)
+        startup_nodes = recorded_startup_nodes(evidence, terminal)
         matched = None
         if reported == "DEVNET_CONSUMER_ACCEPTED":
             require(binding_present and terminal["stage"] == "consumer" and terminal["reason"] is None
@@ -465,6 +584,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["startup_sync_diagnostic"] = startup_sync
         if post_sync is not None:
             report["post_sync_frontier_diagnostic"] = post_sync
+        if startup_nodes is not None:
+            report["startup_node_diagnostics"] = startup_nodes
         return report
 
 

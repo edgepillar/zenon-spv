@@ -20,6 +20,7 @@ from images import Builder
 import model
 from model import Refused, canonical, require, same
 from node_toolchain import Installer
+import node_diagnostics
 from packages import Preparer as Packages, installed_entries
 from process import CommandFailed, Recorder, regular_pin
 from sources import Preparer as Sources
@@ -102,7 +103,7 @@ def fixture_flow(contract, recorder, engine, sources, node, prepared, phase, gua
     engine.require_running_closure(NODE_ROLES if phase == "configure" else model.SERVICES)
 
 
-def wait_for_initial_height(rpc, height):
+def wait_for_initial_height(rpc, height, *, observe_nodes=None):
     try:
         return rpc.wait_height(height, starting=True)
     except Refused as error:
@@ -110,6 +111,8 @@ def wait_for_initial_height(rpc, height):
             observation = rpc.capture_startup_sync()
             if type(observation) is dict and observation.get("status") == "OBSERVED":
                 rpc.capture_post_sync_frontier(observation["request_id"])
+            if observe_nodes is not None:
+                observe_nodes()
         raise
 
 
@@ -244,7 +247,8 @@ def execute(environment, workspace, checkout):
             engine.create(role, images.image_for(role), files)
             engine.start(role)
         rpc = capture.LocalRpc(contract, record, workspace, "/usr/bin/curl", tool_environment, guard)
-        wait_for_initial_height(rpc, contract.data["selection"]["source_expected_first_v3_height"])
+        wait_for_initial_height(rpc, contract.data["selection"]["source_expected_first_v3_height"],
+                                observe_nodes=engine.capture_startup_diagnostics)
         opening = rpc.opening()
         extra.add("opening-momentums.json")
         stage = "fixture-configuration"
@@ -312,6 +316,8 @@ def execute(environment, workspace, checkout):
             extra.update(frontier_evidence_files(rpc))
             extra.update(startup_sync_evidence_files(rpc))
             extra.update(post_sync_frontier_evidence_files(rpc))
+        if node_diagnostics.REPORT in record.names:
+            extra.add(node_diagnostics.REPORT)
         entries = evidence_index((record, transport), {"evidence": extra})
         index = canonical({"format": "owned-devnet-evidence-index/v1",
             "files": entries, "transport_archive_copies": 0,
