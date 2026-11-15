@@ -219,7 +219,7 @@ class StartupNodeCaptureTests(unittest.TestCase):
             self.assertTrue(row["observed_before_cleanup"])
             self.assertFalse(row["atomic_snapshot"])
             self.assertFalse(row["accepted_header_authority"])
-            self.assertTrue(all(c[1][:2] in (["container", "inspect"], ["container", "logs"], ["container", "exec"])
+            self.assertTrue(all(c[1][:2] in (["container", "inspect"], ["container", "logs"], ["container", "exec"], ["container", "cp"])
                                 or c[1][:1] == ["info"] for c in calls))
 
     def test_budget_refusal_launches_nothing_and_cannot_be_retried(self):
@@ -306,6 +306,8 @@ class StartupNodeCaptureTests(unittest.TestCase):
                     raw, err = model.canonical(fixture.containers[arguments[-1]]), b""
                 elif arguments[:2] == ["container", "exec"]:
                     raw, err = file_tail(), b""
+                elif arguments[:2] == ["container", "cp"]:
+                    raw, err = file_archive(label.rsplit("-", 1)[-1]), b""
                 else:
                     raw = b"Producing momentum ...\n"
                     err = b'panic: private-marker /Users/private-marker\n\t/app/pillar/worker.go:100 +0xab\n'

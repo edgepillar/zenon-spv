@@ -70,6 +70,13 @@ def read_method(state):
     return "byte-tail" if executable else "whole-file"
 
 
+def read_method_for_file(state, kind):
+    """Keep a bounded error file's first record without a tail-boundary guess."""
+    require(type(kind) is str and kind in dict(FILES), "startup_file_kind")
+    selected = read_method(state)
+    return "whole-file" if kind == "error" else selected
+
+
 def classify(payload, *, tail=False):
     patterns = TAIL_REASON_PATTERNS if tail else REASON_PATTERNS
     events, reasons, locations = dict.fromkeys(EVENTS, 0), dict.fromkeys(patterns, 0), set()
@@ -84,9 +91,11 @@ def classify(payload, *, tail=False):
             "source_locations_truncated": len(ordered) > nodes.MAX_FRAMES}
 
 
-def archive_summary(raw, kind):
+def archive_summary(raw, kind, *, complete_prefix=False):
     """Read one bounded regular TAR entry in memory; never extract a pathname."""
     paths = dict(FILES)
+    require(type(complete_prefix) is bool and (not complete_prefix or kind == "error"),
+            "startup_file_prefix_mode")
     require(type(kind) is str and kind in paths and type(raw) is bytes and 0 < len(raw) <= ARCHIVE_BYTES
             and len(raw) % 512 == 0, "startup_file_archive_bound")
     expected = paths[kind].rsplit("/", 1)[-1]
@@ -112,8 +121,15 @@ def archive_summary(raw, kind):
         if isinstance(error, Refused):
             raise
         raise Refused("startup_file_archive_encoding") from error
-    return {"content": {"bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest()},
-            "log": nodes.log_summary(payload, b""), "classification": classify(payload)}
+    end = payload.rfind(b"\n") + 1 if complete_prefix else len(payload)
+    selected = payload[:end]
+    result = {"content": {"bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest()},
+              "log": nodes.log_summary(selected, b""), "classification": classify(selected, tail=complete_prefix)}
+    if complete_prefix:
+        result["window"] = {"scope": "bounded-complete-lines-from-file-start", "whole_file_coverage": False,
+                            "leading_discarded_bytes": 0, "trailing_discarded_bytes": len(payload) - end,
+                            "classified_bytes": end}
+    return result
 
 
 def tail_summary(raw):
@@ -130,9 +146,11 @@ def tail_summary(raw):
             "log": nodes.log_summary(selected, b""), "classification": classify(selected, tail=True)}
 
 
-def check_data(data, *, tail=False):
-    require(type(tail) is bool, "review_file_log_mode")
-    exact_keys(data, {"content", "log", "classification"} | ({"window"} if tail else set()),
+def check_data(data, *, tail=False, complete_prefix=False):
+    require(type(tail) is bool and type(complete_prefix) is bool and not (tail and complete_prefix),
+            "review_file_log_mode")
+    windowed = tail or complete_prefix
+    exact_keys(data, {"content", "log", "classification"} | ({"window"} if windowed else set()),
                "review_file_log_data")
     exact_keys(data["content"], {"bytes", "sha256"}, "review_file_log_content")
     uint(data["content"]["bytes"], nodes.LOG_BYTES, minimum=0)
@@ -142,7 +160,7 @@ def check_data(data, *, tail=False):
     row = data["classification"]
     exact_keys(row, {"events", "reasons", "source_locations", "source_locations_truncated"},
                "review_file_log_classification")
-    for name, codes in (("events", EVENTS), ("reasons", TAIL_REASON_PATTERNS if tail else REASONS)):
+    for name, codes in (("events", EVENTS), ("reasons", TAIL_REASON_PATTERNS if windowed else REASONS)):
         exact_keys(row[name], set(codes), "review_file_log_class_codes")
         for value in row[name].values():uint(value, data["log"]["total_lines"], minimum=0)
     require(type(row["source_locations"]) is list and len(row["source_locations"]) <= nodes.MAX_FRAMES
@@ -154,16 +172,17 @@ def check_data(data, *, tail=False):
                 "review_file_log_source_file")
         locations.append((location["file"], uint(location["line"], 99999)))
     require(locations == sorted(set(locations)), "review_file_log_location_order")
-    if tail:
+    if windowed:
         window = data["window"]
         exact_keys(window, {"scope", "whole_file_coverage", "leading_discarded_bytes",
                            "trailing_discarded_bytes", "classified_bytes"}, "review_file_log_window")
-        require(window["scope"] == "bounded-complete-lines" and window["whole_file_coverage"] is False,
+        expected_scope = "bounded-complete-lines-from-file-start" if complete_prefix else "bounded-complete-lines"
+        require(window["scope"] == expected_scope and window["whole_file_coverage"] is False,
                 "review_file_log_window_scope")
         leading, trailing, selected = (uint(window[k], TAIL_BYTES, minimum=0) for k in (
             "leading_discarded_bytes", "trailing_discarded_bytes", "classified_bytes"))
         require(leading + trailing + selected == data["content"]["bytes"]
-                and (leading > 0) == (data["content"]["bytes"] > 0)
+                and (leading == 0 if complete_prefix else (leading > 0) == (data["content"]["bytes"] > 0))
                 and data["log"]["total_lines"] <= selected, "review_file_log_window_accounting")
 
 
@@ -181,9 +200,10 @@ def recorded(evidence, terminal, startup, receipt_reader):
                         "atomic_snapshot", "accepted_header_authority", "production_qualified",
                         "raw_logs_exported", "nodes"}, "review_file_log_fields")
     legacy_tail = summary["format"] == "owned-devnet-startup-file-logs/v2"
-    mixed = summary["format"] == "owned-devnet-startup-file-logs/v3"
+    by_file = summary["format"] == "owned-devnet-startup-file-logs/v4"
+    mixed = summary["format"] == "owned-devnet-startup-file-logs/v3" or by_file
     require(summary["format"] in ("owned-devnet-startup-file-logs/v1", "owned-devnet-startup-file-logs/v2",
-                                  "owned-devnet-startup-file-logs/v3")
+                                  "owned-devnet-startup-file-logs/v3", "owned-devnet-startup-file-logs/v4")
             and summary["trigger"] == "owned_rpc_readiness_deadline" and terminal["stage"] == "nodes"
             and terminal["outcome"] != "DEVNET_CONSUMER_ACCEPTED" and summary["observed_before_cleanup"] is True
             and summary["atomic_snapshot"] is False and summary["accepted_header_authority"] is False
@@ -204,11 +224,13 @@ def recorded(evidence, terminal, startup, receipt_reader):
         model.same(row["service"], role, "review_file_log_role")
         expected = original["inspection"]["command"] if original["inspection"]["status"] == "OBSERVED" else None
         model.same(row["inspection_command"], expected, "review_file_log_inspection")
-        method = read_method(original["inspection"]["data"]) if mixed and expected is not None else None
+        node_method = read_method(original["inspection"]["data"]) if mixed and expected is not None else None
         require(type(row["files"]) is list and len(row["files"]) == len(FILES), "review_file_log_files")
         for (kind, _), item in zip(FILES, row["files"]):
             exact_keys(item, {"kind", "phase"} | ({"method"} if mixed else set()), "review_file_log_item")
             model.same(item["kind"], kind, "review_file_log_kind")
+            method = (read_method_for_file(original["inspection"]["data"], kind)
+                      if by_file and expected is not None else node_method)
             if mixed:
                 model.same(item["method"], method, "review_file_log_method_binding")
             tail = legacy_tail or (mixed and method == "byte-tail")
@@ -253,7 +275,7 @@ def recorded(evidence, terminal, startup, receipt_reader):
                 model.same(evidence.json(label + ".started.json"), {"format": "owned-devnet-command-started/v1",
                     "label": label, "pid": group, "process_group": group, "new_session_requested": True},
                     "review_file_log_start")
-                check_data(phase["data"], tail=tail)
+                check_data(phase["data"], tail=tail, complete_prefix=(by_file and kind == "error"))
                 size = phase["outputs"]["stdout"]["bytes"]
                 if tail:
                     model.same(phase["data"]["content"], phase["outputs"]["stdout"],

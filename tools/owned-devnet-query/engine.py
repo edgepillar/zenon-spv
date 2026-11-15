@@ -538,13 +538,13 @@ class Engine:
         require(not self.startup_file_logs_attempted and self.startup_diagnostics_attempted
                 and self.cleanup_deadline is None and self.admission is not None, "startup_file_scope")
         self.startup_file_logs_attempted = True
-        report = {"format": "owned-devnet-startup-file-logs/v3", "trigger": "owned_rpc_readiness_deadline",
+        report = {"format": "owned-devnet-startup-file-logs/v4", "trigger": "owned_rpc_readiness_deadline",
             "status": "UNKNOWN", "reason": "capture_interrupted", "observed_before_cleanup": True,
             "atomic_snapshot": False, "accepted_header_authority": False, "production_qualified": False,
             "raw_logs_exported": False, "nodes": [{"service": row["service"],
                 "inspection_command": row["inspection"]["command"]
                     if row["inspection"]["status"] == "OBSERVED" else None,
-                "files": [{"kind": kind, "method": file_logs.read_method(row["inspection"]["data"])
+                "files": [{"kind": kind, "method": file_logs.read_method_for_file(row["inspection"]["data"], kind)
                     if row["inspection"]["status"] == "OBSERVED" else None,
                     "phase": node_diag.empty_phase()} for kind, _ in file_logs.FILES]}
                 for row in startup["nodes"]]}
@@ -562,7 +562,7 @@ class Engine:
                     else:
                         arguments = ["container", "cp", owned.identity + ":" + path, "-"]
                         parse = lambda result, kind=kind: file_logs.archive_summary(
-                            result.stdout(file_logs.ARCHIVE_BYTES), kind)
+                            result.stdout(file_logs.ARCHIVE_BYTES), kind, complete_prefix=(kind == "error"))
                         cap = file_logs.ARCHIVE_BYTES
                     observe(item["phase"], "startup-file-" + row["service"] + "-" + kind,
                             arguments, parse, cap, 4096)

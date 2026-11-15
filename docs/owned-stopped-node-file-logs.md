@@ -1,5 +1,9 @@
 # Bounded file observations when a node has stopped
 
+The [v4 small-error follow-up](owned-small-error-file-logs.md) retains this
+state-selected run-file policy and selects a bounded whole-file read for each
+error file. This document preserves the v3 selection and qualification scope.
+
 This change selects a diagnostic read. It does not resolve the observed H1/H2
 readiness refusals or establish the cause of the recorded nonzero node exits.
 The [earlier tail record](owned-startup-log-tails.md) preserves those observations
