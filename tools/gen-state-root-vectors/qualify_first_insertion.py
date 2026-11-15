@@ -26,7 +26,7 @@ INPUT = "tools/gen-state-root-vectors/first-insertion-catchup_test.go.txt"
 INPUTS = {INPUT: "consensus/spv_first_insertion_catchup_test.go",
           "tools/gen-state-root-vectors/first-insertion-export_test.go.txt": "consensus/spv_first_insertion_export_test.go"}
 WORKFLOW = ".github/workflows/first-insertion-catchup.yml"
-PUBLIC_PATHS = (*INPUTS, WORKFLOW, "tools/gen-state-root-vectors/qualify_first_insertion.py",
+PUBLIC_PATHS = (*INPUTS, WORKFLOW, ".gitattributes", "tools/gen-state-root-vectors/qualify_first_insertion.py",
                 "tools/gen-state-root-vectors/qualify_first_insertion_test.py",
                 "tools/gen-state-root-vectors/qualify_closed_parent_oracle.py",
                 "docs/first-insertion-catchup.md")

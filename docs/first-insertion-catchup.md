@@ -16,6 +16,30 @@ At `2026-11-15T10:30:00Z`, 182,718 periods of 300 seconds have elapsed. This is 
 source-supported cost hypothesis; the recorded experiment does not establish it
 as the cause of the readiness deadline or unresolved ledger closes.
 
+The first native measurements at SPV source
+`32c44aa15c54005f19d401b7cfe7a2a34f4a57a5`
+([run 43708353171, attempt 1](https://github.com/edgepillar/zenon-spv/actions/runs/43708353171))
+recorded:
+
+| Platform | Listener seconds, fixed experiment window | Closed consensus logical bytes |
+| --- | ---: | ---: |
+| Linux amd64 | 38.778142229 | 5,047,967 |
+| macOS amd64 | 52.245839178 | 5,047,787 |
+| Windows amd64 | 40.2713689 | 5,044,041 |
+
+All three native commands exited zero with complete output and all three cases
+passed. Linux/macOS jobs completed successfully. Windows subsequently refused
+the documentation source pin because its checkout used CRLF; that CI failure
+remains recorded and is not a successful complete qualification. The document
+now has an explicit LF checkout rule, which is included in the source pins.
+
+For the fixed window, all three native observations reported 182,718 period
+points, 634 epoch points, 365,945 database Gets, 183,353 Puts and 19,619,414 bytes
+of Put values. These are one-run bookkeeping observations. They do not establish
+the duration under four concurrent containers or identify the readiness failure
+cause. Do not change the genesis, slot timing, activation or readiness limits to
+convert these observations into a successful pilot.
+
 ## Unsigned measurement
 
 `first-insertion-catchup.yml` fetches the exact original node into a fresh hosted
