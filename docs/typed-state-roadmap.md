@@ -9,7 +9,7 @@ Delivery and gate states below are planning states. This documentation change
 does not execute a devnet, enable runtime v3/state-value acceptance, authenticate
 network activation or publish a release. Historical source/report identities remain fixed.
 
-For the **13 November 2026** implementation/evidence cut, use the
+For dated implementation/evidence cuts, use the
 [typed-query readiness ledger](typed-query-readiness.md). It separates the
 current qualified runtime, frozen execution-review source, selected binary
 inputs and human-review candidate, and maps C01-C15/G0-G7 to the remaining
