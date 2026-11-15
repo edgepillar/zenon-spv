@@ -1,0 +1,204 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Isolated bookkeeping cost control. The unsigned H2 below is not an accepted header.
+package consensus_test
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/inconshreveable/log15"
+
+	corechain "github.com/zenon-network/go-zenon/chain"
+	cache "github.com/zenon-network/go-zenon/chain/cache/storage"
+	"github.com/zenon-network/go-zenon/chain/genesis"
+	"github.com/zenon-network/go-zenon/chain/nom"
+	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/consensus"
+	"github.com/zenon-network/go-zenon/consensus/storage"
+	"github.com/zenon-network/go-zenon/vm/constants"
+)
+
+type spvCountedDB struct {
+	db.DB
+	gets, puts, putValueBytes uint64
+}
+
+func (d *spvCountedDB) Get(key []byte) ([]byte, error) {
+	d.gets++
+	return d.DB.Get(key)
+}
+
+func (d *spvCountedDB) Put(key, value []byte) error {
+	d.puts++
+	d.putValueBytes += uint64(len(value))
+	return d.DB.Put(key, value)
+}
+
+func spvPointCount(t *testing.T, d db.DB, prefix byte) uint64 {
+	t.Helper()
+	it := d.NewIterator([]byte{prefix})
+	defer it.Release()
+	var count uint64
+	for it.Next() {
+		count++
+	}
+	if it.Error() != nil {
+		t.Fatal("consensus point iteration failed")
+	}
+	return count
+}
+
+func TestSPVFirstInsertionCatchup(t *testing.T) {
+	// Do not start a node wrapper, consensus event loop, producer, RPC or peer.
+	// In particular, do not construct a wallet or obtain a signing key.
+	log15.Root().SetHandler(log15.DiscardHandler())
+	raw, err := os.ReadFile(filepath.Join("..", "docker", "devnet", "genesis.json"))
+	if err != nil {
+		t.Fatal("selected genesis unavailable")
+	}
+	sum := sha256.Sum256(raw)
+	const sourceSHA = "0dd33b18b147f70b3d3d5f07199a2b45311f6e9b84a98b3f86d8f6c6b45f419a"
+	if len(raw) != 8137 || hex.EncodeToString(sum[:]) != sourceSHA {
+		t.Fatal("selected public genesis changed")
+	}
+	var config genesis.GenesisConfig
+	if json.Unmarshal(raw, &config) != nil || genesis.CheckGenesis(&config) != nil || config.ChainIdentifier != 69 {
+		t.Fatal("selected public genesis invalid")
+	}
+	if constants.ConsensusConfig.BlockTime != 10 || constants.ConsensusConfig.NodeCount != 30 {
+		t.Fatal("selected consensus period changed")
+	}
+	for _, selected := range []struct {
+		name string
+		gap  uint64
+	}{
+		{"one-period", 300},
+		{"one-day", 86400},
+		// 2026-11-15T10:30:00Z minus the unchanged source genesis timestamp.
+		{"fixture-window", 54815400},
+	} {
+		t.Run(selected.name, func(t *testing.T) {
+			root := t.TempDir()
+			ch := corechain.NewChain(db.NewLevelDBManager(filepath.Join(root, "ledger")),
+				cache.NewCacheDBManager(filepath.Join(root, "cache")), genesis.NewGenesis(&config),
+				filepath.Join(root, "state"), false)
+			stopped := false
+			defer func() {
+				if !stopped && ch.Stop() != nil {
+					t.Error("owned chain cleanup failed")
+				}
+			}()
+			if ch.Init() != nil {
+				t.Fatal("owned chain initialization failed")
+			}
+			first := ch.GetGenesisMomentum()
+			if first.Height != 1 || first.TimestampUnix != 1739923200 || first.Hash.String() != "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9" {
+				t.Fatal("selected genesis identity differs")
+			}
+			// The manager accepts an explicit test fixture without authenticating it.
+			// This is deliberately below the verifier, with no signature and no network.
+			patch := db.NewPatch()
+			m := &nom.Momentum{Version: 1, ChainIdentifier: 69, Height: 2,
+				PreviousHash: first.Hash, TimestampUnix: first.TimestampUnix + selected.gap,
+				ChangesHash: db.PatchHash(patch)}
+			m.Hash = m.ComputeHash()
+			m.EnsureCache()
+			detailed := &nom.DetailedMomentum{Momentum: m}
+			t.Log("SPV_CATCHUP_PHASE begin unsigned-manager-fixture")
+			started := time.Now()
+			func() {
+				insert := ch.AcquireInsert("isolated unsigned catchup cost fixture")
+				defer insert.Unlock()
+				if ch.UpdateCache(insert, detailed, patch) != nil || ch.UpdateStateTree(insert, detailed, patch) != nil ||
+					ch.AddMomentumTransaction(insert, &nom.MomentumTransaction{Momentum: m, Changes: patch}) != nil {
+					t.Fatal("unsigned manager fixture insertion failed")
+				}
+			}()
+			insertSeconds := time.Since(started).Seconds()
+			if ch.GetFrontierMomentumStore().Identifier() != m.Identifier() {
+				t.Fatal("unsigned fixture frontier differs")
+			}
+			rawDB, ldb := db.NewLevelDB(filepath.Join(root, "consensus"))
+			closed := false
+			defer func() {
+				if !closed && ldb.Close() != nil {
+					t.Error("owned consensus cleanup failed")
+				}
+			}()
+			counted := &spvCountedDB{DB: rawDB}
+			listener, completed := consensus.SPVFirstInsertionPoints(counted, ch)
+			previousPeriod, previousEpoch := completed()
+			if previousPeriod != -1 || previousEpoch != -1 {
+				t.Fatal("fresh point database required")
+			}
+			counted.gets, counted.puts, counted.putValueBytes = 0, 0, 0
+			t.Log("SPV_CATCHUP_PHASE begin original-points-listener")
+			started = time.Now()
+			// This is the original synchronous listener called during canonical
+			// insertion; call it directly so no signed production is necessary.
+			listener.InsertMomentum(detailed)
+			pointSeconds := time.Since(started).Seconds()
+			t.Log("SPV_CATCHUP_PHASE end original-points-listener")
+			periods, epochs := selected.gap/300, selected.gap/86400
+			periodCount := spvPointCount(t, rawDB, storage.PrefixPeriodPoint)
+			epochCount := spvPointCount(t, rawDB, storage.PrefixEpochPoint)
+			completedPeriod, completedEpoch := completed()
+			if periodCount != periods || epochCount != epochs || completedPeriod != int64(periods)-1 || completedEpoch != int64(epochs)-1 {
+				t.Fatal("original listener did not complete the selected history")
+			}
+			if ldb.Close() != nil {
+				t.Fatal("consensus database close failed")
+			}
+			closed = true
+			if ch.Stop() != nil {
+				t.Fatal("chain manager close failed")
+			}
+			stopped = true
+			var files, logicalBytes uint64
+			if filepath.WalkDir(filepath.Join(root, "consensus"), func(_ string, entry fs.DirEntry, err error) error {
+				if err != nil {
+					return err
+				}
+				if entry.IsDir() {
+					return nil
+				}
+				info, err := entry.Info()
+				if err != nil {
+					return err
+				}
+				if !info.Mode().IsRegular() {
+					t.Fatal("unexpected nonregular consensus fixture")
+				}
+				files++
+				logicalBytes += uint64(info.Size())
+				return nil
+			}) != nil {
+				t.Fatal("closed consensus file measurement failed")
+			}
+			report := map[string]interface{}{
+				"format": "selected-first-insertion-catchup/v1", "case": selected.name,
+				"node_revision": "2835c436b197fece5c76adf4ba8dc1decca2e3ea", "source_genesis_sha256": sourceSHA,
+				"source_genesis_unix": first.TimestampUnix, "unsigned_H2_unix": m.TimestampUnix,
+				"gap_seconds": selected.gap, "period_seconds": 300, "completed_periods": periodCount, "completed_epochs": epochCount,
+				"unsigned_insert_seconds": insertSeconds, "points_listener_seconds": pointSeconds,
+				"consensus_get_calls": counted.gets, "consensus_put_calls": counted.puts, "consensus_put_value_bytes": counted.putValueBytes,
+				"closed_consensus_files": files, "closed_consensus_logical_bytes": logicalBytes,
+				"original_points_listener_completed": true, "real_LevelDB_managers": true, "owned_databases_closed": true,
+				"unsigned_test_fixture_bypasses_authentication": true, "Chain_Start": false, "consensus_Start": false,
+				"wallet_or_signing": false, "network_or_broadcast": false, "actual_fixture_cause_established": false,
+				"accepted_header_authority": false, "new_devnet_acceptance_established": false, "peak_disk_or_RSS_measured": false,
+			}
+			encoded, err := json.Marshal(report)
+			if err != nil {
+				t.Fatal("observation encoding failed")
+			}
+			t.Logf("SPV_FIRST_INSERTION_CATCHUP %s", encoded)
+		})
+	}
+}
