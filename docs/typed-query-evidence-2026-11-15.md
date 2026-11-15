@@ -1,10 +1,11 @@
 # Typed-query source and execution evidence: 15 November 2026
 
 This supplements the [dated acceptance ledger](typed-query-readiness.md) and
-[D0-D6 plan](typed-state-roadmap.md). It records already qualified sources and
-two retained non-accepting executions and the qualified tail runner. It introduces no new runtime build,
-selected-network acceptance, independent review or release. Historical records
-retain their original revisions and outcomes.
+[D0-D6 plan](typed-state-roadmap.md). It records qualified runner sources and two
+retained non-accepting executions. Source, binary, execution and human-review
+identities keep their own scope. Selected-network consumer acceptance and
+production gates remain open. Historical records retain their original revisions
+and outcomes.
 
 ## Source roles
 
