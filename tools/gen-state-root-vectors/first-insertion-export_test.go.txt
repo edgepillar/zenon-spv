@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Test-only access to the original point listener; no production API is added.
+package consensus
+
+import (
+	"github.com/zenon-network/go-zenon/chain"
+	"github.com/zenon-network/go-zenon/common/db"
+)
+
+func SPVFirstInsertionPoints(d db.DB, ch chain.Chain) (chain.MomentumEventListener, func() (int64, int64)) {
+	cs := NewConsensus(d, ch, false).(*consensus)
+	p := cs.points.(*points)
+	return p, func() (int64, int64) {
+		return p.lastCompletedPeriod, p.lastCompletedEpoch
+	}
+}

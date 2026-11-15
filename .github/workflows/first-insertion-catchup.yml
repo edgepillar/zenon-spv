@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/first-insertion-catchup.yml'
-      - 'tools/gen-state-root-vectors/first-insertion-catchup_test.go.txt'
+      - 'tools/gen-state-root-vectors/first-insertion-*_test.go.txt'
       - 'tools/gen-state-root-vectors/qualify_first_insertion*.py'
       - 'tools/gen-state-root-vectors/qualify_closed_parent_oracle.py'
       - 'docs/first-insertion-catchup.md'
@@ -13,7 +13,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/first-insertion-catchup.yml'
-      - 'tools/gen-state-root-vectors/first-insertion-catchup_test.go.txt'
+      - 'tools/gen-state-root-vectors/first-insertion-*_test.go.txt'
       - 'tools/gen-state-root-vectors/qualify_first_insertion*.py'
       - 'tools/gen-state-root-vectors/qualify_closed_parent_oracle.py'
       - 'docs/first-insertion-catchup.md'

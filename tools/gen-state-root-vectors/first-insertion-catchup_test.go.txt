@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Isolated bookkeeping cost control. The unsigned H2 below is not an accepted header.
-package consensus
+package consensus_test
 
 import (
 	"crypto/sha256"
@@ -19,6 +19,7 @@ import (
 	"github.com/zenon-network/go-zenon/chain/genesis"
 	"github.com/zenon-network/go-zenon/chain/nom"
 	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/consensus"
 	"github.com/zenon-network/go-zenon/consensus/storage"
 	"github.com/zenon-network/go-zenon/vm/constants"
 )
@@ -131,9 +132,9 @@ func TestSPVFirstInsertionCatchup(t *testing.T) {
 				}
 			}()
 			counted := &spvCountedDB{DB: rawDB}
-			cs := NewConsensus(counted, ch, false).(*consensus)
-			points := cs.points.(*points)
-			if points.lastCompletedPeriod != -1 || points.lastCompletedEpoch != -1 {
+			listener, completed := consensus.SPVFirstInsertionPoints(counted, ch)
+			previousPeriod, previousEpoch := completed()
+			if previousPeriod != -1 || previousEpoch != -1 {
 				t.Fatal("fresh point database required")
 			}
 			counted.gets, counted.puts, counted.putValueBytes = 0, 0, 0
@@ -141,13 +142,14 @@ func TestSPVFirstInsertionCatchup(t *testing.T) {
 			started = time.Now()
 			// This is the original synchronous listener called during canonical
 			// insertion; call it directly so no signed production is necessary.
-			points.InsertMomentum(detailed)
+			listener.InsertMomentum(detailed)
 			pointSeconds := time.Since(started).Seconds()
 			t.Log("SPV_CATCHUP_PHASE end original-points-listener")
 			periods, epochs := selected.gap/300, selected.gap/86400
 			periodCount := spvPointCount(t, rawDB, storage.PrefixPeriodPoint)
 			epochCount := spvPointCount(t, rawDB, storage.PrefixEpochPoint)
-			if periodCount != periods || epochCount != epochs || points.lastCompletedPeriod != int64(periods)-1 || points.lastCompletedEpoch != int64(epochs)-1 {
+			completedPeriod, completedEpoch := completed()
+			if periodCount != periods || epochCount != epochs || completedPeriod != int64(periods)-1 || completedEpoch != int64(epochs)-1 {
 				t.Fatal("original listener did not complete the selected history")
 			}
 			if ldb.Close() != nil {

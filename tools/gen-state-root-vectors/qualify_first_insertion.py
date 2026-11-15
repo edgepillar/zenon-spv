@@ -23,9 +23,10 @@ spec.loader.exec_module(C)
 require, Refused = C.require, C.Refused
 ROOT = HERE.parents[1]
 INPUT = "tools/gen-state-root-vectors/first-insertion-catchup_test.go.txt"
-TARGET = "consensus/spv_first_insertion_catchup_test.go"
+INPUTS = {INPUT: "consensus/spv_first_insertion_catchup_test.go",
+          "tools/gen-state-root-vectors/first-insertion-export_test.go.txt": "consensus/spv_first_insertion_export_test.go"}
 WORKFLOW = ".github/workflows/first-insertion-catchup.yml"
-PUBLIC_PATHS = (INPUT, WORKFLOW, "tools/gen-state-root-vectors/qualify_first_insertion.py",
+PUBLIC_PATHS = (*INPUTS, WORKFLOW, "tools/gen-state-root-vectors/qualify_first_insertion.py",
                 "tools/gen-state-root-vectors/qualify_first_insertion_test.py",
                 "tools/gen-state-root-vectors/qualify_closed_parent_oracle.py",
                 "docs/first-insertion-catchup.md")
@@ -162,7 +163,7 @@ def stage(work, output, selected, records):
             "fresh_workspace_required")
     require(work.parent.is_dir() and output.parent.is_dir() and work != output
             and work not in output.parents and output not in work.parents, "workspace_separation")
-    raw = C.regular(ROOT / INPUT, C.MAX_SOURCE_FILE)
+    inputs = {name: C.regular(ROOT / name, C.MAX_SOURCE_FILE) for name in INPUTS}
     allocation = space(work.parent)
     work.mkdir(mode=0o700)
     output.mkdir(mode=0o700)
@@ -181,13 +182,15 @@ def stage(work, output, selected, records):
     index = C.git(output, "node-index", ["ls-files", "--stage", "-z"], node, records)
     original = C.source_inventory(node, index)
     require(original["docker/devnet/genesis.json"] == {"bytes": 8137, "sha256": C.GENESIS_SHA256}, "source_genesis")
-    require(not (node / TARGET).exists() and not (node / TARGET).is_symlink(), "added_path_exists")
-    C.seal(node / TARGET, raw)
+    for name, target in INPUTS.items():
+        require(not (node / target).exists() and not (node / target).is_symlink(), "added_path_exists")
+        C.seal(node / target, inputs[name])
     C.seal(work / "ownership.json", C.encoded({"format": "owned-first-insertion-work/v1", "context": selected,
         "node_identity": [node.stat().st_dev, node.stat().st_ino], "original_sources": original,
-        "added_input": C.digest(raw)}))
+        "added_inputs": {name: C.digest(raw) for name, raw in inputs.items()}}))
     C.seal(output / "preparation.json", C.encoded({"format": "first-insertion-preparation/v1", "context": selected,
-        "node_revision": head, "node_tree": tree, "original_sources": original, "added_input": C.digest(raw),
+        "node_revision": head, "node_tree": tree, "original_sources": original,
+        "added_inputs": {name: C.digest(raw) for name, raw in inputs.items()},
         "allocation_admission": allocation, "commands": records, "native_execution": False}))
 
 
@@ -202,8 +205,11 @@ def qualify(work, output, selected, records):
 
     def unchanged():
         require(C.source_inventory(node, index) == marker["original_sources"]
-                and C.regular(node / TARGET, C.MAX_SOURCE_FILE) == C.regular(ROOT / INPUT, C.MAX_SOURCE_FILE)
-                and C.digest(C.regular(node / TARGET, C.MAX_SOURCE_FILE)) == marker["added_input"], "source_drift")
+                and set(marker["added_inputs"]) == set(INPUTS), "source_drift")
+        for name, target in INPUTS.items():
+            raw = C.regular(node / target, C.MAX_SOURCE_FILE)
+            require(raw == C.regular(ROOT / name, C.MAX_SOURCE_FILE)
+                    and C.digest(raw) == marker["added_inputs"][name], "added_source_drift")
 
     unchanged()
     allocation = space(work)
@@ -217,15 +223,17 @@ def qualify(work, output, selected, records):
             and C.git(output, "node-tree-after", ["rev-parse", "HEAD^{tree}"], node, records).decode().strip() == C.NODE_TREE,
             "node_revision_after")
     C.git(output, "node-index-after", ["diff", "--cached", "--exit-code", "HEAD"], node, records)
-    require(C.git(output, "node-working-after", ["status", "--porcelain=v1", "-z", "--untracked-files=all"], node, records)
-            == b"?? " + TARGET.encode() + b"\0", "unexpected_working_change")
+    status = C.git(output, "node-working-after", ["status", "--porcelain=v1", "-z", "--untracked-files=all"], node, records)
+    require(status.endswith(b"\0") and sorted(status.split(b"\0")[:-1])
+            == sorted(b"?? " + target.encode() for target in INPUTS.values()), "unexpected_working_change")
     require(C.git(output, "spv-source-head", ["rev-parse", "HEAD"], ROOT, records).decode().strip()
             == selected["source_revision"], "SPV_source_revision")
     tree = C.git(output, "spv-source-tree", ["rev-parse", "HEAD^{tree}"], ROOT, records).decode().strip()
     C.git(output, "spv-index-clean", ["diff", "--cached", "--exit-code", "HEAD"], ROOT, records)
     selected_index = C.git(output, "spv-selected-index", ["ls-files", "--stage", "-z", "--", *PUBLIC_PATHS], ROOT, records)
     sources, working = C.selected_sources(selected_index, PUBLIC_PATHS)
-    C.seal(output / "added-test.go.txt", C.regular(ROOT / INPUT, C.MAX_SOURCE_FILE))
+    for name in INPUTS:
+        C.seal(output / Path(name).name, C.regular(ROOT / name, C.MAX_SOURCE_FILE))
     C.seal(output / "NODE_LICENSE", C.regular(node / "LICENSE", 64 << 10))
     result = {"format": "first-insertion-catchup-ci/v1", "status": "UNSIGNED_BOOKKEEPING_CONTROLS_PASSED",
         **selected, "source_tree": tree, "node_revision": C.NODE_REVISION, "node_tree": C.NODE_TREE,

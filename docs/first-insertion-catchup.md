@@ -20,7 +20,8 @@ as the cause of the readiness deadline or unresolved ledger closes.
 
 `first-insertion-catchup.yml` fetches the exact original node into a fresh hosted
 workspace and verifies all original regular sources against their Git blob IDs.
-It adds one test file to the original `consensus` package. Original node sources,
+It adds an external-package test and a small test-only export adapter for the
+original `consensus` package. Original node sources,
 genesis, activation rules, slot timing and readiness limits are unchanged.
 
 The test initializes real ledger/cache/state LevelDB managers. It inserts an

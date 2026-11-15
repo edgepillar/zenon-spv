@@ -172,7 +172,7 @@ class Controls(unittest.TestCase):
 
     def test_no_native_or_engine_launch_in_python_controls(self):
         # Exercise only the inherited bounded anonymous-pipe capture contract.
-        raw, record = Q.C.capture([sys.executable, "-I", "-B", "-c", "print('regular control')"], HERE, timeout=5)
+        raw, record = Q.C.capture([sys.executable, "-I", "-B", "-c", "import sys; sys.stdout.buffer.write(b'regular control\\n')"], HERE, timeout=5)
         self.assertEqual(record["actual_exit"], 0)
         self.assertTrue(record["output_complete"])
         self.assertEqual(raw["stdout"], b"regular control\n")
