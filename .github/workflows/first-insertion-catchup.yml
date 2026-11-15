@@ -1,0 +1,87 @@
+name: first-insertion-catchup
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/first-insertion-catchup.yml'
+      - 'tools/gen-state-root-vectors/first-insertion-catchup_test.go.txt'
+      - 'tools/gen-state-root-vectors/qualify_first_insertion*.py'
+      - 'tools/gen-state-root-vectors/qualify_closed_parent_oracle.py'
+      - 'docs/first-insertion-catchup.md'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/first-insertion-catchup.yml'
+      - 'tools/gen-state-root-vectors/first-insertion-catchup_test.go.txt'
+      - 'tools/gen-state-root-vectors/qualify_first_insertion*.py'
+      - 'tools/gen-state-root-vectors/qualify_closed_parent_oracle.py'
+      - 'docs/first-insertion-catchup.md'
+
+permissions:
+  contents: read
+
+jobs:
+  catchup:
+    if: github.repository == 'edgepillar/zenon-spv'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            platform: linux-amd64
+          - runner: macos-15-intel
+            platform: darwin-amd64
+          - runner: windows-latest
+            platform: windows-amd64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      GOTOOLCHAIN: local
+      GOENV: 'off'
+      GOWORK: 'off'
+      GOFLAGS: '-mod=readonly'
+      CGO_ENABLED: '1'
+      CC: ${{ matrix.platform == 'darwin-amd64' && 'clang' || 'gcc' }}
+      GOMAXPROCS: '2'
+      SPV_FEATURE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Driver evidence and ownership controls
+        run: python -I -B tools/gen-state-root-vectors/qualify_first_insertion_test.py -v
+      - name: Prepare unchanged reference node and unsigned test
+        run: python -I -B tools/gen-state-root-vectors/qualify_first_insertion.py --mode prepare --platform '${{ matrix.platform }}' --workspace "$RUNNER_TEMP/spv-first-insertion-work" --evidence "$RUNNER_TEMP/spv-first-insertion-evidence"
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.25.14'
+          cache-dependency-path: ${{ runner.temp }}/spv-first-insertion-work/node/go.sum
+      - name: Isolate Go telemetry
+        run: |
+          python -I -B - <<'PY'
+          import os
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP']) / 'spv-first-insertion-telemetry'
+          path.mkdir()
+          (path / 'mode').write_text('off', encoding='ascii')
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as stream:
+              stream.write('GOTELEMETRYDIR=' + str(path) + '\n')
+          PY
+      - name: Observe original synchronous point catch-up
+        run: python -I -B tools/gen-state-root-vectors/qualify_first_insertion.py --mode qualify --platform '${{ matrix.platform }}' --workspace "$RUNNER_TEMP/spv-first-insertion-work" --evidence "$RUNNER_TEMP/spv-first-insertion-evidence"
+      - name: Preserve bounded actual command evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: first-insertion-catchup-${{ matrix.platform }}
+          path: ${{ runner.temp }}/spv-first-insertion-evidence/
+          if-no-files-found: warn
+          retention-days: 14
