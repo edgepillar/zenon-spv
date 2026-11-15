@@ -39,7 +39,7 @@ NATIVE_FILES = frozenset("internal/verify/experimental_v3_" + name for name in (
     "retention_test.go"))
 # Every other non-document tree record remains in this reviewed closure,
 # including workflows, research Go sources, Python helpers and fixture data.
-ORACLE_SOURCE_PIN = "427cde3ad56ecc6a9a2a0908360408bcaf12b061b51038ce09a3400f0fa595ff"
+ORACLE_SOURCE_PIN = "3487311ac37ab94b19e770af0239f774e00d56f14b85919bc02e7217a2afb2df"
 SHARED_TRANSPORT = "tools/ledger-transport/transport.py"
 TRANSPORT_FILES = frozenset("tools/ledger-transport/" + name for name in (
     "archive_index.py", "archive_index_test.py", "archive_tail.py", "archive_tail_test.py",
@@ -48,7 +48,9 @@ EXPORT_FILES = frozenset("tools/ledger-export/" + name for name in (
     "inventory_completed_export.py", "inventory_completed_export_test.py", "README.md"))
 PREPARATION_FILES = frozenset("tools/owned-devnet-query/" + name for name in (
     "engine_test.py", "images_test.py", "inputs.py", "inputs_test.py",
-    "capture_test.py", "review.py", "review_test.py", "README.md"))
+    "capture_test.py", "review.py", "review_test.py", "README.md",
+    "engine.py", "node_diagnostics.py", "node_diagnostics_test.py",
+    "node_file_logs.py", "node_file_logs_test.py"))
 PORTABLE_FILES = TRANSPORT_FILES | EXPORT_FILES | PREPARATION_FILES
 # The intake is the tool contract. The general roadmap is metadata only and
 # must not add an unrelated three-platform workflow to a portable tool change.
@@ -63,7 +65,7 @@ PORTABLE_WORKFLOWS = (
 )
 # Keep every remaining non-document dependency, including all workflows.
 # Refresh only after reviewing dependencies and selecting full runtime CI.
-PORTABLE_SOURCE_PIN = "4d524c42362eecdf6feb0909641b99c0171df14d145d4e8116b0101e36faacb3"
+PORTABLE_SOURCE_PIN = "fbd330a1eb30c2d243f0275bddabb5d635dc1b37f78ef1b6801ce9c74a15e00a"
 MAX_FILTERED_DIFF_RECORDS = 256
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192
