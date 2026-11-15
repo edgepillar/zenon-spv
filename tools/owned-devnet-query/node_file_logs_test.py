@@ -468,7 +468,9 @@ class StateCaptureTests(unittest.TestCase):
             self.assertEqual(report['format'], 'owned-devnet-startup-file-logs/v4')
             row = report['nodes'][2]
             self.assertTrue(all(x['method'] == 'whole-file' and x['phase']['status'] == 'OBSERVED'
-                                and 'window' not in x['phase']['data'] for x in row['files']))
+                                for x in row['files']))
+            self.assertNotIn('window', row['files'][0]['phase']['data'])
+            self.assertEqual(row['files'][1]['phase']['data']['window']['leading_discarded_bytes'], 0)
             self.assertFalse(report['accepted_header_authority'])
 
     def test_paused_node_is_read_without_resuming_or_starting_it(self):
@@ -587,7 +589,9 @@ class FileKindCaptureTests(unittest.TestCase):
         self.assertEqual(data['content']['bytes'], 213)
         self.assertEqual(data['log']['total_lines'], 1)
         self.assertEqual(data['classification']['reasons']['state_version_missing'], 1)
-        self.assertNotIn('window', data);self.assertNotIn('private-marker', json.dumps(report))
+        self.assertEqual(data['window']['leading_discarded_bytes'], 0)
+        self.assertEqual(data['window']['classified_bytes'], 213)
+        self.assertNotIn('private-marker', json.dumps(report))
         self.assertEqual(len(calls), 17)
 
     def test_oversized_error_refuses_without_a_tail_retry(self):
@@ -612,6 +616,44 @@ class FileKindCaptureTests(unittest.TestCase):
         state['fields']['Running'] = 1
         with self.assertRaises(model.Refused):files.read_method_for_file(state, 'error')
 
+    def test_error_prefix_keeps_the_first_complete_line_and_discards_an_unfinished_last_line(self):
+        complete = b'msg="momentum producer trigger finished" reason=too-late\n'
+        partial = b'msg="vm panic when applying momentum" reason="private-marker"'
+        raw = fixtures.file_archive('error', complete + partial)
+        data = files.archive_summary(raw, 'error', complete_prefix=True)
+        files.check_data(data, complete_prefix=True)
+        self.assertEqual(data['window'], {'scope': 'bounded-complete-lines-from-file-start',
+            'whole_file_coverage': False, 'leading_discarded_bytes': 0,
+            'trailing_discarded_bytes': len(partial), 'classified_bytes': len(complete)})
+        self.assertEqual(data['classification']['reasons']['late_production'], 1)
+        self.assertEqual(data['classification']['events']['vm_panic'], 0)
+        self.assertNotIn('private-marker', json.dumps(data))
+
+    def test_error_prefix_accounting_and_mode_cannot_be_forged(self):
+        base = files.archive_summary(fixtures.file_archive('error'), 'error', complete_prefix=True)
+        for change in ('scope', 'leading', 'trailing', 'boolean'):
+            data = deepcopy(base)
+            if change == 'scope':data['window']['scope'] = 'bounded-complete-lines'
+            elif change == 'leading':data['window']['leading_discarded_bytes'] = 1
+            elif change == 'trailing':data['window']['trailing_discarded_bytes'] += 1
+            else:data['window']['classified_bytes'] = True
+            with self.subTest(change=change), self.assertRaises(model.Refused):
+                files.check_data(data, complete_prefix=True)
+        for options in ({}, {'tail': True}, {'tail': True, 'complete_prefix': True}):
+            with self.subTest(options=options), self.assertRaises(model.Refused):files.check_data(base, **options)
+        for kind, flag in (('run', True), ('error', 1)):
+            with self.assertRaises(model.Refused):
+                files.archive_summary(fixtures.file_archive(kind), kind, complete_prefix=flag)
+
+    def test_unterminated_error_has_no_complete_record_and_cannot_use_a_legacy_whole_file_schema(self):
+        data = files.archive_summary(fixtures.file_archive('error', b'msg="vm panic when applying momentum"'),
+                                     'error', complete_prefix=True)
+        files.check_data(data, complete_prefix=True)
+        self.assertEqual(data['log']['total_lines'], 0)
+        self.assertEqual(data['window']['classified_bytes'], 0)
+        self.assertEqual(data['window']['trailing_discarded_bytes'], data['content']['bytes'])
+        with self.assertRaises(model.Refused):files.check_data(data)
+
 
 class FileKindReviewTests(unittest.TestCase):
     def fixture(self):
@@ -623,7 +665,7 @@ class FileKindReviewTests(unittest.TestCase):
                 item['method'] = method;phase = item['phase'];label = phase['command']
                 raw = fixtures.file_archive(item['kind']) if method == 'whole-file' else fixtures.file_tail()
                 result = fixtures.MemoryResult(label, raw);nodes.complete_command(phase, result)
-                phase['data'] = (files.archive_summary(raw, item['kind']) if method == 'whole-file'
+                phase['data'] = (files.archive_summary(raw, item['kind'], complete_prefix=(item['kind'] == 'error')) if method == 'whole-file'
                                  else files.tail_summary(raw))
                 entries['evidence/' + label + '.complete.json'] = model.canonical(result.receipt)
         entries['evidence/' + files.REPORT] = model.canonical(report)
@@ -639,7 +681,7 @@ class FileKindReviewTests(unittest.TestCase):
             for item in row['files']:
                 expected = 'whole-file' if item['kind'] == 'error' or row['service'] == 'pillar3' else 'byte-tail'
                 self.assertEqual(item['method'], expected)
-                self.assertEqual('window' in item['phase']['data'], expected == 'byte-tail')
+                self.assertEqual('window' in item['phase']['data'], expected == 'byte-tail' or item['kind'] == 'error')
 
     def test_running_error_cannot_be_relabelled_as_a_tail(self):
         contract, entries, report = self.fixture();report['nodes'][0]['files'][1]['method'] = 'byte-tail'

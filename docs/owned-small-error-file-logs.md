@@ -34,7 +34,14 @@ refusal. The terminal's owned-runtime closure remains unestablished.
 | Run | Another validated state | Whole file | 64 KiB TAR, 32 KiB decoded regular file |
 | Either | Ownership or inspection unavailable | No read | No parsed data |
 
-The whole-file reader preserves a small error file's first record. A larger
+The error file's classified window starts at byte zero, preserving its first
+complete line, and discards an unfinished final line. The decoded-content pin
+still covers all captured file bytes; window accounting identifies which bytes
+were classified. Its scope is `bounded-complete-lines-from-file-start`, with no
+whole-file coverage or atomicity claim. This v4 window also retains the bounded
+late-production code without changing the earlier whole-file schemas.
+
+A larger
 error file remains unknown or refused under the existing caps; there is no
 fallback tail, second read or cap increase. Run-file tails retain their
 complete-inner-line policy. No line-only tail, configurable path, shell, host
@@ -46,7 +53,8 @@ The `owned-devnet-startup-file-logs/v4` reader binds the recorded method to the
 fixed file kind and the prior typed inspection. The v1, v2 and v3 rules remain
 unchanged; relabeling an old method policy as v4 is refused.
 
-Controls cover a single 213-byte error record, privacy, oversized-file refusal
+Controls cover a single 213-byte error record, unfinished final records, prefix
+accounting, privacy, oversized-file refusal
 without a retry, the fixed command roster, kind/state binding and version
 separation. TAR fixtures stay in memory. These controls do not establish actual
 v4 Docker execution or resolve the observed node failure. Another signed

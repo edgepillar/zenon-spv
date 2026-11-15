@@ -562,7 +562,7 @@ class Engine:
                     else:
                         arguments = ["container", "cp", owned.identity + ":" + path, "-"]
                         parse = lambda result, kind=kind: file_logs.archive_summary(
-                            result.stdout(file_logs.ARCHIVE_BYTES), kind)
+                            result.stdout(file_logs.ARCHIVE_BYTES), kind, complete_prefix=(kind == "error"))
                         cap = file_logs.ARCHIVE_BYTES
                     observe(item["phase"], "startup-file-" + row["service"] + "-" + kind,
                             arguments, parse, cap, 4096)

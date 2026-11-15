@@ -284,6 +284,9 @@ No TAR is transported for a tail. The first line and any unfinished final
 line are discarded conservatively, even when the file fits. Window byte
 accounting, a raw-window pin, bounded classifications and allowlisted source
 coordinates are exported; raw text and arbitrary reasons stay outside the index.
+An error file's classified window starts at byte zero and discards an unfinished
+final line. Its window accounting and content pin are separate from the TAR
+transport pin; no raw TAR or text enters the public index.
 Per-file counts describe selected complete records, never whole-file coverage
 or proof that no error occurred. The two configured handlers can duplicate errors.
 
