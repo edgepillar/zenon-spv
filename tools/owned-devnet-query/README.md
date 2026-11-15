@@ -267,11 +267,12 @@ node's file handlers. The [bounded-tail follow-up](../../docs/owned-startup-log-
 records the source-7cb3fdd attempt: an eventual candidate H2, two late-broadcast
 messages and incomplete coverage when run logs exceeded the old file caps.
 
-The optional `startup-file-logs.json` v3 report selects the same two fixed paths
-from each previously inspected owned node. A positively observed running,
-unpaused, non-restarting and non-dead container uses an exact
+The optional `startup-file-logs.json` v4 report selects the same two fixed paths
+from each previously inspected owned node. Error files use the bounded whole-file
+reader so a small file's first complete record is retained. A run file in a
+positively observed running, unpaused, non-restarting and non-dead container uses an exact
 `docker container exec <owned-id> /bin/busybox tail -c 32768 -- <fixed-path>`
-command. Other validated state summaries select the original bounded
+command. Other validated run-file state summaries select the original bounded
 `docker container cp <owned-id>:<fixed-path> -` reader because exec requires
 a running container. There are at most eight file commands. There is no shell,
 follow mode, configurable path, new mount or host
@@ -289,15 +290,16 @@ or proof that no error occurred. The two configured handlers can duplicate error
 The whole-file method retains the original 64 KiB TAR transport bound and
 32 KiB decoded-file bound; it refuses a larger file without extracting it.
 It does not promise a recent window for stopped nodes. The selected method is
-recorded per file and bound to the prior owned inspection. An intervening exit
+recorded per file and bound to its fixed kind and prior owned inspection. An intervening exit
 keeps the first failure; there is no second read, restart or unpause. See the
-[state-selection record](../../docs/owned-stopped-node-file-logs.md) for the
-limits and the distinction between local controls and real execution.
+[state-selection record](../../docs/owned-stopped-node-file-logs.md) and
+[small-error follow-up](../../docs/owned-small-error-file-logs.md) for the limits,
+the observed single-record omission and the distinction between controls and real execution.
 
 The reader binds a tail's window pin directly to the complete command stdout pin,
 the prior owned inspection, role/kind and command order before cleanup. Nonzero,
-incomplete or unavailable reads supply no parsed data. The immutable v1 reader
-contract and v2 tail reader retain their original bounds and report shapes.
+incomplete or unavailable reads supply no parsed data. The v1 whole-file, v2 tail
+and v3 state-selected readers retain their original bounds, method rules and report shapes.
 No format independently replays omitted text or supplies header authority.
 The readiness, RPC, resource, cleanup, profile and context limits remain unchanged;
 another signed fixture requires separate source-specific authorization.
