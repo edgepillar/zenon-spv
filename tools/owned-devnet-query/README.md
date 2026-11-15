@@ -267,26 +267,38 @@ node's file handlers. The [bounded-tail follow-up](../../docs/owned-startup-log-
 records the source-7cb3fdd attempt: an eventual candidate H2, two late-broadcast
 messages and incomplete coverage when run logs exceeded the old file caps.
 
-The optional `startup-file-logs.json` v2 report selects the same two fixed paths
-from each previously inspected owned node. It uses at most eight exact
+The optional `startup-file-logs.json` v3 report selects the same two fixed paths
+from each previously inspected owned node. A positively observed running,
+unpaused, non-restarting and non-dead container uses an exact
 `docker container exec <owned-id> /bin/busybox tail -c 32768 -- <fixed-path>`
-commands. There is no shell, follow mode, configurable path, new mount or host
+command. Other validated state summaries select the original bounded
+`docker container cp <owned-id>:<fixed-path> -` reader because exec requires
+a running container. There are at most eight file commands. There is no shell,
+follow mode, configurable path, new mount or host
 destination. Applet availability is checked by the actual command outcome.
 
-Each command keeps its five-second deadline and fresh resource guard. Stdout
+Each command keeps its five-second deadline and fresh resource guard. Tail stdout
 is capped at 32 KiB and stderr at 4 KiB, independent of the full log's size.
-No TAR is transported or extracted. The first line and any unfinished final
+No TAR is transported for a tail. The first line and any unfinished final
 line are discarded conservatively, even when the file fits. Window byte
 accounting, a raw-window pin, bounded classifications and allowlisted source
 coordinates are exported; raw text and arbitrary reasons stay outside the index.
 Per-file counts describe selected complete records, never whole-file coverage
 or proof that no error occurred. The two configured handlers can duplicate errors.
 
-The reader binds the window pin directly to the complete command stdout pin,
-prior owned inspection, role/kind and command order before cleanup. Nonzero,
+The whole-file method retains the original 64 KiB TAR transport bound and
+32 KiB decoded-file bound; it refuses a larger file without extracting it.
+It does not promise a recent window for stopped nodes. The selected method is
+recorded per file and bound to the prior owned inspection. An intervening exit
+keeps the first failure; there is no second read, restart or unpause. See the
+[state-selection record](../../docs/owned-stopped-node-file-logs.md) for the
+limits and the distinction between local controls and real execution.
+
+The reader binds a tail's window pin directly to the complete command stdout pin,
+the prior owned inspection, role/kind and command order before cleanup. Nonzero,
 incomplete or unavailable reads supply no parsed data. The immutable v1 reader
-contract remains supported with its original 64 KiB TAR bound and report shape.
-Neither format independently replays omitted text or supplies header authority.
+contract and v2 tail reader retain their original bounds and report shapes.
+No format independently replays omitted text or supplies header authority.
 The readiness, RPC, resource, cleanup, profile and context limits remain unchanged;
 another signed fixture requires separate source-specific authorization.
 

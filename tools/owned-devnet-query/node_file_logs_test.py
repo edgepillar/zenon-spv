@@ -422,5 +422,138 @@ class TailReviewTests(ReviewTests):
         with self.assertRaises(model.Refused):self.review(contract, entries, report)
 
 
+class MethodTests(unittest.TestCase):
+    def state(self, **changes):
+        values = dict(Running=True, Paused=False, Restarting=False, Dead=False)
+        values.update(changes)
+        return fixtures.engine.stop_state_summary({'State': values})
+
+    def test_exec_requires_all_four_positive_state_observations(self):
+        self.assertEqual(files.read_method(self.state()), 'byte-tail')
+        for key, value in (('Running', False), ('Paused', True), ('Restarting', True), ('Dead', True)):
+            with self.subTest(key=key):
+                self.assertEqual(files.read_method(self.state(**{key: value})), 'whole-file')
+        for key in ('Running', 'Paused', 'Restarting', 'Dead'):
+            row = self.state();del row['fields'][key]
+            row['unavailable_fields'] = sorted(set(row['unavailable_fields']) | {key})
+            self.assertEqual(files.read_method(row), 'whole-file')
+
+    def test_method_selection_does_not_coerce_a_boolean(self):
+        row = self.state();row['fields']['Running'] = 1
+        with self.assertRaises(model.Refused):files.read_method(row)
+
+
+class StateCaptureTests(unittest.TestCase):
+    def prepare(self, root):
+        return fixtures.StartupNodeCaptureTests().prepare(root)
+
+    def test_stopped_node_uses_only_two_bounded_stdout_archives(self):
+        with tempfile.TemporaryDirectory(prefix='stopped-file-regular-') as tmp:
+            client, recorder, run, calls = self.prepare(Path(tmp))
+            recorder.containers[client.owned['pillar3'].identity]['State'].update(
+                Running=False, Pid=0, ExitCode=2, Status='exited')
+            with mock.patch.object(client, '_run', side_effect=run):client.capture_startup_diagnostics()
+            copies = [c for c in calls if c[1][:2] == ['container', 'cp']]
+            tails = [c for c in calls if c[1][:2] == ['container', 'exec']]
+            self.assertEqual((len(calls), len(copies), len(tails)), (17, 2, 6))
+            self.assertEqual([c[1] for c in copies], [
+                ['container', 'cp', client.owned['pillar3'].identity + ':' + path, '-']
+                for _, path in files.FILES])
+            self.assertTrue(all(c[2] == {'timeout': 5, 'stdout_cap': files.ARCHIVE_BYTES,
+                                       'stderr_cap': 4096} for c in copies))
+            report = json.loads(recorder.seals[files.REPORT])
+            self.assertEqual(report['format'], 'owned-devnet-startup-file-logs/v3')
+            row = report['nodes'][2]
+            self.assertTrue(all(x['method'] == 'whole-file' and x['phase']['status'] == 'OBSERVED'
+                                and 'window' not in x['phase']['data'] for x in row['files']))
+            self.assertFalse(report['accepted_header_authority'])
+
+    def test_paused_node_is_read_without_resuming_or_starting_it(self):
+        with tempfile.TemporaryDirectory(prefix='paused-file-regular-') as tmp:
+            client, recorder, run, calls = self.prepare(Path(tmp))
+            recorder.containers[client.owned['rpc'].identity]['State'].update(Paused=True, Status='paused')
+            with mock.patch.object(client, '_run', side_effect=run):client.capture_startup_diagnostics()
+            self.assertEqual(len(calls), 17)
+            copies = [c for c in calls if c[1][:2] == ['container', 'cp']]
+            self.assertEqual(len(copies), 2)
+            self.assertTrue(all(c[1][2].startswith(client.owned['rpc'].identity + ':') for c in copies))
+            self.assertTrue(all(c[1][:2] not in (['container', 'start'], ['container', 'unpause']) for c in calls))
+
+    def test_exit_after_inspection_keeps_failure_without_a_second_read(self):
+        with tempfile.TemporaryDirectory(prefix='changed-file-state-regular-') as tmp:
+            client, recorder, run, calls = self.prepare(Path(tmp))
+            def changed(label, arguments, **options):
+                if arguments[:2] == ['container', 'exec'] and arguments[2] == client.owned['pillar3'].identity:
+                    calls.append((label, arguments, options));client.counter += 1
+                    raise process.CommandFailed(fixtures.MemoryResult(
+                        f'docker-{client.counter:03d}-{label}', b'', b'private-marker', actual_exit=1))
+                return run(label, arguments, **options)
+            with mock.patch.object(client, '_run', side_effect=changed):client.capture_startup_diagnostics()
+            self.assertEqual(len(calls), 17)
+            self.assertFalse(any(c[1][:2] == ['container', 'cp'] for c in calls))
+            report = json.loads(recorder.seals[files.REPORT])
+            self.assertEqual(report['status'], 'UNKNOWN')
+            self.assertTrue(all(x['method'] == 'byte-tail' and x['phase']['status'] == 'FAILURE'
+                                and x['phase']['data'] is None for x in report['nodes'][2]['files']))
+            self.assertNotIn('private-marker', json.dumps(report))
+
+
+class MixedReviewTests(TailReviewTests):
+    def fixture(self):
+        contract, entries, report = super().fixture()
+        startup = json.loads(entries['evidence/' + nodes.REPORT])
+        report['format'] = 'owned-devnet-startup-file-logs/v3'
+        for original, row in zip(startup['nodes'], report['nodes']):
+            fields = original['inspection']['data']['fields']
+            fields.update(Paused=False, Restarting=False, Dead=False)
+            original['inspection']['data'] = fixtures.engine.stop_state_summary({'State': {**fields, 'Error': ''}})
+            method = 'whole-file' if row['service'] == 'pillar3' else 'byte-tail'
+            for item in row['files']:
+                item['method'] = method;phase = item['phase'];label = phase['command']
+                raw = fixtures.file_archive(item['kind']) if method == 'whole-file' else fixtures.file_tail()
+                result = fixtures.MemoryResult(label, raw);nodes.complete_command(phase, result)
+                phase['data'] = (files.archive_summary(raw, item['kind']) if method == 'whole-file'
+                                 else files.tail_summary(raw))
+                entries['evidence/' + label + '.complete.json'] = model.canonical(result.receipt)
+        entries['evidence/' + nodes.REPORT] = model.canonical(startup)
+        entries['evidence/' + files.REPORT] = model.canonical(report)
+        return contract, entries, report
+
+    def test_both_methods_keep_their_own_data_schema_and_no_authority(self):
+        contract, entries, report = self.fixture()
+        summary = self.review(contract, entries, report)['startup_file_log_diagnostics']['summary']
+        self.assertFalse(summary['accepted_header_authority'])
+        for row in summary['nodes']:
+            for item in row['files']:
+                self.assertEqual(item['method'], 'whole-file' if row['service'] == 'pillar3' else 'byte-tail')
+                self.assertEqual('window' in item['phase']['data'], item['method'] == 'byte-tail')
+
+    def test_method_must_match_the_prior_inspection(self):
+        for value in ('whole-file', 'private-marker', True, None):
+            contract, entries, report = self.fixture();report['nodes'][0]['files'][0]['method'] = value
+            with self.subTest(value=value), self.assertRaisesRegex(model.Refused, 'review_file_log_method_binding'):
+                self.review(contract, entries, report)
+
+    def test_modified_prior_running_state_cannot_relabel_an_archive(self):
+        contract, entries, report = self.fixture()
+        startup = json.loads(entries['evidence/' + nodes.REPORT])
+        startup['nodes'][2]['inspection']['data']['fields']['Running'] = True
+        entries['evidence/' + nodes.REPORT] = model.canonical(startup)
+        with self.assertRaisesRegex(model.Refused, 'review_file_log_method_binding'):
+            self.review(contract, entries, report)
+
+    def test_archive_keeps_its_larger_transport_cap_and_small_decoded_file(self):
+        contract, entries, report = self.fixture();item = report['nodes'][2]['files'][0]
+        phase = item['phase'];label = phase['command']
+        raw = fixtures.file_archive('run', b'x' * files.TAIL_BYTES)
+        self.assertGreater(len(raw), files.TAIL_BYTES)
+        result = fixtures.MemoryResult(label, raw);nodes.complete_command(phase, result)
+        phase['data'] = files.archive_summary(raw, 'run')
+        entries['evidence/' + label + '.complete.json'] = model.canonical(result.receipt)
+        self.review(contract, entries, report)
+        phase['data']['window'] = files.tail_summary(b'')['window']
+        with self.assertRaises(model.Refused):self.review(contract, entries, report)
+
+
 if __name__ == '__main__':
     unittest.main()

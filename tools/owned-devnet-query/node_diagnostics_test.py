@@ -190,6 +190,9 @@ class StartupNodeCaptureTests(unittest.TestCase):
             if arguments[:2] == ["container", "exec"]:
                 client.guard();client.counter += 1
                 return MemoryResult(f"docker-{client.counter:03d}-{label}", file_tail())
+            if arguments[:2] == ["container", "cp"]:
+                client.guard();client.counter += 1
+                return MemoryResult(f"docker-{client.counter:03d}-{label}", file_archive(label.rsplit("-", 1)[-1]))
             if arguments[:2] == ["container", "logs"]:
                 client.guard();client.counter += 1
                 return MemoryResult(f"docker-{client.counter:03d}-{label}", b"Producing momentum ...\n",
