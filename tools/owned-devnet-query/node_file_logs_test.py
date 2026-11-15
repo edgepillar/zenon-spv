@@ -139,12 +139,13 @@ class CaptureTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="file-logs-regular-capture-") as tmp:
             client, recorder, run, calls = self.prepare(Path(tmp))
             with mock.patch.object(client, "_run", side_effect=run):client.capture_startup_diagnostics()
-            reads = [c for c in calls if c[1][:2] == ["container", "cp"]]
+            reads = [c for c in calls if c[1][:2] == ["container", "exec"]]
             self.assertEqual(len(calls), 17);self.assertEqual(len(reads), 8)
-            expected = [client.owned[role].identity + ":" + path for role in nodes.ROLES for _, path in files.FILES]
-            self.assertEqual([c[1][2] for c in reads], expected)
-            self.assertTrue(all(c[1][3:] == ["-"] and c[2] == {
-                "timeout": 5, "stdout_cap": files.ARCHIVE_BYTES, "stderr_cap": 4096} for c in reads))
+            expected = [["container", "exec", client.owned[role].identity, "/bin/busybox", "tail", "-c",
+                         str(files.TAIL_BYTES), "--", path] for role in nodes.ROLES for _, path in files.FILES]
+            self.assertEqual([c[1] for c in reads], expected)
+            self.assertTrue(all(c[2] == {
+                "timeout": 5, "stdout_cap": files.TAIL_BYTES, "stderr_cap": 4096} for c in reads))
             row = json.loads(recorder.seals[files.REPORT]);self.assertEqual(row["status"], "OBSERVED")
             self.assertNotIn("private-marker", json.dumps(row))
 
@@ -214,6 +215,12 @@ class CaptureTests(unittest.TestCase):
 
 
 class ReviewTests(unittest.TestCase):
+    def payload(self, kind):
+        return fixtures.file_archive(kind)
+
+    def data(self, raw, kind):
+        return files.archive_summary(raw, kind)
+
     def fixture(self):
         contract, entries, startup = fixtures.StartupNodeArchiveTests().files()
         counter = 50
@@ -224,10 +231,10 @@ class ReviewTests(unittest.TestCase):
             row = {'service': node['service'], 'inspection_command': node['inspection']['command'], 'files': []}
             for kind, _ in files.FILES:
                 label = f'docker-{counter:03d}-startup-file-{node["service"]}-{kind}';counter += 1
-                raw = fixtures.file_archive(kind)
+                raw = self.payload(kind)
                 result = fixtures.MemoryResult(label, raw)
                 phase = nodes.empty_phase();nodes.complete_command(phase, result)
-                phase.update(status='OBSERVED', reason=None, data=files.archive_summary(raw, kind))
+                phase.update(status='OBSERVED', reason=None, data=self.data(raw, kind))
                 entries['evidence/' + label + '.complete.json'] = model.canonical(result.receipt)
                 entries['evidence/' + label + '.started.json'] = model.canonical({
                     'format': 'owned-devnet-command-started/v1', 'label': label,
@@ -297,7 +304,7 @@ class ReviewTests(unittest.TestCase):
     def test_cleanup_order_and_orphan_records_are_refused(self):
         contract, entries, report = self.fixture()
         phase = report['nodes'][0]['files'][0]['phase'];old = phase['command'];label = 'docker-048-startup-file-pillar-run'
-        result = fixtures.MemoryResult(label, fixtures.file_archive('run'));nodes.complete_command(phase, result)
+        result = fixtures.MemoryResult(label, self.payload('run'));nodes.complete_command(phase, result)
         del entries['evidence/' + old + '.complete.json'];del entries['evidence/' + old + '.started.json']
         entries['evidence/' + label + '.complete.json'] = model.canonical(result.receipt)
         entries['evidence/' + label + '.started.json'] = model.canonical({'format': 'owned-devnet-command-started/v1',
@@ -317,6 +324,102 @@ class ReviewTests(unittest.TestCase):
             entries['evidence/' + label + suffix] = b'private-marker'
             with self.assertRaisesRegex(model.Refused, 'review_member_selection'):
                 self.review(contract, entries, report)
+
+
+class TailTests(unittest.TestCase):
+    def test_complete_inner_record_has_independent_pin_and_late_code(self):
+        leading, record, trailing = (b'fragment\n',
+            b'msg="do not broadcast own momentum" reason=too-late\n', b'partial')
+        raw = leading + record + trailing
+        row = files.tail_summary(raw);files.check_data(row, tail=True)
+        self.assertEqual(row['content'], {'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()})
+        self.assertEqual(row['window'], {'scope': 'bounded-complete-lines', 'whole_file_coverage': False,
+            'leading_discarded_bytes': len(leading), 'trailing_discarded_bytes': len(trailing),
+            'classified_bytes': len(record)})
+        self.assertEqual(row['log']['events']['late_broadcast'], 1)
+        self.assertEqual(row['classification']['reasons']['late_production'], 1)
+
+    def test_empty_single_record_and_unterminated_windows_have_no_complete_inner_records(self):
+        for raw in (b'', b'one record\n', b'unterminated', b'\n'):
+            row = files.tail_summary(raw);files.check_data(row, tail=True)
+            self.assertEqual(row['log']['total_lines'], 0)
+            self.assertFalse(row['window']['whole_file_coverage'])
+
+    def test_large_log_supplies_only_the_bounded_recent_window(self):
+        source = (b'x' * 199 + b'\n') * 8192 + b'msg="do not broadcast own momentum" reason=too-late\n'
+        raw = source[-files.TAIL_BYTES:]
+        self.assertGreater(len(source), files.ARCHIVE_BYTES)
+        row = files.tail_summary(raw);files.check_data(row, tail=True)
+        self.assertEqual(row['content']['bytes'], files.TAIL_BYTES)
+        self.assertEqual(row['classification']['reasons']['late_production'], 1)
+        self.assertLessEqual(row['log']['total_lines'], nodes.MAX_LINES)
+
+    def test_byte_bound_and_types_are_checked_before_classification(self):
+        for raw in (b'x' * (files.TAIL_BYTES + 1), 'text', True, None):
+            with self.assertRaises(model.Refused):files.tail_summary(raw)
+
+    def test_invalid_inner_utf8_remains_private_and_explicit(self):
+        raw = b'private-marker\n\xff private-marker\n'
+        row = files.tail_summary(raw);files.check_data(row, tail=True)
+        self.assertTrue(row['log']['invalid_utf8'])
+        self.assertNotIn('private-marker', json.dumps(row))
+
+    def test_possible_leading_and_trailing_fragments_are_not_classified(self):
+        event = b'msg="do not broadcast own momentum" reason=too-late'
+        row = files.tail_summary(event + b'\nordinary\n' + event)
+        files.check_data(row, tail=True)
+        self.assertEqual(row['log']['events']['late_broadcast'], 0)
+        self.assertEqual(row['classification']['reasons']['late_production'], 0)
+        self.assertEqual(row['log']['total_lines'], 1)
+
+    def test_line_bound_is_not_removed_for_byte_tails(self):
+        with self.assertRaises(model.Refused):files.tail_summary(b'line\n' * (nodes.MAX_LINES + 2))
+
+    def test_tail_data_cannot_be_silently_read_as_a_whole_file_v1_summary(self):
+        row = files.tail_summary(fixtures.file_tail())
+        with self.assertRaises(model.Refused):files.check_data(row)
+
+
+class TailReviewTests(ReviewTests):
+    def payload(self, kind):
+        return fixtures.file_tail()
+
+    def data(self, raw, kind):
+        return files.tail_summary(raw)
+
+    def fixture(self):
+        contract, entries, report = super().fixture()
+        report['format'] = 'owned-devnet-startup-file-logs/v2'
+        entries['evidence/' + files.REPORT] = model.canonical(report)
+        return contract, entries, report
+
+    def test_tail_pin_is_the_exact_command_stdout_pin(self):
+        contract, entries, report = self.fixture()
+        report['nodes'][0]['files'][0]['phase']['data']['content']['sha256'] = 'f' * 64
+        with self.assertRaisesRegex(model.Refused, 'review_file_log_tail_pin'):
+            self.review(contract, entries, report)
+
+    def test_window_scope_accounting_types_and_unknown_fields_refuse(self):
+        for change in ('coverage', 'count', 'boolean', 'extra'):
+            contract, entries, report = self.fixture();window = report['nodes'][0]['files'][0]['phase']['data']['window']
+            if change == 'coverage':window['whole_file_coverage'] = True
+            elif change == 'count':window['classified_bytes'] += 1
+            elif change == 'boolean':window['leading_discarded_bytes'] = True
+            else:window['raw'] = 'private-marker'
+            with self.subTest(change=change), self.assertRaises(model.Refused):
+                self.review(contract, entries, report)
+
+    def test_tail_stdout_cannot_inherit_the_larger_legacy_tar_cap(self):
+        contract, entries, report = self.fixture();phase = report['nodes'][0]['files'][0]['phase']
+        phase['outputs']['stdout']['bytes'] = files.TAIL_BYTES + 1
+        path = 'evidence/' + phase['command'] + '.complete.json'
+        receipt = json.loads(entries[path]);receipt['outputs']['stdout']['bytes'] = files.TAIL_BYTES + 1
+        entries[path] = model.canonical(receipt)
+        with self.assertRaises(model.Refused):self.review(contract, entries, report)
+
+    def test_legacy_format_cannot_relabel_tail_data(self):
+        contract, entries, report = self.fixture();report['format'] = 'owned-devnet-startup-file-logs/v1'
+        with self.assertRaises(model.Refused):self.review(contract, entries, report)
 
 
 if __name__ == '__main__':

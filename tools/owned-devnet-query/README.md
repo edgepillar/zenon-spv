@@ -262,33 +262,33 @@ Archives without this optional summary preserve their existing report shape.
 
 ### Read the node's actual log files
 
-The [source-4f0b9f7 attempt and file-log contract](../../docs/owned-startup-file-logs.md)
-show why Docker stdout is incomplete: the pinned node writes generation errors
-and VM panic details to two files under its selected data directory. The optional
-`startup-file-logs.json` extension observes those two fixed paths for each
-previously inspected owned node, using at most eight additional Docker API copy
-requests to stdout. There is no shell, container helper or host destination.
+The [whole-file v1 record](../../docs/owned-startup-file-logs.md) explains the
+node's file handlers. The [bounded-tail follow-up](../../docs/owned-startup-log-tails.md)
+records the source-7cb3fdd attempt: an eventual candidate H2, two late-broadcast
+messages and incomplete coverage when run logs exceeded the old file caps.
 
-Each request has a five-second deadline, a 64 KiB archive-stdout cap, 4 KiB stderr
-cap and a 32 KiB decoded-file cap. The memory-only TAR reader admits one exact
-regular basename and rejects other paths, links, sparse/special files, malformed
-framing and excess data. Whole files that do not fit remain unavailable. The
-readiness, resource, cleanup and shared RPC bounds remain unchanged.
+The optional `startup-file-logs.json` v2 report selects the same two fixed paths
+from each previously inspected owned node. It uses at most eight exact
+`docker container exec <owned-id> /bin/busybox tail -c 32768 -- <fixed-path>`
+commands. There is no shell, follow mode, configurable path, new mount or host
+destination. Applet availability is checked by the actual command outcome.
 
-The exported data contains only a file-content pin, the existing bounded log
-summary, and fixed source-derived counters. Additional source-file/line pairs
-are selected only from known VM panic records. Unknown text is excluded.
-Each file has its own counters; the configured
-handlers can record an error in both files. Raw archives, log text and private
-configuration stay outside the public index. Copy/parse failures and interruptions
-retain their actual exit/completeness without supplying parsed data.
+Each command keeps its five-second deadline and fresh resource guard. Stdout
+is capped at 32 KiB and stderr at 4 KiB, independent of the full log's size.
+No TAR is transported or extracted. The first line and any unfinished final
+line are discarded conservatively, even when the file fits. Window byte
+accounting, a raw-window pin, bounded classifications and allowlisted source
+coordinates are exported; raw text and arbitrary reasons stay outside the index.
+Per-file counts describe selected complete records, never whole-file coverage
+or proof that no error occurred. The two configured handlers can duplicate errors.
 
-The reader binds these assertions to the original command receipts and prior
-startup inspection, enforcing role/kind, source bounds and order before cleanup.
-It does not independently replay omitted TAR/text, infer an atomic snapshot,
-retry readiness or confer accepted-header authority. Older archives keep their
-existing report shape. New controls, hosted CI and actual fixture execution remain
-separate qualification steps.
+The reader binds the window pin directly to the complete command stdout pin,
+prior owned inspection, role/kind and command order before cleanup. Nonzero,
+incomplete or unavailable reads supply no parsed data. The immutable v1 reader
+contract remains supported with its original 64 KiB TAR bound and report shape.
+Neither format independently replays omitted text or supplies header authority.
+The readiness, RPC, resource, cleanup, profile and context limits remain unchanged;
+another signed fixture requires separate source-specific authorization.
 
 ### Review a retained result
 

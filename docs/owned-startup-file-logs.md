@@ -1,5 +1,9 @@
 # Bounded startup node file logs
 
+This records the whole-file v1 mechanism qualified at source `7cb3fdd`.
+The [bounded-tail follow-up](owned-startup-log-tails.md) preserves this historical
+reader contract and describes the separately versioned v2 observation.
+
 ## The retained attempt
 
 The single authorized source-`4f0b9f738041c368477c365e1b65fb01f71a2c1c`
