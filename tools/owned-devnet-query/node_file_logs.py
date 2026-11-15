@@ -61,6 +61,15 @@ REASON_PATTERNS = {key: field_pattern("reason", text) for key, text in REASONS.i
 TAIL_REASON_PATTERNS = {**REASON_PATTERNS, "late_production": field_pattern("reason", "too-late")}
 
 
+def read_method(state):
+    """Use exec only for a positively observed executable container state."""
+    nodes.check_state_summary(state)
+    fields = state["fields"]
+    executable = all(fields.get(key) is value for key, value in (
+        ("Running", True), ("Paused", False), ("Restarting", False), ("Dead", False)))
+    return "byte-tail" if executable else "whole-file"
+
+
 def classify(payload, *, tail=False):
     patterns = TAIL_REASON_PATTERNS if tail else REASON_PATTERNS
     events, reasons, locations = dict.fromkeys(EVENTS, 0), dict.fromkeys(patterns, 0), set()
@@ -171,8 +180,10 @@ def recorded(evidence, terminal, startup, receipt_reader):
     exact_keys(summary, {"format", "trigger", "status", "reason", "observed_before_cleanup",
                         "atomic_snapshot", "accepted_header_authority", "production_qualified",
                         "raw_logs_exported", "nodes"}, "review_file_log_fields")
-    tail = summary["format"] == "owned-devnet-startup-file-logs/v2"
-    require(summary["format"] in ("owned-devnet-startup-file-logs/v1", "owned-devnet-startup-file-logs/v2")
+    legacy_tail = summary["format"] == "owned-devnet-startup-file-logs/v2"
+    mixed = summary["format"] == "owned-devnet-startup-file-logs/v3"
+    require(summary["format"] in ("owned-devnet-startup-file-logs/v1", "owned-devnet-startup-file-logs/v2",
+                                  "owned-devnet-startup-file-logs/v3")
             and summary["trigger"] == "owned_rpc_readiness_deadline" and terminal["stage"] == "nodes"
             and terminal["outcome"] != "DEVNET_CONSUMER_ACCEPTED" and summary["observed_before_cleanup"] is True
             and summary["atomic_snapshot"] is False and summary["accepted_header_authority"] is False
@@ -193,10 +204,14 @@ def recorded(evidence, terminal, startup, receipt_reader):
         model.same(row["service"], role, "review_file_log_role")
         expected = original["inspection"]["command"] if original["inspection"]["status"] == "OBSERVED" else None
         model.same(row["inspection_command"], expected, "review_file_log_inspection")
+        method = read_method(original["inspection"]["data"]) if mixed and expected is not None else None
         require(type(row["files"]) is list and len(row["files"]) == len(FILES), "review_file_log_files")
         for (kind, _), item in zip(FILES, row["files"]):
-            exact_keys(item, {"kind", "phase"}, "review_file_log_item")
+            exact_keys(item, {"kind", "phase"} | ({"method"} if mixed else set()), "review_file_log_item")
             model.same(item["kind"], kind, "review_file_log_kind")
+            if mixed:
+                model.same(item["method"], method, "review_file_log_method_binding")
+            tail = legacy_tail or (mixed and method == "byte-tail")
             phase = item["phase"];phases.append(phase)
             exact_keys(phase, set(nodes.empty_phase()), "review_file_log_phase")
             status, reason, label = phase["status"], phase["reason"], phase["command"]
