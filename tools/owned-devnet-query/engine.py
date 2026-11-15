@@ -534,17 +534,19 @@ class Engine:
             self.recorder.seal(node_diag.REPORT, canonical(report))
 
     def _capture_startup_file_logs(self, startup, observe):
-        """Read byte tails from two fixed paths using the owned image's BusyBox."""
+        """Select a bounded file read from the prior owned-node state observation."""
         require(not self.startup_file_logs_attempted and self.startup_diagnostics_attempted
                 and self.cleanup_deadline is None and self.admission is not None, "startup_file_scope")
         self.startup_file_logs_attempted = True
-        report = {"format": "owned-devnet-startup-file-logs/v2", "trigger": "owned_rpc_readiness_deadline",
+        report = {"format": "owned-devnet-startup-file-logs/v3", "trigger": "owned_rpc_readiness_deadline",
             "status": "UNKNOWN", "reason": "capture_interrupted", "observed_before_cleanup": True,
             "atomic_snapshot": False, "accepted_header_authority": False, "production_qualified": False,
             "raw_logs_exported": False, "nodes": [{"service": row["service"],
                 "inspection_command": row["inspection"]["command"]
                     if row["inspection"]["status"] == "OBSERVED" else None,
-                "files": [{"kind": kind, "phase": node_diag.empty_phase()} for kind, _ in file_logs.FILES]}
+                "files": [{"kind": kind, "method": file_logs.read_method(row["inspection"]["data"])
+                    if row["inspection"]["status"] == "OBSERVED" else None,
+                    "phase": node_diag.empty_phase()} for kind, _ in file_logs.FILES]}
                 for row in startup["nodes"]]}
         try:
             for row in report["nodes"]:
@@ -552,11 +554,18 @@ class Engine:
                     continue
                 owned = self.owned[row["service"]]
                 for item, (kind, path) in zip(row["files"], file_logs.FILES):
+                    if item["method"] == "byte-tail":
+                        arguments = ["container", "exec", owned.identity, "/bin/busybox", "tail", "-c",
+                                     str(file_logs.TAIL_BYTES), "--", path]
+                        parse = lambda result: file_logs.tail_summary(result.stdout(file_logs.TAIL_BYTES))
+                        cap = file_logs.TAIL_BYTES
+                    else:
+                        arguments = ["container", "cp", owned.identity + ":" + path, "-"]
+                        parse = lambda result, kind=kind: file_logs.archive_summary(
+                            result.stdout(file_logs.ARCHIVE_BYTES), kind)
+                        cap = file_logs.ARCHIVE_BYTES
                     observe(item["phase"], "startup-file-" + row["service"] + "-" + kind,
-                            ["container", "exec", owned.identity, "/bin/busybox", "tail", "-c",
-                             str(file_logs.TAIL_BYTES), "--", path],
-                            lambda result: file_logs.tail_summary(result.stdout(file_logs.TAIL_BYTES)),
-                            file_logs.TAIL_BYTES, 4096)
+                            arguments, parse, cap, 4096)
             complete = all(item["phase"]["status"] == "OBSERVED"
                            for row in report["nodes"] for item in row["files"])
             report.update(status="OBSERVED" if complete else "UNKNOWN",

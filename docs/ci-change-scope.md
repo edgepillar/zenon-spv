@@ -73,6 +73,7 @@ files. Regular Markdown may accompany the changes.
 | `tools/ledger-transport` | `transport.py` | `ledger-transport.yml` and `ledger-export.yml` |
 | `tools/ledger-export` | `inventory_completed_export.py`, `inventory_completed_export_test.py`, `README.md` | `ledger-export.yml` |
 | `tools/owned-devnet-query` | `engine_test.py`, `images_test.py`, `inputs.py`, `inputs_test.py`, `capture_test.py`, `review.py`, `review_test.py`, `README.md` | `owned-devnet-query.yml` |
+| `tools/owned-devnet-query` | `engine.py`, `node_diagnostics.py`, `node_diagnostics_test.py`, `node_file_logs.py`, `node_file_logs_test.py` | `owned-devnet-query.yml` |
 
 The compiled export controls also consume `transport.py`.
 `docs/state-root-r1-intake.md` adds `ledger-transport.yml` when part of a portable
@@ -113,6 +114,40 @@ an eligible PR or main push, verify each required workflow's actual Linux,
 macOS and Windows job and exact-source artifacts. Skipped general jobs produce
 no native binary or oracle evidence. Keep their latest separately qualified
 source revisions explicit.
+
+### Owned node diagnostic changes
+
+The five additional files in the table implement the owned node engine and its
+optional diagnostic readers, with their matching controls. Their callers are
+the owned runner and retained-result reviewer. The general native and recorded
+oracle entrypoints do not import them. The preparation workflow discovers all
+owned `*_test.py` modules and pins every Python source before and after testing
+on Linux, macOS and Windows. It keeps each platform's actual outcomes and skip
+ledger; a successful selection report alone is insufficient.
+
+This is an explicit existing-file set. The dispatch controller, command recorder,
+RPC client, source intake, query checks, control driver and contract/profile JSON
+remain outside it and inside the remaining-tree closure. Their changes, new
+files, workflow changes, links, file-mode changes or mixed native changes require
+the full runtime lane. Both the selector and executing workflow guard check the
+same reviewed set and exact required preparation workflow.
+
+The prior [diagnostic CI run](https://github.com/edgepillar/zenon-spv/actions/runs/43665684066)
+at feature `73879611387ae4921de449a971e4b9321dd2f117` provides the cost motivation:
+its seven general jobs used 6,140 summed runner-seconds and a 2,102-second
+executed-job window, with 60,079,359 compressed artifact bytes. The macOS native
+job took 2,089 seconds. These are that run's observations, excluding queue time;
+they are not a controlled benchmark or a promise about a future selected route.
+The policy change itself still requires full CI. A later eligible event needs
+its own scope, skipped-job and three-platform preparation artifact qualification
+before reporting measured savings.
+
+No native executable or recorded-oracle completion is produced by skipped
+general jobs. Keep their qualified revisions and original evidence explicit.
+The manual fixture job is unchanged, does not run for an ordinary push or PR,
+and still needs separate source-specific execution permission. This selection
+does not satisfy an actual accepted-header/BatchEntry consumer gate, change
+readiness or resource limits, or create network/state-value authority.
 
 ## Costs and verification limits
 

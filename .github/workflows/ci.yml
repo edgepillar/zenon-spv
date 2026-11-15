@@ -79,7 +79,9 @@ jobs:
                       'inventory_completed_export.py', 'inventory_completed_export_test.py', 'README.md')}
                   preparation = {'tools/owned-devnet-query/' + name for name in (
                       'engine_test.py', 'images_test.py', 'inputs.py', 'inputs_test.py',
-                      'capture_test.py', 'review.py', 'review_test.py', 'README.md')}
+                      'capture_test.py', 'review.py', 'review_test.py', 'README.md',
+                      'engine.py', 'node_diagnostics.py', 'node_diagnostics_test.py',
+                      'node_file_logs.py', 'node_file_logs_test.py')}
                   allowed = transport | exporter | preparation
                   paths, documents = value['portable_paths'], value['documentation_paths']
                   assert type(paths) is list and type(documents) is list

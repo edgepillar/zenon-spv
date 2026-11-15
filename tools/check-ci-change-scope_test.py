@@ -662,6 +662,72 @@ class CIChangeScopeControls(unittest.TestCase):
                 self.assertEqual(report["required_workflows"], required)
                 self.assertEqual(self.workflow_guard(self.guard_bytes(report))[0], None)
 
+    def test_owned_node_diagnostic_group_requires_preparation_without_native_transfer(self):
+        leaves = ('engine.py', 'node_diagnostics.py', 'node_diagnostics_test.py',
+                  'node_file_logs.py', 'node_file_logs_test.py')
+        diff = b''.join(record(('tools/owned-devnet-query/' + name).encode()) for name in leaves)
+        for event in ('pull_request', 'push'):
+            selected = selection(event)
+            report = self.portable_result(FixtureRunner(selected, diff + record()))
+            with self.subTest(event=event):
+                self.assertEqual(report['required_workflows'], [PREPARATION])
+                self.assertEqual(len(report['portable_paths']), len(leaves))
+                self.assertEqual(set(report['source_pins']), set(M.SOURCE_FILES) | {PREPARATION})
+                self.assertTrue(report['selection_only'])
+                self.assertFalse(report['runtime_qualification_transferred'])
+                self.assertEqual(self.workflow_guard(self.guard_bytes(report), selected),
+                                 (None, 'run_runtime=false\nrun_recorded_oracles=false\n'))
+
+    def test_owned_node_diagnostics_do_not_admit_other_runtime_or_trust_changes(self):
+        first = record(b'tools/owned-devnet-query/node_file_logs.py')
+        for path in ('runner.py', 'model.py', 'process.py', 'capture.py', 'sources.py',
+                     'query_checks.py', 'controls.py', 'contract.json', 'reference-gas-contract.json',
+                     'new_diagnostic.py'):
+            with self.subTest(path=path):
+                report = self.portable_result(FixtureRunner(diff=first + record(
+                    ('tools/owned-devnet-query/' + path).encode())))
+                self.assertTrue(report['run_runtime'])
+        for other in (record(b'internal/verify/experimental_v3_state.go'),
+                      record(b'go.mod'), record(PREPARATION.encode()),
+                      record(b'tools/owned-devnet-query/engine.py', b'A', b'000000'),
+                      record(b'tools/owned-devnet-query/engine.py', b'D', new_mode=b'000000'),
+                      record(b'tools/owned-devnet-query/engine.py', old_mode=b'120000', new_mode=b'120000')):
+            with self.subTest(other=other):
+                report = self.portable_result(FixtureRunner(diff=first + other))
+                self.assertTrue(report['run_runtime'])
+
+    def test_owned_node_diagnostic_closure_retains_unselected_runner_and_profile_inputs(self):
+        dependencies = tuple(('tools/owned-devnet-query/' + name).encode() for name in
+            ('runner.py', 'model.py', 'process.py', 'capture.py', 'sources.py', 'query_checks.py',
+             'reference-gas-contract.json'))
+        self.assertTrue(all((ROOT / path.decode()).is_file() for path in dependencies))
+        baseline = portable_tree() + b''.join(tree_record(path) for path in dependencies)
+        pin = M.portable_fingerprint(baseline)['sha256']
+        diff = record(b'tools/owned-devnet-query/engine.py')
+        for path in dependencies + (b'tools/owned-devnet-query/contract.json',):
+            runner = FixtureRunner(diff=diff)
+            raw = baseline.replace(tree_record(path), tree_record(path, oid=b'c' * 40))
+            runner.overrides['ls-tree'] = raw, receipt(raw)
+            with self.subTest(path=path), mock.patch.object(M, 'PORTABLE_SOURCE_PIN', pin):
+                report = M.select_scope(ROOT, runner.selection, runner)
+                self.assertEqual((report['run_runtime'], report['reason']), (True, 'portable_source_pin'))
+
+    def test_owned_node_diagnostic_paths_trigger_the_pinned_preparation_workflow(self):
+        lines = (ROOT / PREPARATION).read_text(encoding='utf-8').splitlines()
+        changed = ['tools/owned-devnet-query/' + name for name in
+                   ('engine.py', 'node_diagnostics.py', 'node_diagnostics_test.py',
+                    'node_file_logs.py', 'node_file_logs_test.py')]
+        for event in ('push', 'pull_request'):
+            start = lines.index('  ' + event + ':') + 1
+            end = next(index for index in range(start, len(lines))
+                       if lines[index] and not lines[index].startswith('    '))
+            filters = [ast.literal_eval(line.strip()[2:]) for line in lines[start:end]
+                       if line.startswith('      - ')]
+            with self.subTest(event=event):
+                self.assertIn('    branches: [main]', lines[start:end])
+                for name in changed:
+                    self.assertTrue(any(fnmatch.fnmatchcase(name, pattern) for pattern in filters), name)
+
     def test_roadmap_mixed_portable_changes_require_only_the_selected_tool_workflows(self):
         leaves = ((b"tools/owned-devnet-query/review.py", [PREPARATION]),
                   (b"tools/ledger-export/inventory_completed_export.py", [EXPORT]),
