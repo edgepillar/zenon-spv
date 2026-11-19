@@ -70,13 +70,41 @@ its original streams and last phase. A passing cost control does not diagnose a
 live process, reproduce every production callback, authenticate execution or
 qualify a devnet consumer.
 
+## Linux CPU comparison
+
+The main revision `5a0d29eb3df7c4ce2f66cae7174e33dea9d8781d` completed the
+unconstrained controls on all three platforms. The fixed window took 40.1 seconds
+on Linux, 69.3 seconds on macOS and 33.3 seconds on Windows in that run.
+[Main measurement run 43711591065](https://github.com/edgepillar/zenon-spv/actions/runs/43711591065)
+
+The Ubuntu job now compiles the original bookkeeping test once. It runs all
+three cases with one Go worker and no unit CPU quota. It then runs only the fixed
+window using the same binary and a 50 ms quota per 100 ms period. Both transient
+units run as the hosted runner user in a private network namespace and have a
+768 MiB memory limit, no swap allocation and separate disposable databases. This
+uses the per-node limits from the historical reference-gas contract and avoids
+building or downloading a node container. The test reads its own kernel limits
+immediately before and after the listener and retains CPU time and throttling
+counter deltas. The comparison requires identical period, epoch, Get, Put and
+written-value counts, and binds both runs to one test binary digest.
+
+The 90 second comparison is against the recorded readiness deadline. It covers
+one listener with an isolated disk workload. The signed fixture also includes
+other nodes, networking, production callbacks and a different build environment.
+A sample above 90 seconds shows that the listener can occupy that much time by
+itself under the measured constraints. A shorter sample still leaves those other
+costs to investigate. The comparison uses the original deadline regardless of
+its result.
+
 ## Resource and evidence limits
 
 Admission requires a 10 GiB free-space floor plus a 3 GiB expected allocation and
 1 GiB safety margin. This is admission budgeting, not an OS aggregate quota.
-The hosted job is limited to 15 minutes, the native test to 180 seconds of test
-execution, and its command to 600 seconds including compilation. Both command
-streams are capped at 2 MiB. The final closed consensus directory must not exceed
+The hosted job is limited to 15 minutes and each native test run to 180 seconds
+of execution. Each Linux transient unit also has a 190 second system limit.
+Compilation is capped at 480 seconds on Linux, and the portable command is
+capped at 600 seconds including compilation. Both command streams are capped
+at 2 MiB. The final closed consensus directory must not exceed
 256 MiB per case. No binary or temporary ledger is uploaded: the small artifact
 retains source inputs, original source pins, toolchain context, actual command
 streams/receipts and the three measurements. Source-pinned inputs reproduce the

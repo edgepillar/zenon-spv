@@ -12,6 +12,7 @@ import argparse
 import importlib.util
 import json
 import math
+import os
 from pathlib import Path
 import shutil
 import sys
@@ -24,6 +25,7 @@ require, Refused = C.require, C.Refused
 ROOT = HERE.parents[1]
 INPUT = "tools/gen-state-root-vectors/first-insertion-catchup_test.go.txt"
 INPUTS = {INPUT: "consensus/spv_first_insertion_catchup_test.go",
+          "tools/gen-state-root-vectors/first-insertion-cpu_test.go.txt": "consensus/spv_first_insertion_cpu_test.go",
           "tools/gen-state-root-vectors/first-insertion-export_test.go.txt": "consensus/spv_first_insertion_export_test.go"}
 WORKFLOW = ".github/workflows/first-insertion-catchup.yml"
 PUBLIC_PATHS = (*INPUTS, WORKFLOW, ".gitattributes", "tools/gen-state-root-vectors/qualify_first_insertion.py",
@@ -34,6 +36,12 @@ CASES = {"one-period": 300, "one-day": 86400, "fixture-window": 54815400}
 TEST = "TestSPVFirstInsertionCatchup"
 PACKAGE = "github.com/zenon-network/go-zenon/consensus"
 MARKER = "SPV_FIRST_INSERTION_CATCHUP "
+CPU_MARKER = "SPV_FIRST_INSERTION_CPU "
+CPU_LIMITS = {"reference": "max 100000", "half-core": "50000 100000"}
+# Resources from the reference-gas contract used by the historical signed run.
+FIXTURE_CONTRACT = "6f67a35cf6db1e2fd91a529880b9fa555461a4687ed0a76d9a27c900ca6b6f31"
+FIXTURE_MEMORY_BYTES = 768 << 20
+FIXTURE_READINESS_SECONDS = 90
 FALSE_FIELDS = frozenset(("Chain_Start", "consensus_Start", "wallet_or_signing", "network_or_broadcast",
     "actual_fixture_cause_established", "accepted_header_authority", "new_devnet_acceptance_established",
     "peak_disk_or_RSS_measured"))
@@ -61,11 +69,35 @@ def decode(raw):
         raise Refused("invalid_JSON") from error
 
 
-def native_controls(raw):
+def selected_trace(text, marker):
+    require(text.endswith("\n") and text.count(marker) == 1, "native_trace_count")
+    line, = [line for line in text.splitlines() if marker in line]
+    return decode(line.split(marker, 1)[1].strip())
+
+
+def cpu_observation(text, profile):
+    row = selected_trace(text, CPU_MARKER)
+    require(type(row) is dict and set(row) == {"format", "profile", "cpu_max", "memory_max_bytes",
+             "memory_swap_max_bytes", "gomaxprocs", "listener_cpu_delta"}, "cpu_trace_fields")
+    require(row["format"] == "first-insertion-cpu-observation/v1" and row["profile"] == profile
+            and row["cpu_max"] == CPU_LIMITS[profile], "cpu_trace_limit")
+    for name, expected in (("memory_max_bytes", FIXTURE_MEMORY_BYTES), ("memory_swap_max_bytes", 0),
+                           ("gomaxprocs", 1)):
+        require(type(row[name]) is int and row[name] == expected, "cpu_trace_environment")
+    delta = row["listener_cpu_delta"]
+    require(type(delta) is dict and set(delta) == {"usage_usec", "nr_periods", "nr_throttled", "throttled_usec"}
+            and all(type(v) is int and 0 <= v < 1 << 40 for v in delta.values())
+            and delta["usage_usec"] > 0, "cpu_trace_delta")
+    return row
+
+
+def native_controls(raw, cpu_profile=None):
+    require(cpu_profile is None or cpu_profile in CPU_LIMITS, "cpu_profile_selection")
+    cases = {"fixture-window": CASES["fixture-window"]} if cpu_profile == "half-core" else CASES
     require(type(raw) is bytes and 0 < len(raw) <= C.MAX_STREAM and raw.endswith(b"\n"), "native_stream")
     lines = raw.splitlines()
     require(len(lines) <= 4096, "native_event_bound")
-    expected = {TEST, *(TEST + "/" + name for name in CASES)}
+    expected = {TEST, *(TEST + "/" + name for name in cases)}
     started, passed, outputs = set(), set(), {}
     package_started = package_passed = False
     for line in lines:
@@ -97,13 +129,14 @@ def native_controls(raw):
         require(len(outputs[name].encode("utf-8")) <= 128 << 10, "native_output_bound")
     require(package_passed and started == passed == expected, "native_completion")
     require(all(MARKER not in text for name, text in outputs.items()
-                if name not in {TEST + "/" + case for case in CASES}), "foreign_trace")
+                if name not in {TEST + "/" + case for case in cases}), "foreign_trace")
+    cpu_test = TEST + "/fixture-window" if cpu_profile else None
+    require(all(CPU_MARKER not in text for name, text in outputs.items()
+                if cpu_test is None or name != cpu_test), "foreign_cpu_trace")
     observations = {}
-    for case, gap in CASES.items():
+    for case, gap in cases.items():
         text = outputs.get(TEST + "/" + case, "")
-        require(text.endswith("\n") and text.count(MARKER) == 1, "native_trace_count")
-        line, = [line for line in text.splitlines() if MARKER in line]
-        trace = decode(line.split(MARKER, 1)[1].strip())
+        trace = selected_trace(text, MARKER)
         fields = (FALSE_FIELDS | TRUE_FIELDS | INTEGER_FIELDS |
                   {"format", "case", "node_revision", "source_genesis_sha256",
                    "unsigned_insert_seconds", "points_listener_seconds"})
@@ -126,9 +159,68 @@ def native_controls(raw):
             require(type(trace[key]) in (float, int) and math.isfinite(trace[key]) and 0 <= trace[key] <= 180,
                     "native_trace_duration")
         observations[case] = trace
-    return {"root_tests": 1, "subtests": len(CASES), "failed": 0, "skipped": 0,
+    result = {"root_tests": 1, "subtests": len(cases), "failed": 0, "skipped": 0,
             "observations": observations, "actual_fixture_cause_established": False,
             "new_devnet_acceptance_established": False}
+    if cpu_profile:
+        result["cpu"] = cpu_observation(outputs.get(cpu_test, ""), cpu_profile)
+    return result
+
+
+def compare_cpu_controls(reference, constrained, binary_pin):
+    a = reference["observations"]["fixture-window"]
+    b = constrained["observations"]["fixture-window"]
+    workload = ("completed_periods", "completed_epochs", "consensus_get_calls",
+                "consensus_put_calls", "consensus_put_value_bytes")
+    require(all(a[key] == b[key] for key in workload), "cpu_comparison_workload")
+    return {"format": "first-insertion-cpu-comparison/v1", "test_binary": binary_pin,
+            "historical_fixture_contract_sha256": FIXTURE_CONTRACT,
+            "historical_readiness_seconds": FIXTURE_READINESS_SECONDS,
+            "reference_listener_seconds": a["points_listener_seconds"],
+            "half_core_listener_seconds": b["points_listener_seconds"],
+            "half_core_listener_reached_readiness_duration": b["points_listener_seconds"] >= FIXTURE_READINESS_SECONDS,
+            "same_measured_workload": {key: a[key] for key in workload},
+            "half_core_controls": constrained, "actual_fixture_cause_established": False}
+
+
+def linux_cpu_controls(work, node, output, selected, records):
+    require(sys.platform == "linux" and os.environ.get("RUNNER_ENVIRONMENT") == "github-hosted"
+            and os.getuid() != 0 and os.getgid() != 0, "hosted_linux_cpu_scope")
+    binary = work / "consensus-catchup.test"
+    require(not binary.exists() and not binary.is_symlink(), "fresh_test_binary")
+    C.command(output, "compile-native-test", ["go", "test", *C.NATIVE_FLAGS, "-c", "-o", str(binary),
+              "./consensus"], node, records, timeout=480)
+    initial = C.digest(C.regular(binary, C.MAX_BINARY))
+    require(initial["bytes"] > 0, "compiled_test_binary")
+    binary.chmod(0o500)
+
+    def run(profile, label, pattern):
+        scratch = work / (profile + "-db")
+        scratch.mkdir(mode=0o700)
+        unit = f"spv-catchup-{selected['run_id']}-{selected['run_attempt']}-{profile}.service"
+        args = ["go", "tool", "test2json", "-t", "-p", PACKAGE, "sudo", "-n", "--", "/usr/bin/systemd-run",
+                "--quiet", "--wait", "--pipe", "--collect", "--service-type=exec", "--expand-environment=no",
+                "--unit=" + unit, "--slice=system.slice", f"--uid={os.getuid()}", f"--gid={os.getgid()}",
+                "--working-directory=" + str(node / "consensus"), "--setenv=GOMAXPROCS=1",
+                "--setenv=SPV_CATCHUP_CPU_PROFILE=" + profile, "--setenv=SPV_CATCHUP_CPU_UNIT=" + unit,
+                "--setenv=TMPDIR=" + str(scratch),
+                "--property=PrivateNetwork=yes", "--property=NoNewPrivileges=yes",
+                "--property=ProtectSystem=strict", "--property=ReadWritePaths=" + str(scratch),
+                "--property=RuntimeMaxSec=190s", "--property=TimeoutStopSec=5s",
+                "--property=CPUWeight=100", "--property=CPUQuotaPeriodSec=100ms",
+                f"--property=MemoryMax={FIXTURE_MEMORY_BYTES}", "--property=MemorySwapMax=0"]
+        if profile == "half-core":
+            args.append("--property=CPUQuota=50%")
+        args.extend(("--", str(binary), "-test.v=test2json", "-test.count=1", "-test.timeout=180s",
+                     "-test.run", pattern))
+        raw = C.command(output, label, args, work, records, timeout=215)
+        require(C.digest(C.regular(binary, C.MAX_BINARY)) == initial and not any(scratch.iterdir()),
+                "cpu_sample_binary_or_scratch")
+        return native_controls(raw, profile)
+
+    reference = run("reference", "native-test", "^" + TEST + "$")
+    constrained = run("half-core", "half-core-test", "^" + TEST + "$/^fixture-window$")
+    return reference, compare_cpu_controls(reference, constrained, initial)
 
 
 def context(platform):
@@ -215,9 +307,13 @@ def qualify(work, output, selected, records):
     allocation = space(work)
     go = decode(C.command(output, "go-environment", ["go", "env", "-json", "GOOS", "GOARCH", "GOVERSION", "CGO_ENABLED", "CC"], node, records))
     C.require_toolchain(go, selected["platform"])
-    raw = C.command(output, "native-test", ["go", "test", *C.NATIVE_FLAGS, "-json", "-count=1", "-timeout=180s",
-                    "-run", "^" + TEST + "$", "./consensus"], node, records, timeout=600)
-    controls = native_controls(raw)
+    comparison = None
+    if selected["platform"] == "linux-amd64":
+        controls, comparison = linux_cpu_controls(work, node, output, selected, records)
+    else:
+        raw = C.command(output, "native-test", ["go", "test", *C.NATIVE_FLAGS, "-json", "-count=1", "-timeout=180s",
+                        "-run", "^" + TEST + "$", "./consensus"], node, records, timeout=600)
+        controls = native_controls(raw)
     unchanged()
     require(C.git(output, "node-head-after", ["rev-parse", "HEAD"], node, records).decode().strip() == C.NODE_REVISION
             and C.git(output, "node-tree-after", ["rev-parse", "HEAD^{tree}"], node, records).decode().strip() == C.NODE_TREE,
@@ -239,6 +335,7 @@ def qualify(work, output, selected, records):
         **selected, "source_tree": tree, "node_revision": C.NODE_REVISION, "node_tree": C.NODE_TREE,
         "source_files": sources, "working_sources": working, "original_node_sources_unchanged": True,
         "node_original_files": len(marker["original_sources"]), "go": go, "native_controls": controls,
+        "linux_cpu_comparison": comparison,
         "allocation_admission": allocation, "commands": records,
         "scope": {"unsigned_test_fixture_bypasses_authentication": True, "actual_fixture_cause_established": False,
                   "new_devnet_acceptance_established": False, "authenticated_distribution": False,
