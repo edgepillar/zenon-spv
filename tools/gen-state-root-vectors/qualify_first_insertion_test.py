@@ -18,6 +18,11 @@ Q = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(Q)
 
 
+VISIBILITY = {"format": "first-insertion-frontier-visibility/v1", "before_height": 1, "during_height": 2,
+              "callback_held_during_read": True, "insert_returned_after_release": True,
+              "accepted_header_authority": False}
+
+
 def events():
     result = [{"Action": "start", "Package": Q.PACKAGE},
               {"Action": "run", "Package": Q.PACKAGE, "Test": Q.TEST}]
@@ -35,6 +40,9 @@ def events():
             {"Action": "output", "Package": Q.PACKAGE, "Test": name,
              "Output": "    control_test.go:1: " + Q.MARKER + json.dumps(trace) + "\n"},
             {"Action": "pass", "Package": Q.PACKAGE, "Test": name}])
+        if case == "one-period":
+            result.insert(-1, {"Action": "output", "Package": Q.PACKAGE, "Test": name,
+                               "Output": Q.VISIBILITY_MARKER + json.dumps(VISIBILITY) + "\n"})
     result.extend([{"Action": "pass", "Package": Q.PACKAGE, "Test": Q.TEST},
                    {"Action": "pass", "Package": Q.PACKAGE}])
     return result
@@ -72,6 +80,7 @@ class Controls(unittest.TestCase):
         self.assertFalse(result["actual_fixture_cause_established"])
         self.assertFalse(result["new_devnet_acceptance_established"])
         self.assertEqual(result["observations"]["fixture-window"]["completed_periods"], 182718)
+        self.assertEqual(result["frontier_visibility"], VISIBILITY)
 
     def test_split_trace_reassembled_only_in_its_own_test(self):
         value = events()
@@ -85,7 +94,7 @@ class Controls(unittest.TestCase):
     def test_failed_skipped_and_missing_completion_refused(self):
         for action in ("fail", "skip", "pause"):
             value = events()
-            value[4]["Action"] = action
+            value[5]["Action"] = action
             with self.subTest(action=action):
                 self.refused(value)
         self.refused(events()[:-1])
@@ -95,7 +104,7 @@ class Controls(unittest.TestCase):
         value = events()
         self.refused(value[:2] + [value[1]] + value[2:])
         self.refused(value + [value[-1]])
-        self.refused(value[:5] + [value[4]] + value[5:])
+        self.refused(value[:6] + [value[5]] + value[6:])
 
     def test_foreign_package_and_case_refused(self):
         value = events()
@@ -168,6 +177,36 @@ class Controls(unittest.TestCase):
         result.insert(-2, {**row, "Test": Q.TEST, "Output": Q.CPU_MARKER + cpu})
         with self.assertRaises(Q.Refused):
             Q.native_controls(encoded(result), "reference")
+
+    def test_visibility_requires_one_observation_at_the_selected_case(self):
+        value = events()
+        marker = next(row for row in value if Q.VISIBILITY_MARKER in row.get("Output", ""))
+        position = value.index(marker)
+        self.refused(value[:position] + value[position + 1:])
+        self.refused(value[:position] + [marker] + value[position:])
+        value.pop(position)
+        value.insert(-2, {**marker, "Test": Q.TEST})
+        self.refused(value)
+
+    def test_visibility_rejects_unheld_callback_and_false_authority(self):
+        for field, replacement in {
+            "before_height": True, "during_height": 1, "callback_held_during_read": False,
+            "insert_returned_after_release": False, "accepted_header_authority": True,
+        }.items():
+            rows = events()
+            row = next(row for row in rows if Q.VISIBILITY_MARKER in row.get("Output", ""))
+            row["Output"] = Q.VISIBILITY_MARKER + json.dumps({**VISIBILITY, field: replacement}) + "\n"
+            with self.subTest(field=field):
+                self.refused(rows)
+
+    def test_visibility_is_excluded_from_half_core_sample(self):
+        rows = cpu_events("half-core")
+        result = Q.native_controls(encoded(rows), "half-core")
+        self.assertNotIn("frontier_visibility", result)
+        sample = next(row for row in rows if Q.MARKER in row.get("Output", ""))
+        sample["Output"] += Q.VISIBILITY_MARKER + json.dumps(VISIBILITY) + "\n"
+        with self.assertRaises(Q.Refused):
+            Q.native_controls(encoded(rows), "half-core")
 
     def test_cpu_launcher_refuses_a_self_hosted_runner_before_compiling(self):
         with patch.object(Q.sys, "platform", "linux"), patch.dict(Q.os.environ, {"RUNNER_ENVIRONMENT": "self-hosted"}), \
