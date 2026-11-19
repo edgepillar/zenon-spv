@@ -28,7 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             platform: linux-amd64
           - runner: macos-15-intel
             platform: darwin-amd64
@@ -75,7 +75,7 @@ jobs:
           with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as stream:
               stream.write('GOTELEMETRYDIR=' + str(path) + '\n')
           PY
-      - name: Observe original synchronous point catch-up
+      - name: Measure point catch-up and compare Linux CPU limits
         run: python -I -B tools/gen-state-root-vectors/qualify_first_insertion.py --mode qualify --platform '${{ matrix.platform }}' --workspace "$RUNNER_TEMP/spv-first-insertion-work" --evidence "$RUNNER_TEMP/spv-first-insertion-evidence"
       - name: Preserve bounded actual command evidence
         if: always()

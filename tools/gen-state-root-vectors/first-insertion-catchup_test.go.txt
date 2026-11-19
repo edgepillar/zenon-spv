@@ -138,6 +138,12 @@ func TestSPVFirstInsertionCatchup(t *testing.T) {
 				t.Fatal("fresh point database required")
 			}
 			counted.gets, counted.puts, counted.putValueBytes = 0, 0, 0
+			profile := os.Getenv(spvCPUProfileEnv)
+			observeCPU := profile != "" && selected.name == "fixture-window"
+			var cpuBefore spvCPUCounters
+			if observeCPU {
+				cpuBefore = spvCPUStats(t, profile)
+			}
 			t.Log("SPV_CATCHUP_PHASE begin original-points-listener")
 			started = time.Now()
 			// This is the original synchronous listener called during canonical
@@ -145,6 +151,9 @@ func TestSPVFirstInsertionCatchup(t *testing.T) {
 			listener.InsertMomentum(detailed)
 			pointSeconds := time.Since(started).Seconds()
 			t.Log("SPV_CATCHUP_PHASE end original-points-listener")
+			if observeCPU {
+				spvCPUReport(t, profile, cpuBefore, spvCPUStats(t, profile))
+			}
 			periods, epochs := selected.gap/300, selected.gap/86400
 			periodCount := spvPointCount(t, rawDB, storage.PrefixPeriodPoint)
 			epochCount := spvPointCount(t, rawDB, storage.PrefixEpochPoint)

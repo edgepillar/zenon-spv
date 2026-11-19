@@ -44,6 +44,23 @@ def encoded(value):
     return b"".join(json.dumps(row).encode() + b"\n" for row in value)
 
 
+def cpu_events(mode, **changes):
+    name = Q.TEST + "/fixture-window"
+    result = events()
+    if mode == "half-core":
+        result = [row for row in result if row.get("Test") in (None, Q.TEST, name)]
+    marker = {"format": "first-insertion-cpu-observation/v1", "profile": mode,
+              "cpu_max": Q.CPU_LIMITS[mode], "memory_max_bytes": 768 << 20,
+              "memory_swap_max_bytes": 0, "gomaxprocs": 1,
+              "listener_cpu_delta": {"usage_usec": 40000000, "nr_periods": 920,
+                                     "nr_throttled": 900, "throttled_usec": 45000000}}
+    output = next(row for row in result if row.get("Test") == name and row["Action"] == "output")
+    trace = json.loads(output["Output"].split(Q.MARKER, 1)[1])
+    trace["points_listener_seconds"] = 91.5 if mode == "half-core" else 40.0
+    output["Output"] = Q.MARKER + json.dumps(trace) + "\n" + Q.CPU_MARKER + json.dumps({**marker, **changes}) + "\n"
+    return result
+
+
 class Controls(unittest.TestCase):
     def refused(self, value):
         with self.assertRaises(Q.Refused):
@@ -122,6 +139,41 @@ class Controls(unittest.TestCase):
                 changed = copy.deepcopy(original)
                 changed[3]["Output"] = Q.MARKER + json.dumps({**trace, key: value}) + "\n"
                 self.refused(changed)
+
+    def test_linux_comparison_keeps_the_deadline_separate_from_completion(self):
+        reference = Q.native_controls(encoded(cpu_events("reference")), "reference")
+        limited = Q.native_controls(encoded(cpu_events("half-core")), "half-core")
+        self.assertEqual((reference["subtests"], limited["subtests"]), (3, 1))
+        comparison = Q.compare_cpu_controls(reference, limited, {"sha256": "0" * 64, "bytes": 123})
+        self.assertTrue(comparison["half_core_listener_reached_readiness_duration"])
+        self.assertFalse(comparison["actual_fixture_cause_established"])
+        self.assertEqual(comparison["same_measured_workload"]["completed_periods"], 182718)
+        limited["observations"]["fixture-window"]["consensus_get_calls"] += 1
+        with self.assertRaises(Q.Refused):
+            Q.compare_cpu_controls(reference, limited, {})
+
+    def test_kernel_limits_and_counter_shape_are_required(self):
+        for changes in ({"cpu_max": "max 100000"}, {"cpu_max": "500000 1000000"}, {"gomaxprocs": 2},
+                        {"memory_max_bytes": 1024 << 20}, {"memory_swap_max_bytes": 1},
+                        {"listener_cpu_delta": {"usage_usec": 3}}, {"profile": "reference"}):
+            with self.subTest(changes=changes), self.assertRaises(Q.Refused):
+                Q.native_controls(encoded(cpu_events("half-core", **changes)), "half-core")
+
+    def test_cpu_marker_must_come_from_the_selected_fixture_window(self):
+        self.refused(cpu_events("reference"))
+        result = cpu_events("reference")
+        row = next(r for r in result if Q.CPU_MARKER in r.get("Output", ""))
+        original, cpu = row["Output"].split(Q.CPU_MARKER)
+        row["Output"] = original
+        result.insert(-2, {**row, "Test": Q.TEST, "Output": Q.CPU_MARKER + cpu})
+        with self.assertRaises(Q.Refused):
+            Q.native_controls(encoded(result), "reference")
+
+    def test_cpu_launcher_refuses_a_self_hosted_runner_before_compiling(self):
+        with patch.object(Q.sys, "platform", "linux"), patch.dict(Q.os.environ, {"RUNNER_ENVIRONMENT": "self-hosted"}), \
+                patch.object(Q.C, "command") as command, self.assertRaises(Q.Refused):
+            Q.linux_cpu_controls(None, None, None, {}, [])
+        command.assert_not_called()
 
     def test_low_space_refuses_before_paths_exist(self):
         with tempfile.TemporaryDirectory() as temporary:
