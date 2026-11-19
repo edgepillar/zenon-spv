@@ -3,9 +3,10 @@
 The owned chain-69 experiment at source `bf6ab4e43dba4fd5c2a2ca3328eba51e11f5159c`
 ([run 43704355778, attempt 1](https://github.com/edgepillar/zenon-spv/actions/runs/43704355778))
 stopped at node readiness. All 30 recorded candidate-frontier responses were
-source genesis H1. The typed consumer did not complete. One bounded pillar log
-summary reported `broadcasting own momentum`; it does not establish delivery,
-the header identity or ordering between the two source locations with that text.
+source genesis H1, including the follow-up after the sync response. The typed
+consumer did not complete. Two run-file summaries each counted one
+`broadcasting own momentum` marker. The marker is shared by the producer worker
+and protocol broadcaster, so its count does not establish a stage or delivery.
 
 The selected original node is
 `digitalSloth/go-zenon@2835c436b197fece5c76adf4ba8dc1decca2e3ea`, tree
@@ -69,6 +70,22 @@ skipped case, partial point history or failed close fails qualification; preserv
 its original streams and last phase. A passing cost control does not diagnose a
 live process, reproduce every production callback, authenticate execution or
 qualify a devnet consumer.
+
+## Frontier visibility during notification
+
+The one-period case pauses a registered insertion listener with a channel. It
+checks H1 before insertion and reads the inserted H2 from the same local
+frontier store used by the Ledger API while the listener is waiting. The
+insertion must complete after the test releases that listener. The control
+reuses the one-period fixture and compiled test. The one-period insertion
+duration includes the observation. The one-day and fixed-window measurements
+use their original insertion path.
+
+The original momentum pool releases the frontier lock before it notifies
+listeners, and the producer broadcaster sends the momentum after insertion
+returns. This test checks same-node visibility and callback ordering. It uses
+the unsigned fixture and starts no RPC server or peer. Cross-node propagation
+and the historical readiness cause remain unestablished.
 
 ## Linux CPU comparison
 
