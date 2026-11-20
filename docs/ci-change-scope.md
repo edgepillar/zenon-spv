@@ -321,6 +321,12 @@ the full general and owned-preparation workflows. The independent native and
 portable selection rules retain the same coverage.
 
 The portable closure contains 1,196 records and 122,538 bytes
-with digest `76aa19da1f2c27ba1c9a21028bed7bce8d4bb48ddd9daf385af9d51d7c8f65e8`.
+with digest `631cad1d5bd788a1a1da5828ee38a77d10cf47c1f489c180baaeea5046d2df8f`.
 The recorded-oracle closure contains 1,215 records and 124,376 bytes
-with digest `72e7b024f6ab57936363ce5571affcf7fe4c44c109b33f1d98f2d2b8b5ee92a0`.
+with digest `17d736f154163aaa5d018e640c4773f6c51f58ba261ee32803757f814dba40f7`.
+
+The 30-second timeout applies to two installed Go `test2json` helpers used by
+the offline pilot's native tests. In the initial Windows CI run for this PR,
+both controls failed near their prior 10-second limit (10.64 and 10.32
+seconds). The original failed roots and timings remain in the first attempt's
+[general CI record](https://github.com/edgepillar/zenon-spv/actions/runs/44769740235).
