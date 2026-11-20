@@ -198,6 +198,8 @@ jobs:
         shell: bash
         run: python -I -B tools/check-ci-change-scope_test.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/ci-change-scope-controls.json"
       - name: Upload CI change scope controls
+        id: upload_scope_controls
+        continue-on-error: true
         if: ${{ !cancelled() && steps.scope_controls.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -245,6 +247,8 @@ jobs:
         shell: bash
         run: python -I -B tools/ledger-inventory/inventory_test.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/ledger-inventory-controls.json"
       - name: Upload bounded ledger inventory controls
+        id: upload_ledger_inventory
+        continue-on-error: true
         if: ${{ !cancelled() && steps.inventory_controls.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -482,6 +486,8 @@ jobs:
       - name: Cache identifier rollback recorded controls
         run: python -I -B tools/gen-state-root-vectors/run_cache_rollback_controls.py --mode bounded --source-revision "${{ github.sha }}" > "${{ runner.temp }}/cache-rollback-tree-reuse.json"
       - name: Upload cache rollback Git tree reuse completion
+        id: upload_cache_rollback
+        continue-on-error: true
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -572,6 +578,8 @@ jobs:
       - name: Independent recorded core Init and Stop
         run: python -I -B tools/gen-state-root-vectors/check_core_init_stop.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/core-init-stop.json"
       - name: Upload core Init and Stop recorded evidence
+        id: upload_core_init_stop
+        continue-on-error: true
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -584,6 +592,8 @@ jobs:
       - name: Independent recorded failed Init cleanup
         run: python -I -B tools/gen-state-root-vectors/check_core_init_failure.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/core-init-failure.json"
       - name: Upload core failed Init cleanup recorded evidence
+        id: upload_core_init_failure
+        continue-on-error: true
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -736,6 +746,8 @@ jobs:
       - name: Node account transaction runtime boundaries
         run: go test -v -count=1 -run '^TestNodeAccountTransaction' ./internal/conformance
       - name: Upload independent signature report
+        id: upload_signatures
+        continue-on-error: true
         if: ${{ !cancelled() && steps.signatures.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -782,6 +794,8 @@ jobs:
           receipt_sha256="$(python -I -B -c 'import hashlib,sys; f=open(sys.argv[1],"rb"); b=f.read(1048577); f.close(); assert 0<len(b)<=1048576; print(hashlib.sha256(b).hexdigest())' "$RUNNER_TEMP/root-suite.json")"
           python -I -B tools/check-root-suite.py --receipt "$RUNNER_TEMP/root-suite.json" --expect-receipt-sha256 "$receipt_sha256" --report "$RUNNER_TEMP/offline-pilot.json" --expect-report-sha256 "$report_sha256" --source . --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)" --expect-race true --expect-coverage true --expect-package-timeout 10m0s --expect-overall-timeout 30m0s > "$RUNNER_TEMP/root-suite-check.json"
       - name: Upload root suite receipt
+        id: upload_root_suite
+        continue-on-error: true
         if: ${{ !cancelled() && steps.root_suite.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -810,6 +824,8 @@ jobs:
           executable_suffix="$(go env GOEXE)"
           python -I -B tools/check-snapshot-header-binding.py --verifier "$candidate_directory/zenon-spv$executable_suffix" --candidate-manifest "$candidate_directory/manifest.json" --source-revision "${{ github.sha }}" > "${{ runner.temp }}/snapshot-header-controls.json"
       - name: Upload snapshot header controls
+        id: upload_snapshot_header_controls
+        continue-on-error: true
         if: ${{ !cancelled() && steps.snapshot_header_controls.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -836,6 +852,8 @@ jobs:
           executable_suffix="$(go env GOEXE)"
           python -I -B tools/check-observer-report-consumer.py --observer "$candidate_directory/observe-block$executable_suffix" --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --collector "$candidate_directory/fetch-bundle$executable_suffix" --source-revision "${{ github.sha }}"
       - name: Upload offline pilot report
+        id: upload_offline_pilot
+        continue-on-error: true
         if: ${{ !cancelled() && (steps.pilot.outcome != 'skipped' || steps.batch_replay.outcome != 'skipped') }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -857,6 +875,8 @@ jobs:
           python -I -B tools/pack-candidate-stream.py --require-skip-ledger --directory "$candidate_directory" --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)" > "$transport_directory/candidate-v1.tar.xz"
           python -I -B tools/check-source-candidate-stream.py --require-skip-ledger --archive "$transport_directory/candidate-v1.tar.xz" --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)"
       - name: Upload tested candidate
+        id: upload_tested_candidate
+        continue-on-error: true
         if: ${{ !cancelled() && steps.pilot.outcome == 'success' && steps.candidate.outcome == 'success' && steps.scenario_inventory.outcome == 'success' && steps.candidate_stream.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -930,6 +950,24 @@ jobs:
           python3 tools/gen-node-momentum-vectors/check-genesis_test.py
           python3 tools/gen-node-momentum-vectors/check_bytes_test.py
           python3 tools/check-verification-context.py
+      - name: Require evidence uploads to succeed
+        if: >-
+          ${{ !cancelled() && (
+            steps.upload_scope_controls.outcome == 'failure' ||
+            steps.upload_ledger_inventory.outcome == 'failure' ||
+            steps.upload_cache_rollback.outcome == 'failure' ||
+            steps.upload_core_init_stop.outcome == 'failure' ||
+            steps.upload_core_init_failure.outcome == 'failure' ||
+            steps.upload_signatures.outcome == 'failure' ||
+            steps.upload_root_suite.outcome == 'failure' ||
+            steps.upload_snapshot_header_controls.outcome == 'failure' ||
+            steps.upload_offline_pilot.outcome == 'failure' ||
+            steps.upload_tested_candidate.outcome == 'failure'
+          ) }}
+        shell: bash
+        run: |
+          echo '::error::A CI evidence upload failed. See the original upload steps.'
+          exit 1
 
   native-platform:
     name: Native platform (${{ matrix.os }})
@@ -957,6 +995,8 @@ jobs:
         shell: bash
         run: python -I -B tools/check-ci-change-scope_test.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/ci-change-scope-controls.json"
       - name: Upload CI change scope controls
+        id: upload_scope_controls
+        continue-on-error: true
         if: ${{ !cancelled() && steps.scope_controls.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -1003,6 +1043,8 @@ jobs:
           receipt_sha256="$(python -I -B -c 'import hashlib,sys; f=open(sys.argv[1],"rb"); b=f.read(1048577); f.close(); assert 0<len(b)<=1048576; print(hashlib.sha256(b).hexdigest())' "$RUNNER_TEMP/root-suite.json")"
           python -I -B tools/check-root-suite.py --receipt "$RUNNER_TEMP/root-suite.json" --expect-receipt-sha256 "$receipt_sha256" --report "$RUNNER_TEMP/offline-pilot.json" --expect-report-sha256 "$report_sha256" --source . --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)" --expect-race false --expect-coverage false --expect-package-timeout 10m0s --expect-overall-timeout 30m0s --require-source-root-group compiled-native-observers/v1 > "$RUNNER_TEMP/root-suite-check.json"
       - name: Upload root suite receipt
+        id: upload_root_suite
+        continue-on-error: true
         if: ${{ !cancelled() && steps.root_suite.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -1017,6 +1059,8 @@ jobs:
         shell: bash
         run: python -I -B tools/ledger-inventory/inventory_test.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/ledger-inventory-controls.json"
       - name: Upload bounded ledger inventory controls
+        id: upload_ledger_inventory
+        continue-on-error: true
         if: ${{ !cancelled() && steps.inventory_controls.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -1249,6 +1293,8 @@ jobs:
       - name: Cache identifier rollback recorded controls
         run: python -I -B tools/gen-state-root-vectors/run_cache_rollback_controls.py --mode bounded --source-revision "${{ github.sha }}" > "${{ runner.temp }}/cache-rollback-tree-reuse.json"
       - name: Upload cache rollback Git tree reuse completion
+        id: upload_cache_rollback
+        continue-on-error: true
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -1339,6 +1385,8 @@ jobs:
       - name: Independent recorded core Init and Stop
         run: python -I -B tools/gen-state-root-vectors/check_core_init_stop.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/core-init-stop.json"
       - name: Upload core Init and Stop recorded evidence
+        id: upload_core_init_stop
+        continue-on-error: true
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -1351,6 +1399,8 @@ jobs:
       - name: Independent recorded failed Init cleanup
         run: python -I -B tools/gen-state-root-vectors/check_core_init_failure.py --source-revision "${{ github.sha }}" > "${{ runner.temp }}/core-init-failure.json"
       - name: Upload core failed Init cleanup recorded evidence
+        id: upload_core_init_failure
+        continue-on-error: true
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -1509,6 +1559,8 @@ jobs:
       - name: Node account transaction runtime boundaries
         run: go test -v -count=1 -run '^TestNodeAccountTransaction' ./internal/conformance
       - name: Upload independent signature report
+        id: upload_signatures
+        continue-on-error: true
         if: ${{ !cancelled() && steps.signatures.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -1561,6 +1613,8 @@ jobs:
           executable_suffix="$(go env GOEXE)"
           python -I -B tools/check-snapshot-header-binding.py --verifier "$candidate_directory/zenon-spv$executable_suffix" --candidate-manifest "$candidate_directory/manifest.json" --source-revision "${{ github.sha }}" > "${{ runner.temp }}/snapshot-header-controls.json"
       - name: Upload snapshot header controls
+        id: upload_snapshot_header_controls
+        continue-on-error: true
         if: ${{ !cancelled() && steps.snapshot_header_controls.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -1587,6 +1641,8 @@ jobs:
           executable_suffix="$(go env GOEXE)"
           python -I -B tools/check-observer-report-consumer.py --observer "$candidate_directory/observe-block$executable_suffix" --verifier "$candidate_directory/zenon-spv$executable_suffix" --consumer "$candidate_directory/consume-query-report$executable_suffix" --collector "$candidate_directory/fetch-bundle$executable_suffix" --source-revision "${{ github.sha }}"
       - name: Upload offline pilot report
+        id: upload_offline_pilot
+        continue-on-error: true
         if: ${{ !cancelled() && (steps.pilot.outcome != 'skipped' || steps.batch_replay.outcome != 'skipped') }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -1608,6 +1664,8 @@ jobs:
           python -I -B tools/pack-candidate-stream.py --require-skip-ledger --directory "$candidate_directory" --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)" > "$transport_directory/candidate-v1.tar.xz"
           python -I -B tools/check-source-candidate-stream.py --require-skip-ledger --archive "$transport_directory/candidate-v1.tar.xz" --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)"
       - name: Upload tested candidate
+        id: upload_tested_candidate
+        continue-on-error: true
         if: ${{ !cancelled() && steps.pilot.outcome == 'success' && steps.candidate.outcome == 'success' && steps.scenario_inventory.outcome == 'success' && steps.candidate_stream.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -1669,6 +1727,24 @@ jobs:
         run: go test -run '^$' -bench '^BenchmarkAccountAmountHash$' -benchtime=1000x -benchmem -cpu=1 -count=3 ./internal/conformance
       - name: Benchmark smoke
         run: go test -run '^$' -bench '^(BenchmarkNativeClient|BenchmarkRetainedCapacity|BenchmarkFlatContent|BenchmarkContentHashOrdering|BenchmarkEnvelopeHash)$' -benchtime=1x ./internal/conformance
+      - name: Require evidence uploads to succeed
+        if: >-
+          ${{ !cancelled() && (
+            steps.upload_scope_controls.outcome == 'failure' ||
+            steps.upload_root_suite.outcome == 'failure' ||
+            steps.upload_ledger_inventory.outcome == 'failure' ||
+            steps.upload_cache_rollback.outcome == 'failure' ||
+            steps.upload_core_init_stop.outcome == 'failure' ||
+            steps.upload_core_init_failure.outcome == 'failure' ||
+            steps.upload_signatures.outcome == 'failure' ||
+            steps.upload_snapshot_header_controls.outcome == 'failure' ||
+            steps.upload_offline_pilot.outcome == 'failure' ||
+            steps.upload_tested_candidate.outcome == 'failure'
+          ) }}
+        shell: bash
+        run: |
+          echo '::error::A CI evidence upload failed. See the original upload steps.'
+          exit 1
 
   recorded-oracles:
     name: Recorded oracles (${{ matrix.platform }})
@@ -1763,6 +1839,8 @@ jobs:
       - name: Recorded fixed prior and candidate import comparison (offline; no Go execution)
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_patch_import_comparison.py --mode translated --source-revision "${{ github.sha }}"
       - name: Upload import resource child recipes
+        id: upload_import_resources
+        continue-on-error: true
         if: ${{ !cancelled() && steps.import_child_controls.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -1829,6 +1907,8 @@ jobs:
       - name: Independent recorded complete driver projection comparison
         run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
       - name: Upload bounded retention leaf reuse reports
+        id: upload_retention_leaf_reuse
+        continue-on-error: true
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -1837,6 +1917,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Upload only the small oracle selection manifest
+        id: upload_oracle_selection
+        continue-on-error: true
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -1844,3 +1926,14 @@ jobs:
           path: ${{ runner.temp }}/recorded-oracle-selection/manifest.json
           if-no-files-found: error
           retention-days: 14
+      - name: Require evidence uploads to succeed
+        if: >-
+          ${{ !cancelled() && (
+            steps.upload_import_resources.outcome == 'failure' ||
+            steps.upload_retention_leaf_reuse.outcome == 'failure' ||
+            steps.upload_oracle_selection.outcome == 'failure'
+          ) }}
+        shell: bash
+        run: |
+          echo '::error::A CI evidence upload failed. See the original upload steps.'
+          exit 1

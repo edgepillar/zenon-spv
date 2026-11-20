@@ -61,6 +61,21 @@ preserves failure fallback while respecting workflow cancellation. A skipped
 job's reported success does not mean its tests ran; inspect its actual job and
 step records before describing qualification.
 
+## Runtime evidence uploads
+
+An individual artifact upload failure leaves subsequent independent checks and
+uploads enabled in the native and recorded-oracle jobs. The final step checks
+each upload's original outcome and fails the job if an upload failed. Keep the
+original error and completed artifact IDs for the specific run and attempt.
+Selection rules, upload conditions, artifact names and retention remain the
+same. The scope job keeps its existing full-runtime fallback.
+
+On main at `d72d14fb0d4f3aa0bbad229ffe17fd5e31956c1c`, two macOS artifact
+creation calls reported `ENOTFOUND` and six expected archives were missing.
+The macOS root suite had completed before the upload failures. This is an
+observed CI transport failure, separate from the subsequent unexecuted checks.
+[Original main attempt](https://github.com/edgepillar/zenon-spv/actions/runs/44779488024/attempts/1)
+
 ## Portable tool changes
 
 The `PORTABLE_WORKFLOWS_ONLY` route selects the union of the three-platform

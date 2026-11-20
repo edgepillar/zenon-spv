@@ -585,6 +585,40 @@ class CIChangeScopeControls(unittest.TestCase):
         self.assertIn("needs.change_scope.outputs.run_recorded_oracles != 'false'", block)
         self.assertIn("needs.change_scope.result != 'success'", block)
 
+    def test_deferred_upload_failures_still_fail_each_runtime_job(self):
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text("utf-8")
+        jobs = ("change_scope", "test", "native-platform", "recorded-oracles")
+        for job, following in zip(jobs[1:], jobs[2:] + (None,)):
+            with self.subTest(job=job):
+                block = workflow.split("\n  " + job + ":\n", 1)[1]
+                if following is not None:
+                    block = block.split("\n  " + following + ":\n", 1)[0]
+                _, *steps = block.split("\n      - ")
+                uploads = []
+                for step in steps[:-1]:
+                    lines = step.splitlines()
+                    if not any(line.startswith("        uses: actions/upload-artifact@")
+                               for line in lines):
+                        self.assertNotIn("        continue-on-error:", step)
+                        continue
+                    self.assertIn("        continue-on-error: true", lines)
+                    identifiers = [line.removeprefix("        id: ") for line in lines
+                                   if line.startswith("        id: ")]
+                    self.assertEqual(len(identifiers), 1)
+                    identifier, = identifiers
+                    self.assertTrue(identifier.startswith("upload_"))
+                    uploads.append(identifier)
+                self.assertTrue(uploads)
+                self.assertEqual(len(set(uploads)), len(uploads))
+                gate = steps[-1]
+                self.assertTrue(gate.startswith("name: Require evidence uploads to succeed\n"))
+                self.assertNotIn("        continue-on-error:", gate)
+                expected = " ||\n".join(f"            steps.{step}.outcome == 'failure'"
+                                          for step in uploads)
+                self.assertIn("        if: >-\n          ${{ !cancelled() && (\n" +
+                              expected + "\n          ) }}\n", gate)
+                self.assertTrue(gate.rstrip().endswith("\n          exit 1"))
+
     def test_native_workflow_guard_rejects_incomplete_closures_paths_and_exit_facts(self):
         report = self.native_result()
         mutations = []
