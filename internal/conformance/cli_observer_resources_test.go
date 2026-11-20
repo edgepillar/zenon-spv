@@ -78,6 +78,16 @@ func TestCompiledBlockObserverResources(t *testing.T) {
 		for i, path := range paths {
 			guards[i] = protectCLIState(t, path)
 		}
+		// The guarded fixture sizes are shared by every round. Each
+		// round still compares the complete input bytes after the call.
+		bundleInfo, err := os.Stat(bundlePath)
+		if err != nil {
+			t.Fatal("cannot read observer resource bundle size")
+		}
+		expectationsInfo, err := os.Stat(expected)
+		if err != nil {
+			t.Fatal("cannot read observer resource expectations size")
+		}
 		for _, concurrency := range []int{1, 4} {
 			name := fmt.Sprintf("K%d_T%d_C%d", capacity, targets, concurrency)
 			t.Run(name, func(t *testing.T) {
@@ -153,11 +163,11 @@ func TestCompiledBlockObserverResources(t *testing.T) {
 						Targets           int                  `json:"targets"`
 						Concurrency       int                  `json:"concurrency"`
 						StateBytes        int64                `json:"state_bytes"`
-						BundleBytes       int                  `json:"bundle_bytes"`
-						ExpectationsBytes int                  `json:"expectations_bytes"`
+						BundleBytes       int64                `json:"bundle_bytes"`
+						ExpectationsBytes int64                `json:"expectations_bytes"`
 						GroupElapsedNS    int64                `json:"group_elapsed_ns"`
 						Observations      []processObservation `json:"observations"`
-					}{name, round, capacity, targets, concurrency, w.bytes, len(readCLIFile(t, bundlePath)), len(readCLIFile(t, expected)), elapsed, observations})
+					}{name, round, capacity, targets, concurrency, w.bytes, bundleInfo.Size(), expectationsInfo.Size(), elapsed, observations})
 					if err != nil {
 						t.Fatal("cannot encode fixed observer resource record")
 					}
