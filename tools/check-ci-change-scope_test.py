@@ -31,6 +31,8 @@ BASE, FEATURE, CHECKOUT, TREE = (character * 40 for character in "1234")
 TRANSPORT = ".github/workflows/ledger-transport.yml"
 EXPORT = ".github/workflows/ledger-export.yml"
 PREPARATION = ".github/workflows/owned-devnet-query.yml"
+FIRST_INSERTION = ".github/workflows/first-insertion-catchup.yml"
+PORTABLE_WORKFLOW_PATHS = (TRANSPORT, EXPORT, PREPARATION, FIRST_INSERTION)
 
 
 def selection(event="pull_request"):
@@ -78,7 +80,7 @@ def native_tree():
 
 def portable_tree():
     return (base_tree() + b"".join(tree_record(path.encode()) for path in
-            (TRANSPORT, EXPORT, PREPARATION, "tools/owned-devnet-query/contract.json"))
+            (*PORTABLE_WORKFLOW_PATHS, "tools/owned-devnet-query/contract.json"))
             + b"".join(tree_record(path.encode()) for path in sorted(M.PORTABLE_FILES)))
 
 
@@ -105,7 +107,7 @@ class FixtureRunner:
             raw = f"tree {TREE}\nparent {BASE}\n\nfixture\n".encode()
         elif args[0] == "show":
             raw = (ROOT / args[1].split(":", 1)[1]).read_bytes()
-            if args[1].split(":", 1)[1] in (TRANSPORT, EXPORT, PREPARATION):
+            if args[1].split(":", 1)[1] in PORTABLE_WORKFLOW_PATHS:
                 raw = raw.replace(b"\r\n", b"\n")
         elif args[0] == "diff":
             raw = self.diff
@@ -633,7 +635,8 @@ class CIChangeScopeControls(unittest.TestCase):
                     else:
                         directory = path.split("/")[1]
                         required = [{"ledger-transport": TRANSPORT, "ledger-export": EXPORT,
-                                     "owned-devnet-query": PREPARATION}[directory]]
+                                     "owned-devnet-query": PREPARATION,
+                                     "gen-state-root-vectors": FIRST_INSERTION}[directory]]
                     runner = FixtureRunner(selected, record(path.encode()) + record())
                     result = self.portable_result(runner)
                     self.assertEqual((result["format"], result["status"], result["run_runtime"]),
@@ -653,10 +656,12 @@ class CIChangeScopeControls(unittest.TestCase):
         archive = record(b"tools/ledger-transport/archive_tail.py")
         exporter = record(b"tools/ledger-export/inventory_completed_export.py")
         preparation = record(b"tools/owned-devnet-query/review.py")
+        insertion = record(b"tools/gen-state-root-vectors/qualify_first_insertion.py")
         for paths, required in ((archive + exporter, [TRANSPORT, EXPORT]),
                                 (exporter + preparation, [EXPORT, PREPARATION]),
                                 (archive + preparation, [TRANSPORT, PREPARATION]),
-                                (archive + exporter + preparation, [TRANSPORT, EXPORT, PREPARATION])):
+                                (preparation + insertion, [PREPARATION, FIRST_INSERTION]),
+                                (archive + exporter + preparation + insertion, list(PORTABLE_WORKFLOW_PATHS))):
             with self.subTest(required=required):
                 report = self.portable_result(FixtureRunner(diff=paths))
                 self.assertEqual(report["required_workflows"], required)
@@ -712,21 +717,21 @@ class CIChangeScopeControls(unittest.TestCase):
                 report = M.select_scope(ROOT, runner.selection, runner)
                 self.assertEqual((report['run_runtime'], report['reason']), (True, 'portable_source_pin'))
 
-    def test_owned_node_diagnostic_paths_trigger_the_pinned_preparation_workflow(self):
-        lines = (ROOT / PREPARATION).read_text(encoding='utf-8').splitlines()
-        changed = ['tools/owned-devnet-query/' + name for name in
-                   ('engine.py', 'node_diagnostics.py', 'node_diagnostics_test.py',
-                    'node_file_logs.py', 'node_file_logs_test.py')]
-        for event in ('push', 'pull_request'):
-            start = lines.index('  ' + event + ':') + 1
-            end = next(index for index in range(start, len(lines))
-                       if lines[index] and not lines[index].startswith('    '))
-            filters = [ast.literal_eval(line.strip()[2:]) for line in lines[start:end]
-                       if line.startswith('      - ')]
-            with self.subTest(event=event):
-                self.assertIn('    branches: [main]', lines[start:end])
-                for name in changed:
-                    self.assertTrue(any(fnmatch.fnmatchcase(name, pattern) for pattern in filters), name)
+    def test_diagnostic_and_first_insertion_paths_trigger_their_pinned_workflows(self):
+        for workflow, changed in ((PREPARATION, sorted(M.PREPARATION_FILES)),
+                                  (FIRST_INSERTION, sorted(M.FIRST_INSERTION_FILES |
+                                                           {'docs/first-insertion-catchup.md'}))):
+            lines = (ROOT / workflow).read_text(encoding='utf-8').splitlines()
+            for event in ('push', 'pull_request'):
+                start = lines.index('  ' + event + ':') + 1
+                end = next(index for index in range(start, len(lines))
+                           if lines[index] and not lines[index].startswith('    '))
+                filters = [ast.literal_eval(line.strip()[2:]) for line in lines[start:end]
+                           if line.startswith('      - ')]
+                with self.subTest(workflow=workflow, event=event):
+                    self.assertIn('    branches: [main]', lines[start:end])
+                    for name in changed:
+                        self.assertTrue(any(fnmatch.fnmatchcase(name, pattern) for pattern in filters), name)
 
     def test_roadmap_mixed_portable_changes_require_only_the_selected_tool_workflows(self):
         leaves = ((b"tools/owned-devnet-query/review.py", [PREPARATION]),
@@ -747,17 +752,20 @@ class CIChangeScopeControls(unittest.TestCase):
                         self.assertEqual(self.workflow_guard(self.guard_bytes(report), selected),
                                          (None, "run_runtime=false\nrun_recorded_oracles=false\n"))
 
-    def test_intake_mixed_portable_changes_still_require_transport(self):
+    def test_dedicated_documents_add_their_workflows_to_portable_changes(self):
         for event in ("pull_request", "push"):
             for change, old_mode, new_mode in ((b"A", b"000000", b"100644"),
                                                (b"M", b"100644", b"100644"),
                                                (b"D", b"100644", b"000000")):
-                for path, required in ((b"tools/owned-devnet-query/review.py", [TRANSPORT, PREPARATION]),
-                                       (b"tools/ledger-export/inventory_completed_export.py", [TRANSPORT, EXPORT])):
-                    with self.subTest(event=event, change=change, path=path):
-                        selected = selection(event)
-                        document = record(b"docs/state-root-r1-intake.md", change, old_mode, new_mode)
-                        report = self.portable_result(FixtureRunner(selected, document + record(path)))
+                selected = selection(event)
+                for document, path, required in (
+                    (b"docs/state-root-r1-intake.md", b"tools/owned-devnet-query/review.py", [TRANSPORT, PREPARATION]),
+                    (b"docs/state-root-r1-intake.md", b"tools/ledger-export/inventory_completed_export.py", [TRANSPORT, EXPORT]),
+                    (b"docs/first-insertion-catchup.md", b"tools/owned-devnet-query/review.py", [PREPARATION, FIRST_INSERTION]),
+                ):
+                    with self.subTest(event=event, change=change, path=path, document=document):
+                        diff = record(document, change, old_mode, new_mode) + record(path)
+                        report = self.portable_result(FixtureRunner(selected, diff))
                         self.assertFalse(report["run_runtime"])
                         self.assertEqual(report["required_workflows"], required)
                         self.assertEqual(self.workflow_guard(self.guard_bytes(report), selected),
@@ -820,14 +828,15 @@ class CIChangeScopeControls(unittest.TestCase):
         self.assertEqual((refused["run_runtime"], refused["reason"]), (True, "portable_diff_count"))
 
     def test_portable_additions_deletions_mode_changes_and_invalid_diffs_keep_runtime(self):
-        path = b"tools/ledger-transport/archive_tail.py"
-        for raw in (record(path, b"A", b"000000"), record(path, b"D", new_mode=b"000000"),
-                    record(path, old_mode=b"100755", new_mode=b"100755"),
-                    record(path, old_mode=b"120000", new_mode=b"120000"),
-                    record(path, change=b"R100"), record(path)[:-1], record(path) + b"bad\0unknown\0",
-                    record(path) * 2, record(path) + record(path.upper())):
-            with self.subTest(raw=raw[:90]):
-                self.assertTrue(self.portable_result(FixtureRunner(diff=raw))["run_runtime"])
+        for path in (b"tools/ledger-transport/archive_tail.py",
+                     b"tools/gen-state-root-vectors/first-insertion-catchup_test.go.txt"):
+            for raw in (record(path, b"A", b"000000"), record(path, b"D", new_mode=b"000000"),
+                        record(path, old_mode=b"100755", new_mode=b"100755"),
+                        record(path, old_mode=b"120000", new_mode=b"120000"),
+                        record(path, change=b"R100"), record(path)[:-1], record(path) + b"bad\0unknown\0",
+                        record(path) * 2, record(path) + record(path.upper())):
+                with self.subTest(path=path, raw=raw[:90]):
+                    self.assertTrue(self.portable_result(FixtureRunner(diff=raw))["run_runtime"])
 
     def test_portable_never_selects_native_or_unreviewed_dependencies(self):
         first = record(b"tools/ledger-transport/transport.py")
@@ -835,7 +844,9 @@ class CIChangeScopeControls(unittest.TestCase):
                  "tools/ledger-export/consume_completion.py", "tools/ledger-inventory/inventory.py",
                  "tools/owned-devnet-query/runner.py", "tools/owned-devnet-query/contract.json",
                  "tools/owned-devnet-query/query_checks.py", "tools/owned-devnet-query/controls.py",
-                 TRANSPORT, EXPORT, PREPARATION, *M.SOURCE_FILES)
+                 "tools/gen-state-root-vectors/qualify_closed_parent_oracle.py",
+                 "tools/gen-state-root-vectors/first-insertion-new_test.go.txt", ".gitattributes",
+                 *PORTABLE_WORKFLOW_PATHS, *M.SOURCE_FILES)
         for path in other:
             with self.subTest(path=path):
                 report = self.portable_result(FixtureRunner(diff=first + record(path.encode())))
@@ -844,8 +855,9 @@ class CIChangeScopeControls(unittest.TestCase):
 
     def test_portable_workflow_pins_bind_base_checkout_and_working_bytes(self):
         diff = (record(b"tools/ledger-transport/transport.py")
-                + record(b"tools/owned-devnet-query/review.py"))
-        for path in (TRANSPORT, EXPORT, PREPARATION):
+                + record(b"tools/owned-devnet-query/review.py")
+                + record(b"tools/gen-state-root-vectors/qualify_first_insertion.py"))
+        for path in PORTABLE_WORKFLOW_PATHS:
             committed = (ROOT / path).read_bytes().replace(b"\r\n", b"\n")
             for revision, reason in ((BASE, "portable_workflow_pin"), (CHECKOUT, "source_binding")):
                 runner = FixtureRunner(diff=diff)
@@ -890,6 +902,7 @@ class CIChangeScopeControls(unittest.TestCase):
         for path, oid in ((b"internal/proof/core.go", b"a" * 40),
                           (b".github/workflows/ci.yml", b"b" * 40),
                           (EXPORT.encode(), b"a" * 40), (PREPARATION.encode(), b"a" * 40),
+                          (FIRST_INSERTION.encode(), b"a" * 40),
                           (b"tools/owned-devnet-query/contract.json", b"a" * 40)):
             raw = baseline.replace(tree_record(path, oid=oid), tree_record(path, oid=b"c" * 40))
             runner = FixtureRunner(diff=diff)
@@ -906,7 +919,8 @@ class CIChangeScopeControls(unittest.TestCase):
         baseline = portable_tree()
         diff = record(b"tools/ledger-transport/archive_tail.py")
         for path in (b"tools/owned-devnet-query/review.py",
-                     b"tools/ledger-export/inventory_completed_export.py", b"docs/contract.md"):
+                     b"tools/ledger-export/inventory_completed_export.py",
+                     b"tools/gen-state-root-vectors/qualify_first_insertion.py", b"docs/contract.md"):
             original = tree_record(path)
             runner = FixtureRunner(diff=diff)
             raw = baseline.replace(original, tree_record(path, oid=b"c" * 40))
@@ -921,7 +935,7 @@ class CIChangeScopeControls(unittest.TestCase):
     def test_portable_closure_literal_digest_and_bounds(self):
         kept = [tree_record(b"internal/proof/core.go"), tree_record(b".github/workflows/ci.yml", oid=b"b" * 40),
                 tree_record(b"tools/owned-devnet-query/contract.json"),
-                *(tree_record(path.encode()) for path in (TRANSPORT, EXPORT, PREPARATION))]
+                *(tree_record(path.encode()) for path in PORTABLE_WORKFLOW_PATHS)]
         expected = b"".join(sorted(kept))
         for raw in (portable_tree(), b"\0".join(reversed(portable_tree().split(b"\0")[:-1])) + b"\0"):
             self.assertEqual(M.portable_fingerprint(raw), {"sha256": hashlib.sha256(expected).hexdigest(),
@@ -935,9 +949,10 @@ class CIChangeScopeControls(unittest.TestCase):
 
     def test_portable_output_guard_rejects_missing_or_altered_workflow_obligations(self):
         diff = (record(b"tools/ledger-transport/transport.py")
-                + record(b"tools/owned-devnet-query/review.py") + record())
+                + record(b"tools/owned-devnet-query/review.py")
+                + record(b"tools/gen-state-root-vectors/qualify_first_insertion.py") + record())
         result = self.portable_result(FixtureRunner(diff=diff))
-        for key, value in (("required_workflows", [TRANSPORT, EXPORT]),
+        for key, value in (("required_workflows", [TRANSPORT, EXPORT, PREPARATION]),
                            ("portable_workflows", result["portable_workflows"][:-1]),
                            ("portable_event_tree", FEATURE),
                            ("portable_paths", result["portable_paths"] * 2),
@@ -947,7 +962,7 @@ class CIChangeScopeControls(unittest.TestCase):
                            ("runtime_closure", {**result["runtime_closure"], "matched": False})):
             with self.subTest(key=key):
                 self.assertIsNotNone(self.workflow_guard(self.guard_bytes({**result, key: value}))[0])
-        for path in (TRANSPORT, EXPORT, PREPARATION):
+        for path in PORTABLE_WORKFLOW_PATHS:
             changed = copy.deepcopy(result)
             changed["source_pins"][path]["git_sha256"] = "0" * 64
             self.assertIsNotNone(self.workflow_guard(self.guard_bytes(changed))[0])
