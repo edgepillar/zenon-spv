@@ -18,6 +18,9 @@ from query_checks import address_bytes, consumer_result, fingerprints, header_fa
 
 RPC_URL = "http://127.0.0.1:35997"
 GATEWAY_URL = "http://127.0.0.1:35999"
+READINESS_ATTEMPTS = 30
+READINESS_WAIT_SECONDS = 90
+INITIAL_HEIGHT_WAIT_SECONDS = 180
 ORACLE_REPORT_BYTES = 256 << 10
 SYNC_INFO_BYTES = 8 << 10
 SYNC_REPORT = "startup-sync.json"
@@ -222,13 +225,14 @@ class LocalRpc:
             self.recorder.seal(POST_SYNC_REPORT, canonical(report))
             self.post_sync_evidence.add(POST_SYNC_REPORT)
 
-    def _wait(self, read, ready, *, starting):
+    def _wait(self, read, ready, *, starting, wait_seconds=READINESS_WAIT_SECONDS):
         # Preserve every actual attempt. A freshly published loopback port can
         # accept and then close a request before RPC initialization completes.
         # Retry only a complete, quiescent startup failure with no response
         # bytes; malformed data, partial responses and later read failures stop.
-        until = time.monotonic() + 90
-        for _ in range(30):
+        until = time.monotonic() + wait_seconds
+        interval = wait_seconds / READINESS_ATTEMPTS
+        for attempt in range(READINESS_ATTEMPTS):
             self.guard()
             require(time.monotonic() < until, "owned_rpc_readiness_deadline")
             try:
@@ -244,12 +248,18 @@ class LocalRpc:
                     raise
             else:
                 if ready(value):
+                    require(time.monotonic() < until, "owned_rpc_readiness_deadline")
                     return value
-            time.sleep(3)
+            if attempt + 1 < READINESS_ATTEMPTS:
+                remaining = until - time.monotonic()
+                require(remaining > 0, "owned_rpc_readiness_deadline")
+                time.sleep(min(interval, remaining))
         raise Refused("owned_rpc_readiness_deadline")
 
     def wait_height(self, height, *, starting=False):
-        return self._wait(self.frontier, lambda frontier: frontier.height >= height, starting=starting)
+        wait_seconds = INITIAL_HEIGHT_WAIT_SECONDS if starting else READINESS_WAIT_SECONDS
+        return self._wait(self.frontier, lambda frontier: frontier.height >= height,
+                          starting=starting, wait_seconds=wait_seconds)
 
     def wait_gateway(self):
         domain = self.contract.data["selection"]["domain_id"]

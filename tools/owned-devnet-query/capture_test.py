@@ -543,7 +543,7 @@ class ReadinessTests(unittest.TestCase):
         self.assertEqual([row["id"] for row in requests], [1, 2])
         self.assertEqual([row["method"] for row in requests], ["ledger.getFrontierMomentum"] * 2)
         self.assertEqual(self.rpc.calls, 2)
-        sleep.assert_called_once_with(3)
+        sleep.assert_called_once_with(6)
 
     def test_empty_startup_connect_and_timeout_failures_remain_bounded_candidates(self):
         for code in (7, 28):
@@ -609,12 +609,36 @@ class ReadinessTests(unittest.TestCase):
     def test_a_valid_low_frontier_remains_available_after_the_deadline(self):
         _, rows, _ = synthetic_window()
         self.recorder.run.return_value = self.response(rows[1], 1)
-        with mock.patch.object(capture.time, "monotonic", side_effect=[0, 0, 90]), \
-                mock.patch.object(capture.time, "sleep"):
+        with mock.patch.object(capture.time, "monotonic", side_effect=[0, 0, 180]), \
+                mock.patch.object(capture.time, "sleep") as sleep:
             with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
                 self.rpc.wait_height(3, starting=True)
         self.assertEqual(self.rpc.retained_frontiers, {"rpc-01.frontier.json"})
         self.assertEqual(self.rpc.calls, 1)
+        sleep.assert_not_called()
+
+    def test_initial_readiness_can_observe_the_selected_height_after_ninety_seconds(self):
+        _, rows, _ = synthetic_window()
+        self.recorder.run.side_effect = [self.response(rows[1], 1), self.response(rows[2], 2)]
+        with mock.patch.object(capture.time, "monotonic", side_effect=[0, 0, 90, 96, 97]), \
+                mock.patch.object(capture.time, "sleep") as sleep:
+            self.assertEqual(self.rpc.wait_height(3, starting=True).height, 3)
+        self.assertEqual(self.rpc.retained_frontiers, {"rpc-01.frontier.json", "rpc-02.frontier.json"})
+        sleep.assert_called_once_with(6)
+
+    def test_ready_frontier_returned_at_the_deadline_remains_only_an_observation(self):
+        _, rows, _ = synthetic_window()
+        for starting, deadline in ((False, 90), (True, 180)):
+            with self.subTest(starting=starting):
+                self.setUp()
+                self.recorder.run.return_value = self.response(rows[2], 1)
+                with mock.patch.object(capture.time, "monotonic", side_effect=[0, 0, deadline]), \
+                        mock.patch.object(capture.time, "sleep") as sleep:
+                    with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
+                        self.rpc.wait_height(3, starting=starting)
+                self.assertEqual(self.rpc.retained_frontiers, {"rpc-01.frontier.json"})
+                self.assertEqual(self.rpc.calls, 1)
+                sleep.assert_not_called()
 
     def test_persistent_empty_receive_failures_exhaust_the_existing_attempt_bound(self):
         failure = self.failure()
@@ -624,7 +648,7 @@ class ReadinessTests(unittest.TestCase):
             with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
                 self.rpc._wait(read, lambda _: True, starting=True)
         self.assertEqual(read.call_count, 30)
-        self.assertEqual(sleep.call_count, 30)
+        self.assertEqual(sleep.call_count, 29)
         self.assertEqual(self.guard.call_count, 30)
 
     def test_expired_deadline_and_guard_refusal_launch_no_read(self):
@@ -664,7 +688,7 @@ class ReadinessTests(unittest.TestCase):
                 self.rpc.wait_height(3, starting=True)
         self.assertEqual(self.rpc.calls, 97)
         self.assertEqual(self.recorder.run.call_count, 1)
-        sleep.assert_called_once_with(3)
+        sleep.assert_called_once_with(6)
 
 
 @unittest.skipUnless(os.name == "posix", "POSIX descriptor and recorder controls")
@@ -735,7 +759,10 @@ class HostBoundaryTests(unittest.TestCase):
             try:
                 rpc = capture.LocalRpc(CONTRACT, record, root, str(curl), {},
                                        lambda: self.assertEqual(errors, []))
-                with mock.patch.object(capture, "RPC_URL", endpoint):
+                # The clock controls cover the full wait. Keep this TCP test
+                # within the listener's five-second accept timeout.
+                with mock.patch.object(capture, "RPC_URL", endpoint), \
+                        mock.patch.object(capture, "INITIAL_HEIGHT_WAIT_SECONDS", 30):
                     self.assertEqual(rpc.wait_height(3, starting=True).height, 4)
             except BaseException:
                 # Preserve actual command/stream evidence in the enclosing test
@@ -818,12 +845,76 @@ class HostBoundaryTests(unittest.TestCase):
                 env = {"GH_TOKEN": "unused-test-value", "GITHUB_OUTPUT": str(root / "output")}
                 self.assertEqual(runner.execute(env, root, HERE.parents[1]), 1)
                 dependencies["Artifacts"].return_value.preflight.assert_called_once_with()
+                dependencies["Artifacts"].return_value.fetch.assert_not_called()
                 dependencies["Packages"].assert_not_called()
                 dependencies["Builder"].assert_not_called()
                 engine.create_layout.assert_not_called()
             terminal = json.loads((root / "evidence/terminal.json").read_bytes())
             self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),
                              ("runtime-inputs", "REFUSED", "fixture_source_default"))
+
+    def test_query_inputs_follow_opening_validation_and_precede_fixture_configuration(self):
+        contract, rows, _ = synthetic_window()
+        execution = model.ExecutionIdentity("a" * 40, 1, 1, "edgepillar")
+        for case, stage, reason in (
+                ("bad-opening", "nodes", "opening_header_count"),
+                ("bad-oracle", "query-inputs", "test_oracle_input_refusal"),
+                ("ready", "fixture-configuration", "test_fixture_boundary")):
+            trace = mock.Mock()
+
+            def rpc_factory(contract, record, root, curl, environment, guard):
+                rpc = actual_rpc(contract, record, root, curl, environment, guard)
+                rpc.wait_height = trace.wait_height
+
+                def read_opening(method, params, cap, *, stdout_name):
+                    trace.opening()
+                    self.assertEqual((method, params), ("ledger.getMomentumsByHeight", [1, 3]))
+                    result = {"count": 3, "list": rows[:2] if case == "bad-opening" else rows[:3]}
+                    record.seal(stdout_name, model.canonical(result))
+                    return result
+
+                rpc._read = read_opening
+                return rpc
+
+            actual_rpc = capture.LocalRpc
+            with self.subTest(case=case), tempfile.TemporaryDirectory(prefix="owned-query-input-control-") as temporary:
+                root = Path(temporary).resolve(strict=True)
+                with mock.patch.multiple(runner, dispatch=mock.DEFAULT, Budget=mock.DEFAULT,
+                                         Engine=mock.DEFAULT, Artifacts=mock.DEFAULT, Installer=mock.DEFAULT,
+                                         Sources=mock.DEFAULT, Packages=mock.DEFAULT, Builder=mock.DEFAULT,
+                                         fixture_flow=mock.DEFAULT, publish_paths=mock.DEFAULT) as dependencies, \
+                        mock.patch.object(capture, "LocalRpc", side_effect=rpc_factory):
+                    dependencies["dispatch"].return_value = contract, execution
+                    dependencies["Budget"].return_value.report.return_value = {}
+                    engine = dependencies["Engine"].return_value
+                    engine.docker_root = contract.data["runtime"]["closed_oracle_readonly_docker_root"]
+                    engine.cleanup.return_value = []
+                    artifacts = dependencies["Artifacts"].return_value
+                    artifacts.preflight = trace.preflight
+                    artifacts.fetch = trace.fetch
+                    consumer = mock.Mock(enable_execution=trace.enable_consumer)
+                    oracle = mock.Mock(enable_execution=trace.enable_oracle)
+                    trace.fetch.side_effect = [mock.Mock(binaries=consumer),
+                        model.Refused(reason) if case == "bad-oracle" else mock.Mock(binaries=oracle)]
+
+                    def stop_at_fixture(*args):
+                        trace.fixture(args[-2])
+                        raise model.Refused("test_fixture_boundary")
+
+                    dependencies["fixture_flow"].side_effect = stop_at_fixture
+                    env = {"GH_TOKEN": "unused-test-value", "GITHUB_OUTPUT": str(root / "output")}
+                    self.assertEqual(runner.execute(env, root, HERE.parents[1]), 1)
+                    engine.cleanup.assert_called_once_with()
+                expected = [mock.call.preflight(), mock.call.wait_height(3, starting=True), mock.call.opening()]
+                if case != "bad-opening":
+                    expected.extend((mock.call.fetch("consumer"), mock.call.fetch("parent_oracle")))
+                if case == "ready":
+                    expected.extend((mock.call.enable_consumer(), mock.call.enable_oracle(),
+                                     mock.call.fixture("configure")))
+                self.assertEqual(trace.mock_calls, expected)
+                terminal = json.loads((root / "evidence/terminal.json").read_bytes())
+                self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),
+                                 (stage, "REFUSED", reason))
 
     def test_runner_refusal_exports_the_valid_frontier_without_other_command_streams(self):
         _, rows, _ = synthetic_window()
@@ -866,6 +957,8 @@ class HostBoundaryTests(unittest.TestCase):
                 engine.cleanup.return_value = []
                 env = {"GH_TOKEN": "unused-test-value", "GITHUB_OUTPUT": str(root / "output")}
                 self.assertEqual(runner.execute(env, root, HERE.parents[1]), 1)
+                dependencies["Artifacts"].return_value.preflight.assert_called_once_with()
+                dependencies["Artifacts"].return_value.fetch.assert_not_called()
                 engine.cleanup.assert_called_once_with()
             terminal = json.loads((root / "evidence/terminal.json").read_bytes())
             self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),

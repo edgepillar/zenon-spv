@@ -56,6 +56,13 @@ in-memory hit rechecks original file identities and binary contents. Incomplete
 or failed attempts are terminal for that workspace. This step does not qualify
 a new CI run or enable binary execution.
 
+The runner checks this metadata before preparing the node and transports the
+consumer and parent-oracle archives only after the selected H1/H2/H3 opening
+passes validation. Early startup refusals therefore carry no downloaded copies
+of those two archives. Both inputs must pass materialization checks before
+fixture configuration starts. The Node toolchain is still installed before
+package preparation.
+
 On fresh intake, the ZIP and Node archive readers perform their existing
 pre-extraction SHA-256 scan on the recorded stdout descriptor. The recorder
 holds and checks the file identity around that scan and extraction. The
@@ -186,11 +193,14 @@ without writing a second ZIP to disk.
 ### Capture the node's sync state after a startup refusal
 
 Only an initial selected-height `owned_rpc_readiness_deadline` permits one
-`stats.syncInfo` read from the same fixed owned RPC endpoint. The
-30 readiness attempts and checked 90-second deadline remain; the observation
-does not retry readiness or advance to fixture configuration. Successful
-readiness, malformed headers, other refusals and later gateway waits do not
-trigger this read. The existing 96-call budget is shared, never reset.
+`stats.syncInfo` read from the same fixed owned RPC endpoint. The initial
+selected-height wait allows 180 seconds and up to 30 reads separated by up to
+six seconds. Gateway and later height waits allow 90 seconds and up to 30 reads
+separated by up to three seconds. A ready response must arrive before its
+deadline. The separate five-second HTTP and seven-second command limits bound
+an in-flight read. The diagnostic cannot restart readiness or advance to
+fixture configuration. Successful readiness, malformed headers, other refusals
+and later waits do not trigger it. All phases share the 96-call budget.
 
 The response cap is 8 KiB, with the existing five-second HTTP / seven-second
 command limits and a fresh budget guard. Only the three bounded integer fields
@@ -304,8 +314,8 @@ the prior owned inspection, role/kind and command order before cleanup. Nonzero,
 incomplete or unavailable reads supply no parsed data. The v1 whole-file, v2 tail
 and v3 state-selected readers retain their original bounds, method rules and report shapes.
 No format independently replays omitted text or supplies header authority.
-The readiness, RPC, resource, cleanup, profile and context limits remain unchanged;
-another signed fixture requires separate source-specific authorization.
+The startup log reader uses the same scope after the initial readiness refusal.
+Another signed fixture requires separate source-specific authorization.
 
 ### Review a retained result
 

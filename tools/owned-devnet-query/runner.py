@@ -224,12 +224,8 @@ def execute(environment, workspace, checkout):
         artifacts = Artifacts(contract, transport, workspace / "binaries", ["/usr/bin/gh"],
                               gh_environment, guard)
         artifacts.preflight()
-        consumer = artifacts.fetch("consumer").binaries
-        oracle = artifacts.fetch("parent_oracle").binaries
         node = Installer(contract, transport, workspace / "node-toolchain",
                          ["/usr/bin/curl", "--disable"], tool_environment, guard).fetch()
-        consumer.enable_execution()
-        oracle.enable_execution()
         node = node.enable_execution()
         stage = "sources"
         sources = Sources(contract, record, workspace / "source", ["/usr/bin/git"],
@@ -252,6 +248,11 @@ def execute(environment, workspace, checkout):
                                 observe_nodes=engine.capture_startup_diagnostics)
         opening = rpc.opening()
         extra.add("opening-momentums.json")
+        stage = "query-inputs"
+        consumer = artifacts.fetch("consumer").binaries
+        oracle = artifacts.fetch("parent_oracle").binaries
+        consumer.enable_execution()
+        oracle.enable_execution()
         stage = "fixture-configuration"
         fixture_flow(contract, record, engine, sources, node, prepared, "configure", guard)
         stage = "fixture-deposit"
