@@ -59,7 +59,13 @@ func decodeExperimentalCLIObject(raw []byte, fields map[string]any, nullable ...
 		for _, field := range nullable {
 			allowNull = allowNull || field == name
 		}
-		if d.Decode(&value) != nil || bytes.Equal(bytes.TrimSpace(value), []byte("null")) && !allowNull || json.Unmarshal(value, target) != nil {
+		if d.Decode(&value) != nil || bytes.Equal(bytes.TrimSpace(value), []byte("null")) && !allowNull {
+			return errExperimentalCLIInput
+		}
+		if destination, ok := target.(*json.RawMessage); ok && destination != nil {
+			// Decode already validated the value and copied it into value.
+			*destination = value
+		} else if json.Unmarshal(value, target) != nil {
 			return errExperimentalCLIInput
 		}
 	}

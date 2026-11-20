@@ -301,3 +301,22 @@ func TestExperimentalBatchContextCLIStrictSchemaAndArguments(t *testing.T) {
 		t.Fatal("lossy output accepted")
 	}
 }
+
+func TestExperimentalCLIRawFieldOwnership(t *testing.T) {
+	const array = `[ {"kind":"\u0061"}, 2 ]`
+	raw := []byte(`{"version":1,"momentums":` + array + `,"witnesses":null}`)
+	var version uint32
+	var momentums, witnesses json.RawMessage
+	fields := map[string]any{"version": &version, "momentums": &momentums, "witnesses": &witnesses}
+	if err := decodeExperimentalCLIObject(raw, fields, "witnesses"); err != nil {
+		t.Fatal(err)
+	}
+	clear(raw)
+	if version != 1 || string(momentums) != array || string(witnesses) != "null" {
+		t.Fatal("decoded fields lost their original byte representation")
+	}
+	momentums[0] = '!'
+	if string(witnesses) != "null" {
+		t.Fatal("raw fields share writable storage")
+	}
+}

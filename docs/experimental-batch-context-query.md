@@ -249,6 +249,25 @@ It pairs the previous bounded reader with the opened-size hint at 2 KiB,
 1 MiB and 8 MiB. Report the actual Go version/platform, bytes and allocations
 per operation; no benchmark result is recorded here by adding the control.
 
+The strict CLI object decoder uses the owned raw JSON value produced by the
+first decode for fields whose destination is a raw JSON message. Typed
+fields and nested witnesses still have their own schema and size checks.
+The raw fields keep their original bytes, including internal whitespace,
+escapes and explicitly allowed null values.
+
+A local comparison on Go 1.25.14 darwin/arm64 used three samples per case
+with one benchmark CPU. The baseline was `04c095f1ebc261a185a179cb2196a6bf45e08736`.
+
+| Decoder input | Input bytes | Baseline B/op | Candidate B/op | Baseline allocs/op | Candidate allocs/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Three-witness bundle with four fixture headers | 7,201 | 148,552 | 135,496 | 1,385 | 1,367 |
+| Outer object with 4,096 repeated fixture header rows | 2,752,933 | 13,902,953 | 11,145,194 | 67 | 58 |
+
+The first row measures full bundle decoding using the recorded proof bytes;
+the second measures only outer field decoding at a large input size. These
+are allocation volumes for the selected operations. Chain verification,
+filesystem reads and process resource limits have separate controls.
+
 The compiled workflow builds both commands together once, collects only from a
 loopback fixture and consumes the typed result. It exercises all three late
 collection failures, unavailable contexts and incompatible context/schema pins,
