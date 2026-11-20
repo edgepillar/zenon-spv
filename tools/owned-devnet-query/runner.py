@@ -224,17 +224,11 @@ def execute(environment, workspace, checkout):
         artifacts = Artifacts(contract, transport, workspace / "binaries", ["/usr/bin/gh"],
                               gh_environment, guard)
         artifacts.preflight()
-        node = Installer(contract, transport, workspace / "node-toolchain",
-                         ["/usr/bin/curl", "--disable"], tool_environment, guard).fetch()
-        node = node.enable_execution()
         stage = "sources"
         sources = Sources(contract, record, workspace / "source", ["/usr/bin/git"],
                           tool_environment, guard).prepare()
         stage = "runtime-inputs"
         files = engine.prepare_files(sources)
-        stage = "packages"
-        prepared = Packages(contract, record, sources, node, workspace / "packages",
-                            tool_environment, guard).prepare()
         stage = "images"
         images = Builder(contract, engine, sources, workspace / "images").prepare()
         stage = "nodes"
@@ -253,6 +247,15 @@ def execute(environment, workspace, checkout):
         oracle = artifacts.fetch("parent_oracle").binaries
         consumer.enable_execution()
         oracle.enable_execution()
+        stage = "node-toolchain"
+        node = Installer(contract, transport, workspace / "node-toolchain",
+                         ["/usr/bin/curl", "--disable"], tool_environment, guard).fetch()
+        node = node.enable_execution()
+        stage = "packages"
+        prepared = Packages(contract, record, sources, node, workspace / "packages",
+                            tool_environment, guard).prepare()
+        stage = "runtime-inputs"
+        files.verify()
         stage = "fixture-configuration"
         fixture_flow(contract, record, engine, sources, node, prepared, "configure", guard)
         stage = "fixture-deposit"

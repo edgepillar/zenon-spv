@@ -56,12 +56,13 @@ in-memory hit rechecks original file identities and binary contents. Incomplete
 or failed attempts are terminal for that workspace. This step does not qualify
 a new CI run or enable binary execution.
 
-The runner checks this metadata before preparing the node and transports the
-consumer and parent-oracle archives only after the selected H1/H2/H3 opening
-passes validation. Early startup refusals therefore carry no downloaded copies
-of those two archives. Both inputs must pass materialization checks before
-fixture configuration starts. The Node toolchain is still installed before
-package preparation.
+The runner checks this metadata before preparing the node. The pinned Go node
+and executor recipes build from their source contexts. After the H1/H2/H3
+opening passes validation, the runner verifies the consumer and parent-oracle
+archives, installs the host Node.js toolchain and prepares the locked npm
+packages. It rechecks the runtime files after package scripts and before
+fixture configuration. A refusal before the opening reaches none of these
+archive transfers, the Node.js extraction or `npm ci`.
 
 On fresh intake, the ZIP and Node archive readers perform their existing
 pre-extraction SHA-256 scan on the recorded stdout descriptor. The recorder

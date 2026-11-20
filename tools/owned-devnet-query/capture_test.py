@@ -853,12 +853,14 @@ class HostBoundaryTests(unittest.TestCase):
             self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),
                              ("runtime-inputs", "REFUSED", "fixture_source_default"))
 
-    def test_query_inputs_follow_opening_validation_and_precede_fixture_configuration(self):
+    def test_query_inputs_and_packages_follow_opening_validation(self):
         contract, rows, _ = synthetic_window()
         execution = model.ExecutionIdentity("a" * 40, 1, 1, "edgepillar")
         for case, stage, reason in (
                 ("bad-opening", "nodes", "opening_header_count"),
                 ("bad-oracle", "query-inputs", "test_oracle_input_refusal"),
+                ("bad-toolchain", "node-toolchain", "test_node_toolchain_refusal"),
+                ("bad-packages", "packages", "test_package_refusal"),
                 ("ready", "fixture-configuration", "test_fixture_boundary")):
             trace = mock.Mock()
 
@@ -901,6 +903,8 @@ class HostBoundaryTests(unittest.TestCase):
                     engine = dependencies["Engine"].return_value
                     engine.docker_root = contract.data["runtime"]["closed_oracle_readonly_docker_root"]
                     engine.cleanup.return_value = []
+                    engine.prepare_files.return_value = mock.Mock(verify=trace.verify_runtime_files)
+                    dependencies["Builder"].return_value.prepare = trace.build_images
                     artifacts = dependencies["Artifacts"].return_value
                     artifacts.preflight = trace.preflight
                     artifacts.fetch = trace.fetch
@@ -908,8 +912,19 @@ class HostBoundaryTests(unittest.TestCase):
                     oracle = mock.Mock(enable_execution=trace.enable_oracle)
                     trace.fetch.side_effect = [mock.Mock(binaries=consumer),
                         model.Refused(reason) if case == "bad-oracle" else mock.Mock(binaries=oracle)]
+                    dependencies["Installer"].return_value.fetch = trace.fetch_node_toolchain
+                    trace.fetch_node_toolchain.return_value = mock.Mock(enable_execution=trace.enable_node)
+                    if case == "bad-toolchain":
+                        trace.fetch_node_toolchain.side_effect = model.Refused(reason)
+                    trace.enable_node.return_value = mock.sentinel.executable_node
+                    dependencies["Packages"].return_value.prepare = trace.prepare_packages
+                    trace.prepare_packages.return_value = mock.sentinel.prepared_packages
+                    if case == "bad-packages":
+                        trace.prepare_packages.side_effect = model.Refused(reason)
 
                     def stop_at_fixture(*args):
+                        self.assertIs(args[4], mock.sentinel.executable_node)
+                        self.assertIs(args[5], mock.sentinel.prepared_packages)
                         trace.fixture(args[-2])
                         raise model.Refused("test_fixture_boundary")
 
@@ -917,12 +932,18 @@ class HostBoundaryTests(unittest.TestCase):
                     env = {"GH_TOKEN": "unused-test-value", "GITHUB_OUTPUT": str(root / "output")}
                     self.assertEqual(runner.execute(env, root, HERE.parents[1]), 1)
                     engine.cleanup.assert_called_once_with()
-                expected = [mock.call.preflight(), mock.call.wait_height(3, starting=True), mock.call.opening()]
+                expected = [mock.call.preflight(), mock.call.build_images(), mock.call.verify_runtime_files()]
+                expected.extend(mock.call.build_images().image_for(role) for role in model.SERVICES[:4])
+                expected.extend((mock.call.wait_height(3, starting=True), mock.call.opening()))
                 if case != "bad-opening":
                     expected.extend((mock.call.fetch("consumer"), mock.call.fetch("parent_oracle")))
-                if case == "ready":
+                if case in ("bad-toolchain", "bad-packages", "ready"):
                     expected.extend((mock.call.enable_consumer(), mock.call.enable_oracle(),
-                                     mock.call.fixture("configure")))
+                                     mock.call.fetch_node_toolchain()))
+                if case in ("bad-packages", "ready"):
+                    expected.extend((mock.call.enable_node(), mock.call.prepare_packages()))
+                if case == "ready":
+                    expected.extend((mock.call.verify_runtime_files(), mock.call.fixture("configure")))
                 self.assertEqual(trace.mock_calls, expected)
                 terminal = json.loads((root / "evidence/terminal.json").read_bytes())
                 self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),
@@ -993,6 +1014,8 @@ class HostBoundaryTests(unittest.TestCase):
                 self.assertEqual(runner.execute(env, root, HERE.parents[1]), 1)
                 dependencies["Artifacts"].return_value.preflight.assert_called_once_with()
                 dependencies["Artifacts"].return_value.fetch.assert_not_called()
+                dependencies["Installer"].assert_not_called()
+                dependencies["Packages"].assert_not_called()
                 engine.cleanup.assert_called_once_with()
             terminal = json.loads((root / "evidence/terminal.json").read_bytes())
             self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),
