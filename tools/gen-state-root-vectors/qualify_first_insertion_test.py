@@ -18,9 +18,15 @@ Q = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(Q)
 
 
-VISIBILITY = {"format": "first-insertion-frontier-visibility/v1", "before_height": 1, "during_height": 2,
-              "callback_held_during_read": True, "insert_returned_after_release": True,
-              "accepted_header_authority": False}
+LEGACY_VISIBILITY = {"format": "first-insertion-frontier-visibility/v1", "before_height": 1, "during_height": 2,
+                     "callback_held_during_read": True, "insert_returned_after_release": True,
+                     "accepted_header_authority": False}
+PERIOD_READ_VISIBILITY = {**LEGACY_VISIBILITY, "format": "first-insertion-frontier-visibility/v2",
+                          "first_period_read_held": True}
+VISIBILITY = {**PERIOD_READ_VISIBILITY, "format": "first-insertion-frontier-visibility/v3",
+              "rpc_method": "ledger.getFrontierMomentum", "rpc_transport": "in-memory-http"}
+BUILD_OUTPUT = {"Action": "build-output", "ImportPath": "github.com/shirou/gopsutil/host",
+                "Output": "warning: 'kIOMasterPortDefault' is deprecated\n"}
 
 
 def events():
@@ -75,12 +81,36 @@ class Controls(unittest.TestCase):
             Q.native_controls(encoded(value))
 
     def test_complete_three_case_observation_is_not_acceptance(self):
-        result = Q.native_controls(encoded(events()))
+        result = Q.native_controls(encoded(events()), require_frontier_rpc=True)
         self.assertEqual((result["root_tests"], result["subtests"]), (1, 3))
         self.assertFalse(result["actual_fixture_cause_established"])
         self.assertFalse(result["new_devnet_acceptance_established"])
         self.assertEqual(result["observations"]["fixture-window"]["completed_periods"], 182718)
         self.assertEqual(result["frontier_visibility"], VISIBILITY)
+
+    def test_archived_callback_report_cannot_qualify_the_original_listener_gate(self):
+        rows = events()
+        marker = next(row for row in rows if Q.VISIBILITY_MARKER in row.get("Output", ""))
+        marker["Output"] = Q.VISIBILITY_MARKER + json.dumps(LEGACY_VISIBILITY) + "\n"
+        raw = encoded(rows)
+        self.assertEqual(Q.native_controls(raw)["frontier_visibility"], LEGACY_VISIBILITY)
+        with self.assertRaisesRegex(Q.Refused, "frontier_visibility_observation"):
+            Q.native_controls(raw, require_first_period_read=True)
+        missing = {name: value for name, value in PERIOD_READ_VISIBILITY.items() if name != "first_period_read_held"}
+        marker["Output"] = Q.VISIBILITY_MARKER + json.dumps(missing) + "\n"
+        with self.assertRaisesRegex(Q.Refused, "frontier_visibility_fields"):
+            Q.native_controls(encoded(rows), require_first_period_read=True)
+
+    def test_earlier_storage_observations_keep_their_scope_under_the_rpc_gate(self):
+        rows = events()
+        marker = next(row for row in rows if Q.VISIBILITY_MARKER in row.get("Output", ""))
+        for earlier in (LEGACY_VISIBILITY, PERIOD_READ_VISIBILITY):
+            with self.subTest(edition=earlier["format"]):
+                marker["Output"] = Q.VISIBILITY_MARKER + json.dumps(earlier) + "\n"
+                raw = encoded(rows)
+                self.assertEqual(Q.native_controls(raw)["frontier_visibility"], earlier)
+                with self.assertRaisesRegex(Q.Refused, "frontier_visibility_observation"):
+                    Q.native_controls(raw, require_frontier_rpc=True)
 
     def test_split_trace_reassembled_only_in_its_own_test(self):
         value = events()
@@ -113,6 +143,29 @@ class Controls(unittest.TestCase):
         value = events()
         value[2]["Test"] = Q.TEST + "/unselected"
         self.refused(value)
+
+    def test_go_build_output_preserves_test_evidence(self):
+        rows = events()
+        mixed = [BUILD_OUTPUT, *rows[:2], BUILD_OUTPUT, *rows[2:]]
+        self.assertEqual(Q.native_controls(encoded(mixed), require_frontier_rpc=True),
+                         Q.native_controls(encoded(rows), require_frontier_rpc=True))
+
+    def test_failed_or_malformed_go_build_events_refused(self):
+        rows = events()
+        build_failure = {"Action": "build-fail", "ImportPath": BUILD_OUTPUT["ImportPath"]}
+        self.refused([BUILD_OUTPUT, build_failure, *rows])
+        for fields in ({"ImportPath": ""}, {"Output": 1}, {"Output": ""}, {"Package": Q.PACKAGE}, {"Test": Q.TEST}):
+            with self.subTest(fields=fields):
+                self.refused([{**BUILD_OUTPUT, **fields}, *rows])
+        self.refused([*rows, BUILD_OUTPUT])
+        with self.assertRaisesRegex(Q.Refused, "native_build_output"):
+            Q.native_controls(encoded([BUILD_OUTPUT, *cpu_events("reference")]), "reference")
+
+    def test_go_build_output_cannot_supply_test_observations(self):
+        rows = events()
+        visibility = next(row for row in rows if Q.VISIBILITY_MARKER in row.get("Output", ""))
+        rows.remove(visibility)
+        self.refused([{**BUILD_OUTPUT, "Output": visibility["Output"]}, *rows])
 
     def test_trace_cannot_come_from_root_or_another_test(self):
         for target in (None, Q.TEST, Q.TEST + "/one-day"):
@@ -192,6 +245,7 @@ class Controls(unittest.TestCase):
         for field, replacement in {
             "before_height": True, "during_height": 1, "callback_held_during_read": False,
             "insert_returned_after_release": False, "accepted_header_authority": True,
+            "first_period_read_held": 1, "rpc_method": "ledger.getMomentumByHeight", "rpc_transport": "tcp",
         }.items():
             rows = events()
             row = next(row for row in rows if Q.VISIBILITY_MARKER in row.get("Output", ""))

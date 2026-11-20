@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""Observe original point catch-up on an isolated unsigned H2, without a node.
+"""Observe original point catch-up on an isolated unsigned H2.
 
 Only fresh hosted workspaces are written. Original node sources are verified
-against Git blobs before and after execution. No wallet, signature, RPC, peer,
-live transaction or accepted header is involved. Retain failed command streams.
+against Git blobs before and after execution. The read-only Ledger RPC handler
+runs in memory against the test chain. Retain failed command streams.
 """
 from __future__ import annotations
 
@@ -92,13 +92,26 @@ def cpu_observation(text, profile):
     return row
 
 
-def insertion_visibility(text):
+def insertion_visibility(text, *, require_first_period_read=False, require_frontier_rpc=False):
     row = selected_trace(text, VISIBILITY_MARKER)
-    require(type(row) is dict and set(row) == {
+    require(type(row) is dict, "frontier_visibility_fields")
+    edition = row.get("format")
+    rpc = edition == "first-insertion-frontier-visibility/v3"
+    period_read = rpc or edition == "first-insertion-frontier-visibility/v2"
+    fields = {
         "format", "before_height", "during_height", "callback_held_during_read",
         "insert_returned_after_release", "accepted_header_authority",
-    }, "frontier_visibility_fields")
-    require(row["format"] == "first-insertion-frontier-visibility/v1"
+    }
+    if period_read:
+        fields.add("first_period_read_held")
+    if rpc:
+        fields.update(("rpc_method", "rpc_transport"))
+    require(set(row) == fields, "frontier_visibility_fields")
+    require((period_read or edition == "first-insertion-frontier-visibility/v1")
+            and (not require_first_period_read or period_read)
+            and (not require_frontier_rpc or rpc)
+            and (not period_read or row["first_period_read_held"] is True)
+            and (not rpc or (row["rpc_method"], row["rpc_transport"]) == ("ledger.getFrontierMomentum", "in-memory-http"))
             and type(row["before_height"]) is int and row["before_height"] == 1
             and type(row["during_height"]) is int and row["during_height"] == 2
             and row["callback_held_during_read"] is True and row["insert_returned_after_release"] is True
@@ -106,7 +119,7 @@ def insertion_visibility(text):
     return row
 
 
-def native_controls(raw, cpu_profile=None):
+def native_controls(raw, cpu_profile=None, *, require_first_period_read=False, require_frontier_rpc=False):
     require(cpu_profile is None or cpu_profile in CPU_LIMITS, "cpu_profile_selection")
     cases = {"fixture-window": CASES["fixture-window"]} if cpu_profile == "half-core" else CASES
     require(type(raw) is bytes and 0 < len(raw) <= C.MAX_STREAM and raw.endswith(b"\n"), "native_stream")
@@ -118,8 +131,17 @@ def native_controls(raw, cpu_profile=None):
     for line in lines:
         require(not package_passed, "native_after_package_pass")
         event = decode(line)
-        require(type(event) is dict and event.get("Package") == PACKAGE, "native_package")
-        action, name = event.get("Action"), event.get("Test")
+        require(type(event) is dict, "native_package")
+        action = event.get("Action")
+        if action == "build-output":
+            # Go test can interleave compiler diagnostics and test events.
+            # The Linux test2json lane runs an already compiled binary.
+            require(cpu_profile is None and set(event) == {"Action", "ImportPath", "Output"}
+                    and type(event["ImportPath"]) is str and bool(event["ImportPath"])
+                    and type(event["Output"]) is str and bool(event["Output"]), "native_build_output")
+            continue
+        require(event.get("Package") == PACKAGE, "native_package")
+        name = event.get("Test")
         require(action in ("start", "run", "output", "pass"), "native_outcome")
         if name is not None:
             require(type(name) is str and name in expected and package_started, "native_selection")
@@ -181,7 +203,9 @@ def native_controls(raw, cpu_profile=None):
             "observations": observations, "actual_fixture_cause_established": False,
             "new_devnet_acceptance_established": False}
     if visibility_test:
-        result["frontier_visibility"] = insertion_visibility(outputs.get(visibility_test, ""))
+        result["frontier_visibility"] = insertion_visibility(outputs.get(visibility_test, ""),
+                                                              require_first_period_read=require_first_period_read,
+                                                              require_frontier_rpc=require_frontier_rpc)
     if cpu_profile:
         result["cpu"] = cpu_observation(outputs.get(cpu_test, ""), cpu_profile)
     return result
@@ -236,7 +260,7 @@ def linux_cpu_controls(work, node, output, selected, records):
         raw = C.command(output, label, args, work, records, timeout=215)
         require(C.digest(C.regular(binary, C.MAX_BINARY)) == initial and not any(scratch.iterdir()),
                 "cpu_sample_binary_or_scratch")
-        return native_controls(raw, profile)
+        return native_controls(raw, profile, require_frontier_rpc=True)
 
     reference = run("reference", "native-test", "^" + TEST + "$")
     constrained = run("half-core", "half-core-test", "^" + TEST + "$/^fixture-window$")
@@ -333,7 +357,7 @@ def qualify(work, output, selected, records):
     else:
         raw = C.command(output, "native-test", ["go", "test", *C.NATIVE_FLAGS, "-json", "-count=1", "-timeout=180s",
                         "-run", "^" + TEST + "$", "./consensus"], node, records, timeout=600)
-        controls = native_controls(raw)
+        controls = native_controls(raw, require_frontier_rpc=True)
     unchanged()
     require(C.git(output, "node-head-after", ["rev-parse", "HEAD"], node, records).decode().strip() == C.NODE_REVISION
             and C.git(output, "node-tree-after", ["rev-parse", "HEAD^{tree}"], node, records).decode().strip() == C.NODE_TREE,
