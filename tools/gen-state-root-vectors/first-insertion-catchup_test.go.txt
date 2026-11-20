@@ -3,12 +3,19 @@
 package consensus_test
 
 import (
+	"bytes"
+	"crypto/ed25519"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io/fs"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,11 +25,20 @@ import (
 	cache "github.com/zenon-network/go-zenon/chain/cache/storage"
 	"github.com/zenon-network/go-zenon/chain/genesis"
 	"github.com/zenon-network/go-zenon/chain/nom"
+	"github.com/zenon-network/go-zenon/common"
 	"github.com/zenon-network/go-zenon/common/db"
+	"github.com/zenon-network/go-zenon/common/trie"
 	"github.com/zenon-network/go-zenon/common/types"
 	"github.com/zenon-network/go-zenon/consensus"
 	"github.com/zenon-network/go-zenon/consensus/storage"
+	"github.com/zenon-network/go-zenon/dp"
+	"github.com/zenon-network/go-zenon/rpc/api"
+	"github.com/zenon-network/go-zenon/rpc/server"
+	"github.com/zenon-network/go-zenon/verifier"
+	"github.com/zenon-network/go-zenon/vm"
 	"github.com/zenon-network/go-zenon/vm/constants"
+	"github.com/zenon-network/go-zenon/vm/embedded/definition"
+	"github.com/zenon-network/go-zenon/zenon"
 )
 
 type spvCountedDB struct {
@@ -55,34 +71,320 @@ func spvPointCount(t *testing.T, d db.DB, prefix byte) uint64 {
 	return count
 }
 
-type spvInsertionVisibilityGate struct {
-	entered chan types.HashHeight
-	release chan struct{}
+type spvFirstPeriodReadGate struct {
+	db.DB
+	corechain.MomentumEventListener
+	pointKey         []byte
+	entered, release chan struct{}
+	notification     types.HashHeight
+	seconds          float64
 }
 
-func (g *spvInsertionVisibilityGate) InsertMomentum(momentum *nom.DetailedMomentum) {
-	select {
-	case g.entered <- momentum.Momentum.Identifier():
-	case <-g.release:
-		return
+func (g *spvFirstPeriodReadGate) Get(key []byte) ([]byte, error) {
+	if g.pointKey != nil && bytes.Equal(key, g.pointKey) {
+		g.pointKey = nil
+		close(g.entered)
+		<-g.release
 	}
-	<-g.release
+	return g.DB.Get(key)
 }
 
-func (*spvInsertionVisibilityGate) DeleteMomentum(*nom.DetailedMomentum) {}
+func (g *spvFirstPeriodReadGate) InsertMomentum(momentum *nom.DetailedMomentum) {
+	g.notification = momentum.Momentum.Identifier()
+	started := time.Now()
+	g.MomentumEventListener.InsertMomentum(momentum)
+	g.seconds = time.Since(started).Seconds()
+}
 
-// Check the actual frontier store used by the Ledger API while an insertion
-// listener is blocked. The gate controls ordering instead of sampling sleeps.
-func spvObserveInsertionVisibility(t *testing.T, ch corechain.Chain, first, next types.HashHeight, insert func() error) {
+type spvFrontierNode struct {
+	zenon.Zenon
+	chain corechain.Chain
+}
+
+func (z *spvFrontierNode) Chain() corechain.Chain { return z.chain }
+
+// Register just the read method used by the readiness probe.
+type spvFrontierLedger struct{ ledger *api.LedgerApi }
+
+func (a *spvFrontierLedger) GetFrontierMomentum() (*api.Momentum, error) {
+	return a.ledger.GetFrontierMomentum()
+}
+
+// Exact post-sync frontier reply from run 43653383092, attempt 1.
+const spvRecordedStartupHeader = `{"jsonrpc":"2.0","id":32,"result":{` +
+	`"version":1,"chainIdentifier":69,` +
+	`"hash":"6203eed405db9b47b93628ed4178740150d35dbb3353bcee75fd622133c9798e",` +
+	`"previousHash":"fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",` +
+	`"height":2,"timestamp":1794699050,"data":"","content":[],` +
+	`"changesHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",` +
+	`"publicKey":"iBln1lKTR6B/c+4sXwWWsbS85EuCisCh/Xegw/GQNVk=",` +
+	`"signature":"uf300J8ZMowXXirZHrcpTCPuKNAdm73le+q2lFxZmHsKzamx+iBeEAwdLExSZRkGdMPhSxsmbQ73Sf8BkGVZAA==",` +
+	`"nextFusionPrice":0,"nextWorkPrice":0,` +
+	`"stateRoot":"0000000000000000000000000000000000000000000000000000000000000000",` +
+	`"producer":"z1qq9n7fpaqd8lpcljandzmx4xtku9w4ftwyg0mq"}}` +
+	"\n"
+
+func spvCheckRecordedStartupHeader(t *testing.T, ch corechain.Chain, genesis types.HashHeight) *nom.Momentum {
 	t.Helper()
-	before, err := ch.GetFrontierMomentumStore().GetFrontierMomentum()
-	if err != nil || before == nil || before.Identifier() != first {
-		t.Fatal("unexpected frontier before the unsigned insertion")
+	raw := []byte(spvRecordedStartupHeader)
+	pin := sha256.Sum256(raw)
+	if len(raw) != 697 || hex.EncodeToString(pin[:]) != "931a991acef939bd4d9c0f55e293c64402189940b406b612a0e8bed9668acbc4" {
+		t.Fatal("recorded startup frontier response changed")
 	}
-	gate := &spvInsertionVisibilityGate{
-		entered: make(chan types.HashHeight),
-		release: make(chan struct{}),
+	var reply struct {
+		Version string        `json:"jsonrpc"`
+		ID      uint64        `json:"id"`
+		Result  *api.Momentum `json:"result"`
 	}
+	if err := json.Unmarshal(raw, &reply); err != nil || reply.Version != "2.0" ||
+		reply.ID != 32 || reply.Result == nil || reply.Result.Momentum == nil {
+		t.Fatal("invalid recorded startup frontier response")
+	}
+	header := reply.Result.Momentum
+	if header.Version != 1 || header.ChainIdentifier != 69 || header.Height != 2 ||
+		header.Previous() != genesis || header.ComputeHash() != header.Hash || !header.StateRoot.IsZero() {
+		t.Fatal("recorded header does not match the source genesis and signed envelope")
+	}
+	if len(header.PublicKey) != ed25519.PublicKeySize ||
+		!ed25519.Verify(ed25519.PublicKey(header.PublicKey), header.Hash.Bytes(), header.Signature) ||
+		reply.Result.Producer != header.Producer() {
+		t.Fatal("recorded header signature or producer address differs")
+	}
+	header.EnsureCache()
+	oracle := consensus.NewConsensus(db.NewMemDB(), ch, false)
+	matches, err := oracle.VerifyMomentumProducerAt(genesis, header)
+	if err != nil || !matches {
+		t.Fatal("recorded header producer does not match the source genesis slot")
+	}
+	if ch.GetFrontierMomentumStore().Identifier() != genesis {
+		t.Fatal("source frontier changed while checking the recorded header")
+	}
+	trace := map[string]interface{}{
+		"format": "recorded-chain69-h2/v1", "recorded_run": 43653383092, "recorded_artifact_id": 14136634774,
+		"rpc_sha256": hex.EncodeToString(pin[:]), "height": header.Height, "version": header.Version,
+		"hash": header.Hash.String(), "parent_hash": genesis.Hash.String(), "timestamp": header.TimestampUnix,
+		"signature_verified": true, "source_parent_slot_match": matches, "source_frontier_unchanged": true,
+		"accepted_header_authority": false,
+	}
+	data, err := json.Marshal(trace)
+	if err != nil {
+		t.Fatal("recorded startup header observation encoding failed")
+	}
+	t.Logf("SPV_RECORDED_STARTUP_H2 %s", data)
+	return header
+}
+
+func spvNewStartupChain(root string, config *genesis.GenesisConfig) corechain.Chain {
+	return corechain.NewChain(db.NewLevelDBManager(filepath.Join(root, "ledger")),
+		cache.NewCacheDBManager(filepath.Join(root, "cache")), genesis.NewGenesis(config),
+		filepath.Join(root, "state"), false)
+}
+
+func spvInsertStartupMomentum(ch corechain.Chain, detailed *nom.DetailedMomentum, changes db.Patch) error {
+	insert := ch.AcquireInsert("isolated startup momentum fixture")
+	defer insert.Unlock()
+	if err := ch.UpdateCache(insert, detailed, changes); err != nil {
+		return err
+	}
+	if err := ch.UpdateStateTree(insert, detailed, changes); err != nil {
+		return err
+	}
+	return ch.AddMomentumTransaction(insert, &nom.MomentumTransaction{Momentum: detailed.Momentum, Changes: changes})
+}
+
+func spvReplayedSettlementProofs(t *testing.T, ch corechain.Chain, header *nom.Momentum, root types.Hash) []byte {
+	t.Helper()
+	ledger := api.NewLedgerApi(&spvFrontierNode{chain: ch})
+	rpcRoot, err := ledger.GetStateRoot(header.Height)
+	if !errors.Is(err, api.ErrStateRootNotActivated) || !rpcRoot.IsZero() {
+		t.Fatal("legacy H2 exposed a root through the ledger API")
+	}
+
+	const domainID = 1
+	subkeys := map[string][]byte{
+		"batch_entry":   (&definition.BatchEntryKey{DomainId: domainID, BatchId: 0}).Key(),
+		"domain_record": (&definition.DomainRecordKey{DomainId: domainID}).Key(),
+		// The selected source keeps the domainConfig key constructor private.
+		"domain_config": binary.BigEndian.AppendUint32([]byte{0x15}, domainID),
+	}
+	type witness struct {
+		Key             string `json:"key"`
+		Proof           []byte `json:"proof"`
+		Value           []byte `json:"value"`
+		ProofRPCRefused bool   `json:"proof_rpc_refused"`
+	}
+	raw := make(map[string]witness, len(subkeys))
+	for _, name := range []string{"batch_entry", "domain_record", "domain_config"} {
+		key := common.JoinBytes([]byte{0x03}, types.SettlementContract.Bytes(), []byte{0x04}, subkeys[name])
+		proofResult, err := ledger.GetProof(header.Height, key)
+		if !errors.Is(err, api.ErrStateRootNotActivated) || proofResult != nil {
+			t.Fatalf("legacy H2 supplied a proof for %s through the ledger API", name)
+		}
+		value, proof, err := ch.GetProof(header.Identifier(), key)
+		if err != nil || value != nil || len(proof) < 99 || len(proof) > 99+256*32 {
+			t.Fatalf("bounded local absence proof is unavailable for %s", name)
+		}
+		if matches, err := trie.VerifyAbsence(root, key, proof); err != nil || !matches {
+			t.Fatalf("local tree proof did not match for %s", name)
+		}
+		if matches, _ := trie.VerifyAbsence(header.StateRoot, key, proof); matches {
+			t.Fatalf("local proof unexpectedly matched the legacy header for %s", name)
+		}
+		raw[name] = witness{Key: hex.EncodeToString(key), Proof: proof, Value: value, ProofRPCRefused: true}
+	}
+	trace := map[string]interface{}{
+		"format": "recorded-chain69-h2-settlement-proofs/v1", "height": header.Height, "hash": header.Hash.String(),
+		"local_tree_root": root.String(), "header_state_root": header.StateRoot.String(),
+		"root_rpc_refused": true, "witnesses": raw, "accepted_header_authority": false,
+	}
+	encoded, err := json.Marshal(trace)
+	if err != nil {
+		t.Fatal("cannot encode the local Settlement proofs")
+	}
+	return encoded
+}
+
+func spvReplayRecordedStartupBoundary(t *testing.T, config *genesis.GenesisConfig, first types.HashHeight) {
+	t.Helper()
+	dir := t.TempDir()
+	ch := spvNewStartupChain(dir, config)
+	defer func() {
+		if ch != nil && ch.Stop() != nil {
+			t.Error("owned replay chain cleanup failed")
+		}
+	}()
+	if ch.Init() != nil || ch.GetFrontierMomentumStore().Identifier() != first || !ch.StateTreeReady() {
+		t.Fatal("recorded replay did not initialize at source H1")
+	}
+	activeAtH1, err := ch.GetFrontierMomentumStore().IsSporkActive(types.StateRootSpork)
+	if err != nil || activeAtH1 {
+		t.Fatal("H1 state-root activation differs")
+	}
+	genesisRoot, err := ch.StateRoot(first)
+	if err != nil || genesisRoot.IsZero() {
+		t.Fatal("source H1 state tree is unavailable")
+	}
+	header := spvCheckRecordedStartupHeader(t, ch, first)
+	detailed := &nom.DetailedMomentum{Momentum: header}
+	empty := db.NewPatch()
+	sourceConsensus := consensus.NewConsensus(db.NewMemDB(), ch, false)
+	result, err := vm.NewSupervisor(ch, sourceConsensus).ApplyMomentum(detailed)
+	if err != nil || result == nil || result.Momentum == nil || result.Changes == nil ||
+		!bytes.Equal(result.Changes.Dump(), empty.Dump()) {
+		t.Fatal("original VM did not apply the recorded H2 with its empty patch")
+	}
+	h2 := header.Identifier()
+	if result.Momentum.Identifier() != h2 || spvInsertStartupMomentum(ch, detailed, result.Changes) != nil {
+		t.Fatal("cannot commit the VM-verified H2 in the isolated replay")
+	}
+	err = ch.Stop()
+	ch = nil
+	if err != nil {
+		t.Fatal("cannot close the recorded replay at H2")
+	}
+
+	ch = spvNewStartupChain(dir, config)
+	if ch.Init() != nil || ch.GetFrontierMomentumStore().Identifier() != h2 || !ch.StateTreeReady() {
+		t.Fatal("recorded replay did not reopen at the exact H2")
+	}
+	activeAtH2, err := ch.GetFrontierMomentumStore().IsSporkActive(types.StateRootSpork)
+	if err != nil || !activeAtH2 {
+		t.Fatal("H2 did not activate the state-root version rule")
+	}
+	root, err := ch.StateRoot(h2)
+	if err != nil || root != genesisRoot {
+		t.Fatal("reopened H2 root differs after the empty patch")
+	}
+	nextRoot, err := ch.ComputeStateRoot(h2, empty)
+	if err != nil || nextRoot != root {
+		t.Fatal("empty-patch candidate root differs from the reopened H2 root")
+	}
+
+	candidate := &nom.Momentum{
+		Version: nom.StateRootMomentumVersion, ChainIdentifier: header.ChainIdentifier,
+		Height: h2.Height + 1, PreviousHash: h2.Hash,
+		TimestampUnix: header.TimestampUnix + uint64(constants.ConsensusConfig.BlockTime), StateRoot: nextRoot,
+		NextFusionPrice: dp.MinResourcePrice, NextWorkPrice: dp.MinResourcePrice,
+	}
+	candidate.EnsureCache()
+	sourceConsensus = consensus.NewConsensus(db.NewMemDB(), ch, false)
+	rules := verifier.NewMomentumVerifier(ch, sourceConsensus, vm.CanonicalBasePlasma)
+	if err := rules.Momentum(&nom.DetailedMomentum{Momentum: candidate}); err != nil {
+		t.Fatal("the original raw rules refused the unsigned H3 candidate")
+	}
+	for _, version := range []uint64{1, 2} {
+		legacy := *candidate
+		legacy.Version = version
+		if err := rules.Momentum(&nom.DetailedMomentum{Momentum: &legacy}); !errors.Is(err, verifier.ErrMVersionInvalid) {
+			t.Fatalf("H2 did not refuse incoming version %d", version)
+		}
+	}
+	if ch.GetFrontierMomentumStore().Identifier() != h2 {
+		t.Fatal("the H3 check changed the replay frontier")
+	}
+	proofs := spvReplayedSettlementProofs(t, ch, header, root)
+	err = ch.Stop()
+	ch = nil
+	if err != nil {
+		t.Fatal("cannot close the reopened replay")
+	}
+	trace := map[string]interface{}{
+		"format": "recorded-chain69-h2-boundary/v1", "parent_height": h2.Height, "parent_hash": h2.Hash.String(),
+		"source_vm_empty_patch": true, "reopened_parent": true, "state_root_active_at_h1": activeAtH1,
+		"state_root_active_at_h2": activeAtH2, "unsigned_height": candidate.Height, "unsigned_version": candidate.Version,
+		"unsigned_empty_patch_root": nextRoot.String(), "rejected_versions": []uint64{1, 2},
+		"unsigned_header_committed": false, "accepted_header_authority": false,
+	}
+	data, err := json.Marshal(trace)
+	if err != nil {
+		t.Fatal("recorded startup boundary observation encoding failed")
+	}
+	t.Logf("SPV_RECORDED_STARTUP_BOUNDARY %s", data)
+	t.Logf("SPV_RECORDED_STARTUP_PROOFS %s", proofs)
+}
+
+const spvFrontierMethod = "ledger.getFrontierMomentum"
+
+func spvReadRPCFrontier(rpc *server.Server) (types.HashHeight, error) {
+	body := `{"jsonrpc":"2.0","id":1,"method":"` + spvFrontierMethod + `","params":[]}`
+	request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	reply := httptest.NewRecorder()
+	rpc.ServeHTTP(reply, request)
+	if reply.Code != http.StatusOK || reply.Header().Get("Content-Type") != "application/json" ||
+		reply.Body.Len() == 0 || reply.Body.Len() > 16<<10 {
+		return types.HashHeight{}, errors.New("unexpected frontier HTTP reply")
+	}
+	var response struct {
+		Version string            `json:"jsonrpc"`
+		ID      uint64            `json:"id"`
+		Result  *types.HashHeight `json:"result"`
+		Error   json.RawMessage   `json:"error"`
+	}
+	if err := json.Unmarshal(reply.Body.Bytes(), &response); err != nil || response.Version != "2.0" ||
+		response.ID != 1 || response.Result == nil || response.Error != nil {
+		return types.HashHeight{}, errors.New("unexpected frontier JSON-RPC reply")
+	}
+	return *response.Result, nil
+}
+
+// Read the actual readiness RPC while the original points listener is at its
+// first period database read. The HTTP handler runs entirely in memory.
+func spvObserveInsertionVisibility(t *testing.T, ch corechain.Chain, first, next types.HashHeight,
+	gate *spvFirstPeriodReadGate, insert func() error) {
+	t.Helper()
+	rpc := server.NewServer()
+	defer rpc.Stop()
+	if err := rpc.RegisterName("ledger", &spvFrontierLedger{ledger: api.NewLedgerApi(&spvFrontierNode{chain: ch})}); err != nil {
+		t.Fatal("cannot register the read-only ledger method")
+	}
+	before, err := spvReadRPCFrontier(rpc)
+	if err != nil || before != first {
+		t.Fatal("unexpected RPC frontier before the unsigned insertion")
+	}
+	gate.pointKey = storage.CreatePointKey(storage.PrefixPeriodPoint, 0)
+	gate.entered = make(chan struct{})
+	gate.release = make(chan struct{})
 	ch.Register(gate)
 	timer := time.NewTimer(8 * time.Second)
 	defer timer.Stop()
@@ -106,30 +408,30 @@ func spvObserveInsertionVisibility(t *testing.T, ch corechain.Chain, first, next
 	}()
 
 	select {
-	case event := <-gate.entered:
-		if event != next {
+	case <-gate.entered:
+		if gate.notification != next {
 			t.Fatal("unexpected fixture insertion notification")
 		}
 	case <-insertDone:
-		t.Fatal("unsigned insertion returned before the callback")
+		t.Fatal("unsigned insertion returned before the first period read")
 	case <-timer.C:
-		t.Fatal("unsigned insertion callback deadline")
+		t.Fatal("first period database read deadline")
 	}
 
 	readDone = make(chan struct{})
-	var during *nom.Momentum
+	var during types.HashHeight
 	var readError error
 	go func() {
-		during, readError = ch.GetFrontierMomentumStore().GetFrontierMomentum()
+		during, readError = spvReadRPCFrontier(rpc)
 		close(readDone)
 	}()
 	select {
 	case <-readDone:
-		if readError != nil || during == nil || during.Identifier() != next {
-			t.Fatal("unsigned fixture frontier is not visible during the callback")
+		if readError != nil || during != next {
+			t.Fatal("unsigned fixture frontier is not visible through RPC during the callback")
 		}
 	case <-timer.C:
-		t.Fatal("frontier read blocked behind the insertion callback")
+		t.Fatal("RPC frontier read blocked behind the insertion callback")
 	}
 	select {
 	case <-insertDone:
@@ -148,9 +450,10 @@ func spvObserveInsertionVisibility(t *testing.T, ch corechain.Chain, first, next
 		t.Fatal("unsigned insertion did not return after the callback")
 	}
 	row := map[string]interface{}{
-		"format":        "first-insertion-frontier-visibility/v1",
+		"format":        "first-insertion-frontier-visibility/v3",
 		"before_height": before.Height, "during_height": during.Height,
 		"callback_held_during_read": true, "insert_returned_after_release": true,
+		"first_period_read_held": true, "rpc_method": spvFrontierMethod, "rpc_transport": "in-memory-http",
 		"accepted_header_authority": false,
 	}
 	data, err := json.Marshal(row)
@@ -161,7 +464,7 @@ func spvObserveInsertionVisibility(t *testing.T, ch corechain.Chain, first, next
 }
 
 func TestSPVFirstInsertionCatchup(t *testing.T) {
-	// Do not start a node wrapper, consensus event loop, producer, RPC or peer.
+	// Do not start a node wrapper, consensus event loop, producer or peer.
 	// In particular, do not construct a wallet or obtain a signing key.
 	log15.Root().SetHandler(log15.DiscardHandler())
 	raw, err := os.ReadFile(filepath.Join("..", "docker", "devnet", "genesis.json"))
@@ -191,9 +494,7 @@ func TestSPVFirstInsertionCatchup(t *testing.T) {
 	} {
 		t.Run(selected.name, func(t *testing.T) {
 			root := t.TempDir()
-			ch := corechain.NewChain(db.NewLevelDBManager(filepath.Join(root, "ledger")),
-				cache.NewCacheDBManager(filepath.Join(root, "cache")), genesis.NewGenesis(&config),
-				filepath.Join(root, "state"), false)
+			ch := spvNewStartupChain(root, &config)
 			stopped := false
 			defer func() {
 				if !stopped && ch.Stop() != nil {
@@ -207,36 +508,38 @@ func TestSPVFirstInsertionCatchup(t *testing.T) {
 			if first.Height != 1 || first.TimestampUnix != 1739923200 || first.Hash.String() != "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9" {
 				t.Fatal("selected genesis identity differs")
 			}
+			if selected.name == "one-period" {
+				spvReplayRecordedStartupBoundary(t, &config, first.Identifier())
+			}
 			// The manager accepts an explicit test fixture without authenticating it.
 			// This is deliberately below the verifier, with no signature and no network.
 			patch := db.NewPatch()
 			m := &nom.Momentum{Version: 1, ChainIdentifier: 69, Height: 2,
 				PreviousHash: first.Hash, TimestampUnix: first.TimestampUnix + selected.gap,
 				ChangesHash: db.PatchHash(patch)}
+			if selected.name == "one-period" {
+				// The RPC converter fills nil optional slices. Seal the empty fields
+				// before the insertion listener and the read can see this fixture.
+				m.Data = []byte{}
+				m.Content = nom.MomentumContent{}
+			}
 			m.Hash = m.ComputeHash()
 			m.EnsureCache()
 			detailed := &nom.DetailedMomentum{Momentum: m}
 			t.Log("SPV_CATCHUP_PHASE begin unsigned-manager-fixture")
-			started := time.Now()
 			insertFixture := func() error {
-				insert := ch.AcquireInsert("isolated unsigned catchup cost fixture")
-				defer insert.Unlock()
-				if err := ch.UpdateCache(insert, detailed, patch); err != nil {
-					return err
-				}
-				if err := ch.UpdateStateTree(insert, detailed, patch); err != nil {
-					return err
-				}
-				return ch.AddMomentumTransaction(insert, &nom.MomentumTransaction{Momentum: m, Changes: patch})
+				return spvInsertStartupMomentum(ch, detailed, patch)
 			}
-			if selected.name == "one-period" {
-				spvObserveInsertionVisibility(t, ch, first.Identifier(), m.Identifier(), insertFixture)
-			} else if insertFixture() != nil {
-				t.Fatal("unsigned manager fixture insertion failed")
-			}
-			insertSeconds := time.Since(started).Seconds()
-			if ch.GetFrontierMomentumStore().Identifier() != m.Identifier() {
-				t.Fatal("unsigned fixture frontier differs")
+			var insertSeconds float64
+			if selected.name != "one-period" {
+				started := time.Now()
+				if insertFixture() != nil {
+					t.Fatal("unsigned manager fixture insertion failed")
+				}
+				insertSeconds = time.Since(started).Seconds()
+				if ch.GetFrontierMomentumStore().Identifier() != m.Identifier() {
+					t.Fatal("unsigned fixture frontier differs")
+				}
 			}
 			rawDB, ldb := db.NewLevelDB(filepath.Join(root, "consensus"))
 			closed := false
@@ -246,7 +549,13 @@ func TestSPVFirstInsertionCatchup(t *testing.T) {
 				}
 			}()
 			counted := &spvCountedDB{DB: rawDB}
-			listener, completed := consensus.SPVFirstInsertionPoints(counted, ch)
+			var pointDB db.DB = counted
+			var gate *spvFirstPeriodReadGate
+			if selected.name == "one-period" {
+				gate = &spvFirstPeriodReadGate{DB: counted}
+				pointDB = gate
+			}
+			listener, completed := consensus.SPVFirstInsertionPoints(pointDB, ch)
 			previousPeriod, previousEpoch := completed()
 			if previousPeriod != -1 || previousEpoch != -1 {
 				t.Fatal("fresh point database required")
@@ -259,11 +568,17 @@ func TestSPVFirstInsertionCatchup(t *testing.T) {
 				cpuBefore = spvCPUStats(t, profile)
 			}
 			t.Log("SPV_CATCHUP_PHASE begin original-points-listener")
-			started = time.Now()
-			// This is the original synchronous listener called during canonical
-			// insertion; call it directly so no signed production is necessary.
-			listener.InsertMomentum(detailed)
-			pointSeconds := time.Since(started).Seconds()
+			started := time.Now()
+			var pointSeconds float64
+			if gate != nil {
+				gate.MomentumEventListener = listener
+				spvObserveInsertionVisibility(t, ch, first.Identifier(), m.Identifier(), gate, insertFixture)
+				insertSeconds = time.Since(started).Seconds()
+				pointSeconds = gate.seconds
+			} else {
+				listener.InsertMomentum(detailed)
+				pointSeconds = time.Since(started).Seconds()
+			}
 			t.Log("SPV_CATCHUP_PHASE end original-points-listener")
 			if observeCPU {
 				spvCPUReport(t, profile, cpuBefore, spvCPUStats(t, profile))
