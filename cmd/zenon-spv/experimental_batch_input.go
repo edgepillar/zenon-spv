@@ -35,6 +35,15 @@ type experimentalCLIConfig struct {
 	QueryProfile  verify.ExperimentalBatchEntryProfile
 }
 
+// experimentalCLIFieldSpan borrows an encoded field for synchronous decoding.
+// It must stay local to the enclosing input decoder.
+type experimentalCLIFieldSpan []byte
+
+// The standard decoder checks the complete value before calling this method.
+type discardedExperimentalCLIValue struct{}
+
+func (*discardedExperimentalCLIValue) UnmarshalJSON([]byte) error { return nil }
+
 // Exact required fields only. Null, aliases, duplicates and trailing values
 // cannot silently replace a trust input or disable a selected comparison.
 func decodeExperimentalCLIObject(raw []byte, fields map[string]any, nullable ...string) error {
@@ -54,25 +63,44 @@ func decodeExperimentalCLIObject(raw []byte, fields map[string]any, nullable ...
 			return errExperimentalCLIInput
 		}
 		seen[name] = true
-		var value json.RawMessage
+		start := d.InputOffset()
+		if d.Decode(&discardedExperimentalCLIValue{}) != nil {
+			return errExperimentalCLIInput
+		}
+		// The validated span starts after the field name and includes its colon.
+		_, value, ok := bytes.Cut(raw[start:d.InputOffset()], []byte{':'})
+		if !ok {
+			return errExperimentalCLIInput
+		}
+		value = bytes.Trim(value, " \t\n\r")
 		allowNull := false
 		for _, field := range nullable {
 			allowNull = allowNull || field == name
 		}
-		if d.Decode(&value) != nil || bytes.Equal(bytes.TrimSpace(value), []byte("null")) && !allowNull {
+		if bytes.Equal(value, []byte("null")) && !allowNull {
 			return errExperimentalCLIInput
 		}
-		if destination, ok := target.(*json.RawMessage); ok && destination != nil {
-			// Decode already validated the value and copied it into value.
+		switch destination := target.(type) {
+		case *experimentalCLIFieldSpan:
+			if destination == nil {
+				return errExperimentalCLIInput
+			}
 			*destination = value
-		} else if json.Unmarshal(value, target) != nil {
-			return errExperimentalCLIInput
+		case *json.RawMessage:
+			if destination == nil {
+				return errExperimentalCLIInput
+			}
+			*destination = bytes.Clone(value)
+		default:
+			if json.Unmarshal(value, target) != nil {
+				return errExperimentalCLIInput
+			}
 		}
 	}
 	if token, err := d.Token(); err != nil || token != json.Delim('}') || len(seen) != len(fields) {
 		return errExperimentalCLIInput
 	}
-	if d.Decode(new(any)) != io.EOF {
+	if d.Decode(&discardedExperimentalCLIValue{}) != io.EOF {
 		return errExperimentalCLIInput
 	}
 	return nil
@@ -102,6 +130,17 @@ type experimentalCLIBundle struct {
 	Gateway *proof.CandidateSettlementBatch
 }
 
+type experimentalCLIRPCHeader chain.CandidateV3Header
+
+func (h *experimentalCLIRPCHeader) UnmarshalJSON(raw []byte) error {
+	header, err := fetch.DecodeCandidateV3MomentumHeader(raw)
+	if err != nil {
+		return err
+	}
+	*h = experimentalCLIRPCHeader(header)
+	return nil
+}
+
 func decodeExperimentalCLIHeaders(raw []byte, maxHeaders uint32) ([]chain.CandidateV3Header, error) {
 	if len(raw) > maxExperimentalBundleBytes || maxHeaders == 0 || maxHeaders > verify.MaxRetainHeaders {
 		return nil, errExperimentalCLIInput
@@ -115,17 +154,13 @@ func decodeExperimentalCLIHeaders(raw []byte, maxHeaders uint32) ([]chain.Candid
 		if len(headers) >= int(maxHeaders) {
 			return nil, errExperimentalCLIInput
 		}
-		var row json.RawMessage
-		if d.Decode(&row) != nil {
+		var header experimentalCLIRPCHeader
+		if d.Decode(&header) != nil {
 			return nil, errExperimentalCLIInput
 		}
-		header, err := fetch.DecodeCandidateV3MomentumHeader(row)
-		if err != nil {
-			return nil, errExperimentalCLIInput
-		}
-		headers = append(headers, header)
+		headers = append(headers, chain.CandidateV3Header(header))
 	}
-	if token, err := d.Token(); err != nil || token != json.Delim(']') || d.Decode(new(any)) != io.EOF {
+	if token, err := d.Token(); err != nil || token != json.Delim(']') || d.Decode(&discardedExperimentalCLIValue{}) != io.EOF {
 		return nil, errExperimentalCLIInput
 	}
 	return headers, nil
@@ -138,7 +173,8 @@ func decodeExperimentalCLIBundle(raw []byte, maxHeaders uint32, compare bool) (e
 		return experimentalCLIBundle{}, errExperimentalCLIInput
 	}
 	var version uint32
-	var rows, witness, gateway json.RawMessage
+	var rows experimentalCLIFieldSpan
+	var witness, gateway json.RawMessage
 	fields := map[string]any{"version": &version, "momentums": &rows, "witness": &witness}
 	if compare {
 		fields["gateway"] = &gateway

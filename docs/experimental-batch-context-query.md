@@ -206,6 +206,30 @@ The retained tail is still rechecked; a zero provider-header count does not mean
 zero signature work. These small fixture counts establish reduced replay scope,
 not representative network latency, R1 resource budgets or production support.
 
+### Provider bundle decoding
+
+The CLI uses the already validated byte range for the `momentums` field and
+decodes each row directly to a detached header. The outer and per-header byte
+caps and the selected header count still apply. The three-witness query checks
+witness inputs before projecting the headers, preserving the existing refusal
+for an unavailable witness.
+
+Go 1.25.14 on Darwin arm64 measured these median allocations across three
+samples with eight operations per sample. Both versions use the same benchmark
+and input bytes. The baseline is `b6a87570abc29fd0dcce4cc32505243e449f0745`.
+
+| Input | Baseline B/op | Candidate B/op | Baseline allocs/op | Candidate allocs/op |
+| --- | ---: | ---: | ---: | ---: |
+| Four recorded headers and three witnesses | 127,208 | 122,552 | 1,319 | 1,304 |
+| 4,096 headers and three witnesses | 73,214,802 | 68,659,854 | 1,052,985 | 1,048,878 |
+
+The larger input repeats the four fixture rows to exercise the parser's header
+count cap. The benchmark measures decoding allocations with prepared bytes.
+
+```sh
+go test -run '^$' -bench '^BenchmarkExperimentalCLIBundleDecode$' -benchmem -benchtime=8x -cpu=1 -count=3 ./cmd/zenon-spv
+```
+
 ## Fixtures and qualification boundaries
 
 The selected original node is
