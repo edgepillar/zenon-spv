@@ -406,6 +406,13 @@ to the exact start and completion receipts and returns the recorded failure
 with exit 1. The record describes the CLI outcome while the consumer
 comparison remains empty.
 
+A gateway-field refusal can follow a complete exit-0 CLI query. With confirmed
+runtime closure, the reader reuses the verified opening and rechecks the
+command receipts, three membership proofs, typed rows and 17 stored fields.
+An independently reproduced mismatch adds `recorded_gateway_mismatch` to the
+recorded refusal, still with exit 1. If closure remains unresolved, the reader
+checks member digests and retains the opening observation and terminal outcome.
+
 The reader opens only the original ZIP and the local contract/profile files.
 The limits are 2,048 ZIP members, a 512 KiB index, 2 MiB per indexed file and
 64 MiB expanded in total. It streams the remaining indexed members in 64 KiB

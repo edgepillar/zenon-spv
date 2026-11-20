@@ -189,7 +189,7 @@ def selected_witnesses(descriptor, profile):
     return root, witnesses, checks.decode_rows(profile, values)
 
 
-def accepted_files():
+def accepted_files(*, gateway_matches=True):
     descriptor, profile = capture.selected_profile(CONTRACT, ROOT)
     root, witnesses, typed = selected_witnesses(descriptor, profile)
     contract, headers, window = synthetic_window(state_root=root)
@@ -199,6 +199,8 @@ def accepted_files():
     provider = {**window.provider, "witnesses": witnesses, "gateway": {
         "domainId": 1, "batchId": 0, "isFinalized": False,
         **{key[0].lower() + key[1:]: value for key, value in encoded(typed["entry"]).items()}}}
+    if not gateway_matches:
+        provider["gateway"]["executorPillar"] = "Different gateway pillar"
     members = checks.witness_rows(profile, 0, root.hex(), witnesses)["memberships"]
     scope = "EXPERIMENTAL_CONFIGURED_HEADER_THREE_ROW_MEMBERSHIP"
     header, context = checks.consumer_context_diagnostics(config, pins)
@@ -213,10 +215,12 @@ def accepted_files():
            "rpc_requests": 0, "production_state_value_guarantee": False, "header_context": header,
            "headers": {"outcome": "ACCEPT", "reason": "ReasonOK", "failed_at": -1},
            "query_context": context, "result": result, "gateway_comparison_requested": True,
-           "gateway_comparison": {"stored_fields_match": True, "frontier_is_finalized_hint": False,
+           "gateway_comparison": {"stored_fields_match": gateway_matches, "frontier_is_finalized_hint": False,
                                   "frontier_identity_authenticated": False}}
     matched = checks.consumer_result(cli, config, request, provider, root.hex(), descriptor)
     final = terminal("DEVNET_CONSUMER_ACCEPTED", contract)
+    if not gateway_matches:
+        final.update(outcome="REFUSED", reason="gateway_stored_fields_differ")
     files = {"evidence/" + name: canonical(data) for name, data in {
         "terminal.json": final, "dispatch-selection.json": {"format": "owned-devnet-dispatch-selection/v1",
             "repository": "edgepillar/zenon-spv", "actor": "edgepillar", "host_attested": False,
@@ -723,6 +727,77 @@ class ReviewTests(unittest.TestCase):
                 self.assertEqual(result["metadata_selection"]["run_conclusion"], conclusion)
                 self.assertEqual(result["archive_review"]["status"], expected)
                 self.assertFalse(result["new_devnet_acceptance_established"])
+
+    def test_hosted_gateway_refusal_checks_the_opening_once_and_retains_the_mismatch(self):
+        _, files = accepted_files(gateway_matches=False)
+        opening_request = "evidence/rpc-02.request.json"
+        files[opening_request] = canonical(
+            {"jsonrpc": "2.0", "id": 2, "method": "ledger.getMomentumsByHeight", "params": [1, 3]})
+        with patch.object(zipfile.ZipFile, "extractall", side_effect=AssertionError), \
+                patch.object(review, "recorded_opening", wraps=review.recorded_opening) as opening:
+            code, result, error = self.hosted_review(make_archive(files), conclusion="failure", execution="failure")
+        opening.assert_called_once()
+        self.assertEqual(code, 1, error)
+        self.assertEqual(result["status"], "HOSTED_RECORDED_NON_ACCEPTING_OUTCOME")
+        archived = result["archive_review"]
+        self.assertEqual(archived["recorded_terminal_outcome"], "REFUSED")
+        self.assertIsNone(archived["comparison"])
+        self.assertNotIn("recorded_consumer_failure", archived)
+        observation = archived["candidate_opening_observation"]
+        self.assertEqual(observation["request"], pin(files[opening_request]))
+        self.assertFalse(observation["accepted_header_authority"])
+        mismatch = archived["recorded_gateway_mismatch"]
+        self.assertFalse(mismatch["gateway_stored_fields_match"])
+        self.assertEqual(mismatch["gateway_stored_fields_compared"], 17)
+        self.assertEqual(mismatch["three_membership_proofs_checked"], 3)
+        self.assertEqual(mismatch["typed_rows_checked"], 3)
+        self.assertEqual(archived["materialized_bytes"], 0)
+        self.assertFalse(archived["native_consumer_reexecuted"])
+        self.assertFalse(result["new_devnet_acceptance_established"])
+
+    def test_terminal_gateway_result_must_agree_with_the_recomputed_comparison(self):
+        _, mismatch = accepted_files(gateway_matches=False)
+        for source, outcome, reason in ((self.files, "REFUSED", "gateway_stored_fields_differ"),
+                                        (mismatch, "DEVNET_CONSUMER_ACCEPTED", None)):
+            with self.subTest(outcome=outcome):
+                files = dict(source)
+                path = "evidence/terminal.json"
+                final = json.loads(files[path])
+                final.update(outcome=outcome, reason=reason)
+                files[path] = canonical(final)
+                with self.assertRaisesRegex(Refused, "review_consumer_gateway"):
+                    self.review(make_archive(files))
+
+    def test_gateway_refusal_requires_consumer_stage_completed_cli_and_same_context(self):
+        _, mismatch = accepted_files(gateway_matches=False)
+        for filename, changes, reason in (
+                ("terminal.json", {"stage": "closed-ledger"}, "review_gateway_refusal_scope"),
+                ("terminal.json", {"outcome": "UNKNOWN"}, "review_gateway_refusal_scope"),
+                ("consume-query.complete.json", {"actual_exit": 2}, "review_recorded_command_completion"),
+                ("consume-query.complete.json", {"output_complete": False}, "review_recorded_command_completion"),
+                ("query-context-pins.json", {"context": "a" * 64}, "review_query_inputs")):
+            with self.subTest(file=filename, reason=reason), self.assertRaisesRegex(Refused, reason):
+                files = dict(mismatch)
+                path = "evidence/" + filename
+                row = json.loads(files[path])
+                row.update(changes)
+                files[path] = canonical(row)
+                self.review(make_archive(files))
+        del mismatch["evidence/" + review.OPENING_FILE]
+        with self.assertRaisesRegex(Refused, "review_consumer_opening"):
+            self.review(make_archive(mismatch))
+
+    def test_gateway_refusal_with_unconfirmed_closure_preserves_opening_and_terminal(self):
+        _, files = accepted_files(gateway_matches=False)
+        path = "evidence/terminal.json"
+        final = json.loads(files[path])
+        final["owned_runtime_observed_closed"] = False
+        files[path] = canonical(final)
+        result = self.review(make_archive(files))
+        self.assertEqual(result["recorded_terminal_outcome"], "REFUSED")
+        self.assertIsNone(result["comparison"])
+        self.assertIn("candidate_opening_observation", result)
+        self.assertNotIn("recorded_gateway_mismatch", result)
 
     def test_hosted_review_refuses_archive_and_execution_mismatches(self):
         accepted = make_archive(self.files)

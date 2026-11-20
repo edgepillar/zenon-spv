@@ -232,7 +232,7 @@ def recorded_opening(evidence, contract):
     return headers, observation
 
 
-def recorded_consumer(evidence, contract, checkout, selection):
+def recorded_consumer(evidence, contract, checkout, selection, opening):
     same(evidence.json("dispatch-selection.json"), {"format": "owned-devnet-dispatch-selection/v1",
          "repository": REPOSITORY, **selection, "actor": "edgepillar", "host_attested": False,
          "explicit_dispatch_selected": True}, "review_dispatch_binding")
@@ -248,7 +248,6 @@ def recorded_consumer(evidence, contract, checkout, selection):
         recorded_output(evidence, label + "-archive", f"artifact-{component['artifact_id']}.zip",
                         folder="transport", external_pin=component["archive"])
 
-    opening, _ = recorded_opening(evidence, contract)
     provider = evidence.json("provider.json", contract.data["limits"]["stdout_bytes"])
     recorded_output(evidence, "collect-provider", "provider.json")
 
@@ -308,7 +307,6 @@ def recorded_consumer(evidence, contract, checkout, selection):
     recorded_output(evidence, "consume-query", capture.CONSUMER_STDOUT)
     matched = consumer_result(result, config, request, provider, query.root, descriptor)
     same(evidence.json("consumer-comparison.json"), matched, "review_consumer_comparison")
-    require(matched["gateway_stored_fields_match"] is True, "review_consumer_gateway")
     return matched
 
 
@@ -603,16 +601,29 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         startup_nodes = recorded_startup_nodes(evidence, terminal)
         file_logs = node_file_logs.recorded(evidence, terminal, startup_nodes, diagnostic_receipt)
         consumer_failure = recorded_consumer_failure(evidence, terminal, binding_present)
-        matched = opening_observation = None
-        if reported == "DEVNET_CONSUMER_ACCEPTED":
+        accepted = reported == "DEVNET_CONSUMER_ACCEPTED"
+        gateway_refusal = terminal["reason"] == "gateway_stored_fields_differ"
+        if accepted:
             require(binding_present and terminal["stage"] == "consumer" and terminal["reason"] is None
                     and terminal["owned_runtime_observed_closed"] is True, "review_terminal_completion")
-            matched = recorded_consumer(evidence, contract, checkout, selection)
         else:
             require(binding_present or terminal["stage"] == "dispatch", "review_terminal_binding")
-            if "evidence/" + OPENING_FILE in evidence.pins:
-                require(binding_present, "review_opening_run_binding")
-                _, opening_observation = recorded_opening(evidence, contract)
+        if gateway_refusal:
+            require(binding_present and terminal["stage"] == "consumer" and reported == "REFUSED",
+                    "review_gateway_refusal_scope")
+
+        opening = opening_observation = matched = gateway_mismatch = None
+        if accepted or "evidence/" + OPENING_FILE in evidence.pins:
+            require(binding_present, "review_opening_run_binding")
+            opening, opening_observation = recorded_opening(evidence, contract)
+        if accepted or (gateway_refusal and terminal["owned_runtime_observed_closed"]):
+            require(opening is not None, "review_consumer_opening")
+            comparison = recorded_consumer(evidence, contract, checkout, selection, opening)
+            same(comparison["gateway_stored_fields_match"], accepted, "review_consumer_gateway")
+            if accepted:
+                matched = comparison
+            else:
+                gateway_mismatch = comparison
         evidence.verify_remaining()
         report = {"format": "owned-devnet-evidence-review/v1",
                 "status": "RECORDED_CONSUMER_BYTES_MATCH" if matched else "RECORDED_NON_ACCEPTING_OUTCOME",
@@ -623,7 +634,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
                 "production_qualified": False}
         if frontiers:
             report["candidate_frontier_observations"] = frontiers
-        if opening_observation is not None:
+        if opening_observation is not None and not accepted:
             report["candidate_opening_observation"] = opening_observation
         if startup_sync is not None:
             report["startup_sync_diagnostic"] = startup_sync
@@ -635,6 +646,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["startup_file_log_diagnostics"] = file_logs
         if consumer_failure is not None:
             report["recorded_consumer_failure"] = consumer_failure
+        if gateway_mismatch is not None:
+            report["recorded_gateway_mismatch"] = gateway_mismatch
         return report
 
 
