@@ -41,7 +41,9 @@ complete event stream must contain one report for each named root. The Go
 collector assembles split lines within each report's exact byte bound and
 checks the original payload digest. The Python checker checks independent
 canonical JSON digests. All 414 refusal records and the help and configuration
-counts are retained in the existing receipt. The checked receipt lists their
+counts are retained in the existing receipt. The receipt parser allows up to
+265 items at the verifier selection report's exact controls array. The standard
+256-item limit applies to other arrays. The checked receipt lists the report
 digests. The four separate steps took 22 seconds on macOS and 10 seconds on
 Windows on the preceding revision. [Baseline CI](https://github.com/edgepillar/zenon-spv/actions/runs/44830506683)
 

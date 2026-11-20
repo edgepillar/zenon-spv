@@ -283,6 +283,25 @@ class RootSuiteControls(unittest.TestCase):
         self.assertIn("--require-source-root-group compiled-native-observers/v3", check)
         self.assertEqual(matrix.count('> "$RUNNER_TEMP/root-suite-check.json"'), 1)
 
+    def test_full_report_array_limit_applies_only_to_the_selected_receipt_path(self):
+        candidate = CHECKER.companion().primitives().checker
+        root = "TestCompiledVerifierSelectionGuards"
+        controls = [0] * 265
+        receipt = {"source_root_controls": {"cli_controls": {root: {"controls": controls}}}}
+        raw = json.dumps(receipt).encode()
+        self.assertEqual(CHECKER.receipt_metadata(raw, candidate), receipt)
+        with self.assertRaises(candidate.Rejected):
+            candidate.metadata(raw)
+        for value in (
+            {"source_root_controls": {"cli_controls": {root: {"controls": controls + [0]}}}},
+            {"source_root_controls": {"cli_controls": {"TestUnselected": {"controls": controls}}}},
+            {"source_root_controls": {"cli_controls": {root: {"other": controls}}}},
+            {"unexpected": receipt},
+            [receipt],
+        ):
+            with self.assertRaises(candidate.Rejected):
+                CHECKER.receipt_metadata(json.dumps(value).encode(), candidate)
+
     def test_observer_resources_are_complete_and_platform_bound(self):
         for platform in ("linux", "darwin", "windows"):
             receipt, report = observer_fixture(platform)

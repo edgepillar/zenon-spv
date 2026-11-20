@@ -16,7 +16,7 @@ import sys
 
 sys.dont_write_bytecode = True
 HERE = Path(__file__).resolve().parent
-DEPENDENCY = (17361, "868167a81686d1fea06469e8b7b94da1558782ffc784fbaf091d91f741a314eb")
+DEPENDENCY = (17361, "dc1a5068520a202076c552d3fce04510eb6f717d7e0f5f4b502a16108b53da94")
 MODULE = "github.com/0x3639/zenon-spv"
 SOURCE_ROOT_GROUP = "compiled-source-enumeration/v1"
 COMPILED_NATIVE_OBSERVER_GROUP = "compiled-native-observers/v1"
@@ -37,6 +37,9 @@ CLI_CONTROL_REPORTS = {
     "TestCompiledVerifierSyntaxPrivacy": (8077, "a59f8ecea585519f29932bbbfe81f2e6261746731662ac125dc5c4a931f8cf5d"),
     "TestCompiledCollectorSyntaxPrivacy": (3272, "d19822ad5cd7707fb42a8c0ee994763d422343d2f195fbd2793ef1b0e79ab1b8"),
     "TestCompiledMaintainerSyntaxPrivacy": (1722, "648477e152c8cf77ed3f8099ce68788964744f194254f214b9f003daa6b0f356"),
+}
+RECEIPT_ARRAY_LIMITS = {
+    ("source_root_controls", "cli_controls", "TestCompiledVerifierSelectionGuards", "controls"): 265,
 }
 SOURCE_ROOT_GROUPS = {
     SOURCE_ROOT_GROUP: (SOURCE_ENUMERATION_ROOT,),
@@ -271,6 +274,10 @@ def check_receipt(value, report, race, coverage, package_timeout, overall_timeou
     return None
 
 
+def receipt_metadata(raw, candidate_checker):
+    return candidate_checker.metadata(raw, array_limits=RECEIPT_ARRAY_LIMITS)
+
+
 def verify(args):
     scenario = companion()
     selection = scenario.verify(args.report, args.expect_report_sha256, args.source, args.expect_revision,
@@ -279,7 +286,7 @@ def verify(args):
     require(digest(args.expect_receipt_sha256)
             and hashlib.sha256(receipt_raw).hexdigest() == args.expect_receipt_sha256)
     c = scenario.primitives().checker
-    receipt = c.metadata(receipt_raw)
+    receipt = receipt_metadata(receipt_raw, c)
     report_raw = scenario.read_regular(args.report, scenario.REPORT_LIMIT, "report")
     require(hashlib.sha256(report_raw).hexdigest() == args.expect_report_sha256)
     report = c.metadata(report_raw)
