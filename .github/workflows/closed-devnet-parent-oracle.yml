@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/closed-devnet-parent-oracle.yml'
+      - '.github/owned-devnet-input-renewal.json'
       - 'tools/gen-state-root-vectors/closed-devnet-parent-oracle*.go.txt'
       - 'tools/gen-state-root-vectors/qualify_closed_parent_oracle*.py'
       - 'tools/gen-state-root-vectors/parent-schedule-adapter.go.txt'
@@ -13,6 +14,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/closed-devnet-parent-oracle.yml'
+      - '.github/owned-devnet-input-renewal.json'
       - 'tools/gen-state-root-vectors/closed-devnet-parent-oracle*.go.txt'
       - 'tools/gen-state-root-vectors/qualify_closed_parent_oracle*.py'
       - 'tools/gen-state-root-vectors/parent-schedule-adapter.go.txt'
@@ -52,10 +54,19 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          fetch-depth: 2
           persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.13'
+      - name: Select paired owned-input retention
+        if: matrix.platform == 'linux-amd64'
+        id: owned_input_retention
+        env:
+          SPV_RENEWAL_BASE: ${{ github.event.before }}
+        run: |
+          days="$(python -I -B tools/owned-devnet-query/input_retention.py)"
+          printf 'days=%s\n' "$days" >> "$GITHUB_OUTPUT"
       - name: Qualification driver boundary controls
         run: python -I -B tools/gen-state-root-vectors/qualify_closed_parent_oracle_test.py -v
       - name: Prepare exact reference-gas node source and local helpers
@@ -84,4 +95,4 @@ jobs:
           name: closed-parent-oracle-${{ matrix.platform }}
           path: ${{ runner.temp }}/spv-closed-parent-evidence/
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: ${{ steps.owned_input_retention.outputs.days || '14' }}
