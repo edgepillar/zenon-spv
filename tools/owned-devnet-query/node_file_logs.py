@@ -10,6 +10,7 @@ import model
 import node_diagnostics as nodes
 
 REPORT = "startup-file-logs.json"
+FORMAT = "owned-devnet-startup-file-logs/v5"
 ARCHIVE_BYTES = 64 << 10
 TAIL_BYTES = nodes.LOG_BYTES
 FILES = (("run", "/root/.znn/log/zenon.log"),
@@ -56,6 +57,17 @@ def field_pattern(key, text):
     return re.compile(r"(?:^|\s)" + key + "=(?:" + "|".join(values) + r")(?=\s|$)")
 
 
+# Both calls use this exact LogfmtFormat layout in the pinned node. Match a
+# complete record so logger tags inside values or a truncated line cannot
+# supply an origin. The identifier is part of the shape and is never exported.
+BROADCAST_RECORD = re.compile(
+    r't=[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[+-][0-9]{4} '
+    r'lvl=info msg="broadcasting own momentum" module=([a-z]+) submodule=([a-z]+) '
+    r'identifier="\{Hash:[0-9a-f]{64} Height:(?:0|[1-9][0-9]{0,19})\}"')
+BROADCAST_LOGGERS = {("pillar", "worker"): "worker_before_insert",
+                     ("handler", "broadcaster"): "protocol_after_insert"}
+BROADCAST_ORIGINS = (*BROADCAST_LOGGERS.values(), "unattributed")
+
 EVENT_PATTERNS = {key: field_pattern("msg", text) for key, text in EVENTS.items()}
 REASON_PATTERNS = {key: field_pattern("reason", text) for key, text in REASONS.items()}
 TAIL_REASON_PATTERNS = {**REASON_PATTERNS, "late_production": field_pattern("reason", "too-late")}
@@ -77,21 +89,33 @@ def read_method_for_file(state, kind):
     return "whole-file" if kind == "error" else selected
 
 
-def classify(payload, *, tail=False):
+def classify(payload, *, tail=False, broadcast_count=None):
     patterns = TAIL_REASON_PATTERNS if tail else REASON_PATTERNS
     events, reasons, locations = dict.fromkeys(EVENTS, 0), dict.fromkeys(patterns, 0), set()
-    for line in payload.decode("utf-8", errors="replace").splitlines():
+    text = payload.decode("utf-8", errors="replace")
+    for line in text.splitlines():
         for key, pattern in EVENT_PATTERNS.items():events[key] += int(pattern.search(line) is not None)
         for key, pattern in patterns.items():reasons[key] += int(pattern.search(line) is not None)
         if EVENT_PATTERNS["vm_panic"].search(line) and re.search(r"(?:^|\s)stack=", line):
             for match in SOURCE_LOCATION.finditer(line):locations.add((match[1], int(match[2])))
     ordered = sorted(locations)
-    return {"events": events, "reasons": reasons,
-            "source_locations": [{"file": name, "line": number} for name, number in ordered[:nodes.MAX_FRAMES]],
-            "source_locations_truncated": len(ordered) > nodes.MAX_FRAMES}
+    classification = {
+        "events": events, "reasons": reasons,
+        "source_locations": [{"file": name, "line": number} for name, number in ordered[:nodes.MAX_FRAMES]],
+        "source_locations_truncated": len(ordered) > nodes.MAX_FRAMES,
+    }
+    if broadcast_count is not None:
+        origins = dict.fromkeys(BROADCAST_ORIGINS, 0)
+        for line in text.split("\n")[:-1]:
+            record = BROADCAST_RECORD.fullmatch(line)
+            if record and (origin := BROADCAST_LOGGERS.get(record.groups())):
+                origins[origin] += 1
+        origins["unattributed"] = broadcast_count - sum(origins.values())
+        classification["broadcast_origins"] = origins
+    return classification
 
 
-def archive_summary(raw, kind, *, complete_prefix=False):
+def archive_summary(raw, kind, *, complete_prefix=False, with_broadcast_origins=False):
     """Read one bounded regular TAR entry in memory; never extract a pathname."""
     paths = dict(FILES)
     require(type(complete_prefix) is bool and (not complete_prefix or kind == "error"),
@@ -123,8 +147,10 @@ def archive_summary(raw, kind, *, complete_prefix=False):
         raise Refused("startup_file_archive_encoding") from error
     end = payload.rfind(b"\n") + 1 if complete_prefix else len(payload)
     selected = payload[:end]
+    log = nodes.log_summary(selected, b"")
     result = {"content": {"bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest()},
-              "log": nodes.log_summary(selected, b""), "classification": classify(selected, tail=complete_prefix)}
+              "log": log, "classification": classify(selected, tail=complete_prefix,
+                  broadcast_count=log["events"]["broadcast"] if with_broadcast_origins else None)}
     if complete_prefix:
         result["window"] = {"scope": "bounded-complete-lines-from-file-start", "whole_file_coverage": False,
                             "leading_discarded_bytes": 0, "trailing_discarded_bytes": len(payload) - end,
@@ -132,21 +158,23 @@ def archive_summary(raw, kind, *, complete_prefix=False):
     return result
 
 
-def tail_summary(raw):
+def tail_summary(raw, *, with_broadcast_origins=False):
     """Classify only complete lines inside a bounded, non-atomic byte tail."""
     require(type(raw) is bytes and len(raw) <= TAIL_BYTES, "startup_file_tail_bound")
     first = raw.find(b"\n")
     start = len(raw) if first < 0 else first + 1
     end = max(start, raw.rfind(b"\n") + 1)
     selected = raw[start:end]
+    log = nodes.log_summary(selected, b"")
     return {"content": {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()},
             "window": {"scope": "bounded-complete-lines", "whole_file_coverage": False,
                        "leading_discarded_bytes": start, "trailing_discarded_bytes": len(raw) - end,
                        "classified_bytes": len(selected)},
-            "log": nodes.log_summary(selected, b""), "classification": classify(selected, tail=True)}
+            "log": log, "classification": classify(selected, tail=True,
+                broadcast_count=log["events"]["broadcast"] if with_broadcast_origins else None)}
 
 
-def check_data(data, *, tail=False, complete_prefix=False):
+def check_data(data, *, tail=False, complete_prefix=False, with_broadcast_origins=False):
     require(type(tail) is bool and type(complete_prefix) is bool and not (tail and complete_prefix),
             "review_file_log_mode")
     windowed = tail or complete_prefix
@@ -158,8 +186,15 @@ def check_data(data, *, tail=False, complete_prefix=False):
     nodes.check_log_summary(data["log"])
     require(data["log"]["total_lines"] <= data["content"]["bytes"], "review_file_log_line_bytes")
     row = data["classification"]
-    exact_keys(row, {"events", "reasons", "source_locations", "source_locations_truncated"},
+    fields = {"events", "reasons", "source_locations", "source_locations_truncated"}
+    exact_keys(row, fields | ({"broadcast_origins"} if with_broadcast_origins else set()),
                "review_file_log_classification")
+    if with_broadcast_origins:
+        origins = row["broadcast_origins"]
+        exact_keys(origins, set(BROADCAST_ORIGINS), "review_file_log_broadcast_origins")
+        broadcasts = data["log"]["events"]["broadcast"]
+        require(sum(uint(value, broadcasts, minimum=0) for value in origins.values()) == broadcasts,
+                "review_file_log_broadcast_origin_counts")
     for name, codes in (("events", EVENTS), ("reasons", TAIL_REASON_PATTERNS if windowed else REASONS)):
         exact_keys(row[name], set(codes), "review_file_log_class_codes")
         for value in row[name].values():uint(value, data["log"]["total_lines"], minimum=0)
@@ -200,10 +235,11 @@ def recorded(evidence, terminal, startup, receipt_reader):
                         "atomic_snapshot", "accepted_header_authority", "production_qualified",
                         "raw_logs_exported", "nodes"}, "review_file_log_fields")
     legacy_tail = summary["format"] == "owned-devnet-startup-file-logs/v2"
-    by_file = summary["format"] == "owned-devnet-startup-file-logs/v4"
+    with_broadcast_origins = summary["format"] == FORMAT
+    by_file = summary["format"] in ("owned-devnet-startup-file-logs/v4", FORMAT)
     mixed = summary["format"] == "owned-devnet-startup-file-logs/v3" or by_file
     require(summary["format"] in ("owned-devnet-startup-file-logs/v1", "owned-devnet-startup-file-logs/v2",
-                                  "owned-devnet-startup-file-logs/v3", "owned-devnet-startup-file-logs/v4")
+                                  "owned-devnet-startup-file-logs/v3", "owned-devnet-startup-file-logs/v4", FORMAT)
             and summary["trigger"] == "owned_rpc_readiness_deadline" and terminal["stage"] == "nodes"
             and terminal["outcome"] != "DEVNET_CONSUMER_ACCEPTED" and summary["observed_before_cleanup"] is True
             and summary["atomic_snapshot"] is False and summary["accepted_header_authority"] is False
@@ -275,7 +311,8 @@ def recorded(evidence, terminal, startup, receipt_reader):
                 model.same(evidence.json(label + ".started.json"), {"format": "owned-devnet-command-started/v1",
                     "label": label, "pid": group, "process_group": group, "new_session_requested": True},
                     "review_file_log_start")
-                check_data(phase["data"], tail=tail, complete_prefix=(by_file and kind == "error"))
+                check_data(phase["data"], tail=tail, complete_prefix=(by_file and kind == "error"),
+                           with_broadcast_origins=with_broadcast_origins)
                 size = phase["outputs"]["stdout"]["bytes"]
                 if tail:
                     model.same(phase["data"]["content"], phase["outputs"]["stdout"],

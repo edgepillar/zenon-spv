@@ -32,6 +32,13 @@ def tar_entries(entries, *, pax=None):
             archive.addfile(entry, io.BytesIO(raw) if entry.size else None)
     return buffer.getvalue()
 
+# The byte layout follows the pinned node's LogfmtFormat and HashHeight.
+WORKER_BROADCAST = (
+    b't=2026-11-15T10:30:00+0000 lvl=info msg="broadcasting own momentum" '
+    b'module=pillar submodule=worker identifier="{Hash:' + b'04ab' * 16 + b' Height:2}"\n')
+PROTOCOL_BROADCAST = WORKER_BROADCAST.replace(
+    b'module=pillar submodule=worker', b'module=handler submodule=broadcaster')
+
 
 class ArchiveTests(unittest.TestCase):
     def test_independently_encoded_ustar_entry_excludes_raw_text(self):
@@ -48,6 +55,56 @@ class ArchiveTests(unittest.TestCase):
         self.assertEqual(row["content"], {"bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest()})
         self.assertEqual(row["log"]["events"]["generation_failed"], 1)
         self.assertNotIn("private-marker", json.dumps(row))
+
+    def test_complete_pinned_logfmt_records_have_separate_broadcast_origins(self):
+        raw = fixtures.file_archive(payload=WORKER_BROADCAST + PROTOCOL_BROADCAST)
+        data = files.archive_summary(raw, "run", with_broadcast_origins=True)
+        files.check_data(data, with_broadcast_origins=True)
+        self.assertEqual(data["log"]["events"]["broadcast"], 2)
+        self.assertEqual(data["classification"]["broadcast_origins"], {
+            "worker_before_insert": 1, "protocol_after_insert": 1, "unattributed": 0})
+        report = json.dumps(data)
+        self.assertNotIn("2026-11-15T10:30:00", report)
+        self.assertNotIn("04ab" * 16, report)
+
+    def test_incomplete_or_noncanonical_records_supply_no_origin(self):
+        wrong_pair = PROTOCOL_BROADCAST.replace(b'submodule=broadcaster', b'submodule=worker')
+        extra_tag = WORKER_BROADCAST[:-1] + b' module=handler\n'
+        partial = PROTOCOL_BROADCAST[:-1]
+        nested = b'notes="private-marker\v' + WORKER_BROADCAST
+        raw = fixtures.file_archive(payload=wrong_pair + extra_tag + nested + partial)
+        data = files.archive_summary(raw, "run", with_broadcast_origins=True)
+        files.check_data(data, with_broadcast_origins=True)
+        self.assertEqual(data["log"]["events"]["broadcast"], 4)
+        self.assertEqual(data["classification"]["broadcast_origins"], {
+            "worker_before_insert": 0, "protocol_after_insert": 0, "unattributed": 4})
+        self.assertNotIn("private-marker", json.dumps(data))
+
+    def test_broadcast_origins_are_bound_to_complete_tail_records(self):
+        raw = WORKER_BROADCAST + PROTOCOL_BROADCAST + WORKER_BROADCAST[:-1]
+        data = files.tail_summary(raw, with_broadcast_origins=True)
+        files.check_data(data, tail=True, with_broadcast_origins=True)
+        self.assertEqual(data["window"]["leading_discarded_bytes"], len(WORKER_BROADCAST))
+        self.assertEqual(data["window"]["trailing_discarded_bytes"], len(WORKER_BROADCAST) - 1)
+        self.assertEqual(data["log"]["events"]["broadcast"], 1)
+        self.assertEqual(data["classification"]["broadcast_origins"], {
+            "worker_before_insert": 0, "protocol_after_insert": 1, "unattributed": 0})
+
+    def test_broadcast_origin_counters_partition_the_legacy_total(self):
+        raw = fixtures.file_archive(payload=WORKER_BROADCAST)
+        base = files.archive_summary(raw, "run", with_broadcast_origins=True)
+        with self.assertRaisesRegex(model.Refused, "review_file_log_classification"):
+            files.check_data(base)
+        for key, value in (("unattributed", 1), ("worker_before_insert", True),
+                           ("worker_before_insert", -1), ("private-marker", 0)):
+            data = deepcopy(base)
+            data["classification"]["broadcast_origins"][key] = value
+            with self.subTest(key=key, value=value), self.assertRaises(model.Refused):
+                files.check_data(data, with_broadcast_origins=True)
+        data = deepcopy(base)
+        data["classification"].pop("broadcast_origins")
+        with self.assertRaisesRegex(model.Refused, "review_file_log_classification"):
+            files.check_data(data, with_broadcast_origins=True)
 
     def test_both_fixed_names_and_empty_file_are_supported(self):
         for kind, path in files.FILES:
@@ -465,7 +522,7 @@ class StateCaptureTests(unittest.TestCase):
             self.assertTrue(all(c[2] == {'timeout': 5, 'stdout_cap': files.ARCHIVE_BYTES,
                                        'stderr_cap': 4096} for c in copies))
             report = json.loads(recorder.seals[files.REPORT])
-            self.assertEqual(report['format'], 'owned-devnet-startup-file-logs/v4')
+            self.assertEqual(report['format'], 'owned-devnet-startup-file-logs/v5')
             row = report['nodes'][2]
             self.assertTrue(all(x['method'] == 'whole-file' and x['phase']['status'] == 'OBSERVED'
                                 for x in row['files']))
@@ -585,7 +642,7 @@ class FileKindCaptureTests(unittest.TestCase):
             report, calls = self.capture_error(Path(tmp), payload)
         item = report['nodes'][0]['files'][1];data = item['phase']['data']
         self.assertEqual((report['format'], item['method'], item['phase']['status']),
-                         ('owned-devnet-startup-file-logs/v4', 'whole-file', 'OBSERVED'))
+                         ('owned-devnet-startup-file-logs/v5', 'whole-file', 'OBSERVED'))
         self.assertEqual(data['content']['bytes'], 213)
         self.assertEqual(data['log']['total_lines'], 1)
         self.assertEqual(data['classification']['reasons']['state_version_missing'], 1)
@@ -656,17 +713,24 @@ class FileKindCaptureTests(unittest.TestCase):
 
 
 class FileKindReviewTests(unittest.TestCase):
-    def fixture(self):
+    def fixture(self, *, with_broadcast_origins=False):
         contract, entries, report = MixedReviewTests().fixture()
-        report['format'] = 'owned-devnet-startup-file-logs/v4'
+        report['format'] = ('owned-devnet-startup-file-logs/v5' if with_broadcast_origins
+                            else 'owned-devnet-startup-file-logs/v4')
         for row in report['nodes']:
             for item in row['files']:
                 method = 'whole-file' if item['kind'] == 'error' or row['service'] == 'pillar3' else 'byte-tail'
                 item['method'] = method;phase = item['phase'];label = phase['command']
-                raw = fixtures.file_archive(item['kind']) if method == 'whole-file' else fixtures.file_tail()
+                if method == 'whole-file':
+                    raw = fixtures.file_archive(item['kind'])
+                    data = files.archive_summary(raw, item['kind'], complete_prefix=(item['kind'] == 'error'),
+                                                 with_broadcast_origins=with_broadcast_origins)
+                else:
+                    raw = (b'leading fragment\n' + WORKER_BROADCAST + PROTOCOL_BROADCAST
+                           if with_broadcast_origins else fixtures.file_tail())
+                    data = files.tail_summary(raw, with_broadcast_origins=with_broadcast_origins)
                 result = fixtures.MemoryResult(label, raw);nodes.complete_command(phase, result)
-                phase['data'] = (files.archive_summary(raw, item['kind'], complete_prefix=(item['kind'] == 'error')) if method == 'whole-file'
-                                 else files.tail_summary(raw))
+                phase['data'] = data
                 entries['evidence/' + label + '.complete.json'] = model.canonical(result.receipt)
         entries['evidence/' + files.REPORT] = model.canonical(report)
         return contract, entries, report
@@ -682,6 +746,27 @@ class FileKindReviewTests(unittest.TestCase):
                 expected = 'whole-file' if item['kind'] == 'error' or row['service'] == 'pillar3' else 'byte-tail'
                 self.assertEqual(item['method'], expected)
                 self.assertEqual('window' in item['phase']['data'], expected == 'byte-tail' or item['kind'] == 'error')
+
+    def test_v5_report_requires_the_new_bounded_counters(self):
+        contract, entries, report = self.fixture(with_broadcast_origins=True)
+        checked = ReviewTests().review(contract, entries, report)['startup_file_log_diagnostics']
+        counters = checked['summary']['nodes'][0]['files'][0]['phase']['data']['classification']
+        self.assertEqual(counters['broadcast_origins'], {
+            'worker_before_insert': 1, 'protocol_after_insert': 1, 'unattributed': 0})
+        self.assertTrue(checked['diagnostic_assertions_only'])
+        self.assertFalse(checked['summary']['accepted_header_authority'])
+        report['nodes'][0]['files'][0]['phase']['data']['classification'].pop('broadcast_origins')
+        with self.assertRaisesRegex(model.Refused, 'review_file_log_classification'):
+            ReviewTests().review(contract, entries, report)
+
+    def test_v4_and_v5_keep_distinct_reader_shapes(self):
+        for has_origins, replacement in ((True, 'owned-devnet-startup-file-logs/v4'),
+                                         (False, 'owned-devnet-startup-file-logs/v5')):
+            contract, entries, report = self.fixture(with_broadcast_origins=has_origins)
+            report['format'] = replacement
+            with self.subTest(has_origins=has_origins), self.assertRaisesRegex(
+                    model.Refused, 'review_file_log_classification'):
+                ReviewTests().review(contract, entries, report)
 
     def test_running_error_cannot_be_relabelled_as_a_tail(self):
         contract, entries, report = self.fixture();report['nodes'][0]['files'][1]['method'] = 'byte-tail'
