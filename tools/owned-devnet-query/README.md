@@ -56,6 +56,14 @@ in-memory hit rechecks original file identities and binary contents. Incomplete
 or failed attempts are terminal for that workspace. This step does not qualify
 a new CI run or enable binary execution.
 
+The runner checks this metadata before preparing the node. The pinned Go node
+and executor recipes build from their source contexts. After the H1/H2/H3
+opening passes validation, the runner verifies the consumer and parent-oracle
+archives, installs the host Node.js toolchain and prepares the locked npm
+packages. It rechecks the runtime files after package scripts and before
+fixture configuration. A refusal before the opening reaches none of these
+archive transfers, the Node.js extraction or `npm ci`.
+
 On fresh intake, the ZIP and Node archive readers perform their existing
 pre-extraction SHA-256 scan on the recorded stdout descriptor. The recorder
 holds and checks the file identity around that scan and extraction. The
@@ -186,11 +194,14 @@ without writing a second ZIP to disk.
 ### Capture the node's sync state after a startup refusal
 
 Only an initial selected-height `owned_rpc_readiness_deadline` permits one
-`stats.syncInfo` read from the same fixed owned RPC endpoint. The
-30 readiness attempts and checked 90-second deadline remain; the observation
-does not retry readiness or advance to fixture configuration. Successful
-readiness, malformed headers, other refusals and later gateway waits do not
-trigger this read. The existing 96-call budget is shared, never reset.
+`stats.syncInfo` read from the same fixed owned RPC endpoint. The initial
+selected-height wait allows 180 seconds and up to 30 reads separated by up to
+six seconds. Gateway and later height waits allow 90 seconds and up to 30 reads
+separated by up to three seconds. A ready response must arrive before its
+deadline. The separate five-second HTTP and seven-second command limits bound
+an in-flight read. The diagnostic cannot restart readiness or advance to
+fixture configuration. Successful readiness, malformed headers, other refusals
+and later waits do not trigger it. All phases share the 96-call budget.
 
 The response cap is 8 KiB, with the existing five-second HTTP / seven-second
 command limits and a fresh budget guard. Only the three bounded integer fields
@@ -304,8 +315,8 @@ the prior owned inspection, role/kind and command order before cleanup. Nonzero,
 incomplete or unavailable reads supply no parsed data. The v1 whole-file, v2 tail
 and v3 state-selected readers retain their original bounds, method rules and report shapes.
 No format independently replays omitted text or supplies header authority.
-The readiness, RPC, resource, cleanup, profile and context limits remain unchanged;
-another signed fixture requires separate source-specific authorization.
+The startup log reader uses the same scope after the initial readiness refusal.
+Another signed fixture requires separate source-specific authorization.
 
 ### Review a retained result
 
@@ -374,6 +385,26 @@ native signature verification, producer authority and any selected-network
 acceptance retain their own evidence requirements. Exit 1 reports an intact
 archive with a recorded failure, refusal or unknown outcome. Exit 2 reports a
 refused or incomplete inspection.
+
+When a failed, refused or incomplete run retains the opening response, the
+reader checks its completed command and start receipts and recomputes the
+three linked header hashes. The report includes the independently checked
+H1, H2 and H3 identities, versions, timestamps and advertised roots as a
+candidate observation. It checks the exact request when the archive indexes
+that request and returns a null request pin for historical response-only
+records. The terminal outcome stays intact. Signature and producer
+authorization still belong to the accepted-header path.
+
+The runner retains the validated opening's request and response in the same
+evidence index before transporting either query component. A refusal during
+query-input preparation can therefore retain both records for offline review.
+
+After the consumer runs, the controller can retain a complete exit-1 or exit-2
+CLI report. It validates the fixed report schema, error category and header
+diagnostic before selecting the original stdout. The reader binds those bytes
+to the exact start and completion receipts and returns the recorded failure
+with exit 1. The record describes the CLI outcome while the consumer
+comparison remains empty.
 
 The reader opens only the original ZIP and the local contract/profile files.
 The limits are 2,048 ZIP members, a 512 KiB index, 2 MiB per indexed file and
