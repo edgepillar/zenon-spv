@@ -18,9 +18,11 @@ Q = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(Q)
 
 
-VISIBILITY = {"format": "first-insertion-frontier-visibility/v1", "before_height": 1, "during_height": 2,
-              "callback_held_during_read": True, "insert_returned_after_release": True,
-              "accepted_header_authority": False}
+LEGACY_VISIBILITY = {"format": "first-insertion-frontier-visibility/v1", "before_height": 1, "during_height": 2,
+                     "callback_held_during_read": True, "insert_returned_after_release": True,
+                     "accepted_header_authority": False}
+VISIBILITY = {**LEGACY_VISIBILITY, "format": "first-insertion-frontier-visibility/v2",
+              "first_period_read_held": True}
 
 
 def events():
@@ -75,12 +77,25 @@ class Controls(unittest.TestCase):
             Q.native_controls(encoded(value))
 
     def test_complete_three_case_observation_is_not_acceptance(self):
-        result = Q.native_controls(encoded(events()))
+        result = Q.native_controls(encoded(events()), require_first_period_read=True)
         self.assertEqual((result["root_tests"], result["subtests"]), (1, 3))
         self.assertFalse(result["actual_fixture_cause_established"])
         self.assertFalse(result["new_devnet_acceptance_established"])
         self.assertEqual(result["observations"]["fixture-window"]["completed_periods"], 182718)
         self.assertEqual(result["frontier_visibility"], VISIBILITY)
+
+    def test_archived_callback_report_cannot_qualify_the_original_listener_gate(self):
+        rows = events()
+        marker = next(row for row in rows if Q.VISIBILITY_MARKER in row.get("Output", ""))
+        marker["Output"] = Q.VISIBILITY_MARKER + json.dumps(LEGACY_VISIBILITY) + "\n"
+        raw = encoded(rows)
+        self.assertEqual(Q.native_controls(raw)["frontier_visibility"], LEGACY_VISIBILITY)
+        with self.assertRaisesRegex(Q.Refused, "frontier_visibility_observation"):
+            Q.native_controls(raw, require_first_period_read=True)
+        missing = {name: value for name, value in VISIBILITY.items() if name != "first_period_read_held"}
+        marker["Output"] = Q.VISIBILITY_MARKER + json.dumps(missing) + "\n"
+        with self.assertRaisesRegex(Q.Refused, "frontier_visibility_fields"):
+            Q.native_controls(encoded(rows), require_first_period_read=True)
 
     def test_split_trace_reassembled_only_in_its_own_test(self):
         value = events()
@@ -192,6 +207,7 @@ class Controls(unittest.TestCase):
         for field, replacement in {
             "before_height": True, "during_height": 1, "callback_held_during_read": False,
             "insert_returned_after_release": False, "accepted_header_authority": True,
+            "first_period_read_held": 1,
         }.items():
             rows = events()
             row = next(row for row in rows if Q.VISIBILITY_MARKER in row.get("Output", ""))

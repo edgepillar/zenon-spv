@@ -51,8 +51,9 @@ genesis, activation rules, slot timing and readiness limits are unchanged.
 
 The test initializes real ledger/cache/state LevelDB managers. It inserts an
 **unauthenticated, unsigned H2 test fixture directly below the verifier** into
-that isolated database. It then constructs the real consensus object with a
-fresh LevelDB and invokes its original point listener synchronously. No producer,
+that isolated database. The original point listener uses a fresh LevelDB. The
+one-period case invokes the listener through the momentum pool. The longer
+cases call the original listener synchronously after insertion. No producer,
 consensus event loop, RPC, peer, wallet, signing operation or live transaction is
 started. This deliberate authentication bypass belongs only to the test fixture;
 it creates no accepted header or runtime authority.
@@ -73,13 +74,16 @@ qualify a devnet consumer.
 
 ## Frontier visibility during notification
 
-The one-period case pauses a registered insertion listener with a channel. It
-checks H1 before insertion and reads the inserted H2 from the same local
-frontier store used by the Ledger API while the listener is waiting. The
-insertion must complete after the test releases that listener. The control
-reuses the one-period fixture and compiled test. The one-period insertion
-duration includes the observation. The one-day and fixed-window measurements
-use their original insertion path.
+The one-period case registers the original points listener and holds its first
+period database read with a channel. It checks H1 before insertion and reads
+H2 from the same local frontier store used by the Ledger API while that read
+is held. It then releases the read, checks that insertion returned and checks
+the completed point records. The one-period duration includes the observation.
+The one-day and fixed-window cases keep their separate direct measurements.
+[Points listener](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/consensus/points.go#L71-L89)
+
+Current qualification requires a v2 visibility record. Historical v1 records
+cover the earlier callback control and retain their original scope.
 
 The original momentum pool releases the frontier lock before it notifies
 listeners, and the producer broadcaster sends the momentum after insertion

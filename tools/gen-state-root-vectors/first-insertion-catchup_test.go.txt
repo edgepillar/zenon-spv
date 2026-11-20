@@ -3,6 +3,7 @@
 package consensus_test
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -55,34 +56,43 @@ func spvPointCount(t *testing.T, d db.DB, prefix byte) uint64 {
 	return count
 }
 
-type spvInsertionVisibilityGate struct {
-	entered chan types.HashHeight
-	release chan struct{}
+type spvFirstPeriodReadGate struct {
+	db.DB
+	corechain.MomentumEventListener
+	pointKey         []byte
+	entered, release chan struct{}
+	notification     types.HashHeight
+	seconds          float64
 }
 
-func (g *spvInsertionVisibilityGate) InsertMomentum(momentum *nom.DetailedMomentum) {
-	select {
-	case g.entered <- momentum.Momentum.Identifier():
-	case <-g.release:
-		return
+func (g *spvFirstPeriodReadGate) Get(key []byte) ([]byte, error) {
+	if g.pointKey != nil && bytes.Equal(key, g.pointKey) {
+		g.pointKey = nil
+		close(g.entered)
+		<-g.release
 	}
-	<-g.release
+	return g.DB.Get(key)
 }
 
-func (*spvInsertionVisibilityGate) DeleteMomentum(*nom.DetailedMomentum) {}
+func (g *spvFirstPeriodReadGate) InsertMomentum(momentum *nom.DetailedMomentum) {
+	g.notification = momentum.Momentum.Identifier()
+	started := time.Now()
+	g.MomentumEventListener.InsertMomentum(momentum)
+	g.seconds = time.Since(started).Seconds()
+}
 
-// Check the actual frontier store used by the Ledger API while an insertion
-// listener is blocked. The gate controls ordering instead of sampling sleeps.
-func spvObserveInsertionVisibility(t *testing.T, ch corechain.Chain, first, next types.HashHeight, insert func() error) {
+// Read the Ledger API's frontier store while the original points listener is
+// at its first period database read. The channel holds that exact read.
+func spvObserveInsertionVisibility(t *testing.T, ch corechain.Chain, first, next types.HashHeight,
+	gate *spvFirstPeriodReadGate, insert func() error) {
 	t.Helper()
 	before, err := ch.GetFrontierMomentumStore().GetFrontierMomentum()
 	if err != nil || before == nil || before.Identifier() != first {
 		t.Fatal("unexpected frontier before the unsigned insertion")
 	}
-	gate := &spvInsertionVisibilityGate{
-		entered: make(chan types.HashHeight),
-		release: make(chan struct{}),
-	}
+	gate.pointKey = storage.CreatePointKey(storage.PrefixPeriodPoint, 0)
+	gate.entered = make(chan struct{})
+	gate.release = make(chan struct{})
 	ch.Register(gate)
 	timer := time.NewTimer(8 * time.Second)
 	defer timer.Stop()
@@ -106,14 +116,14 @@ func spvObserveInsertionVisibility(t *testing.T, ch corechain.Chain, first, next
 	}()
 
 	select {
-	case event := <-gate.entered:
-		if event != next {
+	case <-gate.entered:
+		if gate.notification != next {
 			t.Fatal("unexpected fixture insertion notification")
 		}
 	case <-insertDone:
-		t.Fatal("unsigned insertion returned before the callback")
+		t.Fatal("unsigned insertion returned before the first period read")
 	case <-timer.C:
-		t.Fatal("unsigned insertion callback deadline")
+		t.Fatal("first period database read deadline")
 	}
 
 	readDone = make(chan struct{})
@@ -148,9 +158,10 @@ func spvObserveInsertionVisibility(t *testing.T, ch corechain.Chain, first, next
 		t.Fatal("unsigned insertion did not return after the callback")
 	}
 	row := map[string]interface{}{
-		"format":        "first-insertion-frontier-visibility/v1",
+		"format":        "first-insertion-frontier-visibility/v2",
 		"before_height": before.Height, "during_height": during.Height,
 		"callback_held_during_read": true, "insert_returned_after_release": true,
+		"first_period_read_held":    true,
 		"accepted_header_authority": false,
 	}
 	data, err := json.Marshal(row)
@@ -217,7 +228,6 @@ func TestSPVFirstInsertionCatchup(t *testing.T) {
 			m.EnsureCache()
 			detailed := &nom.DetailedMomentum{Momentum: m}
 			t.Log("SPV_CATCHUP_PHASE begin unsigned-manager-fixture")
-			started := time.Now()
 			insertFixture := func() error {
 				insert := ch.AcquireInsert("isolated unsigned catchup cost fixture")
 				defer insert.Unlock()
@@ -229,14 +239,16 @@ func TestSPVFirstInsertionCatchup(t *testing.T) {
 				}
 				return ch.AddMomentumTransaction(insert, &nom.MomentumTransaction{Momentum: m, Changes: patch})
 			}
-			if selected.name == "one-period" {
-				spvObserveInsertionVisibility(t, ch, first.Identifier(), m.Identifier(), insertFixture)
-			} else if insertFixture() != nil {
-				t.Fatal("unsigned manager fixture insertion failed")
-			}
-			insertSeconds := time.Since(started).Seconds()
-			if ch.GetFrontierMomentumStore().Identifier() != m.Identifier() {
-				t.Fatal("unsigned fixture frontier differs")
+			var insertSeconds float64
+			if selected.name != "one-period" {
+				started := time.Now()
+				if insertFixture() != nil {
+					t.Fatal("unsigned manager fixture insertion failed")
+				}
+				insertSeconds = time.Since(started).Seconds()
+				if ch.GetFrontierMomentumStore().Identifier() != m.Identifier() {
+					t.Fatal("unsigned fixture frontier differs")
+				}
 			}
 			rawDB, ldb := db.NewLevelDB(filepath.Join(root, "consensus"))
 			closed := false
@@ -246,7 +258,13 @@ func TestSPVFirstInsertionCatchup(t *testing.T) {
 				}
 			}()
 			counted := &spvCountedDB{DB: rawDB}
-			listener, completed := consensus.SPVFirstInsertionPoints(counted, ch)
+			var pointDB db.DB = counted
+			var gate *spvFirstPeriodReadGate
+			if selected.name == "one-period" {
+				gate = &spvFirstPeriodReadGate{DB: counted}
+				pointDB = gate
+			}
+			listener, completed := consensus.SPVFirstInsertionPoints(pointDB, ch)
 			previousPeriod, previousEpoch := completed()
 			if previousPeriod != -1 || previousEpoch != -1 {
 				t.Fatal("fresh point database required")
@@ -259,11 +277,17 @@ func TestSPVFirstInsertionCatchup(t *testing.T) {
 				cpuBefore = spvCPUStats(t, profile)
 			}
 			t.Log("SPV_CATCHUP_PHASE begin original-points-listener")
-			started = time.Now()
-			// This is the original synchronous listener called during canonical
-			// insertion; call it directly so no signed production is necessary.
-			listener.InsertMomentum(detailed)
-			pointSeconds := time.Since(started).Seconds()
+			started := time.Now()
+			var pointSeconds float64
+			if gate != nil {
+				gate.MomentumEventListener = listener
+				spvObserveInsertionVisibility(t, ch, first.Identifier(), m.Identifier(), gate, insertFixture)
+				insertSeconds = time.Since(started).Seconds()
+				pointSeconds = gate.seconds
+			} else {
+				listener.InsertMomentum(detailed)
+				pointSeconds = time.Since(started).Seconds()
+			}
 			t.Log("SPV_CATCHUP_PHASE end original-points-listener")
 			if observeCPU {
 				spvCPUReport(t, profile, cpuBefore, spvCPUStats(t, profile))
