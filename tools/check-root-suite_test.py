@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Finite receipt consistency controls; real execution remains a CI gate."""
 import copy
+import hashlib
 import importlib.util
 import io
 import json
 from pathlib import Path
 import re
 import unittest
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location("root_suite_checker", HERE / "check-root-suite.py")
@@ -223,21 +225,62 @@ class RootSuiteControls(unittest.TestCase):
             with self.assertRaises(CHECKER.Rejected):
                 check(changed)
 
+        next_group = "compiled-native-observers/v3"
+        with self.assertRaises(CHECKER.Rejected):
+            check(receipt, next_group)
+        cli = copy.deepcopy(receipt)
+        controls = {
+            "TestCompiledVerifierSelectionGuards": {"controls": [1]},
+            "TestCompiledVerifierSyntaxPrivacy": {"controls": [2]},
+            "TestCompiledCollectorSyntaxPrivacy": {"controls": [3]},
+            "TestCompiledMaintainerSyntaxPrivacy": {"controls": [4]},
+        }
+        section = cli["source_root_controls"]
+        section.update(format="zenon-source-root-controls/v3", group=next_group, cli_controls=controls)
+        section["roots"].extend(
+            {"package": CHECKER.MODULE + "/internal/conformance", "test": name, "status": "pass",
+             "passed_subtests": 0, "skipped_subtests": 0, "failed_subtests": 0} for name in controls
+        )
+        cli["tests"].update(root_tests=13, passed=279)
+        cli["timings"].update(completed_roots=13, missing_elapsed=10)
+        pins = {}
+        for name, control in controls.items():
+            raw = json.dumps(control, sort_keys=True, separators=(",", ":")).encode()
+            pins[name] = (len(raw), hashlib.sha256(raw).hexdigest())
+        with mock.patch.object(CHECKER, "CLI_CONTROL_REPORTS", pins):
+            summary = check(cli, next_group)
+            self.assertEqual(summary["roots"], 9)
+            self.assertEqual(summary["cli_control_sha256"], {name: pin[1] for name, pin in pins.items()})
+            first = next(iter(controls))
+            for mutate in (
+                lambda value: value.pop("cli_controls"),
+                lambda value: value["cli_controls"].pop(first),
+                lambda value: value["cli_controls"][first].update(controls=[9]),
+                lambda value: value["cli_controls"].update(TestUnselected={"controls": []}),
+                lambda value: value["roots"].pop(),
+            ):
+                changed = copy.deepcopy(cli)
+                mutate(changed["source_root_controls"])
+                with self.assertRaises(CHECKER.Rejected):
+                    check(changed, next_group)
+
     def test_source_root_reuse_preserves_parent_instrumentation_and_complete_suite(self):
         workflow = (HERE.parent / ".github/workflows/ci.yml").read_text()
         linux, matrix = workflow.split("\n  native-platform:\n", 1)
         matrix = matrix.split("\n  recorded-oracles:\n", 1)[0]
         for root in ("TestCompiledPilotSourceEnumeration", "TestCompiledAdvancingBlockObserver",
                      "TestCompiledNodeAccountBasicObserver", "TestCompiledNodeAccountReceiveObserver",
-                     "TestCompiledNodeAccountPoWObserver"):
+                     "TestCompiledNodeAccountPoWObserver", "TestCompiledVerifierSelectionGuards",
+                     "TestCompiledVerifierSyntaxPrivacy", "TestCompiledCollectorSyntaxPrivacy",
+                     "TestCompiledMaintainerSyntaxPrivacy"):
             command = "-run '^" + root + "$'"
             self.assertIn(command, linux)
             self.assertNotIn(command, matrix)
         self.assertIn("--full-suite --timeout 30m --package-timeout 10m --race --coverage", linux)
-        self.assertIn("--full-suite --timeout 30m --package-timeout 10m --suite-root-group compiled-native-observers/v2", matrix)
+        self.assertIn("--full-suite --timeout 30m --package-timeout 10m --suite-root-group compiled-native-observers/v3", matrix)
         check, _ = matrix.split("      - name: Upload root suite receipt\n", 1)
         self.assertIn("--expect-race false --expect-coverage false", check)
-        self.assertIn("--require-source-root-group compiled-native-observers/v2", check)
+        self.assertIn("--require-source-root-group compiled-native-observers/v3", check)
         self.assertEqual(matrix.count('> "$RUNNER_TEMP/root-suite-check.json"'), 1)
 
     def test_observer_resources_are_complete_and_platform_bound(self):

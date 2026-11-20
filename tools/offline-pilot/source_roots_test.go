@@ -199,11 +199,16 @@ func TestCompiledNativePoWObserverRootEvidence(t *testing.T) {
 	truncated.Output = strings.TrimSuffix(log.Output, "\n")
 	other := log
 	other.Test = "TestCompiledAdvancingBlockObserver"
+	first, continuation := log, log
+	first.Output, continuation.Output = log.Output[:len(log.Output)/2], log.Output[len(log.Output)/2:]
+	oversized := first
+	oversized.Output += strings.Repeat("a", len(log.Output))
 	for _, tc := range []struct {
 		name string
 		logs []testEvent
 	}{
-		{"complete", []testEvent{log}}, {"missing", nil}, {"other_root", []testEvent{other}},
+		{"complete", []testEvent{log}}, {"split", []testEvent{first, continuation}},
+		{"oversized", []testEvent{oversized}}, {"missing", nil}, {"other_root", []testEvent{other}},
 		{"changed", []testEvent{changed}}, {"partial", []testEvent{truncated}}, {"duplicate", []testEvent{log, log}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -223,7 +228,7 @@ func TestCompiledNativePoWObserverRootEvidence(t *testing.T) {
 			events = append(events, pow[len(pow)-2:]...)
 			events = append(events, testEvent{Action: "pass", Package: sourceEnumerationPackage})
 			collector, _, err := sourceRootCollect(t, events, compiledNativeObserverGroupV2, conformance, sourceEnumerationPackage)
-			if tc.name != "complete" {
+			if tc.name != "complete" && tc.name != "split" {
 				if err == nil && collector.finish(true) == "passed" {
 					t.Fatal("invalid or missing PoW report qualified")
 				}
@@ -265,6 +270,7 @@ func TestSourceRootEvidenceOptInAndLegacyShape(t *testing.T) {
 		{"--suite-root-group", sourceEnumerationGroup},
 		{"--suite-root-group", compiledNativeObserverGroup},
 		{"--suite-root-group", compiledNativeObserverGroupV2},
+		{"--suite-root-group", compiledNativeObserverGroupV3},
 		{"--suite-root-group", sourceEnumerationGroup, "--suite-root-group", compiledNativeObserverGroup},
 		{"--suite-root-group", sourceEnumerationGroup, "--suite-root-group", sourceEnumerationGroup},
 	} {

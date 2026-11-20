@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -12,15 +13,11 @@ import (
 const sourceEnumerationGroup = "compiled-source-enumeration/v1"
 const compiledNativeObserverGroup = "compiled-native-observers/v1"
 const compiledNativeObserverGroupV2 = "compiled-native-observers/v2"
+const compiledNativeObserverGroupV3 = "compiled-native-observers/v3"
 const sourceEnumerationTest = "TestCompiledPilotSourceEnumeration"
 const sourceEnumerationPackage = modulePath + "/tools/offline-pilot"
 const sourceEnumerationSubtests = 6
 const nodeAccountPoWObserverTest = "TestCompiledNodeAccountPoWObserver"
-const nodeAccountPoWObserverMarker = "node-account-pow-observer "
-
-// Pin the exact JSON line emitted by the recorded account PoW observer test.
-const nodeAccountPoWObserverSHA256 = "4a41ad86abce3301f54448dafd21901e3c6158fa9dda67dc72a0bed8bc89f1c1"
-const nodeAccountPoWObserverBytes = 523
 
 type sourceRootSpec struct {
 	packageName string
@@ -37,11 +34,33 @@ var compiledNativeObserverRoots = []sourceRootSpec{
 	sourceEnumerationRoot,
 }
 
+var compiledNativeObserverRootsV2 = append(slices.Clone(compiledNativeObserverRoots),
+	sourceRootSpec{modulePath + "/internal/conformance", nodeAccountPoWObserverTest, 134})
+
 var sourceRootGroups = map[string][]sourceRootSpec{
-	sourceEnumerationGroup:      {sourceEnumerationRoot},
-	compiledNativeObserverGroup: compiledNativeObserverRoots,
-	compiledNativeObserverGroupV2: append(slices.Clone(compiledNativeObserverRoots),
-		sourceRootSpec{modulePath + "/internal/conformance", nodeAccountPoWObserverTest, 134}),
+	sourceEnumerationGroup:        {sourceEnumerationRoot},
+	compiledNativeObserverGroup:   compiledNativeObserverRoots,
+	compiledNativeObserverGroupV2: compiledNativeObserverRootsV2,
+	compiledNativeObserverGroupV3: append(slices.Clone(compiledNativeObserverRootsV2),
+		sourceRootSpec{modulePath + "/internal/conformance", "TestCompiledVerifierSelectionGuards", 0},
+		sourceRootSpec{modulePath + "/internal/conformance", "TestCompiledVerifierSyntaxPrivacy", 0},
+		sourceRootSpec{modulePath + "/internal/conformance", "TestCompiledCollectorSyntaxPrivacy", 0},
+		sourceRootSpec{modulePath + "/internal/conformance", "TestCompiledMaintainerSyntaxPrivacy", 0}),
+}
+
+type sourceRootReportSpec struct {
+	marker string
+	size   int
+	digest string
+}
+
+// Only these complete public reports can reach the retained receipt.
+var sourceRootReportSpecs = map[string]sourceRootReportSpec{
+	nodeAccountPoWObserverTest:            {"node-account-pow-observer ", 523, "4a41ad86abce3301f54448dafd21901e3c6158fa9dda67dc72a0bed8bc89f1c1"},
+	"TestCompiledVerifierSelectionGuards": {"offline-verifier-selection-controls ", 25028, "102b9576a1c178547a4881fefe464c95747752a15a81cea97312b3c384fa8a2f"},
+	"TestCompiledVerifierSyntaxPrivacy":   {"offline-verifier-syntax-controls ", 8077, "f50dd105ff0b753742dce19cfba7580748422b2dc029520764bcaba17f8f56a7"},
+	"TestCompiledCollectorSyntaxPrivacy":  {"offline-collector-syntax-controls ", 3272, "9e76894c137e91527335e464c58a86fc19a73c798b1a207c68979a788d5666e3"},
+	"TestCompiledMaintainerSyntaxPrivacy": {"offline-maintainer-syntax-controls ", 1722, "9ef3f49d5fa9cf7402767943c49440f9f5cb18a950b67115f2d4c485d2605c2d"},
 }
 
 type sourceRootResult struct {
@@ -53,26 +72,29 @@ type sourceRootResult struct {
 	Failed  int    `json:"failed_subtests"`
 }
 
-// The enclosing receipt binds these fixed roots and the bounded PoW report
+// The enclosing receipt binds these fixed roots and the bounded reports
 // to the complete stream, selected report, source and process outcome.
 type sourceRootEvidence struct {
-	Format                 string             `json:"format"`
-	Group                  string             `json:"group"`
-	Status                 string             `json:"status"`
-	Roots                  []sourceRootResult `json:"roots"`
-	NodeAccountPoWObserver json.RawMessage    `json:"node_account_pow_observer,omitempty"`
+	Format                 string                     `json:"format"`
+	Group                  string                     `json:"group"`
+	Status                 string                     `json:"status"`
+	Roots                  []sourceRootResult         `json:"roots"`
+	NodeAccountPoWObserver json.RawMessage            `json:"node_account_pow_observer,omitempty"`
+	CLIControls            map[string]json.RawMessage `json:"cli_controls,omitempty"`
 }
 
 type sourceRootObservation struct {
-	result   sourceRootResult
-	expected int
-	pending  int
+	result     sourceRootResult
+	expected   int
+	pending    int
+	reportSpec sourceRootReportSpec
+	fragment   []byte
+	report     json.RawMessage
 }
 
 type sourceRootCollector struct {
-	group      string
-	roots      []sourceRootObservation
-	powSummary json.RawMessage
+	group string
+	roots []sourceRootObservation
 }
 
 func newSourceRootCollector(group string) *sourceRootCollector {
@@ -83,8 +105,9 @@ func newSourceRootCollector(group string) *sourceRootCollector {
 	collector := &sourceRootCollector{group: group, roots: make([]sourceRootObservation, len(specs))}
 	for i, spec := range specs {
 		collector.roots[i] = sourceRootObservation{
-			result:   sourceRootResult{Package: spec.packageName, Test: spec.test, Status: "missing"},
-			expected: spec.subtests,
+			result:     sourceRootResult{Package: spec.packageName, Test: spec.test, Status: "missing"},
+			expected:   spec.subtests,
+			reportSpec: sourceRootReportSpecs[spec.test],
 		}
 	}
 	return collector
@@ -104,8 +127,8 @@ func (c *sourceRootCollector) event(e testEvent) error {
 			if err := row.observe(e.Action, nested); err != nil {
 				return err
 			}
-			if c.group == compiledNativeObserverGroupV2 && root == nodeAccountPoWObserverTest && e.Action == "output" {
-				return c.observePoWReport(e.Output, !nested && row.result.Status == "running")
+			if row.reportSpec.marker != "" && e.Action == "output" {
+				return row.observeReport(e.Output, !nested && row.result.Status == "running")
 			}
 			return nil
 		}
@@ -113,21 +136,32 @@ func (c *sourceRootCollector) event(e testEvent) error {
 	return nil
 }
 
-func (c *sourceRootCollector) observePoWReport(output string, rootRunning bool) error {
-	_, raw, found := strings.Cut(output, nodeAccountPoWObserverMarker)
-	if !found {
+func (o *sourceRootObservation) observeReport(output string, rootRunning bool) error {
+	spec := o.reportSpec
+	if o.fragment == nil {
+		_, value, found := strings.Cut(output, spec.marker)
+		if !found {
+			return nil
+		}
+		output = value
+	}
+	if !rootRunning || o.report != nil || len(output) > spec.size+2-len(o.fragment) {
+		return errors.New("invalid source root report")
+	}
+	if o.fragment == nil {
+		o.fragment = make([]byte, 0, spec.size+2)
+	}
+	o.fragment = append(o.fragment, output...)
+	if !strings.HasSuffix(output, "\n") {
 		return nil
 	}
-	raw, complete := strings.CutSuffix(raw, "\n")
-	raw = strings.TrimSuffix(raw, "\r")
-	if !rootRunning || len(c.powSummary) != 0 || !complete || len(raw) != nodeAccountPoWObserverBytes {
-		return errors.New("invalid account PoW observer report")
+	raw := bytes.TrimSuffix(bytes.TrimSuffix(o.fragment, []byte("\n")), []byte("\r"))
+	sum := sha256.Sum256(raw)
+	if len(raw) != spec.size || hex.EncodeToString(sum[:]) != spec.digest {
+		return errors.New("invalid source root report")
 	}
-	sum := sha256.Sum256([]byte(raw))
-	if hex.EncodeToString(sum[:]) != nodeAccountPoWObserverSHA256 {
-		return errors.New("invalid account PoW observer report")
-	}
-	c.powSummary = json.RawMessage(raw)
+	o.report = raw
+	o.fragment = nil
 	return nil
 }
 
@@ -139,6 +173,9 @@ func (o *sourceRootObservation) observe(action string, nested bool) error {
 		case "pass", "fail", "skip":
 			if o.pending != 0 {
 				return errors.New("source root completed before its subtests")
+			}
+			if o.fragment != nil {
+				return errors.New("source root completed with a partial report")
 			}
 			o.result.Status = action
 		}
@@ -165,12 +202,9 @@ func (o *sourceRootObservation) observe(action string, nested bool) error {
 
 func (c *sourceRootCollector) complete() bool {
 	if c != nil {
-		if c.group == compiledNativeObserverGroupV2 && len(c.powSummary) == 0 {
-			return false
-		}
 		for _, row := range c.roots {
 			if row.pending != 0 || row.result.Status != "pass" || row.result.Passed != row.expected ||
-				row.result.Skipped != 0 || row.result.Failed != 0 {
+				row.result.Skipped != 0 || row.result.Failed != 0 || row.reportSpec.marker != "" && row.report == nil {
 				return false
 			}
 		}
@@ -186,14 +220,29 @@ func (c *sourceRootCollector) snapshot() *sourceRootEvidence {
 	if c.complete() {
 		status = "complete"
 	}
-	roots := make([]sourceRootResult, len(c.roots))
+	evidence := &sourceRootEvidence{
+		Format: "zenon-source-root-controls/v1",
+		Group:  c.group,
+		Status: status,
+		Roots:  make([]sourceRootResult, len(c.roots)),
+	}
+	switch c.group {
+	case compiledNativeObserverGroupV2:
+		evidence.Format = "zenon-source-root-controls/v2"
+	case compiledNativeObserverGroupV3:
+		evidence.Format = "zenon-source-root-controls/v3"
+		evidence.CLIControls = make(map[string]json.RawMessage)
+	}
 	for i, row := range c.roots {
-		roots[i] = row.result
+		evidence.Roots[i] = row.result
+		if row.report == nil {
+			continue
+		}
+		if row.result.Test == nodeAccountPoWObserverTest {
+			evidence.NodeAccountPoWObserver = slices.Clone(row.report)
+		} else {
+			evidence.CLIControls[row.result.Test] = slices.Clone(row.report)
+		}
 	}
-	format := "zenon-source-root-controls/v1"
-	if c.group == compiledNativeObserverGroupV2 {
-		format = "zenon-source-root-controls/v2"
-	}
-	return &sourceRootEvidence{Format: format, Group: c.group, Status: status, Roots: roots,
-		NodeAccountPoWObserver: slices.Clone(c.powSummary)}
+	return evidence
 }

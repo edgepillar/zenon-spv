@@ -21,6 +21,7 @@ MODULE = "github.com/0x3639/zenon-spv"
 SOURCE_ROOT_GROUP = "compiled-source-enumeration/v1"
 COMPILED_NATIVE_OBSERVER_GROUP = "compiled-native-observers/v1"
 COMPILED_NATIVE_OBSERVER_GROUP_V2 = "compiled-native-observers/v2"
+COMPILED_NATIVE_OBSERVER_GROUP_V3 = "compiled-native-observers/v3"
 SOURCE_ENUMERATION_ROOT = ("tools/offline-pilot", "TestCompiledPilotSourceEnumeration", 6)
 NATIVE_OBSERVER_ROOTS = (
     ("internal/conformance", "TestCompiledAdvancingBlockObserver", 9),
@@ -28,11 +29,21 @@ NATIVE_OBSERVER_ROOTS = (
     ("internal/conformance", "TestCompiledNodeAccountReceiveObserver", 52),
     SOURCE_ENUMERATION_ROOT,
 )
+NATIVE_OBSERVER_ROOTS_V2 = NATIVE_OBSERVER_ROOTS + (
+    ("internal/conformance", "TestCompiledNodeAccountPoWObserver", 134),
+)
+CLI_CONTROL_REPORTS = {
+    "TestCompiledVerifierSelectionGuards": (25028, "dc5e1dac7d5745d8ed87f45aff79608fb06af1500b702ce1edacb6099a6f3b5c"),
+    "TestCompiledVerifierSyntaxPrivacy": (8077, "a59f8ecea585519f29932bbbfe81f2e6261746731662ac125dc5c4a931f8cf5d"),
+    "TestCompiledCollectorSyntaxPrivacy": (3272, "d19822ad5cd7707fb42a8c0ee994763d422343d2f195fbd2793ef1b0e79ab1b8"),
+    "TestCompiledMaintainerSyntaxPrivacy": (1722, "648477e152c8cf77ed3f8099ce68788964744f194254f214b9f003daa6b0f356"),
+}
 SOURCE_ROOT_GROUPS = {
     SOURCE_ROOT_GROUP: (SOURCE_ENUMERATION_ROOT,),
     COMPILED_NATIVE_OBSERVER_GROUP: NATIVE_OBSERVER_ROOTS,
-    COMPILED_NATIVE_OBSERVER_GROUP_V2: NATIVE_OBSERVER_ROOTS + (
-        ("internal/conformance", "TestCompiledNodeAccountPoWObserver", 134),
+    COMPILED_NATIVE_OBSERVER_GROUP_V2: NATIVE_OBSERVER_ROOTS_V2,
+    COMPILED_NATIVE_OBSERVER_GROUP_V3: NATIVE_OBSERVER_ROOTS_V2 + tuple(
+        ("internal/conformance", test, 0) for test in CLI_CONTROL_REPORTS
     ),
 }
 NODE_ACCOUNT_POW_OBSERVER_REPORT = (523, "4a41ad86abce3301f54448dafd21901e3c6158fa9dda67dc72a0bed8bc89f1c1")
@@ -155,15 +166,29 @@ def check_observer_resources(value, platform):
     return {"format": value["format"], "status": "consistent", "groups": len(rows), "process_observations": slot_count}
 
 
+def check_source_root_report(value, pin):
+    require(type(value) is dict)
+    raw = json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+    digest = hashlib.sha256(raw).hexdigest()
+    require((len(raw), digest) == pin)
+    return digest
+
+
 def check_source_roots(value, counts, passed_packages, report, required_group=None):
     require(type(value) is dict and type(value.get("group")) is str and value["group"] in SOURCE_ROOT_GROUPS)
     group = value["group"]
-    with_pow = group == COMPILED_NATIVE_OBSERVER_GROUP_V2
+    with_pow = group in (COMPILED_NATIVE_OBSERVER_GROUP_V2, COMPILED_NATIVE_OBSERVER_GROUP_V3)
+    with_cli = group == COMPILED_NATIVE_OBSERVER_GROUP_V3
     keys = {"format", "group", "status", "roots"}
+    version = 1
     if with_pow:
         keys.add("node_account_pow_observer")
+        version = 2
+    if with_cli:
+        keys.add("cli_controls")
+        version = 3
     require(set(value) == keys
-            and value["format"] == ("zenon-source-root-controls/v2" if with_pow else "zenon-source-root-controls/v1")
+            and value["format"] == f"zenon-source-root-controls/v{version}"
             and (required_group is None or group == required_group)
             and value["status"] == "complete" and type(value["roots"]) is list)
     expected = SOURCE_ROOT_GROUPS[group]
@@ -184,12 +209,14 @@ def check_source_roots(value, counts, passed_packages, report, required_group=No
                                                    for case in report["cases"]))
     summary = {"group": group, "roots": len(expected), "passed_subtests": passed, "skipped_subtests": 0}
     if with_pow:
-        observed = value["node_account_pow_observer"]
-        require(type(observed) is dict)
-        raw = json.dumps(observed, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
-        report_sha = hashlib.sha256(raw).hexdigest()
-        require((len(raw), report_sha) == NODE_ACCOUNT_POW_OBSERVER_REPORT)
-        summary["node_account_pow_observer_sha256"] = report_sha
+        summary["node_account_pow_observer_sha256"] = check_source_root_report(
+            value["node_account_pow_observer"], NODE_ACCOUNT_POW_OBSERVER_REPORT)
+    if with_cli:
+        controls = value["cli_controls"]
+        require(type(controls) is dict and set(controls) == set(CLI_CONTROL_REPORTS))
+        summary["cli_control_sha256"] = {
+            name: check_source_root_report(controls[name], pin) for name, pin in CLI_CONTROL_REPORTS.items()
+        }
     return summary
 
 

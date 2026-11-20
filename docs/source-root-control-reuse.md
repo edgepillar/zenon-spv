@@ -6,7 +6,7 @@ and exercises six actual directory/preflight cases. Its wide fixture grows to
 Repeating it in a later CI step builds and populates the fixture again.
 
 The ordinary-parent macOS and Windows lanes request
-`compiled-native-observers/v2` in the existing complete suite. The independent
+`compiled-native-observers/v3` in the existing complete suite. The independent
 receipt checker requires the group before uploading the checked receipt.
 Each root must pass with its complete fixed subtest inventory.
 
@@ -17,8 +17,12 @@ Each root must pass with its complete fixed subtest inventory.
 | `internal/conformance` | `TestCompiledNodeAccountReceiveObserver` | 52 |
 | `tools/offline-pilot` | `TestCompiledPilotSourceEnumeration` | 6 |
 | `internal/conformance` | `TestCompiledNodeAccountPoWObserver` | 134 |
+| `internal/conformance` | `TestCompiledVerifierSelectionGuards` | 0 |
+| `internal/conformance` | `TestCompiledVerifierSyntaxPrivacy` | 0 |
+| `internal/conformance` | `TestCompiledCollectorSyntaxPrivacy` | 0 |
+| `internal/conformance` | `TestCompiledMaintainerSyntaxPrivacy` | 0 |
 
-The group replaces the separate ordinary-parent invocations of its five roots
+The group replaces the separate ordinary-parent invocations of its nine roots
 on macOS and Windows. Linux runs its ordinary-parent controls alongside its
 race/coverage suite. Dedicated persistence and grouped build steps still emit
 their detailed reports. Complete-suite packages,
@@ -32,10 +36,20 @@ digest and records it in the checked receipt. In the baseline run, the removed
 duplicate steps took 20 seconds on macOS and 13 seconds on Windows. These are
 observed step durations on that revision. [Baseline CI](https://github.com/edgepillar/zenon-spv/actions/runs/44795262864)
 
+The version 3 group also retains the four compiled CLI control reports. The
+complete event stream must contain one report for each named root. The Go
+collector assembles split lines within each report's exact byte bound and
+checks the original payload digest. The Python checker checks independent
+canonical JSON digests. All 414 refusal records and the help and configuration
+counts are retained in the existing receipt. The checked receipt lists their
+digests. The four separate steps took 22 seconds on macOS and 10 seconds on
+Windows on the preceding revision. [Baseline CI](https://github.com/edgepillar/zenon-spv/actions/runs/44830506683)
+
 The opt-in `zenon-root-suite/v4` schema supports these fixed groups.
 Historical `compiled-source-enumeration/v1` receipts keep their original
-one-root contract and `compiled-native-observers/v1` retains its four-root
-contract. The default producer emits v3 and the verifier also supports v1 and
+one-root contract. `compiled-native-observers/v1` retains its four-root
+contract and `compiled-native-observers/v2` retains its five-root contract
+and PoW report. The default producer emits v3 and the verifier also supports v1 and
 v2. Each group requires the exact package, root, child count and passed outcome,
 with zero skipped, failed or unfinished children.
 
