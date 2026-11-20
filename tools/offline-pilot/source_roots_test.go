@@ -176,6 +176,81 @@ func TestCompiledNativeObserverRootEvidence(t *testing.T) {
 	}
 }
 
+func TestCompiledNativePoWObserverRootEvidence(t *testing.T) {
+	const conformance = modulePath + "/internal/conformance"
+	const powTest = "TestCompiledNodeAccountPoWObserver"
+	summary, err := json.Marshal(map[string]any{
+		"schema_version": 1, "cases": 134, "observations": 64, "original_matched": 2,
+		"collection_blocked": 62, "coherent_hash_signature_rejected": 62,
+		"missing_commitment_refused": 4, "consumer_selection_mismatched": 4, "ordinary_commands": 4,
+		"corpus_sha256":              "560ff77f5fe092e99222399309da164c0539dec749e95b0e1788cd52fe30716f",
+		"node_revision":              "c64ed6279ff1d07335dab0ac36156dec8b5b71e9",
+		"runtime_acceptance_changed": false, "account_pow_qualified": false,
+		"new_signatures_generated": false, "network_pilot_qualified": false, "state_value_acceptance": false,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	log := testEvent{Action: "output", Package: conformance, Test: powTest,
+		Output: "    PRIVATE_SOURCE_LOCATION: node-account-pow-observer " + string(summary) + "\n"}
+	changed := log
+	changed.Output = strings.Replace(log.Output, `"ordinary_commands":4`, `"ordinary_commands":5`, 1)
+	truncated := log
+	truncated.Output = strings.TrimSuffix(log.Output, "\n")
+	other := log
+	other.Test = "TestCompiledAdvancingBlockObserver"
+	for _, tc := range []struct {
+		name string
+		logs []testEvent
+	}{
+		{"complete", []testEvent{log}}, {"missing", nil}, {"other_root", []testEvent{other}},
+		{"changed", []testEvent{changed}}, {"partial", []testEvent{truncated}}, {"duplicate", []testEvent{log, log}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			events := []testEvent{{Action: "start", Package: conformance}, {Action: "start", Package: sourceEnumerationPackage}}
+			for _, row := range compiledNativeObserverRoots {
+				sequence := namedSourceRootEvents(row.packageName, row.test, row.subtests)
+				if row.test == other.Test && tc.name == "other_root" {
+					sequence = slices.Insert(sequence, len(sequence)-2, tc.logs...)
+				}
+				events = append(events, sequence[1:len(sequence)-1]...)
+			}
+			pow := namedSourceRootEvents(conformance, powTest, 134)
+			events = append(events, pow[1:len(pow)-2]...)
+			if tc.name != "other_root" {
+				events = append(events, tc.logs...)
+			}
+			events = append(events, pow[len(pow)-2:]...)
+			events = append(events, testEvent{Action: "pass", Package: sourceEnumerationPackage})
+			collector, _, err := sourceRootCollect(t, events, compiledNativeObserverGroupV2, conformance, sourceEnumerationPackage)
+			if tc.name != "complete" {
+				if err == nil && collector.finish(true) == "passed" {
+					t.Fatal("invalid or missing PoW report qualified")
+				}
+				return
+			}
+			if err != nil || collector.finish(true) != "passed" ||
+				collector.counts != (suiteCounts{RootTests: 5, Subtests: 259, Passed: 264}) {
+				t.Fatal("complete ordinary-parent observer group refused", err)
+			}
+			evidence := collector.sourceRoots.snapshot()
+			if evidence.Format != "zenon-source-root-controls/v2" || evidence.Status != "complete" ||
+				!bytes.Equal(evidence.NodeAccountPoWObserver, summary) ||
+				evidence.Roots[4] != (sourceRootResult{Package: conformance, Test: powTest, Status: "pass", Passed: 134}) {
+				t.Fatal("PoW report or its exact root was lost")
+			}
+			encoded, err := json.Marshal(evidence)
+			if err != nil || bytes.Contains(encoded, []byte("PRIVATE")) {
+				t.Fatal("private output entered the fixed PoW report", err)
+			}
+			evidence.NodeAccountPoWObserver[0] = 0
+			if !bytes.Equal(collector.sourceRoots.snapshot().NodeAccountPoWObserver, summary) {
+				t.Fatal("receipt snapshot aliases the original report")
+			}
+		})
+	}
+}
+
 func TestSourceRootEvidenceOptInAndLegacyShape(t *testing.T) {
 	collector, _, err := sourceRootCollect(t, sourceRootEvents(6), "")
 	if err != nil || collector.finish(true) != "passed" || collector.sourceRoots.snapshot() != nil {
@@ -189,6 +264,7 @@ func TestSourceRootEvidenceOptInAndLegacyShape(t *testing.T) {
 		{"--suite-root-group", "PRIVATE"}, {"--suite-root-group", ""},
 		{"--suite-root-group", sourceEnumerationGroup},
 		{"--suite-root-group", compiledNativeObserverGroup},
+		{"--suite-root-group", compiledNativeObserverGroupV2},
 		{"--suite-root-group", sourceEnumerationGroup, "--suite-root-group", compiledNativeObserverGroup},
 		{"--suite-root-group", sourceEnumerationGroup, "--suite-root-group", sourceEnumerationGroup},
 	} {

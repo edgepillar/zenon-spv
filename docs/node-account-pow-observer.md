@@ -44,7 +44,11 @@ cache, reference-node build, corpus regeneration or extra resource producer is
 introduced. The existing basic/receive observers, all runtime/RPC tests, full
 native suites and all 59 offline pilot scenarios remain required.
 
-The dedicated native CI command is:
+The Linux lane runs the ordinary-parent test separately alongside the
+race/coverage suite. The macOS and Windows lanes use the complete ordinary
+suite and retain this test's original summary and all 134 passing subtests in
+the [checked receipt](source-root-control-reuse.md). Run the test by itself
+with the following command.
 
 ```sh
 go test -v -count=1 -run '^TestCompiledNodeAccountPoWObserver$' ./internal/conformance

@@ -20,16 +20,22 @@ DEPENDENCY = (17361, "868167a81686d1fea06469e8b7b94da1558782ffc784fbaf091d91f741
 MODULE = "github.com/0x3639/zenon-spv"
 SOURCE_ROOT_GROUP = "compiled-source-enumeration/v1"
 COMPILED_NATIVE_OBSERVER_GROUP = "compiled-native-observers/v1"
+COMPILED_NATIVE_OBSERVER_GROUP_V2 = "compiled-native-observers/v2"
 SOURCE_ENUMERATION_ROOT = ("tools/offline-pilot", "TestCompiledPilotSourceEnumeration", 6)
+NATIVE_OBSERVER_ROOTS = (
+    ("internal/conformance", "TestCompiledAdvancingBlockObserver", 9),
+    ("internal/conformance", "TestCompiledNodeAccountBasicObserver", 58),
+    ("internal/conformance", "TestCompiledNodeAccountReceiveObserver", 52),
+    SOURCE_ENUMERATION_ROOT,
+)
 SOURCE_ROOT_GROUPS = {
     SOURCE_ROOT_GROUP: (SOURCE_ENUMERATION_ROOT,),
-    COMPILED_NATIVE_OBSERVER_GROUP: (
-        ("internal/conformance", "TestCompiledAdvancingBlockObserver", 9),
-        ("internal/conformance", "TestCompiledNodeAccountBasicObserver", 58),
-        ("internal/conformance", "TestCompiledNodeAccountReceiveObserver", 52),
-        SOURCE_ENUMERATION_ROOT,
+    COMPILED_NATIVE_OBSERVER_GROUP: NATIVE_OBSERVER_ROOTS,
+    COMPILED_NATIVE_OBSERVER_GROUP_V2: NATIVE_OBSERVER_ROOTS + (
+        ("internal/conformance", "TestCompiledNodeAccountPoWObserver", 134),
     ),
 }
+NODE_ACCOUNT_POW_OBSERVER_REPORT = (523, "4a41ad86abce3301f54448dafd21901e3c6158fa9dda67dc72a0bed8bc89f1c1")
 RECEIPT_KEYS = {
     "format", "status", "error", "source", "source_matches_after_run", "test_parent_race_enabled",
     "coverage_enabled", "package_timeout", "overall_timeout", "package_inventory_succeeded", "test_process_succeeded",
@@ -150,12 +156,17 @@ def check_observer_resources(value, platform):
 
 
 def check_source_roots(value, counts, passed_packages, report, required_group=None):
-    require(type(value) is dict and set(value) == {"format", "group", "status", "roots"}
-            and value["format"] == "zenon-source-root-controls/v1"
-            and type(value["group"]) is str and value["group"] in SOURCE_ROOT_GROUPS
-            and (required_group is None or value["group"] == required_group)
+    require(type(value) is dict and type(value.get("group")) is str and value["group"] in SOURCE_ROOT_GROUPS)
+    group = value["group"]
+    with_pow = group == COMPILED_NATIVE_OBSERVER_GROUP_V2
+    keys = {"format", "group", "status", "roots"}
+    if with_pow:
+        keys.add("node_account_pow_observer")
+    require(set(value) == keys
+            and value["format"] == ("zenon-source-root-controls/v2" if with_pow else "zenon-source-root-controls/v1")
+            and (required_group is None or group == required_group)
             and value["status"] == "complete" and type(value["roots"]) is list)
-    expected = SOURCE_ROOT_GROUPS[value["group"]]
+    expected = SOURCE_ROOT_GROUPS[group]
     require(len(value["roots"]) == len(expected))
     selected = {(case["package"], case.get("test")) for case in report["cases"]}
     for row, (package, test, subtests) in zip(value["roots"], expected):
@@ -171,7 +182,15 @@ def check_source_roots(value, counts, passed_packages, report, required_group=No
     require(counts["root_tests"] >= len(report["cases"]) + len(expected)
             and counts["subtests"] >= passed + sum(case["passed_subtests"] + case["skipped_subtests"]
                                                    for case in report["cases"]))
-    return {"group": value["group"], "roots": len(expected), "passed_subtests": passed, "skipped_subtests": 0}
+    summary = {"group": group, "roots": len(expected), "passed_subtests": passed, "skipped_subtests": 0}
+    if with_pow:
+        observed = value["node_account_pow_observer"]
+        require(type(observed) is dict)
+        raw = json.dumps(observed, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        report_sha = hashlib.sha256(raw).hexdigest()
+        require((len(raw), report_sha) == NODE_ACCOUNT_POW_OBSERVER_REPORT)
+        summary["node_account_pow_observer_sha256"] = report_sha
+    return summary
 
 
 def check_receipt(value, report, race, coverage, package_timeout, overall_timeout, platform=None, required_group=None):

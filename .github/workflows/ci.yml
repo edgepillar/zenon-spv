@@ -1034,14 +1034,14 @@ jobs:
         shell: bash
         # Keep every package and the complete repeated-wire grid. The explicit
         # package watchdog remains 10m; the driver bounds the whole suite.
-        run: go run ./tools/offline-pilot --full-suite --timeout 30m --package-timeout 10m --suite-root-group compiled-native-observers/v1 --suite-failure-diagnostics --suite-receipt "${{ runner.temp }}/root-suite.json" --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
+        run: go run ./tools/offline-pilot --full-suite --timeout 30m --package-timeout 10m --suite-root-group compiled-native-observers/v2 --suite-failure-diagnostics --suite-receipt "${{ runner.temp }}/root-suite.json" --export-binaries "${{ runner.temp }}/tested-candidate" > "${{ runner.temp }}/offline-pilot.json"
       - name: Offline pilot report
         id: pilot
         shell: bash
         run: |
           report_sha256="$(python -I -B -c 'import hashlib,sys; f=open(sys.argv[1],"rb"); b=f.read(4194305); f.close(); assert 0<len(b)<=4194304; print(hashlib.sha256(b).hexdigest())' "$RUNNER_TEMP/offline-pilot.json")"
           receipt_sha256="$(python -I -B -c 'import hashlib,sys; f=open(sys.argv[1],"rb"); b=f.read(1048577); f.close(); assert 0<len(b)<=1048576; print(hashlib.sha256(b).hexdigest())' "$RUNNER_TEMP/root-suite.json")"
-          python -I -B tools/check-root-suite.py --receipt "$RUNNER_TEMP/root-suite.json" --expect-receipt-sha256 "$receipt_sha256" --report "$RUNNER_TEMP/offline-pilot.json" --expect-report-sha256 "$report_sha256" --source . --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)" --expect-race false --expect-coverage false --expect-package-timeout 10m0s --expect-overall-timeout 30m0s --require-source-root-group compiled-native-observers/v1 > "$RUNNER_TEMP/root-suite-check.json"
+          python -I -B tools/check-root-suite.py --receipt "$RUNNER_TEMP/root-suite.json" --expect-receipt-sha256 "$receipt_sha256" --report "$RUNNER_TEMP/offline-pilot.json" --expect-report-sha256 "$report_sha256" --source . --expect-revision "${{ github.sha }}" --expect-os "$(go env GOOS)" --expect-architecture "$(go env GOARCH)" --expect-race false --expect-coverage false --expect-package-timeout 10m0s --expect-overall-timeout 30m0s --require-source-root-group compiled-native-observers/v2 > "$RUNNER_TEMP/root-suite-check.json"
       - name: Upload root suite receipt
         id: upload_root_suite
         continue-on-error: true
@@ -1531,8 +1531,6 @@ jobs:
         run: python -I -B tools/gen-node-account-basic-vectors/check_pow.py --source-revision "${{ github.sha }}"
       - name: Recorded account PoW runtime and RPC boundaries
         run: go test -v -count=1 -run '^TestNodeAccountPoW' ./internal/conformance
-      - name: Recorded account PoW observer boundaries
-        run: go test -v -count=1 -run '^TestCompiledNodeAccountPoWObserver$' ./internal/conformance
       - name: Node receive store corpus controls
         run: python -I -B tools/gen-node-account-basic-vectors/check_receive_test.py -v
       - name: Independent node receive store checks

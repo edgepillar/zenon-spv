@@ -170,20 +170,74 @@ class RootSuiteControls(unittest.TestCase):
             with self.assertRaises(CHECKER.Rejected):
                 check(changed)
 
+    def test_compiled_native_pow_observer_requires_the_original_summary(self):
+        receipt, report = source_root_fixture("windows")
+        roots = [
+            {"package": CHECKER.MODULE + "/" + package, "test": test, "status": "pass",
+             "passed_subtests": count, "skipped_subtests": 0, "failed_subtests": 0}
+            for package, test, count in (
+                ("internal/conformance", "TestCompiledAdvancingBlockObserver", 9),
+                ("internal/conformance", "TestCompiledNodeAccountBasicObserver", 58),
+                ("internal/conformance", "TestCompiledNodeAccountReceiveObserver", 52),
+                ("tools/offline-pilot", "TestCompiledPilotSourceEnumeration", 6),
+                ("internal/conformance", "TestCompiledNodeAccountPoWObserver", 134),
+            )
+        ]
+        group = "compiled-native-observers/v2"
+        receipt["source_root_controls"] = {
+            "format": "zenon-source-root-controls/v2", "group": group, "status": "complete", "roots": roots,
+            "node_account_pow_observer": {
+                "schema_version": 1, "cases": 134, "observations": 64, "original_matched": 2,
+                "collection_blocked": 62, "coherent_hash_signature_rejected": 62,
+                "missing_commitment_refused": 4, "consumer_selection_mismatched": 4, "ordinary_commands": 4,
+                "corpus_sha256": "560ff77f5fe092e99222399309da164c0539dec749e95b0e1788cd52fe30716f",
+                "node_revision": "c64ed6279ff1d07335dab0ac36156dec8b5b71e9",
+                "runtime_acceptance_changed": False, "account_pow_qualified": False,
+                "new_signatures_generated": False, "network_pilot_qualified": False, "state_value_acceptance": False,
+            },
+        }
+        receipt["tests"].update(root_tests=9, subtests=267, passed=275)
+        receipt["timings"].update(completed_roots=9, missing_elapsed=6)
+
+        def check(value, required_group=group):
+            return CHECKER.check_receipt(value, report, True, True, "10m0s", "30m0s", "windows", required_group)
+
+        self.assertEqual(check(receipt), {
+            "group": group, "roots": 5, "passed_subtests": 259, "skipped_subtests": 0,
+            "node_account_pow_observer_sha256": "4a41ad86abce3301f54448dafd21901e3c6158fa9dda67dc72a0bed8bc89f1c1",
+        })
+        with self.assertRaises(CHECKER.Rejected):
+            check(receipt, "compiled-native-observers/v1")
+        for mutate in (
+            lambda section: section.pop("node_account_pow_observer"),
+            lambda section: section.update(format="zenon-source-root-controls/v1"),
+            lambda section: section["roots"].pop(),
+            lambda section: section["roots"][-1].update(passed_subtests=133, skipped_subtests=1),
+            lambda section: section["node_account_pow_observer"].update(observations=63),
+            lambda section: section["node_account_pow_observer"].update(schema_version=True),
+            lambda section: section["node_account_pow_observer"].update(state_value_acceptance=True),
+            lambda section: section["node_account_pow_observer"].update(extra="PRIVATE"),
+        ):
+            changed = copy.deepcopy(receipt)
+            mutate(changed["source_root_controls"])
+            with self.assertRaises(CHECKER.Rejected):
+                check(changed)
+
     def test_source_root_reuse_preserves_parent_instrumentation_and_complete_suite(self):
         workflow = (HERE.parent / ".github/workflows/ci.yml").read_text()
         linux, matrix = workflow.split("\n  native-platform:\n", 1)
         matrix = matrix.split("\n  recorded-oracles:\n", 1)[0]
         for root in ("TestCompiledPilotSourceEnumeration", "TestCompiledAdvancingBlockObserver",
-                     "TestCompiledNodeAccountBasicObserver", "TestCompiledNodeAccountReceiveObserver"):
+                     "TestCompiledNodeAccountBasicObserver", "TestCompiledNodeAccountReceiveObserver",
+                     "TestCompiledNodeAccountPoWObserver"):
             command = "-run '^" + root + "$'"
             self.assertIn(command, linux)
             self.assertNotIn(command, matrix)
         self.assertIn("--full-suite --timeout 30m --package-timeout 10m --race --coverage", linux)
-        self.assertIn("--full-suite --timeout 30m --package-timeout 10m --suite-root-group compiled-native-observers/v1", matrix)
+        self.assertIn("--full-suite --timeout 30m --package-timeout 10m --suite-root-group compiled-native-observers/v2", matrix)
         check, _ = matrix.split("      - name: Upload root suite receipt\n", 1)
         self.assertIn("--expect-race false --expect-coverage false", check)
-        self.assertIn("--require-source-root-group compiled-native-observers/v1", check)
+        self.assertIn("--require-source-root-group compiled-native-observers/v2", check)
         self.assertEqual(matrix.count('> "$RUNNER_TEMP/root-suite-check.json"'), 1)
 
     def test_observer_resources_are_complete_and_platform_bound(self):
