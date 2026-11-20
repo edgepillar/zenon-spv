@@ -86,6 +86,28 @@ pins, the 90-second / 30-attempt readiness bound, shared 96 RPC-call cap and
 overall resource/cleanup limits remain unchanged. The original readiness refusal
 still ends the experiment even if diagnostics suggest activity.
 
+## Source-attributed broadcast counts
+
+File report v5 partitions the existing broadcast count into
+\`worker_before_insert\`, \`protocol_after_insert\` and \`unattributed\`. Both
+node calls emit the same message. The worker logs before calling
+\`CreateMomentum\`. The protocol broadcaster logs after local insertion and
+prefetch, immediately before calling \`BroadcastMomentum\`.
+[Worker](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/pillar/worker.go#L109-L115) ·
+[Broadcaster](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/protocol/broadcaster.go#L36-L81)
+
+The classifier matches complete records in the pinned Logfmt format and uses
+the fixed \`pillar/worker\` and \`handler/broadcaster\` logger pairs. Other matches
+count as unattributed. The v5 reader requires the three counts to sum to the
+existing broadcast count. It reads the v4 file windows and also supports
+historical v1 through v4 reports. The new fields contain only counts.
+[Node logging](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/common/logs.go#L15-L61) ·
+[Logfmt formatter](https://github.com/inconshreveable/log15/blob/8562bdadbbac/format.go#L77-L112)
+
+These counters describe logger calls seen in individual bounded file windows.
+Peer delivery, block identity, event ordering across nodes and the cause of a
+readiness refusal remain open.
+
 ## Controls and remaining gates
 
 The controls include an independently encoded USTAR entry, timestamp-bearing PAX,

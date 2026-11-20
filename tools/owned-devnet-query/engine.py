@@ -538,7 +538,7 @@ class Engine:
         require(not self.startup_file_logs_attempted and self.startup_diagnostics_attempted
                 and self.cleanup_deadline is None and self.admission is not None, "startup_file_scope")
         self.startup_file_logs_attempted = True
-        report = {"format": "owned-devnet-startup-file-logs/v4", "trigger": "owned_rpc_readiness_deadline",
+        report = {"format": file_logs.FORMAT, "trigger": "owned_rpc_readiness_deadline",
             "status": "UNKNOWN", "reason": "capture_interrupted", "observed_before_cleanup": True,
             "atomic_snapshot": False, "accepted_header_authority": False, "production_qualified": False,
             "raw_logs_exported": False, "nodes": [{"service": row["service"],
@@ -557,12 +557,14 @@ class Engine:
                     if item["method"] == "byte-tail":
                         arguments = ["container", "exec", owned.identity, "/bin/busybox", "tail", "-c",
                                      str(file_logs.TAIL_BYTES), "--", path]
-                        parse = lambda result: file_logs.tail_summary(result.stdout(file_logs.TAIL_BYTES))
+                        parse = lambda result: file_logs.tail_summary(
+                            result.stdout(file_logs.TAIL_BYTES), with_broadcast_origins=True)
                         cap = file_logs.TAIL_BYTES
                     else:
                         arguments = ["container", "cp", owned.identity + ":" + path, "-"]
                         parse = lambda result, kind=kind: file_logs.archive_summary(
-                            result.stdout(file_logs.ARCHIVE_BYTES), kind, complete_prefix=(kind == "error"))
+                            result.stdout(file_logs.ARCHIVE_BYTES), kind, complete_prefix=(kind == "error"),
+                            with_broadcast_origins=True)
                         cap = file_logs.ARCHIVE_BYTES
                     observe(item["phase"], "startup-file-" + row["service"] + "-" + kind,
                             arguments, parse, cap, 4096)
