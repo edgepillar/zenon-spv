@@ -63,6 +63,27 @@ request, checkpoint, profile or artifact cannot be substituted into the new
 selection. Proof/ABI limits, canonical rules, resource budgets and trust flags
 retain their original meanings.
 
+## Renewing the paired main CI inputs
+
+A reviewed change to the [renewal request](../.github/owned-devnet-input-renewal.json)
+selects both general CI and closed-parent CI. The request records the outgoing
+qualified component source and the reference-gas node selected for this
+renewal. Increase its request number for a new renewal of the same cohort.
+A pull request qualifies its own candidate. When both workflows pass on the
+subsequent `main` push, that revision supplies the source-matched pair.
+
+Both workflows use a 21-day retention request for the existing Linux consumer
+and closed-parent archives on the exact `main` push containing the renewal.
+Other uploads keep 14 days. Missing Git history or an unrecognized change keeps
+the default window. The selector adds no build or duplicate upload. Confirm the
+actual expiry from each artifact's metadata as part of qualification.
+
+Select both original Linux ZIPs from the same completed `main` revision, bind
+their workflow, run and attempt, and independently qualify their source and
+binary pins. Add a separately reviewed contract selection for the new pins and
+preserve the outgoing contract bytes for historical replay. A renewal request
+alone changes neither an approved contract digest nor active runner inputs.
+
 ## Preparation and retained-input review
 
 The model command is offline and reports `PLAN_ONLY`:

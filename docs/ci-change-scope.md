@@ -294,3 +294,20 @@ push need separate reconciliation of source scope, skipped provider records,
 native results and artifacts before claiming measured savings. Fewer selected
 jobs are not a controlled wall-time benchmark, node resource measurement,
 independent review or network/state-value acceptance.
+
+### Paired owned-input renewal
+
+The explicit owned-input renewal request schedules the closed-parent workflow
+at the same source as the existing general workflow. The request remains a
+runtime dependency. It is outside both narrow change-scope file sets, so a
+renewal runs the complete general lane and has its own original CI artifacts.
+
+Relative to `ec2f07e4e5411cedfc74b9f77576b7f7550c00dd`, the two edited
+workflow files, the renewal request and the two retention selector files
+change five records in both closures. The portable closure contains 1,195
+records and 122,422 bytes with digest
+`dbbb683a47ad61c72568b1abca132c962ac6dc9e123e2b9a025b2489a9d8c77c`. The
+recorded-oracle closure contains 1,214 records and 124,260 bytes with digest
+`4b6971bfb7c952a22ac77cd98ce4959081a46581cb3248f65878717716e88b59`.
+The reviewed leaf sets and the recorded-oracle job definition retain the same
+coverage.
