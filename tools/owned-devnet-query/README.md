@@ -399,6 +399,13 @@ The runner retains the validated opening's request and response in the same
 evidence index before transporting either query component. A refusal during
 query-input preparation can therefore retain both records for offline review.
 
+After the consumer runs, the controller can retain a complete exit-1 or exit-2
+CLI report. It validates the fixed report schema, error category and header
+diagnostic before selecting the original stdout. The reader binds those bytes
+to the exact start and completion receipts and returns the recorded failure
+with exit 1. The record describes the CLI outcome while the consumer
+comparison remains empty.
+
 The reader opens only the original ZIP and the local contract/profile files.
 The limits are 2,048 ZIP members, a 512 KiB index, 2 MiB per indexed file and
 64 MiB expanded in total. It streams the remaining indexed members in 64 KiB

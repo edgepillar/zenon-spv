@@ -280,7 +280,7 @@ def execute(environment, workspace, checkout):
         stage = "consumer"
         matched = capture.query(contract, record, window, schedule, descriptor, profile, consumer,
                                 workspace, tool_environment, guard)
-        extra.add("consume-query.stdout")
+        extra.add(capture.CONSUMER_STDOUT)
         verify_checkout(record, checkout, execution, "final")
         budget.check(force=True)
         require(matched["gateway_stored_fields_match"] is True, "gateway_stored_fields_differ")
@@ -288,6 +288,9 @@ def execute(environment, workspace, checkout):
     except CommandFailed as error:
         outcome = "FAILURE" if error.result.receipt["output_complete"] is True else "UNKNOWN"
         reason = "command_failed" if outcome == "FAILURE" else "command_incomplete"
+        if stage == "consumer" and capture.retainable_consumer_failure(error.result):
+            extra.add(capture.CONSUMER_STDOUT)
+            reason = "consumer_reported_failure"
     except Refused as error:
         outcome, reason = "REFUSED", error.reason
     except KeyboardInterrupt:

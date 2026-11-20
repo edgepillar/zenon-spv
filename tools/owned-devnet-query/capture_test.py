@@ -32,6 +32,19 @@ import runner
 CONTRACT = model.read_contract(HERE / "contract.json")
 
 
+def consumer_failure_fixture(code=2, stage="query", category="required_row_absent", **changes):
+    report = {"schema_version": 1, "command": "query-experimental-batch-context",
+        "scope": "EXPERIMENTAL_CONFIGURED_HEADER_THREE_ROW_MEMBERSHIP",
+        "status": "refused" if code == 2 else "rejected", "exit_code": code,
+        "error": {"stage": stage, "category": category},
+        "headers": {"outcome": "ACCEPT", "reason": "ReasonOK", "failed_at": -1},
+        "header_context": None, "query_context": None, "result": None, "gateway_comparison": None,
+        "persistence": "read_only", "rpc_requests": 0, "production_state_value_guarantee": False,
+        "gateway_comparison_requested": True, "caveats": capture.CONSUMER_CAVEATS}
+    report.update(changes)
+    return model.canonical(report)
+
+
 def review_exported(root, index, execution, contract=CONTRACT):
     packed = io.BytesIO()
     with zipfile.ZipFile(packed, "w", compression=zipfile.ZIP_DEFLATED) as archive:
@@ -43,6 +56,34 @@ def review_exported(root, index, execution, contract=CONTRACT):
     return review.review_stream(packed,
         {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()},
         execution.source_revision, execution.run_id, contract, HERE.parents[1])
+
+
+class ConsumerFailureTests(unittest.TestCase):
+    def test_selected_failure_types_have_exact_exit_and_header_diagnostics(self):
+        for code, stage, category, headers in (
+                (1, "headers", "not_accepted", {"outcome": "REJECT", "reason": "ReasonInvalidSignature", "failed_at": 0}),
+                (2, "headers", "not_accepted", {"outcome": "REFUSED", "reason": "ReasonProtocolProfileCoverage", "failed_at": -1}),
+                (2, "witness", "unavailable", None), (2, "gateway", "unavailable", None)):
+            with self.subTest(code=code, stage=stage):
+                report = capture.consumer_failure(consumer_failure_fixture(code, stage, category, headers=headers), code)
+                self.assertEqual(report, {"actual_exit": code, "error": {"stage": stage, "category": category},
+                                          "headers": headers})
+
+    def test_incomplete_or_unrecognized_report_is_not_exportable(self):
+        receipt = {"actual_exit": 2, "label": "consume-query", "launch_outcome": "STARTED",
+                   "output_complete": True, "process_group_quiescent": True, "reason": None}
+        for updates, changes in (({"output_complete": False}, {}), ({"actual_exit": 70}, {}),
+                ({"launch_outcome": "UNKNOWN"}, {}), ({"process_group_quiescent": False}, {}),
+                ({"reason": "timeout"}, {}), ({}, {"result": {"value": "private"}}),
+                ({}, {"caveats": ["private"]}), ({}, {"extra": "private"}),
+                ({}, {"headers": {"outcome": "ACCEPT", "reason": "private", "failed_at": -1}}),
+                ({}, {"exit_code": 1}), ({}, {"error": {"stage": "query", "category": "private"}})):
+            with self.subTest(receipt=updates, fields=sorted(changes)):
+                result = mock.Mock(receipt={**receipt, **updates}, stdout_name=capture.CONSUMER_STDOUT,
+                                   stdout=mock.Mock(return_value=consumer_failure_fixture(**changes)))
+                self.assertFalse(capture.retainable_consumer_failure(result))
+                if updates:
+                    result.stdout.assert_not_called()
 
 
 class StartupSyncTests(unittest.TestCase):
@@ -854,23 +895,33 @@ class HostBoundaryTests(unittest.TestCase):
                              ("runtime-inputs", "REFUSED", "fixture_source_default"))
 
     def test_query_inputs_and_packages_follow_opening_validation(self):
-        contract, rows, _ = synthetic_window()
+        contract, rows, window = synthetic_window()
         execution = model.ExecutionIdentity("a" * 40, 1, 1, "edgepillar")
         for case, stage, reason in (
                 ("bad-opening", "nodes", "opening_header_count"),
                 ("bad-oracle", "query-inputs", "test_oracle_input_refusal"),
                 ("bad-toolchain", "node-toolchain", "test_node_toolchain_refusal"),
                 ("bad-packages", "packages", "test_package_refusal"),
-                ("ready", "fixture-configuration", "test_fixture_boundary")):
+                ("ready", "fixture-configuration", "test_fixture_boundary"),
+                ("bad-consumer", "consumer", "consumer_reported_failure")):
             trace = mock.Mock()
+            consumer_failed = case == "bad-consumer"
 
             def rpc_factory(contract, record, root, curl, environment, guard):
                 rpc = actual_rpc(contract, record, root, curl, environment, guard)
                 trace.wait_height.side_effect = rpc.wait_height
                 rpc.wait_height = trace.wait_height
+                if consumer_failed:
+                    initial_wait = trace.wait_height.side_effect
+                    trace.wait_height.side_effect = lambda height, starting=False: (
+                        initial_wait(height, starting=True) if starting else None)
+                    rpc.wait_gateway = trace.wait_gateway
+                    rpc.select_query_header = mock.Mock(return_value=window.query)
                 actual_run = record.run
 
                 def local_transport(label, argv, cwd, env, **options):
+                    if label == "consume-query":
+                        return actual_run(label, argv, cwd, env, **options)
                     request = json.loads(argv[argv.index("--data-binary") + 1])
                     if request["method"] == "ledger.getFrontierMomentum":
                         self.assertEqual(request, {"jsonrpc": "2.0", "id": 1,
@@ -897,7 +948,9 @@ class HostBoundaryTests(unittest.TestCase):
                                          Engine=mock.DEFAULT, Artifacts=mock.DEFAULT, Installer=mock.DEFAULT,
                                          Sources=mock.DEFAULT, Packages=mock.DEFAULT, Builder=mock.DEFAULT,
                                          fixture_flow=mock.DEFAULT, publish_paths=mock.DEFAULT) as dependencies, \
-                        mock.patch.object(capture, "LocalRpc", side_effect=rpc_factory):
+                        mock.patch.object(capture, "LocalRpc", side_effect=rpc_factory), \
+                        mock.patch.multiple(capture, collect=mock.DEFAULT, read_closed_schedule=mock.DEFAULT,
+                                            query=mock.DEFAULT) as post_fixture:
                     dependencies["dispatch"].return_value = contract, execution
                     dependencies["Budget"].return_value.report.return_value = {}
                     engine = dependencies["Engine"].return_value
@@ -926,8 +979,17 @@ class HostBoundaryTests(unittest.TestCase):
                         self.assertIs(args[4], mock.sentinel.executable_node)
                         self.assertIs(args[5], mock.sentinel.prepared_packages)
                         trace.fixture(args[-2])
-                        raise model.Refused("test_fixture_boundary")
+                        if not consumer_failed:
+                            raise model.Refused("test_fixture_boundary")
 
+                    def reject_query(contract, record, *args):
+                        trace.consume_query()
+                        return record.run("consume-query", [sys.executable, "-I", "-B", "-c",
+                            "import sys; sys.stdout.buffer.write(" + repr(consumer_failure_fixture()) + "); sys.exit(2)"],
+                            root, {}, stdout_cap=capture.CONSUMER_FAILURE_BYTES)
+
+                    post_fixture["collect"].return_value = window
+                    post_fixture["query"].side_effect = reject_query
                     dependencies["fixture_flow"].side_effect = stop_at_fixture
                     env = {"GH_TOKEN": "unused-test-value", "GITHUB_OUTPUT": str(root / "output")}
                     self.assertEqual(runner.execute(env, root, HERE.parents[1]), 1)
@@ -937,17 +999,23 @@ class HostBoundaryTests(unittest.TestCase):
                 expected.extend((mock.call.wait_height(3, starting=True), mock.call.opening()))
                 if case != "bad-opening":
                     expected.extend((mock.call.fetch("consumer"), mock.call.fetch("parent_oracle")))
-                if case in ("bad-toolchain", "bad-packages", "ready"):
+                if case not in ("bad-opening", "bad-oracle"):
                     expected.extend((mock.call.enable_consumer(), mock.call.enable_oracle(),
                                      mock.call.fetch_node_toolchain()))
-                if case in ("bad-packages", "ready"):
+                if case in ("bad-packages", "ready", "bad-consumer"):
                     expected.extend((mock.call.enable_node(), mock.call.prepare_packages()))
-                if case == "ready":
+                if case in ("ready", "bad-consumer"):
                     expected.extend((mock.call.verify_runtime_files(), mock.call.fixture("configure")))
+                if consumer_failed:
+                    expected.extend(mock.call.build_images().image_for(role) for role in model.SERVICES[4:])
+                    expected.extend((mock.call.wait_gateway(), mock.call.fixture("deposit"),
+                        mock.call.wait_height(window.query.height + contract.data["limits"]["header_depth"]),
+                        mock.call.consume_query()))
                 self.assertEqual(trace.mock_calls, expected)
                 terminal = json.loads((root / "evidence/terminal.json").read_bytes())
+                outcome = "FAILURE" if consumer_failed else "REFUSED"
                 self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),
-                                 (stage, "REFUSED", reason))
+                                 (stage, outcome, reason))
                 index = json.loads((root / "evidence/evidence-index.json").read_bytes())
                 files = {row["path"]: {key: row[key] for key in ("bytes", "sha256")}
                          for row in index["files"]}
@@ -955,8 +1023,16 @@ class HostBoundaryTests(unittest.TestCase):
                 request = "evidence/rpc-02.request.json"
                 self.assertIn("evidence/rpc-02.complete.json", files)
                 checked = review_exported(root, index, execution, contract)
-                self.assertEqual(checked["recorded_terminal_outcome"], "REFUSED")
+                self.assertEqual(checked["recorded_terminal_outcome"], outcome)
                 self.assertIsNone(checked["comparison"])
+                if consumer_failed:
+                    raw = consumer_failure_fixture()
+                    name = capture.CONSUMER_STDOUT
+                    self.assertEqual((root / "evidence" / name).read_bytes(), raw)
+                    self.assertEqual(checked["recorded_consumer_failure"], {**capture.consumer_failure(raw, 2),
+                        "stdout": {"file": name, **files["evidence/" + name]}})
+                else:
+                    self.assertNotIn("recorded_consumer_failure", checked)
                 self.assertEqual(checked["candidate_frontier_observations"][0]["request_id"], 1)
                 if case == "bad-opening":
                     self.assertNotIn(path, files)

@@ -145,7 +145,7 @@ class Evidence:
             path = model.relative_name(record["path"])
             parent, _, name = path.partition("/")
             retained_stream = parent == "evidence" and (
-                name == "consume-query.stdout" or re.fullmatch(r"parent-oracle-[0-9]{2}\.stdout", name))
+                name == capture.CONSUMER_STDOUT or re.fullmatch(r"parent-oracle-[0-9]{2}\.stdout", name))
             require(parent in {"evidence", "transport"} and FILE.fullmatch(name) is not None
                     and (name.endswith(".json") or retained_stream)
                     and path in self.rows and path not in self.pins, "review_member_selection")
@@ -175,11 +175,11 @@ class Evidence:
             same({"bytes": size, "sha256": digest.hexdigest()}, self.pins[name], "review_member_digest")
 
 
-def recorded_output(evidence, label, name, *, folder="evidence", external_pin=None):
+def recorded_output(evidence, label, name, *, folder="evidence", external_pin=None, actual_exit=0):
     receipt = evidence.json(label + ".complete.json", folder=folder)
     require(receipt.get("format") == "owned-devnet-command-capture/v1"
             and receipt.get("label") == label and receipt.get("launch_outcome") == "STARTED"
-            and type(receipt.get("actual_exit")) is int and receipt["actual_exit"] == 0
+            and type(receipt.get("actual_exit")) is int and receipt["actual_exit"] == actual_exit
             and receipt.get("output_complete") is True and receipt.get("reason") is None
             and receipt.get("process_group_quiescent") is True, "review_recorded_command_completion")
     pin = evidence.pins[folder + "/" + name] if external_pin is None else external_pin
@@ -190,6 +190,19 @@ def recorded_output(evidence, label, name, *, folder="evidence", external_pin=No
          "label": label, "pid": group, "process_group": group, "new_session_requested": True},
          "review_recorded_command_start")
     return stdout
+
+
+def recorded_consumer_failure(evidence, terminal, binding_present):
+    if terminal["reason"] != "consumer_reported_failure":
+        return None
+    name = capture.CONSUMER_STDOUT
+    require(binding_present and terminal["outcome"] == "FAILURE" and terminal["stage"] == "consumer"
+            and "evidence/" + name in evidence.pins, "review_consumer_failure_scope")
+    code = evidence.json("consume-query.complete.json").get("actual_exit")
+    raw = evidence.bytes("evidence/" + name, capture.CONSUMER_FAILURE_BYTES)
+    report = capture.consumer_failure(raw, code)
+    stdout = recorded_output(evidence, "consume-query", name, actual_exit=code)
+    return {**report, "stdout": stdout}
 
 
 def recorded_opening(evidence, contract):
@@ -291,8 +304,8 @@ def recorded_consumer(evidence, contract, checkout, selection):
     for name, expected in (("query-config.json", config), ("query-request.json", request),
                            ("query-context-pins.json", pins)):
         same(evidence.json(name, 256 << 10), expected, "review_query_inputs")
-    result = evidence.json("consume-query.stdout", 256 << 10)
-    recorded_output(evidence, "consume-query", "consume-query.stdout")
+    result = evidence.json(capture.CONSUMER_STDOUT, 256 << 10)
+    recorded_output(evidence, "consume-query", capture.CONSUMER_STDOUT)
     matched = consumer_result(result, config, request, provider, query.root, descriptor)
     same(evidence.json("consumer-comparison.json"), matched, "review_consumer_comparison")
     require(matched["gateway_stored_fields_match"] is True, "review_consumer_gateway")
@@ -589,6 +602,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         post_sync = recorded_post_sync_frontier(evidence, terminal, startup_sync, frontiers)
         startup_nodes = recorded_startup_nodes(evidence, terminal)
         file_logs = node_file_logs.recorded(evidence, terminal, startup_nodes, diagnostic_receipt)
+        consumer_failure = recorded_consumer_failure(evidence, terminal, binding_present)
         matched = opening_observation = None
         if reported == "DEVNET_CONSUMER_ACCEPTED":
             require(binding_present and terminal["stage"] == "consumer" and terminal["reason"] is None
@@ -619,6 +633,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["startup_node_diagnostics"] = startup_nodes
         if file_logs is not None:
             report["startup_file_log_diagnostics"] = file_logs
+        if consumer_failure is not None:
+            report["recorded_consumer_failure"] = consumer_failure
         return report
 
 

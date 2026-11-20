@@ -19,7 +19,7 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 import capture
 from artifacts import WORKFLOWS
-from capture_test import CONTRACT, synthetic_reports, synthetic_window
+from capture_test import CONTRACT, consumer_failure_fixture, synthetic_reports, synthetic_window
 from model import Refused, canonical
 import query_checks as checks
 import review
@@ -787,6 +787,50 @@ class ReviewTests(unittest.TestCase):
         self.assertEqual(result["archive_review"]["candidate_opening_observation"]["headers"][-1]["height"], 3)
         self.assertIsNone(result["archive_review"]["comparison"])
         self.assertFalse(result["new_devnet_acceptance_established"])
+
+    def consumer_failure_files(self):
+        files = self.opening_files()
+        files["evidence/terminal.json"] = canonical({**terminal("FAILURE", self.contract),
+            "stage": "consumer", "reason": "consumer_reported_failure"})
+        output = consumer_failure_fixture()
+        name = capture.CONSUMER_STDOUT
+        files["evidence/" + name] = output
+        files["evidence/consume-query.started.json"] = self.files["evidence/consume-query.started.json"]
+        receipt = json.loads(self.files["evidence/consume-query.complete.json"])
+        receipt["actual_exit"] = 2
+        receipt["outputs"]["stdout"] = {"file": name, **pin(output)}
+        files["evidence/consume-query.complete.json"] = canonical(receipt)
+        return files
+
+    def test_hosted_consumer_failure_rechecks_the_original_capture(self):
+        files = self.consumer_failure_files()
+        code, result, error = self.hosted_review(make_archive(files), conclusion="failure", execution="failure")
+        self.assertEqual(code, 1, error)
+        archive = result["archive_review"]
+        expected = {"file": capture.CONSUMER_STDOUT, **pin(files["evidence/" + capture.CONSUMER_STDOUT])}
+        self.assertEqual(archive["recorded_consumer_failure"], {
+            **capture.consumer_failure(consumer_failure_fixture(), 2), "stdout": expected})
+        self.assertEqual(archive["recorded_terminal_outcome"], "FAILURE")
+        self.assertEqual(archive["materialized_bytes"], 0)
+        self.assertIsNone(archive["comparison"])
+        self.assertFalse(result["new_devnet_acceptance_established"])
+
+    def test_consumer_failure_cannot_replace_run_receipt_or_start_binding(self):
+        for filename, changes, reason in (
+                ("terminal.json", {"stage": "nodes"}, "review_consumer_failure_scope"),
+                ("terminal.json", {"outcome": "UNKNOWN"}, "review_consumer_failure_scope"),
+                ("consume-query.complete.json", {"actual_exit": 1}, "consumer_failure_scope"),
+                ("consume-query.complete.json", {"output_complete": False}, "review_recorded_command_completion"),
+                ("consume-query.started.json", {"process_group": 43}, "review_recorded_command_start")):
+            with self.subTest(file=filename, changes=changes), self.assertRaisesRegex(Refused, reason):
+                files = self.consumer_failure_files()
+                path = "evidence/" + filename
+                files[path] = canonical({**json.loads(files[path]), **changes})
+                self.review(make_archive(files))
+        with self.assertRaisesRegex(Refused, "review_consumer_failure_scope"):
+            files = self.consumer_failure_files()
+            del files["evidence/" + capture.CONSUMER_STDOUT]
+            self.review(make_archive(files))
 
     def test_checks_the_exact_opening_request_when_retained(self):
         files = self.opening_files()
