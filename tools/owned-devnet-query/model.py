@@ -20,7 +20,8 @@ import sys
 FORMAT = "owned-devnet-batch-query-contract/v1"
 REFERENCE_GAS_FORMAT = "owned-devnet-batch-query-contract/v2"
 CONTRACT_FILES = (("contract.json", FORMAT),
-                  ("reference-gas-contract.json", REFERENCE_GAS_FORMAT))
+                  ("reference-gas-contract.json", REFERENCE_GAS_FORMAT),
+                  ("reference-gas-renewal-1-contract.json", REFERENCE_GAS_FORMAT))
 MAX_CONTRACT_BYTES = 64 << 10
 HEX40 = re.compile(r"[0-9a-f]{40}\Z")
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
@@ -48,6 +49,11 @@ REFERENCE_GAS_SOURCE_PINS = dict(SOURCE_PINS, **{
 })
 REFERENCE_GAS_COMPONENT_REVISION = "7493c5929c7dbcfb29f94be521f7533d90a1a687"
 REFERENCE_GAS_COMPONENTS_SHA256 = "79b92606afbb0e78ddfcaf4b884fc4c81bb1827a9ec0735d0434dca6953e9efb"
+REFERENCE_GAS_COMPONENT_SELECTIONS = {
+    REFERENCE_GAS_COMPONENT_REVISION: (REFERENCE_GAS_COMPONENTS_SHA256, 43355485323, 43355485426),
+    "58e03fa9ff58a752cfd1718245b31cba73dde473": (
+        "367c7c66ff90122c37db53168ae862035cb9c7aa8ffd91da3b29bec71ccc0cb8", 44764773500, 44764773665),
+}
 SELECTION = {
     "chain_id": 69, "domain_id": 1, "batch_id_decimal": "0",
     "settlement_hex": "01b3b6e5adcb4d0cad7fcef33598c6318c6318c0",
@@ -234,9 +240,6 @@ def decode_contract(raw):
     reference_gas = value["format"] == REFERENCE_GAS_FORMAT
     source_pins = REFERENCE_GAS_SOURCE_PINS if reference_gas else SOURCE_PINS
     selection = REFERENCE_GAS_SELECTION if reference_gas else SELECTION
-    component_revision = REFERENCE_GAS_COMPONENT_REVISION if reference_gas else QUALIFIED_COMPONENT_REVISION
-    runs = {"consumer": 43355485323, "parent_oracle": 43355485426} if reference_gas else {
-        "consumer": 42113991642, "parent_oracle": 42113991877}
     same(value["selection"], selection, "selected_query_changed")
     same(value["limits"], LIMITS, "resource_policy_changed")
     same(value["scope"], SCOPE, "scope_changed")
@@ -274,13 +277,17 @@ def decode_contract(raw):
             and genesis["bytes"] == selection["genesis_file_bytes"], "genesis_source_binding")
     components = value["qualified_components"]
     exact_keys(components, {"source_revision", "consumer", "parent_oracle"}, "component_fields")
-    require(components["source_revision"] == component_revision, "component_revision")
+    revision = components["source_revision"]
     if reference_gas:
-        require(hashlib.sha256(canonical(components)).hexdigest() == REFERENCE_GAS_COMPONENTS_SHA256,
-                "component_selection")
+        require(type(revision) is str and revision in REFERENCE_GAS_COMPONENT_SELECTIONS, "component_revision")
+        selected_digest, consumer_run, oracle_run = REFERENCE_GAS_COMPONENT_SELECTIONS[revision]
+        require(hashlib.sha256(canonical(components)).hexdigest() == selected_digest, "component_selection")
+    else:
+        require(revision == QUALIFIED_COMPONENT_REVISION, "component_revision")
+        consumer_run, oracle_run = 42113991642, 42113991877
     for name, expected_run, expected_binaries in (
-            ("consumer", runs["consumer"], {"fetch-bundle", "zenon-spv"}),
-            ("parent_oracle", runs["parent_oracle"], {"spv-closed-parent-oracle.exe"})):
+            ("consumer", consumer_run, {"fetch-bundle", "zenon-spv"}),
+            ("parent_oracle", oracle_run, {"spv-closed-parent-oracle.exe"})):
         item = components[name]
         keys = {"run_id", "run_attempt", "artifact_id", "archive", "binaries"}
         if name == "consumer":
@@ -338,7 +345,7 @@ def read_contract(path):
 
 
 def read_selected_contract(directory, expected_sha256):
-    """Resolve an explicit digest among the two reviewed local contracts."""
+    """Resolve an explicit digest among the reviewed local contracts."""
     digest(expected_sha256)
     matches = []
     for name, version in CONTRACT_FILES:

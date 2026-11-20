@@ -32,7 +32,20 @@ import runner
 CONTRACT = model.read_contract(HERE / "contract.json")
 
 
-def review_exported(root, index, execution):
+def consumer_failure_fixture(code=2, stage="query", category="required_row_absent", **changes):
+    report = {"schema_version": 1, "command": "query-experimental-batch-context",
+        "scope": "EXPERIMENTAL_CONFIGURED_HEADER_THREE_ROW_MEMBERSHIP",
+        "status": "refused" if code == 2 else "rejected", "exit_code": code,
+        "error": {"stage": stage, "category": category},
+        "headers": {"outcome": "ACCEPT", "reason": "ReasonOK", "failed_at": -1},
+        "header_context": None, "query_context": None, "result": None, "gateway_comparison": None,
+        "persistence": "read_only", "rpc_requests": 0, "production_state_value_guarantee": False,
+        "gateway_comparison_requested": True, "caveats": capture.CONSUMER_CAVEATS}
+    report.update(changes)
+    return model.canonical(report)
+
+
+def review_exported(root, index, execution, contract=CONTRACT):
     packed = io.BytesIO()
     with zipfile.ZipFile(packed, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for entry in index["files"]:
@@ -42,7 +55,35 @@ def review_exported(root, index, execution):
     raw = packed.getvalue()
     return review.review_stream(packed,
         {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()},
-        execution.source_revision, execution.run_id, CONTRACT, HERE.parents[1])
+        execution.source_revision, execution.run_id, contract, HERE.parents[1])
+
+
+class ConsumerFailureTests(unittest.TestCase):
+    def test_selected_failure_types_have_exact_exit_and_header_diagnostics(self):
+        for code, stage, category, headers in (
+                (1, "headers", "not_accepted", {"outcome": "REJECT", "reason": "ReasonInvalidSignature", "failed_at": 0}),
+                (2, "headers", "not_accepted", {"outcome": "REFUSED", "reason": "ReasonProtocolProfileCoverage", "failed_at": -1}),
+                (2, "witness", "unavailable", None), (2, "gateway", "unavailable", None)):
+            with self.subTest(code=code, stage=stage):
+                report = capture.consumer_failure(consumer_failure_fixture(code, stage, category, headers=headers), code)
+                self.assertEqual(report, {"actual_exit": code, "error": {"stage": stage, "category": category},
+                                          "headers": headers})
+
+    def test_incomplete_or_unrecognized_report_is_not_exportable(self):
+        receipt = {"actual_exit": 2, "label": "consume-query", "launch_outcome": "STARTED",
+                   "output_complete": True, "process_group_quiescent": True, "reason": None}
+        for updates, changes in (({"output_complete": False}, {}), ({"actual_exit": 70}, {}),
+                ({"launch_outcome": "UNKNOWN"}, {}), ({"process_group_quiescent": False}, {}),
+                ({"reason": "timeout"}, {}), ({}, {"result": {"value": "private"}}),
+                ({}, {"caveats": ["private"]}), ({}, {"extra": "private"}),
+                ({}, {"headers": {"outcome": "ACCEPT", "reason": "private", "failed_at": -1}}),
+                ({}, {"exit_code": 1}), ({}, {"error": {"stage": "query", "category": "private"}})):
+            with self.subTest(receipt=updates, fields=sorted(changes)):
+                result = mock.Mock(receipt={**receipt, **updates}, stdout_name=capture.CONSUMER_STDOUT,
+                                   stdout=mock.Mock(return_value=consumer_failure_fixture(**changes)))
+                self.assertFalse(capture.retainable_consumer_failure(result))
+                if updates:
+                    result.stdout.assert_not_called()
 
 
 class StartupSyncTests(unittest.TestCase):
@@ -543,7 +584,7 @@ class ReadinessTests(unittest.TestCase):
         self.assertEqual([row["id"] for row in requests], [1, 2])
         self.assertEqual([row["method"] for row in requests], ["ledger.getFrontierMomentum"] * 2)
         self.assertEqual(self.rpc.calls, 2)
-        sleep.assert_called_once_with(3)
+        sleep.assert_called_once_with(6)
 
     def test_empty_startup_connect_and_timeout_failures_remain_bounded_candidates(self):
         for code in (7, 28):
@@ -609,12 +650,36 @@ class ReadinessTests(unittest.TestCase):
     def test_a_valid_low_frontier_remains_available_after_the_deadline(self):
         _, rows, _ = synthetic_window()
         self.recorder.run.return_value = self.response(rows[1], 1)
-        with mock.patch.object(capture.time, "monotonic", side_effect=[0, 0, 90]), \
-                mock.patch.object(capture.time, "sleep"):
+        with mock.patch.object(capture.time, "monotonic", side_effect=[0, 0, 180]), \
+                mock.patch.object(capture.time, "sleep") as sleep:
             with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
                 self.rpc.wait_height(3, starting=True)
         self.assertEqual(self.rpc.retained_frontiers, {"rpc-01.frontier.json"})
         self.assertEqual(self.rpc.calls, 1)
+        sleep.assert_not_called()
+
+    def test_initial_readiness_can_observe_the_selected_height_after_ninety_seconds(self):
+        _, rows, _ = synthetic_window()
+        self.recorder.run.side_effect = [self.response(rows[1], 1), self.response(rows[2], 2)]
+        with mock.patch.object(capture.time, "monotonic", side_effect=[0, 0, 90, 96, 97]), \
+                mock.patch.object(capture.time, "sleep") as sleep:
+            self.assertEqual(self.rpc.wait_height(3, starting=True).height, 3)
+        self.assertEqual(self.rpc.retained_frontiers, {"rpc-01.frontier.json", "rpc-02.frontier.json"})
+        sleep.assert_called_once_with(6)
+
+    def test_ready_frontier_returned_at_the_deadline_remains_only_an_observation(self):
+        _, rows, _ = synthetic_window()
+        for starting, deadline in ((False, 90), (True, 180)):
+            with self.subTest(starting=starting):
+                self.setUp()
+                self.recorder.run.return_value = self.response(rows[2], 1)
+                with mock.patch.object(capture.time, "monotonic", side_effect=[0, 0, deadline]), \
+                        mock.patch.object(capture.time, "sleep") as sleep:
+                    with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
+                        self.rpc.wait_height(3, starting=starting)
+                self.assertEqual(self.rpc.retained_frontiers, {"rpc-01.frontier.json"})
+                self.assertEqual(self.rpc.calls, 1)
+                sleep.assert_not_called()
 
     def test_persistent_empty_receive_failures_exhaust_the_existing_attempt_bound(self):
         failure = self.failure()
@@ -624,7 +689,7 @@ class ReadinessTests(unittest.TestCase):
             with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
                 self.rpc._wait(read, lambda _: True, starting=True)
         self.assertEqual(read.call_count, 30)
-        self.assertEqual(sleep.call_count, 30)
+        self.assertEqual(sleep.call_count, 29)
         self.assertEqual(self.guard.call_count, 30)
 
     def test_expired_deadline_and_guard_refusal_launch_no_read(self):
@@ -664,7 +729,7 @@ class ReadinessTests(unittest.TestCase):
                 self.rpc.wait_height(3, starting=True)
         self.assertEqual(self.rpc.calls, 97)
         self.assertEqual(self.recorder.run.call_count, 1)
-        sleep.assert_called_once_with(3)
+        sleep.assert_called_once_with(6)
 
 
 @unittest.skipUnless(os.name == "posix", "POSIX descriptor and recorder controls")
@@ -735,7 +800,10 @@ class HostBoundaryTests(unittest.TestCase):
             try:
                 rpc = capture.LocalRpc(CONTRACT, record, root, str(curl), {},
                                        lambda: self.assertEqual(errors, []))
-                with mock.patch.object(capture, "RPC_URL", endpoint):
+                # The clock controls cover the full wait. Keep this TCP test
+                # within the listener's five-second accept timeout.
+                with mock.patch.object(capture, "RPC_URL", endpoint), \
+                        mock.patch.object(capture, "INITIAL_HEIGHT_WAIT_SECONDS", 30):
                     self.assertEqual(rpc.wait_height(3, starting=True).height, 4)
             except BaseException:
                 # Preserve actual command/stream evidence in the enclosing test
@@ -818,12 +886,166 @@ class HostBoundaryTests(unittest.TestCase):
                 env = {"GH_TOKEN": "unused-test-value", "GITHUB_OUTPUT": str(root / "output")}
                 self.assertEqual(runner.execute(env, root, HERE.parents[1]), 1)
                 dependencies["Artifacts"].return_value.preflight.assert_called_once_with()
+                dependencies["Artifacts"].return_value.fetch.assert_not_called()
                 dependencies["Packages"].assert_not_called()
                 dependencies["Builder"].assert_not_called()
                 engine.create_layout.assert_not_called()
             terminal = json.loads((root / "evidence/terminal.json").read_bytes())
             self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),
                              ("runtime-inputs", "REFUSED", "fixture_source_default"))
+
+    def test_query_inputs_and_packages_follow_opening_validation(self):
+        contract, rows, window = synthetic_window()
+        execution = model.ExecutionIdentity("a" * 40, 1, 1, "edgepillar")
+        for case, stage, reason in (
+                ("bad-opening", "nodes", "opening_header_count"),
+                ("bad-oracle", "query-inputs", "test_oracle_input_refusal"),
+                ("bad-toolchain", "node-toolchain", "test_node_toolchain_refusal"),
+                ("bad-packages", "packages", "test_package_refusal"),
+                ("ready", "fixture-configuration", "test_fixture_boundary"),
+                ("bad-consumer", "consumer", "consumer_reported_failure")):
+            trace = mock.Mock()
+            consumer_failed = case == "bad-consumer"
+
+            def rpc_factory(contract, record, root, curl, environment, guard):
+                rpc = actual_rpc(contract, record, root, curl, environment, guard)
+                trace.wait_height.side_effect = rpc.wait_height
+                rpc.wait_height = trace.wait_height
+                if consumer_failed:
+                    initial_wait = trace.wait_height.side_effect
+                    trace.wait_height.side_effect = lambda height, starting=False: (
+                        initial_wait(height, starting=True) if starting else None)
+                    rpc.wait_gateway = trace.wait_gateway
+                    rpc.select_query_header = mock.Mock(return_value=window.query)
+                actual_run = record.run
+
+                def local_transport(label, argv, cwd, env, **options):
+                    if label == "consume-query":
+                        return actual_run(label, argv, cwd, env, **options)
+                    request = json.loads(argv[argv.index("--data-binary") + 1])
+                    if request["method"] == "ledger.getFrontierMomentum":
+                        self.assertEqual(request, {"jsonrpc": "2.0", "id": 1,
+                            "method": "ledger.getFrontierMomentum", "params": []})
+                        result = rows[2]
+                    else:
+                        trace.opening()
+                        self.assertEqual(request, {"jsonrpc": "2.0", "id": 2,
+                            "method": "ledger.getMomentumsByHeight", "params": [1, 3]})
+                        result = {"count": 3, "list": rows[:2] if case == "bad-opening" else rows[:3]}
+                    response = model.canonical({"jsonrpc": "2.0", "id": request["id"], "result": result})
+                    return actual_run(label, [sys.executable, "-I", "-B", "-c",
+                        "import sys; sys.stdout.write(" + repr(response.decode()) + ")"], cwd, {}, **options)
+
+                patch = mock.patch.object(record, "run", side_effect=local_transport)
+                patch.start()
+                self.addCleanup(patch.stop)
+                return rpc
+
+            actual_rpc = capture.LocalRpc
+            with self.subTest(case=case), tempfile.TemporaryDirectory(prefix="owned-query-input-control-") as temporary:
+                root = Path(temporary).resolve(strict=True)
+                with mock.patch.multiple(runner, dispatch=mock.DEFAULT, Budget=mock.DEFAULT,
+                                         Engine=mock.DEFAULT, Artifacts=mock.DEFAULT, Installer=mock.DEFAULT,
+                                         Sources=mock.DEFAULT, Packages=mock.DEFAULT, Builder=mock.DEFAULT,
+                                         fixture_flow=mock.DEFAULT, publish_paths=mock.DEFAULT) as dependencies, \
+                        mock.patch.object(capture, "LocalRpc", side_effect=rpc_factory), \
+                        mock.patch.multiple(capture, collect=mock.DEFAULT, read_closed_schedule=mock.DEFAULT,
+                                            query=mock.DEFAULT) as post_fixture:
+                    dependencies["dispatch"].return_value = contract, execution
+                    dependencies["Budget"].return_value.report.return_value = {}
+                    engine = dependencies["Engine"].return_value
+                    engine.docker_root = contract.data["runtime"]["closed_oracle_readonly_docker_root"]
+                    engine.cleanup.return_value = []
+                    engine.prepare_files.return_value = mock.Mock(verify=trace.verify_runtime_files)
+                    dependencies["Builder"].return_value.prepare = trace.build_images
+                    artifacts = dependencies["Artifacts"].return_value
+                    artifacts.preflight = trace.preflight
+                    artifacts.fetch = trace.fetch
+                    consumer = mock.Mock(enable_execution=trace.enable_consumer)
+                    oracle = mock.Mock(enable_execution=trace.enable_oracle)
+                    trace.fetch.side_effect = [mock.Mock(binaries=consumer),
+                        model.Refused(reason) if case == "bad-oracle" else mock.Mock(binaries=oracle)]
+                    dependencies["Installer"].return_value.fetch = trace.fetch_node_toolchain
+                    trace.fetch_node_toolchain.return_value = mock.Mock(enable_execution=trace.enable_node)
+                    if case == "bad-toolchain":
+                        trace.fetch_node_toolchain.side_effect = model.Refused(reason)
+                    trace.enable_node.return_value = mock.sentinel.executable_node
+                    dependencies["Packages"].return_value.prepare = trace.prepare_packages
+                    trace.prepare_packages.return_value = mock.sentinel.prepared_packages
+                    if case == "bad-packages":
+                        trace.prepare_packages.side_effect = model.Refused(reason)
+
+                    def stop_at_fixture(*args):
+                        self.assertIs(args[4], mock.sentinel.executable_node)
+                        self.assertIs(args[5], mock.sentinel.prepared_packages)
+                        trace.fixture(args[-2])
+                        if not consumer_failed:
+                            raise model.Refused("test_fixture_boundary")
+
+                    def reject_query(contract, record, *args):
+                        trace.consume_query()
+                        return record.run("consume-query", [sys.executable, "-I", "-B", "-c",
+                            "import sys; sys.stdout.buffer.write(" + repr(consumer_failure_fixture()) + "); sys.exit(2)"],
+                            root, {}, stdout_cap=capture.CONSUMER_FAILURE_BYTES)
+
+                    post_fixture["collect"].return_value = window
+                    post_fixture["query"].side_effect = reject_query
+                    dependencies["fixture_flow"].side_effect = stop_at_fixture
+                    env = {"GH_TOKEN": "unused-test-value", "GITHUB_OUTPUT": str(root / "output")}
+                    self.assertEqual(runner.execute(env, root, HERE.parents[1]), 1)
+                    engine.cleanup.assert_called_once_with()
+                expected = [mock.call.preflight(), mock.call.build_images(), mock.call.verify_runtime_files()]
+                expected.extend(mock.call.build_images().image_for(role) for role in model.SERVICES[:4])
+                expected.extend((mock.call.wait_height(3, starting=True), mock.call.opening()))
+                if case != "bad-opening":
+                    expected.extend((mock.call.fetch("consumer"), mock.call.fetch("parent_oracle")))
+                if case not in ("bad-opening", "bad-oracle"):
+                    expected.extend((mock.call.enable_consumer(), mock.call.enable_oracle(),
+                                     mock.call.fetch_node_toolchain()))
+                if case in ("bad-packages", "ready", "bad-consumer"):
+                    expected.extend((mock.call.enable_node(), mock.call.prepare_packages()))
+                if case in ("ready", "bad-consumer"):
+                    expected.extend((mock.call.verify_runtime_files(), mock.call.fixture("configure")))
+                if consumer_failed:
+                    expected.extend(mock.call.build_images().image_for(role) for role in model.SERVICES[4:])
+                    expected.extend((mock.call.wait_gateway(), mock.call.fixture("deposit"),
+                        mock.call.wait_height(window.query.height + contract.data["limits"]["header_depth"]),
+                        mock.call.consume_query()))
+                self.assertEqual(trace.mock_calls, expected)
+                terminal = json.loads((root / "evidence/terminal.json").read_bytes())
+                outcome = "FAILURE" if consumer_failed else "REFUSED"
+                self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),
+                                 (stage, outcome, reason))
+                index = json.loads((root / "evidence/evidence-index.json").read_bytes())
+                files = {row["path"]: {key: row[key] for key in ("bytes", "sha256")}
+                         for row in index["files"]}
+                path = "evidence/opening-momentums.json"
+                request = "evidence/rpc-02.request.json"
+                self.assertIn("evidence/rpc-02.complete.json", files)
+                checked = review_exported(root, index, execution, contract)
+                self.assertEqual(checked["recorded_terminal_outcome"], outcome)
+                self.assertIsNone(checked["comparison"])
+                if consumer_failed:
+                    raw = consumer_failure_fixture()
+                    name = capture.CONSUMER_STDOUT
+                    self.assertEqual((root / "evidence" / name).read_bytes(), raw)
+                    self.assertEqual(checked["recorded_consumer_failure"], {**capture.consumer_failure(raw, 2),
+                        "stdout": {"file": name, **files["evidence/" + name]}})
+                else:
+                    self.assertNotIn("recorded_consumer_failure", checked)
+                self.assertEqual(checked["candidate_frontier_observations"][0]["request_id"], 1)
+                if case == "bad-opening":
+                    self.assertNotIn(path, files)
+                    self.assertNotIn(request, files)
+                    self.assertNotIn("candidate_opening_observation", checked)
+                else:
+                    observed = checked["candidate_opening_observation"]
+                    self.assertEqual(observed["request_id"], 2)
+                    self.assertEqual(observed["response"], files[path])
+                    self.assertEqual(observed["request"], files[request])
+                    self.assertEqual(observed["headers"][-1]["hash"], rows[2]["hash"])
+                    self.assertFalse(observed["accepted_header_authority"])
+                    self.assertEqual(checked["materialized_bytes"], 0)
 
     def test_runner_refusal_exports_the_valid_frontier_without_other_command_streams(self):
         _, rows, _ = synthetic_window()
@@ -866,6 +1088,10 @@ class HostBoundaryTests(unittest.TestCase):
                 engine.cleanup.return_value = []
                 env = {"GH_TOKEN": "unused-test-value", "GITHUB_OUTPUT": str(root / "output")}
                 self.assertEqual(runner.execute(env, root, HERE.parents[1]), 1)
+                dependencies["Artifacts"].return_value.preflight.assert_called_once_with()
+                dependencies["Artifacts"].return_value.fetch.assert_not_called()
+                dependencies["Installer"].assert_not_called()
+                dependencies["Packages"].assert_not_called()
                 engine.cleanup.assert_called_once_with()
             terminal = json.loads((root / "evidence/terminal.json").read_bytes())
             self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),
