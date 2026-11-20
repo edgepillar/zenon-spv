@@ -381,6 +381,13 @@ The limits are 2,048 ZIP members, a 512 KiB index, 2 MiB per indexed file and
 blocks. Review creates zero extracted bytes and reuses the original recorded
 consumer output. Preserve the original archive and run metadata as evidence.
 
+For a recorded gateway-field refusal at the consumer stage with confirmed
+closure, the reader independently rechecks the same command receipts, three
+membership proofs, typed rows and 17 stored fields. If the mismatch agrees
+with the retained CLI report, the reader adds `recorded_gateway_mismatch`
+and returns the original non-accepting result with exit 1. With unresolved
+closure, the reader preserves the recorded refusal and checks member digests.
+
 The regular-file controls can be run with Python's standard library:
 
 ```sh
