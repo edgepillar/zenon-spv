@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""Observe original point catch-up on an isolated unsigned H2, without a node.
+"""Observe original point catch-up on an isolated unsigned H2.
 
 Only fresh hosted workspaces are written. Original node sources are verified
-against Git blobs before and after execution. No wallet, signature, RPC, peer,
-live transaction or accepted header is involved. Retain failed command streams.
+against Git blobs before and after execution. The read-only Ledger RPC handler
+runs in memory against the test chain. Retain failed command streams.
 """
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import shutil
 import sys
 
@@ -38,6 +39,37 @@ PACKAGE = "github.com/zenon-network/go-zenon/consensus"
 MARKER = "SPV_FIRST_INSERTION_CATCHUP "
 CPU_MARKER = "SPV_FIRST_INSERTION_CPU "
 VISIBILITY_MARKER = "SPV_FIRST_INSERTION_VISIBILITY "
+RECORDED_H2_MARKER = "SPV_RECORDED_STARTUP_H2 "
+RECORDED_BOUNDARY_MARKER = "SPV_RECORDED_STARTUP_BOUNDARY "
+RECORDED_H2 = {
+    "format": "recorded-chain69-h2/v1",
+    "recorded_run": 43653383092,
+    "recorded_artifact_id": 14136634774,
+    "rpc_sha256": "931a991acef939bd4d9c0f55e293c64402189940b406b612a0e8bed9668acbc4",
+    "height": 2,
+    "version": 1,
+    "hash": "6203eed405db9b47b93628ed4178740150d35dbb3353bcee75fd622133c9798e",
+    "parent_hash": "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",
+    "timestamp": 1794699050,
+    "signature_verified": True,
+    "source_parent_slot_match": True,
+    "source_frontier_unchanged": True,
+    "accepted_header_authority": False,
+}
+RECORDED_BOUNDARY = {
+    "format": "recorded-chain69-h2-boundary/v1",
+    "parent_height": RECORDED_H2["height"],
+    "parent_hash": RECORDED_H2["hash"],
+    "source_vm_empty_patch": True,
+    "reopened_parent": True,
+    "state_root_active_at_h1": False,
+    "state_root_active_at_h2": True,
+    "unsigned_height": 3,
+    "unsigned_version": 3,
+    "rejected_versions": [1, 2],
+    "unsigned_header_committed": False,
+    "accepted_header_authority": False,
+}
 CPU_LIMITS = {"reference": "max 100000", "half-core": "50000 100000"}
 # Resources from the reference-gas contract used by the historical signed run.
 FIXTURE_CONTRACT = "6f67a35cf6db1e2fd91a529880b9fa555461a4687ed0a76d9a27c900ca6b6f31"
@@ -92,13 +124,26 @@ def cpu_observation(text, profile):
     return row
 
 
-def insertion_visibility(text):
+def insertion_visibility(text, *, require_first_period_read=False, require_frontier_rpc=False):
     row = selected_trace(text, VISIBILITY_MARKER)
-    require(type(row) is dict and set(row) == {
+    require(type(row) is dict, "frontier_visibility_fields")
+    edition = row.get("format")
+    rpc = edition == "first-insertion-frontier-visibility/v3"
+    period_read = rpc or edition == "first-insertion-frontier-visibility/v2"
+    fields = {
         "format", "before_height", "during_height", "callback_held_during_read",
         "insert_returned_after_release", "accepted_header_authority",
-    }, "frontier_visibility_fields")
-    require(row["format"] == "first-insertion-frontier-visibility/v1"
+    }
+    if period_read:
+        fields.add("first_period_read_held")
+    if rpc:
+        fields.update(("rpc_method", "rpc_transport"))
+    require(set(row) == fields, "frontier_visibility_fields")
+    require((period_read or edition == "first-insertion-frontier-visibility/v1")
+            and (not require_first_period_read or period_read)
+            and (not require_frontier_rpc or rpc)
+            and (not period_read or row["first_period_read_held"] is True)
+            and (not rpc or (row["rpc_method"], row["rpc_transport"]) == ("ledger.getFrontierMomentum", "in-memory-http"))
             and type(row["before_height"]) is int and row["before_height"] == 1
             and type(row["during_height"]) is int and row["during_height"] == 2
             and row["callback_held_during_read"] is True and row["insert_returned_after_release"] is True
@@ -106,7 +151,8 @@ def insertion_visibility(text):
     return row
 
 
-def native_controls(raw, cpu_profile=None):
+def native_controls(raw, cpu_profile=None, *, require_first_period_read=False, require_frontier_rpc=False,
+                    require_recorded_h2=False, require_recorded_boundary=False):
     require(cpu_profile is None or cpu_profile in CPU_LIMITS, "cpu_profile_selection")
     cases = {"fixture-window": CASES["fixture-window"]} if cpu_profile == "half-core" else CASES
     require(type(raw) is bytes and 0 < len(raw) <= C.MAX_STREAM and raw.endswith(b"\n"), "native_stream")
@@ -118,8 +164,17 @@ def native_controls(raw, cpu_profile=None):
     for line in lines:
         require(not package_passed, "native_after_package_pass")
         event = decode(line)
-        require(type(event) is dict and event.get("Package") == PACKAGE, "native_package")
-        action, name = event.get("Action"), event.get("Test")
+        require(type(event) is dict, "native_package")
+        action = event.get("Action")
+        if action == "build-output":
+            # Go test can interleave compiler diagnostics and test events.
+            # The Linux test2json lane runs an already compiled binary.
+            require(cpu_profile is None and set(event) == {"Action", "ImportPath", "Output"}
+                    and type(event["ImportPath"]) is str and bool(event["ImportPath"])
+                    and type(event["Output"]) is str and bool(event["Output"]), "native_build_output")
+            continue
+        require(event.get("Package") == PACKAGE, "native_package")
+        name = event.get("Test")
         require(action in ("start", "run", "output", "pass"), "native_outcome")
         if name is not None:
             require(type(name) is str and name in expected and package_started, "native_selection")
@@ -148,6 +203,10 @@ def native_controls(raw, cpu_profile=None):
     visibility_test = TEST + "/one-period" if "one-period" in cases else None
     require(all(VISIBILITY_MARKER not in text for name, text in outputs.items()
                 if visibility_test is None or name != visibility_test), "foreign_visibility_trace")
+    require(all(RECORDED_H2_MARKER not in text for name, text in outputs.items()
+                if visibility_test is None or name != visibility_test), "foreign_recorded_h2_trace")
+    require(all(RECORDED_BOUNDARY_MARKER not in text for name, text in outputs.items()
+                if visibility_test is None or name != visibility_test), "foreign_recorded_boundary_trace")
     cpu_test = TEST + "/fixture-window" if cpu_profile else None
     require(all(CPU_MARKER not in text for name, text in outputs.items()
                 if cpu_test is None or name != cpu_test), "foreign_cpu_trace")
@@ -181,7 +240,27 @@ def native_controls(raw, cpu_profile=None):
             "observations": observations, "actual_fixture_cause_established": False,
             "new_devnet_acceptance_established": False}
     if visibility_test:
-        result["frontier_visibility"] = insertion_visibility(outputs.get(visibility_test, ""))
+        result["frontier_visibility"] = insertion_visibility(outputs.get(visibility_test, ""),
+                                                              require_first_period_read=require_first_period_read,
+                                                              require_frontier_rpc=require_frontier_rpc)
+    recorded_text = outputs.get(visibility_test, "")
+    if require_recorded_h2 or RECORDED_H2_MARKER in recorded_text:
+        row = selected_trace(recorded_text, RECORDED_H2_MARKER)
+        require(type(row) is dict and row == RECORDED_H2
+                and all(type(row[key]) is type(expected) for key, expected in RECORDED_H2.items()),
+                "recorded_h2_observation")
+        result["recorded_h2"] = row
+    if require_recorded_boundary or RECORDED_BOUNDARY_MARKER in recorded_text:
+        row = selected_trace(recorded_text, RECORDED_BOUNDARY_MARKER)
+        require("recorded_h2" in result and type(row) is dict
+                and set(row) == RECORDED_BOUNDARY.keys() | {"unsigned_empty_patch_root"}
+                and all(type(row[key]) is type(expected) and row[key] == expected
+                        for key, expected in RECORDED_BOUNDARY.items())
+                and all(type(version) is int for version in row["rejected_versions"]), "recorded_boundary_observation")
+        root = row["unsigned_empty_patch_root"]
+        require(type(root) is str and re.fullmatch("[0-9a-f]{64}", root) is not None
+                and root != "0" * 64, "recorded_boundary_root")
+        result["recorded_boundary"] = row
     if cpu_profile:
         result["cpu"] = cpu_observation(outputs.get(cpu_test, ""), cpu_profile)
     return result
@@ -236,7 +315,8 @@ def linux_cpu_controls(work, node, output, selected, records):
         raw = C.command(output, label, args, work, records, timeout=215)
         require(C.digest(C.regular(binary, C.MAX_BINARY)) == initial and not any(scratch.iterdir()),
                 "cpu_sample_binary_or_scratch")
-        return native_controls(raw, profile)
+        return native_controls(raw, profile, require_frontier_rpc=True,
+                               require_recorded_boundary=profile == "reference")
 
     reference = run("reference", "native-test", "^" + TEST + "$")
     constrained = run("half-core", "half-core-test", "^" + TEST + "$/^fixture-window$")
@@ -333,7 +413,7 @@ def qualify(work, output, selected, records):
     else:
         raw = C.command(output, "native-test", ["go", "test", *C.NATIVE_FLAGS, "-json", "-count=1", "-timeout=180s",
                         "-run", "^" + TEST + "$", "./consensus"], node, records, timeout=600)
-        controls = native_controls(raw)
+        controls = native_controls(raw, require_frontier_rpc=True, require_recorded_boundary=True)
     unchanged()
     require(C.git(output, "node-head-after", ["rev-parse", "HEAD"], node, records).decode().strip() == C.NODE_REVISION
             and C.git(output, "node-tree-after", ["rev-parse", "HEAD^{tree}"], node, records).decode().strip() == C.NODE_TREE,

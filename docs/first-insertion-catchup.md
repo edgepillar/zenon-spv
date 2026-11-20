@@ -51,11 +51,12 @@ genesis, activation rules, slot timing and readiness limits are unchanged.
 
 The test initializes real ledger/cache/state LevelDB managers. It inserts an
 **unauthenticated, unsigned H2 test fixture directly below the verifier** into
-that isolated database. It then constructs the real consensus object with a
-fresh LevelDB and invokes its original point listener synchronously. No producer,
-consensus event loop, RPC, peer, wallet, signing operation or live transaction is
-started. This deliberate authentication bypass belongs only to the test fixture;
-it creates no accepted header or runtime authority.
+that isolated database. The original point listener uses a fresh LevelDB. The
+one-period case invokes the listener through the momentum pool. The longer
+cases call the original listener synchronously after insertion. The fixture runs
+with an in-memory read of the Ledger RPC handler and isolated databases. The
+unsigned input exercises node bookkeeping. Its measurements cover fixture
+timing and same-node frontier visibility.
 
 Three independent fresh cases use gaps of one period, one day and the fixed
 experiment window. Each retains actual listener duration, database Get/Put calls,
@@ -73,19 +74,64 @@ qualify a devnet consumer.
 
 ## Frontier visibility during notification
 
-The one-period case pauses a registered insertion listener with a channel. It
-checks H1 before insertion and reads the inserted H2 from the same local
-frontier store used by the Ledger API while the listener is waiting. The
-insertion must complete after the test releases that listener. The control
-reuses the one-period fixture and compiled test. The one-period insertion
-duration includes the observation. The one-day and fixed-window measurements
-use their original insertion path.
+The one-period case registers the original points listener and holds its first
+period database read with a channel. It sends the same fixed
+`ledger.getFrontierMomentum` JSON-RPC request before insertion and while the
+listener is held. The node's HTTP handler serves the request in memory and the
+test checks the response envelope and the expected height and hash, first H1
+and then H2. After releasing the read, the test checks insertion completion and
+the resulting point records. The one-period duration includes the observation.
+The longer cases keep their separate direct measurements.
+[Points listener](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/consensus/points.go#L71-L89) ·
+[Ledger API](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/rpc/api/ledger.go#L300-L308)
+
+Current qualification requires a v3 visibility record with the fixed RPC method
+and in-memory transport. Historical v1 and v2 records retain their local-store
+observations and their original scope.
+
+The portable `go test -json` stream can include compiler diagnostics, such as a
+macOS dependency deprecation warning. The original stream retains these
+records. The qualifier derives observations only from the selected test events
+and requires successful command and test completion.
 
 The original momentum pool releases the frontier lock before it notifies
 listeners, and the producer broadcaster sends the momentum after insertion
-returns. This test checks same-node visibility and callback ordering. It uses
-the unsigned fixture and starts no RPC server or peer. Cross-node propagation
-and the historical readiness cause remain unestablished.
+returns. This test checks same-node RPC visibility and callback ordering in the
+unsigned fixture. Cross-node propagation and the historical readiness cause
+remain unestablished.
+
+## Recorded chain-69 height-two header
+
+The one-period case also verifies the archived 697-byte frontier reply from
+request 32 of [run 43653383092, attempt 1](https://github.com/edgepillar/zenon-spv/actions/runs/43653383092),
+artifact `14136634774`. Its SHA-256 is
+`931a991acef939bd4d9c0f55e293c64402189940b406b612a0e8bed9668acbc4`.
+The reply contains the recorded v1 H2 from the post-sync diagnostic. The
+run's terminal outcome remains `REFUSED` at the startup deadline.
+
+The test decodes the original reply with the node's Ledger RPC types,
+recomputes the signed momentum hash, verifies its Ed25519 signature and derives
+the producer address from the public key. The node's original
+`VerifyMomentumProducerAt` must match the exact timestamp against the restored
+public source genesis H1. It computes the election with an in-memory cache and
+the chain stays at H1. The earlier unsigned H2 remains a separate visibility
+and cost fixture. Current qualification requires both observations.
+[Original producer verification](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/consensus/consensus.go#L98-L115)
+
+The recorded-header result binds the archive reply to its signature and the
+source-genesis slot. In a separate temporary database the original node's VM
+validates and applies the recorded H2 and reproduces its empty change set.
+The ledger, cache and state-tree managers close and reopen at that exact H2.
+The state-root rule is inactive at H1 and active at the reopened H2. The
+original raw verifier accepts an unsigned H3 with version 3 and rejects incoming
+versions 1 and 2. Its hypothetical empty-patch root matches the reopened H2
+tree root. The test leaves the reconstructed ledger at H2.
+[VM apply path](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/vm/supervisor.go#L109-L133) ·
+[Version rule](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/verifier/momentum.go#L149-L167)
+
+This control uses the existing one-period execution and a second short database
+lifecycle. Its root is conditional on an empty H3 patch. The selected experiment
+must still supply the signed H3, accepted range and typed BatchEntry result.
 
 ## Linux CPU comparison
 
