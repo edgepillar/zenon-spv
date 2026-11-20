@@ -119,11 +119,11 @@ func decodeExperimentalCLIHeaders(raw []byte, maxHeaders uint32) ([]chain.Candid
 		if d.Decode(&row) != nil {
 			return nil, errExperimentalCLIInput
 		}
-		candidate, err := fetch.DecodeCandidateV3Momentum(row)
+		header, err := fetch.DecodeCandidateV3MomentumHeader(row)
 		if err != nil {
 			return nil, errExperimentalCLIInput
 		}
-		headers = append(headers, candidate.Header)
+		headers = append(headers, header)
 	}
 	if token, err := d.Token(); err != nil || token != json.Delim(']') || d.Decode(new(any)) != io.EOF {
 		return nil, errExperimentalCLIInput

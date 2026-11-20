@@ -47,6 +47,19 @@ type CandidateV3Momentum struct {
 // Signatures must have the correct width and encoding but are not verified.
 // Genesis/v1/v2 and unknown versions are outside this candidate-only format.
 func DecodeCandidateV3Momentum(raw []byte) (CandidateV3Momentum, error) {
+	return decodeCandidateV3Momentum(raw, true)
+}
+
+// DecodeCandidateV3MomentumHeader applies the same wire and hash checks as
+// DecodeCandidateV3Momentum, retaining only the header. Content members are
+// checked and hashed in wire order as they are decoded.
+// Signature and producer authorization checks belong to the owned verifier.
+func DecodeCandidateV3MomentumHeader(raw []byte) (chain.CandidateV3Header, error) {
+	momentum, err := decodeCandidateV3Momentum(raw, false)
+	return momentum.Header, err
+}
+
+func decodeCandidateV3Momentum(raw []byte, retainContent bool) (CandidateV3Momentum, error) {
 	if len(raw) > MaxCandidateV3MomentumJSONBytes {
 		return CandidateV3Momentum{}, ErrCandidateV3Momentum
 	}
@@ -77,16 +90,9 @@ func DecodeCandidateV3Momentum(raw []byte) (CandidateV3Momentum, error) {
 	if h.Signature, err = decodeCandidateRPCBytes(signature, ed25519.SignatureSize, ed25519.SignatureSize); err != nil {
 		return CandidateV3Momentum{}, ErrCandidateV3Momentum
 	}
-	if next.Content, err = decodeCandidateRPCContent(content); err != nil {
+	if next.Content, h.ContentHash, err = decodeCandidateRPCContent(content, retainContent); err != nil {
 		return CandidateV3Momentum{}, ErrCandidateV3Momentum
 	}
-	digest := sha3.New256()
-	for _, member := range next.Content {
-		if _, err := digest.Write(member.Bytes()); err != nil {
-			return CandidateV3Momentum{}, ErrCandidateV3Momentum
-		}
-	}
-	copy(h.ContentHash[:], digest.Sum(nil))
 	next.Producer, err = decodeCandidateRPCAddress(producer)
 	if err != nil || next.Producer != chain.PubKeyToAddress(h.PublicKey) {
 		return CandidateV3Momentum{}, ErrCandidateV3Momentum
@@ -135,6 +141,9 @@ func decodeCandidateRPCObjectNullable(raw []byte, fields map[string]any, nullabl
 				return ErrCandidateV3Momentum
 			}
 			*hash = decoded
+		} else if destination, ok := target.(*json.RawMessage); ok && destination != nil {
+			// The decoder has already checked the value and copied its bytes.
+			*destination = value
 		} else if err := json.Unmarshal(value, target); err != nil {
 			return ErrCandidateV3Momentum
 		}
@@ -196,36 +205,47 @@ func decodeCandidateRPCAddress(text string) (chain.Address, error) {
 	return chain.Address(decoded), nil
 }
 
-func decodeCandidateRPCContent(raw []byte) ([]chain.AccountHeader, error) {
+func decodeCandidateRPCContent(raw []byte, retainContent bool) ([]chain.AccountHeader, chain.Hash, error) {
 	d := json.NewDecoder(bytes.NewReader(raw))
+	var hash chain.Hash
 	if start, err := d.Token(); err != nil || start != json.Delim('[') {
-		return nil, ErrCandidateV3Momentum
+		return nil, hash, ErrCandidateV3Momentum
 	}
-	members := make([]chain.AccountHeader, 0)
-	for d.More() {
-		if len(members) >= MaxCandidateV3MomentumContentMembers {
-			return nil, ErrCandidateV3Momentum
+	var members []chain.AccountHeader
+	if retainContent {
+		members = make([]chain.AccountHeader, 0)
+	}
+	digest := sha3.New256()
+	for count := 0; d.More(); count++ {
+		if count >= MaxCandidateV3MomentumContentMembers {
+			return nil, hash, ErrCandidateV3Momentum
 		}
 		var value json.RawMessage
 		if err := d.Decode(&value); err != nil {
-			return nil, ErrCandidateV3Momentum
+			return nil, hash, ErrCandidateV3Momentum
 		}
 		var member chain.AccountHeader
 		var address string
 		if err := decodeCandidateRPCObject(value, map[string]any{"address": &address, "height": &member.Height, "hash": &member.Hash}); err != nil {
-			return nil, err
+			return nil, hash, err
 		}
 		var err error
 		if member.Address, err = decodeCandidateRPCAddress(address); err != nil {
-			return nil, err
+			return nil, hash, err
 		}
-		members = append(members, member)
+		if _, err := digest.Write(member.Bytes()); err != nil {
+			return nil, hash, ErrCandidateV3Momentum
+		}
+		if retainContent {
+			members = append(members, member)
+		}
 	}
 	if end, err := d.Token(); err != nil || end != json.Delim(']') {
-		return nil, ErrCandidateV3Momentum
+		return nil, hash, ErrCandidateV3Momentum
 	}
 	if err := d.Decode(new(json.RawMessage)); err != io.EOF {
-		return nil, ErrCandidateV3Momentum
+		return nil, hash, ErrCandidateV3Momentum
 	}
-	return members, nil
+	copy(hash[:], digest.Sum(nil))
+	return members, hash, nil
 }
