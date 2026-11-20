@@ -294,3 +294,22 @@ push need separate reconciliation of source scope, skipped provider records,
 native results and artifacts before claiming measured savings. Fewer selected
 jobs are not a controlled wall-time benchmark, node resource measurement,
 independent review or network/state-value acceptance.
+
+### Closure refresh for the first-insertion and startup-diagnostic changes
+
+The native closure advanced from `e9a047230298eb3e24579fd6162f413b7fc63c32`
+to `ec2f07e4e5411cedfc74b9f77576b7f7550c00dd`. The 13 changed closure
+records cover the dedicated first-insertion workflow and its five inputs,
+the five owned devnet diagnostic files, the general scope validator's
+first-insertion rules, and the line-ending attribute for the catch-up
+document. The recorded-oracle job definition is byte-identical across
+those revisions. The refreshed digest is
+`4bac97b17356cfa3dfebe40e4598cc57c095c529ba7b140214a6b23795ee3745`
+over 1,211 records and 123,968 bytes. These paths remain part of the closure.
+
+[PR #420's general CI](https://github.com/edgepillar/zenon-spv/actions/runs/44684143424)
+ran all three recorded-oracle jobs, using 2,096 runner-seconds, after its
+v3 test-only change encountered the prior closure pin. The same Git tree
+projects to the native-only route with the refreshed pin. The pin update
+itself runs full CI. Future native-only events must establish their own
+job selection and platform evidence before any measured savings are reported.
