@@ -30,6 +30,8 @@ INDEX_BYTES = 512 << 10
 FILE_BYTES = 2 << 20
 MAX_FILES = 2048
 MAX_ARCHIVE = model.LIMITS["max_evidence_bytes"] + (2 << 20)
+OPENING_FILE = "opening-momentums.json"
+OPENING_BYTES = 384 << 10
 EXECUTE_STEP = "Run the reviewed fixture and read-only query"
 UPLOAD_STEP = "Retain selected evidence and command receipts"
 TERMINAL_CONCLUSIONS = ("success", "failure", "cancelled", "timed_out")
@@ -190,6 +192,33 @@ def recorded_output(evidence, label, name, *, folder="evidence", external_pin=No
     return stdout
 
 
+def recorded_opening(evidence, contract):
+    envelope = evidence.json(OPENING_FILE, OPENING_BYTES)
+    exact_keys(envelope, {"jsonrpc", "id", "result"}, "owned_rpc_result_envelope")
+    request_id = model.uint(envelope["id"], 96)
+    result = envelope["result"]
+    require(envelope["jsonrpc"] == "2.0" and type(result) is dict, "owned_rpc_result_identity")
+    label = f"rpc-{request_id:02d}"
+    recorded_output(evidence, label, OPENING_FILE)
+    request_file = label + ".request.json"
+    request = evidence.pins.get("evidence/" + request_file)
+    if request is not None:
+        same(evidence.json(request_file, 4096), {"jsonrpc": "2.0", "id": request_id,
+             "method": "ledger.getMomentumsByHeight", "params": [1, 3]}, "review_opening_request")
+    model.uint(result["count"], minimum=3)
+    headers = capture.opening_headers(contract, result["list"])
+    observation = {
+        "request_id": request_id,
+        "request": request,
+        "response": evidence.pins["evidence/" + OPENING_FILE],
+        "headers": [{**header.identifier(), "version": header.version, "timestamp": header.timestamp,
+                     "state_root": header.root} for header in headers],
+        "signature_verified": False,
+        "accepted_header_authority": False,
+    }
+    return headers, observation
+
+
 def recorded_consumer(evidence, contract, checkout, selection):
     same(evidence.json("dispatch-selection.json"), {"format": "owned-devnet-dispatch-selection/v1",
          "repository": REPOSITORY, **selection, "actor": "edgepillar", "host_attested": False,
@@ -206,12 +235,7 @@ def recorded_consumer(evidence, contract, checkout, selection):
         recorded_output(evidence, label + "-archive", f"artifact-{component['artifact_id']}.zip",
                         folder="transport", external_pin=component["archive"])
 
-    opening_raw = evidence.bytes("evidence/opening-momentums.json", 384 << 10)
-    request_id = model.uint(api_json(opening_raw, 384 << 10)["id"], 96)
-    recorded_output(evidence, f"rpc-{request_id:02d}", "opening-momentums.json")
-    opening_result = capture.rpc_result(opening_raw, request_id, 384 << 10)
-    model.uint(opening_result["count"], minimum=3)
-    opening = capture.opening_headers(contract, opening_result["list"])
+    opening, _ = recorded_opening(evidence, contract)
     provider = evidence.json("provider.json", contract.data["limits"]["stdout_bytes"])
     recorded_output(evidence, "collect-provider", "provider.json")
 
@@ -565,13 +589,16 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         post_sync = recorded_post_sync_frontier(evidence, terminal, startup_sync, frontiers)
         startup_nodes = recorded_startup_nodes(evidence, terminal)
         file_logs = node_file_logs.recorded(evidence, terminal, startup_nodes, diagnostic_receipt)
-        matched = None
+        matched = opening_observation = None
         if reported == "DEVNET_CONSUMER_ACCEPTED":
             require(binding_present and terminal["stage"] == "consumer" and terminal["reason"] is None
                     and terminal["owned_runtime_observed_closed"] is True, "review_terminal_completion")
             matched = recorded_consumer(evidence, contract, checkout, selection)
         else:
             require(binding_present or terminal["stage"] == "dispatch", "review_terminal_binding")
+            if "evidence/" + OPENING_FILE in evidence.pins:
+                require(binding_present, "review_opening_run_binding")
+                _, opening_observation = recorded_opening(evidence, contract)
         evidence.verify_remaining()
         report = {"format": "owned-devnet-evidence-review/v1",
                 "status": "RECORDED_CONSUMER_BYTES_MATCH" if matched else "RECORDED_NON_ACCEPTING_OUTCOME",
@@ -582,6 +609,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
                 "production_qualified": False}
         if frontiers:
             report["candidate_frontier_observations"] = frontiers
+        if opening_observation is not None:
+            report["candidate_opening_observation"] = opening_observation
         if startup_sync is not None:
             report["startup_sync_diagnostic"] = startup_sync
         if post_sync is not None:
