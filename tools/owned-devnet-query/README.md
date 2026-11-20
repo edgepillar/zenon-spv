@@ -375,6 +375,15 @@ acceptance retain their own evidence requirements. Exit 1 reports an intact
 archive with a recorded failure, refusal or unknown outcome. Exit 2 reports a
 refused or incomplete inspection.
 
+When a failed, refused or incomplete run retains the opening response, the
+reader checks its completed command and start receipts and recomputes the
+three linked header hashes. The report includes the independently checked
+H1, H2 and H3 identities, versions, timestamps and advertised roots as a
+candidate observation. It checks the exact request when the archive indexes
+that request and returns a null request pin for historical response-only
+records. The terminal outcome stays intact. Signature and producer
+authorization still belong to the accepted-header path.
+
 The reader opens only the original ZIP and the local contract/profile files.
 The limits are 2,048 ZIP members, a 512 KiB index, 2 MiB per indexed file and
 64 MiB expanded in total. It streams the remaining indexed members in 64 KiB
