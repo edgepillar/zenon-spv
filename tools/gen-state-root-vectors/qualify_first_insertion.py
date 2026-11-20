@@ -37,6 +37,7 @@ TEST = "TestSPVFirstInsertionCatchup"
 PACKAGE = "github.com/zenon-network/go-zenon/consensus"
 MARKER = "SPV_FIRST_INSERTION_CATCHUP "
 CPU_MARKER = "SPV_FIRST_INSERTION_CPU "
+VISIBILITY_MARKER = "SPV_FIRST_INSERTION_VISIBILITY "
 CPU_LIMITS = {"reference": "max 100000", "half-core": "50000 100000"}
 # Resources from the reference-gas contract used by the historical signed run.
 FIXTURE_CONTRACT = "6f67a35cf6db1e2fd91a529880b9fa555461a4687ed0a76d9a27c900ca6b6f31"
@@ -91,6 +92,20 @@ def cpu_observation(text, profile):
     return row
 
 
+def insertion_visibility(text):
+    row = selected_trace(text, VISIBILITY_MARKER)
+    require(type(row) is dict and set(row) == {
+        "format", "before_height", "during_height", "callback_held_during_read",
+        "insert_returned_after_release", "accepted_header_authority",
+    }, "frontier_visibility_fields")
+    require(row["format"] == "first-insertion-frontier-visibility/v1"
+            and type(row["before_height"]) is int and row["before_height"] == 1
+            and type(row["during_height"]) is int and row["during_height"] == 2
+            and row["callback_held_during_read"] is True and row["insert_returned_after_release"] is True
+            and row["accepted_header_authority"] is False, "frontier_visibility_observation")
+    return row
+
+
 def native_controls(raw, cpu_profile=None):
     require(cpu_profile is None or cpu_profile in CPU_LIMITS, "cpu_profile_selection")
     cases = {"fixture-window": CASES["fixture-window"]} if cpu_profile == "half-core" else CASES
@@ -130,6 +145,9 @@ def native_controls(raw, cpu_profile=None):
     require(package_passed and started == passed == expected, "native_completion")
     require(all(MARKER not in text for name, text in outputs.items()
                 if name not in {TEST + "/" + case for case in cases}), "foreign_trace")
+    visibility_test = TEST + "/one-period" if "one-period" in cases else None
+    require(all(VISIBILITY_MARKER not in text for name, text in outputs.items()
+                if visibility_test is None or name != visibility_test), "foreign_visibility_trace")
     cpu_test = TEST + "/fixture-window" if cpu_profile else None
     require(all(CPU_MARKER not in text for name, text in outputs.items()
                 if cpu_test is None or name != cpu_test), "foreign_cpu_trace")
@@ -162,6 +180,8 @@ def native_controls(raw, cpu_profile=None):
     result = {"root_tests": 1, "subtests": len(cases), "failed": 0, "skipped": 0,
             "observations": observations, "actual_fixture_cause_established": False,
             "new_devnet_acceptance_established": False}
+    if visibility_test:
+        result["frontier_visibility"] = insertion_visibility(outputs.get(visibility_test, ""))
     if cpu_profile:
         result["cpu"] = cpu_observation(outputs.get(cpu_test, ""), cpu_profile)
     return result
