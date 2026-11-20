@@ -394,6 +394,10 @@ that request and returns a null request pin for historical response-only
 records. The terminal outcome stays intact. Signature and producer
 authorization still belong to the accepted-header path.
 
+The runner retains the validated opening's request and response in the same
+evidence index before transporting either query component. A refusal during
+query-input preparation can therefore retain both records for offline review.
+
 The reader opens only the original ZIP and the local contract/profile files.
 The limits are 2,048 ZIP members, a 512 KiB index, 2 MiB per indexed file and
 64 MiB expanded in total. It streams the remaining indexed members in 64 KiB

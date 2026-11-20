@@ -247,7 +247,7 @@ def execute(environment, workspace, checkout):
         wait_for_initial_height(rpc, contract.data["selection"]["source_expected_first_v3_height"],
                                 observe_nodes=engine.capture_startup_diagnostics)
         opening = rpc.opening()
-        extra.add("opening-momentums.json")
+        extra.update(("opening-momentums.json", f"rpc-{rpc.calls:02d}.request.json"))
         stage = "query-inputs"
         consumer = artifacts.fetch("consumer").binaries
         oracle = artifacts.fetch("parent_oracle").binaries

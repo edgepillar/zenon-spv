@@ -32,7 +32,7 @@ import runner
 CONTRACT = model.read_contract(HERE / "contract.json")
 
 
-def review_exported(root, index, execution):
+def review_exported(root, index, execution, contract=CONTRACT):
     packed = io.BytesIO()
     with zipfile.ZipFile(packed, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for entry in index["files"]:
@@ -42,7 +42,7 @@ def review_exported(root, index, execution):
     raw = packed.getvalue()
     return review.review_stream(packed,
         {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()},
-        execution.source_revision, execution.run_id, CONTRACT, HERE.parents[1])
+        execution.source_revision, execution.run_id, contract, HERE.parents[1])
 
 
 class StartupSyncTests(unittest.TestCase):
@@ -864,16 +864,28 @@ class HostBoundaryTests(unittest.TestCase):
 
             def rpc_factory(contract, record, root, curl, environment, guard):
                 rpc = actual_rpc(contract, record, root, curl, environment, guard)
+                trace.wait_height.side_effect = rpc.wait_height
                 rpc.wait_height = trace.wait_height
+                actual_run = record.run
 
-                def read_opening(method, params, cap, *, stdout_name):
-                    trace.opening()
-                    self.assertEqual((method, params), ("ledger.getMomentumsByHeight", [1, 3]))
-                    result = {"count": 3, "list": rows[:2] if case == "bad-opening" else rows[:3]}
-                    record.seal(stdout_name, model.canonical(result))
-                    return result
+                def local_transport(label, argv, cwd, env, **options):
+                    request = json.loads(argv[argv.index("--data-binary") + 1])
+                    if request["method"] == "ledger.getFrontierMomentum":
+                        self.assertEqual(request, {"jsonrpc": "2.0", "id": 1,
+                            "method": "ledger.getFrontierMomentum", "params": []})
+                        result = rows[2]
+                    else:
+                        trace.opening()
+                        self.assertEqual(request, {"jsonrpc": "2.0", "id": 2,
+                            "method": "ledger.getMomentumsByHeight", "params": [1, 3]})
+                        result = {"count": 3, "list": rows[:2] if case == "bad-opening" else rows[:3]}
+                    response = model.canonical({"jsonrpc": "2.0", "id": request["id"], "result": result})
+                    return actual_run(label, [sys.executable, "-I", "-B", "-c",
+                        "import sys; sys.stdout.write(" + repr(response.decode()) + ")"], cwd, {}, **options)
 
-                rpc._read = read_opening
+                patch = mock.patch.object(record, "run", side_effect=local_transport)
+                patch.start()
+                self.addCleanup(patch.stop)
                 return rpc
 
             actual_rpc = capture.LocalRpc
@@ -915,6 +927,28 @@ class HostBoundaryTests(unittest.TestCase):
                 terminal = json.loads((root / "evidence/terminal.json").read_bytes())
                 self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),
                                  (stage, "REFUSED", reason))
+                index = json.loads((root / "evidence/evidence-index.json").read_bytes())
+                files = {row["path"]: {key: row[key] for key in ("bytes", "sha256")}
+                         for row in index["files"]}
+                path = "evidence/opening-momentums.json"
+                request = "evidence/rpc-02.request.json"
+                self.assertIn("evidence/rpc-02.complete.json", files)
+                checked = review_exported(root, index, execution, contract)
+                self.assertEqual(checked["recorded_terminal_outcome"], "REFUSED")
+                self.assertIsNone(checked["comparison"])
+                self.assertEqual(checked["candidate_frontier_observations"][0]["request_id"], 1)
+                if case == "bad-opening":
+                    self.assertNotIn(path, files)
+                    self.assertNotIn(request, files)
+                    self.assertNotIn("candidate_opening_observation", checked)
+                else:
+                    observed = checked["candidate_opening_observation"]
+                    self.assertEqual(observed["request_id"], 2)
+                    self.assertEqual(observed["response"], files[path])
+                    self.assertEqual(observed["request"], files[request])
+                    self.assertEqual(observed["headers"][-1]["hash"], rows[2]["hash"])
+                    self.assertFalse(observed["accepted_header_authority"])
+                    self.assertEqual(checked["materialized_bytes"], 0)
 
     def test_runner_refusal_exports_the_valid_frontier_without_other_command_streams(self):
         _, rows, _ = synthetic_window()
