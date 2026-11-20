@@ -74,10 +74,12 @@ files. Regular Markdown may accompany the changes.
 | `tools/ledger-export` | `inventory_completed_export.py`, `inventory_completed_export_test.py`, `README.md` | `ledger-export.yml` |
 | `tools/owned-devnet-query` | `engine_test.py`, `images_test.py`, `inputs.py`, `inputs_test.py`, `capture_test.py`, `review.py`, `review_test.py`, `README.md` | `owned-devnet-query.yml` |
 | `tools/owned-devnet-query` | `engine.py`, `node_diagnostics.py`, `node_diagnostics_test.py`, `node_file_logs.py`, `node_file_logs_test.py` | `owned-devnet-query.yml` |
+| `tools/gen-state-root-vectors` | `first-insertion-catchup_test.go.txt`, `first-insertion-cpu_test.go.txt`, `first-insertion-export_test.go.txt`, `qualify_first_insertion.py`, `qualify_first_insertion_test.py` | `first-insertion-catchup.yml` |
 
 The compiled export controls also consume `transport.py`.
 `docs/state-root-r1-intake.md` adds `ledger-transport.yml` when part of a portable
-diff. The general `docs/native-roadmap.md` is an evidence metadata input, not a
+diff. `docs/first-insertion-catchup.md` adds `first-insertion-catchup.yml` in the
+same way. The general `docs/native-roadmap.md` is an evidence metadata input, not a
 transport execution dependency: its changes alone do not trigger that workflow
 or add it to the portable workflow union. Transport code, the intake contract,
 the inventory dependency, the transport workflow and license changes retain
@@ -114,6 +116,15 @@ an eligible PR or main push, verify each required workflow's actual Linux,
 macOS and Windows job and exact-source artifacts. Skipped general jobs produce
 no native binary or oracle evidence. Keep their latest separately qualified
 source revisions explicit.
+
+### First-insertion catch-up controls
+
+The five files are execution inputs to the dedicated workflow alone. It tests
+the qualifier and runs the unsigned point-catch-up controls against the pinned
+reference node on Linux, macOS and Windows. Its Linux job also compares CPU
+limits. The pinned closure includes the shared `qualify_closed_parent_oracle.py`,
+`.gitattributes`, and the workflow itself. A change to any of them selects the
+full lane. The dedicated workflow's reports cover the runs and probes they record.
 
 ### Owned node diagnostic changes
 

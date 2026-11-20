@@ -51,7 +51,11 @@ PREPARATION_FILES = frozenset("tools/owned-devnet-query/" + name for name in (
     "capture_test.py", "review.py", "review_test.py", "README.md",
     "engine.py", "node_diagnostics.py", "node_diagnostics_test.py",
     "node_file_logs.py", "node_file_logs_test.py"))
-PORTABLE_FILES = TRANSPORT_FILES | EXPORT_FILES | PREPARATION_FILES
+FIRST_INSERTION_FILES = frozenset("tools/gen-state-root-vectors/" + name for name in (
+    "first-insertion-catchup_test.go.txt", "first-insertion-cpu_test.go.txt",
+    "first-insertion-export_test.go.txt", "qualify_first_insertion.py",
+    "qualify_first_insertion_test.py"))
+PORTABLE_FILES = TRANSPORT_FILES | EXPORT_FILES | PREPARATION_FILES | FIRST_INSERTION_FILES
 # The intake is the tool contract. The general roadmap is metadata only and
 # must not add an unrelated three-platform workflow to a portable tool change.
 TRANSPORT_DOCS = frozenset(("docs/state-root-r1-intake.md",))
@@ -62,10 +66,13 @@ PORTABLE_WORKFLOWS = (
      "8fab1803332f60cac43a20b8940988b19c38b8dd0359f005f605dcc55dcb98fb"),
     (".github/workflows/owned-devnet-query.yml", PREPARATION_FILES, 4453,
      "cf4ddd4e2c7a5388af336e42e5d47ce43ca112ed2c699731d4b8cd2137977d66"),
+    (".github/workflows/first-insertion-catchup.yml",
+     FIRST_INSERTION_FILES | {"docs/first-insertion-catchup.md"}, 3621,
+     "007b1af81e7b05f542e5fcd4999fc3d6403e2dc2ecb5694e5235660a09a0a4dd"),
 )
 # Keep every remaining non-document dependency, including all workflows.
 # Refresh only after reviewing dependencies and selecting full runtime CI.
-PORTABLE_SOURCE_PIN = "fbd330a1eb30c2d243f0275bddabb5d635dc1b37f78ef1b6801ce9c74a15e00a"
+PORTABLE_SOURCE_PIN = "d85ff752228201add66ac5f70f764a65499c3beba97ac37bc96918733aae8a5b"
 MAX_FILTERED_DIFF_RECORDS = 256
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192
