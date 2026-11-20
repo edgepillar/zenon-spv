@@ -558,13 +558,13 @@ class Engine:
                         arguments = ["container", "exec", owned.identity, "/bin/busybox", "tail", "-c",
                                      str(file_logs.TAIL_BYTES), "--", path]
                         parse = lambda result: file_logs.tail_summary(
-                            result.stdout(file_logs.TAIL_BYTES), with_broadcast_origins=True)
+                            result.stdout(file_logs.TAIL_BYTES), with_height_two=True)
                         cap = file_logs.TAIL_BYTES
                     else:
                         arguments = ["container", "cp", owned.identity + ":" + path, "-"]
                         parse = lambda result, kind=kind: file_logs.archive_summary(
                             result.stdout(file_logs.ARCHIVE_BYTES), kind, complete_prefix=(kind == "error"),
-                            with_broadcast_origins=True)
+                            with_height_two=True)
                         cap = file_logs.ARCHIVE_BYTES
                     observe(item["phase"], "startup-file-" + row["service"] + "-" + kind,
                             arguments, parse, cap, 4096)
