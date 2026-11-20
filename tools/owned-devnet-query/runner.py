@@ -224,21 +224,11 @@ def execute(environment, workspace, checkout):
         artifacts = Artifacts(contract, transport, workspace / "binaries", ["/usr/bin/gh"],
                               gh_environment, guard)
         artifacts.preflight()
-        consumer = artifacts.fetch("consumer").binaries
-        oracle = artifacts.fetch("parent_oracle").binaries
-        node = Installer(contract, transport, workspace / "node-toolchain",
-                         ["/usr/bin/curl", "--disable"], tool_environment, guard).fetch()
-        consumer.enable_execution()
-        oracle.enable_execution()
-        node = node.enable_execution()
         stage = "sources"
         sources = Sources(contract, record, workspace / "source", ["/usr/bin/git"],
                           tool_environment, guard).prepare()
         stage = "runtime-inputs"
         files = engine.prepare_files(sources)
-        stage = "packages"
-        prepared = Packages(contract, record, sources, node, workspace / "packages",
-                            tool_environment, guard).prepare()
         stage = "images"
         images = Builder(contract, engine, sources, workspace / "images").prepare()
         stage = "nodes"
@@ -251,7 +241,21 @@ def execute(environment, workspace, checkout):
         wait_for_initial_height(rpc, contract.data["selection"]["source_expected_first_v3_height"],
                                 observe_nodes=engine.capture_startup_diagnostics)
         opening = rpc.opening()
-        extra.add("opening-momentums.json")
+        extra.update(("opening-momentums.json", f"rpc-{rpc.calls:02d}.request.json"))
+        stage = "query-inputs"
+        consumer = artifacts.fetch("consumer").binaries
+        oracle = artifacts.fetch("parent_oracle").binaries
+        consumer.enable_execution()
+        oracle.enable_execution()
+        stage = "node-toolchain"
+        node = Installer(contract, transport, workspace / "node-toolchain",
+                         ["/usr/bin/curl", "--disable"], tool_environment, guard).fetch()
+        node = node.enable_execution()
+        stage = "packages"
+        prepared = Packages(contract, record, sources, node, workspace / "packages",
+                            tool_environment, guard).prepare()
+        stage = "runtime-inputs"
+        files.verify()
         stage = "fixture-configuration"
         fixture_flow(contract, record, engine, sources, node, prepared, "configure", guard)
         stage = "fixture-deposit"
@@ -276,7 +280,7 @@ def execute(environment, workspace, checkout):
         stage = "consumer"
         matched = capture.query(contract, record, window, schedule, descriptor, profile, consumer,
                                 workspace, tool_environment, guard)
-        extra.add("consume-query.stdout")
+        extra.add(capture.CONSUMER_STDOUT)
         verify_checkout(record, checkout, execution, "final")
         budget.check(force=True)
         require(matched["gateway_stored_fields_match"] is True, "gateway_stored_fields_differ")
@@ -284,6 +288,9 @@ def execute(environment, workspace, checkout):
     except CommandFailed as error:
         outcome = "FAILURE" if error.result.receipt["output_complete"] is True else "UNKNOWN"
         reason = "command_failed" if outcome == "FAILURE" else "command_incomplete"
+        if stage == "consumer" and capture.retainable_consumer_failure(error.result):
+            extra.add(capture.CONSUMER_STDOUT)
+            reason = "consumer_reported_failure"
     except Refused as error:
         outcome, reason = "REFUSED", error.reason
     except KeyboardInterrupt:

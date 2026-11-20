@@ -18,10 +18,36 @@ from query_checks import address_bytes, consumer_result, fingerprints, header_fa
 
 RPC_URL = "http://127.0.0.1:35997"
 GATEWAY_URL = "http://127.0.0.1:35999"
+READINESS_ATTEMPTS = 30
+READINESS_WAIT_SECONDS = 90
+INITIAL_HEIGHT_WAIT_SECONDS = 180
 ORACLE_REPORT_BYTES = 256 << 10
 SYNC_INFO_BYTES = 8 << 10
 SYNC_REPORT = "startup-sync.json"
 POST_SYNC_REPORT = "startup-post-sync-frontier.json"
+CONSUMER_STDOUT = "consume-query.stdout"
+CONSUMER_FAILURE_BYTES = 4096
+# Fixed read-only report text from both selected consumer revisions. Raw
+# stdout is eligible only when every field has a known source-defined shape.
+CONSUMER_CAVEATS = [
+    "Configured fingerprints do not authenticate network activation, file provenance or independently selected trust inputs.",
+    "Configured-header membership does not establish canonicality, consensus finality, STF correctness, funds release or recipient receive.",
+    "No witness availability, freshness or production state-value guarantee is established.",
+    "Current-H domain/config does not establish submission-time context or STF execution.",
+    "Gateway stored-field comparison is separate; a mismatch does not invalidate the historical membership result.",
+]
+CONSUMER_FAILURES = {
+    1: {"headers": {"not_accepted"}, "query": {"query_identity_mismatch", "gateway_mismatch",
+        "source_rule_mismatch", "invalid_witness"}},
+    2: {"headers": {"not_accepted"}, "query": {"required_row_absent", "typed_value_absent",
+        "unsupported_bounds", "outside_owned_scope"}, "witness": {"unavailable"}, "gateway": {"unavailable"}},
+}
+CONSUMER_HEADER_FAILURES = {
+    1: {"ReasonHeightNonMonotonic", "ReasonBrokenLinkage", "ReasonChainIDMismatch", "ReasonInvalidResourcePrice",
+        "ReasonInvalidHash", "ReasonInvalidSignature", "ReasonUnauthorizedProducer"},
+    2: {"ReasonMissingEvidence", "ReasonOversizedHeaders", "ReasonWindowNotMet", "ReasonUnsupportedHeaderVersion",
+        "ReasonHeaderVersionInactive", "ReasonProtocolProfileCoverage", "ReasonProducerSetUnknown"},
+}
 SYNC_REASONS = {"OBSERVED": {None}, "NOT_ATTEMPTED": {"shared_call_limit", "budget_refused"},
     "FAILURE": {"command_failed"}, "UNKNOWN": {"command_incomplete", "capture_interrupted"},
     "REFUSED": {"capture_refused"}}
@@ -222,13 +248,14 @@ class LocalRpc:
             self.recorder.seal(POST_SYNC_REPORT, canonical(report))
             self.post_sync_evidence.add(POST_SYNC_REPORT)
 
-    def _wait(self, read, ready, *, starting):
+    def _wait(self, read, ready, *, starting, wait_seconds=READINESS_WAIT_SECONDS):
         # Preserve every actual attempt. A freshly published loopback port can
         # accept and then close a request before RPC initialization completes.
         # Retry only a complete, quiescent startup failure with no response
         # bytes; malformed data, partial responses and later read failures stop.
-        until = time.monotonic() + 90
-        for _ in range(30):
+        until = time.monotonic() + wait_seconds
+        interval = wait_seconds / READINESS_ATTEMPTS
+        for attempt in range(READINESS_ATTEMPTS):
             self.guard()
             require(time.monotonic() < until, "owned_rpc_readiness_deadline")
             try:
@@ -244,12 +271,18 @@ class LocalRpc:
                     raise
             else:
                 if ready(value):
+                    require(time.monotonic() < until, "owned_rpc_readiness_deadline")
                     return value
-            time.sleep(3)
+            if attempt + 1 < READINESS_ATTEMPTS:
+                remaining = until - time.monotonic()
+                require(remaining > 0, "owned_rpc_readiness_deadline")
+                time.sleep(min(interval, remaining))
         raise Refused("owned_rpc_readiness_deadline")
 
     def wait_height(self, height, *, starting=False):
-        return self._wait(self.frontier, lambda frontier: frontier.height >= height, starting=starting)
+        wait_seconds = INITIAL_HEIGHT_WAIT_SECONDS if starting else READINESS_WAIT_SECONDS
+        return self._wait(self.frontier, lambda frontier: frontier.height >= height,
+                          starting=starting, wait_seconds=wait_seconds)
 
     def wait_gateway(self):
         domain = self.contract.data["selection"]["domain_id"]
@@ -471,6 +504,55 @@ def read_closed_schedule(contract, recorder, engine, ledger, window, sources, bi
         "reader_source_sha256": hashlib.sha256(reader_source.encode("utf-8")).hexdigest(),
         "ledger_copied": False, "ledger_opened_read_only": True}))
     return schedule
+
+
+def consumer_failure(raw, code):
+    """Check a complete fixed-schema refusal before exporting its original bytes."""
+    require(type(code) is int and code in CONSUMER_FAILURES, "consumer_failure_exit")
+    report = api_json(raw, CONSUMER_FAILURE_BYTES)
+    fields = {"schema_version": 1, "command": "query-experimental-batch-context",
+        "scope": "EXPERIMENTAL_CONFIGURED_HEADER_THREE_ROW_MEMBERSHIP",
+        "status": "rejected" if code == 1 else "refused", "exit_code": code,
+        "header_context": None, "query_context": None, "result": None, "gateway_comparison": None,
+        "persistence": "read_only", "rpc_requests": 0, "production_state_value_guarantee": False,
+        "gateway_comparison_requested": True, "caveats": CONSUMER_CAVEATS}
+    exact_keys(report, fields.keys() | {"error", "headers"}, "consumer_failure_fields")
+    same({key: report[key] for key in fields}, fields, "consumer_failure_scope")
+    error = report["error"]
+    exact_keys(error, {"stage", "category"}, "consumer_failure_error")
+    stage, category = error["stage"], error["category"]
+    require(type(stage) is str and type(category) is str and category in CONSUMER_FAILURES[code].get(stage, ()),
+            "consumer_failure_error")
+    headers = report["headers"]
+    if stage == "headers":
+        exact_keys(headers, {"outcome", "reason", "failed_at"}, "consumer_failure_headers")
+        require(headers["outcome"] == ("REJECT" if code == 1 else "REFUSED")
+                and type(headers["reason"]) is str and headers["reason"] in CONSUMER_HEADER_FAILURES[code],
+                "consumer_failure_headers")
+        if code == 1:
+            uint(headers["failed_at"], model.LIMITS["max_header_targets"] - 1, minimum=0)
+        else:
+            same(headers["failed_at"], -1, "consumer_failure_headers")
+    elif stage == "query":
+        same(headers, {"outcome": "ACCEPT", "reason": "ReasonOK", "failed_at": -1}, "consumer_failure_headers")
+    else:
+        same(headers, None, "consumer_failure_headers")
+    return {"actual_exit": code, "error": error, "headers": headers}
+
+
+def retainable_consumer_failure(result):
+    receipt = result.receipt
+    code = receipt.get("actual_exit")
+    if (type(code) is not int or code not in CONSUMER_FAILURES
+            or receipt.get("label") != "consume-query" or result.stdout_name != CONSUMER_STDOUT
+            or receipt.get("launch_outcome") != "STARTED" or receipt.get("output_complete") is not True
+            or receipt.get("process_group_quiescent") is not True or receipt.get("reason") is not None):
+        return False
+    try:
+        consumer_failure(result.stdout(CONSUMER_FAILURE_BYTES), code)
+    except (Refused, OSError):
+        return False
+    return True
 
 
 def query(contract, recorder, window, schedule, descriptor, profile, binaries, directory, environment, guard):

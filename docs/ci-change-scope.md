@@ -311,3 +311,16 @@ recorded-oracle closure contains 1,214 records and 124,260 bytes with digest
 `4b6971bfb7c952a22ac77cd98ce4959081a46581cb3248f65878717716e88b59`.
 The reviewed leaf sets and the recorded-oracle job definition retain the same
 coverage.
+
+### Renewed owned BatchEntry selection
+
+The reviewed source closure moves from `58e03fa9ff58a752cfd1718245b31cba73dde473` to the
+reference-gas contract that selects the renewed main Linux pair and the
+bounded runner that preserves nonaccepting query evidence. This change runs
+the full general and owned-preparation workflows. The independent native and
+portable selection rules retain the same coverage.
+
+The portable closure contains 1,196 records and 122,538 bytes
+with digest `76aa19da1f2c27ba1c9a21028bed7bce8d4bb48ddd9daf385af9d51d7c8f65e8`.
+The recorded-oracle closure contains 1,215 records and 124,376 bytes
+with digest `72e7b024f6ab57936363ce5571affcf7fe4c44c109b33f1d98f2d2b8b5ee92a0`.
