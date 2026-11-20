@@ -271,7 +271,6 @@ def recorded_consumer(evidence, contract, checkout, selection):
     recorded_output(evidence, "consume-query", "consume-query.stdout")
     matched = consumer_result(result, config, request, provider, query.root, descriptor)
     same(evidence.json("consumer-comparison.json"), matched, "review_consumer_comparison")
-    require(matched["gateway_stored_fields_match"] is True, "review_consumer_gateway")
     return matched
 
 
@@ -560,6 +559,13 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         binding_present = any(value is not None for value in recorded.values())
         if binding_present:
             same(recorded, selection, "review_terminal_binding")
+        gateway_mismatch = None
+        if terminal["reason"] == "gateway_stored_fields_differ":
+            require(binding_present and terminal["stage"] == "consumer" and reported == "REFUSED",
+                    "review_gateway_refusal_scope")
+            if terminal["owned_runtime_observed_closed"]:
+                gateway_mismatch = recorded_consumer(evidence, contract, checkout, selection)
+                require(gateway_mismatch["gateway_stored_fields_match"] is False, "review_consumer_gateway")
         startup_sync = recorded_startup_sync(evidence, terminal)
         frontiers = recorded_frontiers(evidence, contract)
         post_sync = recorded_post_sync_frontier(evidence, terminal, startup_sync, frontiers)
@@ -570,6 +576,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             require(binding_present and terminal["stage"] == "consumer" and terminal["reason"] is None
                     and terminal["owned_runtime_observed_closed"] is True, "review_terminal_completion")
             matched = recorded_consumer(evidence, contract, checkout, selection)
+            require(matched["gateway_stored_fields_match"] is True, "review_consumer_gateway")
         else:
             require(binding_present or terminal["stage"] == "dispatch", "review_terminal_binding")
         evidence.verify_remaining()
@@ -590,6 +597,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["startup_node_diagnostics"] = startup_nodes
         if file_logs is not None:
             report["startup_file_log_diagnostics"] = file_logs
+        if gateway_mismatch is not None:
+            report["recorded_gateway_mismatch"] = gateway_mismatch
         return report
 
 
