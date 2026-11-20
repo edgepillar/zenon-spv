@@ -19,6 +19,7 @@ import stat
 import time
 
 from artifacts import api_json
+from inputs import _read_archive_file
 import model
 import node_diagnostics as node_diag
 import node_file_logs as file_logs
@@ -337,12 +338,16 @@ class Engine:
     def prepare_files(self, sources):
         require(self.admission is not None and type(sources) is PreparedSources, "runtime_source_context")
         sources.verify()
-        script = sources.paths["devnet"] / "scripts/devnet.sh"
-        pin = next(row for row in self.contract.data["source_files"]
-                   if row["role"] == "devnet" and row["path"] == "scripts/devnet.sh")
-        require(regular_pin(script, 64 << 10) == {k: pin[k] for k in ("sha256", "bytes")},
+        devnet = sources.paths["devnet"]
+        source_pins = {row["path"]: row for row in self.contract.data["source_files"]
+                       if row["role"] == "devnet"}
+        script_name = "scripts/devnet.sh"
+        script_pin = source_pins[script_name]
+        size = model.uint(script_pin["bytes"], 64 << 10)
+        script = _read_archive_file(devnet / script_name, size, lambda stream: stream.read(size + 1))
+        require(len(script) == size and hashlib.sha256(script).hexdigest() == script_pin["sha256"],
                 "fixture_source_binding")
-        raw = public_fixture_default(script.read_bytes())
+        raw = public_fixture_default(script)
         self.guard()
         directory = self.root / "public-fixture"
         directory.mkdir(mode=0o700)
@@ -350,14 +355,15 @@ class Engine:
         with path.open("xb") as stream:
             stream.write(raw)
         path.chmod(0o400)
-        selected = (sources.paths["devnet"] / "config/executor.json",
-                    sources.paths["devnet"] / "config/gateway.json", path)
-        pins = {name: regular_pin(value, 64 << 10) for name, value in
-                zip(("executor", "gateway", "fixture"), selected)}
+        executor_name, gateway_name = "config/executor.json", "config/gateway.json"
+        selected = (devnet / executor_name, devnet / gateway_name, path)
+        pins = {name: {key: source_pins[relative][key] for key in ("sha256", "bytes")}
+                for name, relative in (("executor", executor_name), ("gateway", gateway_name))}
+        pins["fixture"] = {"sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)}
         files = RuntimeFiles(*selected, canonical(pins), tuple(_file_identity(p.lstat()) for p in selected))
         files.verify()
         self.recorder.seal("runtime-input-pins.json", canonical({"format": "owned-devnet-runtime-inputs/v1",
-            "pins": pins, "fixture_source": {k: pin[k] for k in ("sha256", "bytes", "git_blob")},
+            "pins": pins, "fixture_source": {k: script_pin[k] for k in ("sha256", "bytes", "git_blob")},
             "user_environment_key_selected": False, "fixture_plaintext_published": False}))
         return files
 
