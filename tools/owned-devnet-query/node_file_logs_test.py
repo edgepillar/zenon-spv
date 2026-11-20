@@ -38,6 +38,11 @@ WORKER_BROADCAST = (
     b'module=pillar submodule=worker identifier="{Hash:' + b'04ab' * 16 + b' Height:2}"\n')
 PROTOCOL_BROADCAST = WORKER_BROADCAST.replace(
     b'module=pillar submodule=worker', b'module=handler submodule=broadcaster')
+POOL_ENTER = PROTOCOL_BROADCAST.replace(b'broadcasting own momentum', b'inserting new momentum').replace(
+    b'module=handler submodule=broadcaster', b'module=chain submodule=momentum-pool')
+ZERO_TARGETS = PROTOCOL_BROADCAST.replace(b'broadcasting own momentum', b'propagated momentum to peers').replace(
+    b'module=handler submodule=broadcaster identifier=', b'module=handler num-peers=0 momentum-identifier=')
+NONZERO_TARGETS = ZERO_TARGETS.replace(b'num-peers=0', b'num-peers=2')
 
 
 class ArchiveTests(unittest.TestCase):
@@ -105,6 +110,47 @@ class ArchiveTests(unittest.TestCase):
         data["classification"].pop("broadcast_origins")
         with self.assertRaisesRegex(model.Refused, "review_file_log_classification"):
             files.check_data(data, with_broadcast_origins=True)
+
+    def test_height_two_counts_distinct_identifiers_and_disjoint_target_observations(self):
+        another = (POOL_ENTER + PROTOCOL_BROADCAST + ZERO_TARGETS).replace(b'04ab' * 16, b'35bf' * 16)
+        payload = (WORKER_BROADCAST + POOL_ENTER + PROTOCOL_BROADCAST + ZERO_TARGETS) * 2
+        payload += NONZERO_TARGETS * 2 + another
+        data = files.archive_summary(fixtures.file_archive(payload=payload), "run", with_height_two=True)
+        files.check_data(data, with_height_two=True)
+        self.assertEqual(data["classification"]["height_two"], {
+            "worker_before_insert": 1, "pool_entered": 2, "own_post_insert": 2,
+            "pool_then_own_post_insert": 2, "own_post_insert_then_nonzero_targets": 1,
+            "own_post_insert_then_zero_targets_only": 1})
+        rendered = json.dumps(data)
+        for private in ("04ab" * 16, "35bf" * 16, "2026-11-15T10:30:00", "num-peers=2"):
+            self.assertNotIn(private, rendered)
+
+    def test_height_two_requires_ordered_complete_records_for_the_same_identifier(self):
+        other_pool = POOL_ENTER.replace(b'04ab' * 16, b'35bf' * 16)
+        other_targets = NONZERO_TARGETS.replace(b'04ab' * 16, b'35bf' * 16)
+        payload = (POOL_ENTER + NONZERO_TARGETS + other_pool + PROTOCOL_BROADCAST + POOL_ENTER
+                   + WORKER_BROADCAST.replace(b'Height:2', b'Height:3') + other_targets
+                   + NONZERO_TARGETS.replace(b'num-peers=2', b'num-peers=9223372036854775808')
+                   + ZERO_TARGETS.replace(b'module=handler', b'module=pillar')
+                   + ZERO_TARGETS[:-1] + b' extra=field\n' + NONZERO_TARGETS[:-1])
+        data = files.tail_summary(payload, with_height_two=True)
+        files.check_data(data, tail=True, with_height_two=True)
+        self.assertEqual(data["classification"]["height_two"], {
+            "worker_before_insert": 0, "pool_entered": 2, "own_post_insert": 1,
+            "pool_then_own_post_insert": 0, "own_post_insert_then_nonzero_targets": 0,
+            "own_post_insert_then_zero_targets_only": 0})
+
+    def test_height_two_reader_refuses_impossible_counts_and_unexpected_fields(self):
+        payload = WORKER_BROADCAST + POOL_ENTER + PROTOCOL_BROADCAST + NONZERO_TARGETS
+        data = files.archive_summary(fixtures.file_archive(payload=payload), "run", with_height_two=True)
+        files.check_data(data, with_height_two=True)
+        for name, value in (("worker_before_insert", 2), ("pool_entered", 4), ("own_post_insert", 2),
+                            ("pool_then_own_post_insert", 2), ("own_post_insert_then_zero_targets_only", 1),
+                            ("pool_entered", True), ("identifier", "private-marker")):
+            changed = deepcopy(data)
+            changed["classification"]["height_two"][name] = value
+            with self.subTest(name=name, value=value), self.assertRaises(model.Refused):
+                files.check_data(changed, with_height_two=True)
 
     def test_both_fixed_names_and_empty_file_are_supported(self):
         for kind, path in files.FILES:
@@ -522,12 +568,14 @@ class StateCaptureTests(unittest.TestCase):
             self.assertTrue(all(c[2] == {'timeout': 5, 'stdout_cap': files.ARCHIVE_BYTES,
                                        'stderr_cap': 4096} for c in copies))
             report = json.loads(recorder.seals[files.REPORT])
-            self.assertEqual(report['format'], 'owned-devnet-startup-file-logs/v5')
+            self.assertEqual(report['format'], 'owned-devnet-startup-file-logs/v6')
             row = report['nodes'][2]
             self.assertTrue(all(x['method'] == 'whole-file' and x['phase']['status'] == 'OBSERVED'
                                 for x in row['files']))
             self.assertNotIn('window', row['files'][0]['phase']['data'])
             self.assertEqual(row['files'][1]['phase']['data']['window']['leading_discarded_bytes'], 0)
+            self.assertEqual(row['files'][0]['phase']['data']['classification']['height_two'],
+                             dict.fromkeys(files.HEIGHT_TWO_FIELDS, 0))
             self.assertFalse(report['accepted_header_authority'])
 
     def test_paused_node_is_read_without_resuming_or_starting_it(self):
@@ -642,7 +690,7 @@ class FileKindCaptureTests(unittest.TestCase):
             report, calls = self.capture_error(Path(tmp), payload)
         item = report['nodes'][0]['files'][1];data = item['phase']['data']
         self.assertEqual((report['format'], item['method'], item['phase']['status']),
-                         ('owned-devnet-startup-file-logs/v5', 'whole-file', 'OBSERVED'))
+                         ('owned-devnet-startup-file-logs/v6', 'whole-file', 'OBSERVED'))
         self.assertEqual(data['content']['bytes'], 213)
         self.assertEqual(data['log']['total_lines'], 1)
         self.assertEqual(data['classification']['reasons']['state_version_missing'], 1)
@@ -713,10 +761,14 @@ class FileKindCaptureTests(unittest.TestCase):
 
 
 class FileKindReviewTests(unittest.TestCase):
-    def fixture(self, *, with_broadcast_origins=False):
+    def fixture(self, *, with_broadcast_origins=False, with_height_two=False):
         contract, entries, report = MixedReviewTests().fixture()
-        report['format'] = ('owned-devnet-startup-file-logs/v5' if with_broadcast_origins
-                            else 'owned-devnet-startup-file-logs/v4')
+        if with_height_two:
+            report['format'] = 'owned-devnet-startup-file-logs/v6'
+        elif with_broadcast_origins:
+            report['format'] = 'owned-devnet-startup-file-logs/v5'
+        else:
+            report['format'] = 'owned-devnet-startup-file-logs/v4'
         for row in report['nodes']:
             for item in row['files']:
                 method = 'whole-file' if item['kind'] == 'error' or row['service'] == 'pillar3' else 'byte-tail'
@@ -724,11 +776,17 @@ class FileKindReviewTests(unittest.TestCase):
                 if method == 'whole-file':
                     raw = fixtures.file_archive(item['kind'])
                     data = files.archive_summary(raw, item['kind'], complete_prefix=(item['kind'] == 'error'),
-                                                 with_broadcast_origins=with_broadcast_origins)
+                                                 with_broadcast_origins=with_broadcast_origins,
+                                                 with_height_two=with_height_two)
                 else:
-                    raw = (b'leading fragment\n' + WORKER_BROADCAST + PROTOCOL_BROADCAST
-                           if with_broadcast_origins else fixtures.file_tail())
-                    data = files.tail_summary(raw, with_broadcast_origins=with_broadcast_origins)
+                    if with_height_two:
+                        raw = b'leading fragment\n' + WORKER_BROADCAST + POOL_ENTER + PROTOCOL_BROADCAST + NONZERO_TARGETS
+                    elif with_broadcast_origins:
+                        raw = b'leading fragment\n' + WORKER_BROADCAST + PROTOCOL_BROADCAST
+                    else:
+                        raw = fixtures.file_tail()
+                    data = files.tail_summary(raw, with_broadcast_origins=with_broadcast_origins,
+                                              with_height_two=with_height_two)
                 result = fixtures.MemoryResult(label, raw);nodes.complete_command(phase, result)
                 phase['data'] = data
                 entries['evidence/' + label + '.complete.json'] = model.canonical(result.receipt)
@@ -765,6 +823,27 @@ class FileKindReviewTests(unittest.TestCase):
             contract, entries, report = self.fixture(with_broadcast_origins=has_origins)
             report['format'] = replacement
             with self.subTest(has_origins=has_origins), self.assertRaisesRegex(
+                    model.Refused, 'review_file_log_classification'):
+                ReviewTests().review(contract, entries, report)
+
+    def test_v6_rows_bound_height_two_counts_to_the_diagnostic_shape(self):
+        contract, entries, report = self.fixture(with_height_two=True)
+        checked = ReviewTests().review(contract, entries, report)['startup_file_log_diagnostics']
+        counters = checked['summary']['nodes'][0]['files'][0]['phase']['data']['classification']['height_two']
+        self.assertEqual(counters['pool_then_own_post_insert'], 1)
+        self.assertEqual(counters['own_post_insert_then_nonzero_targets'], 1)
+        self.assertTrue(checked['diagnostic_assertions_only'])
+        self.assertFalse(checked['summary']['accepted_header_authority'])
+        report['nodes'][0]['files'][0]['phase']['data']['classification'].pop('height_two')
+        with self.assertRaisesRegex(model.Refused, 'review_file_log_classification'):
+            ReviewTests().review(contract, entries, report)
+
+    def test_v5_and_v6_keep_distinct_reader_shapes(self):
+        for has_height_two, replacement in ((True, 'owned-devnet-startup-file-logs/v5'),
+                                             (False, 'owned-devnet-startup-file-logs/v6')):
+            contract, entries, report = self.fixture(with_broadcast_origins=True, with_height_two=has_height_two)
+            report['format'] = replacement
+            with self.subTest(has_height_two=has_height_two), self.assertRaisesRegex(
                     model.Refused, 'review_file_log_classification'):
                 ReviewTests().review(contract, entries, report)
 

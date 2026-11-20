@@ -108,6 +108,30 @@ These counters describe logger calls seen in individual bounded file windows.
 Peer delivery, block identity, event ordering across nodes and the cause of a
 readiness refusal remain open.
 
+## Height-two observations
+
+File report v6 adds a `height_two` summary for each log window. It counts
+distinct H2 identifiers in complete records for the producer worker, entry to
+the local momentum pool and the broadcaster after local insertion. It also
+counts identifiers observed at the pool before the broadcaster in that window.
+The pool record occurs before the chain manager adds the momentum.
+[Momentum-pool entry](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/chain/momentum_pool.go#L56-L73)
+
+After an H2 broadcaster record, a later propagation record for the same
+identifier contributes to either the nonzero-target count or the zero-only
+count. The latter covers identifiers with only zero-target observations after
+the broadcaster in that window. The reported peer count comes from the
+transfer list. Individual send failures have their own log message, and peer
+receipt needs separate evidence.
+[Propagation loop](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/protocol/handler.go#L481-L504)
+
+The controller uses the existing bounded file reads. It retains counts and
+the existing content pins. Identifier matching happens in memory within each
+file window, and the reader checks count bounds and report framing. A zero
+count describes the selected window. Startup readiness, cross-node receipt and
+header acceptance still depend on their own evidence. Historical v1 through v5
+reports keep their recorded schemas.
+
 ## Controls and remaining gates
 
 The controls include an independently encoded USTAR entry, timestamp-bearing PAX,
