@@ -39,7 +39,8 @@ NATIVE_FILES = frozenset("internal/verify/experimental_v3_" + name for name in (
     "retention_test.go"))
 # Every other non-document tree record remains in this reviewed closure,
 # including workflows, research Go sources, Python helpers and fixture data.
-ORACLE_SOURCE_PIN = "0c7c344517c822d79b0c2b5e4f68e6c700c89f232080352a99fc03438d05fab1"
+# Reviewed against ec2f07e4e5411cedfc74b9f77576b7f7550c00dd.
+ORACLE_SOURCE_PIN = "4bac97b17356cfa3dfebe40e4598cc57c095c529ba7b140214a6b23795ee3745"
 SHARED_TRANSPORT = "tools/ledger-transport/transport.py"
 TRANSPORT_FILES = frozenset("tools/ledger-transport/" + name for name in (
     "archive_index.py", "archive_index_test.py", "archive_tail.py", "archive_tail_test.py",
