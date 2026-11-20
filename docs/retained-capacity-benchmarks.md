@@ -115,9 +115,8 @@ bytes, and local operation time is in milliseconds:
 outside the changed path. Saved state sizes remained 13,139, 202,500 and
 3,232,261 bytes for K=16, 256 and 4096. These results do not establish a
 portable speedup, peak RSS, a hardware memory ceiling or network performance.
-The verifier still allocates a header array proportional to K. These older
-measurements precede the query changes below. Extension, save and resume
-retain costs that grow with retained history.
+In this comparison each extension still allocated K header slots. Extension,
+save and resume incur costs that grow with retained history.
 
 Ownership tests cover initially empty, partial and full windows; batches below,
 equal to and above K; caller input mutations; predecessor, sibling and
@@ -126,6 +125,36 @@ extensions; save/resume; and concurrent readers/extensions. A local disposable
 overlay that omitted incoming-envelope detachment failed all 12 ownership
 matrix scenarios. These signed synthetic tests are behavioral checks, not
 evidence of canonicality, finality, network activation or state values.
+
+## Backing storage for partially populated immutable windows
+
+`VerifiedState` allocates header slots as history fills. Extension copies
+the resulting retained suffix into an array sized for that suffix. Trusted
+resume reuses its private decoded array when it fits the selected capacity.
+If the backing array exceeds that capacity, resume copies the retained
+suffix after validating and re-authorizing the entire saved window. The
+mutable `HeaderState` entry points reserve K slots for appends.
+
+The following local allocation comparison uses baseline
+`9265f4e4ff4f4ef2c9fe06498b8c54de65125825` and a candidate differing in the
+immutable window's allocation policy. Both use the same deterministic
+`buildChain` v1 fixture, explicit activation profile, operator schedule,
+K=4096 and W=6. Go 1.25.14 on darwin/arm64 ran the same benchmark with
+`-cpu=1`. Three samples per case used 64 iterations at 16 retained headers and
+four iterations at 4096. Fixture setup and file creation precede timing.
+
+| Operation | Retained before operation | Baseline B/op | Candidate B/op | Baseline allocs/op | Candidate allocs/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Initialize | 0 | 1,050,600 | 2,024 | 14 | 13 |
+| Extend by one | 16 | 1,049,424 | 5,712 | 15 | 15 |
+| Trusted resume | 16 | 1,099,016 | 50,442 | 402 | 401 |
+| Extend by one | 4096 | 1,049,424 | 1,049,424 | 15 | 15 |
+| Trusted resume | 4096 | 12,730,192 | 12,730,188 | 49,387 | 49,387 |
+
+Values are medians of allocated bytes and allocation counts per operation.
+The full-window controls show comparable allocation costs. These short local
+samples characterize allocation volume. Peak RSS, sustained latency and
+public-network resource requirements need separate measurements.
 
 ## Reusing immutable state during individual commitment queries
 

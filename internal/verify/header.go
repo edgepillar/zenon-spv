@@ -62,6 +62,10 @@ func VerifyHeaders(headers []chain.Header, state HeaderState, policy Policy) (Re
 // All other verification semantics (linkage, hash, signature,
 // checkpoint, window) are identical to VerifyHeaders.
 func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts VerifyOptions) (Result, HeaderState) {
+	return verifyHeadersWithOptions(headers, state, opts, true)
+}
+
+func verifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts VerifyOptions, reserveCapacity bool) (Result, HeaderState) {
 	policy := opts.Policy
 	if policy.ValidateRetention() != nil || state.Capacity < 1 || state.Capacity > MaxPersistedHeaders || len(state.RetainedWindow) > state.Capacity {
 		return refuse(ReasonInvalidRetentionPolicy, "invalid retained header capacity"), state
@@ -83,15 +87,20 @@ func VerifyHeadersWithOptions(headers []chain.Header, state HeaderState, opts Ve
 		return refuse(ReasonProducerSetUnknown, err.Error()), state
 	}
 
-	// Reserve only the final window. A full window no longer shifts for
-	// each new header. Even headers outside the suffix must pass every check.
+	// Copy only the final window. Even headers outside the suffix must pass
+	// every check. Raw callers keep their preallocated append capacity.
 	oldWindow := state.RetainedWindow
 	newCount := min(len(headers), state.Capacity)
 	oldCount := min(len(oldWindow), state.Capacity-newCount)
+	retainedCount := oldCount + newCount
+	storageCapacity := retainedCount
+	if reserveCapacity {
+		storageCapacity = state.Capacity
+	}
 	firstKept := len(headers) - newCount
 	working := state
 	working.ProtocolProfile = cloneProtocolProfile(state.ProtocolProfile)
-	working.RetainedWindow = make([]chain.Header, oldCount+newCount, state.Capacity)
+	working.RetainedWindow = make([]chain.Header, retainedCount, storageCapacity)
 	copy(working.RetainedWindow, oldWindow[len(oldWindow)-oldCount:])
 
 	// Embedded checkpoints apply only to mainnet (chain_id=1). Other

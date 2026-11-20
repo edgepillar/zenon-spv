@@ -50,7 +50,7 @@ func NewVerifiedState(anchor GenesisTrustRoot, opts VerifyOptions) (VerifiedStat
 	if err != nil {
 		return VerifiedState{}, err
 	}
-	return VerifiedState{data: &verifiedStateData{state: NewHeaderState(anchor, opts.Policy), opts: opts}}, nil
+	return VerifiedState{data: &verifiedStateData{state: newHeaderState(anchor, opts.Policy, false), opts: opts}}, nil
 }
 
 // LoadTrustedState loads a trusted local file, or initializes an empty state
@@ -65,7 +65,7 @@ func LoadTrustedState(path string, anchor GenesisTrustRoot, opts VerifyOptions) 
 	if err != nil {
 		return VerifiedState{}, err
 	}
-	state, err := loadOrInit(path, anchor, opts.Policy, func(full HeaderState) error {
+	state, err := loadOrInit(path, anchor, opts.Policy, false, func(full HeaderState) error {
 		if r := AuthorizeRetainedWindow(full, opts); r.Outcome != OutcomeAccept {
 			return &StateAuthorizationError{Result: r}
 		}
@@ -84,7 +84,7 @@ func (s VerifiedState) Extend(headers []chain.Header) (Result, VerifiedState) {
 	if s.data == nil {
 		return uninitializedStateResult(), s
 	}
-	r, next := VerifyHeadersWithOptions(headers, s.data.state, s.data.opts)
+	r, next := verifyHeadersWithOptions(headers, s.data.state, s.data.opts, false)
 	if r.Outcome != OutcomeAccept {
 		return r, s
 	}

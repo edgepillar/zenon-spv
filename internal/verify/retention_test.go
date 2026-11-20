@@ -185,3 +185,68 @@ func TestRetentionBoundsFailBeforeAllocation(t *testing.T) {
 		t.Fatal("oversized retained window was copied or changed")
 	}
 }
+
+func TestVerifiedStatePartialWindowCapacity(t *testing.T) {
+	const retained = 10
+	anchor, headers, opts, evidence := extensionOwnershipFixture(t, retained+1)
+	opts.Policy.W, opts.Policy.RetainHeaders = 2, MaxRetainHeaders
+	path := filepath.Join(t.TempDir(), "state.json")
+	check := func(state VerifiedState, count, storageLimit int) {
+		t.Helper()
+		window := state.data.state.RetainedWindow
+		summary, err := state.RetainedSummary()
+		if err != nil || summary.Count != count || summary.Capacity != MaxRetainHeaders ||
+			window == nil || len(window) != count || cap(window) > storageLimit {
+			t.Fatalf("retained summary=%+v, storage capacity=%d, want count=%d with at most %d slots",
+				summary, cap(window), count, storageLimit)
+		}
+	}
+
+	fresh, err := NewVerifiedState(anchor, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check(fresh, 0, 0)
+	missing, err := LoadTrustedState(path, anchor, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check(missing, 0, 0)
+
+	raw := NewHeaderState(anchor, opts.Policy)
+	if cap(raw.RetainedWindow) != MaxRetainHeaders {
+		t.Fatal("raw constructor lost append capacity")
+	}
+	result, raw := VerifyHeadersWithOptions(headers[:retained], raw, opts)
+	if result.Outcome != OutcomeAccept || cap(raw.RetainedWindow) != MaxRetainHeaders {
+		t.Fatal("raw extension lost append capacity or failed", result)
+	}
+	result, partial := fresh.Extend(headers[:retained])
+	if result.Outcome != OutcomeAccept || !reflect.DeepEqual(partial.Snapshot(), raw) {
+		t.Fatal("owned extension changed the retained header values", result)
+	}
+	check(partial, retained, retained)
+	if err := partial.Save(path); err != nil {
+		t.Fatal(err)
+	}
+	withCapacity, err := LoadOrInit(path, anchor, opts.Policy)
+	if err != nil || cap(withCapacity.RetainedWindow) != MaxRetainHeaders || !reflect.DeepEqual(raw, withCapacity) {
+		t.Fatal("raw resume changed the retained window or append capacity", err)
+	}
+	resumed, err := LoadTrustedState(path, anchor, opts)
+	if err != nil || !reflect.DeepEqual(resumed.Snapshot(), raw) {
+		t.Fatal("owned resume changed the retained window", err)
+	}
+	check(resumed, retained, 4*retained)
+	context, err := partial.VerificationContext()
+	if err != nil || context.Fingerprint == nil || resumed.RequireContextFingerprint(*context.Fingerprint) != nil {
+		t.Fatal("partial resume changed the context pin", err)
+	}
+	result, extended := resumed.Extend(headers[retained:])
+	if result.Outcome != OutcomeAccept || extended.VerifyCommitment(evidence).Outcome != OutcomeAccept {
+		t.Fatal("resumed window failed to extend or lost inclusion", result)
+	}
+	check(extended, retained+1, retained+1)
+	check(resumed, retained, 4*retained)
+	check(fresh, 0, 0)
+}
