@@ -120,7 +120,7 @@ jobs:
                           'cf4ddd4e2c7a5388af336e42e5d47ce43ca112ed2c699731d4b8cd2137977d66', 4453)
                   if names & (first_insertion | {'docs/first-insertion-catchup.md'}):
                       required['.github/workflows/first-insertion-catchup.yml'] = (
-                          '007b1af81e7b05f542e5fcd4999fc3d6403e2dc2ecb5694e5235660a09a0a4dd', 3621)
+                          'eb856b43c7f0dc9e374e73f8703a63f6d97a008bd34ba44d43cb382c7ab0cc2a', 3765)
                   assert value['required_workflows'] == list(required)
                   assert value['portable_workflows'] == [
                       {'path': path, 'sha256': digest, 'bytes': size, 'base_matches_checkout': True}

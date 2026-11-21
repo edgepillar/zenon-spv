@@ -8,6 +8,7 @@ on:
       - 'tools/gen-state-root-vectors/first-insertion-*_test.go.txt'
       - 'tools/gen-state-root-vectors/qualify_first_insertion*.py'
       - 'tools/gen-state-root-vectors/qualify_closed_parent_oracle.py'
+      - 'internal/testdata/conformance/batch-context-node-witness.json'
       - 'docs/first-insertion-catchup.md'
   push:
     branches: [main]
@@ -16,6 +17,7 @@ on:
       - 'tools/gen-state-root-vectors/first-insertion-*_test.go.txt'
       - 'tools/gen-state-root-vectors/qualify_first_insertion*.py'
       - 'tools/gen-state-root-vectors/qualify_closed_parent_oracle.py'
+      - 'internal/testdata/conformance/batch-context-node-witness.json'
       - 'docs/first-insertion-catchup.md'
 
 permissions:
