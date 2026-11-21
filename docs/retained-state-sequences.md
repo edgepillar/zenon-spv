@@ -51,6 +51,14 @@ exact envelope, query, trust and context-pin checks run after every operation;
 three immutable predecessors and selected delayed targets are checked too.
 Read-only load attempts must preserve saved bytes, including failed attempts.
 
+Each case constructs its configured profile and producer schedule once. The
+loads pass a copy of those options with the selected W and K to the trusted state
+loader, which freezes the inputs and revalidates the saved window on every load.
+The tail-only refusal builds a separate schedule for its narrower coverage.
+An expected rejection or refusal snapshots the state before extension to check
+rollback. Successful extensions check both the new state and its predecessor
+against the independent list model.
+
 The shrink refusal, invalid retention selections and authorized K=8 resume
 read the same saved full window. Each operation reopens that file and checks
 its bytes against the original save after loading.
