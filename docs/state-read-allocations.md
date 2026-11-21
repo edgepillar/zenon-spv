@@ -94,9 +94,9 @@ The figures are medians.
 
 | Retained headers | State bytes | Before (B/op) | Streaming (B/op) | Before (ms) | Streaming (ms) |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 16 | 13,139 | 55,368 | 45,738 | 0.717 | 0.664 |
-| 256 | 202,500 | 710,088 | 509,214 | 10.379 | 9.626 |
-| 4096 | 3,232,261 | 12,762,980 | 9,539,388 | 166.300 | 154.871 |
+| 16 | 13,139 | 55,368 | 45,758 | 0.717 | 0.705 |
+| 256 | 202,500 | 710,088 | 509,214 | 10.379 | 9.953 |
+| 4096 | 3,232,261 | 12,762,980 | 9,539,396 | 166.300 | 155.326 |
 
 The largest case allocated 25.3% fewer bytes per resume. These samples measure
 cumulative allocation and elapsed time with a warm filesystem cache.

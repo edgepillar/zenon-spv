@@ -25,11 +25,7 @@ func (state *persistedState) decodeJSON(d *json.Decoder) error {
 		{"retained_window", &decoded.Window}, {"capacity", &decoded.Capacity},
 		{"protocol_profile", &decoded.ProtocolProfile},
 	}
-	token, err := d.Token()
-	if err != nil {
-		return err
-	}
-	if token != json.Delim('{') {
+	if token, err := d.Token(); err != nil || token != json.Delim('{') {
 		return fmt.Errorf("%w: state file must be a JSON object", ErrInvalidRetainedState)
 	}
 	seen := make([]bool, len(fields))
@@ -67,11 +63,7 @@ func (state *persistedState) decodeJSON(d *json.Decoder) error {
 			return err
 		}
 	}
-	token, err = d.Token()
-	if err != nil {
-		return err
-	}
-	if token != json.Delim('}') {
+	if token, err := d.Token(); err != nil || token != json.Delim('}') {
 		return fmt.Errorf("%w: invalid state object terminator", ErrInvalidRetainedState)
 	}
 	if _, err := d.Token(); err != io.EOF {
