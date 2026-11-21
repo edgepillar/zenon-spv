@@ -99,7 +99,8 @@ def fixture_flow(contract, recorder, engine, sources, node, prepared, phase, gua
     environment.update({key: value for key, value in engine.environment.items() if key.startswith("DOCKER_")})
     tsx = source_root / "node_modules/tsx/dist/cli.mjs"
     recorder.run("fixture-" + phase, [str(node.node), str(tsx), script, *arguments], source_root,
-                 environment, guard=guard, timeout=timeout, stdout_cap=1 << 20, stderr_cap=1 << 20)
+                 environment, guard=guard, timeout=timeout, stdout_cap=model.FIXTURE_OUTPUT_BYTES,
+                 stderr_cap=model.FIXTURE_OUTPUT_BYTES)
     sources.verify()
     engine.require_running_closure(NODE_ROLES if phase == "configure" else model.SERVICES)
 
@@ -111,7 +112,9 @@ def wait_for_initial_height(rpc, height, *, observe_nodes=None):
         if error.reason == "owned_rpc_readiness_deadline":
             observation = rpc.capture_startup_sync()
             if type(observation) is dict and observation.get("status") == "OBSERVED":
-                rpc.capture_post_sync_frontier(observation["request_id"])
+                after = rpc.capture_post_sync_frontier(observation["request_id"])
+                if type(after) is dict and after.get("status") == "OBSERVED":
+                    rpc.capture_startup_peer_frontiers(after["request_id"])
             if observe_nodes is not None:
                 observe_nodes()
         raise
@@ -153,6 +156,19 @@ def post_sync_frontier_evidence_files(rpc):
         require(type(name) is str and re.fullmatch(
             r"rpc-(?:0[1-9]|[1-8][0-9]|9[0-6])\.request\.json", name) is not None,
             "post_sync_frontier_selection")
+    return selected
+
+
+def startup_peer_evidence_files(rpc):
+    selected = set(rpc.startup_frontier_evidence)
+    if not selected:
+        return selected
+    report = capture.STARTUP_FRONTIERS_REPORT
+    labels = [f"startup-{role}-frontier" for role in capture.STARTUP_FRONTIER_URLS]
+    allowed = {report} | {label + suffix for label in labels for suffix in (".request.json", ".json")}
+    require(report in selected and selected <= allowed
+            and all(label + ".json" not in selected or label + ".request.json" in selected
+                    for label in labels), "startup_peer_frontier_selection")
     return selected
 
 
@@ -240,8 +256,24 @@ def execute(environment, workspace, checkout):
         rpc = capture.LocalRpc(contract, record, workspace, "/usr/bin/curl", tool_environment, guard)
         wait_for_initial_height(rpc, contract.data["selection"]["source_expected_first_v3_height"],
                                 observe_nodes=engine.capture_startup_diagnostics)
-        opening = rpc.opening()
-        extra.update(("opening-momentums.json", f"rpc-{rpc.calls:02d}.request.json"))
+        opening, opening_rows = rpc.opening()
+        extra.update((capture.OPENING_FILE, f"rpc-{rpc.calls:02d}.request.json"))
+        stage = "opening-proof"
+        proof_request = f"rpc-{rpc.calls + 1:02d}.request.json"
+        try:
+            opening_proof = rpc.opening_proof(opening[2], profile)
+        except Refused as error:
+            if error.reason == capture.OPENING_PROOF_VERSION_UNAVAILABLE:
+                extra.add(capture.OPENING_PROOF_FILE)
+            raise
+        finally:
+            if proof_request in record.names:
+                extra.add(proof_request)
+        extra.add(capture.OPENING_PROOF_FILE)
+        require(opening_proof["presence"] == "absent", capture.OPENING_BATCH_ALREADY_PRESENT)
+        stage = "opening-signatures"
+        capture.verify_opening_signatures(record, opening, opening_rows, private, tool_environment, guard)
+        extra.add(capture.OPENING_SIGNATURE_REPORT)
         stage = "query-inputs"
         consumer = artifacts.fetch("consumer").binaries
         oracle = artifacts.fetch("parent_oracle").binaries
@@ -312,7 +344,7 @@ def execute(environment, workspace, checkout):
         if outcome == "DEVNET_CONSUMER_ACCEPTED" and evidence_bytes(record.directory, record.identity) \
                 > model.LIMITS["max_evidence_bytes"] - (2 << 20):
             outcome, reason = "REFUSED", "final_evidence_reservation"
-        record.seal("terminal.json", canonical({"format": "owned-devnet-query-terminal/v1",
+        record.seal("terminal.json", canonical({"format": model.TERMINAL_FORMAT,
             "outcome": outcome, "stage": stage, "reason": reason,
             "source_revision": execution.source_revision if execution else None,
             "contract_sha256": contract.sha256 if contract else None,
@@ -324,6 +356,7 @@ def execute(environment, workspace, checkout):
             extra.update(frontier_evidence_files(rpc))
             extra.update(startup_sync_evidence_files(rpc))
             extra.update(post_sync_frontier_evidence_files(rpc))
+            extra.update(startup_peer_evidence_files(rpc))
         if node_diagnostics.REPORT in record.names:
             extra.add(node_diagnostics.REPORT)
         if node_file_logs.REPORT in record.names:

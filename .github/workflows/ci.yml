@@ -120,7 +120,7 @@ jobs:
                           'cf4ddd4e2c7a5388af336e42e5d47ce43ca112ed2c699731d4b8cd2137977d66', 4453)
                   if names & (first_insertion | {'docs/first-insertion-catchup.md'}):
                       required['.github/workflows/first-insertion-catchup.yml'] = (
-                          '007b1af81e7b05f542e5fcd4999fc3d6403e2dc2ecb5694e5235660a09a0a4dd', 3621)
+                          'eb856b43c7f0dc9e374e73f8703a63f6d97a008bd34ba44d43cb382c7ab0cc2a', 3765)
                   assert value['required_workflows'] == list(required)
                   assert value['portable_workflows'] == [
                       {'path': path, 'sha256': digest, 'bytes': size, 'base_matches_checkout': True}
@@ -690,7 +690,10 @@ jobs:
       - name: Independent node signatures
         id: signatures
         shell: bash
-        run: python -B tools/gen-node-momentum-vectors/check-signatures.py --openssl openssl --source-revision "${{ github.sha }}" > "${{ runner.temp }}/node-signatures.json"
+        run: |
+          python -B tools/gen-node-momentum-vectors/check-signatures.py --openssl openssl --source-revision "${{ github.sha }}" > "${{ runner.temp }}/node-signatures.json"
+          python -I -B tools/gen-node-momentum-vectors/check-first-v3-signatures_test.py
+          python -I -B tools/gen-node-momentum-vectors/check-first-v3-signatures.py --openssl openssl --source-revision "${{ github.sha }}" > "${{ runner.temp }}/first-v3-signatures.json"
       - name: Node static corpus controls
         run: python -I -B tools/gen-node-static-vectors/check_test.py -v
       - name: Independent node static checks
@@ -754,6 +757,7 @@ jobs:
           name: independent-signatures-linux
           path: |
             ${{ runner.temp }}/node-signatures.json
+            ${{ runner.temp }}/first-v3-signatures.json
             ${{ runner.temp }}/node-static-signatures.json
             ${{ runner.temp }}/node-account-signatures.json
           if-no-files-found: error
@@ -1492,6 +1496,8 @@ jobs:
             signature_backend="$(brew --prefix openssl@3)/bin/openssl"
           fi
           python -B tools/gen-node-momentum-vectors/check-signatures.py --openssl "$signature_backend" --source-revision "${{ github.sha }}" > "${{ runner.temp }}/node-signatures.json"
+          python -I -B tools/gen-node-momentum-vectors/check-first-v3-signatures_test.py
+          python -I -B tools/gen-node-momentum-vectors/check-first-v3-signatures.py --openssl "$signature_backend" --source-revision "${{ github.sha }}" > "${{ runner.temp }}/first-v3-signatures.json"
       - name: Node static corpus controls
         run: python -I -B tools/gen-node-static-vectors/check_test.py -v
       - name: Independent node static checks
@@ -1554,6 +1560,7 @@ jobs:
           name: independent-signatures-${{ matrix.os }}
           path: |
             ${{ runner.temp }}/node-signatures.json
+            ${{ runner.temp }}/first-v3-signatures.json
             ${{ runner.temp }}/node-static-signatures.json
             ${{ runner.temp }}/node-account-signatures.json
           if-no-files-found: error
@@ -1787,7 +1794,7 @@ jobs:
            "workflow":{"path":".github/workflows/ci.yml","git_content_sha256":hashlib.sha256(workflow).hexdigest(),"git_content_bytes":len(workflow),
             "checkout_content_sha256":hashlib.sha256(working).hexdigest(),"checkout_content_bytes":len(working),"checkout_relation":relation},
            "serial_baseline":{"revision":"59ab5184d2e983f2322ff9e730a86cd19217970b","workflow_sha256":"407cf9a5da9fca75957f570981694ecc7bd17a4f29ae3ce4f697f40a17d4421a"},
-           "selected_command_inventory":{"commands":33,"sha256":"c285ca19653067b71f8132e09ec07e50178eef5ec927c096c368d349d3879b6b","encoding":"sorted-key compact JSON list plus LF; unexpanded workflow expressions"},
+           "selected_command_inventory":{"commands":27,"sha256":"549a728ca9de3d33156f1ffb0902639d7f12a671ecfb0797893d1fcb3e96e0d9","encoding":"sorted-key compact JSON list plus LF; unexpanded workflow expressions"},
            "scope":{"selection_record_only":True,"test_completion_reported":False,
             "actual_completion_requires_hosted_job_and_step_records":True,
             "existing_fresh_Python_CLI_controls_retained":True,"new_Go_builds":False,
@@ -1803,10 +1810,11 @@ jobs:
               handle.write(raw)
           print(raw.decode(),end="")
           PY
-      - name: Workspace observation envelope controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent temporary input and database observations
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_temp_workspace.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Recorded temporary workspace and envelope controls
+        shell: bash
+        run: |
+          python -I -B tools/gen-state-root-vectors/run_workspace_checks_test.py -v
+          python -I -B tools/gen-state-root-vectors/run_workspace_checks.py --source-revision "${{ github.sha }}"
       - name: Import resource child recipe controls
         id: import_child_controls
         shell: bash
@@ -1872,26 +1880,16 @@ jobs:
       - name: Independent recorded larger NodeTree retention
         shell: bash
         run: python -I -B tools/gen-state-root-vectors/run_retention_leaves.py --program check_tree_scale.py --mode reused --source-revision "${{ github.sha }}" > "$RUNNER_TEMP/retention-leaf-reuse/retention-observations.jsonl"
-      - name: Larger file NodeTree import controls
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent recorded larger file NodeTree import
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_scale.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Complete reference child lifecycle controls
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent recorded reference child lifecycle
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_tree_import_lifecycle.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Separate driver and build resource controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent recorded driver and build resources
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_tree_driver_resources.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Selected sparse oracle projection controls
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent recorded selected sparse oracle comparison
-        run: python -I -B tools/gen-state-root-vectors/run_oracle_graphs.py --program check_oracle_projection.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Complete driver projection controls
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver_test.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
-      - name: Independent recorded complete driver projection comparison
-        run: python -I -B tools/gen-state-root-vectors/run_target_hex.py --program check_projected_driver.py --mode translated --source-revision "${{ github.sha }}" --reuse-graphs
+      - name: Larger file NodeTree import recording and controls
+        run: python -I -B tools/gen-state-root-vectors/run_workspace_checks.py --tree-check tree-import-scale --source-revision "${{ github.sha }}"
+      - name: Reference child lifecycle recording and controls
+        run: python -I -B tools/gen-state-root-vectors/run_workspace_checks.py --tree-check tree-import-lifecycle --source-revision "${{ github.sha }}"
+      - name: Driver and build resource recording and controls
+        run: python -I -B tools/gen-state-root-vectors/run_workspace_checks.py --tree-check tree-driver-resources --source-revision "${{ github.sha }}"
+      - name: Sparse oracle projection recording and controls
+        run: python -I -B tools/gen-state-root-vectors/run_workspace_checks.py --tree-check oracle-projection --source-revision "${{ github.sha }}"
+      - name: Complete driver projection recording and controls
+        run: python -I -B tools/gen-state-root-vectors/run_workspace_checks.py --tree-check projected-driver --source-revision "${{ github.sha }}"
       - name: Upload bounded retention leaf reuse reports
         id: upload_retention_leaf_reuse
         continue-on-error: true

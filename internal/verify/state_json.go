@@ -12,6 +12,10 @@ import (
 // top-level state fields. Later arrays, objects, or nulls must not hide earlier
 // evidence from validation. Publish the decoded state only on complete success.
 func (state *persistedState) UnmarshalJSON(raw []byte) error {
+	return state.decodeJSON(json.NewDecoder(bytes.NewReader(raw)))
+}
+
+func (state *persistedState) decodeJSON(d *json.Decoder) error {
 	var decoded persistedState
 	fields := []struct {
 		name   string
@@ -21,7 +25,6 @@ func (state *persistedState) UnmarshalJSON(raw []byte) error {
 		{"retained_window", &decoded.Window}, {"capacity", &decoded.Capacity},
 		{"protocol_profile", &decoded.ProtocolProfile},
 	}
-	d := json.NewDecoder(bytes.NewReader(raw))
 	if token, err := d.Token(); err != nil || token != json.Delim('{') {
 		return fmt.Errorf("%w: state file must be a JSON object", ErrInvalidRetainedState)
 	}

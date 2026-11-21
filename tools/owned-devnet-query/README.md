@@ -191,17 +191,59 @@ request files and failed-response bodies are not added to the export. The
 recorder-to-index-to-reader control checks this exact selection in memory,
 without writing a second ZIP to disk.
 
+### Check the opening proof before fixture setup
+
+After validating the opening sequence, the runner derives the selected
+BatchEntry key from the pinned profile and requests one bounded
+`ledger.getProof` at the candidate H3. It checks the canonical proof against
+the StateRoot in that candidate header and requires absence for the selected
+BatchEntry before fixture setup. A valid membership proof yields
+`opening_batch_already_present` and retains the bound reply for offline review.
+An unavailable reply, incorrect root or malformed proof also stops preparation
+before binary downloads, package installation or fixture signing.
+
+The shared budget allows the extra read within the existing 96 calls. The
+successful path reserves up to 90 calls for the three readiness waits, one for
+the opening, one for this proof, two for query selection and two for the
+frontier around final collection. A checked reply and its paired request are
+retained once. The selected node's exact `trie: no such version` reply is
+also retained when it refuses this read. Archive review checks the original
+reply, paired request, completed command and terminal refusal. This reply
+records an unavailable tree version for the requested height. The original
+node returned the same error in an isolated retained-history test.
+[Recorded pruning control](../../docs/first-insertion-catchup.md#pruned-versions-and-retained-absence-at-the-rpc-boundary)
+
+Archive review recomputes the opening proof from the retained bytes and
+selected profile. After the absence check passes, the runner uses the host OpenSSL
+Ed25519 verifier to check the H2 and H3 signatures over their recomputed
+32-byte hashes. Both commands must complete successfully before input
+downloads, package installation or fixture setup. Their small input files
+are staged in the runner's private scratch directory and removed after the
+checks. The archive binds a successful report to the original opening reply
+and the two completed command receipts.
+
+These checks establish signature validity for the observed candidate bytes.
+The actual BatchEntry query still needs the selected producer schedule, the
+accepted header and all three membership proofs at the query height.
+
 ### Capture the node's sync state after a startup refusal
 
 Only an initial selected-height `owned_rpc_readiness_deadline` permits one
 `stats.syncInfo` read from the same fixed owned RPC endpoint. The initial
-selected-height wait allows 180 seconds and up to 30 reads separated by up to
-six seconds. Gateway and later height waits allow 90 seconds and up to 30 reads
-separated by up to three seconds. A ready response must arrive before its
-deadline. The separate five-second HTTP and seven-second command limits bound
-an in-flight read. The diagnostic cannot restart readiness or advance to
-fixture configuration. Successful readiness, malformed headers, other refusals
-and later waits do not trigger it. All phases share the 96-call budget.
+selected-height wait allows 180 seconds and up to 30 reads. The runner schedules
+the reads at roughly 6.17-second intervals measured from the start of the
+window and skips fully elapsed slots after a local stall. Response and capture
+time count toward each interval. The final slot starts one second before the
+deadline. Each read uses the lesser of five seconds and the remaining time as
+its HTTP limit and retains the two-second command capture allowance.
+A response that finishes at or after the readiness deadline stays a candidate
+observation. Gateway and later height waits allow 90 seconds and up to 30 reads
+with the usual three-second interval. All phases share the 96-call budget.
+
+The [recorded chain-69 attempt](https://github.com/edgepillar/zenon-spv/actions/runs/43653383092/attempts/1)
+returned H2 on its final regular readiness read and on the later diagnostic.
+Its terminal result remains a refusal at the H3 readiness boundary. The
+diagnostic applies only after an initial deadline refusal.
 
 The response cap is 8 KiB, with the existing five-second HTTP / seven-second
 command limits and a fresh budget guard. Only the three bounded integer fields
@@ -245,6 +287,26 @@ The [source-f09006d attempt](../../docs/owned-devnet-startup-nodes-2026-11-14.md
 retained both reads: `SyncDone` at current/target height one, followed by another
 v1 H1 frontier. It reached no fixture configuration or native consumer result.
 Its after-stop nonzero exits cannot establish when or why a producer stopped.
+
+### Compare the primary pillar and RPC frontiers after refusal
+
+An observed post-sync RPC frontier permits a read of the primary pillar's
+already published loopback port 35991, followed by another read of the RPC
+port 35997. The controller reserves two slots in the shared 96-call budget,
+checks resources before each read and uses the existing 128 KiB response
+bound and five-second Curl deadline. Each request is a
+\`ledger.getFrontierMomentum\` call with empty parameters. A failed or invalid
+pillar read stops the pair. The original readiness refusal ends execution.
+
+The optional \`startup-peer-frontiers.json\` report identifies the preceding
+RPC request and the two ordered role-specific observations. The reader
+rechecks the exact requests, command receipts, response envelopes and
+candidate headers. When the RPC candidate changes across the two reads, the
+report records that movement. When the two RPC identifiers agree, it can
+distinguish a matching pillar candidate, a height difference or a different
+hash at the same height. Partial pairs retain their individual outcomes.
+The reads are sequential candidate observations. Producer authorization,
+peer receipt and the reason for a readiness refusal require separate evidence.
 
 ### Observe owned node state before cleanup
 
@@ -378,6 +440,16 @@ binary transport receipts, the H2/H3 boundary, the captured H/hash and tip,
 the reported closed RPC container and oracle receipts, and the derived query
 inputs. It recomputes the three membership proofs, decodes the typed rows and
 compares the 17 stored fields with the recorded gateway response and CLI result.
+
+With a version-2 or version-3 terminal record, a successful consumer comparison or a
+closed-run gateway mismatch also requires the opening BatchEntry proof, the
+H2/H3 signature command receipts and the successful configuration and deposit
+command receipts. The reader checks the fixture receipt bindings, exit codes
+and bounded stream digests. Fixture streams stay out of the archive.
+Version 3 requires an opening absence proof before a completed comparison.
+It also binds a present opening proof to a refusal before signature checks and
+fixture commands. The reader reviews prior versions under their recorded rules
+and verifies the stages reached by each early failure.
 
 Exit 0 reports `RECORDED_CONSUMER_BYTES_MATCH`. This is agreement among the
 retained records and independently recomputed bytes. The original run identity,

@@ -1,14 +1,26 @@
 # Separate recorded-oracle CI lane
 
-The CI workflow runs 33 recorded-data commands in a separate job on Linux amd64,
-macOS Intel amd64 and Windows amd64. The original 31-command selection keeps
-all its controls and selected programs. Two larger-retention invocations now
-use the explicit [bounded leaf commitment scope](retention-leaf-reuse.md); a new
-control invocation checks that scope. Two complete import control suites now
-use [explicit fresh child CLI recipes](import-resource-child-hex.md), with one
-additional recipe-control invocation. The other 30 commands retain their
-names and arguments from the 32-command leaf-scope selection. Commands remain sequential within that job. The
-native verifier jobs run on separate hosted runners alongside this lane.
+The CI workflow runs 27 recorded-data commands in a separate job on Linux amd64,
+macOS Intel amd64 and Windows amd64. Two larger-retention invocations use the
+[bounded leaf commitment scope](retention-leaf-reuse.md), with a separate control
+invocation. Two complete import control suites use
+[explicit fresh child CLI recipes](import-resource-child-hex.md), with a separate
+recipe-control invocation. The combined workspace command verifies the recorded
+observations first and then runs all five envelope controls in the same Python
+process. The recorded check constructs the reference import model. The envelope
+controls reuse that model and validate their own inputs. The dedicated workspace
+runner emits a source-bound completion receipt after both checks succeed and their
+scopes close. The CI step also runs the workspace runner controls.
+The same runner pairs the original recorded check and the complete control
+suite for file-backed NodeTree import, reference-child lifecycle, driver and
+build resources, sparse oracle projection and complete driver projection.
+Each pair validates the recording with the original checker before its controls
+run. Both phases share the checker's expected document and one bounded
+in-memory graph scope keyed by the complete ordered state bytes. Each control
+still validates its own inputs. The runner retains the original checker report
+in the job log and emits a separate source-bound receipt with all control names
+and graph accounting after both phases finish. Each pair has its own process.
+The native verifier jobs run on separate hosted runners alongside this lane.
 See the [GitHub-hosted runner model](https://docs.github.com/en/actions/concepts/runners/github-hosted-runners)
 for its VM isolation and runner-image limits.
 
@@ -26,15 +38,19 @@ files. They check recorded resources rather than launching a new node, database
 workload or Go build. Some existing controls still launch fresh Python CLIs and
 use their own temporary test files.
 
-The current 33-command inventory has SHA-256
-`c285ca19653067b71f8132e09ec07e50178eef5ec927c096c368d349d3879b6b`.
+The current 27-command inventory has SHA-256
+`549a728ca9de3d33156f1ffb0902639d7f12a671ecfb0797893d1fcb3e96e0d9`.
 Its encoding is the ordered list of name/run objects, with sorted JSON keys,
-compact separators and a final LF. Workflow expressions remain unexpanded in
-that inventory. The preceding 32-command leaf-scope inventory remains
-`60f485ae21bfc88c968ddb251accefe716c87fa247ce15f4d5a452f53b8bf280`.
-The original 31-command inventory remains
-`16fbc16ba92476d4e64d5ea5377e7702dcdb032eaa41d2e2073263418cfb60f0`;
-do not relabel its earlier evidence as the new scope's qualification. The serial baseline is commit
+compact separators, unexpanded workflow expressions and a final LF. The
+preceding 32-command inventory with separate tree checks had SHA-256
+`b6740942f8c048d4a0f9490eddbfa1fcef396ad1952561293a8413425dd69eab`. The earlier
+33-command inventory with separate workspace invocations had SHA-256
+`c285ca19653067b71f8132e09ec07e50178eef5ec927c096c368d349d3879b6b`.
+The 32-command leaf-scope inventory had SHA-256
+`60f485ae21bfc88c968ddb251accefe716c87fa247ce15f4d5a452f53b8bf280`. The original
+31-command inventory had SHA-256
+`16fbc16ba92476d4e64d5ea5377e7702dcdb032eaa41d2e2073263418cfb60f0`.
+Each inventory identifies its own evidence. The serial baseline is commit
 `59ab5184d2e983f2322ff9e730a86cd19217970b`; its workflow bytes have SHA-256
 `407cf9a5da9fca75957f570981694ecc7bd17a4f29ae3ce4f697f40a17d4421a`.
 
@@ -57,6 +73,16 @@ retain each verified object once. Do not download native payloads merely to
 qualify this workflow-only scheduling change.
 
 ## Timing evidence and acceptance
+
+One local Darwin arm64 comparison ran each of the five pairs once in each
+mode with the same recorded inputs. The paired run retained all 141 controls
+and reproduced each original checker report. Full reference graph calls fell
+from 349 to 184. The elapsed time for the ten separate processes was 134.76
+seconds. The five paired processes took 70.15 seconds. The graph cache wrote
+no files. These timings describe the selected local runs.
+
+The hosted baseline took 271 seconds for the ten selected Linux steps, 508
+seconds for macOS and 375 seconds for Windows. [Baseline CI](https://github.com/edgepillar/zenon-spv/actions/runs/44926642106)
 
 In baseline CI run
 [40224397389](https://github.com/edgepillar/zenon-spv/actions/runs/40224397389),

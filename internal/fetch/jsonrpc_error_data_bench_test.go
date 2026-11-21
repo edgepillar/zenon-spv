@@ -9,6 +9,11 @@ import (
 	"testing"
 )
 
+// The streaming decoder validates the value before passing it to this sink.
+type ignoredRPCValue struct{}
+
+func (*ignoredRPCValue) UnmarshalJSON([]byte) error { return nil }
+
 // BenchmarkRPCErrorData compares complete error-envelope decoding. The former
 // response and object helpers below retain error.data; the current path can
 // discard it. Input construction is outside the timed region. Both paths check

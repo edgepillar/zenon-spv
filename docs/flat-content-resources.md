@@ -47,6 +47,28 @@ preflight budget. Every bundle fits the existing 64 MiB byte cap and default
 count caps. Tests also require absent/tampered targets and content to reject,
 and smaller per-proof/aggregate budgets to refuse without proof guarantees.
 
+## Fixture staging
+
+The four-proof fixture encodes its shared account-header list once and writes
+the encoded list at each of the four proof positions. The file still contains
+57,556,508 bytes and 400,000 encoded members. The bounded decoder and both
+proof count limits read the complete repeated lists. All four workload files
+matched the byte length and SHA-256 of the whole-value JSON encoder.
+
+Three local one-iteration samples on darwin/arm64 with Go 1.25.14, race and
+atomic coverage measured the four-proof encoding stage with output sent to
+a discard writer. Medians were 1,622 ms for whole-value marshaling and 413 ms
+for shared-list staging. The median allocation count fell from 800,073 to
+200,105. Cumulative allocated bytes varied with encoder buffer reuse, from
+102,358,176 to 370,794,768 for whole-value marshaling and from 92,708,008 to
+92,708,040 for shared-list staging. File writes and verifier execution have
+their own measurements.
+
+The content hash ordering and shared-query benchmarks use the in-memory
+fixture. Running their three fixture setups once avoids 14,673,700 logical
+temporary file bytes. The file-based scaling and compiled consumer tests
+exercise the actual bundle file.
+
 ## What is measured
 
 The [hash/address text buffer comparison](chain-text-hex-allocations.md)
@@ -72,10 +94,10 @@ The full repeated wire lists and every existing workload below remain intact.
 - `LoadAndVerify`: bounded warm file read, JSON decoding, and the same checks.
   State creation, profile/schedule setup and fixture encoding are outside timing.
 
-`B/op` is cumulative allocation volume, not retained heap or peak RSS. The
-current implementation hashes the complete flat content for each proof; this
-is not a compact Merkle path. `make bench` includes these eight workloads. CI
-runs each once on Linux/macOS/Windows for functional coverage, without timing
+`B/op` counts cumulative allocation volume. Peak RSS is measured separately.
+This benchmark uses individual `VerifyCommitment` calls, each of which hashes
+its complete flat list. `make bench` includes these eight workloads. CI runs
+each once on Linux/macOS/Windows for functional coverage without timing
 thresholds.
 
 `TestCompiledContentScalingWorkflow` separately builds the actual CLI, inspects
@@ -84,6 +106,22 @@ the selected configuration, checks its fingerprint, and performs one
 for byte/metadata preservation. Each result must identify the requested target,
 prove only content inclusion, and retain configured-anchor, external-schedule
 and persisted-state trust assumptions.
+
+Within one `verify-commitment` batch, the verifier can reuse the last nonempty
+list whose canonical hash matched a retained header. It compares every
+account-header field in order and requires the same commitment hash in the
+current header. Reordered or different lists use the canonical hasher. Bounds,
+retained height, depth and target membership are checked for each proof. The
+comparison holds one reference to an existing list and ends with the batch.
+The CLI preflights all occurrences and the batch holds one result per input.
+
+A local comparison used the already-decoded `M100000_P4` bundle with four
+independently allocated lists. On macOS arm64 with Go 1.25.14, race detection,
+atomic coverage and two runtime CPUs, the median for four individual calls
+was 153.16 ms and the median for one batch was 68.79 ms. Each path had three
+single-iteration samples and returned identical results. The timing starts
+after decoding and ends before report emission. The fixture still carries
+57,556,508 wire bytes.
 
 The measured CLI process includes startup, configuration loading, bounded
 bundle decoding, full trusted-state revalidation, proof verification and JSON

@@ -1,6 +1,7 @@
 package fetch
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -81,7 +82,11 @@ func invalidRPCEnvelopes() map[string]string {
 		"duplicate message":        `{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"a","message":"b"}}`,
 		"duplicate error data":     `{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"failure","data":0,"data":1}}`,
 		"case alias":               `{"jsonrpc":"2.0","id":1,"result":0,"Result":1}`,
+		"unicode case alias":       `{"jsonrpc":"2.0","id":1,"result":0,"re\u017fult":1}`,
 		"error case alias":         `{"jsonrpc":"2.0","id":1,"error":{"code":1,"Code":2,"message":"failure"}}`,
+		"missing colon":            `{"jsonrpc":"2.0","id":1,"result" 0}`,
+		"missing separator":        `{"jsonrpc":"2.0","id":1 "result":0}`,
+		"trailing comma":           `{"jsonrpc":"2.0","id":1,"result":0,}`,
 		"trailing object":          `{"jsonrpc":"2.0","id":1,"result":0}{}`,
 		"trailing text":            `{"jsonrpc":"2.0","id":1,"result":0} private-response-marker`,
 		"truncated":                `{"jsonrpc":"2.0","id":1,"result":`,
@@ -101,6 +106,45 @@ func TestDecodeRPCEnvelopeRejectsMalformedControlFields(t *testing.T) {
 				t.Fatal("parser error echoed peer data")
 			}
 		})
+	}
+}
+
+func TestDecodeRPCEnvelopeBorrowsExactResult(t *testing.T) {
+	const prefix = "\r\n{\n" + `"trace":{"extension":true},"\u0072esult"` + " \t:\n "
+	for name, want := range map[string]string{
+		"object": `{ "items": ["[a:b]", "escaped \"quote\"", null], "count": 3 }`,
+		"array":  `[ 1, {"text":"} ] ,"}, false ]`,
+		"string": `"escapes \\ \" \/ \u005b"`,
+		"number": `-1.25e-3`,
+		"bool":   `true`,
+		"null":   `null`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			body := []byte(prefix + want + "\t , " + `"id":1,"jsonrpc":"2.0"}` + "\n")
+			r, err := decodeRPCResponse(body, 1)
+			if err != nil || string(r.Result) != want {
+				t.Fatalf("result bytes changed: %q, %v", r.Result, err)
+			}
+			if &r.Result[0] != &body[len(prefix)] || cap(r.Result) != len(r.Result) {
+				t.Fatal("the selected result did not borrow its bounded span of the response")
+			}
+		})
+	}
+
+	// The streaming reference applies the JSON depth limit per member. The
+	// enclosing RPC object must not consume one level of the result's limit.
+	for _, depth := range []int{10000, 10001} {
+		result := strings.Repeat("[", depth) + "0" + strings.Repeat("]", depth)
+		body := []byte(prefix + result + `,"id":1,"jsonrpc":"2.0"}`)
+		compareRPCObjectWithCopyReference(t, body, "jsonrpc", "id", "result", "error")
+		r, err := decodeRPCResponse(body, 1)
+		if json.Valid([]byte(result)) {
+			if err != nil || string(r.Result) != result {
+				t.Fatalf("valid result at depth %d did not survive: %v", depth, err)
+			}
+		} else if !errors.Is(err, ErrInvalidRPCResponse) || len(r.Result) != 0 {
+			t.Fatalf("invalid result at depth %d returned evidence: %v", depth, err)
+		}
 	}
 }
 
@@ -152,7 +196,12 @@ func FuzzRPCEnvelope(f *testing.F) {
 		if len(raw) > 1<<20 {
 			t.Skip()
 		}
-		r, err := decodeRPCResponse([]byte(raw), 1)
+		body := []byte(raw)
+		fields := compareRPCObjectWithCopyReference(t, body, "jsonrpc", "id", "result", "error")
+		if len(fields) != 0 && len(fields[3]) != 0 {
+			compareRPCObjectWithCopyReference(t, fields[3], "code", "message", "data")
+		}
+		r, err := decodeRPCResponse(body, 1)
 		if err != nil {
 			if !errors.Is(err, ErrInvalidRPCResponse) || len(r.Result) != 0 || r.Error != nil {
 				t.Fatal("failed decode returned partial evidence")
@@ -160,14 +209,44 @@ func FuzzRPCEnvelope(f *testing.F) {
 			return
 		}
 		var envelope struct {
-			Version string `json:"jsonrpc"`
-			ID      int    `json:"id"`
+			Version string          `json:"jsonrpc"`
+			ID      int             `json:"id"`
+			Result  json.RawMessage `json:"result"`
 		}
-		if json.Unmarshal([]byte(raw), &envelope) != nil || envelope.Version != "2.0" || envelope.ID != 1 {
+		if json.Unmarshal(body, &envelope) != nil || envelope.Version != "2.0" || envelope.ID != 1 {
 			t.Fatal("accepted an unbound response")
 		}
 		if (len(r.Result) == 0) == (r.Error == nil) {
 			t.Fatal("accepted an ambiguous outcome")
 		}
+		if string(r.Result) != string(envelope.Result) {
+			t.Fatal("accepted result changed the original JSON value")
+		}
 	})
+}
+
+func compareRPCObjectWithCopyReference(t *testing.T, raw []byte, names ...string) []json.RawMessage {
+	t.Helper()
+	got := make([]json.RawMessage, len(names))
+	want := make([]json.RawMessage, len(names))
+	fields := make(map[string]*json.RawMessage, len(names))
+	refFields := make(map[string]*json.RawMessage, len(names))
+	for i, name := range names {
+		fields[name] = &got[i]
+		refFields[name] = &want[i]
+	}
+	err := decodeRPCObject(raw, fields)
+	refErr := decodeRPCObjectCopyReference(raw, refFields)
+	if (err == nil) != (refErr == nil) {
+		t.Fatalf("object acceptance differs from the reference: got %v, reference %v", err, refErr)
+	}
+	if err != nil {
+		return nil
+	}
+	for i, name := range names {
+		if !bytes.Equal(got[i], want[i]) {
+			t.Fatalf("control field %s differs from the reference bytes", name)
+		}
+	}
+	return got
 }

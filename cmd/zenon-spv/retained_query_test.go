@@ -249,6 +249,57 @@ func TestRetainedQueryRequiresExplicitModeAndEmptyHeaders(t *testing.T) {
 	}
 }
 
+func TestRetainedQueryCommitmentBatchPreservesRows(t *testing.T) {
+	f := nodeRetainedQueryFixture(t, true)
+	first := f.bundle.Commitments[0]
+	members := first.Flat.SortedHeaders
+	second := first
+	second.Target = members[1]
+	second.Flat = &proof.FlatContentEvidence{SortedHeaders: slices.Clone(members)}
+	absent := second
+	absent.Target.Hash[0] ^= 1
+	tampered := second
+	tampered.Flat = &proof.FlatContentEvidence{SortedHeaders: slices.Clone(members)}
+	tampered.Flat.SortedHeaders[len(members)-1].Hash[0] ^= 1
+	shallow := second
+	shallow.Height++
+	f.bundle.Commitments = []proof.CommitmentEvidence{first, second, absent, tampered, shallow, first}
+	writeQueryJSON(t, f.bundlePath, f.bundle)
+	checkState := unchangedQueryFile(t, f.statePath)
+	checkBundle := unchangedQueryFile(t, f.bundlePath)
+
+	args := append(slices.Clone(f.args), "--json", "--retained-only", f.bundlePath)
+	code, output := captureRun(t, func() int { return runVerifyCommitment(args) })
+	var report verificationReport
+	if err := json.Unmarshal([]byte(output), &report); err != nil {
+		t.Fatal(err)
+	}
+	if code != 1 || report.ExitCode != 1 || report.Outcome == nil || *report.Outcome != "REJECT" ||
+		report.Persistence != "read_only" || len(report.Results) != len(f.bundle.Commitments) {
+		t.Fatalf("unexpected retained commitment report: exit %d, outcome %v, rows %d", code, report.Outcome, len(report.Results))
+	}
+	want := []verify.ReasonCode{verify.ReasonOK, verify.ReasonOK, verify.ReasonNotMember,
+		verify.ReasonInvalidContent, verify.ReasonInsufficientFinality, verify.ReasonOK}
+	for i, row := range report.Results {
+		ref, evidence := row.Reference, f.bundle.Commitments[i]
+		if row.Reason != want[i].String() || ref.Index == nil || *ref.Index != i ||
+			ref.AccountHeader == nil || *ref.AccountHeader != evidence.Target ||
+			ref.MomentumHeight == nil || *ref.MomentumHeight != evidence.Height {
+			t.Fatalf("unexpected result identity at index %d: %+v", i, row)
+		}
+		if want[i] == verify.ReasonOK {
+			if row.Outcome != "ACCEPT" || !slices.Equal(row.Proven, []verify.Guarantee{verify.GuaranteeContentInclusion}) ||
+				!slices.Contains(row.TrustAssumptions, verify.TrustPersistedState) {
+				t.Fatalf("accepted row %d changed its guarantees or state trust", i)
+			}
+		} else if len(row.Proven) != 0 {
+			t.Fatalf("row %d gained a guarantee after refusal or rejection", i)
+		}
+	}
+	checkState(t)
+	checkBundle(t)
+}
+
 func TestRetainedQueryProofFailuresDoNotChangeState(t *testing.T) {
 	for _, tc := range []struct {
 		name   string

@@ -88,15 +88,16 @@ cannot exceed 96 KiB before decoded proof/value budgets apply. Missing, duplicat
 aliased or null required fields are refused. An unavailable named witness remains
 unavailable, never proven absence.
 
-After the descriptor's regular-file identity check, its bounded size is only an
-allocation hint. Stable inputs use one byte buffer plus a single overflow-probe
-byte; short reads and files that grow or shrink still read to EOF or the byte
-cap plus one. A simultaneous data/read error or close failure returns no input.
-This applies to both experimental query commands and the three-row command's
-checkpoint read. It changes no schema, byte cap, digest, context or trust rule.
-The in-memory read controls compare bytes and consumption with the former
-bounded `io.ReadAll` behavior. The paired read benchmark measures only buffer
-allocation/copying; it does not measure filesystem, JSON, proof or network costs.
+For the config, request and provider files, the regular-file descriptor's
+bounded size is an allocation hint. Stable inputs use one byte buffer and one
+overflow-probe byte. Short reads and files that grow or shrink still read to EOF
+or to the byte cap plus one. A read error, even one returned with data, or a
+close failure leaves no input. The [pinned checkpoint reader](#pinned-read-only-checkpoint-reuse)
+uses a bounded stream.
+
+The in-memory controls compare bytes and consumption with the former bounded
+`io.ReadAll` behavior. The paired benchmark measures input buffer allocation
+and copying.
 
 Successful output has scope `EXPERIMENTAL_CONFIGURED_HEADER_THREE_ROW_MEMBERSHIP`,
 `persistence: "read_only"`, `rpc_requests: 0` and
@@ -166,20 +167,23 @@ input reads. Header and query
 context pins remain mandatory and are checked before the checkpoint or provider.
 The checkpoint is never selected by provider JSON or by a default filename.
 
-The regular-file reader caps the state at 8 MiB and reads its bytes once. The
-same buffer is SHA-256 checked and strictly decoded through
-`DecodePinnedTrustedExperimentalV3State`. Profile/policy/context, retained
-header layouts, root-bound hashes, signatures, finite producer authorization and
-links are rechecked. A matching digest is content identity, not authentication:
-trusted local provenance is still required for evicted ancestry and file origin.
-Both trusted loaders consume the existing v4 format.
+The regular-file reader caps the state at 8 MiB and hashes the same stream
+that supplies the v4 decoder. The decoder reads `retained_headers` one header
+at a time and checks UTF-8 in the individual JSON values. A complete read and
+matching SHA-256 are required before the selected profile, policy and context
+can authorize the retained headers. The reader then rechecks the root-bound
+hashes, signatures, producer slots and links. Trusted local provenance supplies
+the assumptions about evicted ancestry and file origin.
 
-The v4 object decoder now consumes `retained_headers` one header at a time.
-The selected file bytes, decoded headers and individual JSON values still
-occupy memory. The [retained-state benchmark](streamed-state-window.md) compares
-direct array consumption with the prior whole-array buffer at the retained
-header cap. It measures the structural parser, excluding file reads, digest
-selection, signature verification and the consumer query.
+The local `BenchmarkExperimentalV3PinnedCheckpointInput` comparison reads
+and decodes 4,096 repeated recorded envelopes. Both paths verify the same
+digest and report the same repeated-height refusal. Three samples of four
+iterations per path on Go 1.25.14 darwin/arm64 measured median allocations of
+57,953,072 bytes for the buffered path and 54,877,000 bytes for the stream.
+Median elapsed time was 97.77 ms and 78.41 ms respectively. These measurements
+cover input, digest, decoding and the early linkage refusal. The
+[retained-state benchmark](streamed-state-window.md) separately measures
+structural parsing at the same header cap.
 
 The provider can contain an empty `momentums` array when all query/tip headers
 are already retained, or only the bounded immediate successors of the saved tip.

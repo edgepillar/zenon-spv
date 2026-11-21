@@ -16,6 +16,24 @@ import model
 import query_checks as q
 
 FIXTURES = HERE.parents[1] / "internal/testdata/conformance"
+NODE_WITNESS_SHA256 = "773cda402e08709ffd73adfea355f73269b1470b7336c5a027ddd5b331ab9d96"
+# Unsigned H3 in the reopened original-node fixture. Artifact 14698214783,
+# run 44882528531 attempt 1. The H3 RPC proof digest matches these bytes.
+OPENING_BATCH_KEY = "0301b3b6e5adcb4d0cad7fcef33598c6318c6318c00402000000010000000000000000"
+OPENING_ABSENCE_ROOT = "36fd7a907707f00939bb4741da5d8f3dd4fdf4200581ebe869b934a8f1981287"
+OPENING_ABSENCE_SHA256 = "5dc5adc0b21bee3b5fa405fe4c2c07e431a6bff36ce73a688f16f67e6796e37e"
+OPENING_ABSENCE_PROOF = (
+    "AF7kNY/z0A9LJM/aHZv1EgwCzhWUrqStpxdnuS6GKG1vAAAAAAAAAAAAAAAAAAAA"
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    "HwAF0hRjVDIeNrQJMRsQR3QtmYQ6sMdlZ0X9q96cyJmgutDBJRbs4emaCx5sMn3u"
+    "pyZw0AlRZ0KGW6Kmrd3gvyNx2kcpu956VrKer1qZiIHdUoRuDuJhyH4lw8JLNmxG"
+    "P9lmfDvxMylQxivkGuUgmIl5rgiC5WGehYJtAFmBHvqnj+UPlIvLjb5qKOVOD2a0"
+    "OdAYrHN2GxcNKFtqe06rwikZeA=="
+)
+
+
+def opening_absence_fixture():
+    return {"root": OPENING_ABSENCE_ROOT, "proof": OPENING_ABSENCE_PROOF, "value": None}
 
 
 def fixture(name, digest=None):
@@ -26,11 +44,19 @@ def fixture(name, digest=None):
     return json.loads(raw)
 
 
+def opening_present_fixture():
+    trace = fixture("batch-context-node-witness.json", NODE_WITNESS_SHA256)
+    row = trace["rows"][0]
+    assert row["name"] == "batch_entry" and row["ledger_key_hex"] == OPENING_BATCH_KEY
+    return {"root": trace["root_hex"], "value": base64.b64encode(bytes.fromhex(row["value_hex"])).decode("ascii"),
+            "proof": base64.b64encode(bytes.fromhex(row["proof_hex"])).decode("ascii")}
+
+
 class QueryCheckTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.unit = fixture("batch-context-unit.json", "e4bfbdb7bff55f9719782c7e609240b2ba9aeefd0d0f42b7ee1948286e890366")
-        cls.trace = fixture("batch-context-node-witness.json", "773cda402e08709ffd73adfea355f73269b1470b7336c5a027ddd5b331ab9d96")
+        cls.trace = fixture("batch-context-node-witness.json", NODE_WITNESS_SHA256)
 
     def witnesses(self):
         return {row["name"]: {"root": self.trace["root_hex"],
@@ -85,6 +111,36 @@ class QueryCheckTests(unittest.TestCase):
         changed["context"] = "0" * 64
         with self.assertRaisesRegex(model.Refused, "independent_request_context"):
             q.fingerprints(self.unit["config"], changed)
+
+    def test_opening_probe_rechecks_node_derived_absence_against_the_local_key(self):
+        profile = self.unit["config"]["query_profile"]
+        key = q.ledger_keys(profile, 0)["batch_entry"]
+        self.assertEqual(key.hex(), OPENING_BATCH_KEY)
+        row = opening_absence_fixture()
+        checked = q.opening_batch_witness(profile, OPENING_ABSENCE_ROOT, key, row)
+        self.assertEqual(checked, {"presence": "absent", "path": q.H(key).hex(), "siblings": 5,
+                                   "proof_bytes": 259, "proof_sha256": OPENING_ABSENCE_SHA256})
+
+        raw = base64.b64decode(row["proof"])
+        mutated = base64.b64encode(raw[:-1] + bytes([raw[-1] ^ 1])).decode("ascii")
+        trailing = base64.b64encode(raw + b"\x00").decode("ascii")
+        for name, root, selected, witness in (
+                ("wrong_root", "0" * 64, key, row),
+                ("wrong_key", OPENING_ABSENCE_ROOT, q.ledger_keys(profile, 1)["batch_entry"], row),
+                ("wrong_path_root", OPENING_ABSENCE_ROOT, key, {**row, "proof": mutated}),
+                ("trailing_byte", OPENING_ABSENCE_ROOT, key, {**row, "proof": trailing}),
+                ("empty_value_is_not_absence", OPENING_ABSENCE_ROOT, key, {**row, "value": ""}),
+                ("unavailable", OPENING_ABSENCE_ROOT, key, None)):
+            with self.subTest(name=name), self.assertRaises(model.Refused):
+                q.opening_batch_witness(profile, root, selected, witness)
+
+    def test_opening_probe_can_validate_a_present_witness_without_decoding_an_abi_value(self):
+        profile = self.unit["config"]["query_profile"]
+        key = q.ledger_keys(profile, 0)["batch_entry"]
+        row = opening_present_fixture()
+        checked = q.opening_batch_witness(profile, self.trace["root_hex"], key, row)
+        self.assertEqual(checked["presence"], "present")
+        self.assertEqual(checked["path"], q.H(key).hex())
 
     def test_original_pooled_proofs_match_only_locally_derived_keys_and_same_root(self):
         profile = self.unit["config"]["query_profile"]

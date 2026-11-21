@@ -112,7 +112,7 @@ func TestExperimentalBatchContextCheckpointCLI(t *testing.T) {
 }
 
 func TestExperimentalBatchContextCheckpointFailures(t *testing.T) {
-	for _, name := range []string{"digest", "missing-state", "directory", "oversize", "matching-malformed", "matching-wrong-context", "matching-native-format", "empty-checkpoint", "stale-tip", "old-range", "pruned-height", "unavailable-witness", "provider-checkpoint"} {
+	for _, name := range []string{"digest", "malformed-with-wrong-digest", "missing-state", "directory", "oversize", "matching-malformed", "matching-wrong-context", "matching-native-format", "empty-checkpoint", "stale-tip", "old-range", "pruned-height", "unavailable-witness", "provider-checkpoint"} {
 		t.Run(name, func(t *testing.T) {
 			f := newBatchContextCLIInputs(t)
 			count := 4
@@ -128,7 +128,12 @@ func TestExperimentalBatchContextCheckpointFailures(t *testing.T) {
 			args := batchContextCheckpointArgs(f, path, raw)
 			want := 70
 			switch name {
-			case "digest":
+			case "digest", "malformed-with-wrong-digest":
+				if name == "malformed-with-wrong-digest" {
+					if err := os.WriteFile(path, []byte("{"), 0600); err != nil {
+						t.Fatal(err)
+					}
+				}
 				args[len(args)-2] = strings.Repeat("1", 64)
 				// A digest refusal must happen before any provider-file read.
 				args[len(args)-1] = filepath.Join(filepath.Dir(path), "PRIVATE_MISSING_PROVIDER")
@@ -179,8 +184,17 @@ func TestExperimentalBatchContextCheckpointFailures(t *testing.T) {
 			}
 			f.write(t)
 			report := batchContextCLIReport(t, experimentalContextQueryCommand, args, want)
-			if name == "digest" && (report.Error == nil || report.Error.Stage != "state_input" || report.Error.Category != "digest_mismatch") {
-				t.Fatal("digest check was bypassed")
+			var category string
+			switch name {
+			case "digest", "malformed-with-wrong-digest":
+				category = "digest_mismatch"
+			case "missing-state", "directory", "oversize":
+				category = "invalid_input"
+			case "matching-malformed", "matching-wrong-context", "matching-native-format", "empty-checkpoint":
+				category = "invalid_checkpoint"
+			}
+			if category != "" && (report.Error == nil || report.Error.Stage != "state_input" || report.Error.Category != category) {
+				t.Fatal("checkpoint refusal changed its category", report.Error, category)
 			}
 		})
 	}

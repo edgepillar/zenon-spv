@@ -53,6 +53,22 @@ The existing original-node corpus is reused without a new node execution or
 another source/archive download. Local allocation controls and bounded fuzzing
 are implementation evidence; resource timings do not qualify a live workload.
 
+### Chain-69 candidate H3 proof replay
+
+The original node's isolated unsigned H3 produced three canonical absence
+proofs for the selected Settlement domain 1 and batch 0. The native workflow
+test replays those exact proof bytes as `ledger.getProof` results through the
+same three-witness collector. It checks all three full keys and verifies 873
+proof bytes and 18 encoded siblings against the root in the candidate header.
+The test recomputes the header hash from its 208-byte preimage. Linux, macOS and
+Windows produced matching bytes in the original run. [Original node run](https://github.com/edgepillar/zenon-spv/actions/runs/44675121122)
+
+The same native control checks the v1 parent's zero root and a one-byte lower
+aggregate budget. The owned-header path rejects the unsigned H3 with
+`ReasonInvalidSignature` and leaves its root unavailable. This replay provides
+candidate encoding and absence evidence. The selected consumer still requires
+an accepted signed header and membership for all three typed rows.
+
 The initial bounded local run at `5ec4f7204dfa63f6e36a73acd9bc96542ad4171d`
 used Go 1.25.14, darwin/arm64 and two Go workers. The
 race-selected lane passed 20 test roots and 293 subtest pass events, including

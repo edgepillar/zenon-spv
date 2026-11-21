@@ -16,6 +16,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import capture
+from capture import OPENING_BYTES, OPENING_FILE
 import inputs
 import model
 import node_diagnostics as node_diag
@@ -23,15 +24,13 @@ import node_file_logs
 from artifacts import API_LIMIT, REPOSITORY, WORKFLOWS, api_json
 from model import Refused, canonical, exact_keys, require, same
 from process import FILE
-from query_checks import consumer_result
+from query_checks import consumer_result, opening_batch_witness
 
 INDEX = "evidence/evidence-index.json"
 INDEX_BYTES = 512 << 10
 FILE_BYTES = 2 << 20
 MAX_FILES = 2048
 MAX_ARCHIVE = model.LIMITS["max_evidence_bytes"] + (2 << 20)
-OPENING_FILE = "opening-momentums.json"
-OPENING_BYTES = 384 << 10
 EXECUTE_STEP = "Run the reviewed fixture and read-only query"
 UPLOAD_STEP = "Retain selected evidence and command receipts"
 TERMINAL_CONCLUSIONS = ("success", "failure", "cancelled", "timed_out")
@@ -175,21 +174,41 @@ class Evidence:
             same({"bytes": size, "sha256": digest.hexdigest()}, self.pins[name], "review_member_digest")
 
 
-def recorded_output(evidence, label, name, *, folder="evidence", external_pin=None, actual_exit=0):
+def recorded_completion(evidence, label, *, folder="evidence", actual_exit=0):
     receipt = evidence.json(label + ".complete.json", folder=folder)
     require(receipt.get("format") == "owned-devnet-command-capture/v1"
             and receipt.get("label") == label and receipt.get("launch_outcome") == "STARTED"
             and type(receipt.get("actual_exit")) is int and receipt["actual_exit"] == actual_exit
             and receipt.get("output_complete") is True and receipt.get("reason") is None
             and receipt.get("process_group_quiescent") is True, "review_recorded_command_completion")
-    pin = evidence.pins[folder + "/" + name] if external_pin is None else external_pin
-    stdout = {"file": name, **pin}
-    same(receipt["outputs"]["stdout"], stdout, "review_recorded_command_stdout")
     group = model.uint(receipt["process_group"])
     same(evidence.json(label + ".started.json", folder=folder), {"format": "owned-devnet-command-started/v1",
          "label": label, "pid": group, "process_group": group, "new_session_requested": True},
          "review_recorded_command_start")
+    return receipt
+
+
+def recorded_output(evidence, label, name, *, folder="evidence", external_pin=None, actual_exit=0):
+    receipt = recorded_completion(evidence, label, folder=folder, actual_exit=actual_exit)
+    pin = evidence.pins[folder + "/" + name] if external_pin is None else external_pin
+    stdout = {"file": name, **pin}
+    same(receipt["outputs"]["stdout"], stdout, "review_recorded_command_stdout")
     return stdout
+
+
+def recorded_fixture_commands(evidence):
+    commands = {}
+    for label in ("fixture-configure", "fixture-deposit"):
+        outputs = recorded_completion(evidence, label).get("outputs")
+        exact_keys(outputs, {"stdout", "stderr"}, "review_fixture_output_pins")
+        for stream, pin in outputs.items():
+            exact_keys(pin, {"file", "bytes", "sha256"}, "review_fixture_output_pins")
+            same(pin["file"], f"{label}.{stream}", "review_fixture_output_pins")
+            model.uint(pin["bytes"], model.FIXTURE_OUTPUT_BYTES, minimum=0)
+            model.digest(pin["sha256"])
+        commands[label] = {"start": evidence.pins[f"evidence/{label}.started.json"],
+                           "completion": evidence.pins[f"evidence/{label}.complete.json"]}
+    return commands
 
 
 def recorded_consumer_failure(evidence, terminal, binding_present):
@@ -230,6 +249,69 @@ def recorded_opening(evidence, contract):
         "accepted_header_authority": False,
     }
     return headers, observation
+
+
+def recorded_opening_proof(evidence, contract, checkout, opening, opening_observation, terminal):
+    name = capture.OPENING_PROOF_FILE
+    version_unavailable = terminal["reason"] == capture.OPENING_PROOF_VERSION_UNAVAILABLE
+    batch_already_present = terminal["reason"] == capture.OPENING_BATCH_ALREADY_PRESENT
+    if "evidence/" + name not in evidence.pins:
+        require(not (version_unavailable or batch_already_present), "review_opening_proof_refusal_evidence")
+        return None
+    require(opening is not None and opening_observation["request"] is not None, "review_opening_proof_context")
+    request_id = model.uint(opening_observation["request_id"] + 1, capture.RPC_CALL_LIMIT)
+    label = f"rpc-{request_id:02d}"
+    header = opening[2]
+    _, profile = capture.selected_profile(contract, checkout)
+    key, parameters = capture.opening_proof_target(contract, profile, header)
+    request_file = label + ".request.json"
+    same(evidence.json(request_file, 4096), {"jsonrpc": "2.0", "id": request_id,
+         "method": "ledger.getProof", "params": parameters}, "review_opening_proof_request")
+    response = recorded_output(evidence, label, name)
+    raw = evidence.bytes("evidence/" + name, capture.OPENING_PROOF_BYTES)
+    try:
+        witness = capture.opening_proof_result(raw, request_id, capture.OPENING_PROOF_BYTES)
+    except Refused as error:
+        if error.reason != capture.OPENING_PROOF_VERSION_UNAVAILABLE:
+            raise
+        require(version_unavailable and terminal["stage"] == "opening-proof" and terminal["outcome"] == "REFUSED",
+                "review_opening_proof_refusal_scope")
+        observation = {"status": "VERSION_UNAVAILABLE", "rpc_error_code": -32000}
+    else:
+        require(not version_unavailable, "review_opening_proof_refusal_scope")
+        observation = opening_batch_witness(profile, header.root, key, witness)
+    current = terminal["format"] == model.TERMINAL_FORMAT
+    if current:
+        require(batch_already_present == (observation.get("presence") == "present"), "review_opening_batch_scope")
+    if batch_already_present:
+        later_labels = (*capture.OPENING_SIGNATURE_LABELS, "fixture-configure", "fixture-deposit")
+        require(current and terminal["stage"] == "opening-proof" and terminal["outcome"] == "REFUSED"
+                and "evidence/" + capture.OPENING_SIGNATURE_REPORT not in evidence.pins
+                and all(f"evidence/{later}.{phase}.json" not in evidence.pins
+                        for later in later_labels for phase in ("launch", "started", "complete")),
+                "review_opening_batch_scope")
+    return {**observation, "ledger_key": key.hex(),
+            "header": header.identifier(), "state_root": header.root, "request_id": request_id,
+            "request": evidence.pins["evidence/" + request_file], "response": response,
+            "accepted_header_authority": False}
+
+
+def recorded_opening_signatures(evidence, opening, observation, proof):
+    name = capture.OPENING_SIGNATURE_REPORT
+    if "evidence/" + name not in evidence.pins:
+        return None
+    require(opening is not None and observation["request"] is not None and proof is not None
+            and proof.get("presence") in ("present", "absent"), "review_opening_signature_context")
+    report = capture.opening_signature_report(opening, observation["response"])
+    same(evidence.json(name), report, "review_opening_signature_report")
+    success = capture.OPENING_SIGNATURE_OK
+    pin = {"bytes": len(success), "sha256": hashlib.sha256(success).hexdigest()}
+    for label in capture.OPENING_SIGNATURE_LABELS:
+        recorded_output(evidence, label, label + ".stdout", external_pin=pin)
+        stderr = evidence.json(label + ".complete.json")["outputs"]["stderr"]
+        same(stderr, {"file": label + ".stderr", "bytes": 0, "sha256": hashlib.sha256(b"").hexdigest()},
+             "review_opening_signature_stderr")
+    return report
 
 
 def recorded_consumer(evidence, contract, checkout, selection, opening):
@@ -320,18 +402,27 @@ def recorded_frontiers(evidence, contract):
         require(match is not None, "review_frontier_filename")
         request_id = model.uint(int(match[1]), 96)
         label, name = f"rpc-{request_id:02d}", path.split("/")[1]
-        same(evidence.json(label + ".request.json"), {"jsonrpc": "2.0", "id": request_id,
-             "method": "ledger.getFrontierMomentum", "params": []}, "review_frontier_request")
-        # The receipt binds these exact bytes to a completed successful command;
-        # the response ID/chain/header checks remain independent of its exit.
-        recorded_output(evidence, label, name)
-        raw = evidence.bytes(path, 128 << 10)
-        header = capture.Header.read(capture.rpc_result(raw, request_id, 128 << 10),
-                                     contract.data["selection"]["chain_id"])
-        rows.append({"request_id": request_id, "response": evidence.pins[path],
-                     "candidate_header": header.identifier(), "version": header.version,
-                     "timestamp": header.timestamp, "accepted_header_authority": False})
+        frontier_request(evidence, label, request_id)
+        rows.append(frontier_observation(evidence, contract, label, name, request_id))
     return rows
+
+
+def frontier_request(evidence, label, request_id):
+    same(evidence.json(label + ".request.json"), {"jsonrpc": "2.0", "id": request_id,
+         "method": "ledger.getFrontierMomentum", "params": []}, "review_frontier_request")
+
+
+def frontier_observation(evidence, contract, label, name, request_id):
+    # Bind the exact body to a complete command before checking its ID and header.
+    path = "evidence/" + name
+    require(path in evidence.pins, "review_frontier_body_missing")
+    recorded_output(evidence, label, name)
+    raw = evidence.bytes(path, capture.FRONTIER_BYTES)
+    result = capture.rpc_result(raw, request_id, capture.FRONTIER_BYTES)
+    header = capture.Header.read(result, contract.data["selection"]["chain_id"])
+    return {"request_id": request_id, "response": evidence.pins[path],
+            "candidate_header": header.identifier(), "version": header.version,
+            "timestamp": header.timestamp, "accepted_header_authority": False}
 
 
 def diagnostic_receipt(evidence, label, reason):
@@ -451,6 +542,90 @@ def recorded_post_sync_frontier(evidence, terminal, startup_sync, frontiers):
             require(receipt is not None and receipt["output_complete"] is False,
                     "review_post_sync_incomplete")
     return result
+
+
+def recorded_startup_peer_frontiers(evidence, terminal, post_sync, contract):
+    roles = tuple(capture.STARTUP_FRONTIER_URLS)
+    labels = tuple(f"startup-{role}-frontier" for role in roles)
+    requests = {"evidence/" + label + ".request.json" for label in labels} & evidence.pins.keys()
+    bodies = {"evidence/" + label + ".json" for label in labels} & evidence.pins.keys()
+    receipts = {"evidence/" + label + suffix for label in labels
+                for suffix in (".started.json", ".complete.json")} & evidence.pins.keys()
+    if "evidence/" + capture.STARTUP_FRONTIERS_REPORT not in evidence.pins:
+        require(not (requests or bodies or receipts), "review_startup_peer_report_missing")
+        return None
+    report = evidence.json(capture.STARTUP_FRONTIERS_REPORT, 4096)
+    exact_keys(report, {"format", "after_rpc_request_id", "observations",
+                        "accepted_header_authority", "production_qualified"}, "review_startup_peer_fields")
+    require(report["format"] == "owned-devnet-startup-peer-frontiers/v1"
+            and terminal["stage"] == "nodes" and terminal["outcome"] != "DEVNET_CONSUMER_ACCEPTED"
+            and post_sync is not None and post_sync["status"] == "OBSERVED"
+            and report["accepted_header_authority"] is False
+            and report["production_qualified"] is False, "review_startup_peer_scope")
+    after = model.uint(report["after_rpc_request_id"], capture.RPC_CALL_LIMIT)
+    same(after, post_sync["request_id"], "review_startup_peer_parent")
+    rows = report["observations"]
+    require(type(rows) is list and 1 <= len(rows) <= len(roles), "review_startup_peer_count")
+    observations, expected_requests, expected_bodies = [], set(), set()
+    for index, row in enumerate(rows):
+        exact_keys(row, {"role", "status", "reason", "request_id", "response_file"}, "review_startup_peer_row")
+        role, status, reason = row["role"], row["status"], row["reason"]
+        require(role == roles[index] and type(status) is str and status in capture.SYNC_REASONS
+                and (reason is None or type(reason) is str) and reason in capture.SYNC_REASONS[status]
+                and (index == 0 or observations[-1]["status"] == "OBSERVED"), "review_startup_peer_row_scope")
+        label = labels[index]
+        request_id = row["request_id"]
+        observation = {"role": role, "status": status, "reason": reason, "request_id": request_id,
+                       "observation": None, "actual_exit": None, "output_complete": None}
+        if reason == "shared_call_limit":
+            require(index == 0 and after + len(roles) > capture.RPC_CALL_LIMIT, "review_startup_peer_call_limit")
+        if request_id is None:
+            require((status in ("NOT_ATTEMPTED", "REFUSED") or reason == "capture_interrupted")
+                    and not any(path.startswith("evidence/" + label + ".") for path in receipts),
+                    "review_startup_peer_request_missing")
+        else:
+            model.uint(request_id, capture.RPC_CALL_LIMIT)
+            require(request_id == after + index + 1 and after + len(roles) <= capture.RPC_CALL_LIMIT
+                    and status != "NOT_ATTEMPTED", "review_startup_peer_request_id")
+            frontier_request(evidence, label, request_id)
+            expected_requests.add("evidence/" + label + ".request.json")
+            receipt = diagnostic_receipt(evidence, label, "review_startup_peer_receipt")
+            if receipt is not None:
+                observation.update(actual_exit=receipt["actual_exit"], output_complete=receipt["output_complete"])
+            if status == "FAILURE":
+                require(receipt is not None and type(receipt["actual_exit"]) is int
+                        and receipt["actual_exit"] != 0 and receipt["output_complete"] is True,
+                        "review_startup_peer_failure")
+            if reason == "command_incomplete":
+                require(receipt is not None and receipt["output_complete"] is False, "review_startup_peer_incomplete")
+        if status == "OBSERVED":
+            name = label + ".json"
+            same(row["response_file"], name, "review_startup_peer_response")
+            observation["observation"] = frontier_observation(evidence, contract, label, name, request_id)
+            expected_bodies.add("evidence/" + name)
+        else:
+            require(row["response_file"] is None, "review_startup_peer_response")
+        observations.append(observation)
+    require(requests == expected_requests and bodies == expected_bodies,
+            "review_startup_peer_member_selection")
+    require(len(observations) == len(roles) or observations[-1]["status"] != "OBSERVED",
+            "review_startup_peer_followup_missing")
+    comparison = None
+    if len(observations) == len(roles) and all(row["status"] == "OBSERVED" for row in observations):
+        first = post_sync["observation"]["candidate_header"]
+        pillar, final = (row["observation"]["candidate_header"] for row in observations)
+        if final != first:
+            comparison = "rpc_frontier_changed"
+        elif pillar == first:
+            comparison = "same_candidate"
+        elif pillar["height"] == first["height"]:
+            comparison = "different_hash_at_same_height"
+        else:
+            comparison = ("pillar_ahead_of_unchanged_rpc" if pillar["height"] > first["height"]
+                          else "pillar_behind_unchanged_rpc")
+    return {"after_rpc_request_id": after, "observations": observations, "comparison": comparison,
+            "sequential_observations": True, "accepted_header_authority": False,
+            "production_qualified": False}
 
 
 def recorded_startup_nodes(evidence, terminal):
@@ -584,7 +759,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         exact_keys(terminal, {*selection, "format", "outcome", "stage", "reason",
                              "owned_runtime_observed_closed", "production_qualified",
                              "consensus_finality_or_funds_release"}, "review_terminal_fields")
-        require(terminal["format"] == "owned-devnet-query-terminal/v1"
+        require(terminal["format"] in ("owned-devnet-query-terminal/v1", model.TERMINAL_FORMAT_V2, model.TERMINAL_FORMAT)
                 and terminal["production_qualified"] is False
                 and terminal["consensus_finality_or_funds_release"] is False
                 and type(terminal["owned_runtime_observed_closed"]) is bool, "review_terminal_scope")
@@ -598,6 +773,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         startup_sync = recorded_startup_sync(evidence, terminal)
         frontiers = recorded_frontiers(evidence, contract)
         post_sync = recorded_post_sync_frontier(evidence, terminal, startup_sync, frontiers)
+        startup_peers = recorded_startup_peer_frontiers(evidence, terminal, post_sync, contract)
         startup_nodes = recorded_startup_nodes(evidence, terminal)
         file_logs = node_file_logs.recorded(evidence, terminal, startup_nodes, diagnostic_receipt)
         consumer_failure = recorded_consumer_failure(evidence, terminal, binding_present)
@@ -612,12 +788,17 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             require(binding_present and terminal["stage"] == "consumer" and reported == "REFUSED",
                     "review_gateway_refusal_scope")
 
-        opening = opening_observation = matched = gateway_mismatch = None
+        opening = opening_observation = matched = gateway_mismatch = fixture_commands = None
         if accepted or "evidence/" + OPENING_FILE in evidence.pins:
             require(binding_present, "review_opening_run_binding")
             opening, opening_observation = recorded_opening(evidence, contract)
+        opening_proof = recorded_opening_proof(evidence, contract, checkout, opening, opening_observation, terminal)
+        opening_signatures = recorded_opening_signatures(evidence, opening, opening_observation, opening_proof)
         if accepted or (gateway_refusal and terminal["owned_runtime_observed_closed"]):
             require(opening is not None, "review_consumer_opening")
+            if terminal["format"] in (model.TERMINAL_FORMAT_V2, model.TERMINAL_FORMAT):
+                require(opening_signatures is not None, "review_consumer_opening_gate")
+                fixture_commands = recorded_fixture_commands(evidence)
             comparison = recorded_consumer(evidence, contract, checkout, selection, opening)
             same(comparison["gateway_stored_fields_match"], accepted, "review_consumer_gateway")
             if accepted:
@@ -636,10 +817,18 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["candidate_frontier_observations"] = frontiers
         if opening_observation is not None and not accepted:
             report["candidate_opening_observation"] = opening_observation
+        if opening_proof is not None:
+            report["candidate_opening_proof"] = opening_proof
+        if opening_signatures is not None:
+            report["recorded_opening_signatures"] = opening_signatures
+        if fixture_commands is not None:
+            report["recorded_fixture_commands"] = fixture_commands
         if startup_sync is not None:
             report["startup_sync_diagnostic"] = startup_sync
         if post_sync is not None:
             report["post_sync_frontier_diagnostic"] = post_sync
+        if startup_peers is not None:
+            report["startup_peer_frontier_diagnostic"] = startup_peers
         if startup_nodes is not None:
             report["startup_node_diagnostics"] = startup_nodes
         if file_logs is not None:

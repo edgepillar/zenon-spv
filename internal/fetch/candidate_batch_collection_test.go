@@ -196,6 +196,80 @@ func TestCandidateBatchCollectionRecordedWire(t *testing.T) {
 	}
 }
 
+func TestCandidateBatchBundleEncoding(t *testing.T) {
+	recorded, _ := collectionFixture(t)
+	witness := json.RawMessage(`{ "text": "<tag>&", "escaped": "\u2028" }`)
+	contextWitnesses := &collectedBatchContextWitnesses{witness, witness, witness}
+	gateway := json.RawMessage(`{ "isFinalized": true }`)
+	for _, test := range []struct {
+		name      string
+		resume    bool
+		witness   json.RawMessage
+		witnesses *collectedBatchContextWitnesses
+		gateway   json.RawMessage
+	}{
+		{name: "entry", witness: witness},
+		{name: "entry-with-gateway", witness: witness, gateway: gateway},
+		{name: "context", witnesses: contextWitnesses},
+		{name: "proof-only-with-gateway", resume: true, witnesses: contextWitnesses, gateway: gateway},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			rows := make([]json.RawMessage, 0, len(recorded))
+			if !test.resume {
+				for _, row := range recorded {
+					var formatted bytes.Buffer
+					if err := json.Indent(&formatted, row, "", "  "); err != nil {
+						t.Fatal(err)
+					}
+					rows = append(rows, formatted.Bytes())
+				}
+			}
+			var expected bytes.Buffer
+			encoder := json.NewEncoder(&expected)
+			encoder.SetEscapeHTML(false)
+			if err := encoder.Encode(struct {
+				Version   uint32                          `json:"version"`
+				Momentums []json.RawMessage               `json:"momentums"`
+				Witness   json.RawMessage                 `json:"witness,omitempty"`
+				Witnesses *collectedBatchContextWitnesses `json:"witnesses,omitempty"`
+				Gateway   json.RawMessage                 `json:"gateway,omitempty"`
+			}{1, rows, test.witness, test.witnesses, test.gateway}); err != nil {
+				t.Fatal(err)
+			}
+			got, err := encodeCandidateBatchBundle(rows, test.witness, test.witnesses, test.gateway)
+			if err != nil || !bytes.Equal(got, expected.Bytes()) {
+				t.Fatal("provider document changed byte for byte", err)
+			}
+		})
+	}
+}
+
+func TestCandidateBatchBundleEncodingSizeLimit(t *testing.T) {
+	// Reuse bounded row bytes to exercise the complete document limit.
+	const emptyDocument = "{\"version\":1,\"momentums\":[],\"witness\":{}}\n"
+	witness := json.RawMessage(`{}`)
+	rows := make([]json.RawMessage, 512)
+	rowBytes := (MaxCandidateBatchBundleBytes - len(emptyDocument) - (len(rows) - 1)) / len(rows)
+	makeRow := func(size int) json.RawMessage {
+		row := bytes.Repeat([]byte{'x'}, size)
+		row[0], row[len(row)-1] = '"', '"'
+		return row
+	}
+	row := makeRow(rowBytes)
+	for i := range rows {
+		rows[i] = row
+	}
+	lastBytes := MaxCandidateBatchBundleBytes - len(emptyDocument) - (len(rows)-1)*(rowBytes+1)
+	rows[len(rows)-1] = makeRow(lastBytes)
+	if raw, err := encodeCandidateBatchBundle(rows, witness, nil, nil); err != nil || len(raw) != MaxCandidateBatchBundleBytes {
+		t.Fatal("document at the limit was refused", len(raw), err)
+	}
+	rows[len(rows)-1] = makeRow(lastBytes + 1)
+	if raw, err := encodeCandidateBatchBundle(rows, witness, nil, nil); !errors.Is(err, ErrResponseTooLarge) || raw != nil {
+		t.Fatal("document beyond the limit was not refused", len(raw), err)
+	}
+}
+
 func btoi(value bool) int {
 	if value {
 		return 1

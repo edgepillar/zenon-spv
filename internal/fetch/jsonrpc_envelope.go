@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"strings"
 )
 
@@ -15,6 +14,7 @@ var ErrInvalidRPCResponse = errors.New("invalid JSON-RPC response")
 
 // decodeRPCResponse consumes a body already bounded by Client.Call. The client
 // emits integer IDs; a response must echo that integer and use JSON-RPC 2.0.
+// A successful result borrows bytes from raw until the caller decodes it.
 func decodeRPCResponse(raw []byte, requestID int) (rpcResponse, error) {
 	var versionRaw, idRaw, resultRaw, errorRaw json.RawMessage
 	if err := decodeRPCObject(raw, map[string]*json.RawMessage{
@@ -55,29 +55,37 @@ func decodeRPCResponse(raw []byte, requestID int) (rpcResponse, error) {
 // decodeRPCObject rejects duplicate control fields and case aliases while
 // allowing unrelated extension members. Field names and values are not echoed
 // in parser diagnostics. Callers provide fresh temporary fields for each object.
+// Selected fields borrow the validated value bytes from raw.
 // A nil target marks a known field whose value is discarded after JSON scanning;
 // its presence is still tracked to reject duplicates and case aliases.
 func decodeRPCObject(raw []byte, fields map[string]*json.RawMessage) error {
-	dec := json.NewDecoder(bytes.NewReader(raw))
-	if token, err := dec.Token(); err != nil || token != json.Delim('{') {
+	const whitespace = " \t\r\n"
+	raw = bytes.Trim(raw, whitespace)
+	if len(raw) == 0 || raw[0] != '{' {
 		return fmt.Errorf("%w: expected an object", ErrInvalidRPCResponse)
 	}
+	if len(raw) < 2 || raw[len(raw)-1] != '}' {
+		return fmt.Errorf("%w: malformed object ending", ErrInvalidRPCResponse)
+	}
+
 	var discarded map[string]bool
-	for dec.More() {
-		token, err := dec.Token()
-		name, ok := token.(string)
-		if err != nil || !ok {
+	remaining := bytes.TrimLeft(raw[1:len(raw)-1], whitespace)
+	for len(remaining) != 0 {
+		if remaining[0] != '"' {
+			return fmt.Errorf("%w: malformed object member", ErrInvalidRPCResponse)
+		}
+		keyEnd := rpcJSONStringEnd(remaining)
+		var name string
+		if json.Unmarshal(remaining[:keyEnd], &name) != nil {
 			return fmt.Errorf("%w: malformed object member", ErrInvalidRPCResponse)
 		}
 		target, known := fields[name]
-		var value any = target
 		if !known {
 			for field := range fields {
 				if strings.EqualFold(name, field) {
 					return fmt.Errorf("%w: noncanonical control field name", ErrInvalidRPCResponse)
 				}
 			}
-			value = &ignoredRPCValue{}
 		} else if target == nil {
 			if discarded[name] {
 				return fmt.Errorf("%w: duplicate control field", ErrInvalidRPCResponse)
@@ -86,28 +94,77 @@ func decodeRPCObject(raw []byte, fields map[string]*json.RawMessage) error {
 				discarded = make(map[string]bool)
 			}
 			discarded[name] = true
-			value = &ignoredRPCValue{}
 		} else if len(*target) != 0 {
 			return fmt.Errorf("%w: duplicate control field", ErrInvalidRPCResponse)
 		}
-		if err := dec.Decode(value); err != nil {
+		colon := bytes.TrimLeft(remaining[keyEnd:], whitespace)
+		if len(colon) == 0 || colon[0] != ':' {
 			return fmt.Errorf("%w: malformed member value", ErrInvalidRPCResponse)
 		}
-	}
-	if token, err := dec.Token(); err != nil || token != json.Delim('}') {
-		return fmt.Errorf("%w: malformed object ending", ErrInvalidRPCResponse)
-	}
-	var extra json.RawMessage
-	if err := dec.Decode(&extra); err != io.EOF {
-		return fmt.Errorf("%w: trailing response data", ErrInvalidRPCResponse)
+		value := bytes.TrimLeft(colon[1:], whitespace)
+		end := rpcJSONValueEnd(value)
+		// Validate each value with the standard decoder's grammar and depth
+		// limit without allocating Decoder.Decode's whole-value buffer.
+		if !json.Valid(value[:end]) {
+			return fmt.Errorf("%w: malformed member value", ErrInvalidRPCResponse)
+		}
+		if target != nil {
+			*target = value[:end:end]
+		}
+		remaining = bytes.TrimLeft(value[end:], whitespace)
+		if len(remaining) == 0 {
+			break
+		}
+		if remaining[0] != ',' {
+			return fmt.Errorf("%w: malformed object member separator", ErrInvalidRPCResponse)
+		}
+		remaining = bytes.TrimLeft(remaining[1:], whitespace)
+		if len(remaining) == 0 {
+			return fmt.Errorf("%w: malformed object member", ErrInvalidRPCResponse)
+		}
 	}
 	return nil
 }
 
-// ignoredRPCValue is only passed to json.Decoder.Decode, which scans and
-// validates the complete JSON value before calling UnmarshalJSON. The callback
-// discards that validated value without making a RawMessage payload copy.
-// Decoder buffering and copies of required control fields are still allocated.
-type ignoredRPCValue struct{}
+// rpcJSONValueEnd finds a possible value boundary without interpreting scalar
+// syntax or matching bracket types. The caller validates the resulting span.
+func rpcJSONValueEnd(raw []byte) int {
+	depth := 0
+	for i := 0; i < len(raw); i++ {
+		switch raw[i] {
+		case '"':
+			i += rpcJSONStringEnd(raw[i:]) - 1
+			if depth == 0 {
+				return i + 1
+			}
+		case '{', '[':
+			depth++
+		case '}', ']':
+			if depth == 0 {
+				return i
+			}
+			depth--
+			if depth == 0 {
+				return i + 1
+			}
+		case ',', ' ', '\t', '\r', '\n':
+			if depth == 0 {
+				return i
+			}
+		}
+	}
+	return len(raw)
+}
 
-func (*ignoredRPCValue) UnmarshalJSON([]byte) error { return nil }
+// rpcJSONStringEnd starts at the opening quote and skips escaped characters.
+func rpcJSONStringEnd(raw []byte) int {
+	for i := 1; i < len(raw); i++ {
+		switch raw[i] {
+		case '\\':
+			i++
+		case '"':
+			return i + 1
+		}
+	}
+	return len(raw)
+}
