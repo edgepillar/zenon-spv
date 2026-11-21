@@ -390,9 +390,12 @@ func TestFullSuiteActualFailureDiagnostics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), nativeSuiteHelperTimeout)
 	defer cancel()
 	ok, category := runTestProcess(ctx, goTool, []string{"tool", "test2json", "-t", "-p", pkg, self, "-test.v=test2json", "-test.run=^TestFullSuiteNativeNameHelper$"}, pilotEnvironment(goTool), c.read)
+	if ctx.Err() == context.DeadlineExceeded {
+		t.Fatal("native test2json control timed out")
+	}
 	if ok || category == nil || !c.complete || c.finish(ok) != "failed" || c.counts.Failed != 2 || c.failures.Observed != 1 || len(c.failures.Roots) != 1 || c.failures.Roots[0] != (suiteFailedRoot{pkg, "TestFullSuiteNativeNameHelper"}) {
 		t.Fatal("actual unselected root failure or failed child exit was lost")
 	}
@@ -589,6 +592,10 @@ func TestFullSuiteActualProcessCompletion(t *testing.T) {
 
 const suiteNameHelperEnvironment = "SPV_SUITE_NATIVE_NAME_HELPER"
 
+// The event controls run the installed Go tool and a child test executable.
+// Allow for tool startup on loaded native CI workers.
+const nativeSuiteHelperTimeout = 30 * time.Second
+
 func TestFullSuiteNativeNameHelper(t *testing.T) {
 	if os.Getenv(suiteNameHelperEnvironment) == "failure-diagnostics" {
 		t.Run("PRIVATE_LABEL", func(t *testing.T) { t.Error("PRIVATE_PATH_AND_VALUE") })
@@ -627,10 +634,13 @@ func TestFullSuiteActualNativeNames(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), nativeSuiteHelperTimeout)
 	defer cancel()
 	ok, category := runTestProcess(ctx, goTool, []string{"tool", "test2json", "-t", "-p", pkg, self,
 		"-test.v=test2json", "-test.run=^TestFullSuiteNativeNameHelper$"}, pilotEnvironment(goTool), c.read)
+	if ctx.Err() == context.DeadlineExceeded {
+		t.Fatal("native test2json control timed out")
+	}
 	if !ok || category != nil || c.finish(ok) != "passed" || selected.finish(ok) != "passed" ||
 		c.counts != (suiteCounts{RootTests: 1, Subtests: 5, Passed: 6}) {
 		t.Fatal("actual slash-labelled or parallel Go subtests did not complete")

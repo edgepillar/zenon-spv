@@ -294,3 +294,39 @@ push need separate reconciliation of source scope, skipped provider records,
 native results and artifacts before claiming measured savings. Fewer selected
 jobs are not a controlled wall-time benchmark, node resource measurement,
 independent review or network/state-value acceptance.
+
+### Paired owned-input renewal
+
+The explicit owned-input renewal request schedules the closed-parent workflow
+at the same source as the existing general workflow. The request remains a
+runtime dependency. It is outside both narrow change-scope file sets, so a
+renewal runs the complete general lane and has its own original CI artifacts.
+
+Relative to `ec2f07e4e5411cedfc74b9f77576b7f7550c00dd`, the two edited
+workflow files, the renewal request and the two retention selector files
+change five records in both closures. The portable closure contains 1,195
+records and 122,422 bytes with digest
+`dbbb683a47ad61c72568b1abca132c962ac6dc9e123e2b9a025b2489a9d8c77c`. The
+recorded-oracle closure contains 1,214 records and 124,260 bytes with digest
+`4b6971bfb7c952a22ac77cd98ce4959081a46581cb3248f65878717716e88b59`.
+The reviewed leaf sets and the recorded-oracle job definition retain the same
+coverage.
+
+### Renewed owned BatchEntry selection
+
+The reviewed source closure moves from `58e03fa9ff58a752cfd1718245b31cba73dde473` to the
+reference-gas contract that selects the renewed main Linux pair and the
+bounded runner that preserves nonaccepting query evidence. This change runs
+the full general and owned-preparation workflows. The independent native and
+portable selection rules retain the same coverage.
+
+The portable closure contains 1,196 records and 122,538 bytes
+with digest `631cad1d5bd788a1a1da5828ee38a77d10cf47c1f489c180baaeea5046d2df8f`.
+The recorded-oracle closure contains 1,215 records and 124,376 bytes
+with digest `17d736f154163aaa5d018e640c4773f6c51f58ba261ee32803757f814dba40f7`.
+
+The 30-second timeout applies to two installed Go `test2json` helpers used by
+the offline pilot's native tests. In the initial Windows CI run for this PR,
+both controls failed near their prior 10-second limit (10.64 and 10.32
+seconds). The original failed roots and timings remain in the first attempt's
+[general CI record](https://github.com/edgepillar/zenon-spv/actions/runs/44769740235).

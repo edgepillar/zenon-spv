@@ -30,6 +30,8 @@ INDEX_BYTES = 512 << 10
 FILE_BYTES = 2 << 20
 MAX_FILES = 2048
 MAX_ARCHIVE = model.LIMITS["max_evidence_bytes"] + (2 << 20)
+OPENING_FILE = "opening-momentums.json"
+OPENING_BYTES = 384 << 10
 EXECUTE_STEP = "Run the reviewed fixture and read-only query"
 UPLOAD_STEP = "Retain selected evidence and command receipts"
 TERMINAL_CONCLUSIONS = ("success", "failure", "cancelled", "timed_out")
@@ -143,7 +145,7 @@ class Evidence:
             path = model.relative_name(record["path"])
             parent, _, name = path.partition("/")
             retained_stream = parent == "evidence" and (
-                name == "consume-query.stdout" or re.fullmatch(r"parent-oracle-[0-9]{2}\.stdout", name))
+                name == capture.CONSUMER_STDOUT or re.fullmatch(r"parent-oracle-[0-9]{2}\.stdout", name))
             require(parent in {"evidence", "transport"} and FILE.fullmatch(name) is not None
                     and (name.endswith(".json") or retained_stream)
                     and path in self.rows and path not in self.pins, "review_member_selection")
@@ -173,11 +175,11 @@ class Evidence:
             same({"bytes": size, "sha256": digest.hexdigest()}, self.pins[name], "review_member_digest")
 
 
-def recorded_output(evidence, label, name, *, folder="evidence", external_pin=None):
+def recorded_output(evidence, label, name, *, folder="evidence", external_pin=None, actual_exit=0):
     receipt = evidence.json(label + ".complete.json", folder=folder)
     require(receipt.get("format") == "owned-devnet-command-capture/v1"
             and receipt.get("label") == label and receipt.get("launch_outcome") == "STARTED"
-            and type(receipt.get("actual_exit")) is int and receipt["actual_exit"] == 0
+            and type(receipt.get("actual_exit")) is int and receipt["actual_exit"] == actual_exit
             and receipt.get("output_complete") is True and receipt.get("reason") is None
             and receipt.get("process_group_quiescent") is True, "review_recorded_command_completion")
     pin = evidence.pins[folder + "/" + name] if external_pin is None else external_pin
@@ -190,7 +192,47 @@ def recorded_output(evidence, label, name, *, folder="evidence", external_pin=No
     return stdout
 
 
-def recorded_consumer(evidence, contract, checkout, selection):
+def recorded_consumer_failure(evidence, terminal, binding_present):
+    if terminal["reason"] != "consumer_reported_failure":
+        return None
+    name = capture.CONSUMER_STDOUT
+    require(binding_present and terminal["outcome"] == "FAILURE" and terminal["stage"] == "consumer"
+            and "evidence/" + name in evidence.pins, "review_consumer_failure_scope")
+    code = evidence.json("consume-query.complete.json").get("actual_exit")
+    raw = evidence.bytes("evidence/" + name, capture.CONSUMER_FAILURE_BYTES)
+    report = capture.consumer_failure(raw, code)
+    stdout = recorded_output(evidence, "consume-query", name, actual_exit=code)
+    return {**report, "stdout": stdout}
+
+
+def recorded_opening(evidence, contract):
+    envelope = evidence.json(OPENING_FILE, OPENING_BYTES)
+    exact_keys(envelope, {"jsonrpc", "id", "result"}, "owned_rpc_result_envelope")
+    request_id = model.uint(envelope["id"], 96)
+    result = envelope["result"]
+    require(envelope["jsonrpc"] == "2.0" and type(result) is dict, "owned_rpc_result_identity")
+    label = f"rpc-{request_id:02d}"
+    recorded_output(evidence, label, OPENING_FILE)
+    request_file = label + ".request.json"
+    request = evidence.pins.get("evidence/" + request_file)
+    if request is not None:
+        same(evidence.json(request_file, 4096), {"jsonrpc": "2.0", "id": request_id,
+             "method": "ledger.getMomentumsByHeight", "params": [1, 3]}, "review_opening_request")
+    model.uint(result["count"], minimum=3)
+    headers = capture.opening_headers(contract, result["list"])
+    observation = {
+        "request_id": request_id,
+        "request": request,
+        "response": evidence.pins["evidence/" + OPENING_FILE],
+        "headers": [{**header.identifier(), "version": header.version, "timestamp": header.timestamp,
+                     "state_root": header.root} for header in headers],
+        "signature_verified": False,
+        "accepted_header_authority": False,
+    }
+    return headers, observation
+
+
+def recorded_consumer(evidence, contract, checkout, selection, opening):
     same(evidence.json("dispatch-selection.json"), {"format": "owned-devnet-dispatch-selection/v1",
          "repository": REPOSITORY, **selection, "actor": "edgepillar", "host_attested": False,
          "explicit_dispatch_selected": True}, "review_dispatch_binding")
@@ -206,12 +248,6 @@ def recorded_consumer(evidence, contract, checkout, selection):
         recorded_output(evidence, label + "-archive", f"artifact-{component['artifact_id']}.zip",
                         folder="transport", external_pin=component["archive"])
 
-    opening_raw = evidence.bytes("evidence/opening-momentums.json", 384 << 10)
-    request_id = model.uint(api_json(opening_raw, 384 << 10)["id"], 96)
-    recorded_output(evidence, f"rpc-{request_id:02d}", "opening-momentums.json")
-    opening_result = capture.rpc_result(opening_raw, request_id, 384 << 10)
-    model.uint(opening_result["count"], minimum=3)
-    opening = capture.opening_headers(contract, opening_result["list"])
     provider = evidence.json("provider.json", contract.data["limits"]["stdout_bytes"])
     recorded_output(evidence, "collect-provider", "provider.json")
 
@@ -267,11 +303,10 @@ def recorded_consumer(evidence, contract, checkout, selection):
     for name, expected in (("query-config.json", config), ("query-request.json", request),
                            ("query-context-pins.json", pins)):
         same(evidence.json(name, 256 << 10), expected, "review_query_inputs")
-    result = evidence.json("consume-query.stdout", 256 << 10)
-    recorded_output(evidence, "consume-query", "consume-query.stdout")
+    result = evidence.json(capture.CONSUMER_STDOUT, 256 << 10)
+    recorded_output(evidence, "consume-query", capture.CONSUMER_STDOUT)
     matched = consumer_result(result, config, request, provider, query.root, descriptor)
     same(evidence.json("consumer-comparison.json"), matched, "review_consumer_comparison")
-    require(matched["gateway_stored_fields_match"] is True, "review_consumer_gateway")
     return matched
 
 
@@ -565,13 +600,30 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         post_sync = recorded_post_sync_frontier(evidence, terminal, startup_sync, frontiers)
         startup_nodes = recorded_startup_nodes(evidence, terminal)
         file_logs = node_file_logs.recorded(evidence, terminal, startup_nodes, diagnostic_receipt)
-        matched = None
-        if reported == "DEVNET_CONSUMER_ACCEPTED":
+        consumer_failure = recorded_consumer_failure(evidence, terminal, binding_present)
+        accepted = reported == "DEVNET_CONSUMER_ACCEPTED"
+        gateway_refusal = terminal["reason"] == "gateway_stored_fields_differ"
+        if accepted:
             require(binding_present and terminal["stage"] == "consumer" and terminal["reason"] is None
                     and terminal["owned_runtime_observed_closed"] is True, "review_terminal_completion")
-            matched = recorded_consumer(evidence, contract, checkout, selection)
         else:
             require(binding_present or terminal["stage"] == "dispatch", "review_terminal_binding")
+        if gateway_refusal:
+            require(binding_present and terminal["stage"] == "consumer" and reported == "REFUSED",
+                    "review_gateway_refusal_scope")
+
+        opening = opening_observation = matched = gateway_mismatch = None
+        if accepted or "evidence/" + OPENING_FILE in evidence.pins:
+            require(binding_present, "review_opening_run_binding")
+            opening, opening_observation = recorded_opening(evidence, contract)
+        if accepted or (gateway_refusal and terminal["owned_runtime_observed_closed"]):
+            require(opening is not None, "review_consumer_opening")
+            comparison = recorded_consumer(evidence, contract, checkout, selection, opening)
+            same(comparison["gateway_stored_fields_match"], accepted, "review_consumer_gateway")
+            if accepted:
+                matched = comparison
+            else:
+                gateway_mismatch = comparison
         evidence.verify_remaining()
         report = {"format": "owned-devnet-evidence-review/v1",
                 "status": "RECORDED_CONSUMER_BYTES_MATCH" if matched else "RECORDED_NON_ACCEPTING_OUTCOME",
@@ -582,6 +634,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
                 "production_qualified": False}
         if frontiers:
             report["candidate_frontier_observations"] = frontiers
+        if opening_observation is not None and not accepted:
+            report["candidate_opening_observation"] = opening_observation
         if startup_sync is not None:
             report["startup_sync_diagnostic"] = startup_sync
         if post_sync is not None:
@@ -590,6 +644,10 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["startup_node_diagnostics"] = startup_nodes
         if file_logs is not None:
             report["startup_file_log_diagnostics"] = file_logs
+        if consumer_failure is not None:
+            report["recorded_consumer_failure"] = consumer_failure
+        if gateway_mismatch is not None:
+            report["recorded_gateway_mismatch"] = gateway_mismatch
         return report
 
 

@@ -33,6 +33,7 @@ class ReferenceGasTests(unittest.TestCase):
     def setUpClass(cls):
         cls.old = model.read_contract(HERE / "contract.json")
         cls.new = model.read_contract(HERE / "reference-gas-contract.json")
+        cls.renewed = model.read_contract(HERE / "reference-gas-renewal-1-contract.json")
         cls.unit = json.loads((ROOT / "internal/testdata/conformance/batch-context-unit.json").read_bytes())
 
     def test_original_contract_and_prepared_inputs_keep_their_byte_identity(self):
@@ -57,6 +58,29 @@ class ReferenceGasTests(unittest.TestCase):
         self.assertFalse(plan["execution_authorized"])
         self.assertFalse(plan["actual_devnet_query_executed"])
 
+    def test_renewal_changes_the_components_without_changing_query_inputs(self):
+        self.assertEqual(self.renewed.sha256, "7af671795d7a9a97d57432ce1b38d490580340e7b844a083298dbcaf8a5c4fe0")
+        outgoing, renewed = self.new.data, self.renewed.data
+        outgoing_pair = outgoing.pop("qualified_components")
+        renewed_pair = renewed.pop("qualified_components")
+        self.assertEqual(outgoing, renewed)
+        self.assertNotEqual(renewed_pair, outgoing_pair)
+        self.assertEqual(renewed_pair["source_revision"], "58e03fa9ff58a752cfd1718245b31cba73dde473")
+        self.assertEqual(capture.selected_profile(self.renewed, ROOT), capture.selected_profile(self.new, ROOT))
+        self.assertFalse(model.preparation_report(self.renewed)["execution_authorized"])
+
+    def test_mixed_or_unreviewed_renewal_components_are_refused(self):
+        for role in ("consumer", "parent_oracle"):
+            with self.subTest(role=role):
+                value = self.renewed.data
+                value["qualified_components"][role] = self.new.data["qualified_components"][role]
+                with self.assertRaisesRegex(model.Refused, "component_selection"):
+                    model.decode_contract(model.canonical(value))
+        value = self.renewed.data
+        value["qualified_components"]["source_revision"] = "2" * 40
+        with self.assertRaisesRegex(model.Refused, "component_revision"):
+            model.decode_contract(model.canonical(value))
+
     def test_cross_cohort_sources_selection_and_binaries_are_refused(self):
         for name in ("format", "sources", "selection", "qualified_components"):
             for original, foreign in ((self.new, self.old), (self.old, self.new)):
@@ -71,8 +95,8 @@ class ReferenceGasTests(unittest.TestCase):
             with self.assertRaisesRegex(model.Refused, "component_selection"):
                 model.decode_contract(model.canonical(value))
 
-    def test_only_two_exact_contract_digests_are_selected(self):
-        for contract in (self.old, self.new):
+    def test_only_exact_contract_digests_are_selected(self):
+        for contract in (self.old, self.new, self.renewed):
             self.assertEqual(model.read_selected_contract(HERE, contract.sha256), contract)
         for digest in ("a" * 64, "latest", self.new.sha256.upper(), True):
             with self.subTest(digest=digest), self.assertRaises(model.Refused):
@@ -154,12 +178,13 @@ class ReferenceGasTests(unittest.TestCase):
         with self.assertRaisesRegex(model.Refused, "npm_dependency_source_binding"):
             sources.lockfile_binding(self.new, self.lockfile(self.old))
 
-    def metadata(self, role):
-        item = self.new.data["qualified_components"][role]
+    def metadata(self, role, contract=None):
+        components = (self.new if contract is None else contract).data["qualified_components"]
+        item = components[role]
         repository = {"id": 17, "full_name": artifacts.REPOSITORY}
         run = {"id": item["run_id"], "run_attempt": 1, "status": "completed", "conclusion": "success",
                "event": "push", "head_branch": "main", "path": artifacts.WORKFLOWS[role],
-               "head_sha": model.REFERENCE_GAS_COMPONENT_REVISION,
+               "head_sha": components["source_revision"],
                "repository": repository, "head_repository": dict(repository)}
         artifact = {"id": item["artifact_id"], "expired": False, "size_in_bytes": item["archive"]["bytes"],
                     "digest": "sha256:" + item["archive"]["sha256"], "workflow_run": {
@@ -173,6 +198,17 @@ class ReferenceGasTests(unittest.TestCase):
             result = artifacts.bind_metadata(self.new, role, run, artifact)
             self.assertEqual(result["source_revision"], model.REFERENCE_GAS_COMPONENT_REVISION)
             self.assertFalse(result["new_ci_execution_qualified"])
+
+    def test_renewed_pair_binds_both_main_runs_and_refuses_the_outgoing_pair(self):
+        for role in artifacts.WORKFLOWS:
+            with self.subTest(role=role):
+                run, artifact = self.metadata(role, self.renewed)
+                result = artifacts.bind_metadata(self.renewed, role, run, artifact)
+                self.assertEqual(result["source_revision"], self.renewed.data["qualified_components"]["source_revision"])
+                self.assertFalse(result["new_ci_execution_qualified"])
+                run, artifact = self.metadata(role, self.new)
+                with self.assertRaisesRegex(model.Refused, "artifact_run_id"):
+                    artifacts.bind_metadata(self.renewed, role, run, artifact)
 
     def test_old_source_or_expired_artifact_cannot_enter_the_new_selection(self):
         for role in artifacts.WORKFLOWS:
