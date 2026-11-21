@@ -690,7 +690,10 @@ jobs:
       - name: Independent node signatures
         id: signatures
         shell: bash
-        run: python -B tools/gen-node-momentum-vectors/check-signatures.py --openssl openssl --source-revision "${{ github.sha }}" > "${{ runner.temp }}/node-signatures.json"
+        run: |
+          python -B tools/gen-node-momentum-vectors/check-signatures.py --openssl openssl --source-revision "${{ github.sha }}" > "${{ runner.temp }}/node-signatures.json"
+          python -I -B tools/gen-node-momentum-vectors/check-first-v3-signatures_test.py
+          python -I -B tools/gen-node-momentum-vectors/check-first-v3-signatures.py --openssl openssl --source-revision "${{ github.sha }}" > "${{ runner.temp }}/first-v3-signatures.json"
       - name: Node static corpus controls
         run: python -I -B tools/gen-node-static-vectors/check_test.py -v
       - name: Independent node static checks
@@ -754,6 +757,7 @@ jobs:
           name: independent-signatures-linux
           path: |
             ${{ runner.temp }}/node-signatures.json
+            ${{ runner.temp }}/first-v3-signatures.json
             ${{ runner.temp }}/node-static-signatures.json
             ${{ runner.temp }}/node-account-signatures.json
           if-no-files-found: error
@@ -1492,6 +1496,8 @@ jobs:
             signature_backend="$(brew --prefix openssl@3)/bin/openssl"
           fi
           python -B tools/gen-node-momentum-vectors/check-signatures.py --openssl "$signature_backend" --source-revision "${{ github.sha }}" > "${{ runner.temp }}/node-signatures.json"
+          python -I -B tools/gen-node-momentum-vectors/check-first-v3-signatures_test.py
+          python -I -B tools/gen-node-momentum-vectors/check-first-v3-signatures.py --openssl "$signature_backend" --source-revision "${{ github.sha }}" > "${{ runner.temp }}/first-v3-signatures.json"
       - name: Node static corpus controls
         run: python -I -B tools/gen-node-static-vectors/check_test.py -v
       - name: Independent node static checks
@@ -1554,6 +1560,7 @@ jobs:
           name: independent-signatures-${{ matrix.os }}
           path: |
             ${{ runner.temp }}/node-signatures.json
+            ${{ runner.temp }}/first-v3-signatures.json
             ${{ runner.temp }}/node-static-signatures.json
             ${{ runner.temp }}/node-account-signatures.json
           if-no-files-found: error
