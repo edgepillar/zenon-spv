@@ -22,6 +22,7 @@ GATEWAY_URL = "http://127.0.0.1:35999"
 READINESS_ATTEMPTS = 30
 READINESS_WAIT_SECONDS = 90
 INITIAL_HEIGHT_WAIT_SECONDS = 180
+INITIAL_FINAL_PROBE_SECONDS = 1
 ORACLE_REPORT_BYTES = 256 << 10
 SYNC_INFO_BYTES = 8 << 10
 SYNC_REPORT = "startup-sync.json"
@@ -146,7 +147,17 @@ class LocalRpc:
         self.startup_frontier_attempted = False
         self.startup_frontier_evidence = set()
 
-    def _read(self, method, parameters, cap, *, stdout_name=None, startup_role=None):
+    def _read(self, method, parameters, cap, *, stdout_name=None, startup_role=None, deadline=None):
+        connect_limit, http_limit, command_limit = "2", "5", 7
+        if deadline is not None:
+            # curl treats zero as unlimited. Round the allowance down and
+            # refuse before allocating an ID if less than a millisecond remains.
+            remaining_ms = int((deadline - time.monotonic()) * 1000)
+            require(remaining_ms > 0, "owned_rpc_readiness_deadline")
+            http_seconds = min(5000, remaining_ms) / 1000
+            connect_limit = f"{min(2, http_seconds):.3f}"
+            http_limit = f"{http_seconds:.3f}"
+            command_limit = http_seconds + 2
         url = GATEWAY_URL if method == "zeno_getHead" else RPC_URL
         label = f"rpc-{self.calls + 1:02d}"
         if startup_role is not None:
@@ -162,21 +173,21 @@ class LocalRpc:
         raw = json.dumps(request, separators=(",", ":"), allow_nan=False)
         self.recorder.seal(label + ".request.json", raw.encode("ascii") + b"\n")
         result = self.recorder.run(label, [self.curl, "--disable", "--silent", "--show-error",
-            "--fail", "--noproxy", "*", "--proto", "=http", "--connect-timeout", "2",
-            "--max-time", "5", "--max-filesize", str(cap), "--header", "Content-Type: application/json",
+            "--fail", "--noproxy", "*", "--proto", "=http", "--connect-timeout", connect_limit,
+            "--max-time", http_limit, "--max-filesize", str(cap), "--header", "Content-Type: application/json",
             "--data-binary", raw, url],
             self.directory, self.environment,
-            timeout=7, stdout_cap=cap, stderr_cap=4096, stdout_name=stdout_name, guard=self.guard)
+            timeout=command_limit, stdout_cap=cap, stderr_cap=4096, stdout_name=stdout_name, guard=self.guard)
         return rpc_result(result.stdout(cap), request_id, cap)
 
-    def _frontier(self, name, *, startup_role=None):
+    def _frontier(self, name, *, startup_role=None, deadline=None):
         row = self._read("ledger.getFrontierMomentum", [], FRONTIER_BYTES,
-                         stdout_name=name, startup_role=startup_role)
+                         stdout_name=name, startup_role=startup_role, deadline=deadline)
         return Header.read(row, self.contract.data["selection"]["chain_id"])
 
-    def frontier(self):
+    def frontier(self, *, deadline=None):
         name = f"rpc-{self.calls + 1:02d}.frontier.json"
-        header = self._frontier(name)
+        header = self._frontier(name, deadline=deadline)
         # Retain the original response only after envelope/header parsing.
         # Readiness is a candidate observation, never accepted-header authority.
         self.retained_frontiers.add(name)
@@ -314,7 +325,8 @@ class LocalRpc:
             self.startup_frontier_evidence.add(STARTUP_FRONTIERS_REPORT)
         return report
 
-    def _wait(self, read, ready, *, starting, wait_seconds=READINESS_WAIT_SECONDS):
+    def _wait(self, read, ready, *, starting, wait_seconds=READINESS_WAIT_SECONDS,
+              reserve_final_probe=False):
         # Preserve every actual attempt. A freshly published loopback port can
         # accept and then close a request before RPC initialization completes.
         # Retry only a complete, quiescent startup failure with no response
@@ -324,8 +336,9 @@ class LocalRpc:
         for attempt in range(READINESS_ATTEMPTS):
             self.guard()
             require(time.monotonic() < until, "owned_rpc_readiness_deadline")
+            final_probe = reserve_final_probe and attempt + 1 == READINESS_ATTEMPTS
             try:
-                value = read()
+                value = read(deadline=until) if final_probe else read()
             except CommandFailed as error:
                 receipt = error.result.receipt
                 stdout_bytes = receipt["outputs"]["stdout"]["bytes"]
@@ -342,13 +355,20 @@ class LocalRpc:
             if attempt + 1 < READINESS_ATTEMPTS:
                 remaining = until - time.monotonic()
                 require(remaining > 0, "owned_rpc_readiness_deadline")
-                time.sleep(min(interval, remaining))
+                delay = min(interval, remaining)
+                if reserve_final_probe and attempt + 2 == READINESS_ATTEMPTS:
+                    # Use the last allowed read near the end of the initial
+                    # window. Earlier reads keep their established cadence.
+                    delay = max(0, remaining - INITIAL_FINAL_PROBE_SECONDS)
+                if delay > 0:
+                    time.sleep(delay)
         raise Refused("owned_rpc_readiness_deadline")
 
     def wait_height(self, height, *, starting=False):
         wait_seconds = INITIAL_HEIGHT_WAIT_SECONDS if starting else READINESS_WAIT_SECONDS
         return self._wait(self.frontier, lambda frontier: frontier.height >= height,
-                          starting=starting, wait_seconds=wait_seconds)
+                          starting=starting, wait_seconds=wait_seconds,
+                          reserve_final_probe=starting)
 
     def wait_gateway(self):
         domain = self.contract.data["selection"]["domain_id"]

@@ -759,6 +759,57 @@ class ReadinessTests(unittest.TestCase):
         self.assertEqual(self.rpc.retained_frontiers, {"rpc-01.frontier.json", "rpc-02.frontier.json"})
         sleep.assert_called_once_with(6)
 
+    def test_initial_final_read_uses_the_existing_attempt_and_time_budgets(self):
+        _, rows, _ = synthetic_window()
+        deadline = capture.INITIAL_HEIGHT_WAIT_SECONDS
+        for case in ("ready", "late", "missed"):
+            with self.subTest(case=case):
+                self.setUp()
+                clock = 0.0
+
+                def sleep(seconds):
+                    nonlocal clock
+                    clock += seconds
+                    if case == "missed" and clock >= deadline - capture.INITIAL_FINAL_PROBE_SECONDS:
+                        clock = deadline
+
+                def observed(label, argv, *args, **kwargs):
+                    nonlocal clock
+                    request_id = int(label.removeprefix("rpc-"))
+                    http_seconds = float(argv[argv.index("--max-time") + 1])
+                    connect_seconds = float(argv[argv.index("--connect-timeout") + 1])
+                    if request_id < capture.READINESS_ATTEMPTS:
+                        self.assertEqual((connect_seconds, http_seconds, kwargs["timeout"]), (2, 5, 7))
+                        clock += 0.01
+                        return self.response(rows[1], request_id)
+                    self.assertEqual(clock, deadline - capture.INITIAL_FINAL_PROBE_SECONDS)
+                    self.assertEqual((connect_seconds, http_seconds, kwargs["timeout"]), (1, 1, 3))
+                    clock = deadline if case == "late" else clock + 0.01
+                    return self.response(rows[2], request_id)
+
+                self.recorder.run.side_effect = observed
+                with mock.patch.object(capture.time, "monotonic", side_effect=lambda: clock), \
+                        mock.patch.object(capture.time, "sleep", side_effect=sleep):
+                    if case == "ready":
+                        self.assertEqual(self.rpc.wait_height(3, starting=True).height, 3)
+                    else:
+                        with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
+                            self.rpc.wait_height(3, starting=True)
+                expected = capture.READINESS_ATTEMPTS - (case == "missed")
+                self.assertEqual(self.recorder.run.call_count, expected)
+                self.assertEqual(len(self.rpc.retained_frontiers), expected)
+                self.assertEqual(self.rpc.calls, expected)
+                self.assertEqual([row.args[0] for row in self.recorder.seal.call_args_list],
+                                 [f"rpc-{i:02d}.request.json" for i in range(1, expected + 1)])
+
+    def test_deadline_limited_read_with_sub_millisecond_remaining_allocates_no_rpc(self):
+        with mock.patch.object(capture.time, "monotonic", return_value=179.9995):
+            with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
+                self.rpc.frontier(deadline=180)
+        self.assertEqual(self.rpc.calls, 0)
+        self.recorder.seal.assert_not_called()
+        self.recorder.run.assert_not_called()
+
     def test_ready_frontier_returned_at_the_deadline_remains_only_an_observation(self):
         _, rows, _ = synthetic_window()
         for starting, deadline in ((False, 90), (True, 180)):

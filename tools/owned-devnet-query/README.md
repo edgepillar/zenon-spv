@@ -195,13 +195,18 @@ without writing a second ZIP to disk.
 
 Only an initial selected-height `owned_rpc_readiness_deadline` permits one
 `stats.syncInfo` read from the same fixed owned RPC endpoint. The initial
-selected-height wait allows 180 seconds and up to 30 reads separated by up to
-six seconds. Gateway and later height waits allow 90 seconds and up to 30 reads
-separated by up to three seconds. A ready response must arrive before its
-deadline. The separate five-second HTTP and seven-second command limits bound
-an in-flight read. The diagnostic cannot restart readiness or advance to
-fixture configuration. Successful readiness, malformed headers, other refusals
-and later waits do not trigger it. All phases share the 96-call budget.
+selected-height wait allows 180 seconds and up to 30 reads. Earlier reads use
+the six-second interval. When readiness has not been observed, the last allowed
+read is reserved for the final second of that same window. It uses the remaining
+time as its HTTP limit and retains the two-second command capture allowance.
+A response that finishes at or after the readiness deadline stays a candidate
+observation. Gateway and later height waits allow 90 seconds and up to 30 reads
+with the usual three-second interval. All phases share the 96-call budget.
+
+The [recorded chain-69 attempt](https://github.com/edgepillar/zenon-spv/actions/runs/43653383092/attempts/1)
+returned H2 on its final regular readiness read and on the later diagnostic.
+Its terminal result remains a refusal at the H3 readiness boundary. The
+diagnostic applies only after an initial deadline refusal.
 
 The response cap is 8 KiB, with the existing five-second HTTP / seven-second
 command limits and a fresh budget guard. Only the three bounded integer fields
