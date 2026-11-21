@@ -88,15 +88,16 @@ cannot exceed 96 KiB before decoded proof/value budgets apply. Missing, duplicat
 aliased or null required fields are refused. An unavailable named witness remains
 unavailable, never proven absence.
 
-After the descriptor's regular-file identity check, its bounded size is only an
-allocation hint. Stable inputs use one byte buffer plus a single overflow-probe
-byte; short reads and files that grow or shrink still read to EOF or the byte
-cap plus one. A simultaneous data/read error or close failure returns no input.
-This applies to both experimental query commands and the three-row command's
-checkpoint read. It changes no schema, byte cap, digest, context or trust rule.
-The in-memory read controls compare bytes and consumption with the former
-bounded `io.ReadAll` behavior. The paired read benchmark measures only buffer
-allocation/copying; it does not measure filesystem, JSON, proof or network costs.
+For the config, request and provider files, the regular-file descriptor's
+bounded size is an allocation hint. Stable inputs use one byte buffer and one
+overflow-probe byte. Short reads and files that grow or shrink still read to EOF
+or to the byte cap plus one. A read error, even one returned with data, or a
+close failure leaves no input. The [pinned checkpoint reader](#pinned-read-only-checkpoint-reuse)
+uses a bounded stream.
+
+The in-memory controls compare bytes and consumption with the former bounded
+`io.ReadAll` behavior. The paired benchmark measures input buffer allocation
+and copying.
 
 Successful output has scope `EXPERIMENTAL_CONFIGURED_HEADER_THREE_ROW_MEMBERSHIP`,
 `persistence: "read_only"`, `rpc_requests: 0` and
