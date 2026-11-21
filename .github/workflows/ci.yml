@@ -201,7 +201,7 @@ jobs:
         id: upload_scope_controls
         continue-on-error: true
         if: ${{ !cancelled() && steps.scope_controls.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: ci-scope-controls-linux
           path: ${{ runner.temp }}/ci-change-scope-controls.json
@@ -250,7 +250,7 @@ jobs:
         id: upload_ledger_inventory
         continue-on-error: true
         if: ${{ !cancelled() && steps.inventory_controls.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: ledger-inventory-linux
           path: ${{ runner.temp }}/ledger-inventory-controls.json
@@ -489,7 +489,7 @@ jobs:
         id: upload_cache_rollback
         continue-on-error: true
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: cache-rollback-tree-reuse-${{ runner.os }}
           path: ${{ runner.temp }}/cache-rollback-tree-reuse.json
@@ -581,7 +581,7 @@ jobs:
         id: upload_core_init_stop
         continue-on-error: true
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: core-init-stop-${{ runner.os }}
           path: ${{ runner.temp }}/core-init-stop.json
@@ -595,7 +595,7 @@ jobs:
         id: upload_core_init_failure
         continue-on-error: true
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: core-init-failure-${{ runner.os }}
           path: ${{ runner.temp }}/core-init-failure.json
@@ -749,7 +749,7 @@ jobs:
         id: upload_signatures
         continue-on-error: true
         if: ${{ !cancelled() && steps.signatures.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: independent-signatures-linux
           path: |
@@ -797,7 +797,7 @@ jobs:
         id: upload_root_suite
         continue-on-error: true
         if: ${{ !cancelled() && steps.root_suite.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: root-suite-linux
           path: |
@@ -827,7 +827,7 @@ jobs:
         id: upload_snapshot_header_controls
         continue-on-error: true
         if: ${{ !cancelled() && steps.snapshot_header_controls.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: snapshot-header-controls-linux
           path: ${{ runner.temp }}/snapshot-header-controls.json
@@ -855,7 +855,7 @@ jobs:
         id: upload_offline_pilot
         continue-on-error: true
         if: ${{ !cancelled() && (steps.pilot.outcome != 'skipped' || steps.batch_replay.outcome != 'skipped') }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: offline-pilot-linux
           path: |
@@ -878,11 +878,10 @@ jobs:
         id: upload_tested_candidate
         continue-on-error: true
         if: ${{ !cancelled() && steps.pilot.outcome == 'success' && steps.candidate.outcome == 'success' && steps.scenario_inventory.outcome == 'success' && steps.candidate_stream.outcome == 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: tested-candidate-linux
           path: ${{ runner.temp }}/tested-candidate-transport/candidate-v1.tar.xz
-          archive: true
           compression-level: 0
           if-no-files-found: error
           retention-days: ${{ needs.change_scope.outputs.owned_input_retention_days || '14' }}
@@ -998,7 +997,7 @@ jobs:
         id: upload_scope_controls
         continue-on-error: true
         if: ${{ !cancelled() && steps.scope_controls.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: ci-scope-controls-${{ matrix.os }}
           path: ${{ runner.temp }}/ci-change-scope-controls.json
@@ -1046,7 +1045,7 @@ jobs:
         id: upload_root_suite
         continue-on-error: true
         if: ${{ !cancelled() && steps.root_suite.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: root-suite-${{ matrix.os }}
           path: |
@@ -1062,7 +1061,7 @@ jobs:
         id: upload_ledger_inventory
         continue-on-error: true
         if: ${{ !cancelled() && steps.inventory_controls.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: ledger-inventory-${{ matrix.os }}
           path: ${{ runner.temp }}/ledger-inventory-controls.json
@@ -1286,7 +1285,7 @@ jobs:
         id: upload_cache_rollback
         continue-on-error: true
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: cache-rollback-tree-reuse-${{ runner.os }}
           path: ${{ runner.temp }}/cache-rollback-tree-reuse.json
@@ -1378,7 +1377,7 @@ jobs:
         id: upload_core_init_stop
         continue-on-error: true
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: core-init-stop-${{ runner.os }}
           path: ${{ runner.temp }}/core-init-stop.json
@@ -1392,7 +1391,7 @@ jobs:
         id: upload_core_init_failure
         continue-on-error: true
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: core-init-failure-${{ runner.os }}
           path: ${{ runner.temp }}/core-init-failure.json
@@ -1550,7 +1549,7 @@ jobs:
         id: upload_signatures
         continue-on-error: true
         if: ${{ !cancelled() && steps.signatures.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: independent-signatures-${{ matrix.os }}
           path: |
@@ -1604,7 +1603,7 @@ jobs:
         id: upload_snapshot_header_controls
         continue-on-error: true
         if: ${{ !cancelled() && steps.snapshot_header_controls.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: snapshot-header-controls-${{ matrix.os }}
           path: ${{ runner.temp }}/snapshot-header-controls.json
@@ -1632,7 +1631,7 @@ jobs:
         id: upload_offline_pilot
         continue-on-error: true
         if: ${{ !cancelled() && (steps.pilot.outcome != 'skipped' || steps.batch_replay.outcome != 'skipped') }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: offline-pilot-${{ matrix.os }}
           path: |
@@ -1655,11 +1654,10 @@ jobs:
         id: upload_tested_candidate
         continue-on-error: true
         if: ${{ !cancelled() && steps.pilot.outcome == 'success' && steps.candidate.outcome == 'success' && steps.scenario_inventory.outcome == 'success' && steps.candidate_stream.outcome == 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: tested-candidate-${{ matrix.os }}
           path: ${{ runner.temp }}/tested-candidate-transport/candidate-v1.tar.xz
-          archive: true
           compression-level: 0
           if-no-files-found: error
           retention-days: 14
@@ -1830,7 +1828,7 @@ jobs:
         id: upload_import_resources
         continue-on-error: true
         if: ${{ !cancelled() && steps.import_child_controls.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: import-resource-child-${{ matrix.platform }}
           path: |
@@ -1898,7 +1896,7 @@ jobs:
         id: upload_retention_leaf_reuse
         continue-on-error: true
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: retention-leaf-reuse-${{ matrix.platform }}
           path: ${{ runner.temp }}/retention-leaf-reuse/
@@ -1908,7 +1906,7 @@ jobs:
         id: upload_oracle_selection
         continue-on-error: true
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-runtime-evidence
         with:
           name: recorded-oracles-${{ matrix.platform }}
           path: ${{ runner.temp }}/recorded-oracle-selection/manifest.json

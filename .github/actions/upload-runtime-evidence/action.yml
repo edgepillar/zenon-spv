@@ -1,0 +1,64 @@
+name: Upload runtime evidence
+description: Upload one CI evidence archive with a single same-job retry
+inputs:
+  name:
+    description: Existing workflow artifact name
+    required: true
+  path:
+    description: Exact file paths or patterns from the producing step
+    required: true
+  if-no-files-found:
+    description: Missing-file policy for the original attempt
+    required: true
+  retention-days:
+    description: Retention of the archive
+    required: true
+  compression-level:
+    description: ZIP compression level
+    default: '6'
+runs:
+  using: composite
+  steps:
+    - name: Upload initial evidence
+      id: initial
+      if: always()
+      continue-on-error: true
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        if-no-files-found: ${{ inputs.if-no-files-found }}
+        retention-days: ${{ inputs.retention-days }}
+        compression-level: ${{ inputs.compression-level }}
+        archive: true
+        overwrite: false
+    - name: Wait briefly after the initial upload failure
+      id: backoff
+      if: ${{ !cancelled() && steps.initial.outcome == 'failure' }}
+      shell: bash
+      run: |
+        echo '::warning::Initial CI evidence upload failed. Retrying the same archive once.'
+        sleep 10
+    - name: Retry the evidence upload
+      id: retry
+      if: ${{ !cancelled() && steps.backoff.outcome == 'success' }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        if-no-files-found: error
+        retention-days: ${{ inputs.retention-days }}
+        compression-level: ${{ inputs.compression-level }}
+        archive: true
+        overwrite: false
+    - name: Require a completed retry after an upload error
+      if: >-
+        ${{ !cancelled() && steps.initial.outcome == 'failure' && (
+          steps.retry.outcome != 'success' ||
+          steps.retry.outputs.artifact-id == '' ||
+          steps.retry.outputs.artifact-digest == ''
+        ) }}
+      shell: bash
+      run: |
+        echo '::error::Evidence upload retry did not return a completed artifact receipt.'
+        exit 1
