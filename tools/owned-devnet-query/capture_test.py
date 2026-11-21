@@ -26,6 +26,7 @@ import closed_reader
 import model
 from process import CommandFailed, Recorder, capture as capture_process
 import query_checks
+from query_checks_test import OPENING_ABSENCE_ROOT, OPENING_BATCH_KEY, opening_absence_fixture
 import review
 import runner
 
@@ -406,6 +407,98 @@ class PostSyncFrontierTests(unittest.TestCase):
             runner.wait_for_initial_height(rpc, 3)
 
 
+class StartupPeerFrontierTests(unittest.TestCase):
+    def setUp(self):
+        PostSyncFrontierTests.setUp(self)
+        post = self.rpc.capture_post_sync_frontier(1)
+        self.after = post["request_id"]
+        transport = self.recorder.run.side_effect
+        rows = synthetic_window()[1]
+
+        def peer_transport(label, argv, cwd, environment, **options):
+            request = json.loads(argv[argv.index("--data-binary") + 1])
+            self.raw = model.canonical({"jsonrpc": "2.0", "id": request["id"],
+                                        "result": rows[2 if label == "startup-pillar-frontier" else 0]})
+            return transport(label, argv, cwd, environment, **options)
+
+        self.recorder.run.reset_mock()
+        self.recorder.run.side_effect = peer_transport
+
+    def test_two_owned_reads_fit_in_the_shared_budget_and_keep_exact_bytes(self):
+        report = self.rpc.capture_startup_peer_frontiers(self.after)
+        self.assertEqual(report["after_rpc_request_id"], 2)
+        self.assertEqual([(row["role"], row["request_id"], row["status"]) for row in report["observations"]],
+                         [("pillar", 3, "OBSERVED"), ("rpc", 4, "OBSERVED")])
+        self.assertFalse(report["accepted_header_authority"])
+        from engine import PORTS
+        for call, role in zip(self.recorder.run.call_args_list, ("pillar", "rpc")):
+            label, argv = call.args[:2]
+            port = next(host for host, container in PORTS[role] if container == 35997)
+            self.assertEqual((label, argv[-1]), (f"startup-{role}-frontier", f"http://127.0.0.1:{port}"))
+            self.assertEqual((call.kwargs["stdout_cap"], call.kwargs["timeout"]), (128 << 10, 7))
+            name = label + ".json"
+            self.assertEqual(json.loads(self.payloads[name])["id"], 3 if role == "pillar" else 4)
+        self.assertEqual(self.rpc.calls, 4)
+        self.assertEqual(self.rpc.retained_frontiers, {"rpc-02.frontier.json"})
+        self.assertEqual(runner.startup_peer_evidence_files(self.rpc), {
+            capture.STARTUP_FRONTIERS_REPORT, "startup-pillar-frontier.request.json",
+            "startup-pillar-frontier.json", "startup-rpc-frontier.request.json", "startup-rpc-frontier.json"})
+        with self.assertRaisesRegex(model.Refused, "startup_frontier_scope"):
+            self.rpc.capture_startup_peer_frontiers(self.after)
+
+    def test_bracket_requires_the_observed_parent_and_two_slots(self):
+        with self.assertRaisesRegex(model.Refused, "startup_frontier_scope"):
+            self.rpc.capture_startup_peer_frontiers(1)
+        self.rpc.calls = self.rpc.post_sync_observed_request = 95
+        report = self.rpc.capture_startup_peer_frontiers(95)
+        self.assertEqual(report["observations"], [{"role": "pillar", "status": "NOT_ATTEMPTED",
+            "reason": "shared_call_limit", "request_id": None, "response_file": None}])
+        self.recorder.run.assert_not_called()
+        self.assertEqual(runner.startup_peer_evidence_files(self.rpc), {capture.STARTUP_FRONTIERS_REPORT})
+
+    def test_partial_bracket_retains_first_read_when_budget_refuses_followup(self):
+        self.guard.side_effect = [None, model.Refused("budget_refused")]
+        report = self.rpc.capture_startup_peer_frontiers(self.after)
+        self.assertEqual([row["status"] for row in report["observations"]], ["OBSERVED", "NOT_ATTEMPTED"])
+        self.assertEqual(report["observations"][1]["reason"], "budget_refused")
+        self.assertEqual(self.recorder.run.call_count, 1)
+        self.assertEqual(runner.startup_peer_evidence_files(self.rpc), {
+            capture.STARTUP_FRONTIERS_REPORT, "startup-pillar-frontier.request.json", "startup-pillar-frontier.json"})
+
+    def test_unvalidated_pillar_body_stops_before_final_rpc(self):
+        self.recorder.run.side_effect = lambda *args, **kwargs: mock.Mock(stdout=lambda cap: b"not a response")
+        report = self.rpc.capture_startup_peer_frontiers(self.after)
+        self.assertEqual(report["observations"], [{"role": "pillar", "status": "REFUSED",
+            "reason": "capture_refused", "request_id": 3, "response_file": None}])
+        self.assertEqual(self.recorder.run.call_count, 1)
+        self.assertEqual(runner.startup_peer_evidence_files(self.rpc),
+                         {capture.STARTUP_FRONTIERS_REPORT, "startup-pillar-frontier.request.json"})
+
+    def test_publication_requires_the_request_and_fixed_role(self):
+        for selected in ({capture.STARTUP_FRONTIERS_REPORT, "startup-rpc-frontier.json"},
+                         {capture.STARTUP_FRONTIERS_REPORT, "startup-other-frontier.request.json"},
+                         {"startup-pillar-frontier.request.json"}):
+            with self.subTest(selected=selected), self.assertRaises(model.Refused):
+                runner.startup_peer_evidence_files(mock.Mock(startup_frontier_evidence=selected))
+
+    def test_readiness_uses_only_observed_post_sync_and_keeps_original_refusal(self):
+        for after in (None, {"status": "REFUSED"}, {"status": "OBSERVED", "request_id": 32}):
+            with self.subTest(after=after):
+                rpc, inspect_nodes = mock.Mock(), mock.Mock()
+                error = model.Refused("owned_rpc_readiness_deadline")
+                rpc.wait_height.side_effect = error
+                rpc.capture_startup_sync.return_value = {"status": "OBSERVED", "request_id": 31}
+                rpc.capture_post_sync_frontier.return_value = after
+                with self.assertRaises(model.Refused) as observed:
+                    runner.wait_for_initial_height(rpc, 3, observe_nodes=inspect_nodes)
+                self.assertIs(observed.exception, error)
+                if after is not None and after["status"] == "OBSERVED":
+                    rpc.capture_startup_peer_frontiers.assert_called_once_with(32)
+                else:
+                    rpc.capture_startup_peer_frontiers.assert_not_called()
+                inspect_nodes.assert_called_once_with()
+
+
 def synthetic_window(last=4, state_root=bytes([77]) * 32):
     rows = []
     chain = CONTRACT.data["selection"]["chain_id"]
@@ -667,6 +760,57 @@ class ReadinessTests(unittest.TestCase):
         self.assertEqual(self.rpc.retained_frontiers, {"rpc-01.frontier.json", "rpc-02.frontier.json"})
         sleep.assert_called_once_with(6)
 
+    def test_initial_final_read_uses_the_existing_attempt_and_time_budgets(self):
+        _, rows, _ = synthetic_window()
+        deadline = capture.INITIAL_HEIGHT_WAIT_SECONDS
+        for case in ("ready", "late", "missed"):
+            with self.subTest(case=case):
+                self.setUp()
+                clock = 0.0
+
+                def sleep(seconds):
+                    nonlocal clock
+                    clock += seconds
+                    if case == "missed" and clock >= deadline - capture.INITIAL_FINAL_PROBE_SECONDS:
+                        clock = deadline
+
+                def observed(label, argv, *args, **kwargs):
+                    nonlocal clock
+                    request_id = int(label.removeprefix("rpc-"))
+                    http_seconds = float(argv[argv.index("--max-time") + 1])
+                    connect_seconds = float(argv[argv.index("--connect-timeout") + 1])
+                    if request_id < capture.READINESS_ATTEMPTS:
+                        self.assertEqual((connect_seconds, http_seconds, kwargs["timeout"]), (2, 5, 7))
+                        clock += 0.01
+                        return self.response(rows[1], request_id)
+                    self.assertEqual(clock, deadline - capture.INITIAL_FINAL_PROBE_SECONDS)
+                    self.assertEqual((connect_seconds, http_seconds, kwargs["timeout"]), (1, 1, 3))
+                    clock = deadline if case == "late" else clock + 0.01
+                    return self.response(rows[2], request_id)
+
+                self.recorder.run.side_effect = observed
+                with mock.patch.object(capture.time, "monotonic", side_effect=lambda: clock), \
+                        mock.patch.object(capture.time, "sleep", side_effect=sleep):
+                    if case == "ready":
+                        self.assertEqual(self.rpc.wait_height(3, starting=True).height, 3)
+                    else:
+                        with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
+                            self.rpc.wait_height(3, starting=True)
+                expected = capture.READINESS_ATTEMPTS - (case == "missed")
+                self.assertEqual(self.recorder.run.call_count, expected)
+                self.assertEqual(len(self.rpc.retained_frontiers), expected)
+                self.assertEqual(self.rpc.calls, expected)
+                self.assertEqual([row.args[0] for row in self.recorder.seal.call_args_list],
+                                 [f"rpc-{i:02d}.request.json" for i in range(1, expected + 1)])
+
+    def test_deadline_limited_read_with_sub_millisecond_remaining_allocates_no_rpc(self):
+        with mock.patch.object(capture.time, "monotonic", return_value=179.9995):
+            with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
+                self.rpc.frontier(deadline=180)
+        self.assertEqual(self.rpc.calls, 0)
+        self.recorder.seal.assert_not_called()
+        self.recorder.run.assert_not_called()
+
     def test_ready_frontier_returned_at_the_deadline_remains_only_an_observation(self):
         _, rows, _ = synthetic_window()
         for starting, deadline in ((False, 90), (True, 180)):
@@ -895,10 +1039,12 @@ class HostBoundaryTests(unittest.TestCase):
                              ("runtime-inputs", "REFUSED", "fixture_source_default"))
 
     def test_query_inputs_and_packages_follow_opening_validation(self):
-        contract, rows, window = synthetic_window()
+        contract, rows, window = synthetic_window(state_root=bytes.fromhex(OPENING_ABSENCE_ROOT))
+        proof_key = base64.b64encode(bytes.fromhex(OPENING_BATCH_KEY)).decode("ascii")
         execution = model.ExecutionIdentity("a" * 40, 1, 1, "edgepillar")
         for case, stage, reason in (
                 ("bad-opening", "nodes", "opening_header_count"),
+                ("bad-proof", "opening-proof", "opening_proof_root_or_response"),
                 ("bad-oracle", "query-inputs", "test_oracle_input_refusal"),
                 ("bad-toolchain", "node-toolchain", "test_node_toolchain_refusal"),
                 ("bad-packages", "packages", "test_package_refusal"),
@@ -927,11 +1073,18 @@ class HostBoundaryTests(unittest.TestCase):
                         self.assertEqual(request, {"jsonrpc": "2.0", "id": 1,
                             "method": "ledger.getFrontierMomentum", "params": []})
                         result = rows[2]
-                    else:
+                    elif request["method"] == "ledger.getMomentumsByHeight":
                         trace.opening()
                         self.assertEqual(request, {"jsonrpc": "2.0", "id": 2,
                             "method": "ledger.getMomentumsByHeight", "params": [1, 3]})
                         result = {"count": 3, "list": rows[:2] if case == "bad-opening" else rows[:3]}
+                    else:
+                        trace.opening_proof()
+                        self.assertEqual(request, {"jsonrpc": "2.0", "id": 3,
+                            "method": "ledger.getProof", "params": [3, proof_key]})
+                        result = opening_absence_fixture()
+                        if case == "bad-proof":
+                            result["root"] = "1" * 64
                     response = model.canonical({"jsonrpc": "2.0", "id": request["id"], "result": result})
                     return actual_run(label, [sys.executable, "-I", "-B", "-c",
                         "import sys; sys.stdout.write(" + repr(response.decode()) + ")"], cwd, {}, **options)
@@ -998,8 +1151,10 @@ class HostBoundaryTests(unittest.TestCase):
                 expected.extend(mock.call.build_images().image_for(role) for role in model.SERVICES[:4])
                 expected.extend((mock.call.wait_height(3, starting=True), mock.call.opening()))
                 if case != "bad-opening":
+                    expected.append(mock.call.opening_proof())
+                if case not in ("bad-opening", "bad-proof"):
                     expected.extend((mock.call.fetch("consumer"), mock.call.fetch("parent_oracle")))
-                if case not in ("bad-opening", "bad-oracle"):
+                if case not in ("bad-opening", "bad-proof", "bad-oracle"):
                     expected.extend((mock.call.enable_consumer(), mock.call.enable_oracle(),
                                      mock.call.fetch_node_toolchain()))
                 if case in ("bad-packages", "ready", "bad-consumer"):
@@ -1046,9 +1201,25 @@ class HostBoundaryTests(unittest.TestCase):
                     self.assertEqual(observed["headers"][-1]["hash"], rows[2]["hash"])
                     self.assertFalse(observed["accepted_header_authority"])
                     self.assertEqual(checked["materialized_bytes"], 0)
+                proof_request = "evidence/rpc-03.request.json"
+                proof_response = "evidence/" + capture.OPENING_PROOF_FILE
+                if case == "bad-opening":
+                    self.assertNotIn(proof_request, files)
+                else:
+                    self.assertIn(proof_request, files)
+                if case in ("bad-opening", "bad-proof"):
+                    self.assertNotIn(proof_response, files)
+                    self.assertNotIn("candidate_opening_proof", checked)
+                else:
+                    validated = checked["candidate_opening_proof"]
+                    self.assertEqual(validated["header"], window.headers[2].identifier())
+                    self.assertEqual(validated["ledger_key"], OPENING_BATCH_KEY)
+                    self.assertEqual(validated["presence"], "absent")
+                    self.assertEqual(validated["request"], files[proof_request])
+                    self.assertFalse(validated["accepted_header_authority"])
 
     def test_runner_refusal_exports_the_valid_frontier_without_other_command_streams(self):
-        _, rows, _ = synthetic_window()
+        _, rows, _ = synthetic_window(last=5)
         execution = model.ExecutionIdentity("a" * 40, 1, 1, "edgepillar")
         actual_rpc = capture.LocalRpc
 
@@ -1058,9 +1229,14 @@ class HostBoundaryTests(unittest.TestCase):
 
             def local_transport(label, argv, cwd, env, **options):
                 request = json.loads(argv[argv.index("--data-binary") + 1])
-                result = (rows[1] if request["id"] == 1 else rows[3]) \
-                    if request["method"] == "ledger.getFrontierMomentum" else {
-                        "state": 2, "currentHeight": 99, "targetHeight": 99}
+                if request["method"] == "stats.syncInfo":
+                    result = {"state": 2, "currentHeight": 99, "targetHeight": 99}
+                elif label == "startup-pillar-frontier":
+                    self.assertEqual(argv[-1], "http://127.0.0.1:35991")
+                    result = rows[4]
+                else:
+                    self.assertEqual(argv[-1], "http://127.0.0.1:35997")
+                    result = rows[1] if request["id"] == 1 else rows[3]
                 self.assertIn(request["method"], ("ledger.getFrontierMomentum", "stats.syncInfo"))
                 raw = model.canonical({"jsonrpc": "2.0", "id": request["id"], "result": result})
                 return actual_run(label, [sys.executable, "-I", "-B", "-c",
@@ -1109,6 +1285,13 @@ class HostBoundaryTests(unittest.TestCase):
             self.assertIn("evidence/" + capture.POST_SYNC_REPORT, names)
             self.assertIn("evidence/rpc-03.request.json", names)
             self.assertIn("evidence/rpc-03.frontier.json", names)
+            self.assertIn("evidence/" + capture.STARTUP_FRONTIERS_REPORT, names)
+            for role in ("pillar", "rpc"):
+                label = f"evidence/startup-{role}-frontier"
+                self.assertIn(label + ".json", names)
+                self.assertIn(label + ".request.json", names)
+                self.assertIn(label + ".complete.json", names)
+                self.assertNotIn(label + ".stderr", names)
             self.assertFalse(index["raw_service_logs_or_private_configuration_exported"])
             # Inspect exactly the exported index, not the wider recorder directory.
             # The real reader must be able to find the request after a refusal.
@@ -1132,6 +1315,10 @@ class HostBoundaryTests(unittest.TestCase):
             self.assertEqual((post["after_sync_request_id"], post["request_id"]), (2, 3))
             self.assertFalse(post["atomic_with_sync_observation"])
             self.assertFalse(post["accepted_header_authority"])
+            peer = checked["startup_peer_frontier_diagnostic"]
+            self.assertEqual(peer["comparison"], "pillar_ahead_of_unchanged_rpc")
+            self.assertEqual([row["request_id"] for row in peer["observations"]], [4, 5])
+            self.assertFalse(peer["accepted_header_authority"])
 
     def test_unavailable_sync_keeps_real_exit_and_excludes_unvalidated_body(self):
         for complete in (True, False):
