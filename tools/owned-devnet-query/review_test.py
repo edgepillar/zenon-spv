@@ -665,6 +665,114 @@ class PostSyncFrontierReviewTests(unittest.TestCase):
         with self.assertRaises(Refused):self.review(contract, files)
 
 
+class StartupPeerFrontierReviewTests(unittest.TestCase):
+    @staticmethod
+    def files(pillar_height=3, final_height=2):
+        contract, files = PostSyncFrontierReviewTests.files()
+        _, rows, _ = synthetic_window()
+        observations = []
+        for role, request_id, height in (("pillar", 4, pillar_height), ("rpc", 5, final_height)):
+            raw = canonical({"jsonrpc": "2.0", "id": request_id, "result": rows[height - 1]})
+            _, probe = FrontierReviewTests.files(request_id, raw=raw)
+            old_label, label = f"rpc-{request_id:02d}", f"startup-{role}-frontier"
+            for name, value in probe.items():
+                if name == "evidence/terminal.json":
+                    continue
+                if name == f"evidence/{old_label}.frontier.json":
+                    files[f"evidence/{label}.json"] = raw
+                else:
+                    if name.endswith(".complete.json"):
+                        value = value.replace(f"{old_label}.frontier.json".encode(), f"{label}.json".encode())
+                    files[name.replace(old_label, label)] = value.replace(old_label.encode(), label.encode())
+            observations.append({"role": role, "status": "OBSERVED", "reason": None, "request_id": request_id,
+                                 "response_file": label + ".json"})
+        files["evidence/" + capture.STARTUP_FRONTIERS_REPORT] = canonical({
+            "format": "owned-devnet-startup-peer-frontiers/v1", "after_rpc_request_id": 3,
+            "observations": observations, "accepted_header_authority": False, "production_qualified": False})
+        return contract, files
+
+    @staticmethod
+    def review(contract, files):
+        return FrontierReviewTests.review(contract, files)
+
+    def test_distinguishes_pillar_progress_from_movement_of_the_rpc_bracket(self):
+        for heights, comparison in (((3, 2), "pillar_ahead_of_unchanged_rpc"),
+                                    ((2, 2), "same_candidate"),
+                                    ((1, 2), "pillar_behind_unchanged_rpc"),
+                                    ((3, 3), "rpc_frontier_changed")):
+            with self.subTest(heights=heights):
+                contract, files = self.files(*heights)
+                result = self.review(contract, files)
+                self.assertEqual(result["recorded_terminal_outcome"], "REFUSED")
+                self.assertIsNone(result["comparison"])
+                peer = result["startup_peer_frontier_diagnostic"]
+                self.assertEqual(peer["comparison"], comparison)
+                self.assertTrue(peer["sequential_observations"])
+                self.assertFalse(peer["accepted_header_authority"])
+                self.assertEqual([item["observation"]["candidate_header"]["height"]
+                                  for item in peer["observations"]], list(heights))
+                self.assertEqual([item["request_id"] for item in result["candidate_frontier_observations"]], [3])
+
+    def test_partial_bracket_is_retained_without_a_comparison(self):
+        contract, files = self.files()
+        for name in list(files):
+            if name.startswith("evidence/startup-rpc-frontier."):
+                del files[name]
+        name = "evidence/" + capture.STARTUP_FRONTIERS_REPORT
+        report = json.loads(files[name])
+        report["observations"][1].update(status="NOT_ATTEMPTED", reason="budget_refused",
+                                         request_id=None, response_file=None)
+        files[name] = canonical(report)
+        peer = self.review(contract, files)["startup_peer_frontier_diagnostic"]
+        self.assertIsNone(peer["comparison"])
+        self.assertEqual(peer["observations"][1]["status"], "NOT_ATTEMPTED")
+        self.assertEqual(peer["observations"][0]["actual_exit"], 0)
+
+    def test_rejects_unbound_parent_probe_and_role_receipt(self):
+        for missing in (capture.STARTUP_FRONTIERS_REPORT, capture.POST_SYNC_REPORT,
+                        "startup-pillar-frontier.request.json", "startup-pillar-frontier.complete.json",
+                        "startup-rpc-frontier.json"):
+            with self.subTest(missing=missing):
+                contract, files = self.files()
+                del files["evidence/" + missing]
+                with self.assertRaises(Refused):
+                    self.review(contract, files)
+        for field, value in (("role", "rpc"), ("request_id", True), ("request_id", 5),
+                             ("response_file", "startup-rpc-frontier.json")):
+            with self.subTest(field=field, value=value):
+                contract, files = self.files()
+                name = "evidence/" + capture.STARTUP_FRONTIERS_REPORT
+                report = json.loads(files[name])
+                report["observations"][0][field] = value
+                files[name] = canonical(report)
+                with self.assertRaises(Refused):
+                    self.review(contract, files)
+
+    def test_failed_followup_retains_exit_and_rejects_a_false_completion(self):
+        contract, files = self.files()
+        label = "evidence/startup-rpc-frontier"
+        del files[label + ".json"]
+        receipt = json.loads(files[label + ".complete.json"])
+        receipt.update(actual_exit=7, outputs={"stdout": {"file": "startup-rpc-frontier.json", **pin(b"")}})
+        files[label + ".complete.json"] = canonical(receipt)
+        name = "evidence/" + capture.STARTUP_FRONTIERS_REPORT
+        report = json.loads(files[name])
+        report["observations"][1].update(status="FAILURE", reason="command_failed", response_file=None)
+        files[name] = canonical(report)
+        peer = self.review(contract, files)["startup_peer_frontier_diagnostic"]
+        self.assertIsNone(peer["comparison"])
+        self.assertEqual((peer["observations"][1]["actual_exit"], peer["observations"][1]["output_complete"]),
+                         (7, True))
+        files[label + ".complete.json"] = canonical({**receipt, "actual_exit": 0})
+        with self.assertRaisesRegex(Refused, "review_startup_peer_failure"):
+            self.review(contract, files)
+
+    def test_peer_reports_are_optional_for_historical_archives(self):
+        contract, files = PostSyncFrontierReviewTests.files()
+        result = self.review(contract, files)
+        self.assertNotIn("startup_peer_frontier_diagnostic", result)
+
+
 class ReviewTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

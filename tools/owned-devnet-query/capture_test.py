@@ -406,6 +406,98 @@ class PostSyncFrontierTests(unittest.TestCase):
             runner.wait_for_initial_height(rpc, 3)
 
 
+class StartupPeerFrontierTests(unittest.TestCase):
+    def setUp(self):
+        PostSyncFrontierTests.setUp(self)
+        post = self.rpc.capture_post_sync_frontier(1)
+        self.after = post["request_id"]
+        transport = self.recorder.run.side_effect
+        rows = synthetic_window()[1]
+
+        def peer_transport(label, argv, cwd, environment, **options):
+            request = json.loads(argv[argv.index("--data-binary") + 1])
+            self.raw = model.canonical({"jsonrpc": "2.0", "id": request["id"],
+                                        "result": rows[2 if label == "startup-pillar-frontier" else 0]})
+            return transport(label, argv, cwd, environment, **options)
+
+        self.recorder.run.reset_mock()
+        self.recorder.run.side_effect = peer_transport
+
+    def test_two_owned_reads_fit_in_the_shared_budget_and_keep_exact_bytes(self):
+        report = self.rpc.capture_startup_peer_frontiers(self.after)
+        self.assertEqual(report["after_rpc_request_id"], 2)
+        self.assertEqual([(row["role"], row["request_id"], row["status"]) for row in report["observations"]],
+                         [("pillar", 3, "OBSERVED"), ("rpc", 4, "OBSERVED")])
+        self.assertFalse(report["accepted_header_authority"])
+        from engine import PORTS
+        for call, role in zip(self.recorder.run.call_args_list, ("pillar", "rpc")):
+            label, argv = call.args[:2]
+            port = next(host for host, container in PORTS[role] if container == 35997)
+            self.assertEqual((label, argv[-1]), (f"startup-{role}-frontier", f"http://127.0.0.1:{port}"))
+            self.assertEqual((call.kwargs["stdout_cap"], call.kwargs["timeout"]), (128 << 10, 7))
+            name = label + ".json"
+            self.assertEqual(json.loads(self.payloads[name])["id"], 3 if role == "pillar" else 4)
+        self.assertEqual(self.rpc.calls, 4)
+        self.assertEqual(self.rpc.retained_frontiers, {"rpc-02.frontier.json"})
+        self.assertEqual(runner.startup_peer_evidence_files(self.rpc), {
+            capture.STARTUP_FRONTIERS_REPORT, "startup-pillar-frontier.request.json",
+            "startup-pillar-frontier.json", "startup-rpc-frontier.request.json", "startup-rpc-frontier.json"})
+        with self.assertRaisesRegex(model.Refused, "startup_frontier_scope"):
+            self.rpc.capture_startup_peer_frontiers(self.after)
+
+    def test_bracket_requires_the_observed_parent_and_two_slots(self):
+        with self.assertRaisesRegex(model.Refused, "startup_frontier_scope"):
+            self.rpc.capture_startup_peer_frontiers(1)
+        self.rpc.calls = self.rpc.post_sync_observed_request = 95
+        report = self.rpc.capture_startup_peer_frontiers(95)
+        self.assertEqual(report["observations"], [{"role": "pillar", "status": "NOT_ATTEMPTED",
+            "reason": "shared_call_limit", "request_id": None, "response_file": None}])
+        self.recorder.run.assert_not_called()
+        self.assertEqual(runner.startup_peer_evidence_files(self.rpc), {capture.STARTUP_FRONTIERS_REPORT})
+
+    def test_partial_bracket_retains_first_read_when_budget_refuses_followup(self):
+        self.guard.side_effect = [None, model.Refused("budget_refused")]
+        report = self.rpc.capture_startup_peer_frontiers(self.after)
+        self.assertEqual([row["status"] for row in report["observations"]], ["OBSERVED", "NOT_ATTEMPTED"])
+        self.assertEqual(report["observations"][1]["reason"], "budget_refused")
+        self.assertEqual(self.recorder.run.call_count, 1)
+        self.assertEqual(runner.startup_peer_evidence_files(self.rpc), {
+            capture.STARTUP_FRONTIERS_REPORT, "startup-pillar-frontier.request.json", "startup-pillar-frontier.json"})
+
+    def test_unvalidated_pillar_body_stops_before_final_rpc(self):
+        self.recorder.run.side_effect = lambda *args, **kwargs: mock.Mock(stdout=lambda cap: b"not a response")
+        report = self.rpc.capture_startup_peer_frontiers(self.after)
+        self.assertEqual(report["observations"], [{"role": "pillar", "status": "REFUSED",
+            "reason": "capture_refused", "request_id": 3, "response_file": None}])
+        self.assertEqual(self.recorder.run.call_count, 1)
+        self.assertEqual(runner.startup_peer_evidence_files(self.rpc),
+                         {capture.STARTUP_FRONTIERS_REPORT, "startup-pillar-frontier.request.json"})
+
+    def test_publication_requires_the_request_and_fixed_role(self):
+        for selected in ({capture.STARTUP_FRONTIERS_REPORT, "startup-rpc-frontier.json"},
+                         {capture.STARTUP_FRONTIERS_REPORT, "startup-other-frontier.request.json"},
+                         {"startup-pillar-frontier.request.json"}):
+            with self.subTest(selected=selected), self.assertRaises(model.Refused):
+                runner.startup_peer_evidence_files(mock.Mock(startup_frontier_evidence=selected))
+
+    def test_readiness_uses_only_observed_post_sync_and_keeps_original_refusal(self):
+        for after in (None, {"status": "REFUSED"}, {"status": "OBSERVED", "request_id": 32}):
+            with self.subTest(after=after):
+                rpc, inspect_nodes = mock.Mock(), mock.Mock()
+                error = model.Refused("owned_rpc_readiness_deadline")
+                rpc.wait_height.side_effect = error
+                rpc.capture_startup_sync.return_value = {"status": "OBSERVED", "request_id": 31}
+                rpc.capture_post_sync_frontier.return_value = after
+                with self.assertRaises(model.Refused) as observed:
+                    runner.wait_for_initial_height(rpc, 3, observe_nodes=inspect_nodes)
+                self.assertIs(observed.exception, error)
+                if after is not None and after["status"] == "OBSERVED":
+                    rpc.capture_startup_peer_frontiers.assert_called_once_with(32)
+                else:
+                    rpc.capture_startup_peer_frontiers.assert_not_called()
+                inspect_nodes.assert_called_once_with()
+
+
 def synthetic_window(last=4, state_root=bytes([77]) * 32):
     rows = []
     chain = CONTRACT.data["selection"]["chain_id"]
@@ -1048,7 +1140,7 @@ class HostBoundaryTests(unittest.TestCase):
                     self.assertEqual(checked["materialized_bytes"], 0)
 
     def test_runner_refusal_exports_the_valid_frontier_without_other_command_streams(self):
-        _, rows, _ = synthetic_window()
+        _, rows, _ = synthetic_window(last=5)
         execution = model.ExecutionIdentity("a" * 40, 1, 1, "edgepillar")
         actual_rpc = capture.LocalRpc
 
@@ -1058,9 +1150,14 @@ class HostBoundaryTests(unittest.TestCase):
 
             def local_transport(label, argv, cwd, env, **options):
                 request = json.loads(argv[argv.index("--data-binary") + 1])
-                result = (rows[1] if request["id"] == 1 else rows[3]) \
-                    if request["method"] == "ledger.getFrontierMomentum" else {
-                        "state": 2, "currentHeight": 99, "targetHeight": 99}
+                if request["method"] == "stats.syncInfo":
+                    result = {"state": 2, "currentHeight": 99, "targetHeight": 99}
+                elif label == "startup-pillar-frontier":
+                    self.assertEqual(argv[-1], "http://127.0.0.1:35991")
+                    result = rows[4]
+                else:
+                    self.assertEqual(argv[-1], "http://127.0.0.1:35997")
+                    result = rows[1] if request["id"] == 1 else rows[3]
                 self.assertIn(request["method"], ("ledger.getFrontierMomentum", "stats.syncInfo"))
                 raw = model.canonical({"jsonrpc": "2.0", "id": request["id"], "result": result})
                 return actual_run(label, [sys.executable, "-I", "-B", "-c",
@@ -1109,6 +1206,13 @@ class HostBoundaryTests(unittest.TestCase):
             self.assertIn("evidence/" + capture.POST_SYNC_REPORT, names)
             self.assertIn("evidence/rpc-03.request.json", names)
             self.assertIn("evidence/rpc-03.frontier.json", names)
+            self.assertIn("evidence/" + capture.STARTUP_FRONTIERS_REPORT, names)
+            for role in ("pillar", "rpc"):
+                label = f"evidence/startup-{role}-frontier"
+                self.assertIn(label + ".json", names)
+                self.assertIn(label + ".request.json", names)
+                self.assertIn(label + ".complete.json", names)
+                self.assertNotIn(label + ".stderr", names)
             self.assertFalse(index["raw_service_logs_or_private_configuration_exported"])
             # Inspect exactly the exported index, not the wider recorder directory.
             # The real reader must be able to find the request after a refusal.
@@ -1132,6 +1236,10 @@ class HostBoundaryTests(unittest.TestCase):
             self.assertEqual((post["after_sync_request_id"], post["request_id"]), (2, 3))
             self.assertFalse(post["atomic_with_sync_observation"])
             self.assertFalse(post["accepted_header_authority"])
+            peer = checked["startup_peer_frontier_diagnostic"]
+            self.assertEqual(peer["comparison"], "pillar_ahead_of_unchanged_rpc")
+            self.assertEqual([row["request_id"] for row in peer["observations"]], [4, 5])
+            self.assertFalse(peer["accepted_header_authority"])
 
     def test_unavailable_sync_keeps_real_exit_and_excludes_unvalidated_body(self):
         for complete in (True, False):

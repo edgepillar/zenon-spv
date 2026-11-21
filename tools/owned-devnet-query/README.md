@@ -246,6 +246,26 @@ retained both reads: `SyncDone` at current/target height one, followed by anothe
 v1 H1 frontier. It reached no fixture configuration or native consumer result.
 Its after-stop nonzero exits cannot establish when or why a producer stopped.
 
+### Compare the primary pillar and RPC frontiers after refusal
+
+An observed post-sync RPC frontier permits a read of the primary pillar's
+already published loopback port 35991, followed by another read of the RPC
+port 35997. The controller reserves two slots in the shared 96-call budget,
+checks resources before each read and uses the existing 128 KiB response
+bound and five-second Curl deadline. Each request is a
+\`ledger.getFrontierMomentum\` call with empty parameters. A failed or invalid
+pillar read stops the pair. The original readiness refusal ends execution.
+
+The optional \`startup-peer-frontiers.json\` report identifies the preceding
+RPC request and the two ordered role-specific observations. The reader
+rechecks the exact requests, command receipts, response envelopes and
+candidate headers. When the RPC candidate changes across the two reads, the
+report records that movement. When the two RPC identifiers agree, it can
+distinguish a matching pillar candidate, a height difference or a different
+hash at the same height. Partial pairs retain their individual outcomes.
+The reads are sequential candidate observations. Producer authorization,
+peer receipt and the reason for a readiness refusal require separate evidence.
+
 ### Observe owned node state before cleanup
 
 After that same initial readiness refusal, `startup-node-diagnostics.json`

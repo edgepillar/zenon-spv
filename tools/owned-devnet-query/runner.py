@@ -111,7 +111,9 @@ def wait_for_initial_height(rpc, height, *, observe_nodes=None):
         if error.reason == "owned_rpc_readiness_deadline":
             observation = rpc.capture_startup_sync()
             if type(observation) is dict and observation.get("status") == "OBSERVED":
-                rpc.capture_post_sync_frontier(observation["request_id"])
+                after = rpc.capture_post_sync_frontier(observation["request_id"])
+                if type(after) is dict and after.get("status") == "OBSERVED":
+                    rpc.capture_startup_peer_frontiers(after["request_id"])
             if observe_nodes is not None:
                 observe_nodes()
         raise
@@ -153,6 +155,19 @@ def post_sync_frontier_evidence_files(rpc):
         require(type(name) is str and re.fullmatch(
             r"rpc-(?:0[1-9]|[1-8][0-9]|9[0-6])\.request\.json", name) is not None,
             "post_sync_frontier_selection")
+    return selected
+
+
+def startup_peer_evidence_files(rpc):
+    selected = set(rpc.startup_frontier_evidence)
+    if not selected:
+        return selected
+    report = capture.STARTUP_FRONTIERS_REPORT
+    labels = [f"startup-{role}-frontier" for role in capture.STARTUP_FRONTIER_URLS]
+    allowed = {report} | {label + suffix for label in labels for suffix in (".request.json", ".json")}
+    require(report in selected and selected <= allowed
+            and all(label + ".json" not in selected or label + ".request.json" in selected
+                    for label in labels), "startup_peer_frontier_selection")
     return selected
 
 
@@ -324,6 +339,7 @@ def execute(environment, workspace, checkout):
             extra.update(frontier_evidence_files(rpc))
             extra.update(startup_sync_evidence_files(rpc))
             extra.update(post_sync_frontier_evidence_files(rpc))
+            extra.update(startup_peer_evidence_files(rpc))
         if node_diagnostics.REPORT in record.names:
             extra.add(node_diagnostics.REPORT)
         if node_file_logs.REPORT in record.names:

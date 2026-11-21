@@ -320,18 +320,27 @@ def recorded_frontiers(evidence, contract):
         require(match is not None, "review_frontier_filename")
         request_id = model.uint(int(match[1]), 96)
         label, name = f"rpc-{request_id:02d}", path.split("/")[1]
-        same(evidence.json(label + ".request.json"), {"jsonrpc": "2.0", "id": request_id,
-             "method": "ledger.getFrontierMomentum", "params": []}, "review_frontier_request")
-        # The receipt binds these exact bytes to a completed successful command;
-        # the response ID/chain/header checks remain independent of its exit.
-        recorded_output(evidence, label, name)
-        raw = evidence.bytes(path, 128 << 10)
-        header = capture.Header.read(capture.rpc_result(raw, request_id, 128 << 10),
-                                     contract.data["selection"]["chain_id"])
-        rows.append({"request_id": request_id, "response": evidence.pins[path],
-                     "candidate_header": header.identifier(), "version": header.version,
-                     "timestamp": header.timestamp, "accepted_header_authority": False})
+        frontier_request(evidence, label, request_id)
+        rows.append(frontier_observation(evidence, contract, label, name, request_id))
     return rows
+
+
+def frontier_request(evidence, label, request_id):
+    same(evidence.json(label + ".request.json"), {"jsonrpc": "2.0", "id": request_id,
+         "method": "ledger.getFrontierMomentum", "params": []}, "review_frontier_request")
+
+
+def frontier_observation(evidence, contract, label, name, request_id):
+    # Bind the exact body to a complete command before checking its ID and header.
+    path = "evidence/" + name
+    require(path in evidence.pins, "review_frontier_body_missing")
+    recorded_output(evidence, label, name)
+    raw = evidence.bytes(path, capture.FRONTIER_BYTES)
+    result = capture.rpc_result(raw, request_id, capture.FRONTIER_BYTES)
+    header = capture.Header.read(result, contract.data["selection"]["chain_id"])
+    return {"request_id": request_id, "response": evidence.pins[path],
+            "candidate_header": header.identifier(), "version": header.version,
+            "timestamp": header.timestamp, "accepted_header_authority": False}
 
 
 def diagnostic_receipt(evidence, label, reason):
@@ -451,6 +460,90 @@ def recorded_post_sync_frontier(evidence, terminal, startup_sync, frontiers):
             require(receipt is not None and receipt["output_complete"] is False,
                     "review_post_sync_incomplete")
     return result
+
+
+def recorded_startup_peer_frontiers(evidence, terminal, post_sync, contract):
+    roles = tuple(capture.STARTUP_FRONTIER_URLS)
+    labels = tuple(f"startup-{role}-frontier" for role in roles)
+    requests = {"evidence/" + label + ".request.json" for label in labels} & evidence.pins.keys()
+    bodies = {"evidence/" + label + ".json" for label in labels} & evidence.pins.keys()
+    receipts = {"evidence/" + label + suffix for label in labels
+                for suffix in (".started.json", ".complete.json")} & evidence.pins.keys()
+    if "evidence/" + capture.STARTUP_FRONTIERS_REPORT not in evidence.pins:
+        require(not (requests or bodies or receipts), "review_startup_peer_report_missing")
+        return None
+    report = evidence.json(capture.STARTUP_FRONTIERS_REPORT, 4096)
+    exact_keys(report, {"format", "after_rpc_request_id", "observations",
+                        "accepted_header_authority", "production_qualified"}, "review_startup_peer_fields")
+    require(report["format"] == "owned-devnet-startup-peer-frontiers/v1"
+            and terminal["stage"] == "nodes" and terminal["outcome"] != "DEVNET_CONSUMER_ACCEPTED"
+            and post_sync is not None and post_sync["status"] == "OBSERVED"
+            and report["accepted_header_authority"] is False
+            and report["production_qualified"] is False, "review_startup_peer_scope")
+    after = model.uint(report["after_rpc_request_id"], capture.RPC_CALL_LIMIT)
+    same(after, post_sync["request_id"], "review_startup_peer_parent")
+    rows = report["observations"]
+    require(type(rows) is list and 1 <= len(rows) <= len(roles), "review_startup_peer_count")
+    observations, expected_requests, expected_bodies = [], set(), set()
+    for index, row in enumerate(rows):
+        exact_keys(row, {"role", "status", "reason", "request_id", "response_file"}, "review_startup_peer_row")
+        role, status, reason = row["role"], row["status"], row["reason"]
+        require(role == roles[index] and type(status) is str and status in capture.SYNC_REASONS
+                and (reason is None or type(reason) is str) and reason in capture.SYNC_REASONS[status]
+                and (index == 0 or observations[-1]["status"] == "OBSERVED"), "review_startup_peer_row_scope")
+        label = labels[index]
+        request_id = row["request_id"]
+        observation = {"role": role, "status": status, "reason": reason, "request_id": request_id,
+                       "observation": None, "actual_exit": None, "output_complete": None}
+        if reason == "shared_call_limit":
+            require(index == 0 and after + len(roles) > capture.RPC_CALL_LIMIT, "review_startup_peer_call_limit")
+        if request_id is None:
+            require((status in ("NOT_ATTEMPTED", "REFUSED") or reason == "capture_interrupted")
+                    and not any(path.startswith("evidence/" + label + ".") for path in receipts),
+                    "review_startup_peer_request_missing")
+        else:
+            model.uint(request_id, capture.RPC_CALL_LIMIT)
+            require(request_id == after + index + 1 and after + len(roles) <= capture.RPC_CALL_LIMIT
+                    and status != "NOT_ATTEMPTED", "review_startup_peer_request_id")
+            frontier_request(evidence, label, request_id)
+            expected_requests.add("evidence/" + label + ".request.json")
+            receipt = diagnostic_receipt(evidence, label, "review_startup_peer_receipt")
+            if receipt is not None:
+                observation.update(actual_exit=receipt["actual_exit"], output_complete=receipt["output_complete"])
+            if status == "FAILURE":
+                require(receipt is not None and type(receipt["actual_exit"]) is int
+                        and receipt["actual_exit"] != 0 and receipt["output_complete"] is True,
+                        "review_startup_peer_failure")
+            if reason == "command_incomplete":
+                require(receipt is not None and receipt["output_complete"] is False, "review_startup_peer_incomplete")
+        if status == "OBSERVED":
+            name = label + ".json"
+            same(row["response_file"], name, "review_startup_peer_response")
+            observation["observation"] = frontier_observation(evidence, contract, label, name, request_id)
+            expected_bodies.add("evidence/" + name)
+        else:
+            require(row["response_file"] is None, "review_startup_peer_response")
+        observations.append(observation)
+    require(requests == expected_requests and bodies == expected_bodies,
+            "review_startup_peer_member_selection")
+    require(len(observations) == len(roles) or observations[-1]["status"] != "OBSERVED",
+            "review_startup_peer_followup_missing")
+    comparison = None
+    if len(observations) == len(roles) and all(row["status"] == "OBSERVED" for row in observations):
+        first = post_sync["observation"]["candidate_header"]
+        pillar, final = (row["observation"]["candidate_header"] for row in observations)
+        if final != first:
+            comparison = "rpc_frontier_changed"
+        elif pillar == first:
+            comparison = "same_candidate"
+        elif pillar["height"] == first["height"]:
+            comparison = "different_hash_at_same_height"
+        else:
+            comparison = ("pillar_ahead_of_unchanged_rpc" if pillar["height"] > first["height"]
+                          else "pillar_behind_unchanged_rpc")
+    return {"after_rpc_request_id": after, "observations": observations, "comparison": comparison,
+            "sequential_observations": True, "accepted_header_authority": False,
+            "production_qualified": False}
 
 
 def recorded_startup_nodes(evidence, terminal):
@@ -598,6 +691,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         startup_sync = recorded_startup_sync(evidence, terminal)
         frontiers = recorded_frontiers(evidence, contract)
         post_sync = recorded_post_sync_frontier(evidence, terminal, startup_sync, frontiers)
+        startup_peers = recorded_startup_peer_frontiers(evidence, terminal, post_sync, contract)
         startup_nodes = recorded_startup_nodes(evidence, terminal)
         file_logs = node_file_logs.recorded(evidence, terminal, startup_nodes, diagnostic_receipt)
         consumer_failure = recorded_consumer_failure(evidence, terminal, binding_present)
@@ -640,6 +734,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["startup_sync_diagnostic"] = startup_sync
         if post_sync is not None:
             report["post_sync_frontier_diagnostic"] = post_sync
+        if startup_peers is not None:
+            report["startup_peer_frontier_diagnostic"] = startup_peers
         if startup_nodes is not None:
             report["startup_node_diagnostics"] = startup_nodes
         if file_logs is not None:

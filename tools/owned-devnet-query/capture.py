@@ -17,6 +17,7 @@ from process import CommandFailed, regular_pin
 from query_checks import address_bytes, consumer_result, fingerprints, header_facts, schedule_hash
 
 RPC_URL = "http://127.0.0.1:35997"
+STARTUP_FRONTIER_URLS = {"pillar": "http://127.0.0.1:35991", "rpc": RPC_URL}
 GATEWAY_URL = "http://127.0.0.1:35999"
 READINESS_ATTEMPTS = 30
 READINESS_WAIT_SECONDS = 90
@@ -25,6 +26,9 @@ ORACLE_REPORT_BYTES = 256 << 10
 SYNC_INFO_BYTES = 8 << 10
 SYNC_REPORT = "startup-sync.json"
 POST_SYNC_REPORT = "startup-post-sync-frontier.json"
+STARTUP_FRONTIERS_REPORT = "startup-peer-frontiers.json"
+FRONTIER_BYTES = 128 << 10
+RPC_CALL_LIMIT = 96
 CONSUMER_STDOUT = "consume-query.stdout"
 CONSUMER_FAILURE_BYTES = 4096
 # Fixed read-only report text from both selected consumer revisions. Raw
@@ -138,28 +142,41 @@ class LocalRpc:
         self.startup_sync_observed_request = None
         self.post_sync_evidence = set()
         self.post_sync_attempted = False
+        self.post_sync_observed_request = None
+        self.startup_frontier_attempted = False
+        self.startup_frontier_evidence = set()
 
-    def _read(self, method, parameters, cap, *, stdout_name=None):
+    def _read(self, method, parameters, cap, *, stdout_name=None, startup_role=None):
+        url = GATEWAY_URL if method == "zeno_getHead" else RPC_URL
+        label = f"rpc-{self.calls + 1:02d}"
+        if startup_role is not None:
+            require(type(startup_role) is str and startup_role in STARTUP_FRONTIER_URLS
+                    and method == "ledger.getFrontierMomentum" and parameters == [], "startup_frontier_read_scope")
+            label = f"startup-{startup_role}-frontier"
+            url = STARTUP_FRONTIER_URLS[startup_role]
+            require(stdout_name == label + ".json" and cap == FRONTIER_BYTES, "startup_frontier_output_scope")
         self.calls += 1
-        require(self.calls <= 96, "owned_rpc_call_bound")
+        require(self.calls <= RPC_CALL_LIMIT, "owned_rpc_call_bound")
         request_id = self.calls
-        label = "rpc-" + str(request_id).zfill(2)
         request = {"jsonrpc": "2.0", "id": request_id, "method": method, "params": parameters}
         raw = json.dumps(request, separators=(",", ":"), allow_nan=False)
         self.recorder.seal(label + ".request.json", raw.encode("ascii") + b"\n")
         result = self.recorder.run(label, [self.curl, "--disable", "--silent", "--show-error",
             "--fail", "--noproxy", "*", "--proto", "=http", "--connect-timeout", "2",
             "--max-time", "5", "--max-filesize", str(cap), "--header", "Content-Type: application/json",
-            "--data-binary", raw, GATEWAY_URL if method == "zeno_getHead" else RPC_URL],
+            "--data-binary", raw, url],
             self.directory, self.environment,
             timeout=7, stdout_cap=cap, stderr_cap=4096, stdout_name=stdout_name, guard=self.guard)
         return rpc_result(result.stdout(cap), request_id, cap)
 
+    def _frontier(self, name, *, startup_role=None):
+        row = self._read("ledger.getFrontierMomentum", [], FRONTIER_BYTES,
+                         stdout_name=name, startup_role=startup_role)
+        return Header.read(row, self.contract.data["selection"]["chain_id"])
+
     def frontier(self):
         name = f"rpc-{self.calls + 1:02d}.frontier.json"
-        header = Header.read(self._read("ledger.getFrontierMomentum", [], 128 << 10,
-                                       stdout_name=name),
-                             self.contract.data["selection"]["chain_id"])
+        header = self._frontier(name)
         # Retain the original response only after envelope/header parsing.
         # Readiness is a candidate observation, never accepted-header authority.
         self.retained_frontiers.add(name)
@@ -183,7 +200,7 @@ class LocalRpc:
         request_id = self.calls + 1
         label, response = f"rpc-{request_id:02d}", f"rpc-{request_id:02d}.sync-info.json"
         try:
-            if self.calls >= 96:
+            if self.calls >= RPC_CALL_LIMIT:
                 return
             report.update(status="UNKNOWN", reason="capture_interrupted")
             try:
@@ -213,7 +230,7 @@ class LocalRpc:
 
     def capture_post_sync_frontier(self, after_request_id):
         """Retain one later candidate hash without restarting readiness."""
-        uint(after_request_id, 96)
+        uint(after_request_id, RPC_CALL_LIMIT)
         require(after_request_id == self.calls == self.startup_sync_observed_request
                 and not self.post_sync_attempted, "post_sync_frontier_scope")
         self.post_sync_attempted = True
@@ -223,7 +240,7 @@ class LocalRpc:
         request_id = self.calls + 1
         label, response = f"rpc-{request_id:02d}", f"rpc-{request_id:02d}.frontier.json"
         try:
-            if self.calls >= 96:
+            if self.calls >= RPC_CALL_LIMIT:
                 return
             report.update(status="UNKNOWN", reason="capture_interrupted")
             try:
@@ -239,6 +256,7 @@ class LocalRpc:
                 report.update(status="REFUSED", reason="capture_refused")
             else:
                 report.update(status="OBSERVED", reason=None, response_file=response)
+                self.post_sync_observed_request = request_id
         finally:
             request = label + ".request.json"
             if request in self.recorder.names:
@@ -247,6 +265,54 @@ class LocalRpc:
             # The validated body is already selected by retained_frontiers.
             self.recorder.seal(POST_SYNC_REPORT, canonical(report))
             self.post_sync_evidence.add(POST_SYNC_REPORT)
+        return report
+
+    def capture_startup_peer_frontiers(self, after_request_id):
+        """Bracket one pillar read with the preceding and following RPC reads."""
+        uint(after_request_id, RPC_CALL_LIMIT)
+        require(after_request_id == self.calls == self.post_sync_observed_request
+                and not self.startup_frontier_attempted, "startup_frontier_scope")
+        self.startup_frontier_attempted = True
+        observations = []
+        report = {"format": "owned-devnet-startup-peer-frontiers/v1",
+                  "after_rpc_request_id": after_request_id, "observations": observations,
+                  "accepted_header_authority": False, "production_qualified": False}
+        have_slots = after_request_id + len(STARTUP_FRONTIER_URLS) <= RPC_CALL_LIMIT
+        try:
+            for role in STARTUP_FRONTIER_URLS:
+                row = {"role": role, "status": "NOT_ATTEMPTED", "reason": "shared_call_limit",
+                       "request_id": None, "response_file": None}
+                observations.append(row)
+                if not have_slots:
+                    break
+                row.update(status="UNKNOWN", reason="capture_interrupted")
+                try:
+                    self.guard()
+                except Refused:
+                    row.update(status="NOT_ATTEMPTED", reason="budget_refused")
+                    break
+                request_id = self.calls + 1
+                label = f"startup-{role}-frontier"
+                request, response = label + ".request.json", label + ".json"
+                try:
+                    self._frontier(response, startup_role=role)
+                except CommandFailed as error:
+                    diagnostic_failure(row, error)
+                except Refused:
+                    row.update(status="REFUSED", reason="capture_refused")
+                else:
+                    row.update(status="OBSERVED", reason=None, response_file=response)
+                    self.startup_frontier_evidence.add(response)
+                finally:
+                    if request in self.recorder.names:
+                        row["request_id"] = request_id
+                        self.startup_frontier_evidence.add(request)
+                if row["status"] != "OBSERVED":
+                    break
+        finally:
+            self.recorder.seal(STARTUP_FRONTIERS_REPORT, canonical(report))
+            self.startup_frontier_evidence.add(STARTUP_FRONTIERS_REPORT)
+        return report
 
     def _wait(self, read, ready, *, starting, wait_seconds=READINESS_WAIT_SECONDS):
         # Preserve every actual attempt. A freshly published loopback port can
