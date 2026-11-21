@@ -226,9 +226,25 @@ These checks establish signature validity for the observed candidate bytes.
 The actual BatchEntry query still needs the selected producer schedule, the
 accepted header and all three membership proofs at the query height.
 
+### Capture the node's sync state during the opening wait
+
+If the last successful read still shows the selected H1, the runner can use
+the middle scheduled slot for one bounded `stats.syncInfo` read against the same
+loopback RPC. It replaces a frontier read within the existing 30 initial slots
+and 96 total calls. The HTTP allowance reserves the remaining capture time in
+that slot. The regular frontier schedule resumes, including the final slot.
+Even a sync response reporting height three or higher requires a separate
+validated frontier before the runner can proceed.
+
+The optional `startup-wait-sync.json` report binds this read to the immediately
+preceding validated genesis frontier. It keeps only the checked sync response,
+fixed request and command receipts. The reader exposes separate sequential
+observations with no header authority. A transport or response failure stays a
+diagnostic outcome while the remaining bounded frontier reads continue.
+
 ### Capture the node's sync state after a startup refusal
 
-Only an initial selected-height `owned_rpc_readiness_deadline` permits one
+After an initial selected-height `owned_rpc_readiness_deadline`, the runner permits one additional
 `stats.syncInfo` read from the same fixed owned RPC endpoint. The initial
 selected-height wait allows 180 seconds and up to 30 reads. The runner schedules
 the reads at roughly 6.17-second intervals measured from the start of the
