@@ -94,10 +94,10 @@ The full repeated wire lists and every existing workload below remain intact.
 - `LoadAndVerify`: bounded warm file read, JSON decoding, and the same checks.
   State creation, profile/schedule setup and fixture encoding are outside timing.
 
-`B/op` is cumulative allocation volume, not retained heap or peak RSS. The
-current implementation hashes the complete flat content for each proof; this
-is not a compact Merkle path. `make bench` includes these eight workloads. CI
-runs each once on Linux/macOS/Windows for functional coverage, without timing
+`B/op` counts cumulative allocation volume. Peak RSS is measured separately.
+This benchmark uses individual `VerifyCommitment` calls, each of which hashes
+its complete flat list. `make bench` includes these eight workloads. CI runs
+each once on Linux/macOS/Windows for functional coverage without timing
 thresholds.
 
 `TestCompiledContentScalingWorkflow` separately builds the actual CLI, inspects
@@ -106,6 +106,22 @@ the selected configuration, checks its fingerprint, and performs one
 for byte/metadata preservation. Each result must identify the requested target,
 prove only content inclusion, and retain configured-anchor, external-schedule
 and persisted-state trust assumptions.
+
+Within one `verify-commitment` batch, the verifier can reuse the last nonempty
+list whose canonical hash matched a retained header. It compares every
+account-header field in order and requires the same commitment hash in the
+current header. Reordered or different lists use the canonical hasher. Bounds,
+retained height, depth and target membership are checked for each proof. The
+comparison holds one reference to an existing list and ends with the batch.
+The CLI preflights all occurrences and the batch holds one result per input.
+
+A local comparison used the already-decoded `M100000_P4` bundle with four
+independently allocated lists. On macOS arm64 with Go 1.25.14, race detection,
+atomic coverage and two runtime CPUs, the median for four individual calls
+was 153.16 ms and the median for one batch was 68.79 ms. Each path had three
+single-iteration samples and returned identical results. The timing starts
+after decoding and ends before report emission. The fixture still carries
+57,556,508 wire bytes.
 
 The measured CLI process includes startup, configuration loading, bounded
 bundle decoding, full trusted-state revalidation, proof verification and JSON

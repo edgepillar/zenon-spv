@@ -2,6 +2,7 @@ package verify
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
 	"github.com/0x3639/zenon-spv/internal/proof"
@@ -54,6 +55,17 @@ func VerifyCommitment(state HeaderState, evidence proof.CommitmentEvidence, poli
 // entry point above must validate its caller-owned state before using this path.
 // Evidence remains caller-owned and is checked on every invocation.
 func verifyCommitmentInValidatedWindow(state HeaderState, evidence proof.CommitmentEvidence, policy Policy) Result {
+	return verifyCommitmentWithFlatContent(state, evidence, policy, nil)
+}
+
+// matchedFlatContent holds one list whose canonical hash matched an authenticated
+// header during the current batch. The batch owns the lifetime of this reference.
+type matchedFlatContent struct {
+	root    chain.Hash
+	members []chain.AccountHeader
+}
+
+func verifyCommitmentWithFlatContent(state HeaderState, evidence proof.CommitmentEvidence, policy Policy, previous *matchedFlatContent) Result {
 	header, ok := state.HeaderAtHeight(evidence.Height)
 	if !ok {
 		return Result{
@@ -87,24 +99,32 @@ func verifyCommitmentInValidatedWindow(state HeaderState, evidence proof.Commitm
 			FailedAt: -1,
 		}
 	}
-	if policy.MaxFlatEvidenceMembers > 0 && len(evidence.Flat.SortedHeaders) > policy.MaxFlatEvidenceMembers {
+	members := evidence.Flat.SortedHeaders
+	if policy.MaxFlatEvidenceMembers > 0 && len(members) > policy.MaxFlatEvidenceMembers {
 		return Result{
 			Outcome:  OutcomeRefused,
 			Reason:   ReasonOversizedEvidence,
-			Message:  fmt.Sprintf("flat evidence members=%d exceeds MaxFlatEvidenceMembers=%d", len(evidence.Flat.SortedHeaders), policy.MaxFlatEvidenceMembers),
+			Message:  fmt.Sprintf("flat evidence members=%d exceeds MaxFlatEvidenceMembers=%d", len(members), policy.MaxFlatEvidenceMembers),
 			FailedAt: -1,
 		}
 	}
-	recomputed := chain.MomentumContentHash(evidence.Flat.SortedHeaders)
-	if recomputed != header.ContentHash {
-		return Result{
-			Outcome:  OutcomeReject,
-			Reason:   ReasonInvalidContent,
-			Message:  fmt.Sprintf("recomputed=%x header.ContentHash=%x", recomputed, header.ContentHash),
-			FailedAt: -1,
+	sameContent := previous != nil && len(members) > 0 && previous.root == header.ContentHash &&
+		slices.Equal(previous.members, members)
+	if !sameContent {
+		recomputed := chain.MomentumContentHash(members)
+		if recomputed != header.ContentHash {
+			return Result{
+				Outcome:  OutcomeReject,
+				Reason:   ReasonInvalidContent,
+				Message:  fmt.Sprintf("recomputed=%x header.ContentHash=%x", recomputed, header.ContentHash),
+				FailedAt: -1,
+			}
+		}
+		if previous != nil && len(members) > 0 {
+			*previous = matchedFlatContent{root: recomputed, members: members}
 		}
 	}
-	if !containsAccountHeader(evidence.Flat.SortedHeaders, evidence.Target) {
+	if !containsAccountHeader(members, evidence.Target) {
 		return Result{
 			Outcome:  OutcomeReject,
 			Reason:   ReasonNotMember,

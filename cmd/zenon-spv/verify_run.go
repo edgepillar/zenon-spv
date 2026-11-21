@@ -89,8 +89,8 @@ func (ctx verifierContext) verifyProofs(command string, state verify.VerifiedSta
 		if len(ctx.bundle.Commitments) == 0 {
 			return missing("commitments")
 		}
-		for i, c := range ctx.bundle.Commitments {
-			r := state.VerifyCommitment(c)
+		for i, r := range state.VerifyCommitments(ctx.bundle.Commitments) {
+			c := ctx.bundle.Commitments[i]
 			out.result(fmt.Sprintf("commitment[%d] height=%d addr=%x", i, c.Height, c.Target.Address),
 				reportReference{Scope: "commitment", Index: &i, MomentumHeight: &c.Height, AccountHeader: &c.Target}, r)
 			accumulate(r.Outcome)
