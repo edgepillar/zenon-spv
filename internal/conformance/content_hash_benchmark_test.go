@@ -14,7 +14,7 @@ import (
 func BenchmarkContentHashOrdering(b *testing.B) {
 	for _, size := range []int{1000, 100000} {
 		b.Run(fmt.Sprintf("M%d", size), func(b *testing.B) {
-			w := newFlatWorkload(b, size, 1)
+			w := newFlatFixture(b, size, 1)
 			for _, order := range []string{"Sorted", "Reversed", "Shuffled", "LastSwap"} {
 				b.Run(order, func(b *testing.B) {
 					headers := slices.Clone(w.bundle.Commitments[0].Flat.SortedHeaders)
