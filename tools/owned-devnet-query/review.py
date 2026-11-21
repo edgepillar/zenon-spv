@@ -438,18 +438,44 @@ def diagnostic_receipt(evidence, label, reason):
 
 def recorded_startup_sync(evidence, terminal):
     path = "evidence/" + capture.SYNC_REPORT
-    bodies = {name for name in evidence.pins if name.endswith(".sync-info.json")}
+    bodies = {name for name in evidence.pins if name.endswith(capture.SYNC_BODY_SUFFIX)}
     if path not in evidence.pins:
         require(not bodies, "review_sync_summary_missing")
         return None
     summary = evidence.json(capture.SYNC_REPORT, 4096)
     exact_keys(summary, {"format", "trigger", "status", "reason", "request_id", "response_file",
                         "accepted_header_authority", "production_qualified"}, "review_sync_summary_fields")
-    status, reason = summary["status"], summary["reason"]
     require(summary["format"] == "owned-devnet-startup-sync/v1"
             and summary["trigger"] == "owned_rpc_readiness_deadline"
-            and terminal["stage"] == "nodes" and terminal["outcome"] != "DEVNET_CONSUMER_ACCEPTED"
-            and summary["accepted_header_authority"] is False and summary["production_qualified"] is False
+            and terminal["stage"] == "nodes" and terminal["outcome"] != "DEVNET_CONSUMER_ACCEPTED",
+            "review_sync_summary_scope")
+    return sync_observation(evidence, summary, bodies, capture.SYNC_BODY_SUFFIX)
+
+
+def recorded_wait_sync(evidence, contract, frontiers):
+    bodies = {name for name in evidence.pins if name.endswith(capture.WAIT_SYNC_BODY_SUFFIX)}
+    if "evidence/" + capture.WAIT_SYNC_REPORT not in evidence.pins:
+        require(not bodies, "review_wait_sync_summary_missing")
+        return None
+    summary = evidence.json(capture.WAIT_SYNC_REPORT, 4096)
+    exact_keys(summary, {"format", "after_frontier_request_id", "status", "reason", "request_id",
+                        "response_file", "accepted_header_authority", "production_qualified"},
+               "review_wait_sync_fields")
+    previous_id = model.uint(summary["after_frontier_request_id"], capture.WAIT_SYNC_SLOT)
+    genesis = {"height": 1, "hash": contract.data["selection"]["genesis_h1_hash"]}
+    require(summary["format"] == "owned-devnet-startup-wait-sync/v1"
+            and any(row["request_id"] == previous_id and row["version"] == 1
+                    and row["candidate_header"] == genesis for row in frontiers),
+            "review_wait_sync_frontier")
+    result = sync_observation(evidence, summary, bodies, capture.WAIT_SYNC_BODY_SUFFIX)
+    require(result["request_id"] is None or result["request_id"] == previous_id + 1,
+            "review_wait_sync_request_order")
+    return {**result, "after_frontier_request_id": previous_id, "atomic_with_frontier": False}
+
+
+def sync_observation(evidence, summary, bodies, body_suffix):
+    status, reason = summary["status"], summary["reason"]
+    require(summary["accepted_header_authority"] is False and summary["production_qualified"] is False
             and type(status) is str and status in capture.SYNC_REASONS
             and (reason is None or type(reason) is str)
             and reason in capture.SYNC_REASONS[status], "review_sync_summary_scope")
@@ -462,7 +488,7 @@ def recorded_startup_sync(evidence, terminal):
                  or status == "UNKNOWN" and reason == "capture_interrupted")
                 and summary["response_file"] is None and not bodies, "review_sync_missing_request")
         return result
-    model.uint(request_id, 96)
+    model.uint(request_id, capture.RPC_CALL_LIMIT)
     require(status != "NOT_ATTEMPTED", "review_sync_request_scope")
     label = f"rpc-{request_id:02d}"
     same(evidence.json(label + ".request.json"), {"jsonrpc": "2.0", "id": request_id,
@@ -471,7 +497,7 @@ def recorded_startup_sync(evidence, terminal):
     if receipt is not None:
         result.update(actual_exit=receipt["actual_exit"], output_complete=receipt["output_complete"])
     if status == "OBSERVED":
-        response = label + ".sync-info.json"
+        response = label + body_suffix
         require(summary["response_file"] == response and bodies == {"evidence/" + response},
                 "review_sync_response_selection")
         recorded_output(evidence, label, response)
@@ -772,6 +798,12 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             same(recorded, selection, "review_terminal_binding")
         startup_sync = recorded_startup_sync(evidence, terminal)
         frontiers = recorded_frontiers(evidence, contract)
+        wait_sync = recorded_wait_sync(evidence, contract, frontiers)
+        if wait_sync is not None:
+            require(binding_present, "review_wait_sync_run_binding")
+            if startup_sync is not None and startup_sync["request_id"] is not None:
+                last_wait_id = wait_sync["request_id"] or wait_sync["after_frontier_request_id"]
+                require(startup_sync["request_id"] > last_wait_id, "review_wait_sync_request_order")
         post_sync = recorded_post_sync_frontier(evidence, terminal, startup_sync, frontiers)
         startup_peers = recorded_startup_peer_frontiers(evidence, terminal, post_sync, contract)
         startup_nodes = recorded_startup_nodes(evidence, terminal)
@@ -823,6 +855,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["recorded_opening_signatures"] = opening_signatures
         if fixture_commands is not None:
             report["recorded_fixture_commands"] = fixture_commands
+        if wait_sync is not None:
+            report["startup_wait_sync_diagnostic"] = wait_sync
         if startup_sync is not None:
             report["startup_sync_diagnostic"] = startup_sync
         if post_sync is not None:

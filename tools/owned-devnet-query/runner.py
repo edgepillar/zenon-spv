@@ -131,18 +131,21 @@ def frontier_evidence_files(rpc):
     return selected
 
 
-def startup_sync_evidence_files(rpc):
-    selected = set(rpc.startup_sync_evidence)
+def startup_sync_evidence_files(rpc, *, during_wait=False):
+    selected = set(rpc.wait_sync_evidence if during_wait else rpc.startup_sync_evidence)
     if not selected:
         return selected
-    require(capture.SYNC_REPORT in selected and len(selected) <= 3, "startup_sync_selection")
+    report = capture.WAIT_SYNC_REPORT if during_wait else capture.SYNC_REPORT
+    suffix = capture.WAIT_SYNC_BODY_SUFFIX if during_wait else capture.SYNC_BODY_SUFFIX
+    require(report in selected and len(selected) <= 3, "startup_sync_selection")
+    pattern = r"(rpc-(?:0[1-9]|[1-8][0-9]|9[0-6]))(\.request\.json|" + re.escape(suffix) + ")"
     labels, responses, requests = set(), set(), set()
-    for name in selected - {capture.SYNC_REPORT}:
+    for name in selected - {report}:
         require(type(name) is str, "startup_sync_selection")
-        match = re.fullmatch(r"(rpc-(?:0[1-9]|[1-8][0-9]|9[0-6]))\.(request|sync-info)\.json", name)
+        match = re.fullmatch(pattern, name)
         require(match is not None, "startup_sync_selection")
         labels.add(match[1])
-        (requests if match[2] == "request" else responses).add(match[1])
+        (requests if match[2] == ".request.json" else responses).add(match[1])
     require(len(labels) <= 1 and responses <= requests, "startup_sync_selection")
     return selected
 
@@ -355,6 +358,7 @@ def execute(environment, workspace, checkout):
         if rpc is not None:
             extra.update(frontier_evidence_files(rpc))
             extra.update(startup_sync_evidence_files(rpc))
+            extra.update(startup_sync_evidence_files(rpc, during_wait=True))
             extra.update(post_sync_frontier_evidence_files(rpc))
             extra.update(startup_peer_evidence_files(rpc))
         if node_diagnostics.REPORT in record.names:

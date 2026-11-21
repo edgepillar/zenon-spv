@@ -24,11 +24,16 @@ STARTUP_FRONTIER_URLS = {"pillar": "http://127.0.0.1:35991", "rpc": RPC_URL}
 GATEWAY_URL = "http://127.0.0.1:35999"
 READINESS_ATTEMPTS = 30
 READINESS_WAIT_SECONDS = 90
+WAIT_SYNC_SLOT = READINESS_ATTEMPTS // 2
+RPC_CAPTURE_SECONDS = 2
 INITIAL_HEIGHT_WAIT_SECONDS = 180
 INITIAL_FINAL_PROBE_SECONDS = 1
 ORACLE_REPORT_BYTES = 256 << 10
 SYNC_INFO_BYTES = 8 << 10
 SYNC_REPORT = "startup-sync.json"
+SYNC_BODY_SUFFIX = ".sync-info.json"
+WAIT_SYNC_REPORT = "startup-wait-sync.json"
+WAIT_SYNC_BODY_SUFFIX = ".wait-sync-info.json"
 POST_SYNC_REPORT = "startup-post-sync-frontier.json"
 STARTUP_FRONTIERS_REPORT = "startup-peer-frontiers.json"
 FRONTIER_BYTES = 128 << 10
@@ -205,6 +210,7 @@ class LocalRpc:
         self.calls = 0
         self.retained_frontiers = set()
         self.startup_sync_evidence = set()
+        self.wait_sync_evidence = set()
         self.startup_sync_attempted = False
         self.startup_sync_observed_request = None
         self.post_sync_evidence = set()
@@ -224,7 +230,7 @@ class LocalRpc:
             http_seconds = min(5000, remaining_ms) / 1000
             connect_limit = f"{min(2, http_seconds):.3f}"
             http_limit = f"{http_seconds:.3f}"
-            command_limit = http_seconds + 2
+            command_limit = http_seconds + RPC_CAPTURE_SECONDS
         url = GATEWAY_URL if method == "zeno_getHead" else RPC_URL
         label = f"rpc-{self.calls + 1:02d}"
         if startup_role is not None:
@@ -278,11 +284,26 @@ class LocalRpc:
         """One diagnostic after node readiness fails; never retry readiness."""
         require(not self.startup_sync_attempted, "startup_sync_already_attempted")
         self.startup_sync_attempted = True
-        report = {"format": "owned-devnet-startup-sync/v1", "trigger": "owned_rpc_readiness_deadline",
-            "status": "NOT_ATTEMPTED", "reason": "shared_call_limit", "request_id": None,
+        report = self._capture_sync(SYNC_REPORT, SYNC_BODY_SUFFIX, self.startup_sync_evidence,
+            {"format": "owned-devnet-startup-sync/v1", "trigger": "owned_rpc_readiness_deadline"})
+        if report is not None and report["status"] == "OBSERVED":
+            self.startup_sync_observed_request = report["request_id"]
+        return report
+
+    def _capture_wait_sync(self, after_frontier_request_id, deadline):
+        """Spend one initial slot on a diagnostic while the RPC is at genesis."""
+        require(after_frontier_request_id == self.calls and not self.wait_sync_evidence,
+                "startup_wait_sync_scope")
+        self._capture_sync(WAIT_SYNC_REPORT, WAIT_SYNC_BODY_SUFFIX, self.wait_sync_evidence,
+            {"format": "owned-devnet-startup-wait-sync/v1",
+             "after_frontier_request_id": after_frontier_request_id}, deadline=deadline)
+
+    def _capture_sync(self, report_name, body_suffix, evidence, scope, *, deadline=None):
+        report = {**scope, "status": "NOT_ATTEMPTED", "reason": "shared_call_limit", "request_id": None,
             "response_file": None, "accepted_header_authority": False, "production_qualified": False}
         request_id = self.calls + 1
-        label, response = f"rpc-{request_id:02d}", f"rpc-{request_id:02d}.sync-info.json"
+        label = f"rpc-{request_id:02d}"
+        response = label + body_suffix
         try:
             if self.calls >= RPC_CALL_LIMIT:
                 return
@@ -293,23 +314,23 @@ class LocalRpc:
                 report.update(status="NOT_ATTEMPTED", reason="budget_refused")
                 return
             try:
-                sync_info(self._read("stats.syncInfo", [], SYNC_INFO_BYTES, stdout_name=response))
+                sync_info(self._read("stats.syncInfo", [], SYNC_INFO_BYTES,
+                                     stdout_name=response, deadline=deadline))
             except CommandFailed as error:
                 diagnostic_failure(report, error)
             except Refused:
                 report.update(status="REFUSED", reason="capture_refused")
             else:
                 report.update(status="OBSERVED", reason=None, response_file=response)
-                self.startup_sync_observed_request = request_id
         finally:
             request = label + ".request.json"
             if request in self.recorder.names:
                 report["request_id"] = request_id
-                self.startup_sync_evidence.add(request)
+                evidence.add(request)
             if report["status"] == "OBSERVED":
-                self.startup_sync_evidence.add(response)
-            self.recorder.seal(SYNC_REPORT, canonical(report))
-            self.startup_sync_evidence.add(SYNC_REPORT)
+                evidence.add(response)
+            self.recorder.seal(report_name, canonical(report))
+            evidence.add(report_name)
         return report
 
     def capture_post_sync_frontier(self, after_request_id):
@@ -405,12 +426,14 @@ class LocalRpc:
         # bytes; malformed data, partial responses and later read failures stop.
         start = time.monotonic()
         if initial_frontier:
+            genesis = self.contract.data["selection"]["genesis_h1_hash"]
             until = start + INITIAL_HEIGHT_WAIT_SECONDS
             last_probe = until - INITIAL_FINAL_PROBE_SECONDS
             interval = (last_probe - start) / (READINESS_ATTEMPTS - 1)
         else:
             until = start + READINESS_WAIT_SECONDS
             interval = READINESS_WAIT_SECONDS / READINESS_ATTEMPTS
+        last_genesis_request = None
         for attempt in range(READINESS_ATTEMPTS):
             if initial_frontier and attempt:
                 # Let response and capture time use part of the interval.
@@ -424,6 +447,11 @@ class LocalRpc:
                     time.sleep(scheduled - now)
             self.guard()
             require(time.monotonic() < until, "owned_rpc_readiness_deadline")
+            if initial_frontier and attempt == WAIT_SYNC_SLOT and last_genesis_request == self.calls:
+                sync_deadline = scheduled + interval - RPC_CAPTURE_SECONDS
+                if sync_deadline - time.monotonic() >= 0.001:
+                    self._capture_wait_sync(last_genesis_request, sync_deadline)
+                    continue
             try:
                 value = read(deadline=until) if initial_frontier else read()
             except CommandFailed as error:
@@ -439,6 +467,10 @@ class LocalRpc:
                 if ready(value):
                     require(time.monotonic() < until, "owned_rpc_readiness_deadline")
                     return value
+                if initial_frontier:
+                    last_genesis_request = None
+                    if (value.height, value.version, value.hash) == (1, 1, genesis):
+                        last_genesis_request = self.calls
             if not initial_frontier and attempt + 1 < READINESS_ATTEMPTS:
                 remaining = until - time.monotonic()
                 require(remaining > 0, "owned_rpc_readiness_deadline")

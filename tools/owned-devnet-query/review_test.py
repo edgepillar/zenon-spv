@@ -457,6 +457,78 @@ class StartupSyncReviewTests(unittest.TestCase):
         self.assertFalse(result["new_devnet_acceptance_established"])
         self.assertIsNone(result["comparison"])
 
+    @staticmethod
+    def wait_files():
+        contract, files = StartupSyncReviewTests.files()
+        _, rows, _ = synthetic_window()
+        genesis = canonical({"jsonrpc": "2.0", "id": 1, "result": rows[0]})
+        _, previous = FrontierReviewTests.files(1, raw=genesis)
+        files.update((name, raw) for name, raw in previous.items() if name != "evidence/terminal.json")
+        old = "evidence/rpc-02.sync-info.json"
+        name = "rpc-02.wait-sync-info.json"
+        files["evidence/" + name] = files.pop(old)
+        key = "evidence/rpc-02.complete.json"
+        receipt = json.loads(files[key])
+        receipt["outputs"]["stdout"]["file"] = name
+        files[key] = canonical(receipt)
+        summary = json.loads(files.pop("evidence/" + capture.SYNC_REPORT))
+        del summary["trigger"]
+        summary.update(format="owned-devnet-startup-wait-sync/v1",
+                       after_frontier_request_id=1, response_file=name)
+        files["evidence/" + capture.WAIT_SYNC_REPORT] = canonical(summary)
+        return contract, files
+
+    def test_wait_sync_and_post_deadline_sync_remain_separate_observations(self):
+        contract, files = self.wait_files()
+        _, later = self.files()
+        label = "rpc-03"
+        reply_name = label + ".sync-info.json"
+        response = canonical({"jsonrpc": "2.0", "id": 3,
+            "result": {"state": 2, "currentHeight": 2, "targetHeight": 2}})
+        files["evidence/" + reply_name] = response
+        files["evidence/" + label + ".request.json"] = canonical({"jsonrpc": "2.0", "id": 3,
+            "method": "stats.syncInfo", "params": []})
+        started = json.loads(later["evidence/rpc-02.started.json"])
+        files["evidence/" + label + ".started.json"] = canonical({**started, "label": label})
+        receipt = json.loads(later["evidence/rpc-02.complete.json"])
+        receipt.update(label=label, outputs={"stdout": {"file": reply_name, **pin(response)}})
+        files["evidence/" + label + ".complete.json"] = canonical(receipt)
+        report = "evidence/" + capture.SYNC_REPORT
+        summary = json.loads(later[report])
+        files[report] = canonical({**summary, "request_id": 3, "response_file": reply_name})
+
+        result = self.review(contract, files)
+        wait = result["startup_wait_sync_diagnostic"]
+        self.assertEqual((wait["after_frontier_request_id"], wait["request_id"], wait["actual_exit"]), (1, 2, 0))
+        self.assertEqual(wait["observation"], {"state": 3, "current_height": 1, "target_height": 0})
+        self.assertEqual(result["startup_sync_diagnostic"]["observation"]["current_height"], 2)
+        self.assertFalse(wait["atomic_with_frontier"])
+        self.assertFalse(wait["accepted_header_authority"])
+        self.assertEqual(result["recorded_terminal_outcome"], "REFUSED")
+        self.assertIsNone(result["comparison"])
+
+    def test_wait_sync_requires_the_bound_preceding_genesis_and_matching_command(self):
+        report = "evidence/" + capture.WAIT_SYNC_REPORT
+        for case in ("no-summary", "wrong-frontier", "wrong-request", "wrong-command"):
+            with self.subTest(case=case):
+                contract, files = self.wait_files()
+                if case == "no-summary":
+                    del files[report]
+                elif case == "wrong-frontier":
+                    _, alternative = FrontierReviewTests.files(1)
+                    files.update((name, raw) for name, raw in alternative.items()
+                                 if name != "evidence/terminal.json")
+                elif case == "wrong-request":
+                    key = "evidence/rpc-02.request.json"
+                    request = json.loads(files[key])
+                    files[key] = canonical({**request, "method": "ledger.getFrontierMomentum"})
+                else:
+                    key = "evidence/rpc-02.complete.json"
+                    receipt = json.loads(files[key])
+                    files[key] = canonical({**receipt, "output_complete": False})
+                with self.assertRaises(Refused):
+                    self.review(contract, files)
+
     def test_summary_requires_fixed_scope_status_request_and_false_authority(self):
         for field, value in (("format", "another/v1"), ("trigger", "unselected"),
                              ("status", "READY"), ("status", True), ("reason", []),

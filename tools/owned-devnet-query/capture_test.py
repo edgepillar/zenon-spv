@@ -793,6 +793,88 @@ class ReadinessTests(unittest.TestCase):
             self.assertAlmostEqual(start, attempt * 179 / 29)
         self.assertAlmostEqual(clock, 1179.25)
 
+    def test_genesis_stall_uses_one_existing_slot_and_keeps_the_final_header_read(self):
+        contract, rows, _ = synthetic_window()
+        self.rpc.contract = contract
+        self.recorder.names = set()
+        interval = (capture.INITIAL_HEIGHT_WAIT_SECONDS - capture.INITIAL_FINAL_PROBE_SECONDS) / 29
+        clock = 0.0
+        starts = []
+        records = {}
+
+        def seal(name, raw):
+            records[name] = json.loads(raw)
+            self.recorder.names.add(name)
+
+        def wait(seconds):
+            nonlocal clock
+            clock += seconds
+
+        def respond(label, argv, *args, **kwargs):
+            request_id = int(label.removeprefix("rpc-"))
+            starts.append(clock)
+            if request_id == capture.WAIT_SYNC_SLOT + 1:
+                self.assertLess(kwargs["timeout"], interval + 0.001)
+                self.assertEqual(kwargs["stdout_cap"], capture.SYNC_INFO_BYTES)
+                return self.response({"state": 2, "currentHeight": 99, "targetHeight": 99}, request_id)
+            return self.response(rows[2] if request_id == 30 else rows[0], request_id)
+
+        self.recorder.run.side_effect = respond
+        self.recorder.seal.side_effect = seal
+        with mock.patch.object(capture.time, "monotonic", side_effect=lambda: clock), \
+                mock.patch.object(capture.time, "sleep", side_effect=wait):
+            header = self.rpc.wait_height(3, starting=True)
+
+        self.assertEqual((header.height, self.rpc.calls, len(self.rpc.retained_frontiers)), (3, 30, 29))
+        for attempt, started in enumerate(starts):
+            self.assertAlmostEqual(started, attempt * interval)
+        self.assertEqual(starts[-1], 179)
+        self.assertEqual(records["rpc-16.request.json"]["method"], "stats.syncInfo")
+        self.assertEqual(records["rpc-30.request.json"]["method"], "ledger.getFrontierMomentum")
+        summary = records[capture.WAIT_SYNC_REPORT]
+        self.assertEqual((summary["after_frontier_request_id"], summary["request_id"], summary["status"]),
+                         (15, 16, "OBSERVED"))
+        self.assertFalse(summary["accepted_header_authority"])
+        self.assertEqual(runner.startup_sync_evidence_files(self.rpc, during_wait=True),
+                         {capture.WAIT_SYNC_REPORT, "rpc-16.request.json", "rpc-16.wait-sync-info.json"})
+        self.assertFalse(self.rpc.startup_sync_attempted)
+
+    def test_incomplete_wait_sync_does_not_submit_a_readiness_result(self):
+        contract, rows, _ = synthetic_window()
+        self.rpc.contract = contract
+        self.recorder.names = set()
+        clock = 0.0
+        records = {}
+
+        def seal(name, raw):
+            records[name] = json.loads(raw)
+            self.recorder.names.add(name)
+
+        def wait(seconds):
+            nonlocal clock
+            clock += seconds
+
+        def respond(label, *args, **kwargs):
+            request_id = int(label.removeprefix("rpc-"))
+            if request_id == capture.WAIT_SYNC_SLOT + 1:
+                self.recorder.names.add(kwargs["stdout_name"])
+                raise self.failure(-9, output_complete=False)
+            return self.response(rows[0], request_id)
+
+        self.recorder.run.side_effect = respond
+        self.recorder.seal.side_effect = seal
+        with mock.patch.object(capture.time, "monotonic", side_effect=lambda: clock), \
+                mock.patch.object(capture.time, "sleep", side_effect=wait):
+            with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
+                self.rpc.wait_height(3, starting=True)
+        summary = records[capture.WAIT_SYNC_REPORT]
+        self.assertEqual((summary["status"], summary["reason"], summary["response_file"]),
+                         ("UNKNOWN", "command_incomplete", None))
+        self.assertEqual(self.rpc.calls, 30)
+        self.assertIn("rpc-30.frontier.json", self.rpc.retained_frontiers)
+        self.assertEqual(runner.startup_sync_evidence_files(self.rpc, during_wait=True),
+                         {capture.WAIT_SYNC_REPORT, "rpc-16.request.json"})
+
     def test_initial_readiness_skips_elapsed_slots_and_keeps_the_next_request_id(self):
         _, rows, _ = synthetic_window()
         clock = 0
