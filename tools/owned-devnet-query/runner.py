@@ -257,6 +257,14 @@ def execute(environment, workspace, checkout):
                                 observe_nodes=engine.capture_startup_diagnostics)
         opening = rpc.opening()
         extra.update(("opening-momentums.json", f"rpc-{rpc.calls:02d}.request.json"))
+        stage = "opening-proof"
+        proof_request = f"rpc-{rpc.calls + 1:02d}.request.json"
+        try:
+            rpc.opening_proof(opening[2], profile)
+        finally:
+            if proof_request in record.names:
+                extra.add(proof_request)
+        extra.add(capture.OPENING_PROOF_FILE)
         stage = "query-inputs"
         consumer = artifacts.fetch("consumer").binaries
         oracle = artifacts.fetch("parent_oracle").binaries

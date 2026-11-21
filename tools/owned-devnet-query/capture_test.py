@@ -26,6 +26,7 @@ import closed_reader
 import model
 from process import CommandFailed, Recorder, capture as capture_process
 import query_checks
+from query_checks_test import OPENING_ABSENCE_ROOT, OPENING_BATCH_KEY, opening_absence_fixture
 import review
 import runner
 
@@ -1038,10 +1039,12 @@ class HostBoundaryTests(unittest.TestCase):
                              ("runtime-inputs", "REFUSED", "fixture_source_default"))
 
     def test_query_inputs_and_packages_follow_opening_validation(self):
-        contract, rows, window = synthetic_window()
+        contract, rows, window = synthetic_window(state_root=bytes.fromhex(OPENING_ABSENCE_ROOT))
+        proof_key = base64.b64encode(bytes.fromhex(OPENING_BATCH_KEY)).decode("ascii")
         execution = model.ExecutionIdentity("a" * 40, 1, 1, "edgepillar")
         for case, stage, reason in (
                 ("bad-opening", "nodes", "opening_header_count"),
+                ("bad-proof", "opening-proof", "opening_proof_root_or_response"),
                 ("bad-oracle", "query-inputs", "test_oracle_input_refusal"),
                 ("bad-toolchain", "node-toolchain", "test_node_toolchain_refusal"),
                 ("bad-packages", "packages", "test_package_refusal"),
@@ -1070,11 +1073,18 @@ class HostBoundaryTests(unittest.TestCase):
                         self.assertEqual(request, {"jsonrpc": "2.0", "id": 1,
                             "method": "ledger.getFrontierMomentum", "params": []})
                         result = rows[2]
-                    else:
+                    elif request["method"] == "ledger.getMomentumsByHeight":
                         trace.opening()
                         self.assertEqual(request, {"jsonrpc": "2.0", "id": 2,
                             "method": "ledger.getMomentumsByHeight", "params": [1, 3]})
                         result = {"count": 3, "list": rows[:2] if case == "bad-opening" else rows[:3]}
+                    else:
+                        trace.opening_proof()
+                        self.assertEqual(request, {"jsonrpc": "2.0", "id": 3,
+                            "method": "ledger.getProof", "params": [3, proof_key]})
+                        result = opening_absence_fixture()
+                        if case == "bad-proof":
+                            result["root"] = "1" * 64
                     response = model.canonical({"jsonrpc": "2.0", "id": request["id"], "result": result})
                     return actual_run(label, [sys.executable, "-I", "-B", "-c",
                         "import sys; sys.stdout.write(" + repr(response.decode()) + ")"], cwd, {}, **options)
@@ -1141,8 +1151,10 @@ class HostBoundaryTests(unittest.TestCase):
                 expected.extend(mock.call.build_images().image_for(role) for role in model.SERVICES[:4])
                 expected.extend((mock.call.wait_height(3, starting=True), mock.call.opening()))
                 if case != "bad-opening":
+                    expected.append(mock.call.opening_proof())
+                if case not in ("bad-opening", "bad-proof"):
                     expected.extend((mock.call.fetch("consumer"), mock.call.fetch("parent_oracle")))
-                if case not in ("bad-opening", "bad-oracle"):
+                if case not in ("bad-opening", "bad-proof", "bad-oracle"):
                     expected.extend((mock.call.enable_consumer(), mock.call.enable_oracle(),
                                      mock.call.fetch_node_toolchain()))
                 if case in ("bad-packages", "ready", "bad-consumer"):
@@ -1189,6 +1201,22 @@ class HostBoundaryTests(unittest.TestCase):
                     self.assertEqual(observed["headers"][-1]["hash"], rows[2]["hash"])
                     self.assertFalse(observed["accepted_header_authority"])
                     self.assertEqual(checked["materialized_bytes"], 0)
+                proof_request = "evidence/rpc-03.request.json"
+                proof_response = "evidence/" + capture.OPENING_PROOF_FILE
+                if case == "bad-opening":
+                    self.assertNotIn(proof_request, files)
+                else:
+                    self.assertIn(proof_request, files)
+                if case in ("bad-opening", "bad-proof"):
+                    self.assertNotIn(proof_response, files)
+                    self.assertNotIn("candidate_opening_proof", checked)
+                else:
+                    validated = checked["candidate_opening_proof"]
+                    self.assertEqual(validated["header"], window.headers[2].identifier())
+                    self.assertEqual(validated["ledger_key"], OPENING_BATCH_KEY)
+                    self.assertEqual(validated["presence"], "absent")
+                    self.assertEqual(validated["request"], files[proof_request])
+                    self.assertFalse(validated["accepted_header_authority"])
 
     def test_runner_refusal_exports_the_valid_frontier_without_other_command_streams(self):
         _, rows, _ = synthetic_window(last=5)

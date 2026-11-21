@@ -23,7 +23,7 @@ import node_file_logs
 from artifacts import API_LIMIT, REPOSITORY, WORKFLOWS, api_json
 from model import Refused, canonical, exact_keys, require, same
 from process import FILE
-from query_checks import consumer_result
+from query_checks import consumer_result, opening_batch_witness
 
 INDEX = "evidence/evidence-index.json"
 INDEX_BYTES = 512 << 10
@@ -230,6 +230,28 @@ def recorded_opening(evidence, contract):
         "accepted_header_authority": False,
     }
     return headers, observation
+
+
+def recorded_opening_proof(evidence, contract, checkout, opening, opening_observation):
+    name = capture.OPENING_PROOF_FILE
+    if "evidence/" + name not in evidence.pins:
+        return None
+    require(opening is not None and opening_observation["request"] is not None, "review_opening_proof_context")
+    request_id = model.uint(opening_observation["request_id"] + 1, capture.RPC_CALL_LIMIT)
+    label = f"rpc-{request_id:02d}"
+    header = opening[2]
+    _, profile = capture.selected_profile(contract, checkout)
+    key, parameters = capture.opening_proof_target(contract, profile, header)
+    request_file = label + ".request.json"
+    same(evidence.json(request_file, 4096), {"jsonrpc": "2.0", "id": request_id,
+         "method": "ledger.getProof", "params": parameters}, "review_opening_proof_request")
+    response = recorded_output(evidence, label, name)
+    witness = capture.rpc_result(evidence.bytes("evidence/" + name, capture.OPENING_PROOF_BYTES),
+                                 request_id, capture.OPENING_PROOF_BYTES)
+    return {**opening_batch_witness(profile, header.root, key, witness), "ledger_key": key.hex(),
+            "header": header.identifier(), "state_root": header.root, "request_id": request_id,
+            "request": evidence.pins["evidence/" + request_file], "response": response,
+            "accepted_header_authority": False}
 
 
 def recorded_consumer(evidence, contract, checkout, selection, opening):
@@ -710,6 +732,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         if accepted or "evidence/" + OPENING_FILE in evidence.pins:
             require(binding_present, "review_opening_run_binding")
             opening, opening_observation = recorded_opening(evidence, contract)
+        opening_proof = recorded_opening_proof(evidence, contract, checkout, opening, opening_observation)
         if accepted or (gateway_refusal and terminal["owned_runtime_observed_closed"]):
             require(opening is not None, "review_consumer_opening")
             comparison = recorded_consumer(evidence, contract, checkout, selection, opening)
@@ -730,6 +753,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["candidate_frontier_observations"] = frontiers
         if opening_observation is not None and not accepted:
             report["candidate_opening_observation"] = opening_observation
+        if opening_proof is not None:
+            report["candidate_opening_proof"] = opening_proof
         if startup_sync is not None:
             report["startup_sync_diagnostic"] = startup_sync
         if post_sync is not None:

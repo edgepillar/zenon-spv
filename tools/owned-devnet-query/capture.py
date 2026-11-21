@@ -2,6 +2,7 @@
 """Bounded read-only capture and finite schedule selection for one owned node."""
 from __future__ import annotations
 
+import base64
 from dataclasses import dataclass
 import hashlib
 import json
@@ -14,7 +15,8 @@ from closed_reader import LEDGER, ORACLE_NAME
 import model
 from model import Refused, canonical, exact_keys, require, same, uint
 from process import CommandFailed, regular_pin
-from query_checks import address_bytes, consumer_result, fingerprints, header_facts, schedule_hash
+from query_checks import (address_bytes, consumer_result, fingerprints, header_facts, ledger_keys,
+                          opening_batch_witness, schedule_hash)
 
 RPC_URL = "http://127.0.0.1:35997"
 STARTUP_FRONTIER_URLS = {"pillar": "http://127.0.0.1:35991", "rpc": RPC_URL}
@@ -29,6 +31,8 @@ SYNC_REPORT = "startup-sync.json"
 POST_SYNC_REPORT = "startup-post-sync-frontier.json"
 STARTUP_FRONTIERS_REPORT = "startup-peer-frontiers.json"
 FRONTIER_BYTES = 128 << 10
+OPENING_PROOF_FILE = "opening-batch-proof.json"
+OPENING_PROOF_BYTES = 32 << 10
 RPC_CALL_LIMIT = 96
 CONSUMER_STDOUT = "consume-query.stdout"
 CONSUMER_FAILURE_BYTES = 4096
@@ -131,6 +135,14 @@ def opening_headers(contract, rows):
     return genesis, anchor, first
 
 
+def opening_proof_target(contract, profile, header):
+    selection = contract.data["selection"]
+    require(header.height == selection["source_expected_first_v3_height"] and header.version == 3,
+            "opening_proof_header")
+    key = ledger_keys(profile, int(selection["batch_id_decimal"]))["batch_entry"]
+    return key, [header.height, base64.b64encode(key).decode("ascii")]
+
+
 class LocalRpc:
     """Bounded read methods of the selected loopback-owned services."""
     def __init__(self, contract, recorder, directory, curl, environment, guard):
@@ -200,6 +212,12 @@ class LocalRpc:
         require(type(result.get("count")) is int and result["count"] >= 3,
                 "opening_frontier_count")
         return opening_headers(self.contract, rows)
+
+    def opening_proof(self, header, profile):
+        key, parameters = opening_proof_target(self.contract, profile, header)
+        witness = self._read("ledger.getProof", parameters, OPENING_PROOF_BYTES,
+                             stdout_name=OPENING_PROOF_FILE)
+        return opening_batch_witness(profile, header.root, key, witness)
 
     def capture_startup_sync(self):
         """One diagnostic after node readiness fails; never retry readiness."""

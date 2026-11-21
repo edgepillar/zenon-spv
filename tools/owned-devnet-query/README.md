@@ -191,6 +191,25 @@ request files and failed-response bodies are not added to the export. The
 recorder-to-index-to-reader control checks this exact selection in memory,
 without writing a second ZIP to disk.
 
+### Check the opening proof before fixture setup
+
+After validating the opening sequence, the runner derives the selected
+BatchEntry key from the pinned profile and requests one bounded
+`ledger.getProof` at the candidate H3. It checks the canonical proof against
+the StateRoot in that candidate header. A valid absence or membership proof
+demonstrates that the selected proof path is readable. An unavailable reply,
+incorrect root or malformed proof stops preparation before binary downloads,
+package installation or fixture signing.
+
+The shared budget allows the extra read within the existing 96 calls. The
+successful path reserves up to 90 calls for the three readiness waits, one for
+the opening, one for this proof, two for query selection and two for the
+frontier around final collection. A checked reply and its paired request are
+retained once. Archive review recomputes the opening proof from the retained
+bytes and selected profile. The actual BatchEntry query still requires the
+accepted header and its three complete membership proofs at the selected
+query height.
+
 ### Capture the node's sync state after a startup refusal
 
 Only an initial selected-height `owned_rpc_readiness_deadline` permits one
