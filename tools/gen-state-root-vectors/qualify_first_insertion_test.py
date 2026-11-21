@@ -117,6 +117,59 @@ def history_events(observation):
                                       Q.H3_HISTORY_MARKER, observation)
 
 
+def sparse_layer_witnesses(values, selected):
+    """Build full sparse layers for the small synthetic negative-control set."""
+    def hash_bytes(raw):
+        return hashlib.sha3_256(raw).digest()
+
+    paths = {name: hash_bytes(bytes.fromhex(key)) for name, key in Q.RECORDED_PROOF_KEYS.items()}
+    empty = bytes(32)
+    layers = [{int.from_bytes(paths[name], "big"): hash_bytes(paths[name] + value)
+               for name, value in values.items()}]
+    for _ in range(256):
+        level = layers[-1]
+        layers.append({parent: hash_bytes(level.get(2 * parent, empty) + level.get(2 * parent + 1, empty))
+                       for parent in {index >> 1 for index in level}})
+    proofs = {}
+    for name in selected:
+        path, value = paths[name], values.get(name)
+        position = int.from_bytes(path, "big")
+        bitmap, siblings = bytearray(32), []
+        for level, layer in enumerate(layers[:-1]):
+            if (position ^ 1) in layer:
+                bitmap[level // 8] |= 128 >> (level % 8)
+                siblings.append(layer[position ^ 1])
+            position >>= 1
+        leaf = hash_bytes(path + value) if value is not None else empty
+        tail = len(value).to_bytes(4, "big") + value if value is not None else b""
+        raw = bytes([value is not None]) + path + leaf + bitmap + len(siblings).to_bytes(2, "big")
+        proofs[name] = base64.b64encode(raw + b"".join(siblings) + tail).decode("ascii")
+    return layers[-1][0].hex(), proofs
+
+
+def typed_history_observation():
+    values = Q.typed_history_values()
+    root, proofs = sparse_layer_witnesses(values, values)
+    later_root, absent = sparse_layer_witnesses({k: v for k, v in values.items() if k != "batch_entry"},
+                                               ("batch_entry",))
+    keys = {k: bytes.fromhex(v) for k, v in Q.RECORDED_PROOF_KEYS.items()}
+    sizes = {"batch_entry": b"\xa0\x06", "domain_record": b"\xc0\x03", "domain_config": b"\x40"}
+    patch = b"".join(bytes((1, len(keys[k]))) + keys[k] + sizes[k] + values[k] for k in values)
+    deletion = bytes((0, len(keys["batch_entry"]))) + keys["batch_entry"]
+
+    def header(height, parent, timestamp, root, changes):
+        digest = hashlib.sha3_256(changes).digest()
+        return {"height": height, "hash": Q.unsigned_v3_hash(height, parent, timestamp, root, digest),
+                "parent_hash": parent, "timestamp": timestamp, "state_root": root, "changes_hash": digest.hex()}
+
+    h4 = history_observation()
+    target = header(5, h4["tip_hash"], h4["tip_timestamp"] + 10, root, patch)
+    tip = header(6, target["hash"], target["timestamp"] + 10, later_root, deletion)
+    return {"format": "chain69-typed-rows-after-reopen/v1", "target": target, "tip": tip,
+            "memberships": proofs, "tip_batch_absence": absent["batch_entry"],
+            "checked_at_tip_before_and_after_reopen": True, "accepted_header_authority": False}
+
+
 def encoded(value):
     return b"".join(json.dumps(row).encode() + b"\n" for row in value)
 
@@ -344,6 +397,55 @@ class Controls(unittest.TestCase):
                 observation = history_observation()
                 observation["proof_pins"]["batch_entry"][field] = value
                 self.refused(history_events(observation))
+
+    def test_typed_history_binds_three_raw_paths_and_tip_deletion(self):
+        row = typed_history_observation()
+        rows = add_one_period_observation(history_events(history_observation()), Q.TYPED_HISTORY_MARKER, row)
+        result = Q.native_controls(encoded(rows), require_typed_history=True)["typed_history"]
+        self.assertEqual(result["target"], row["target"])
+        self.assertEqual(result["tip"], row["tip"])
+        self.assertEqual(result["membership_pins"],
+                         {k: Q.C.digest(base64.b64decode(v)) for k, v in row["memberships"].items()})
+        self.assertEqual(result["tip_batch_absence_pin"], Q.C.digest(base64.b64decode(row["tip_batch_absence"])))
+        self.assertFalse(result["accepted_header_authority"])
+        self.assertNotIn("memberships", result)
+
+    def test_typed_history_requires_retained_h4_and_exactly_one_native_observation(self):
+        history = history_observation()
+        row = typed_history_observation()
+        rows = history_events(history)
+        self.assertNotIn("typed_history", Q.native_controls(encoded(rows)))
+        with self.assertRaisesRegex(Q.Refused, "native_trace_count"):
+            Q.native_controls(encoded(rows), require_typed_history=True)
+        rows = add_one_period_observation(rows, Q.TYPED_HISTORY_MARKER, row)
+        with self.assertRaisesRegex(Q.Refused, "typed_history_requires_h4"):
+            Q.native_controls(encoded([r for r in rows if Q.H3_HISTORY_MARKER not in r.get("Output", "")]))
+        self.refused(add_one_period_observation(rows[:], Q.TYPED_HISTORY_MARKER, row))
+        next(r for r in rows if Q.TYPED_HISTORY_MARKER in r.get("Output", ""))["Test"] = Q.TEST
+        with self.assertRaisesRegex(Q.Refused, "foreign_typed_history_trace"):
+            Q.native_controls(encoded(rows))
+
+    def test_typed_history_refuses_changed_ancestry_patch_and_proofs(self):
+        row = typed_history_observation()
+        mutations = [
+            {"target": {**row["target"], "parent_hash": "1" * 64}},
+            {"tip": {**row["tip"], "changes_hash": "2" * 64}},
+            {"tip": {**row["tip"], "state_root": row["target"]["state_root"]}},
+            {"memberships": {**row["memberships"], "domain_record": row["memberships"]["domain_config"]}},
+            {"memberships": {**row["memberships"], "batch_entry": row["tip_batch_absence"]}},
+            {"tip_batch_absence": row["memberships"]["batch_entry"]},
+            {"accepted_header_authority": True},
+            {"checked_at_tip_before_and_after_reopen": False},
+        ]
+        raw = base64.b64decode(row["memberships"]["batch_entry"])
+        for offset in (100, len(raw) - 1):
+            changed = raw[:offset] + bytes([raw[offset] ^ 1]) + raw[offset + 1:]
+            mutations.append({"memberships": {**row["memberships"],
+                                              "batch_entry": base64.b64encode(changed).decode("ascii")}})
+        for changes in mutations:
+            with self.subTest(changes=list(changes)):
+                self.refused(add_one_period_observation(history_events(history_observation()),
+                                                        Q.TYPED_HISTORY_MARKER, {**row, **changes}))
 
     def test_split_trace_reassembled_only_in_its_own_test(self):
         value = events()

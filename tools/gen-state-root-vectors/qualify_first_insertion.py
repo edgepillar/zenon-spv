@@ -28,9 +28,14 @@ spec.loader.exec_module(C)
 require, Refused = C.require, C.Refused
 ROOT = HERE.parents[1]
 INPUT = "tools/gen-state-root-vectors/first-insertion-catchup_test.go.txt"
-INPUTS = {INPUT: "consensus/spv_first_insertion_catchup_test.go",
-          "tools/gen-state-root-vectors/first-insertion-cpu_test.go.txt": "consensus/spv_first_insertion_cpu_test.go",
-          "tools/gen-state-root-vectors/first-insertion-export_test.go.txt": "consensus/spv_first_insertion_export_test.go"}
+TYPED_ROWS = "internal/testdata/conformance/batch-context-node-witness.json"
+TYPED_ROWS_SHA256 = "773cda402e08709ffd73adfea355f73269b1470b7336c5a027ddd5b331ab9d96"
+HARNESS_INPUTS = {
+    INPUT: "consensus/spv_first_insertion_catchup_test.go",
+    "tools/gen-state-root-vectors/first-insertion-cpu_test.go.txt": "consensus/spv_first_insertion_cpu_test.go",
+    "tools/gen-state-root-vectors/first-insertion-export_test.go.txt": "consensus/spv_first_insertion_export_test.go",
+}
+INPUTS = {**HARNESS_INPUTS, TYPED_ROWS: "consensus/spv_batch_context_node_witness.json"}
 WORKFLOW = ".github/workflows/first-insertion-catchup.yml"
 PUBLIC_PATHS = (*INPUTS, WORKFLOW, ".gitattributes", "tools/gen-state-root-vectors/qualify_first_insertion.py",
                 "tools/gen-state-root-vectors/qualify_first_insertion_test.py",
@@ -47,6 +52,7 @@ RECORDED_BOUNDARY_MARKER = "SPV_RECORDED_STARTUP_BOUNDARY "
 RECORDED_PROOFS_MARKER = "SPV_RECORDED_STARTUP_PROOFS "
 UNSIGNED_H3_MARKER = "SPV_UNSIGNED_H3_LEDGER "
 H3_HISTORY_MARKER = "SPV_H3_HISTORY_AT_H4 "
+TYPED_HISTORY_MARKER = "SPV_TYPED_HISTORY "
 RECORDED_H2 = {
     "format": "recorded-chain69-h2/v1",
     "recorded_run": 43653383092,
@@ -264,9 +270,107 @@ def h3_history_at_h4(text, h3):
     return row
 
 
+def typed_history_values():
+    raw = C.regular(ROOT / TYPED_ROWS, 32 << 10)
+    require(hashlib.sha256(raw).hexdigest() == TYPED_ROWS_SHA256, "typed_history_input")
+    rows = decode(raw)["rows"]
+    values = {row["name"]: bytes.fromhex(row["value_hex"]) for row in rows[:3]}
+    require(list(values) == list(RECORDED_PROOF_KEYS)
+            and all(row["ledger_key_hex"] == RECORDED_PROOF_KEYS[row["name"]] for row in rows[:3])
+            and all(0 < len(value) <= 4096 for value in values.values()), "typed_history_input_rows")
+    return values
+
+
+def batch_varint(size):
+    raw = bytearray()
+    while size >= 128:
+        raw.append((size & 0x7f) | 0x80)
+        size >>= 7
+    raw.append(size)
+    return bytes(raw)
+
+
+def typed_history_header(row, parent, patch):
+    require(type(row) is dict and set(row) == {
+        "height", "hash", "parent_hash", "timestamp", "state_root", "changes_hash"}, "typed_history_header_fields")
+    digest = hashlib.sha3_256(patch).digest()
+    require(type(row["height"]) is int and row["height"] == parent["height"] + 1
+            and type(row["timestamp"]) is int and row["timestamp"] == parent["timestamp"] + 10
+            and row["parent_hash"] == parent["hash"] and row["changes_hash"] == digest.hex(),
+            "typed_history_header_link_or_changes")
+    root = row["state_root"]
+    require(type(root) is str and re.fullmatch("[0-9a-f]{64}", root) is not None
+            and root not in ("0" * 64, parent["state_root"]), "typed_history_root")
+    require(row["hash"] == unsigned_v3_hash(row["height"], row["parent_hash"], row["timestamp"], root, digest),
+            "typed_history_header_hash")
+    return bytes.fromhex(root)
+
+
+def typed_history_proof(root, key, encoded, value):
+    """Recompute a canonical NodeTree proof from the selected raw key and value."""
+    max_bytes = MAX_ABSENCE_PROOF + (4 + len(value) if value is not None else 0)
+    require(type(encoded) is str and len(encoded) <= ((max_bytes + 2) // 3) * 4, "typed_history_proof_bound")
+    try:
+        raw = base64.b64decode(encoded, validate=True)
+    except ValueError as error:
+        raise Refused("typed_history_proof_encoding") from error
+    require(99 <= len(raw) <= max_bytes and base64.b64encode(raw).decode("ascii") == encoded,
+            "typed_history_proof_encoding")
+    path, empty = hashlib.sha3_256(key).digest(), bytes(32)
+    present = value is not None
+    leaf = hashlib.sha3_256(path + value).digest() if present else empty
+    require(raw[0] == int(present) and raw[1:33] == path and raw[33:65] == leaf,
+            "typed_history_proof_path_or_leaf")
+    levels = [level for level in range(256) if raw[65 + level // 8] & (128 >> (level % 8))]
+    cursor = 99 + 32 * len(levels)
+    expected_tail = struct.pack(">I", len(value)) + value if present else b""
+    require(int.from_bytes(raw[97:99], "big") == len(levels) and len(raw) == cursor + len(expected_tail)
+            and raw[cursor:] == expected_tail, "typed_history_proof_framing")
+    siblings = {level: raw[99 + index * 32:131 + index * 32] for index, level in enumerate(levels)}
+    require(empty not in siblings.values(), "typed_history_proof_zero_sibling")
+    bits = int.from_bytes(path, "big")
+    current = leaf
+    for level in range(256):
+        sibling = siblings.get(level, empty)
+        if current != empty or sibling != empty:
+            pair = sibling + current if bits & (1 << level) else current + sibling
+            current = hashlib.sha3_256(pair).digest()
+    require(current == root, "typed_history_proof_root")
+    return C.digest(raw)
+
+
+def typed_history(text, h4):
+    row = selected_trace(text, TYPED_HISTORY_MARKER)
+    require(h4 is not None, "typed_history_requires_h4")
+    require(type(row) is dict and set(row) == {"format", "target", "tip", "memberships", "tip_batch_absence",
+                                            "checked_at_tip_before_and_after_reopen", "accepted_header_authority"}
+            and row["format"] == "chain69-typed-rows-after-reopen/v1"
+            and row["checked_at_tip_before_and_after_reopen"] is True
+            and row["accepted_header_authority"] is False, "typed_history_scope")
+    values = typed_history_values()
+    keys = {name: bytes.fromhex(key) for name, key in RECORDED_PROOF_KEYS.items()}
+    # LevelDB batch payload encodes a one-byte put/delete kind, unsigned
+    # varint lengths and the original key/value bytes in patch order.
+    puts = b"".join(b"\x01" + batch_varint(len(keys[name])) + keys[name]
+                    + batch_varint(len(value)) + value for name, value in values.items())
+    batch_key = keys["batch_entry"]
+    deletion = b"\x00" + batch_varint(len(batch_key)) + batch_key
+    parent = {key: h4["tip_" + key] for key in ("height", "hash", "timestamp", "state_root")}
+    target_root = typed_history_header(row["target"], parent, puts)
+    tip_root = typed_history_header(row["tip"], row["target"], deletion)
+    proofs = row["memberships"]
+    require(type(proofs) is dict and proofs.keys() == keys.keys(), "typed_history_proof_roster")
+    pins = {name: typed_history_proof(target_root, keys[name], proofs[name], value)
+            for name, value in values.items()}
+    absence = typed_history_proof(tip_root, batch_key, row["tip_batch_absence"], None)
+    return {"format": row["format"], "target": row["target"], "tip": row["tip"],
+            "membership_pins": pins, "tip_batch_absence_pin": absence, "value_source_sha256": TYPED_ROWS_SHA256,
+            "checked_at_tip_before_and_after_reopen": True, "accepted_header_authority": False}
+
+
 def native_controls(raw, cpu_profile=None, *, require_first_period_read=False, require_frontier_rpc=False,
                     require_recorded_h2=False, require_recorded_boundary=False, require_recorded_proofs=False,
-                    require_unsigned_h3=False, require_h3_history=False):
+                    require_unsigned_h3=False, require_h3_history=False, require_typed_history=False):
     require(cpu_profile is None or cpu_profile in CPU_LIMITS, "cpu_profile_selection")
     cases = {"fixture-window": CASES["fixture-window"]} if cpu_profile == "half-core" else CASES
     require(type(raw) is bytes and 0 < len(raw) <= C.MAX_STREAM and raw.endswith(b"\n"), "native_stream")
@@ -327,6 +431,8 @@ def native_controls(raw, cpu_profile=None, *, require_first_period_read=False, r
                 if visibility_test is None or name != visibility_test), "foreign_unsigned_h3_trace")
     require(all(H3_HISTORY_MARKER not in text for name, text in outputs.items()
                 if visibility_test is None or name != visibility_test), "foreign_h3_history_trace")
+    require(all(TYPED_HISTORY_MARKER not in text for name, text in outputs.items()
+                if visibility_test is None or name != visibility_test), "foreign_typed_history_trace")
     cpu_test = TEST + "/fixture-window" if cpu_profile else None
     require(all(CPU_MARKER not in text for name, text in outputs.items()
                 if cpu_test is None or name != cpu_test), "foreign_cpu_trace")
@@ -387,6 +493,8 @@ def native_controls(raw, cpu_profile=None, *, require_first_period_read=False, r
         result["unsigned_h3_ledger"] = unsigned_h3_ledger(recorded_text, result.get("recorded_proofs"))
     if require_h3_history or H3_HISTORY_MARKER in recorded_text:
         result["h3_history_at_h4"] = h3_history_at_h4(recorded_text, result.get("unsigned_h3_ledger"))
+    if require_typed_history or TYPED_HISTORY_MARKER in recorded_text:
+        result["typed_history"] = typed_history(recorded_text, result.get("h3_history_at_h4"))
     if cpu_profile:
         result["cpu"] = cpu_observation(outputs.get(cpu_test, ""), cpu_profile)
     return result
@@ -444,7 +552,7 @@ def linux_cpu_controls(work, node, output, selected, records):
         return native_controls(raw, profile, require_frontier_rpc=True,
                                require_recorded_proofs=profile == "reference",
                                require_unsigned_h3=profile == "reference",
-                               require_h3_history=profile == "reference")
+                               require_h3_history=profile == "reference", require_typed_history=profile == "reference")
 
     reference = run("reference", "native-test", "^" + TEST + "$")
     constrained = run("half-core", "half-core-test", "^" + TEST + "$/^fixture-window$")
@@ -542,7 +650,7 @@ def qualify(work, output, selected, records):
         raw = C.command(output, "native-test", ["go", "test", *C.NATIVE_FLAGS, "-json", "-count=1", "-timeout=180s",
                         "-run", "^" + TEST + "$", "./consensus"], node, records, timeout=600)
         controls = native_controls(raw, require_frontier_rpc=True, require_recorded_proofs=True,
-                                   require_unsigned_h3=True, require_h3_history=True)
+                                   require_unsigned_h3=True, require_h3_history=True, require_typed_history=True)
     unchanged()
     require(C.git(output, "node-head-after", ["rev-parse", "HEAD"], node, records).decode().strip() == C.NODE_REVISION
             and C.git(output, "node-tree-after", ["rev-parse", "HEAD^{tree}"], node, records).decode().strip() == C.NODE_TREE,
@@ -557,7 +665,7 @@ def qualify(work, output, selected, records):
     C.git(output, "spv-index-clean", ["diff", "--cached", "--exit-code", "HEAD"], ROOT, records)
     selected_index = C.git(output, "spv-selected-index", ["ls-files", "--stage", "-z", "--", *PUBLIC_PATHS], ROOT, records)
     sources, working = C.selected_sources(selected_index, PUBLIC_PATHS)
-    for name in INPUTS:
+    for name in HARNESS_INPUTS:
         C.seal(output / Path(name).name, C.regular(ROOT / name, C.MAX_SOURCE_FILE))
     C.seal(output / "NODE_LICENSE", C.regular(node / "LICENSE", 64 << 10))
     result = {"format": "first-insertion-catchup-ci/v1", "status": "UNSIGNED_BOOKKEEPING_CONTROLS_PASSED",

@@ -182,6 +182,27 @@ checks one retained-height read at the original node, the depth used by the
 owned query. The selected network still requires a signed range and three
 present typed witnesses.
 
+### Historical membership of the three typed rows
+
+The same disposable ledger continues from H4 to H5 and H6. H5 inserts the
+pinned BatchEntry, domainRecord and domainConfig ABI bytes under their
+locally selected Settlement keys. H6 deletes BatchEntry and changes the
+StateRoot. The original Ledger API returns all three H5 membership proofs
+before and after reopening at H6. The proof bytes match the initial H5 reads.
+The H6 read returns a canonical absence proof for the deleted batch.
+
+The qualifier independently derives the two patch hashes and unsigned header
+hashes, then reconstructs the roots from the three membership proofs and one
+absence proof. The test keeps one copy of each proof in the native output and
+records digest references in the manifest. Both successors reuse the existing
+one-period database and compiled test. The earlier H2 through H4 records and
+the fixed-window CPU workload retain their original scope.
+
+The inserted ABI values come from the recorded three-row source fixture.
+These raw ledger patches run below the VM verifier with unsigned headers.
+The result qualifies historical membership reads in that isolated node fixture.
+Selected-network header authority and the real typed consumer remain open.
+
 ## Linux CPU comparison
 
 The main revision `5a0d29eb3df7c4ce2f66cae7174e33dea9d8781d` completed the

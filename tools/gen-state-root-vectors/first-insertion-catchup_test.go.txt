@@ -204,6 +204,20 @@ type spvStartupProofPin struct {
 	Bytes  int    `json:"bytes"`
 }
 
+func spvSettlementKeys() map[string][]byte {
+	const domainID = 1
+	subkeys := map[string][]byte{
+		"batch_entry":   (&definition.BatchEntryKey{DomainId: domainID, BatchId: 0}).Key(),
+		"domain_record": (&definition.DomainRecordKey{DomainId: domainID}).Key(),
+		// The selected source keeps the domainConfig key constructor private.
+		"domain_config": binary.BigEndian.AppendUint32([]byte{0x15}, domainID),
+	}
+	for name, subkey := range subkeys {
+		subkeys[name] = common.JoinBytes([]byte{0x03}, types.SettlementContract.Bytes(), []byte{0x04}, subkey)
+	}
+	return subkeys
+}
+
 func spvReplayedSettlementProofs(t *testing.T, ch corechain.Chain, header *nom.Momentum, root types.Hash) ([]byte, map[string]spvStartupWitness) {
 	t.Helper()
 	ledger := api.NewLedgerApi(&spvFrontierNode{chain: ch})
@@ -212,16 +226,10 @@ func spvReplayedSettlementProofs(t *testing.T, ch corechain.Chain, header *nom.M
 		t.Fatal("legacy H2 exposed a root through the ledger API")
 	}
 
-	const domainID = 1
-	subkeys := map[string][]byte{
-		"batch_entry":   (&definition.BatchEntryKey{DomainId: domainID, BatchId: 0}).Key(),
-		"domain_record": (&definition.DomainRecordKey{DomainId: domainID}).Key(),
-		// The selected source keeps the domainConfig key constructor private.
-		"domain_config": binary.BigEndian.AppendUint32([]byte{0x15}, domainID),
-	}
-	raw := make(map[string]spvStartupWitness, len(subkeys))
+	keys := spvSettlementKeys()
+	raw := make(map[string]spvStartupWitness, len(keys))
 	for _, name := range []string{"batch_entry", "domain_record", "domain_config"} {
-		key := common.JoinBytes([]byte{0x03}, types.SettlementContract.Bytes(), []byte{0x04}, subkeys[name])
+		key := keys[name]
 		proofResult, err := ledger.GetProof(header.Height, key)
 		if !errors.Is(err, api.ErrStateRootNotActivated) || proofResult != nil {
 			t.Fatalf("legacy H2 supplied a proof for %s through the ledger API", name)
@@ -342,6 +350,85 @@ func spvCheckH3AtH4(t *testing.T, ch corechain.Chain, target, tip *nom.Momentum,
 	return spvCheckHistoricalAbsence(t, ledger, target, prior)
 }
 
+type spvTypedHistoryRow struct {
+	key   []byte
+	value []byte
+}
+
+func spvTypedHistoryRows(t *testing.T) map[string]spvTypedHistoryRow {
+	t.Helper()
+	raw, err := os.ReadFile("spv_batch_context_node_witness.json")
+	digest := sha256.Sum256(raw)
+	if err != nil || hex.EncodeToString(digest[:]) != "773cda402e08709ffd73adfea355f73269b1470b7336c5a027ddd5b331ab9d96" {
+		t.Fatal("typed row source changed", err)
+	}
+	var fixture struct {
+		Rows []struct {
+			Name  string `json:"name"`
+			Key   string `json:"ledger_key_hex"`
+			Value string `json:"value_hex"`
+		}
+	}
+	if json.Unmarshal(raw, &fixture) != nil || len(fixture.Rows) != 4 || fixture.Rows[3].Name != "absent_batch" {
+		t.Fatal("typed row source encoding differs")
+	}
+	keys := spvSettlementKeys()
+	rows := make(map[string]spvTypedHistoryRow, len(keys))
+	for _, rawRow := range fixture.Rows[:3] {
+		key, exists := keys[rawRow.Name]
+		value, err := hex.DecodeString(rawRow.Value)
+		if _, duplicate := rows[rawRow.Name]; !exists || duplicate || rawRow.Key != hex.EncodeToString(key) ||
+			err != nil || len(value) == 0 || len(value) > 4096 {
+			t.Fatal("unexpected typed row source", rawRow.Name)
+		}
+		rows[rawRow.Name] = spvTypedHistoryRow{key: key, value: value}
+	}
+	return rows
+}
+
+func spvAppendUnsignedHistory(t *testing.T, ch corechain.Chain, parent *nom.Momentum, changes db.Patch) *nom.Momentum {
+	t.Helper()
+	root, err := ch.ComputeStateRoot(parent.Identifier(), changes)
+	if err != nil || root.IsZero() || root == parent.StateRoot {
+		t.Fatal("history fixture must have a distinct state root")
+	}
+	header := &nom.Momentum{
+		Version: nom.StateRootMomentumVersion, ChainIdentifier: parent.ChainIdentifier,
+		Height: parent.Height + 1, PreviousHash: parent.Hash,
+		TimestampUnix: parent.TimestampUnix + uint64(constants.ConsensusConfig.BlockTime),
+		StateRoot:     root, ChangesHash: db.PatchHash(changes),
+		NextFusionPrice: dp.MinResourcePrice, NextWorkPrice: dp.MinResourcePrice,
+	}
+	header.EnsureCache()
+	header.Hash = header.ComputeHash()
+	if spvInsertStartupMomentum(ch, &nom.DetailedMomentum{Momentum: header}, changes) != nil {
+		t.Fatal("cannot extend the isolated historical-read fixture")
+	}
+	return header
+}
+
+func spvReadTypedHistory(t *testing.T, ledger *api.LedgerApi, target *nom.Momentum,
+	rows map[string]spvTypedHistoryRow) map[string][]byte {
+	t.Helper()
+	root, err := ledger.GetStateRoot(target.Height)
+	if err != nil || root != target.StateRoot {
+		t.Fatal("typed historical root differs from the selected header")
+	}
+	proofs := make(map[string][]byte, len(rows))
+	for name, row := range rows {
+		witness, err := ledger.GetProof(target.Height, row.key)
+		if err != nil || witness == nil || witness.Root != root || !bytes.Equal(witness.Value, row.value) ||
+			len(witness.Proof) < 103 || len(witness.Proof) > 12391 {
+			t.Fatalf("bounded typed membership is unavailable for %s", name)
+		}
+		if matches, err := trie.VerifyProofByPath(root, trie.Path(types.NewHash(row.key)), row.value, witness.Proof); err != nil || !matches {
+			t.Fatalf("typed membership does not match the selected root for %s", name)
+		}
+		proofs[name] = witness.Proof
+	}
+	return proofs
+}
+
 func spvReplayRecordedStartupBoundary(t *testing.T, config *genesis.GenesisConfig, first types.HashHeight) {
 	t.Helper()
 	dir := t.TempDir()
@@ -402,7 +489,7 @@ func spvReplayRecordedStartupBoundary(t *testing.T, config *genesis.GenesisConfi
 		Version: nom.StateRootMomentumVersion, ChainIdentifier: header.ChainIdentifier,
 		Height: h2.Height + 1, PreviousHash: h2.Hash,
 		TimestampUnix: header.TimestampUnix + uint64(constants.ConsensusConfig.BlockTime), StateRoot: nextRoot,
-		ChangesHash: db.PatchHash(empty),
+		ChangesHash:     db.PatchHash(empty),
 		NextFusionPrice: dp.MinResourcePrice, NextWorkPrice: dp.MinResourcePrice,
 	}
 	candidate.EnsureCache()
@@ -463,22 +550,7 @@ func spvReplayRecordedStartupBoundary(t *testing.T, config *genesis.GenesisConfi
 	marker := []byte("spv-historical-proof-tip")
 	changes := db.NewPatch()
 	changes.Put(markerKey, marker)
-	tipRoot, err := ch.ComputeStateRoot(candidate.Identifier(), changes)
-	if err != nil || tipRoot.IsZero() || tipRoot == candidate.StateRoot {
-		t.Fatal("H4 fixture must have a distinct state root")
-	}
-	tip := &nom.Momentum{
-		Version: nom.StateRootMomentumVersion, ChainIdentifier: candidate.ChainIdentifier,
-		Height: candidate.Height + 1, PreviousHash: candidate.Hash,
-		TimestampUnix: candidate.TimestampUnix + uint64(constants.ConsensusConfig.BlockTime),
-		StateRoot: tipRoot, ChangesHash: db.PatchHash(changes),
-		NextFusionPrice: dp.MinResourcePrice, NextWorkPrice: dp.MinResourcePrice,
-	}
-	tip.EnsureCache()
-	tip.Hash = tip.ComputeHash()
-	if spvInsertStartupMomentum(ch, &nom.DetailedMomentum{Momentum: tip}, changes) != nil {
-		t.Fatal("cannot extend the isolated historical-read fixture")
-	}
+	tip := spvAppendUnsignedHistory(t, ch, candidate, changes)
 	spvCheckH3AtH4(t, ch, candidate, tip, markerKey, marker, rawProofs)
 	err = ch.Stop()
 	ch = nil
@@ -503,6 +575,76 @@ func spvReplayRecordedStartupBoundary(t *testing.T, config *genesis.GenesisConfi
 		t.Fatal("cannot encode the historical Ledger observation")
 	}
 	t.Logf("SPV_H3_HISTORY_AT_H4 %s", data)
+
+	// Place the pinned ABI bytes in one original-node tree version. Only the
+	// disposable database below the VM verifier is changed.
+	rows := spvTypedHistoryRows(t)
+	add := db.NewPatch()
+	for _, name := range []string{"batch_entry", "domain_record", "domain_config"} {
+		row := rows[name]
+		add.Put(row.key, row.value)
+	}
+	typed := spvAppendUnsignedHistory(t, ch, tip, add)
+	original := spvReadTypedHistory(t, api.NewLedgerApi(&spvFrontierNode{chain: ch}), typed, rows)
+	deletion := db.NewPatch()
+	batchKey := rows["batch_entry"].key
+	deletion.Delete(batchKey)
+	later := spvAppendUnsignedHistory(t, ch, typed, deletion)
+
+	checkHistory := func() []byte {
+		t.Helper()
+		ledger := api.NewLedgerApi(&spvFrontierNode{chain: ch})
+		frontier, err := ledger.GetFrontierMomentum()
+		if err != nil || frontier == nil || frontier.Identifier() != later.Identifier() ||
+			frontier.PreviousHash != typed.Hash || frontier.StateRoot != later.StateRoot ||
+			len(frontier.PublicKey) != 0 || len(frontier.Signature) != 0 || !ch.StateTreeReady() {
+			t.Fatal("typed history fixture has an unexpected frontier")
+		}
+		for name, proof := range spvReadTypedHistory(t, ledger, typed, rows) {
+			if !bytes.Equal(proof, original[name]) {
+				t.Fatalf("historical typed witness changed for %s", name)
+			}
+		}
+		root, err := ledger.GetStateRoot(later.Height)
+		deleted, proofErr := ledger.GetProof(later.Height, batchKey)
+		if err != nil || root != later.StateRoot || proofErr != nil || deleted == nil ||
+			deleted.Root != root || deleted.Value != nil || len(deleted.Proof) < 99 || len(deleted.Proof) > 8291 {
+			t.Fatal("deleted batch is not absent at the later version")
+		}
+		if matches, err := trie.VerifyAbsence(root, batchKey, deleted.Proof); err != nil || !matches {
+			t.Fatal("deleted batch absence does not match the later root")
+		}
+		return deleted.Proof
+	}
+	beforeReopen := checkHistory()
+	err = ch.Stop()
+	ch = nil
+	if err != nil {
+		t.Fatal("cannot close the typed historical-read fixture")
+	}
+	ch = spvNewStartupChain(dir, config)
+	if ch.Init() != nil {
+		t.Fatal("cannot reopen the typed historical-read fixture")
+	}
+	afterReopen := checkHistory()
+	if !bytes.Equal(afterReopen, beforeReopen) {
+		t.Fatal("later batch absence differs after reopening")
+	}
+	headerFields := func(h *nom.Momentum) map[string]interface{} {
+		return map[string]interface{}{
+			"height": h.Height, "hash": h.Hash.String(), "parent_hash": h.PreviousHash.String(),
+			"timestamp": h.TimestampUnix, "state_root": h.StateRoot.String(), "changes_hash": h.ChangesHash.String(),
+		}
+	}
+	data, err = json.Marshal(map[string]interface{}{
+		"format": "chain69-typed-rows-after-reopen/v1", "target": headerFields(typed), "tip": headerFields(later),
+		"memberships": original, "tip_batch_absence": afterReopen,
+		"checked_at_tip_before_and_after_reopen": true, "accepted_header_authority": false,
+	})
+	if err != nil {
+		t.Fatal("cannot encode the typed historical-read observation")
+	}
+	t.Logf("SPV_TYPED_HISTORY %s", data)
 }
 
 const spvFrontierMethod = "ledger.getFrontierMomentum"

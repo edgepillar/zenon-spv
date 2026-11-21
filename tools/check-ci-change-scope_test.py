@@ -720,7 +720,8 @@ class CIChangeScopeControls(unittest.TestCase):
     def test_diagnostic_and_first_insertion_paths_trigger_their_pinned_workflows(self):
         for workflow, changed in ((PREPARATION, sorted(M.PREPARATION_FILES)),
                                   (FIRST_INSERTION, sorted(M.FIRST_INSERTION_FILES |
-                                                           {'docs/first-insertion-catchup.md'}))):
+                                                           {'docs/first-insertion-catchup.md',
+                                                            'internal/testdata/conformance/batch-context-node-witness.json'}))):
             lines = (ROOT / workflow).read_text(encoding='utf-8').splitlines()
             for event in ('push', 'pull_request'):
                 start = lines.index('  ' + event + ':') + 1

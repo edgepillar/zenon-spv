@@ -39,7 +39,7 @@ NATIVE_FILES = frozenset("internal/verify/experimental_v3_" + name for name in (
     "retention_test.go"))
 # Every other non-document tree record remains in this reviewed closure,
 # including workflows, research Go sources, Python helpers and fixture data.
-ORACLE_SOURCE_PIN = "17d736f154163aaa5d018e640c4773f6c51f58ba261ee32803757f814dba40f7"
+ORACLE_SOURCE_PIN = "091f5e93c909ea3839a97be9849c3f5201c2d052bc4f84d4f102a432bacb6a32"
 SHARED_TRANSPORT = "tools/ledger-transport/transport.py"
 TRANSPORT_FILES = frozenset("tools/ledger-transport/" + name for name in (
     "archive_index.py", "archive_index_test.py", "archive_tail.py", "archive_tail_test.py",
@@ -67,12 +67,12 @@ PORTABLE_WORKFLOWS = (
     (".github/workflows/owned-devnet-query.yml", PREPARATION_FILES, 4453,
      "cf4ddd4e2c7a5388af336e42e5d47ce43ca112ed2c699731d4b8cd2137977d66"),
     (".github/workflows/first-insertion-catchup.yml",
-     FIRST_INSERTION_FILES | {"docs/first-insertion-catchup.md"}, 3621,
-     "007b1af81e7b05f542e5fcd4999fc3d6403e2dc2ecb5694e5235660a09a0a4dd"),
+     FIRST_INSERTION_FILES | {"docs/first-insertion-catchup.md"}, 3765,
+     "eb856b43c7f0dc9e374e73f8703a63f6d97a008bd34ba44d43cb382c7ab0cc2a"),
 )
 # Keep every remaining non-document dependency, including all workflows.
 # Refresh only after reviewing dependencies and selecting full runtime CI.
-PORTABLE_SOURCE_PIN = "631cad1d5bd788a1a1da5828ee38a77d10cf47c1f489c180baaeea5046d2df8f"
+PORTABLE_SOURCE_PIN = "77f3fd61e1ba5c94a23c39f330738b31d41fc6a2112f5ac0e570511de582a6d0"
 MAX_FILTERED_DIFF_RECORDS = 256
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192
