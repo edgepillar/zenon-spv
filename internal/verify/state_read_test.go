@@ -77,24 +77,44 @@ func TestSizedStateReadContract(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, hint := range []int64{1, int64(len(raw)), int64(len(raw) + 128)} {
-			got, err := decodeSizedHeaderState(iotest.OneByteReader(bytes.NewReader(raw)), MaxStateFileBytes, hint)
+		for _, reader := range []io.Reader{
+			iotest.OneByteReader(bytes.NewReader(raw)),
+			stateReadFailure{bytes.NewReader(raw), io.EOF},
+		} {
+			got, err := decodeHeaderState(reader, int64(len(raw)))
 			if err != nil || !reflect.DeepEqual(got, want) {
-				t.Fatal("saved state changed with a stale size or short reads", err)
+				t.Fatal("saved state changed with short reads or a final read carrying EOF", err)
 			}
-			for _, bad := range [][]byte{
-				append(bytes.Clone(raw), []byte(" null")...),
-				raw[:len(raw)-1],
-				append([]byte(`{"retained_window":[null],`), raw[1:]...),
-			} {
-				if got, err := decodeSizedHeaderState(bytes.NewReader(bad), MaxStateFileBytes, hint); err == nil || !got.Empty() {
-					t.Fatal("allocation hint hid malformed, trailing or shadowed evidence")
-				}
+		}
+		for _, bad := range [][]byte{
+			append(bytes.Clone(raw), []byte(" null")...),
+			raw[:len(raw)-1],
+			append([]byte(`{"retained_window":[null],`), raw[1:]...),
+		} {
+			if got, err := decodeHeaderState(bytes.NewReader(bad), int64(len(bad))); err == nil || !got.Empty() {
+				t.Fatal("streaming input hid malformed, trailing or shadowed evidence")
 			}
-			failure := errors.New("synthetic complete-JSON read failure")
-			if got, err := decodeSizedHeaderState(stateReadFailure{bytes.NewReader(raw), failure}, MaxStateFileBytes, hint); !errors.Is(err, failure) || !got.Empty() {
-				t.Fatal("complete JSON hid a read error", err)
-			}
+		}
+		failure := errors.New("synthetic complete-JSON read failure")
+		if got, err := decodeHeaderState(stateReadFailure{bytes.NewReader(raw), failure}, int64(len(raw))); !errors.Is(err, failure) || !got.Empty() {
+			t.Fatal("complete JSON hid a read error", err)
+		}
+	})
+	t.Run("streaming_input_precedence", func(t *testing.T) {
+		const limit = 8192
+		invalid := bytes.Repeat([]byte{'?'}, limit+32)
+		reader := bytes.NewReader(invalid)
+		if got, err := decodeHeaderState(reader, limit); !errors.Is(err, ErrStateFileTooLarge) || !got.Empty() || reader.Len() != 31 {
+			t.Fatal("an early syntax error hid an overflow or changed its single-byte probe", err)
+		}
+		failure := errors.New("synthetic read failure after malformed JSON")
+		reader = bytes.NewReader(invalid[:limit+1])
+		if got, err := decodeHeaderState(stateReadFailure{reader, failure}, limit); !errors.Is(err, failure) || !got.Empty() || reader.Len() != 0 {
+			t.Fatal("an early syntax error or a simultaneous overflow hid the read failure", err)
+		}
+		reader = bytes.NewReader(invalid)
+		if got, err := decodeHeaderState(reader, -1); !errors.Is(err, ErrInvalidRetainedState) || !got.Empty() || reader.Len() != len(invalid) {
+			t.Fatal("invalid streaming limit reached the input reader", err)
 		}
 	})
 }
