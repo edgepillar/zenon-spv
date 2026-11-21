@@ -50,6 +50,7 @@ VISIBILITY_MARKER = "SPV_FIRST_INSERTION_VISIBILITY "
 RECORDED_H2_MARKER = "SPV_RECORDED_STARTUP_H2 "
 RECORDED_BOUNDARY_MARKER = "SPV_RECORDED_STARTUP_BOUNDARY "
 RECORDED_PEER_BRIDGE_MARKER = "SPV_RECORDED_PEER_BRIDGE "
+RECORDED_PEER_FETCH_MARKER = "SPV_RECORDED_PEER_FETCH "
 RECORDED_PROOFS_MARKER = "SPV_RECORDED_STARTUP_PROOFS "
 UNSIGNED_H3_MARKER = "SPV_UNSIGNED_H3_LEDGER "
 H3_HISTORY_MARKER = "SPV_H3_HISTORY_AT_H4 "
@@ -95,6 +96,20 @@ RECORDED_PEER_BRIDGE = {
     "peer_insert_completed": True,
     "reopened_at_h2": True,
     "unsigned_h3_refused_before_commit": True,
+    "network_started": False,
+    "accepted_header_authority": False,
+}
+RECORDED_PEER_FETCH = {
+    "format": "recorded-chain69-peer-fetch/v1",
+    "rpc_method": "ledger.getFrontierMomentum",
+    "before_height": RECORDED_H2["height"] - 1,
+    "before_hash": RECORDED_H2["parent_hash"],
+    "held_height": RECORDED_H2["height"],
+    "held_hash": RECORDED_H2["hash"],
+    "insert_returned_while_held": False,
+    "relay_called_while_held": False,
+    "relayed_hash": RECORDED_H2["hash"],
+    "relay_propagate": True,
     "network_started": False,
     "accepted_header_authority": False,
 }
@@ -418,7 +433,8 @@ def pruned_typed_history(text, history):
 def native_controls(raw, cpu_profile=None, *, require_first_period_read=False, require_frontier_rpc=False,
                     require_recorded_h2=False, require_recorded_boundary=False, require_recorded_proofs=False,
                     require_unsigned_h3=False, require_h3_history=False, require_typed_history=False,
-                    require_pruned_typed_history=False, require_recorded_peer_bridge=False):
+                    require_pruned_typed_history=False, require_recorded_peer_bridge=False,
+                    require_recorded_peer_fetch=False):
     require(cpu_profile is None or cpu_profile in CPU_LIMITS, "cpu_profile_selection")
     cases = {"fixture-window": CASES["fixture-window"]} if cpu_profile == "half-core" else CASES
     require(type(raw) is bytes and 0 < len(raw) <= C.MAX_STREAM and raw.endswith(b"\n"), "native_stream")
@@ -475,6 +491,8 @@ def native_controls(raw, cpu_profile=None, *, require_first_period_read=False, r
                 if visibility_test is None or name != visibility_test), "foreign_recorded_boundary_trace")
     require(all(RECORDED_PEER_BRIDGE_MARKER not in text for name, text in outputs.items()
                 if visibility_test is None or name != visibility_test), "foreign_recorded_peer_bridge_trace")
+    require(all(RECORDED_PEER_FETCH_MARKER not in text for name, text in outputs.items()
+                if visibility_test is None or name != visibility_test), "foreign_recorded_peer_fetch_trace")
     require(all(RECORDED_PROOFS_MARKER not in text for name, text in outputs.items()
                 if visibility_test is None or name != visibility_test), "foreign_recorded_proofs_trace")
     require(all(UNSIGNED_H3_MARKER not in text for name, text in outputs.items()
@@ -545,6 +563,12 @@ def native_controls(raw, cpu_profile=None, *, require_first_period_read=False, r
                 and all(type(row[key]) is type(expected) for key, expected in RECORDED_PEER_BRIDGE.items()),
                 "recorded_peer_bridge_observation")
         result["recorded_peer_bridge"] = row
+    if require_recorded_peer_fetch or RECORDED_PEER_FETCH_MARKER in recorded_text:
+        row = selected_trace(recorded_text, RECORDED_PEER_FETCH_MARKER)
+        require("recorded_peer_bridge" in result and type(row) is dict and row == RECORDED_PEER_FETCH
+                and all(type(row[key]) is type(expected) for key, expected in RECORDED_PEER_FETCH.items()),
+                "recorded_peer_fetch_observation")
+        result["recorded_peer_fetch"] = row
     if require_recorded_proofs or RECORDED_PROOFS_MARKER in recorded_text:
         result["recorded_proofs"] = recorded_startup_proofs(recorded_text, result.get("recorded_boundary"))
     if require_unsigned_h3 or UNSIGNED_H3_MARKER in recorded_text:
@@ -614,7 +638,8 @@ def linux_cpu_controls(work, node, output, selected, records):
                                require_unsigned_h3=profile == "reference",
                                require_h3_history=profile == "reference", require_typed_history=profile == "reference",
                                require_pruned_typed_history=profile == "reference",
-                               require_recorded_peer_bridge=profile == "reference")
+                               require_recorded_peer_bridge=profile == "reference",
+                               require_recorded_peer_fetch=profile == "reference")
 
     reference = run("reference", "native-test", "^" + TEST + "$")
     constrained = run("half-core", "half-core-test", "^" + TEST + "$/^fixture-window$")
@@ -713,7 +738,8 @@ def qualify(work, output, selected, records):
                         "-run", "^" + TEST + "$", "./consensus"], node, records, timeout=600)
         controls = native_controls(raw, require_frontier_rpc=True, require_recorded_proofs=True,
                                    require_unsigned_h3=True, require_h3_history=True, require_typed_history=True,
-                                   require_pruned_typed_history=True, require_recorded_peer_bridge=True)
+                                   require_pruned_typed_history=True, require_recorded_peer_bridge=True,
+                                   require_recorded_peer_fetch=True)
     unchanged()
     require(C.git(output, "node-head-after", ["rev-parse", "HEAD"], node, records).decode().strip() == C.NODE_REVISION
             and C.git(output, "node-tree-after", ["rev-parse", "HEAD^{tree}"], node, records).decode().strip() == C.NODE_TREE,

@@ -4,6 +4,7 @@ package consensus_test
 
 import (
 	"bytes"
+	"context"
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/binary"
@@ -37,6 +38,7 @@ import (
 	"github.com/zenon-network/go-zenon/dp"
 	"github.com/zenon-network/go-zenon/p2p"
 	"github.com/zenon-network/go-zenon/protocol"
+	"github.com/zenon-network/go-zenon/protocol/fetcher"
 	"github.com/zenon-network/go-zenon/rpc/api"
 	"github.com/zenon-network/go-zenon/rpc/server"
 	"github.com/zenon-network/go-zenon/verifier"
@@ -600,13 +602,7 @@ func spvReplayRecordedStartupBoundary(t *testing.T, config *genesis.GenesisConfi
 	}
 	bridge := protocol.NewChainBridge(ch, sourceConsensus, verifier.NewVerifier(ch, sourceConsensus, vm.CanonicalBasePlasma),
 		vm.NewSupervisor(ch, sourceConsensus))
-	if err := bridge.VerifyMomentum(detailed); err != nil {
-		t.Fatal("original peer precheck rejected the recorded H2", err)
-	}
-	index, err := bridge.InsertChain([]*nom.DetailedMomentum{detailed})
-	if err != nil || index != 0 || ch.GetFrontierMomentumStore().Identifier() != h2 {
-		t.Fatal("original peer insertion did not commit the recorded H2", index, err)
-	}
+	spvObserveRecordedFetch(t, ch, bridge, detailed, first)
 	err = ch.Stop()
 	ch = nil
 	if err != nil {
@@ -672,7 +668,7 @@ func spvReplayRecordedStartupBoundary(t *testing.T, config *genesis.GenesisConfi
 	unsigned := &nom.DetailedMomentum{Momentum: candidate}
 	bridge = protocol.NewChainBridge(ch, sourceConsensus, verifier.NewVerifier(ch, sourceConsensus, vm.CanonicalBasePlasma),
 		vm.NewSupervisor(ch, sourceConsensus))
-	index, err = bridge.InsertChain([]*nom.DetailedMomentum{unsigned})
+	index, err := bridge.InsertChain([]*nom.DetailedMomentum{unsigned})
 	if index != 0 || !errors.Is(err, verifier.ErrMSignatureMissing) ||
 		ch.GetFrontierMomentumStore().Identifier() != h2 {
 		t.Fatal("the original peer bridge did not refuse unsigned H3 before advancing", index, err)
@@ -819,6 +815,157 @@ func spvReplayRecordedStartupBoundary(t *testing.T, config *genesis.GenesisConfi
 }
 
 const spvFrontierMethod = "ledger.getFrontierMomentum"
+
+type spvFetchNotification struct {
+	entered chan types.HashHeight
+	release <-chan struct{}
+}
+
+func (g *spvFetchNotification) InsertMomentum(detailed *nom.DetailedMomentum) {
+	g.entered <- detailed.Momentum.Identifier()
+	<-g.release
+}
+
+func (*spvFetchNotification) DeleteMomentum(*nom.DetailedMomentum) {}
+
+// Enqueue the recorded block in the original fetcher. The final callback
+// represents the handoff to the broadcaster, with no transport behind it.
+func spvObserveRecordedFetch(t *testing.T, ch corechain.Chain, bridge protocol.ChainBridge,
+	detailed *nom.DetailedMomentum, first types.HashHeight) {
+	t.Helper()
+	next := detailed.Momentum.Identifier()
+	rpc := server.NewServer()
+	defer rpc.Stop()
+	if err := rpc.RegisterName("ledger", &spvFrontierLedger{ledger: api.NewLedgerApi(&spvFrontierNode{chain: ch})}); err != nil {
+		t.Fatal("cannot register the read-only ledger method", err)
+	}
+	before, err := spvReadRPCFrontier(rpc)
+	if err != nil || before != first || bridge.GetBlock(next.Hash) != nil {
+		t.Fatal("unexpected initial frontier or known recorded block", err)
+	}
+
+	deadline, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	gate := &spvFetchNotification{entered: make(chan types.HashHeight, 1), release: deadline.Done()}
+	ch.Register(gate)
+	type relay struct {
+		id        types.HashHeight
+		propagate bool
+	}
+	ready, settled := make(chan struct{}), make(chan struct{})
+	finished, relayed := make(chan error, 1), make(chan relay, 1)
+	startupReads := 0
+	lookupStarted := false
+	queue := fetcher.New(func(hash types.Hash) *nom.DetailedMomentum {
+		if hash == next.Hash {
+			// The loop looks up H2. The worker looks up its H1 parent.
+			lookupStarted = true
+		}
+		return bridge.GetBlock(hash)
+	}, bridge.VerifyMomentum, func(block *nom.DetailedMomentum, propagate bool) {
+		relayed <- relay{block.Momentum.Identifier(), propagate}
+	}, func() uint64 {
+		height := bridge.CurrentBlock().Height
+		// The pinned loop reads height at startup and after each of its
+		// two initial expired timers. Once drained, the sole event after
+		// it takes H2 off the queue is the import worker's done signal.
+		startupReads++
+		if startupReads == 3 {
+			close(ready)
+		}
+		if lookupStarted {
+			close(settled)
+			lookupStarted = false
+		}
+		return height
+	}, func(blocks []*nom.DetailedMomentum) (int, error) {
+		index, err := bridge.InsertChain(blocks)
+		if err == nil && index != 0 {
+			err = errors.New("unexpected recorded H2 insertion index")
+		}
+		finished <- err
+		return index, err
+	}, func(string) {})
+	queue.Start()
+	submitted := false
+	defer func() {
+		cancel()
+		// Let the original loop consume the worker's completion before
+		// stopping it and closing the fixture chain.
+		if submitted {
+			<-settled
+		} else {
+			<-ready
+		}
+		queue.Stop()
+		ch.UnRegister(gate)
+	}()
+	select {
+	case <-ready:
+	case <-deadline.Done():
+		t.Fatal("recorded fetch queue startup deadline")
+	}
+	if err := queue.Enqueue("recorded-peer", detailed); err != nil {
+		t.Fatal("cannot enqueue recorded H2", err)
+	}
+	submitted = true
+	select {
+	case id := <-gate.entered:
+		if id != next {
+			t.Fatal("unexpected recorded fetch notification", id)
+		}
+	case err := <-finished:
+		t.Fatal("recorded fetch insertion returned before its notification", err)
+	case <-settled:
+		t.Fatal("recorded fetch settled without notifying insertion")
+	case <-deadline.Done():
+		t.Fatal("recorded fetch notification deadline")
+	}
+	during, err := spvReadRPCFrontier(rpc)
+	if err != nil || during != next || deadline.Err() != nil {
+		t.Fatal("RPC did not expose recorded H2 while its notification was held", err)
+	}
+	select {
+	case err := <-finished:
+		t.Fatal("recorded fetch insertion returned while its notification was held", err)
+	case <-relayed:
+		t.Fatal("recorded fetch called the broadcaster while its notification was held")
+	default:
+	}
+	cancel()
+
+	completion := time.NewTimer(8 * time.Second)
+	defer completion.Stop()
+	select {
+	case err := <-finished:
+		if err != nil || ch.GetFrontierMomentumStore().Identifier() != next {
+			t.Fatal("recorded fetch did not commit H2", err)
+		}
+	case <-completion.C:
+		t.Fatal("recorded fetch insertion completion deadline")
+	}
+	var broadcast relay
+	select {
+	case broadcast = <-relayed:
+		if broadcast.id != next || !broadcast.propagate {
+			t.Fatal("recorded fetch sent an unexpected block to the broadcaster")
+		}
+	case <-completion.C:
+		t.Fatal("recorded fetch broadcast callback deadline")
+	}
+
+	data, err := json.Marshal(map[string]interface{}{
+		"format": "recorded-chain69-peer-fetch/v1", "rpc_method": spvFrontierMethod,
+		"before_height": before.Height, "before_hash": before.Hash.String(),
+		"held_height": during.Height, "held_hash": during.Hash.String(),
+		"insert_returned_while_held": false, "relay_called_while_held": false,
+		"relayed_hash": broadcast.id.Hash.String(), "relay_propagate": broadcast.propagate,
+		"network_started": false, "accepted_header_authority": false,
+	})
+	if err != nil {
+		t.Fatal("cannot encode the recorded fetch observation", err)
+	}
+	t.Logf("SPV_RECORDED_PEER_FETCH %s", data)
+}
 
 func spvReadRPCFrontier(rpc *server.Server) (types.HashHeight, error) {
 	body := `{"jsonrpc":"2.0","id":1,"method":"` + spvFrontierMethod + `","params":[]}`

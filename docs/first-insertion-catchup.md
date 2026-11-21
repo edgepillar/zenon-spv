@@ -131,17 +131,26 @@ one size/digest observation for these in-memory bytes.
 [Node message codec](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/p2p/message.go#L46-L55) ·
 [Momentum field order](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/chain/nom/momentum.go#L38-L67)
 
-The original `ChainBridge` checks the decoded envelope and inserts the recorded
-H2 through the node's VM, cache, state tree and ledger. Its checked changes hash
-commits the empty patch. All managers close and reopen at the exact H2. The
-state-root rule is inactive at H1 and active at the reopened H2. The original
+The original fetch queue takes the decoded H2, looks up its parent and calls
+`ChainBridge` to check and insert it through the node's VM, cache, state tree
+and ledger. A fixture listener holds the synchronous insertion notification.
+The in-memory Ledger RPC returns H1 before enqueue and H2 while the notification
+is held. Insertion returns after release and the fetcher hands that exact H2
+to an in-memory propagation callback. The check reuses the existing one-period
+database and native test invocation.
+[Fetch queue](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/protocol/fetcher/fetcher.go#L444-L515) ·
+[Peer handler](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/protocol/handler.go#L428-L453)
+
+The checked changes hash commits the empty patch. All managers close and
+reopen at the exact H2. The state-root rule is inactive at H1 and active at the
+reopened H2. The original
 raw verifier accepts version 3 for an unsigned H3 candidate and rejects incoming
 versions 1 and 2. Its hypothetical empty-patch root matches the reopened H2
 tree root. The reconstructed ledger stays at H2 for this observation.
 [Receiver insertion](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/protocol/chain_bridge.go#L451-L500) ·
 [Version rule](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/verifier/momentum.go#L149-L167)
 
-The current qualification requires the peer bridge record in the existing
+The current qualification requires both the queue and bridge records in the existing
 one-period case. Historical direct VM replays retain their original report
 shape. The root remains conditional on an empty H3 patch. Cross-node delivery
 and the selected signed H3, accepted range and typed BatchEntry result still
