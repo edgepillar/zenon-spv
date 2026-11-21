@@ -53,6 +53,48 @@ func sourceRootCollect(t *testing.T, events []testEvent, group string, packages 
 	return collector, raw, collector.read(&stream)
 }
 
+func TestGroupedCLIBuildSourceRootReport(t *testing.T) {
+	report := queryCLIBuildBatchReport{
+		SchemaVersion: 1, Commands: 7, Individual: 7, Batch: 1, Rebuild: 1, Parallelism: 1,
+		Equal: true, Independent: true, Mutation: true, Fresh: true, Exports: true,
+		ReferenceNS: 40, BatchNS: 20,
+	}
+	for i, command := range queryCLIBuildReportCommands {
+		report.Binaries = append(report.Binaries, queryCLIBuildOutput{command, fmt.Sprintf("%064x", i+1), 4096})
+	}
+	raw, err := json.Marshal(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newRoot := func() sourceRootObservation {
+		return sourceRootObservation{
+			result:     sourceRootResult{Test: queryCLIBuildBatchTest, Status: "running"},
+			reportSpec: sourceRootReportSpecs[queryCLIBuildBatchTest],
+		}
+	}
+	root := newRoot()
+	if err := root.observeReport(root.reportSpec.marker+string(raw[:128]), true); err != nil {
+		t.Fatal(err)
+	}
+	if err := root.observeReport(string(raw[128:])+"\r\n", true); err != nil || !bytes.Equal(root.report, raw) {
+		t.Fatal("complete grouped build evidence was lost", err)
+	}
+	if err := root.observeReport(root.reportSpec.marker+string(raw)+"\n", true); err == nil {
+		t.Fatal("duplicate grouped build evidence was accepted")
+	}
+	for _, candidate := range [][]byte{
+		bytes.Replace(raw, []byte(`"fresh_rebuild":true`), []byte(`"fresh_rebuild":false`), 1),
+		bytes.Replace(raw, []byte(`"bytes":4096`), []byte(`"bytes":134217729`), 1),
+		bytes.Replace(raw, []byte(`"command":"zenon-spv"`), []byte(`"command":"PRIVATE_PATH"`), 1),
+		append([]byte(`{"private":"PRIVATE_PATH",`), raw[1:]...),
+	} {
+		bad := newRoot()
+		if err := bad.observeReport(bad.reportSpec.marker+string(candidate)+"\n", true); err == nil || bad.report != nil {
+			t.Fatal("invalid grouped build evidence entered the receipt")
+		}
+	}
+}
+
 func TestSourceRootEvidenceCompleteBoundAndPrivate(t *testing.T) {
 	collector, raw, err := sourceRootCollect(t, sourceRootEvents(6), sourceEnumerationGroup)
 	if err != nil || collector.finish(true) != "passed" {

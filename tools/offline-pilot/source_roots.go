@@ -14,10 +14,12 @@ const sourceEnumerationGroup = "compiled-source-enumeration/v1"
 const compiledNativeObserverGroup = "compiled-native-observers/v1"
 const compiledNativeObserverGroupV2 = "compiled-native-observers/v2"
 const compiledNativeObserverGroupV3 = "compiled-native-observers/v3"
+const compiledNativeObserverGroupV4 = "compiled-native-observers/v4"
 const sourceEnumerationTest = "TestCompiledPilotSourceEnumeration"
 const sourceEnumerationPackage = modulePath + "/tools/offline-pilot"
 const sourceEnumerationSubtests = 6
 const nodeAccountPoWObserverTest = "TestCompiledNodeAccountPoWObserver"
+const queryCLIBuildBatchTest = "TestQueryCLIBuildBatch"
 
 type sourceRootSpec struct {
 	packageName string
@@ -37,15 +39,22 @@ var compiledNativeObserverRoots = []sourceRootSpec{
 var compiledNativeObserverRootsV2 = append(slices.Clone(compiledNativeObserverRoots),
 	sourceRootSpec{modulePath + "/internal/conformance", nodeAccountPoWObserverTest, 134})
 
+var compiledNativeObserverRootsV3 = append(slices.Clone(compiledNativeObserverRootsV2),
+	sourceRootSpec{modulePath + "/internal/conformance", "TestCompiledVerifierSelectionGuards", 0},
+	sourceRootSpec{modulePath + "/internal/conformance", "TestCompiledVerifierSyntaxPrivacy", 0},
+	sourceRootSpec{modulePath + "/internal/conformance", "TestCompiledCollectorSyntaxPrivacy", 0},
+	sourceRootSpec{modulePath + "/internal/conformance", "TestCompiledMaintainerSyntaxPrivacy", 0})
+
 var sourceRootGroups = map[string][]sourceRootSpec{
 	sourceEnumerationGroup:        {sourceEnumerationRoot},
 	compiledNativeObserverGroup:   compiledNativeObserverRoots,
 	compiledNativeObserverGroupV2: compiledNativeObserverRootsV2,
-	compiledNativeObserverGroupV3: append(slices.Clone(compiledNativeObserverRootsV2),
-		sourceRootSpec{modulePath + "/internal/conformance", "TestCompiledVerifierSelectionGuards", 0},
-		sourceRootSpec{modulePath + "/internal/conformance", "TestCompiledVerifierSyntaxPrivacy", 0},
-		sourceRootSpec{modulePath + "/internal/conformance", "TestCompiledCollectorSyntaxPrivacy", 0},
-		sourceRootSpec{modulePath + "/internal/conformance", "TestCompiledMaintainerSyntaxPrivacy", 0}),
+	compiledNativeObserverGroupV3: compiledNativeObserverRootsV3,
+	compiledNativeObserverGroupV4: append(slices.Clone(compiledNativeObserverRootsV3),
+		sourceRootSpec{modulePath + "/internal/conformance", "TestQueryCLIBuildPlan", 5},
+		sourceRootSpec{modulePath + "/internal/conformance", queryCLIBuildBatchTest, 0},
+		sourceRootSpec{modulePath + "/internal/conformance", "TestQueryCLIBuildFailureHelper", 0},
+		sourceRootSpec{modulePath + "/internal/conformance", "TestQueryCLIBuildFailure", 0}),
 }
 
 type sourceRootReportSpec struct {
@@ -61,6 +70,9 @@ var sourceRootReportSpecs = map[string]sourceRootReportSpec{
 	"TestCompiledVerifierSyntaxPrivacy":   {"offline-verifier-syntax-controls ", 8077, "f50dd105ff0b753742dce19cfba7580748422b2dc029520764bcaba17f8f56a7"},
 	"TestCompiledCollectorSyntaxPrivacy":  {"offline-collector-syntax-controls ", 3272, "9e76894c137e91527335e464c58a86fc19a73c798b1a207c68979a788d5666e3"},
 	"TestCompiledMaintainerSyntaxPrivacy": {"offline-maintainer-syntax-controls ", 1722, "9ef3f49d5fa9cf7402767943c49440f9f5cb18a950b67115f2d4c485d2605c2d"},
+	"TestQueryCLIBuildPlan":               {"query-cli-build-plan ", 96, "c1de58366de6838ab5d1cc9eda666e6d7a21b9c56d8aeb4e91e96319bf6a3241"},
+	queryCLIBuildBatchTest:                {"query-cli-build-batch ", 2048, ""},
+	"TestQueryCLIBuildFailure":            {"query-cli-build-failure ", 144, "16a8fdeb714ad1809a93f643fc91a5137a97856433c79e9bf1fe255886581967"},
 }
 
 type sourceRootResult struct {
@@ -156,9 +168,15 @@ func (o *sourceRootObservation) observeReport(output string, rootRunning bool) e
 		return nil
 	}
 	raw := bytes.TrimSuffix(bytes.TrimSuffix(o.fragment, []byte("\n")), []byte("\r"))
-	sum := sha256.Sum256(raw)
-	if len(raw) != spec.size || hex.EncodeToString(sum[:]) != spec.digest {
-		return errors.New("invalid source root report")
+	if o.result.Test == queryCLIBuildBatchTest {
+		if !validQueryCLIBuildBatchReport(raw) {
+			return errors.New("invalid grouped CLI build report")
+		}
+	} else {
+		sum := sha256.Sum256(raw)
+		if len(raw) != spec.size || hex.EncodeToString(sum[:]) != spec.digest {
+			return errors.New("invalid source root report")
+		}
 	}
 	o.report = raw
 	o.fragment = nil
@@ -231,6 +249,9 @@ func (c *sourceRootCollector) snapshot() *sourceRootEvidence {
 		evidence.Format = "zenon-source-root-controls/v2"
 	case compiledNativeObserverGroupV3:
 		evidence.Format = "zenon-source-root-controls/v3"
+		evidence.CLIControls = make(map[string]json.RawMessage)
+	case compiledNativeObserverGroupV4:
+		evidence.Format = "zenon-source-root-controls/v4"
 		evidence.CLIControls = make(map[string]json.RawMessage)
 	}
 	for i, row := range c.roots {

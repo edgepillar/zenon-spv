@@ -264,6 +264,34 @@ class RootSuiteControls(unittest.TestCase):
                 with self.assertRaises(CHECKER.Rejected):
                     check(changed, next_group)
 
+    def test_grouped_cli_build_report_binds_execution_pins(self):
+        binaries = [{"command": command, "sha256": f"{i+1:064x}", "bytes": 4096}
+                    for i, command in enumerate(CHECKER.CLI_BUILD_COMMANDS)]
+        report = {
+            "schema_version": 1, "commands": 7, "individual_go_build_invocations": 7,
+            "batch_go_build_invocations": 1, "rebuild_go_build_invocations": 1, "build_parallelism": 1,
+            "binary_bytes_equal": True, "independent_paths": True, "private_mutation_isolated": True,
+            "fresh_rebuild": True, "existing_exports_unchanged": True,
+            "reference_elapsed_ns": 500, "batch_elapsed_ns": 200, "binaries": binaries,
+        }
+        executed = [{"binaries": [{"command": x["command"], "sha256": x["sha256"]} for x in binaries]}]
+        canonical = json.dumps(report, sort_keys=True, separators=(",", ":")).encode()
+        self.assertEqual(CHECKER.check_cli_build_batch(report, executed), hashlib.sha256(canonical).hexdigest())
+        for mutate in (
+            lambda d: d.update(batch_elapsed_ns=0),
+            lambda d: d.update(fresh_rebuild=False),
+            lambda d: d["binaries"].reverse(),
+            lambda d: d["binaries"][0].update(bytes=True),
+            lambda d: d["binaries"][0].update(sha256="f" * 64),
+            lambda d: d["binaries"][0].update(path="PRIVATE"),
+        ):
+            changed = copy.deepcopy(report)
+            mutate(changed)
+            with self.assertRaises(CHECKER.Rejected):
+                CHECKER.check_cli_build_batch(changed, executed)
+        with self.assertRaises(CHECKER.Rejected):
+            CHECKER.check_cli_build_batch(report, [{"binaries": executed[0]["binaries"][:-1]}])
+
     def test_source_root_reuse_preserves_parent_instrumentation_and_complete_suite(self):
         workflow = (HERE.parent / ".github/workflows/ci.yml").read_text()
         linux, matrix = workflow.split("\n  native-platform:\n", 1)
@@ -277,10 +305,12 @@ class RootSuiteControls(unittest.TestCase):
             self.assertIn(command, linux)
             self.assertNotIn(command, matrix)
         self.assertIn("--full-suite --timeout 30m --package-timeout 10m --race --coverage", linux)
-        self.assertIn("--full-suite --timeout 30m --package-timeout 10m --suite-root-group compiled-native-observers/v3", matrix)
+        self.assertIn("-run '^TestQueryCLIBuild'", linux)
+        self.assertNotIn("-run '^TestQueryCLIBuild'", matrix)
+        self.assertIn("--full-suite --timeout 30m --package-timeout 10m --suite-root-group compiled-native-observers/v4", matrix)
         check, _ = matrix.split("      - name: Upload root suite receipt\n", 1)
         self.assertIn("--expect-race false --expect-coverage false", check)
-        self.assertIn("--require-source-root-group compiled-native-observers/v3", check)
+        self.assertIn("--require-source-root-group compiled-native-observers/v4", check)
         self.assertEqual(matrix.count('> "$RUNNER_TEMP/root-suite-check.json"'), 1)
 
     def test_full_report_array_limit_applies_only_to_the_selected_receipt_path(self):
