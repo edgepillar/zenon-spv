@@ -5,6 +5,22 @@ import (
 	"io"
 )
 
+// Remember the first terminal result. A JSON decoder can consume bytes from
+// the same read as an I/O error and still return a complete JSON token.
+type boundedStateInput struct {
+	reader io.LimitedReader
+	err    error
+}
+
+func (r *boundedStateInput) Read(raw []byte) (int, error) {
+	if r.err != nil {
+		return 0, r.err
+	}
+	n, err := r.reader.Read(raw)
+	r.err = err
+	return n, err
+}
+
 // A stat size is an allocation hint, never the input boundary. Read to EOF
 // even when the file grew or shrank, and inspect at most maxBytes+1 bytes.
 // The common stable-file path needs one input buffer. Its capacity, including

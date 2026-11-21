@@ -2,12 +2,12 @@
 
 The populated-window baseline showed substantial allocation volume during
 trusted resume. A local allocation profile identified input-buffer growth in
-`io.ReadAll` as one contributor. `LoadHeaderState` now uses the already observed
+`io.ReadAll` as one contributor. The initial improvement used the observed
 file size to reserve the initial read buffer, avoiding repeated copying on the
-usual stable-file path. The benchmark continues to include complete decoding,
+usual stable-file path. The benchmark includes complete decoding,
 integrity checks, schedule capture and producer reauthorization.
 
-## Preserved boundaries
+## Input boundaries
 
 The stat size is an allocation hint. A stale smaller hint cannot truncate a
 growing file, and a stale larger hint cannot turn unused buffer bytes into
@@ -40,7 +40,7 @@ before capacity changes can remove any header. State formats, context pins,
 writer locking, and save/replacement behavior are unchanged.
 
 `TestSizedStateReadContract` covers byte boundaries, unusable and stale hints,
-short reads, data accompanied by EOF/errors, and complete saved-state parsing.
+short reads, data accompanied by EOF or I/O errors, and complete saved-state parsing.
 `FuzzSizedStateRead` compares accepted bytes and overflow consumption against
 the previous bounded `io.ReadAll` contract. The native offline pilot includes
 the deterministic read-contract scenario alongside the full-capacity and
@@ -78,3 +78,25 @@ Reads normally use a warm filesystem cache. This remains a synthetic local
 workload; it does not measure cold I/O, network latency, real account traffic or
 target-device performance. CI executes the workload as a functional check and
 does not enforce timing thresholds.
+
+## Streaming the native retained window
+
+The v1/v2 disk reader now decodes one retained header at a time through a
+bounded reader. It checks the rest of the input after an early parser error
+so a read failure or the single overflow byte still controls the outcome.
+A valid object must reach EOF before the loader validates the full saved
+window. Trusted resume reauthorizes the full window before any resize.
+
+A comparison against `d72d14fb0d4f3aa0bbad229ffe17fd5e31956c1c` used the
+existing `TrustedResume` workload on darwin/arm64 with Go 1.25.14 and
+`-cpu=1`. Each capacity used three samples of four iterations per version.
+The figures are medians.
+
+| Retained headers | State bytes | Before (B/op) | Streaming (B/op) | Before (ms) | Streaming (ms) |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 16 | 13,139 | 55,368 | 45,738 | 0.717 | 0.664 |
+| 256 | 202,500 | 710,088 | 509,214 | 10.379 | 9.626 |
+| 4096 | 3,232,261 | 12,762,980 | 9,539,388 | 166.300 | 154.871 |
+
+The largest case allocated 25.3% fewer bytes per resume. These samples measure
+cumulative allocation and elapsed time with a warm filesystem cache.
