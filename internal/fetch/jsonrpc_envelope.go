@@ -15,6 +15,7 @@ var ErrInvalidRPCResponse = errors.New("invalid JSON-RPC response")
 
 // decodeRPCResponse consumes a body already bounded by Client.Call. The client
 // emits integer IDs; a response must echo that integer and use JSON-RPC 2.0.
+// A successful result borrows bytes from raw until the caller decodes it.
 func decodeRPCResponse(raw []byte, requestID int) (rpcResponse, error) {
 	var versionRaw, idRaw, resultRaw, errorRaw json.RawMessage
 	if err := decodeRPCObject(raw, map[string]*json.RawMessage{
@@ -55,6 +56,7 @@ func decodeRPCResponse(raw []byte, requestID int) (rpcResponse, error) {
 // decodeRPCObject rejects duplicate control fields and case aliases while
 // allowing unrelated extension members. Field names and values are not echoed
 // in parser diagnostics. Callers provide fresh temporary fields for each object.
+// Selected fields borrow the validated value bytes from raw.
 // A nil target marks a known field whose value is discarded after JSON scanning;
 // its presence is still tracked to reject duplicates and case aliases.
 func decodeRPCObject(raw []byte, fields map[string]*json.RawMessage) error {
@@ -63,6 +65,7 @@ func decodeRPCObject(raw []byte, fields map[string]*json.RawMessage) error {
 		return fmt.Errorf("%w: expected an object", ErrInvalidRPCResponse)
 	}
 	var discarded map[string]bool
+	var scan ignoredRPCValue
 	for dec.More() {
 		token, err := dec.Token()
 		name, ok := token.(string)
@@ -70,14 +73,12 @@ func decodeRPCObject(raw []byte, fields map[string]*json.RawMessage) error {
 			return fmt.Errorf("%w: malformed object member", ErrInvalidRPCResponse)
 		}
 		target, known := fields[name]
-		var value any = target
 		if !known {
 			for field := range fields {
 				if strings.EqualFold(name, field) {
 					return fmt.Errorf("%w: noncanonical control field name", ErrInvalidRPCResponse)
 				}
 			}
-			value = &ignoredRPCValue{}
 		} else if target == nil {
 			if discarded[name] {
 				return fmt.Errorf("%w: duplicate control field", ErrInvalidRPCResponse)
@@ -86,19 +87,28 @@ func decodeRPCObject(raw []byte, fields map[string]*json.RawMessage) error {
 				discarded = make(map[string]bool)
 			}
 			discarded[name] = true
-			value = &ignoredRPCValue{}
 		} else if len(*target) != 0 {
 			return fmt.Errorf("%w: duplicate control field", ErrInvalidRPCResponse)
 		}
-		if err := dec.Decode(value); err != nil {
+		afterKey := dec.InputOffset()
+		if err := dec.Decode(&scan); err != nil {
 			return fmt.Errorf("%w: malformed member value", ErrInvalidRPCResponse)
+		}
+		if target != nil {
+			// Decode consumed the colon and one complete value. Use the input
+			// offsets to keep the original bytes without the decoder's buffer.
+			member := bytes.TrimLeft(raw[afterKey:dec.InputOffset()], " \t\r\n")
+			if len(member) < 2 || member[0] != ':' {
+				return fmt.Errorf("%w: malformed member value", ErrInvalidRPCResponse)
+			}
+			value := bytes.Trim(member[1:], " \t\r\n")
+			*target = value[:len(value):len(value)]
 		}
 	}
 	if token, err := dec.Token(); err != nil || token != json.Delim('}') {
 		return fmt.Errorf("%w: malformed object ending", ErrInvalidRPCResponse)
 	}
-	var extra json.RawMessage
-	if err := dec.Decode(&extra); err != io.EOF {
+	if err := dec.Decode(&scan); err != io.EOF {
 		return fmt.Errorf("%w: trailing response data", ErrInvalidRPCResponse)
 	}
 	return nil
@@ -106,8 +116,7 @@ func decodeRPCObject(raw []byte, fields map[string]*json.RawMessage) error {
 
 // ignoredRPCValue is only passed to json.Decoder.Decode, which scans and
 // validates the complete JSON value before calling UnmarshalJSON. The callback
-// discards that validated value without making a RawMessage payload copy.
-// Decoder buffering and copies of required control fields are still allocated.
+// discards the decoder's value without making a RawMessage payload copy.
 type ignoredRPCValue struct{}
 
 func (*ignoredRPCValue) UnmarshalJSON([]byte) error { return nil }

@@ -12,34 +12,54 @@ import (
 // BenchmarkRPCEnvelopeExtensions compares the current object decoder with the
 // former copy-based decoder retained below. Input construction is outside the
 // timed region; both paths retain and check identical control-field bytes.
-// These are synthetic decoder allocation observations, not RPC/RSS budgets.
+// The page fixture uses the size and shape of the bounded candidate range.
+// These are synthetic decoder allocation measurements.
 func BenchmarkRPCEnvelopeExtensions(b *testing.B) {
 	for _, size := range []int{32 << 10, 1 << 20, 8 << 20} {
 		raw := []byte(`{"jsonrpc":"2.0","trace":{"metadata":"` + strings.Repeat("x", size) + `"},"id":1,"result":{"value":2}}`)
-		for _, mode := range []struct {
-			name   string
-			decode func([]byte, map[string]*json.RawMessage) error
-		}{
-			{"copy_reference", decodeRPCObjectCopyReference},
-			{"discard_extension", decodeRPCObject},
-		} {
-			b.Run(fmt.Sprintf("%d/%s", size, mode.name), func(b *testing.B) {
-				b.ReportAllocs()
-				b.SetBytes(int64(len(raw)))
-				b.ResetTimer()
-				for i := 0; i < b.N; i++ {
-					var version, id, result, remoteError json.RawMessage
-					fields := map[string]*json.RawMessage{
-						"jsonrpc": &version, "id": &id, "result": &result, "error": &remoteError,
-					}
-					if err := mode.decode(raw, fields); err != nil ||
-						string(version) != `"2.0"` || string(id) != "1" ||
-						string(result) != `{"value":2}` || len(remoteError) != 0 {
-						b.Fatalf("control field mismatch: %v", err)
-					}
-				}
-			})
+		benchmarkRPCEnvelopeFields(b, fmt.Sprint(size), raw, []byte(`{"value":2}`))
+	}
+
+	const prefix = `{"jsonrpc":"2.0","id":1,"result":`
+	row := `{"data":"` + strings.Repeat("Z", 20<<10) + `"}`
+	raw := make([]byte, 0, len(prefix)+400*(len(row)+1)+32)
+	raw = append(raw, prefix...)
+	raw = append(raw, `{"list":[`...)
+	for i := 0; i < 400; i++ {
+		if i > 0 {
+			raw = append(raw, ',')
 		}
+		raw = append(raw, row...)
+	}
+	raw = append(raw, `],"count":400}}`...)
+	benchmarkRPCEnvelopeFields(b, "page_result", raw, raw[len(prefix):len(raw)-1])
+}
+
+func benchmarkRPCEnvelopeFields(b *testing.B, name string, raw, expected []byte) {
+	b.Helper()
+	for _, mode := range []struct {
+		name   string
+		decode func([]byte, map[string]*json.RawMessage) error
+	}{
+		{"copy_reference", decodeRPCObjectCopyReference},
+		{"discard_extension", decodeRPCObject},
+	} {
+		b.Run(name+"/"+mode.name, func(b *testing.B) {
+			b.ReportAllocs()
+			b.SetBytes(int64(len(raw)))
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				var version, id, result, remoteError json.RawMessage
+				fields := map[string]*json.RawMessage{
+					"jsonrpc": &version, "id": &id, "result": &result, "error": &remoteError,
+				}
+				if err := mode.decode(raw, fields); err != nil ||
+					string(version) != `"2.0"` || string(id) != "1" ||
+					!bytes.Equal(result, expected) || len(remoteError) != 0 {
+					b.Fatalf("control field mismatch: %v", err)
+				}
+			}
+		})
 	}
 }
 

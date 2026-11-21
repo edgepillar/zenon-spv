@@ -104,6 +104,19 @@ func TestDecodeRPCEnvelopeRejectsMalformedControlFields(t *testing.T) {
 	}
 }
 
+func TestDecodeRPCEnvelopeBorrowsExactResult(t *testing.T) {
+	const want = `{ "items": ["[a:b]", "escaped \"quote\"", null], "count": 3 }`
+	const prefix = "\r\n{\n" + `"trace":{"extension":true},"\u0072esult"` + " \t:\n "
+	body := []byte(prefix + want + "\t , " + `"id":1,"jsonrpc":"2.0"}` + "\n")
+	r, err := decodeRPCResponse(body, 1)
+	if err != nil || string(r.Result) != want {
+		t.Fatalf("result bytes changed: %q, %v", r.Result, err)
+	}
+	if &r.Result[0] != &body[len(prefix)] || cap(r.Result) != len(r.Result) {
+		t.Fatal("the selected result did not borrow its bounded span of the response")
+	}
+}
+
 func TestCallPreservesValidResultsAndRemoteErrors(t *testing.T) {
 	for _, result := range []string{`null`, `0`, `false`, `"value"`, `[1,2]`, `{"value":2}`} {
 		t.Run(result, func(t *testing.T) {
@@ -160,14 +173,18 @@ func FuzzRPCEnvelope(f *testing.F) {
 			return
 		}
 		var envelope struct {
-			Version string `json:"jsonrpc"`
-			ID      int    `json:"id"`
+			Version string          `json:"jsonrpc"`
+			ID      int             `json:"id"`
+			Result  json.RawMessage `json:"result"`
 		}
 		if json.Unmarshal([]byte(raw), &envelope) != nil || envelope.Version != "2.0" || envelope.ID != 1 {
 			t.Fatal("accepted an unbound response")
 		}
 		if (len(r.Result) == 0) == (r.Error == nil) {
 			t.Fatal("accepted an ambiguous outcome")
+		}
+		if string(r.Result) != string(envelope.Result) {
+			t.Fatal("accepted result changed the original JSON value")
 		}
 	})
 }
