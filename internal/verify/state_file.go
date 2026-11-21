@@ -168,19 +168,12 @@ func LoadHeaderState(path string) (HeaderState, error) {
 }
 
 func decodeHeaderState(r io.Reader, maxBytes int64) (HeaderState, error) {
-	if maxBytes < 0 || maxBytes > MaxStateFileBytes {
-		return HeaderState{}, fmt.Errorf("%w: invalid state byte limit", ErrInvalidRetainedState)
-	}
-	input := boundedStateInput{reader: io.LimitedReader{R: r, N: maxBytes + 1}}
 	var body persistedState
-	parseErr := body.decodeJSON(json.NewDecoder(bufio.NewReader(&input)))
-	// Finish checking the bounded input even if decoding stopped early. A
-	// read error or an overflow byte takes precedence over a parse error.
-	if _, err := io.Copy(io.Discard, &input); err != nil {
-		return HeaderState{}, fmt.Errorf("read: %w", err)
-	}
-	if input.reader.N == 0 {
-		return HeaderState{}, ErrStateFileTooLarge
+	var parseErr error
+	if _, err := readBoundedState(r, maxBytes, func(input io.Reader) {
+		parseErr = body.decodeJSON(json.NewDecoder(bufio.NewReader(input)))
+	}); err != nil {
+		return HeaderState{}, err
 	}
 	if parseErr != nil {
 		return HeaderState{}, fmt.Errorf("parse: %w", parseErr)

@@ -169,20 +169,23 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 	}
 	state := empty
 	if selectedCheckpoint != nil {
-		// The regular-file reader bounds and owns these bytes once. The same
-		// buffer is digested and decoded; the provider cannot select this path.
-		raw, err = readExperimentalCLIFile(*checkpointPath, verify.MaxExperimentalV3StateBytes, openExperimentalCLIFile)
+		checkpoint, _, err := openExperimentalCLIInput(*checkpointPath, verify.MaxExperimentalV3StateBytes, openExperimentalCLIFile)
 		if err != nil {
 			return finish(70, "state_input", "invalid_input")
 		}
-		state, err = empty.DecodePinnedTrustedCheckpoint(raw, [32]byte(*selectedCheckpoint))
+		resumed, size, err := empty.ReadPinnedTrustedCheckpoint(checkpoint, [32]byte(*selectedCheckpoint))
+		closeErr := checkpoint.Close()
+		if closeErr != nil || errors.Is(err, verify.ErrExperimentalV3CheckpointInput) {
+			return finish(70, "state_input", "invalid_input")
+		}
 		if errors.Is(err, verify.ErrExperimentalV3CheckpointDigest) {
 			return finish(1, "state_input", "digest_mismatch")
 		}
-		if err != nil || state.Empty() {
+		if err != nil || resumed.Empty() {
 			return finish(70, "state_input", "invalid_checkpoint")
 		}
-		report.StateInput = &experimentalContextCheckpointReport{SHA256: hex.EncodeToString(selectedCheckpoint[:]), Bytes: uint64(len(raw)), Trust: "trusted_local_provenance_required"}
+		state = resumed
+		report.StateInput = &experimentalContextCheckpointReport{SHA256: hex.EncodeToString(selectedCheckpoint[:]), Bytes: uint64(size), Trust: "trusted_local_provenance_required"}
 		report.Caveats = append(report.Caveats, "The selected checkpoint digest identifies bytes; trusted local provenance remains required for evicted ancestry and file authenticity.")
 	}
 	raw, err = readExperimentalCLIFile(fs.Arg(0), maxExperimentalBundleBytes, openExperimentalCLIFile)

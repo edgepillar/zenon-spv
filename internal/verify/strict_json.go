@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"unicode/utf8"
 )
 
 // decodeRequiredObject accepts exactly the named fields, once each, with no
@@ -13,7 +14,12 @@ import (
 // so a failure cannot change an already selected trust configuration.
 // A function target consumes one value directly and checks its non-null shape.
 func decodeRequiredObject(raw []byte, fields map[string]any) error {
-	d := json.NewDecoder(bytes.NewReader(raw))
+	return decodeRequiredObjectValue(json.NewDecoder(bytes.NewReader(raw)), fields, false)
+}
+
+// With requireUTF8, field names must be ASCII schema names. A function target
+// also validates the raw text of each value it consumes.
+func decodeRequiredObjectValue(d *json.Decoder, fields map[string]any, requireUTF8 bool) error {
 	start, err := d.Token()
 	if err != nil || start != json.Delim('{') {
 		return errors.New("expected one JSON object")
@@ -39,6 +45,9 @@ func decodeRequiredObject(raw []byte, fields map[string]any) error {
 		var value json.RawMessage
 		if err := d.Decode(&value); err != nil {
 			return errors.New("malformed JSON field")
+		}
+		if requireUTF8 && !utf8.Valid(value) {
+			return fmt.Errorf("invalid %s", key)
 		}
 		if bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
 			return fmt.Errorf("%s must be non-null", key)

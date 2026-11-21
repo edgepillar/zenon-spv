@@ -29,15 +29,19 @@ type experimentalV3File struct {
 var ErrExperimentalV3StateFile = errors.New("invalid experimental v3 state file")
 
 func (f *experimentalV3File) UnmarshalJSON(raw []byte) error {
-	if f == nil || int64(len(raw)) > MaxExperimentalV3StateBytes || !utf8.Valid(raw) {
+	if f == nil || int64(len(raw)) > MaxExperimentalV3StateBytes {
 		return ErrExperimentalV3StateFile
 	}
+	return f.decodeJSON(json.NewDecoder(bytes.NewReader(raw)))
+}
+
+func (f *experimentalV3File) decodeJSON(d *json.Decoder) error {
 	var next experimentalV3File
 	var text string
-	if err := decodeRequiredObject(raw, map[string]any{
+	if err := decodeRequiredObjectValue(d, map[string]any{
 		"format": &next.Format, "version": &next.Version, "context": &text,
 		"profile": &next.Profile, "policy": &next.Policy, "retained_headers": next.Headers.readValue,
-	}); err != nil {
+	}, true); err != nil {
 		return ErrExperimentalV3StateFile
 	}
 	if next.Format != experimentalV3StateFormat || next.Version != 4 || len(text) != 64 || next.Context.UnmarshalText([]byte(text)) != nil {
@@ -81,7 +85,7 @@ func (w *experimentalV3Window) readValue(d *json.Decoder) error {
 			return ErrExperimentalV3StateFile
 		}
 		var value json.RawMessage
-		if d.Decode(&value) != nil {
+		if d.Decode(&value) != nil || !utf8.Valid(value) {
 			return ErrExperimentalV3StateFile
 		}
 		h, err := chain.DecodeCandidateV3Header(value)
@@ -151,6 +155,10 @@ func decodeTrustedExperimentalV3State(raw []byte, selected ExperimentalV3State) 
 	if json.Unmarshal(raw, &file) != nil {
 		return ExperimentalV3State{}, ErrExperimentalV3StateFile
 	}
+	return selected.resumeExperimentalV3File(file)
+}
+
+func (selected ExperimentalV3State) resumeExperimentalV3File(file experimentalV3File) (ExperimentalV3State, error) {
 	c := selected.data.config
 	if file.Context != c.context.Fingerprint || file.Policy != c.policy {
 		return ExperimentalV3State{}, ErrContextFingerprintMismatch

@@ -21,6 +21,23 @@ func (r *boundedStateInput) Read(raw []byte) (int, error) {
 	return n, err
 }
 
+func readBoundedState(r io.Reader, maxBytes int64, decode func(io.Reader)) (int64, error) {
+	if maxBytes < 0 || maxBytes > MaxStateFileBytes {
+		return 0, fmt.Errorf("%w: invalid state byte limit", ErrInvalidRetainedState)
+	}
+	input := boundedStateInput{reader: io.LimitedReader{R: r, N: maxBytes + 1}}
+	decode(&input)
+	// Finish the same bounded stream after an early parser return. The caller
+	// can then give input errors and an overflow byte precedence over parsing.
+	if _, err := io.Copy(io.Discard, &input); err != nil {
+		return 0, fmt.Errorf("read: %w", err)
+	}
+	if input.reader.N == 0 {
+		return 0, ErrStateFileTooLarge
+	}
+	return maxBytes + 1 - input.reader.N, nil
+}
+
 // A stat size is an allocation hint, never the input boundary. Read to EOF
 // even when the file grew or shrank, and inspect at most maxBytes+1 bytes.
 // The common stable-file path needs one input buffer. Its capacity, including

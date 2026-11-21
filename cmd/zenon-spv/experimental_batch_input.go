@@ -206,37 +206,44 @@ func decodeExperimentalCLIBundle(raw []byte, maxHeaders uint32, compare bool) (e
 	return next, nil
 }
 
-// Regular-file checks precede open and are repeated on the descriptor. The
-// file identity must match; byte caps include whitespace and concurrent growth.
-// This is bounded local input, not authentication of file provenance.
 func readExperimentalCLIFile(path string, limit int64, openFile func(string) (*os.File, error)) ([]byte, error) {
-	if limit <= 0 || limit > maxExperimentalBundleBytes {
-		return nil, errExperimentalCLIInput
-	}
-	selected, err := os.Lstat(path)
-	if err != nil || !selected.Mode().IsRegular() || selected.Size() > limit {
-		return nil, errExperimentalCLIInput
-	}
-	// Windows FileInfo resolves file IDs lazily through its saved path. Resolve
-	// the selected ID now so a later path replacement cannot redefine it.
-	if !os.SameFile(selected, selected) {
-		return nil, errExperimentalCLIInput
-	}
-	f, err := openFile(path)
+	f, size, err := openExperimentalCLIInput(path, limit, openFile)
 	if err != nil {
-		return nil, errExperimentalCLIInput
+		return nil, err
 	}
-	opened, err := f.Stat()
-	if err != nil || !opened.Mode().IsRegular() || !os.SameFile(selected, opened) || opened.Size() > limit {
-		_ = f.Close()
-		return nil, errExperimentalCLIInput
-	}
-	raw, readErr := readExperimentalCLIBytes(f, limit, opened.Size())
+	raw, readErr := readExperimentalCLIBytes(f, limit, size)
 	closeErr := f.Close()
 	if readErr != nil || closeErr != nil || int64(len(raw)) > limit {
 		return nil, errExperimentalCLIInput
 	}
 	return raw, nil
+}
+
+// Regular-file checks precede open and are repeated on the descriptor. The
+// file identity must match. The caller owns the descriptor and the read cap.
+func openExperimentalCLIInput(path string, limit int64, openFile func(string) (*os.File, error)) (*os.File, int64, error) {
+	if limit <= 0 || limit > maxExperimentalBundleBytes {
+		return nil, 0, errExperimentalCLIInput
+	}
+	selected, err := os.Lstat(path)
+	if err != nil || !selected.Mode().IsRegular() || selected.Size() > limit {
+		return nil, 0, errExperimentalCLIInput
+	}
+	// Windows FileInfo resolves file IDs lazily through its saved path. Resolve
+	// the selected ID now so a later path replacement cannot redefine it.
+	if !os.SameFile(selected, selected) {
+		return nil, 0, errExperimentalCLIInput
+	}
+	f, err := openFile(path)
+	if err != nil {
+		return nil, 0, errExperimentalCLIInput
+	}
+	opened, err := f.Stat()
+	if err != nil || !opened.Mode().IsRegular() || !os.SameFile(selected, opened) || opened.Size() > limit {
+		_ = f.Close()
+		return nil, 0, errExperimentalCLIInput
+	}
+	return f, opened.Size(), nil
 }
 
 // The opened regular file's size is an allocation hint, never an input bound.
