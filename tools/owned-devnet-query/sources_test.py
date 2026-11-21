@@ -10,6 +10,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.dont_write_bytecode = True
 HERE = Path(__file__).absolute().parent
@@ -111,6 +112,67 @@ class SourceTests(unittest.TestCase):
                 for selected in (record, executable):
                     with self.assertRaisesRegex(model.Refused, "source_executable_mode"):
                         sources.read_tracked(root, selected)
+
+    def preparation_fixture(self, root, *, wrong_pin=False):
+        data = self.contract.data
+        files = {role: {"selected.txt": role.encode(), "other.txt": b"other"}
+                 for role in sources.ROLES}
+        files["devnet"]["package-lock.json"] = model.canonical(self.locked_dependencies())
+        selected_rows = []
+        for role, entries in files.items():
+            content = entries["selected.txt"]
+            expected = b"different selection" if wrong_pin and role == "devnet" else content
+            selected_rows.append({"role": role, "path": "selected.txt", "git_blob": blob(content),
+                                  "bytes": len(content), "sha256": hashlib.sha256(expected).hexdigest()})
+        data["source_files"] = selected_rows
+        raw = model.canonical(data)
+        contract = model.Contract(raw, hashlib.sha256(raw).hexdigest())
+        recorder = mock.Mock()
+        preparation = sources.Preparer(contract, recorder, root / "sources", ["fixture-git"],
+                                       {"PATH": "/fixture/bin"}, lambda: None)
+
+        def run(role, label, path, *args, **options):
+            if label == "tree":
+                output = b"".join(tree_row(name, content) for name, content in files[role].items())
+            elif label in ("fetched-head", "head"):
+                output = (data["sources"][role]["revision"] + "\n").encode()
+            elif label == "tree-id":
+                output = b"1" * 40 + b"\n"
+            else:
+                if label == "checkout":
+                    for name, content in files[role].items():
+                        (path / name).write_bytes(content)
+                output = b""
+            return mock.Mock(stdout=mock.Mock(return_value=output))
+
+        preparation.run = mock.Mock(side_effect=run)
+        return preparation, recorder
+
+    @unittest.skipUnless(os.name == "posix", "POSIX source preparation fixture")
+    def test_preparation_has_initial_and_final_reads_for_every_tracked_file(self):
+        with tempfile.TemporaryDirectory(prefix="source-cohort-regular-control-") as temporary:
+            preparation, recorder = self.preparation_fixture(Path(temporary))
+            with mock.patch.object(sources, "read_tracked", wraps=sources.read_tracked) as reads:
+                result = preparation.prepare()
+            rows = {(checkout.path, entry.name) for checkout in result.checkouts for entry in checkout.records}
+            initial = [(call.args[0], call.args[1].name) for call in reads.call_args_list if len(call.args) == 2]
+            final = [(call.args[0], call.args[1].name) for call in reads.call_args_list if len(call.args) == 3]
+            self.assertCountEqual(initial, rows)
+            self.assertCountEqual(final, rows)
+            self.assertEqual(reads.call_count, 2 * len(rows))
+            self.assertEqual(recorder.seal.call_args.args[0], "selected-sources.json")
+            self.assertEqual(json.loads(recorder.seal.call_args.args[1])["tracked_files"], len(rows))
+
+    @unittest.skipUnless(os.name == "posix", "POSIX source preparation fixture")
+    def test_selected_pin_is_checked_before_preparing_the_next_role(self):
+        with tempfile.TemporaryDirectory(prefix="source-cohort-regular-control-") as temporary:
+            preparation, recorder = self.preparation_fixture(Path(temporary), wrong_pin=True)
+            with mock.patch.object(sources, "read_tracked", wraps=sources.read_tracked) as reads:
+                with self.assertRaisesRegex(model.Refused, "selected_source_content_binding"):
+                    preparation.prepare()
+            self.assertEqual(reads.call_count, 1)
+            self.assertEqual({call.args[0] for call in preparation.run.call_args_list}, {"devnet"})
+            recorder.seal.assert_not_called()
 
     def locked_dependencies(self):
         packages = {"": {"dependencies": {}}}

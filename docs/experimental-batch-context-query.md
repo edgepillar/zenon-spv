@@ -206,6 +206,30 @@ The retained tail is still rechecked; a zero provider-header count does not mean
 zero signature work. These small fixture counts establish reduced replay scope,
 not representative network latency, R1 resource budgets or production support.
 
+### Provider bundle decoding
+
+The CLI uses the already validated byte range for the `momentums` field and
+decodes each row directly to a detached header. The outer and per-header byte
+caps and the selected header count still apply. The three-witness query checks
+witness inputs before projecting the headers, preserving the existing refusal
+for an unavailable witness.
+
+Go 1.25.14 on Darwin arm64 measured these median allocations across three
+samples with eight operations per sample. Both versions use the same benchmark
+and input bytes. The baseline is `b6a87570abc29fd0dcce4cc32505243e449f0745`.
+
+| Input | Baseline B/op | Candidate B/op | Baseline allocs/op | Candidate allocs/op |
+| --- | ---: | ---: | ---: | ---: |
+| Four recorded headers and three witnesses | 127,208 | 122,552 | 1,319 | 1,304 |
+| 4,096 headers and three witnesses | 73,214,802 | 68,659,854 | 1,052,985 | 1,048,878 |
+
+The larger input repeats the four fixture rows to exercise the parser's header
+count cap. The benchmark measures decoding allocations with prepared bytes.
+
+```sh
+go test -run '^$' -bench '^BenchmarkExperimentalCLIBundleDecode$' -benchmem -benchtime=8x -cpu=1 -count=3 ./cmd/zenon-spv
+```
+
 ## Fixtures and qualification boundaries
 
 The selected original node is
@@ -248,6 +272,25 @@ For a short buffer-only comparison, run `go test -run '^$' -bench
 It pairs the previous bounded reader with the opened-size hint at 2 KiB,
 1 MiB and 8 MiB. Report the actual Go version/platform, bytes and allocations
 per operation; no benchmark result is recorded here by adding the control.
+
+The strict CLI object decoder uses the owned raw JSON value produced by the
+first decode for fields whose destination is a raw JSON message. Typed
+fields and nested witnesses still have their own schema and size checks.
+The raw fields keep their original bytes, including internal whitespace,
+escapes and explicitly allowed null values.
+
+A local comparison on Go 1.25.14 darwin/arm64 used three samples per case
+with one benchmark CPU. The baseline was `04c095f1ebc261a185a179cb2196a6bf45e08736`.
+
+| Decoder input | Input bytes | Baseline B/op | Candidate B/op | Baseline allocs/op | Candidate allocs/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Three-witness bundle with four fixture headers | 7,201 | 148,552 | 135,496 | 1,385 | 1,367 |
+| Outer object with 4,096 repeated fixture header rows | 2,752,933 | 13,902,953 | 11,145,194 | 67 | 58 |
+
+The first row measures full bundle decoding using the recorded proof bytes;
+the second measures only outer field decoding at a large input size. These
+are allocation volumes for the selected operations. Chain verification,
+filesystem reads and process resource limits have separate controls.
 
 The compiled workflow builds both commands together once, collects only from a
 loopback fixture and consumes the typed result. It exercises all three late

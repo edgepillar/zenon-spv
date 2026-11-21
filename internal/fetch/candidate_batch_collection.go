@@ -92,13 +92,13 @@ func (d *collectedCandidateMomentumDecoder) UnmarshalJSON(raw []byte) error {
 	if !utf8.Valid(raw) {
 		return ErrCandidateV3Momentum
 	}
-	value, err := DecodeCandidateV3Momentum(raw)
+	header, err := DecodeCandidateV3MomentumHeader(raw)
 	if err != nil {
 		return err
 	}
 	// The projection contains a data hash, not the original data bytes. Preserve
 	// the validated wire row independently; it cannot be rebuilt from that hash.
-	*d.target = collectedCandidateMomentum{header: value.Header, wire: bytes.Clone(raw)}
+	*d.target = collectedCandidateMomentum{header: header, wire: bytes.Clone(raw)}
 	return nil
 }
 

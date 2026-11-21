@@ -61,6 +61,33 @@ preserves failure fallback while respecting workflow cancellation. A skipped
 job's reported success does not mean its tests ran; inspect its actual job and
 step records before describing qualification.
 
+## Runtime evidence uploads
+
+An individual artifact upload failure leaves subsequent independent checks and
+uploads enabled in the native and recorded-oracle jobs. After a failed
+upload, the same job waits ten seconds and makes one more upload from the
+existing files. Both attempts use the same artifact name without overwrite.
+The retry requires files and a completed upload receipt. An unresolved
+failure still fails the job at its final upload check. A cancelled job
+does not retry. Keep the original error and completed artifact IDs for
+the specific run and attempt. The scope job keeps its full-runtime fallback.
+
+If the service created the original artifact but did not acknowledge it,
+the retry may report an artifact name conflict. The original is kept and
+the job still reports the unresolved upload. A retry resends the artifact
+within the job without rerunning any test or build.
+
+On main at `d72d14fb0d4f3aa0bbad229ffe17fd5e31956c1c`, two macOS artifact
+creation calls reported `ENOTFOUND` and six expected archives were missing.
+The macOS root suite had completed before the upload failures. This is an
+observed CI transport failure, separate from the subsequent unexecuted checks.
+[Original main attempt](https://github.com/edgepillar/zenon-spv/actions/runs/44779488024/attempts/1)
+
+On PR #428 at `fa2ffe0abd90e5ee7ee71cb6ce68029e59f3acd8`, the macOS
+core Init and Stop archive was missing after the same DNS error. The
+job continued through the remaining checks and was marked failed at the
+upload gate. [Original PR attempt](https://github.com/edgepillar/zenon-spv/actions/runs/44852618386/attempts/1)
+
 ## Portable tool changes
 
 The `PORTABLE_WORKFLOWS_ONLY` route selects the union of the three-platform

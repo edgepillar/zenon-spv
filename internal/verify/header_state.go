@@ -41,12 +41,20 @@ func capacityForPolicy(policy Policy) int {
 // NewHeaderState builds an empty state anchored at g, sized for
 // explicit K or legacy W+1 headers of retention.
 func NewHeaderState(g GenesisTrustRoot, policy Policy) HeaderState {
-	cap := capacityForPolicy(policy)
+	return newHeaderState(g, policy, true)
+}
+
+func newHeaderState(g GenesisTrustRoot, policy Policy, reserveCapacity bool) HeaderState {
+	capacity := capacityForPolicy(policy)
+	storageCapacity := 0
+	if reserveCapacity {
+		storageCapacity = capacity
+	}
 	return HeaderState{
 		ProtocolProfile: cloneProtocolProfile(policy.ProtocolProfile),
 		Genesis:         g,
-		RetainedWindow:  make([]chain.Header, 0, cap),
-		Capacity:        cap,
+		RetainedWindow:  make([]chain.Header, 0, storageCapacity),
+		Capacity:        capacity,
 		RetainHeaders:   policy.RetainHeaders,
 	}
 }

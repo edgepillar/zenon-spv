@@ -51,6 +51,16 @@ exact envelope, query, trust and context-pin checks run after every operation;
 three immutable predecessors and selected delayed targets are checked too.
 Read-only load attempts must preserve saved bytes, including failed attempts.
 
+The shrink refusal, invalid retention selections and authorized K=8 resume
+read the same saved full window. Each operation reopens that file and checks
+its bytes against the original save after loading.
+
+A local darwin/arm64 comparison on Go 1.25.14 traced 162 saves before this
+change and 126 after it across all 18 cases. The SHA-256 sequence for the
+remaining saves matched exactly. The test wrote 41,145,716 fewer logical
+state-file bytes per run. The candidate also passed all 18 cases under race
+and atomic coverage instrumentation.
+
 The large fixtures contain 2*K+32 synthetic headers, with unique content at
 each height. Profile and schedule coverage extend through the refill and then
 expire inside a multi-header batch. An explicit reason-coverage assertion

@@ -59,8 +59,13 @@ candidate export. The parent checks that an unrelated retained control file
 keeps its bytes and identity. This expected failure is separate from the
 successful control-suite result.
 
-Native CI executes these controls on Linux, macOS and Windows. Its single
-reference-then-grouped timing observation is not counterbalanced and has no
+Native CI executes these controls on Linux, macOS and Windows. The macOS and
+Windows jobs collect the four build test roots and their reports from the
+complete native test stream. The receipt binds the build report's binary
+digests to the pilot's recorded executions. Linux also runs its separate
+ordinary test command alongside the race and coverage suite.
+
+The single reference-then-grouped timing observation is not counterbalanced and has no
 performance threshold. Initial local counterbalanced observations used a new
 owned compiler cache warmed for all seven packages; those timings also include
 task-manager supervision. Neither observation qualifies a whole-CI speedup,

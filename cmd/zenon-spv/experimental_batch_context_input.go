@@ -48,7 +48,8 @@ func decodeExperimentalContextCLIBundle(raw []byte, maxHeaders uint32, compare b
 		return experimentalContextCLIBundle{}, errExperimentalCLIInput
 	}
 	var version uint32
-	var rows, witnesses, gateway json.RawMessage
+	var rows experimentalCLIFieldSpan
+	var witnesses, gateway json.RawMessage
 	fields := map[string]any{"version": &version, "momentums": &rows, "witnesses": &witnesses}
 	if compare {
 		fields["gateway"] = &gateway

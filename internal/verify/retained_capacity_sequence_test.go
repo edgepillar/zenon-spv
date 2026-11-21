@@ -106,7 +106,11 @@ func (s *capacitySequence) extend(count int, fault string) {
 
 func (s *capacitySequence) resume(w uint64, k int) {
 	s.t.Helper()
-	raw := sequenceSavedBytes(s.t, s.state, s.path)
+	s.resumeSaved(w, k, sequenceSavedBytes(s.t, s.state, s.path))
+}
+
+func (s *capacitySequence) resumeSaved(w uint64, k int, raw []byte) {
+	s.t.Helper()
 	context, err := s.state.VerificationContext()
 	if err != nil {
 		s.t.Fatal(err)
@@ -135,9 +139,8 @@ func (s *capacitySequence) unchangedFile(raw []byte) {
 	}
 }
 
-func (s *capacitySequence) refuseShrink() {
+func (s *capacitySequence) refuseShrink(raw []byte) {
 	s.t.Helper()
-	raw := sequenceSavedBytes(s.t, s.state, s.path)
 	m := s.model.resized(6, 8)
 	opts := s.fixture.options(s.t, m)
 	first, last := s.fixture.headers[m.indices[0]], s.fixture.headers[m.next-1]
@@ -152,9 +155,8 @@ func (s *capacitySequence) refuseShrink() {
 	s.check()
 }
 
-func (s *capacitySequence) refuseSelections() {
+func (s *capacitySequence) refuseSelections(raw []byte) {
 	s.t.Helper()
-	raw := sequenceSavedBytes(s.t, s.state, s.path)
 	for _, k := range []int{0, int(s.model.w), MaxRetainHeaders + 1} {
 		opts := s.fixture.options(s.t, s.model)
 		opts.Policy.RetainHeaders = k
@@ -199,9 +201,12 @@ func TestRetainedCapacitySequenceModel(t *testing.T) {
 						s.extend(3, "signature")
 						s.extend(3, "hash")
 						s.extend(1, "") // Evict the original oldest delayed target.
-						s.refuseShrink()
-						s.refuseSelections()
-						s.resume(6, 8)
+						// These reads use the same full window. Each still
+						// checks authorization or policy and file preservation.
+						saved := sequenceSavedBytes(t, s.state, s.path)
+						s.refuseShrink(saved)
+						s.refuseSelections(saved)
+						s.resumeSaved(6, 8, saved)
 						s.resume(6, k) // Growth must not restore the evicted history.
 						s.resume(6, k)
 						s.extend(k-8, "") // Refill the enlarged window from its retained tail.

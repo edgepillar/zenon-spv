@@ -81,8 +81,8 @@ def _executable_matches(mode, git_mode):
     return bool(mode & stat.S_IXUSR) if git_mode == "100755" else not (mode & 0o111)
 
 
-def read_tracked(root, record, expected_identity=None):
-    """Check a regular tracked file without following an intermediate link."""
+def read_tracked(root, record, expected_identity=None, *, selected_pin=None):
+    """Bind a regular file to its Git blob and optional selected SHA-256 pin."""
     root = Path(root)
     directory_identity = _directory_identity(root)
     current = root
@@ -119,7 +119,11 @@ def read_tracked(root, record, expected_identity=None):
     if os.name == "posix":
         require(_executable_matches(final.st_mode, record.mode),
                 "source_executable_mode")
-    return {"sha256": sha.hexdigest(), "bytes": size}, _identity(final)
+    content_pin = {"sha256": sha.hexdigest(), "bytes": size}
+    if selected_pin is not None:
+        require(content_pin == {key: selected_pin[key] for key in ("sha256", "bytes")},
+                "selected_source_content_binding")
+    return content_pin, _identity(final)
 
 
 def selected_files(contract, role, records):
@@ -205,11 +209,7 @@ class Checkout:
         require(len(self.records) == len(self.identities), "source_snapshot_identity_count")
         selected = {row["path"]: row for row in json.loads(self.selected_raw)}
         for record, identity in zip(self.records, self.identities):
-            actual, _ = read_tracked(self.path, record, identity)
-            if record.name in selected:
-                expected = selected[record.name]
-                require(actual == {k: expected[k] for k in ("sha256", "bytes")},
-                        "selected_source_content_binding")
+            read_tracked(self.path, record, identity, selected_pin=selected.get(record.name))
         return {"role": self.role, "repository": self.repository, "revision": self.revision,
                 "tree": self.tree, "tracked_files": len(self.records),
                 "tracked_bytes": sum(row.size for row in self.records),
@@ -314,11 +314,14 @@ class Preparer:
             tree = self.run(role, "tree-id", path, "rev-parse", "HEAD^{tree}", cap=128).stdout(128)
             require(len(tree) == 41 and tree.endswith(b"\n"), "source_tree_identity")
             tree_digest = digest(tree[:-1].decode("ascii"), HEX40)
-            identities = tuple(read_tracked(path, record)[1] for record in records)
-            checkout = Checkout(role, path, _directory_identity(path), selected["repository"], revision,
-                                tree_digest, records, identities, canonical(selected_rows))
-            checkout.verify()
-            checkouts.append(checkout)
+            directory_identity = _directory_identity(path)
+            selected_by_path = {row["path"]: row for row in selected_rows}
+            identities = tuple(read_tracked(path, record, selected_pin=selected_by_path.get(record.name))[1]
+                               for record in records)
+            require(_directory_identity(path) == directory_identity, "source_checkout_replaced")
+            checkouts.append(Checkout(role, path, directory_identity, selected["repository"], revision,
+                                      tree_digest, records, identities, canonical(selected_rows)))
+        # Later checkout commands ran after earlier roles were first read.
         result = PreparedSources(tuple(checkouts))
         source_report = result.verify()
         lockfile = result.paths["devnet"] / "package-lock.json"

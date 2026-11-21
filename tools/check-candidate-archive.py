@@ -127,7 +127,10 @@ def check_skip_ledger(report, os_name, require_complete=False):
     return {"coverage": ledger["coverage"], "records": len(ledger["records"])}
 
 
-def metadata(raw):
+def metadata(raw, *, array_limits=None):
+    """Decode bounded metadata with optional limits at exact object-key paths."""
+    limits = array_limits or {}
+
     def pairs(values):
         result = {}
         for key, value in values:
@@ -148,7 +151,7 @@ def metadata(raw):
                        parse_float=invalid_number, parse_constant=invalid_number)
     nodes = 0
 
-    def bounded(item, depth=0):
+    def bounded(item, depth, path):
         nonlocal nodes
         nodes += 1
         require(nodes <= 65536 and depth <= 16)
@@ -156,17 +159,17 @@ def metadata(raw):
             require(len(item) <= 256)
             for key, child in item.items():
                 require(len(key) <= 128)
-                bounded(child, depth + 1)
+                bounded(child, depth + 1, None if path is None else path + (key,))
         elif type(item) is list:
-            require(len(item) <= 256)
+            require(len(item) <= limits.get(path, 256))
             for child in item:
-                bounded(child, depth + 1)
+                bounded(child, depth + 1, None)
         elif type(item) is str:
             require(len(item) <= 4096)
         else:
             require(item is None or type(item) is bool or integer(item))
 
-    bounded(value)
+    bounded(value, 0, () if limits else None)
     return value
 
 

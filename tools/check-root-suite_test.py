@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Finite receipt consistency controls; real execution remains a CI gate."""
 import copy
+import hashlib
 import importlib.util
 import io
 import json
 from pathlib import Path
 import re
 import unittest
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location("root_suite_checker", HERE / "check-root-suite.py")
@@ -170,21 +172,165 @@ class RootSuiteControls(unittest.TestCase):
             with self.assertRaises(CHECKER.Rejected):
                 check(changed)
 
+    def test_compiled_native_pow_observer_requires_the_original_summary(self):
+        receipt, report = source_root_fixture("windows")
+        roots = [
+            {"package": CHECKER.MODULE + "/" + package, "test": test, "status": "pass",
+             "passed_subtests": count, "skipped_subtests": 0, "failed_subtests": 0}
+            for package, test, count in (
+                ("internal/conformance", "TestCompiledAdvancingBlockObserver", 9),
+                ("internal/conformance", "TestCompiledNodeAccountBasicObserver", 58),
+                ("internal/conformance", "TestCompiledNodeAccountReceiveObserver", 52),
+                ("tools/offline-pilot", "TestCompiledPilotSourceEnumeration", 6),
+                ("internal/conformance", "TestCompiledNodeAccountPoWObserver", 134),
+            )
+        ]
+        group = "compiled-native-observers/v2"
+        receipt["source_root_controls"] = {
+            "format": "zenon-source-root-controls/v2", "group": group, "status": "complete", "roots": roots,
+            "node_account_pow_observer": {
+                "schema_version": 1, "cases": 134, "observations": 64, "original_matched": 2,
+                "collection_blocked": 62, "coherent_hash_signature_rejected": 62,
+                "missing_commitment_refused": 4, "consumer_selection_mismatched": 4, "ordinary_commands": 4,
+                "corpus_sha256": "560ff77f5fe092e99222399309da164c0539dec749e95b0e1788cd52fe30716f",
+                "node_revision": "c64ed6279ff1d07335dab0ac36156dec8b5b71e9",
+                "runtime_acceptance_changed": False, "account_pow_qualified": False,
+                "new_signatures_generated": False, "network_pilot_qualified": False, "state_value_acceptance": False,
+            },
+        }
+        receipt["tests"].update(root_tests=9, subtests=267, passed=275)
+        receipt["timings"].update(completed_roots=9, missing_elapsed=6)
+
+        def check(value, required_group=group):
+            return CHECKER.check_receipt(value, report, True, True, "10m0s", "30m0s", "windows", required_group)
+
+        self.assertEqual(check(receipt), {
+            "group": group, "roots": 5, "passed_subtests": 259, "skipped_subtests": 0,
+            "node_account_pow_observer_sha256": "4a41ad86abce3301f54448dafd21901e3c6158fa9dda67dc72a0bed8bc89f1c1",
+        })
+        with self.assertRaises(CHECKER.Rejected):
+            check(receipt, "compiled-native-observers/v1")
+        for mutate in (
+            lambda section: section.pop("node_account_pow_observer"),
+            lambda section: section.update(format="zenon-source-root-controls/v1"),
+            lambda section: section["roots"].pop(),
+            lambda section: section["roots"][-1].update(passed_subtests=133, skipped_subtests=1),
+            lambda section: section["node_account_pow_observer"].update(observations=63),
+            lambda section: section["node_account_pow_observer"].update(schema_version=True),
+            lambda section: section["node_account_pow_observer"].update(state_value_acceptance=True),
+            lambda section: section["node_account_pow_observer"].update(extra="PRIVATE"),
+        ):
+            changed = copy.deepcopy(receipt)
+            mutate(changed["source_root_controls"])
+            with self.assertRaises(CHECKER.Rejected):
+                check(changed)
+
+        next_group = "compiled-native-observers/v3"
+        with self.assertRaises(CHECKER.Rejected):
+            check(receipt, next_group)
+        cli = copy.deepcopy(receipt)
+        controls = {
+            "TestCompiledVerifierSelectionGuards": {"controls": [1]},
+            "TestCompiledVerifierSyntaxPrivacy": {"controls": [2]},
+            "TestCompiledCollectorSyntaxPrivacy": {"controls": [3]},
+            "TestCompiledMaintainerSyntaxPrivacy": {"controls": [4]},
+        }
+        section = cli["source_root_controls"]
+        section.update(format="zenon-source-root-controls/v3", group=next_group, cli_controls=controls)
+        section["roots"].extend(
+            {"package": CHECKER.MODULE + "/internal/conformance", "test": name, "status": "pass",
+             "passed_subtests": 0, "skipped_subtests": 0, "failed_subtests": 0} for name in controls
+        )
+        cli["tests"].update(root_tests=13, passed=279)
+        cli["timings"].update(completed_roots=13, missing_elapsed=10)
+        pins = {}
+        for name, control in controls.items():
+            raw = json.dumps(control, sort_keys=True, separators=(",", ":")).encode()
+            pins[name] = (len(raw), hashlib.sha256(raw).hexdigest())
+        with mock.patch.object(CHECKER, "CLI_CONTROL_REPORTS", pins):
+            summary = check(cli, next_group)
+            self.assertEqual(summary["roots"], 9)
+            self.assertEqual(summary["cli_control_sha256"], {name: pin[1] for name, pin in pins.items()})
+            first = next(iter(controls))
+            for mutate in (
+                lambda value: value.pop("cli_controls"),
+                lambda value: value["cli_controls"].pop(first),
+                lambda value: value["cli_controls"][first].update(controls=[9]),
+                lambda value: value["cli_controls"].update(TestUnselected={"controls": []}),
+                lambda value: value["roots"].pop(),
+            ):
+                changed = copy.deepcopy(cli)
+                mutate(changed["source_root_controls"])
+                with self.assertRaises(CHECKER.Rejected):
+                    check(changed, next_group)
+
+    def test_grouped_cli_build_report_binds_execution_pins(self):
+        binaries = [{"command": command, "sha256": f"{i+1:064x}", "bytes": 4096}
+                    for i, command in enumerate(CHECKER.CLI_BUILD_COMMANDS)]
+        report = {
+            "schema_version": 1, "commands": 7, "individual_go_build_invocations": 7,
+            "batch_go_build_invocations": 1, "rebuild_go_build_invocations": 1, "build_parallelism": 1,
+            "binary_bytes_equal": True, "independent_paths": True, "private_mutation_isolated": True,
+            "fresh_rebuild": True, "existing_exports_unchanged": True,
+            "reference_elapsed_ns": 500, "batch_elapsed_ns": 200, "binaries": binaries,
+        }
+        executed = [{"binaries": [{"command": x["command"], "sha256": x["sha256"]} for x in binaries]}]
+        canonical = json.dumps(report, sort_keys=True, separators=(",", ":")).encode()
+        self.assertEqual(CHECKER.check_cli_build_batch(report, executed), hashlib.sha256(canonical).hexdigest())
+        for mutate in (
+            lambda d: d.update(batch_elapsed_ns=0),
+            lambda d: d.update(fresh_rebuild=False),
+            lambda d: d["binaries"].reverse(),
+            lambda d: d["binaries"][0].update(bytes=True),
+            lambda d: d["binaries"][0].update(sha256="f" * 64),
+            lambda d: d["binaries"][0].update(path="PRIVATE"),
+        ):
+            changed = copy.deepcopy(report)
+            mutate(changed)
+            with self.assertRaises(CHECKER.Rejected):
+                CHECKER.check_cli_build_batch(changed, executed)
+        with self.assertRaises(CHECKER.Rejected):
+            CHECKER.check_cli_build_batch(report, [{"binaries": executed[0]["binaries"][:-1]}])
+
     def test_source_root_reuse_preserves_parent_instrumentation_and_complete_suite(self):
         workflow = (HERE.parent / ".github/workflows/ci.yml").read_text()
         linux, matrix = workflow.split("\n  native-platform:\n", 1)
         matrix = matrix.split("\n  recorded-oracles:\n", 1)[0]
         for root in ("TestCompiledPilotSourceEnumeration", "TestCompiledAdvancingBlockObserver",
-                     "TestCompiledNodeAccountBasicObserver", "TestCompiledNodeAccountReceiveObserver"):
+                     "TestCompiledNodeAccountBasicObserver", "TestCompiledNodeAccountReceiveObserver",
+                     "TestCompiledNodeAccountPoWObserver", "TestCompiledVerifierSelectionGuards",
+                     "TestCompiledVerifierSyntaxPrivacy", "TestCompiledCollectorSyntaxPrivacy",
+                     "TestCompiledMaintainerSyntaxPrivacy"):
             command = "-run '^" + root + "$'"
             self.assertIn(command, linux)
             self.assertNotIn(command, matrix)
         self.assertIn("--full-suite --timeout 30m --package-timeout 10m --race --coverage", linux)
-        self.assertIn("--full-suite --timeout 30m --package-timeout 10m --suite-root-group compiled-native-observers/v1", matrix)
+        self.assertIn("-run '^TestQueryCLIBuild'", linux)
+        self.assertNotIn("-run '^TestQueryCLIBuild'", matrix)
+        self.assertIn("--full-suite --timeout 30m --package-timeout 10m --suite-root-group compiled-native-observers/v4", matrix)
         check, _ = matrix.split("      - name: Upload root suite receipt\n", 1)
         self.assertIn("--expect-race false --expect-coverage false", check)
-        self.assertIn("--require-source-root-group compiled-native-observers/v1", check)
+        self.assertIn("--require-source-root-group compiled-native-observers/v4", check)
         self.assertEqual(matrix.count('> "$RUNNER_TEMP/root-suite-check.json"'), 1)
+
+    def test_full_report_array_limit_applies_only_to_the_selected_receipt_path(self):
+        candidate = CHECKER.companion().primitives().checker
+        root = "TestCompiledVerifierSelectionGuards"
+        controls = [0] * 265
+        receipt = {"source_root_controls": {"cli_controls": {root: {"controls": controls}}}}
+        raw = json.dumps(receipt).encode()
+        self.assertEqual(CHECKER.receipt_metadata(raw, candidate), receipt)
+        with self.assertRaises(candidate.Rejected):
+            candidate.metadata(raw)
+        for value in (
+            {"source_root_controls": {"cli_controls": {root: {"controls": controls + [0]}}}},
+            {"source_root_controls": {"cli_controls": {"TestUnselected": {"controls": controls}}}},
+            {"source_root_controls": {"cli_controls": {root: {"other": controls}}}},
+            {"unexpected": receipt},
+            [receipt],
+        ):
+            with self.assertRaises(candidate.Rejected):
+                CHECKER.receipt_metadata(json.dumps(value).encode(), candidate)
 
     def test_observer_resources_are_complete_and_platform_bound(self):
         for platform in ("linux", "darwin", "windows"):
