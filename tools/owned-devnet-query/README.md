@@ -440,6 +440,14 @@ the reported closed RPC container and oracle receipts, and the derived query
 inputs. It recomputes the three membership proofs, decodes the typed rows and
 compares the 17 stored fields with the recorded gateway response and CLI result.
 
+With a version-2 terminal record, a successful consumer comparison or a
+closed-run gateway mismatch also requires the opening BatchEntry proof, the
+H2/H3 signature command receipts and the successful configuration and deposit
+command receipts. The reader checks the fixture receipt bindings, exit codes
+and bounded stream digests. Fixture streams stay out of the archive. The
+reader preserves earlier terminal records and reviews early failures without
+requiring stages they did not reach.
+
 Exit 0 reports `RECORDED_CONSUMER_BYTES_MATCH`. This is agreement among the
 retained records and independently recomputed bytes. The original run identity,
 native signature verification, producer authority and any selected-network

@@ -20,6 +20,7 @@ sys.path.insert(0, str(HERE))
 import capture
 from artifacts import WORKFLOWS
 from capture_test import CONTRACT, consumer_failure_fixture, synthetic_reports, synthetic_window
+import model
 from model import Refused, canonical
 import query_checks as checks
 import review
@@ -189,7 +190,7 @@ def selected_witnesses(descriptor, profile):
     return root, witnesses, checks.decode_rows(profile, values)
 
 
-def accepted_files(*, gateway_matches=True):
+def accepted_files(*, gateway_matches=True, record_preparation=False):
     descriptor, profile = capture.selected_profile(CONTRACT, ROOT)
     root, witnesses, typed = selected_witnesses(descriptor, profile)
     contract, headers, window = synthetic_window(state_root=root)
@@ -219,6 +220,8 @@ def accepted_files(*, gateway_matches=True):
                                   "frontier_identity_authenticated": False}}
     matched = checks.consumer_result(cli, config, request, provider, root.hex(), descriptor)
     final = terminal("DEVNET_CONSUMER_ACCEPTED", contract)
+    if record_preparation:
+        final["format"] = model.TERMINAL_FORMAT
     if not gateway_matches:
         final.update(outcome="REFUSED", reason="gateway_stored_fields_differ")
     files = {"evidence/" + name: canonical(data) for name, data in {
@@ -231,21 +234,38 @@ def accepted_files(*, gateway_matches=True):
         "query-config.json": config, "query-request.json": request,
         "query-context-pins.json": pins, "consumer-comparison.json": matched}.items()}
 
-    def output(label, name, raw=None, *, folder="evidence", external_pin=None):
+    def output(label, name, raw=None, *, folder="evidence", external_pin=None, stderr_pin=None):
         if raw is not None:
             files[folder + "/" + name] = raw
         stdout = {"file": name, **(pin(raw) if raw is not None else external_pin)}
+        outputs = {"stdout": stdout}
+        if stderr_pin is not None:
+            outputs["stderr"] = {"file": label + ".stderr", **stderr_pin}
         files[folder + "/" + label + ".complete.json"] = canonical({
             "format": "owned-devnet-command-capture/v1", "label": label, "launch_outcome": "STARTED",
             "actual_exit": 0, "output_complete": True, "reason": None, "process_group": 42,
-            "process_group_quiescent": True, "outputs": {"stdout": stdout}})
+            "process_group_quiescent": True, "outputs": outputs})
         files[folder + "/" + label + ".started.json"] = canonical({
             "format": "owned-devnet-command-started/v1", "label": label, "pid": 42,
             "process_group": 42, "new_session_requested": True})
         return stdout
 
-    output("rpc-02", "opening-momentums.json", canonical({"jsonrpc": "2.0", "id": 2,
-           "result": {"count": 3, "list": headers[:3]}}))
+    opening = canonical({"jsonrpc": "2.0", "id": 2, "result": {"count": 3, "list": headers[:3]}})
+    output("rpc-02", capture.OPENING_FILE, opening)
+    if record_preparation:
+        _, parameters = capture.opening_proof_target(contract, profile, window.headers[2])
+        files["evidence/rpc-02.request.json"] = canonical(
+            {"jsonrpc": "2.0", "id": 2, "method": "ledger.getMomentumsByHeight", "params": [1, 3]})
+        files["evidence/rpc-03.request.json"] = canonical(
+            {"jsonrpc": "2.0", "id": 3, "method": "ledger.getProof", "params": parameters})
+        output("rpc-03", capture.OPENING_PROOF_FILE, canonical(
+            {"jsonrpc": "2.0", "id": 3, "result": witnesses["batch_entry"]}))
+        files["evidence/" + capture.OPENING_SIGNATURE_REPORT] = canonical(
+            capture.opening_signature_report(window.headers[:3], pin(opening)))
+        for label in capture.OPENING_SIGNATURE_LABELS:
+            output(label, label + ".stdout", external_pin=pin(capture.OPENING_SIGNATURE_OK), stderr_pin=pin(b""))
+        for label in ("fixture-configure", "fixture-deposit"):
+            output(label, label + ".stdout", external_pin=pin(b"fixture control\n"), stderr_pin=pin(b""))
     output("collect-provider", "provider.json", canonical(provider))
     output("consume-query", "consume-query.stdout", canonical(cli))
     components = contract.data["qualified_components"]
@@ -939,6 +959,64 @@ class ReviewTests(unittest.TestCase):
         files["evidence/terminal.json"] = canonical({
             **terminal(outcome, self.contract), "stage": "fixture-configuration"})
         return files
+
+    def test_current_reviews_bind_the_opening_and_both_fixture_commands(self):
+        for gateway_matches in (True, False):
+            contract, files = accepted_files(gateway_matches=gateway_matches, record_preparation=True)
+            with self.subTest(gateway_matches=gateway_matches):
+                report = self.review(make_archive(files), contract)
+                comparison = report["comparison" if gateway_matches else "recorded_gateway_mismatch"]
+                self.assertEqual(comparison["gateway_stored_fields_match"], gateway_matches)
+                self.assertEqual(report["candidate_opening_proof"]["presence"], "present")
+                self.assertFalse(report["recorded_opening_signatures"]["producer_schedule_verified"])
+                self.assertEqual(report["recorded_fixture_commands"], {
+                    label: {"start": pin(files[f"evidence/{label}.started.json"]),
+                            "completion": pin(files[f"evidence/{label}.complete.json"])}
+                    for label in ("fixture-configure", "fixture-deposit")})
+                self.assertFalse(report["new_devnet_acceptance_established"])
+                self.assertEqual(report["materialized_bytes"], 0)
+                for filename, reason in (
+                        (capture.OPENING_PROOF_FILE, "review_opening_signature_context"),
+                        (capture.OPENING_SIGNATURE_REPORT, "review_consumer_opening_gate"),
+                        ("opening-signature-h3.complete.json", "review_member_bound"),
+                        ("fixture-configure.started.json", "review_member_bound"),
+                        ("fixture-deposit.complete.json", "review_member_bound")):
+                    with self.subTest(filename=filename), self.assertRaisesRegex(Refused, reason):
+                        missing = dict(files)
+                        del missing["evidence/" + filename]
+                        self.review(make_archive(missing), contract)
+
+    def test_current_reviews_require_completed_fixture_commands_and_bounded_stream_pins(self):
+        contract, files = accepted_files(record_preparation=True)
+        path = "evidence/fixture-deposit.complete.json"
+        for changes, reason in (
+                ({"actual_exit": 1}, "review_recorded_command_completion"),
+                ({"output_complete": False}, "review_recorded_command_completion"),
+                ({"process_group_quiescent": False}, "review_recorded_command_completion"),
+                ({"process_group": 43}, "review_recorded_command_start"),
+                ({"outputs": {"stdout": {"file": "fixture-deposit.stdout", **pin(b"")}}},
+                 "review_fixture_output_pins")):
+            with self.subTest(changes=changes), self.assertRaisesRegex(Refused, reason):
+                updated = canonical({**json.loads(files[path]), **changes})
+                self.review(make_archive({**files, path: updated}), contract)
+        for changes, reason in (
+                ({"file": "fixture-configure.stdout"}, "review_fixture_output_pins"),
+                ({"bytes": model.FIXTURE_OUTPUT_BYTES + 1}, "integer_bounds"),
+                ({"sha256": "invalid"}, "digest_format")):
+            with self.subTest(changes=changes), self.assertRaisesRegex(Refused, reason):
+                receipt = json.loads(files[path])
+                receipt["outputs"]["stdout"].update(changes)
+                self.review(make_archive({**files, path: canonical(receipt)}), contract)
+
+    def test_current_early_failure_can_lack_preparation_receipts(self):
+        files = self.opening_files()
+        path = "evidence/terminal.json"
+        files[path] = canonical({**json.loads(files[path]), "format": model.TERMINAL_FORMAT,
+                                 "stage": "opening-proof"})
+        report = self.review(make_archive(files))
+        self.assertEqual(report["recorded_terminal_outcome"], "FAILURE")
+        self.assertIsNone(report["comparison"])
+        self.assertNotIn("recorded_fixture_commands", report)
 
     def test_replays_retained_opening_after_a_nonaccepting_terminal_outcome(self):
         for outcome in ("FAILURE", "REFUSED", "UNKNOWN"):

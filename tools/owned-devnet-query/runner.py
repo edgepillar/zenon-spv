@@ -99,7 +99,8 @@ def fixture_flow(contract, recorder, engine, sources, node, prepared, phase, gua
     environment.update({key: value for key, value in engine.environment.items() if key.startswith("DOCKER_")})
     tsx = source_root / "node_modules/tsx/dist/cli.mjs"
     recorder.run("fixture-" + phase, [str(node.node), str(tsx), script, *arguments], source_root,
-                 environment, guard=guard, timeout=timeout, stdout_cap=1 << 20, stderr_cap=1 << 20)
+                 environment, guard=guard, timeout=timeout, stdout_cap=model.FIXTURE_OUTPUT_BYTES,
+                 stderr_cap=model.FIXTURE_OUTPUT_BYTES)
     sources.verify()
     engine.require_running_closure(NODE_ROLES if phase == "configure" else model.SERVICES)
 
@@ -342,7 +343,7 @@ def execute(environment, workspace, checkout):
         if outcome == "DEVNET_CONSUMER_ACCEPTED" and evidence_bytes(record.directory, record.identity) \
                 > model.LIMITS["max_evidence_bytes"] - (2 << 20):
             outcome, reason = "REFUSED", "final_evidence_reservation"
-        record.seal("terminal.json", canonical({"format": "owned-devnet-query-terminal/v1",
+        record.seal("terminal.json", canonical({"format": model.TERMINAL_FORMAT,
             "outcome": outcome, "stage": stage, "reason": reason,
             "source_revision": execution.source_revision if execution else None,
             "contract_sha256": contract.sha256 if contract else None,

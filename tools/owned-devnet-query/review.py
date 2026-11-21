@@ -174,21 +174,41 @@ class Evidence:
             same({"bytes": size, "sha256": digest.hexdigest()}, self.pins[name], "review_member_digest")
 
 
-def recorded_output(evidence, label, name, *, folder="evidence", external_pin=None, actual_exit=0):
+def recorded_completion(evidence, label, *, folder="evidence", actual_exit=0):
     receipt = evidence.json(label + ".complete.json", folder=folder)
     require(receipt.get("format") == "owned-devnet-command-capture/v1"
             and receipt.get("label") == label and receipt.get("launch_outcome") == "STARTED"
             and type(receipt.get("actual_exit")) is int and receipt["actual_exit"] == actual_exit
             and receipt.get("output_complete") is True and receipt.get("reason") is None
             and receipt.get("process_group_quiescent") is True, "review_recorded_command_completion")
-    pin = evidence.pins[folder + "/" + name] if external_pin is None else external_pin
-    stdout = {"file": name, **pin}
-    same(receipt["outputs"]["stdout"], stdout, "review_recorded_command_stdout")
     group = model.uint(receipt["process_group"])
     same(evidence.json(label + ".started.json", folder=folder), {"format": "owned-devnet-command-started/v1",
          "label": label, "pid": group, "process_group": group, "new_session_requested": True},
          "review_recorded_command_start")
+    return receipt
+
+
+def recorded_output(evidence, label, name, *, folder="evidence", external_pin=None, actual_exit=0):
+    receipt = recorded_completion(evidence, label, folder=folder, actual_exit=actual_exit)
+    pin = evidence.pins[folder + "/" + name] if external_pin is None else external_pin
+    stdout = {"file": name, **pin}
+    same(receipt["outputs"]["stdout"], stdout, "review_recorded_command_stdout")
     return stdout
+
+
+def recorded_fixture_commands(evidence):
+    commands = {}
+    for label in ("fixture-configure", "fixture-deposit"):
+        outputs = recorded_completion(evidence, label).get("outputs")
+        exact_keys(outputs, {"stdout", "stderr"}, "review_fixture_output_pins")
+        for stream, pin in outputs.items():
+            exact_keys(pin, {"file", "bytes", "sha256"}, "review_fixture_output_pins")
+            same(pin["file"], f"{label}.{stream}", "review_fixture_output_pins")
+            model.uint(pin["bytes"], model.FIXTURE_OUTPUT_BYTES, minimum=0)
+            model.digest(pin["sha256"])
+        commands[label] = {"start": evidence.pins[f"evidence/{label}.started.json"],
+                           "completion": evidence.pins[f"evidence/{label}.complete.json"]}
+    return commands
 
 
 def recorded_consumer_failure(evidence, terminal, binding_present):
@@ -728,7 +748,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         exact_keys(terminal, {*selection, "format", "outcome", "stage", "reason",
                              "owned_runtime_observed_closed", "production_qualified",
                              "consensus_finality_or_funds_release"}, "review_terminal_fields")
-        require(terminal["format"] == "owned-devnet-query-terminal/v1"
+        require(terminal["format"] in ("owned-devnet-query-terminal/v1", model.TERMINAL_FORMAT)
                 and terminal["production_qualified"] is False
                 and terminal["consensus_finality_or_funds_release"] is False
                 and type(terminal["owned_runtime_observed_closed"]) is bool, "review_terminal_scope")
@@ -757,7 +777,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             require(binding_present and terminal["stage"] == "consumer" and reported == "REFUSED",
                     "review_gateway_refusal_scope")
 
-        opening = opening_observation = matched = gateway_mismatch = None
+        opening = opening_observation = matched = gateway_mismatch = fixture_commands = None
         if accepted or "evidence/" + OPENING_FILE in evidence.pins:
             require(binding_present, "review_opening_run_binding")
             opening, opening_observation = recorded_opening(evidence, contract)
@@ -765,6 +785,9 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         opening_signatures = recorded_opening_signatures(evidence, opening, opening_observation, opening_proof)
         if accepted or (gateway_refusal and terminal["owned_runtime_observed_closed"]):
             require(opening is not None, "review_consumer_opening")
+            if terminal["format"] == model.TERMINAL_FORMAT:
+                require(opening_signatures is not None, "review_consumer_opening_gate")
+                fixture_commands = recorded_fixture_commands(evidence)
             comparison = recorded_consumer(evidence, contract, checkout, selection, opening)
             same(comparison["gateway_stored_fields_match"], accepted, "review_consumer_gateway")
             if accepted:
@@ -787,6 +810,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["candidate_opening_proof"] = opening_proof
         if opening_signatures is not None:
             report["recorded_opening_signatures"] = opening_signatures
+        if fixture_commands is not None:
+            report["recorded_fixture_commands"] = fixture_commands
         if startup_sync is not None:
             report["startup_sync_diagnostic"] = startup_sync
         if post_sync is not None:

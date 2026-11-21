@@ -19,6 +19,8 @@ import sys
 
 FORMAT = "owned-devnet-batch-query-contract/v1"
 REFERENCE_GAS_FORMAT = "owned-devnet-batch-query-contract/v2"
+TERMINAL_FORMAT = "owned-devnet-query-terminal/v2"
+FIXTURE_OUTPUT_BYTES = 1 << 20
 CONTRACT_FILES = (("contract.json", FORMAT),
                   ("reference-gas-contract.json", REFERENCE_GAS_FORMAT),
                   ("reference-gas-renewal-1-contract.json", REFERENCE_GAS_FORMAT))
