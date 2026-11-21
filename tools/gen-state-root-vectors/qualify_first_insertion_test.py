@@ -170,6 +170,17 @@ def typed_history_observation():
             "checked_at_tip_before_and_after_reopen": True, "accepted_header_authority": False}
 
 
+def pruned_history_observation(history):
+    tip = history["tip"]
+    value = {"value": None, "proof": history["tip_batch_absence"], "root": tip["state_root"]}
+    tip_rpc = ('{"jsonrpc":"2.0","id":1,"result":' + json.dumps(value, separators=(",", ":")) + "}\n").encode()
+    return {"format": "chain69-pruned-typed-history/v1", "target_height": history["target"]["height"],
+            "target_hash": history["target"]["hash"], "tip_height": tip["height"], "tip_hash": tip["hash"],
+            "prune_below_height": tip["height"], "pruned_proof_keys": dict(Q.RECORDED_PROOF_KEYS),
+            "pruned_rpc_body": '{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"trie: no such version"}}\n',
+            "tip_absence_rpc": Q.C.digest(tip_rpc), "reopened_at_same_tip": True, "accepted_header_authority": False}
+
+
 def encoded(value):
     return b"".join(json.dumps(row).encode() + b"\n" for row in value)
 
@@ -446,6 +457,50 @@ class Controls(unittest.TestCase):
             with self.subTest(changes=list(changes)):
                 self.refused(add_one_period_observation(history_events(history_observation()),
                                                         Q.TYPED_HISTORY_MARKER, {**row, **changes}))
+
+    def test_pruned_history_distinguishes_wire_error_from_retained_absence(self):
+        history = typed_history_observation()
+        row = pruned_history_observation(history)
+        retained = add_one_period_observation(history_events(history_observation()), Q.TYPED_HISTORY_MARKER, history)
+        self.assertNotIn("pruned_typed_history", Q.native_controls(encoded(retained)))
+        rows = add_one_period_observation(retained, Q.PRUNED_TYPED_HISTORY_MARKER, row)
+        result = Q.native_controls(encoded(rows), require_pruned_typed_history=True)["pruned_typed_history"]
+        self.assertEqual(result["rpc_error_code"], -32000)
+        self.assertEqual(result["pruned_rpc_error"], Q.C.digest(row["pruned_rpc_body"].encode()))
+        self.assertEqual(result["tip_absence_rpc"], row["tip_absence_rpc"])
+        self.assertFalse(result["accepted_header_authority"])
+
+    def test_pruned_history_requires_retained_history_and_one_complete_observation(self):
+        history = typed_history_observation()
+        row = pruned_history_observation(history)
+        events_at_h4 = history_events(history_observation())
+        retained = add_one_period_observation(events_at_h4[:], Q.TYPED_HISTORY_MARKER, history)
+        with self.assertRaisesRegex(Q.Refused, "native_trace_count"):
+            Q.native_controls(encoded(retained), require_pruned_typed_history=True)
+        with self.assertRaisesRegex(Q.Refused, "pruned_history_requires_retained_history"):
+            Q.native_controls(encoded(add_one_period_observation(events_at_h4[:], Q.PRUNED_TYPED_HISTORY_MARKER, row)))
+        rows = add_one_period_observation(retained, Q.PRUNED_TYPED_HISTORY_MARKER, row)
+        self.refused(add_one_period_observation(rows[:], Q.PRUNED_TYPED_HISTORY_MARKER, row))
+        next(event for event in rows if Q.PRUNED_TYPED_HISTORY_MARKER in event.get("Output", ""))["Test"] = Q.TEST
+        with self.assertRaisesRegex(Q.Refused, "foreign_pruned_typed_history_trace"):
+            Q.native_controls(encoded(rows))
+
+    def test_pruned_history_refuses_changed_request_horizon_wire_or_retained_pin(self):
+        history = typed_history_observation()
+        row = pruned_history_observation(history)
+        retained = add_one_period_observation(history_events(history_observation()), Q.TYPED_HISTORY_MARKER, history)
+        mutations = (
+            {"target_hash": row["tip_hash"]}, {"prune_below_height": row["target_height"]},
+            {"tip_height": float(row["tip_height"])}, {"accepted_header_authority": True},
+            {"pruned_proof_keys": {**row["pruned_proof_keys"], "domain_config": Q.RECORDED_PROOF_KEYS["domain_record"]}},
+            {"pruned_rpc_body": '{"jsonrpc":"2.0","id":1,"result":null}\n'},
+            {"pruned_rpc_body": row["pruned_rpc_body"].replace("-32000", "-32601")},
+            {"tip_absence_rpc": Q.C.digest(row["pruned_rpc_body"].encode())},
+            {"tip_absence_rpc": {**row["tip_absence_rpc"], "bytes": float(row["tip_absence_rpc"]["bytes"])}},
+        )
+        for changes in mutations:
+            with self.subTest(fields=list(changes)):
+                self.refused(add_one_period_observation(retained[:], Q.PRUNED_TYPED_HISTORY_MARKER, {**row, **changes}))
 
     def test_split_trace_reassembled_only_in_its_own_test(self):
         value = events()

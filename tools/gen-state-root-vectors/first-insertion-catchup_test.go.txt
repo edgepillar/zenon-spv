@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"github.com/inconshreveable/log15"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 
 	corechain "github.com/zenon-network/go-zenon/chain"
 	cache "github.com/zenon-network/go-zenon/chain/cache/storage"
@@ -429,6 +431,108 @@ func spvReadTypedHistory(t *testing.T, ledger *api.LedgerApi, target *nom.Moment
 	return proofs
 }
 
+func spvPruneClosedFixtureTree(t *testing.T, stateDir string, target, tip *nom.Momentum) {
+	t.Helper()
+	ldb, err := leveldb.OpenFile(stateDir, &opt.Options{ErrorIfMissing: true})
+	if err != nil {
+		t.Fatal("cannot open the closed fixture tree", err)
+	}
+	defer func() {
+		if err := ldb.Close(); err != nil {
+			t.Error("cannot close the pruned fixture tree", err)
+		}
+	}()
+	tree, err := trie.NewNodeTree(ldb)
+	if err != nil || tree.FrontierIdentifier() != tip.Identifier() || target.Height+1 != tip.Height {
+		t.Fatal("unexpected fixture tree before pruning", err)
+	}
+	if root, err := tree.Root(target.Identifier()); err != nil || root != target.StateRoot {
+		t.Fatal("typed history must be retained before pruning", err)
+	}
+	if err := tree.Prune(tip.Height); err != nil {
+		t.Fatal("cannot prune the closed fixture below its tip", err)
+	}
+	if root, err := tree.Root(target.Identifier()); !errors.Is(err, trie.ErrNoVersion) || !root.IsZero() {
+		t.Fatal("pruned typed history still has a tree version", err)
+	}
+	if root, err := tree.Root(tip.Identifier()); err != nil || root != tip.StateRoot {
+		t.Fatal("retained tip changed during pruning", err)
+	}
+}
+
+func spvStateTreeRPC(t *testing.T, rpc *server.Server, method string, params ...interface{}) []byte {
+	t.Helper()
+	body, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "2.0", "id": 1, "method": method, "params": params,
+	})
+	if err != nil {
+		t.Fatal("cannot encode fixture RPC request", err)
+	}
+	request := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	reply := httptest.NewRecorder()
+	rpc.ServeHTTP(reply, request)
+	if reply.Code != http.StatusOK || reply.Header().Get("Content-Type") != "application/json" ||
+		reply.Body.Len() == 0 || reply.Body.Len() > 16<<10 {
+		t.Fatal("unexpected state tree HTTP reply")
+	}
+	return reply.Body.Bytes()
+}
+
+func spvObservePrunedTypedHistory(t *testing.T, ch corechain.Chain, target, tip *nom.Momentum, absence []byte) {
+	t.Helper()
+	store := ch.GetFrontierMomentumStore()
+	old, err := store.GetMomentumByHeight(target.Height)
+	if err != nil || old == nil || old.Identifier() != target.Identifier() || old.StateRoot != target.StateRoot ||
+		store.Identifier() != tip.Identifier() || !ch.StateTreeReady() {
+		t.Fatal("reopened fixture lost its ledger header or retained frontier", err)
+	}
+	rpc := server.NewServer()
+	defer rpc.Stop()
+	if err := rpc.RegisterName("ledger", api.NewLedgerApi(&spvFrontierNode{chain: ch})); err != nil {
+		t.Fatal("cannot register the original ledger API", err)
+	}
+	pruned := spvStateTreeRPC(t, rpc, "ledger.getStateRoot", target.Height)
+	const prunedError = `{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"trie: no such version"}}` + "\n"
+	if string(pruned) != prunedError {
+		t.Fatal("pruned root RPC did not return the expected version error")
+	}
+	keys := spvSettlementKeys()
+	checked := map[string]string{}
+	for _, name := range []string{"batch_entry", "domain_record", "domain_config"} {
+		key := keys[name]
+		proof := spvStateTreeRPC(t, rpc, "ledger.getProof", target.Height, key)
+		if !bytes.Equal(proof, pruned) {
+			t.Fatalf("pruned witness RPC did not return the version error for %s", name)
+		}
+		checked[name] = hex.EncodeToString(key)
+	}
+	retained := spvStateTreeRPC(t, rpc, "ledger.getProof", tip.Height, keys["batch_entry"])
+	var response struct {
+		Version string          `json:"jsonrpc"`
+		ID      uint64          `json:"id"`
+		Error   json.RawMessage `json:"error"`
+		Result  *api.StateProof `json:"result"`
+	}
+	if json.Unmarshal(retained, &response) != nil || response.Version != "2.0" || response.ID != 1 ||
+		response.Error != nil || response.Result == nil || response.Result.Root != tip.StateRoot ||
+		response.Result.Value != nil || !bytes.Equal(response.Result.Proof, absence) {
+		t.Fatal("retained tip RPC did not preserve the original batch absence proof")
+	}
+	digest := sha256.Sum256(retained)
+	data, err := json.Marshal(map[string]interface{}{
+		"format": "chain69-pruned-typed-history/v1", "target_height": target.Height, "target_hash": target.Hash.String(),
+		"tip_height": tip.Height, "tip_hash": tip.Hash.String(), "prune_below_height": tip.Height,
+		"pruned_rpc_body": string(pruned), "pruned_proof_keys": checked,
+		"tip_absence_rpc":      spvStartupProofPin{SHA256: hex.EncodeToString(digest[:]), Bytes: len(retained)},
+		"reopened_at_same_tip": true, "accepted_header_authority": false,
+	})
+	if err != nil {
+		t.Fatal("cannot encode pruned history RPC observation", err)
+	}
+	t.Logf("SPV_PRUNED_TYPED_HISTORY %s", data)
+}
+
 func spvReplayRecordedStartupBoundary(t *testing.T, config *genesis.GenesisConfig, first types.HashHeight) {
 	t.Helper()
 	dir := t.TempDir()
@@ -645,6 +749,18 @@ func spvReplayRecordedStartupBoundary(t *testing.T, config *genesis.GenesisConfi
 		t.Fatal("cannot encode the typed historical-read observation")
 	}
 	t.Logf("SPV_TYPED_HISTORY %s", data)
+
+	err = ch.Stop()
+	ch = nil
+	if err != nil {
+		t.Fatal("cannot close the typed historical fixture before pruning", err)
+	}
+	spvPruneClosedFixtureTree(t, filepath.Join(dir, "state"), typed, later)
+	ch = spvNewStartupChain(dir, config)
+	if err := ch.Init(); err != nil {
+		t.Fatal("cannot reopen the pruned historical fixture", err)
+	}
+	spvObservePrunedTypedHistory(t, ch, typed, later, afterReopen)
 }
 
 const spvFrontierMethod = "ledger.getFrontierMomentum"

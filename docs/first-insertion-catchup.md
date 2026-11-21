@@ -203,6 +203,22 @@ These raw ledger patches run below the VM verifier with unsigned headers.
 The result qualifies historical membership reads in that isolated node fixture.
 Selected-network header authority and the real typed consumer remain open.
 
+### Pruned versions and retained absence at the RPC boundary
+
+The one-period control closes the disposable ledger and uses the original
+NodeTree to prune below H6. It reopens the original managers at the same tip.
+The H5 momentum remains in the ledger. Its pruned tree version returns a
+JSON-RPC error from `ledger.getStateRoot` and from `ledger.getProof` for each
+of the three selected Settlement keys. The retained H6 proof read succeeds
+with `value: null` and the same canonical BatchEntry absence proof.
+
+The original HTTP handler runs in memory over the existing isolated chain.
+The qualifier binds the error body to the exact selection and reconstructs
+the successful H6 response from the prior canonical proof and header root.
+This explicit cutoff tests pruned-read behavior with the existing database
+and compiled test. The configured production retention depth and the signed
+devnet consumer retain their separate acceptance gates.
+
 ## Linux CPU comparison
 
 The main revision `5a0d29eb3df7c4ce2f66cae7174e33dea9d8781d` completed the

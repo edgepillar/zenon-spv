@@ -53,6 +53,7 @@ RECORDED_PROOFS_MARKER = "SPV_RECORDED_STARTUP_PROOFS "
 UNSIGNED_H3_MARKER = "SPV_UNSIGNED_H3_LEDGER "
 H3_HISTORY_MARKER = "SPV_H3_HISTORY_AT_H4 "
 TYPED_HISTORY_MARKER = "SPV_TYPED_HISTORY "
+PRUNED_TYPED_HISTORY_MARKER = "SPV_PRUNED_TYPED_HISTORY "
 RECORDED_H2 = {
     "format": "recorded-chain69-h2/v1",
     "recorded_run": 43653383092,
@@ -368,9 +369,41 @@ def typed_history(text, h4):
             "checked_at_tip_before_and_after_reopen": True, "accepted_header_authority": False}
 
 
+def pruned_typed_history(text, history):
+    row = selected_trace(text, PRUNED_TYPED_HISTORY_MARKER)
+    require(history is not None, "pruned_history_requires_retained_history")
+    require(type(row) is dict and set(row) == {"format", "target_height", "target_hash", "tip_height", "tip_hash",
+                                            "prune_below_height", "pruned_rpc_body", "pruned_proof_keys",
+                                            "tip_absence_rpc", "reopened_at_same_tip", "accepted_header_authority"}
+            and row["format"] == "chain69-pruned-typed-history/v1"
+            and row["reopened_at_same_tip"] is True and row["accepted_header_authority"] is False,
+            "pruned_history_scope")
+    target, tip = history["target"], history["tip"]
+    require(all(type(row[name]) is int for name in ("target_height", "tip_height", "prune_below_height"))
+            and (row["target_height"], row["target_hash"], row["tip_height"], row["tip_hash"], row["prune_below_height"])
+            == (target["height"], target["hash"], tip["height"], tip["hash"], tip["height"])
+            and target["height"] < row["prune_below_height"], "pruned_history_horizon")
+    require(row["pruned_proof_keys"] == RECORDED_PROOF_KEYS, "pruned_history_proof_keys")
+    error = b'{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"trie: no such version"}}\n'
+    require(row["pruned_rpc_body"] == error.decode("ascii"), "pruned_history_wire_error")
+
+    # Rebuild the successful original RPC body from the independently checked
+    # H6 header and canonical absence proof. The trace only carries its digest.
+    proof = selected_trace(text, TYPED_HISTORY_MARKER)["tip_batch_absence"]
+    result = {"value": None, "proof": proof, "root": tip["state_root"]}
+    body = json.dumps({"jsonrpc": "2.0", "id": 1, "result": result}, separators=(",", ":")).encode("ascii") + b"\n"
+    pin = row["tip_absence_rpc"]
+    require(type(pin) is dict and type(pin.get("bytes")) is int and pin == C.digest(body),
+            "pruned_history_tip_absence_pin")
+    return {name: value for name, value in row.items() if name != "pruned_rpc_body"} | {
+        "pruned_rpc_error": C.digest(error), "rpc_error_code": -32000,
+    }
+
+
 def native_controls(raw, cpu_profile=None, *, require_first_period_read=False, require_frontier_rpc=False,
                     require_recorded_h2=False, require_recorded_boundary=False, require_recorded_proofs=False,
-                    require_unsigned_h3=False, require_h3_history=False, require_typed_history=False):
+                    require_unsigned_h3=False, require_h3_history=False, require_typed_history=False,
+                    require_pruned_typed_history=False):
     require(cpu_profile is None or cpu_profile in CPU_LIMITS, "cpu_profile_selection")
     cases = {"fixture-window": CASES["fixture-window"]} if cpu_profile == "half-core" else CASES
     require(type(raw) is bytes and 0 < len(raw) <= C.MAX_STREAM and raw.endswith(b"\n"), "native_stream")
@@ -433,6 +466,8 @@ def native_controls(raw, cpu_profile=None, *, require_first_period_read=False, r
                 if visibility_test is None or name != visibility_test), "foreign_h3_history_trace")
     require(all(TYPED_HISTORY_MARKER not in text for name, text in outputs.items()
                 if visibility_test is None or name != visibility_test), "foreign_typed_history_trace")
+    require(all(PRUNED_TYPED_HISTORY_MARKER not in text for name, text in outputs.items()
+                if visibility_test is None or name != visibility_test), "foreign_pruned_typed_history_trace")
     cpu_test = TEST + "/fixture-window" if cpu_profile else None
     require(all(CPU_MARKER not in text for name, text in outputs.items()
                 if cpu_test is None or name != cpu_test), "foreign_cpu_trace")
@@ -495,6 +530,8 @@ def native_controls(raw, cpu_profile=None, *, require_first_period_read=False, r
         result["h3_history_at_h4"] = h3_history_at_h4(recorded_text, result.get("unsigned_h3_ledger"))
     if require_typed_history or TYPED_HISTORY_MARKER in recorded_text:
         result["typed_history"] = typed_history(recorded_text, result.get("h3_history_at_h4"))
+    if require_pruned_typed_history or PRUNED_TYPED_HISTORY_MARKER in recorded_text:
+        result["pruned_typed_history"] = pruned_typed_history(recorded_text, result.get("typed_history"))
     if cpu_profile:
         result["cpu"] = cpu_observation(outputs.get(cpu_test, ""), cpu_profile)
     return result
@@ -552,7 +589,8 @@ def linux_cpu_controls(work, node, output, selected, records):
         return native_controls(raw, profile, require_frontier_rpc=True,
                                require_recorded_proofs=profile == "reference",
                                require_unsigned_h3=profile == "reference",
-                               require_h3_history=profile == "reference", require_typed_history=profile == "reference")
+                               require_h3_history=profile == "reference", require_typed_history=profile == "reference",
+                               require_pruned_typed_history=profile == "reference")
 
     reference = run("reference", "native-test", "^" + TEST + "$")
     constrained = run("half-core", "half-core-test", "^" + TEST + "$/^fixture-window$")
@@ -650,7 +688,8 @@ def qualify(work, output, selected, records):
         raw = C.command(output, "native-test", ["go", "test", *C.NATIVE_FLAGS, "-json", "-count=1", "-timeout=180s",
                         "-run", "^" + TEST + "$", "./consensus"], node, records, timeout=600)
         controls = native_controls(raw, require_frontier_rpc=True, require_recorded_proofs=True,
-                                   require_unsigned_h3=True, require_h3_history=True, require_typed_history=True)
+                                   require_unsigned_h3=True, require_h3_history=True, require_typed_history=True,
+                                   require_pruned_typed_history=True)
     unchanged()
     require(C.git(output, "node-head-after", ["rev-parse", "HEAD"], node, records).decode().strip() == C.NODE_REVISION
             and C.git(output, "node-tree-after", ["rev-parse", "HEAD^{tree}"], node, records).decode().strip() == C.NODE_TREE,
