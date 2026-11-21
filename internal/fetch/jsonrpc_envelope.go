@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"strings"
 )
 
@@ -60,16 +59,24 @@ func decodeRPCResponse(raw []byte, requestID int) (rpcResponse, error) {
 // A nil target marks a known field whose value is discarded after JSON scanning;
 // its presence is still tracked to reject duplicates and case aliases.
 func decodeRPCObject(raw []byte, fields map[string]*json.RawMessage) error {
-	dec := json.NewDecoder(bytes.NewReader(raw))
-	if token, err := dec.Token(); err != nil || token != json.Delim('{') {
+	const whitespace = " \t\r\n"
+	raw = bytes.Trim(raw, whitespace)
+	if len(raw) == 0 || raw[0] != '{' {
 		return fmt.Errorf("%w: expected an object", ErrInvalidRPCResponse)
 	}
+	if len(raw) < 2 || raw[len(raw)-1] != '}' {
+		return fmt.Errorf("%w: malformed object ending", ErrInvalidRPCResponse)
+	}
+
 	var discarded map[string]bool
-	var scan ignoredRPCValue
-	for dec.More() {
-		token, err := dec.Token()
-		name, ok := token.(string)
-		if err != nil || !ok {
+	remaining := bytes.TrimLeft(raw[1:len(raw)-1], whitespace)
+	for len(remaining) != 0 {
+		if remaining[0] != '"' {
+			return fmt.Errorf("%w: malformed object member", ErrInvalidRPCResponse)
+		}
+		keyEnd := rpcJSONStringEnd(remaining)
+		var name string
+		if json.Unmarshal(remaining[:keyEnd], &name) != nil {
 			return fmt.Errorf("%w: malformed object member", ErrInvalidRPCResponse)
 		}
 		target, known := fields[name]
@@ -90,33 +97,74 @@ func decodeRPCObject(raw []byte, fields map[string]*json.RawMessage) error {
 		} else if len(*target) != 0 {
 			return fmt.Errorf("%w: duplicate control field", ErrInvalidRPCResponse)
 		}
-		afterKey := dec.InputOffset()
-		if err := dec.Decode(&scan); err != nil {
+		colon := bytes.TrimLeft(remaining[keyEnd:], whitespace)
+		if len(colon) == 0 || colon[0] != ':' {
+			return fmt.Errorf("%w: malformed member value", ErrInvalidRPCResponse)
+		}
+		value := bytes.TrimLeft(colon[1:], whitespace)
+		end := rpcJSONValueEnd(value)
+		// Validate each value with the standard decoder's grammar and depth
+		// limit without allocating Decoder.Decode's whole-value buffer.
+		if !json.Valid(value[:end]) {
 			return fmt.Errorf("%w: malformed member value", ErrInvalidRPCResponse)
 		}
 		if target != nil {
-			// Decode consumed the colon and one complete value. Use the input
-			// offsets to keep the original bytes without the decoder's buffer.
-			member := bytes.TrimLeft(raw[afterKey:dec.InputOffset()], " \t\r\n")
-			if len(member) < 2 || member[0] != ':' {
-				return fmt.Errorf("%w: malformed member value", ErrInvalidRPCResponse)
-			}
-			value := bytes.Trim(member[1:], " \t\r\n")
-			*target = value[:len(value):len(value)]
+			*target = value[:end:end]
 		}
-	}
-	if token, err := dec.Token(); err != nil || token != json.Delim('}') {
-		return fmt.Errorf("%w: malformed object ending", ErrInvalidRPCResponse)
-	}
-	if err := dec.Decode(&scan); err != io.EOF {
-		return fmt.Errorf("%w: trailing response data", ErrInvalidRPCResponse)
+		remaining = bytes.TrimLeft(value[end:], whitespace)
+		if len(remaining) == 0 {
+			break
+		}
+		if remaining[0] != ',' {
+			return fmt.Errorf("%w: malformed object member separator", ErrInvalidRPCResponse)
+		}
+		remaining = bytes.TrimLeft(remaining[1:], whitespace)
+		if len(remaining) == 0 {
+			return fmt.Errorf("%w: malformed object member", ErrInvalidRPCResponse)
+		}
 	}
 	return nil
 }
 
-// ignoredRPCValue is only passed to json.Decoder.Decode, which scans and
-// validates the complete JSON value before calling UnmarshalJSON. The callback
-// discards the decoder's value without making a RawMessage payload copy.
-type ignoredRPCValue struct{}
+// rpcJSONValueEnd finds a possible value boundary without interpreting scalar
+// syntax or matching bracket types. The caller validates the resulting span.
+func rpcJSONValueEnd(raw []byte) int {
+	depth := 0
+	for i := 0; i < len(raw); i++ {
+		switch raw[i] {
+		case '"':
+			i += rpcJSONStringEnd(raw[i:]) - 1
+			if depth == 0 {
+				return i + 1
+			}
+		case '{', '[':
+			depth++
+		case '}', ']':
+			if depth == 0 {
+				return i
+			}
+			depth--
+			if depth == 0 {
+				return i + 1
+			}
+		case ',', ' ', '\t', '\r', '\n':
+			if depth == 0 {
+				return i
+			}
+		}
+	}
+	return len(raw)
+}
 
-func (*ignoredRPCValue) UnmarshalJSON([]byte) error { return nil }
+// rpcJSONStringEnd starts at the opening quote and skips escaped characters.
+func rpcJSONStringEnd(raw []byte) int {
+	for i := 1; i < len(raw); i++ {
+		switch raw[i] {
+		case '\\':
+			i++
+		case '"':
+			return i + 1
+		}
+	}
+	return len(raw)
+}
