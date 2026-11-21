@@ -261,7 +261,7 @@ def execute(environment, workspace, checkout):
         stage = "opening-proof"
         proof_request = f"rpc-{rpc.calls + 1:02d}.request.json"
         try:
-            rpc.opening_proof(opening[2], profile)
+            opening_proof = rpc.opening_proof(opening[2], profile)
         except Refused as error:
             if error.reason == capture.OPENING_PROOF_VERSION_UNAVAILABLE:
                 extra.add(capture.OPENING_PROOF_FILE)
@@ -270,6 +270,7 @@ def execute(environment, workspace, checkout):
             if proof_request in record.names:
                 extra.add(proof_request)
         extra.add(capture.OPENING_PROOF_FILE)
+        require(opening_proof["presence"] == "absent", capture.OPENING_BATCH_ALREADY_PRESENT)
         stage = "opening-signatures"
         capture.verify_opening_signatures(record, opening, opening_rows, private, tool_environment, guard)
         extra.add(capture.OPENING_SIGNATURE_REPORT)

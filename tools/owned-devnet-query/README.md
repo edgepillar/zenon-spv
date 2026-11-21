@@ -196,10 +196,11 @@ without writing a second ZIP to disk.
 After validating the opening sequence, the runner derives the selected
 BatchEntry key from the pinned profile and requests one bounded
 `ledger.getProof` at the candidate H3. It checks the canonical proof against
-the StateRoot in that candidate header. A valid absence or membership proof
-demonstrates that the selected proof path is readable. An unavailable reply,
-incorrect root or malformed proof stops preparation before binary downloads,
-package installation or fixture signing.
+the StateRoot in that candidate header and requires absence for the selected
+BatchEntry before fixture setup. A valid membership proof yields
+`opening_batch_already_present` and retains the bound reply for offline review.
+An unavailable reply, incorrect root or malformed proof also stops preparation
+before binary downloads, package installation or fixture signing.
 
 The shared budget allows the extra read within the existing 96 calls. The
 successful path reserves up to 90 calls for the three readiness waits, one for
@@ -208,12 +209,12 @@ frontier around final collection. A checked reply and its paired request are
 retained once. The selected node's exact `trie: no such version` reply is
 also retained when it refuses this read. Archive review checks the original
 reply, paired request, completed command and terminal refusal. This reply
-records an unavailable tree version for the requested height. The export is
-limited to this exact refusal reply. The original node returned the same error
-in an isolated retained-history test. [Recorded pruning control](../../docs/first-insertion-catchup.md#pruned-versions-and-retained-absence-at-the-rpc-boundary)
+records an unavailable tree version for the requested height. The original
+node returned the same error in an isolated retained-history test.
+[Recorded pruning control](../../docs/first-insertion-catchup.md#pruned-versions-and-retained-absence-at-the-rpc-boundary)
 
-Archive review recomputes a successful opening proof from the retained bytes
-and selected profile. After that proof passes, the runner uses the host OpenSSL
+Archive review recomputes the opening proof from the retained bytes and
+selected profile. After the absence check passes, the runner uses the host OpenSSL
 Ed25519 verifier to check the H2 and H3 signatures over their recomputed
 32-byte hashes. Both commands must complete successfully before input
 downloads, package installation or fixture setup. Their small input files
@@ -440,13 +441,15 @@ the reported closed RPC container and oracle receipts, and the derived query
 inputs. It recomputes the three membership proofs, decodes the typed rows and
 compares the 17 stored fields with the recorded gateway response and CLI result.
 
-With a version-2 terminal record, a successful consumer comparison or a
+With a version-2 or version-3 terminal record, a successful consumer comparison or a
 closed-run gateway mismatch also requires the opening BatchEntry proof, the
 H2/H3 signature command receipts and the successful configuration and deposit
 command receipts. The reader checks the fixture receipt bindings, exit codes
-and bounded stream digests. Fixture streams stay out of the archive. The
-reader preserves earlier terminal records and reviews early failures without
-requiring stages they did not reach.
+and bounded stream digests. Fixture streams stay out of the archive.
+Version 3 requires an opening absence proof before a completed comparison.
+It also binds a present opening proof to a refusal before signature checks and
+fixture commands. The reader reviews prior versions under their recorded rules
+and verifies the stages reached by each early failure.
 
 Exit 0 reports `RECORDED_CONSUMER_BYTES_MATCH`. This is agreement among the
 retained records and independently recomputed bytes. The original run identity,

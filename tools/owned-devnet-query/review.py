@@ -254,8 +254,9 @@ def recorded_opening(evidence, contract):
 def recorded_opening_proof(evidence, contract, checkout, opening, opening_observation, terminal):
     name = capture.OPENING_PROOF_FILE
     version_unavailable = terminal["reason"] == capture.OPENING_PROOF_VERSION_UNAVAILABLE
+    batch_already_present = terminal["reason"] == capture.OPENING_BATCH_ALREADY_PRESENT
     if "evidence/" + name not in evidence.pins:
-        require(not version_unavailable, "review_opening_proof_refusal_evidence")
+        require(not (version_unavailable or batch_already_present), "review_opening_proof_refusal_evidence")
         return None
     require(opening is not None and opening_observation["request"] is not None, "review_opening_proof_context")
     request_id = model.uint(opening_observation["request_id"] + 1, capture.RPC_CALL_LIMIT)
@@ -279,6 +280,16 @@ def recorded_opening_proof(evidence, contract, checkout, opening, opening_observ
     else:
         require(not version_unavailable, "review_opening_proof_refusal_scope")
         observation = opening_batch_witness(profile, header.root, key, witness)
+    current = terminal["format"] == model.TERMINAL_FORMAT
+    if current:
+        require(batch_already_present == (observation.get("presence") == "present"), "review_opening_batch_scope")
+    if batch_already_present:
+        later_labels = (*capture.OPENING_SIGNATURE_LABELS, "fixture-configure", "fixture-deposit")
+        require(current and terminal["stage"] == "opening-proof" and terminal["outcome"] == "REFUSED"
+                and "evidence/" + capture.OPENING_SIGNATURE_REPORT not in evidence.pins
+                and all(f"evidence/{later}.{phase}.json" not in evidence.pins
+                        for later in later_labels for phase in ("launch", "started", "complete")),
+                "review_opening_batch_scope")
     return {**observation, "ledger_key": key.hex(),
             "header": header.identifier(), "state_root": header.root, "request_id": request_id,
             "request": evidence.pins["evidence/" + request_file], "response": response,
@@ -748,7 +759,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         exact_keys(terminal, {*selection, "format", "outcome", "stage", "reason",
                              "owned_runtime_observed_closed", "production_qualified",
                              "consensus_finality_or_funds_release"}, "review_terminal_fields")
-        require(terminal["format"] in ("owned-devnet-query-terminal/v1", model.TERMINAL_FORMAT)
+        require(terminal["format"] in ("owned-devnet-query-terminal/v1", model.TERMINAL_FORMAT_V2, model.TERMINAL_FORMAT)
                 and terminal["production_qualified"] is False
                 and terminal["consensus_finality_or_funds_release"] is False
                 and type(terminal["owned_runtime_observed_closed"]) is bool, "review_terminal_scope")
@@ -785,7 +796,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         opening_signatures = recorded_opening_signatures(evidence, opening, opening_observation, opening_proof)
         if accepted or (gateway_refusal and terminal["owned_runtime_observed_closed"]):
             require(opening is not None, "review_consumer_opening")
-            if terminal["format"] == model.TERMINAL_FORMAT:
+            if terminal["format"] in (model.TERMINAL_FORMAT_V2, model.TERMINAL_FORMAT):
                 require(opening_signatures is not None, "review_consumer_opening_gate")
                 fixture_commands = recorded_fixture_commands(evidence)
             comparison = recorded_consumer(evidence, contract, checkout, selection, opening)

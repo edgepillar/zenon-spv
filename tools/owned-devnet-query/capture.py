@@ -41,6 +41,7 @@ ED25519_SPKI_PREFIX = bytes.fromhex("302a300506032b6570032100")
 OPENING_PROOF_FILE = "opening-batch-proof.json"
 OPENING_PROOF_BYTES = 32 << 10
 OPENING_PROOF_VERSION_UNAVAILABLE = "opening_proof_version_unavailable"
+OPENING_BATCH_ALREADY_PRESENT = "opening_batch_already_present"
 RPC_CALL_LIMIT = 96
 CONSUMER_STDOUT = "consume-query.stdout"
 CONSUMER_FAILURE_BYTES = 4096

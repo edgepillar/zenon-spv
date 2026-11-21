@@ -16,6 +16,7 @@ import model
 import query_checks as q
 
 FIXTURES = HERE.parents[1] / "internal/testdata/conformance"
+NODE_WITNESS_SHA256 = "773cda402e08709ffd73adfea355f73269b1470b7336c5a027ddd5b331ab9d96"
 # Unsigned H3 in the reopened original-node fixture. Artifact 14698214783,
 # run 44882528531 attempt 1. The H3 RPC proof digest matches these bytes.
 OPENING_BATCH_KEY = "0301b3b6e5adcb4d0cad7fcef33598c6318c6318c00402000000010000000000000000"
@@ -43,11 +44,19 @@ def fixture(name, digest=None):
     return json.loads(raw)
 
 
+def opening_present_fixture():
+    trace = fixture("batch-context-node-witness.json", NODE_WITNESS_SHA256)
+    row = trace["rows"][0]
+    assert row["name"] == "batch_entry" and row["ledger_key_hex"] == OPENING_BATCH_KEY
+    return {"root": trace["root_hex"], "value": base64.b64encode(bytes.fromhex(row["value_hex"])).decode("ascii"),
+            "proof": base64.b64encode(bytes.fromhex(row["proof_hex"])).decode("ascii")}
+
+
 class QueryCheckTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.unit = fixture("batch-context-unit.json", "e4bfbdb7bff55f9719782c7e609240b2ba9aeefd0d0f42b7ee1948286e890366")
-        cls.trace = fixture("batch-context-node-witness.json", "773cda402e08709ffd73adfea355f73269b1470b7336c5a027ddd5b331ab9d96")
+        cls.trace = fixture("batch-context-node-witness.json", NODE_WITNESS_SHA256)
 
     def witnesses(self):
         return {row["name"]: {"root": self.trace["root_hex"],
@@ -128,7 +137,7 @@ class QueryCheckTests(unittest.TestCase):
     def test_opening_probe_can_validate_a_present_witness_without_decoding_an_abi_value(self):
         profile = self.unit["config"]["query_profile"]
         key = q.ledger_keys(profile, 0)["batch_entry"]
-        row = self.witnesses()["batch_entry"]
+        row = opening_present_fixture()
         checked = q.opening_batch_witness(profile, self.trace["root_hex"], key, row)
         self.assertEqual(checked["presence"], "present")
         self.assertEqual(checked["path"], q.H(key).hex())

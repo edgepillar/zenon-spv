@@ -26,7 +26,7 @@ import closed_reader
 import model
 from process import CommandFailed, Recorder, capture as capture_process
 import query_checks
-from query_checks_test import OPENING_ABSENCE_ROOT, OPENING_BATCH_KEY, opening_absence_fixture
+from query_checks_test import OPENING_BATCH_KEY, opening_absence_fixture, opening_present_fixture
 import review
 import runner
 
@@ -499,7 +499,7 @@ class StartupPeerFrontierTests(unittest.TestCase):
                 inspect_nodes.assert_called_once_with()
 
 
-def synthetic_window(last=4, state_root=bytes([77]) * 32):
+def synthetic_window(last=4, state_root=bytes([77]) * 32, *, opening_root=None):
     rows = []
     chain = CONTRACT.data["selection"]["chain_id"]
     previous = bytes(32)
@@ -509,6 +509,8 @@ def synthetic_window(last=4, state_root=bytes([77]) * 32):
         version = 1 if height < 3 else 3
         timestamp = 1739923200 + height * 10
         root = state_root if version == 3 else bytes(32)
+        if height == 3 and opening_root is not None:
+            root = opening_root
         encoded = struct.pack(">QQ", version, chain) + previous + struct.pack(">QQ", height, timestamp)
         encoded += empty + empty + bytes(32)
         if version == 3:
@@ -1095,13 +1097,13 @@ class HostBoundaryTests(unittest.TestCase):
                              ("runtime-inputs", "REFUSED", "fixture_source_default"))
 
     def test_query_inputs_and_packages_follow_opening_validation(self):
-        contract, rows, window = synthetic_window(state_root=bytes.fromhex(OPENING_ABSENCE_ROOT))
         proof_key = base64.b64encode(bytes.fromhex(OPENING_BATCH_KEY)).decode("ascii")
         execution = model.ExecutionIdentity("a" * 40, 1, 1, "edgepillar")
         for case, stage, reason in (
                 ("bad-opening", "nodes", "opening_header_count"),
                 ("bad-proof", "opening-proof", "opening_proof_root_or_response"),
                 ("version-unavailable", "opening-proof", capture.OPENING_PROOF_VERSION_UNAVAILABLE),
+                ("batch-already-present", "opening-proof", capture.OPENING_BATCH_ALREADY_PRESENT),
                 ("other-proof-error", "opening-proof", "owned_rpc_result_envelope"),
                 ("bad-signature", "opening-signatures", "command_failed"),
                 ("bad-oracle", "query-inputs", "test_oracle_input_refusal"),
@@ -1111,7 +1113,10 @@ class HostBoundaryTests(unittest.TestCase):
                 ("bad-consumer", "consumer", "consumer_reported_failure")):
             trace = mock.Mock()
             consumer_failed = case == "bad-consumer"
-            opening_failed = case in ("bad-opening", "bad-proof", "version-unavailable", "other-proof-error")
+            batch_present = case == "batch-already-present"
+            witness = opening_present_fixture() if batch_present else opening_absence_fixture()
+            contract, rows, window = synthetic_window(state_root=bytes.fromhex(witness["root"]))
+            opening_failed = batch_present or case in ("bad-opening", "bad-proof", "version-unavailable", "other-proof-error")
             signature_failed = case == "bad-signature"
             queries_admitted = not opening_failed and not signature_failed
 
@@ -1159,7 +1164,7 @@ class HostBoundaryTests(unittest.TestCase):
                         trace.opening_proof()
                         self.assertEqual(request, {"jsonrpc": "2.0", "id": 3,
                             "method": "ledger.getProof", "params": [3, proof_key]})
-                        result = opening_absence_fixture()
+                        result = dict(witness)
                         if case == "bad-proof":
                             result["root"] = "1" * 64
                     response = model.canonical({"jsonrpc": "2.0", "id": request["id"], "result": result})
@@ -1293,7 +1298,7 @@ class HostBoundaryTests(unittest.TestCase):
                     self.assertNotIn(proof_request, files)
                 else:
                     self.assertIn(proof_request, files)
-                if opening_failed and case != "version-unavailable":
+                if opening_failed and case not in ("version-unavailable", "batch-already-present"):
                     self.assertNotIn(proof_response, files)
                     self.assertNotIn("candidate_opening_proof", checked)
                 else:
@@ -1309,7 +1314,7 @@ class HostBoundaryTests(unittest.TestCase):
                         self.assertEqual(validated["response"],
                                          {"file": capture.OPENING_PROOF_FILE, **files[proof_response]})
                     else:
-                        self.assertEqual(validated["presence"], "absent")
+                        self.assertEqual(validated["presence"], "present" if batch_present else "absent")
                 signature_report = "evidence/" + capture.OPENING_SIGNATURE_REPORT
                 self.assertEqual(signature_report in files, queries_admitted)
                 self.assertEqual("recorded_opening_signatures" in checked, queries_admitted)
