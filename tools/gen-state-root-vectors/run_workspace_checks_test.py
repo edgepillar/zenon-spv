@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""Control ordering and completion of the recorded workspace check."""
+"""Control ordering and completion of paired observation checks."""
 from contextlib import redirect_stdout
 import importlib.util
 import io
@@ -67,6 +67,45 @@ class WorkspaceChecksControls(unittest.TestCase):
                         with self.assertRaises(ValueError):
                             RUN.main(['--source-revision', REVISION])
                         self.assertEqual(output.getvalue(), RECORDING + '\n')
+
+    def test_tree_pairs_run_the_exact_recording_and_all_its_controls_in_one_scope(self):
+        for name, stem in RUN.TREE_CHECKS.items():
+            with self.subTest(name=name):
+                controls = stem + '_test.py'
+                program = RUN.HEX.load('tree_pair_fixture', controls)
+                suite = unittest.defaultTestLoader.loadTestsFromModule(program)
+                expected = list(RUN.control_names(suite))
+                output = io.StringIO()
+
+                def complete_controls(tests):
+                    self.assertEqual(output.getvalue(), RECORDING + '\n')
+                    self.assertEqual(list(RUN.control_names(tests)), expected)
+                    return SimpleNamespace(wasSuccessful=lambda: True, skipped=[], testsRun=len(expected))
+
+                with mock.patch.object(RUN.HEX, 'load', return_value=program) as load, \
+                        mock.patch.object(program.CHECK, 'main', side_effect=lambda _: print(RECORDING)) as record, \
+                        mock.patch.object(RUN.unittest.TextTestRunner, 'run', side_effect=complete_controls), \
+                        redirect_stdout(output):
+                    RUN.main(['--source-revision', REVISION, '--tree-check', name])
+                load.assert_called_once_with('recorded_observation_controls', controls)
+                record.assert_called_once_with(['--source-revision', REVISION])
+                recording, raw_report = output.getvalue().splitlines()
+                self.assertEqual(recording, RECORDING)
+                report = json.loads(raw_report)
+                self.assertEqual(report['kind'], 'recorded-tree-checks-execution')
+                self.assertEqual(report['recording_program'], stem + '.py')
+                self.assertEqual(report['control_program'], controls)
+                self.assertEqual(report['control_names'], expected)
+                self.assertTrue(report['graph_reuse']['selected_functions_restored'])
+
+    def test_refuses_a_mismatched_recording_before_running_either_check(self):
+        wrong = RUN.HEX.load('wrong_recording_controls', RUN.CONTROLS)
+        with mock.patch.object(RUN.HEX, 'load', return_value=wrong), \
+                mock.patch.object(wrong.CHECK, 'main') as record, \
+                mock.patch.object(RUN.unittest.TextTestRunner, 'run') as controls, self.assertRaises(ValueError):
+            RUN.main(['--source-revision', REVISION, '--tree-check', 'projected-driver'])
+        record.assert_not_called()
+        controls.assert_not_called()
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 # Separate recorded-oracle CI lane
 
-The CI workflow runs 32 recorded-data commands in a separate job on Linux amd64,
+The CI workflow runs 27 recorded-data commands in a separate job on Linux amd64,
 macOS Intel amd64 and Windows amd64. Two larger-retention invocations use the
 [bounded leaf commitment scope](retention-leaf-reuse.md), with a separate control
 invocation. Two complete import control suites use
@@ -11,6 +11,15 @@ process. The recorded check constructs the reference import model. The envelope
 controls reuse that model and validate their own inputs. The dedicated workspace
 runner emits a source-bound completion receipt after both checks succeed and their
 scopes close. The CI step also runs the workspace runner controls.
+The same runner pairs the original recorded check and the complete control
+suite for file-backed NodeTree import, reference-child lifecycle, driver and
+build resources, sparse oracle projection and complete driver projection.
+Each pair validates the recording with the original checker before its controls
+run. Both phases share the checker's expected document and one bounded
+in-memory graph scope keyed by the complete ordered state bytes. Each control
+still validates its own inputs. The runner retains the original checker report
+in the job log and emits a separate source-bound receipt with all control names
+and graph accounting after both phases finish. Each pair has its own process.
 The native verifier jobs run on separate hosted runners alongside this lane.
 See the [GitHub-hosted runner model](https://docs.github.com/en/actions/concepts/runners/github-hosted-runners)
 for its VM isolation and runner-image limits.
@@ -29,10 +38,12 @@ files. They check recorded resources rather than launching a new node, database
 workload or Go build. Some existing controls still launch fresh Python CLIs and
 use their own temporary test files.
 
-The current 32-command inventory has SHA-256
-`b6740942f8c048d4a0f9490eddbfa1fcef396ad1952561293a8413425dd69eab`.
+The current 27-command inventory has SHA-256
+`549a728ca9de3d33156f1ffb0902639d7f12a671ecfb0797893d1fcb3e96e0d9`.
 Its encoding is the ordered list of name/run objects, with sorted JSON keys,
-compact separators, unexpanded workflow expressions and a final LF. The earlier
+compact separators, unexpanded workflow expressions and a final LF. The
+preceding 32-command inventory with separate tree checks had SHA-256
+`b6740942f8c048d4a0f9490eddbfa1fcef396ad1952561293a8413425dd69eab`. The earlier
 33-command inventory with separate workspace invocations had SHA-256
 `c285ca19653067b71f8132e09ec07e50178eef5ec927c096c368d349d3879b6b`.
 The 32-command leaf-scope inventory had SHA-256
@@ -62,6 +73,16 @@ retain each verified object once. Do not download native payloads merely to
 qualify this workflow-only scheduling change.
 
 ## Timing evidence and acceptance
+
+One local Darwin arm64 comparison ran each of the five pairs once in each
+mode with the same recorded inputs. The paired run retained all 141 controls
+and reproduced each original checker report. Full reference graph calls fell
+from 349 to 184. The elapsed time for the ten separate processes was 134.76
+seconds. The five paired processes took 70.15 seconds. The graph cache wrote
+no files. These timings describe the selected local runs.
+
+The hosted baseline took 271 seconds for the ten selected Linux steps, 508
+seconds for macOS and 375 seconds for Windows. [Baseline CI](https://github.com/edgepillar/zenon-spv/actions/runs/44926642106)
 
 In baseline CI run
 [40224397389](https://github.com/edgepillar/zenon-spv/actions/runs/40224397389),
