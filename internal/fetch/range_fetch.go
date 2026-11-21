@@ -16,10 +16,14 @@ func fetchHeightRange[Wire, Parsed any](ctx context.Context, client *Client, met
 	var out []Parsed
 	for offset := uint64(0); offset < count; {
 		pageCount := min(count-offset, rpcRangePageSize)
+		raw, err := client.callResultWithBudget(ctx, method, params(start+offset, pageCount), budget)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", method, err)
+		}
 		var rows []Wire
 		decoder := rpcListDecoder[Wire]{target: &rows, count: pageCount, rowTarget: rowTarget}
-		if err := client.callWithBudget(ctx, method, params(start+offset, pageCount), &decoder, budget); err != nil {
-			return nil, fmt.Errorf("%s: %w", method, err)
+		if err := decoder.UnmarshalJSON(raw); err != nil {
+			return nil, fmt.Errorf("%s: %w", method, callFailure("unmarshal result", err))
 		}
 		if uint64(len(rows)) != pageCount {
 			return nil, fmt.Errorf("%w: rpc returned %d rows, expected %d", ErrQueryMismatch, len(rows), pageCount)

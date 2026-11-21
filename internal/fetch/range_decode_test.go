@@ -1,10 +1,12 @@
 package fetch
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -120,10 +122,40 @@ func TestRangeDecodeRetainsWholeJSONValidation(t *testing.T) {
 	} {
 		got := []rpcMomentum{{Height: 77}}
 		var syntax *json.SyntaxError
-		err := json.Unmarshal([]byte(raw), &rpcListDecoder[rpcMomentum]{target: &got, count: 1})
+		decoder := rpcListDecoder[rpcMomentum]{target: &got, count: 1}
+		err := decoder.UnmarshalJSON([]byte(raw))
 		if !errors.As(err, &syntax) || !reflect.DeepEqual(got, []rpcMomentum{{Height: 77}}) {
 			t.Fatalf("range parsing bypassed JSON syntax validation: %v", err)
 		}
+	}
+}
+
+type rangeRowCheck func([]byte) error
+
+func (check rangeRowCheck) UnmarshalJSON(raw []byte) error { return check(raw) }
+
+func TestRangeDecodeBorrowsExactRows(t *testing.T) {
+	want := []string{`{"text":"}, [, \"quoted\""}`, `[ 3, false ]`, `"escaped \\ slash \/"`, `-1.25e-3`, `null`}
+	body := []byte("{\r\n" + `"li\u017ft"` + ": [ \t" + strings.Join(want, " ,\r\n") + "\n ] }")
+	var got []int
+	seen := 0
+	decode := rpcListDecoder[int]{target: &got, count: uint64(len(want)), rowTarget: func(row *int) any {
+		check := rangeRowCheck(func(raw []byte) error {
+			if seen >= len(want) || string(raw) != want[seen] {
+				t.Fatal("row bytes differ from the input span")
+			}
+			offset := bytes.Index(body, raw)
+			if offset < 0 || &raw[0] != &body[offset] || cap(raw) != len(raw) {
+				t.Fatal("row must borrow only its own bounded span")
+			}
+			*row = seen
+			seen++
+			return nil
+		})
+		return &check
+	}}
+	if err := decode.UnmarshalJSON(body); err != nil || !reflect.DeepEqual(got, []int{0, 1, 2, 3, 4}) {
+		t.Fatalf("row projection failed: %v", err)
 	}
 }
 
@@ -141,7 +173,15 @@ func FuzzRPCRangeDecode(f *testing.F) {
 		}
 		limit := uint64(capByte % 8)
 		got := []rpcMomentum{{Height: 77}}
-		err := json.Unmarshal(raw, &rpcListDecoder[rpcMomentum]{target: &got, count: limit})
+		decode := rpcListDecoder[rpcMomentum]{target: &got, count: limit, rowTarget: newRPCEvidenceDecoder().momentum}
+		err := decode.UnmarshalJSON(raw)
+		ref := []rpcMomentum{{Height: 77}}
+		refErr := json.Unmarshal(raw, &referenceRPCRangeDecoder{target: &ref, count: limit, rowTarget: newRPCEvidenceDecoder().momentum})
+		if (err == nil) != (refErr == nil) || !reflect.DeepEqual(got, ref) ||
+			errors.Is(err, ErrQueryMismatch) != errors.Is(refErr, ErrQueryMismatch) ||
+			errors.Is(err, ErrInvalidRPCResponse) != errors.Is(refErr, ErrInvalidRPCResponse) {
+			t.Fatal("range interpretation or error classification differs from the reference")
+		}
 		if err != nil {
 			if !reflect.DeepEqual(got, []rpcMomentum{{Height: 77}}) {
 				t.Fatal("failed range decode changed existing output")
@@ -153,4 +193,72 @@ func FuzzRPCRangeDecode(f *testing.F) {
 			t.Fatalf("bounded range changed JSON semantics or exceeded its count: %v", err)
 		}
 	})
+}
+
+// The reference preserves the rpcMomentum projection and the streaming row
+// loop used by 551cb68012c671730f50ba8ad7ee16dbee16280b. The outer Unmarshal
+// also preserves the former generic Call dispatch for a complete result.
+type referenceRPCRangeDecoder struct {
+	target    *[]rpcMomentum
+	count     uint64
+	rowTarget func(*rpcMomentum) any
+}
+
+func (d *referenceRPCRangeDecoder) UnmarshalJSON(raw []byte) error {
+	wire := struct {
+		List referenceRPCRangeRows `json:"list"`
+	}{List: referenceRPCRangeRows{count: d.count, rowTarget: d.rowTarget}}
+	if err := json.Unmarshal(raw, &wire); err != nil {
+		return err
+	}
+	*d.target = wire.List.rows
+	return nil
+}
+
+type referenceRPCRangeRows struct {
+	rows      []rpcMomentum
+	count     uint64
+	seen      bool
+	rowTarget func(*rpcMomentum) any
+}
+
+func (r *referenceRPCRangeRows) UnmarshalJSON(raw []byte) error {
+	if r.seen {
+		return ErrInvalidRPCResponse
+	}
+	r.seen = true
+	d := json.NewDecoder(bytes.NewReader(raw))
+	first, err := d.Token()
+	if err != nil {
+		return err
+	}
+	var rows []rpcMomentum
+	if first != nil {
+		if first != json.Delim('[') {
+			return ErrInvalidRPCResponse
+		}
+		rows = make([]rpcMomentum, 0)
+		for d.More() {
+			if uint64(len(rows)) >= r.count {
+				return ErrQueryMismatch
+			}
+			var row rpcMomentum
+			var target any = &row
+			if r.rowTarget != nil {
+				target = r.rowTarget(&row)
+			}
+			if err := d.Decode(target); err != nil {
+				return err
+			}
+			rows = append(rows, row)
+		}
+		if _, err := d.Token(); err != nil {
+			return err
+		}
+	}
+	if _, err := d.Token(); err != io.EOF {
+		return ErrInvalidRPCResponse
+	}
+	r.rows = rows
+	return nil
 }
