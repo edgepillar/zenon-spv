@@ -55,6 +55,14 @@ heights. The v3 preimage must append the raw root at byte 176, after both prices
 The local capture controller separately reconstructed all 14 hashes with
 Python's SHA3-256 implementation before preserving the capture.
 
+The [independent signature checker](../tools/gen-node-momentum-vectors/check-first-v3-signatures.py)
+reconstructs the same 14 messages in Python and verifies 13 signatures with
+OpenSSL 3. It derives the data and content hashes from the three signed v3 RPC
+records before matching each projection against the capture. For each v3
+signature, OpenSSL must reject the two recomputed digests with the StateRoot
+omitted or changed. The native CI signature artifact includes this report on
+Linux, macOS and Windows.
+
 Negative controls change each signed field, including both prices and the state
 root. A changed root with a recomputed hash remains decodable but fails the old
 fixture signature. Width-correct altered public keys and signatures also remain
