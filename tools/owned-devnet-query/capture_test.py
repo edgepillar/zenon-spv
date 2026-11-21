@@ -668,7 +668,8 @@ class ReadinessTests(unittest.TestCase):
         failure = self.failure()
         before = deepcopy(failure.result.receipt)
         self.recorder.run.side_effect = [failure, self.response(rows[-1], 2)]
-        with mock.patch.object(capture.time, "sleep") as sleep:
+        with mock.patch.object(capture.time, "monotonic", return_value=0), \
+                mock.patch.object(capture.time, "sleep") as sleep:
             header = self.rpc.wait_height(3, starting=True)
         self.assertEqual(header.height, 4)
         self.assertEqual(failure.result.receipt, before)
@@ -677,7 +678,8 @@ class ReadinessTests(unittest.TestCase):
         self.assertEqual([row["id"] for row in requests], [1, 2])
         self.assertEqual([row["method"] for row in requests], ["ledger.getFrontierMomentum"] * 2)
         self.assertEqual(self.rpc.calls, 2)
-        sleep.assert_called_once_with(6)
+        sleep.assert_called_once()
+        self.assertAlmostEqual(sleep.call_args.args[0], 179 / 29)
 
     def test_empty_startup_connect_and_timeout_failures_remain_bounded_candidates(self):
         for code in (7, 28):
@@ -742,8 +744,15 @@ class ReadinessTests(unittest.TestCase):
 
     def test_a_valid_low_frontier_remains_available_after_the_deadline(self):
         _, rows, _ = synthetic_window()
-        self.recorder.run.return_value = self.response(rows[1], 1)
-        with mock.patch.object(capture.time, "monotonic", side_effect=[0, 0, 180]), \
+        clock = 0
+
+        def low_frontier(*args, **kwargs):
+            nonlocal clock
+            clock = 180
+            return self.response(rows[1], 1)
+
+        self.recorder.run.side_effect = low_frontier
+        with mock.patch.object(capture.time, "monotonic", side_effect=lambda: clock), \
                 mock.patch.object(capture.time, "sleep") as sleep:
             with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
                 self.rpc.wait_height(3, starting=True)
@@ -751,14 +760,58 @@ class ReadinessTests(unittest.TestCase):
         self.assertEqual(self.rpc.calls, 1)
         sleep.assert_not_called()
 
-    def test_initial_readiness_can_observe_the_selected_height_after_ninety_seconds(self):
+    def test_initial_readiness_can_observe_a_late_height_with_slow_responses(self):
         _, rows, _ = synthetic_window()
-        self.recorder.run.side_effect = [self.response(rows[1], 1), self.response(rows[2], 2)]
-        with mock.patch.object(capture.time, "monotonic", side_effect=[0, 0, 90, 96, 97]), \
+        clock = 1000.0
+        starts = []
+
+        def observed(label, argv, *args, **kwargs):
+            nonlocal clock
+            starts.append(clock - 1000)
+            request_id = len(starts)
+            self.assertEqual(label, f"rpc-{request_id:02d}")
+            if starts[-1] >= 174:
+                clock += 0.25
+                return self.response(rows[2], request_id)
+            clock += 4.75
+            return self.response(rows[1], request_id)
+
+        def sleep(seconds):
+            nonlocal clock
+            clock += seconds
+
+        self.recorder.run.side_effect = observed
+        with mock.patch.object(capture.time, "monotonic", side_effect=lambda: clock), \
+                mock.patch.object(capture.time, "sleep", side_effect=sleep):
+            self.assertEqual(self.rpc.wait_height(3, starting=True).height, 3)
+
+        self.assertEqual(self.rpc.calls, 30)
+        self.assertEqual(len(self.rpc.retained_frontiers), 30)
+        for attempt, start in enumerate(starts):
+            self.assertAlmostEqual(start, attempt * 179 / 29)
+        self.assertAlmostEqual(clock, 1179.25)
+
+    def test_initial_readiness_skips_elapsed_slots_and_keeps_the_next_request_id(self):
+        _, rows, _ = synthetic_window()
+        clock = 0
+        starts = []
+
+        def observed(label, argv, *args, **kwargs):
+            nonlocal clock
+            starts.append(clock)
+            if label == "rpc-01":
+                clock = 25
+                return self.response(rows[1], 1)
+            self.assertEqual(label, "rpc-02")
+            return self.response(rows[2], 2)
+
+        self.recorder.run.side_effect = observed
+        with mock.patch.object(capture.time, "monotonic", side_effect=lambda: clock), \
                 mock.patch.object(capture.time, "sleep") as sleep:
             self.assertEqual(self.rpc.wait_height(3, starting=True).height, 3)
+        self.assertEqual(starts, [0, 25])
         self.assertEqual(self.rpc.retained_frontiers, {"rpc-01.frontier.json", "rpc-02.frontier.json"})
-        sleep.assert_called_once_with(6)
+        sleep.assert_not_called()
 
     def test_initial_final_read_uses_the_existing_attempt_and_time_budgets(self):
         _, rows, _ = synthetic_window()
@@ -817,7 +870,8 @@ class ReadinessTests(unittest.TestCase):
             with self.subTest(starting=starting):
                 self.setUp()
                 self.recorder.run.return_value = self.response(rows[2], 1)
-                with mock.patch.object(capture.time, "monotonic", side_effect=[0, 0, deadline]), \
+                clock = [0, 0, 0, deadline] if starting else [0, 0, deadline]
+                with mock.patch.object(capture.time, "monotonic", side_effect=clock), \
                         mock.patch.object(capture.time, "sleep") as sleep:
                     with self.assertRaisesRegex(model.Refused, "owned_rpc_readiness_deadline"):
                         self.rpc.wait_height(3, starting=starting)
@@ -868,12 +922,14 @@ class ReadinessTests(unittest.TestCase):
     def test_startup_failure_does_not_reset_the_shared_rpc_call_budget(self):
         self.rpc.calls = 95
         self.recorder.run.side_effect = self.failure()
-        with mock.patch.object(capture.time, "sleep") as sleep:
+        with mock.patch.object(capture.time, "monotonic", return_value=0), \
+                mock.patch.object(capture.time, "sleep") as sleep:
             with self.assertRaisesRegex(model.Refused, "owned_rpc_call_bound"):
                 self.rpc.wait_height(3, starting=True)
         self.assertEqual(self.rpc.calls, 97)
         self.assertEqual(self.recorder.run.call_count, 1)
-        sleep.assert_called_once_with(6)
+        sleep.assert_called_once()
+        self.assertAlmostEqual(sleep.call_args.args[0], 179 / 29)
 
 
 @unittest.skipUnless(os.name == "posix", "POSIX descriptor and recorder controls")

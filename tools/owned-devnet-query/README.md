@@ -229,10 +229,12 @@ accepted header and all three membership proofs at the query height.
 
 Only an initial selected-height `owned_rpc_readiness_deadline` permits one
 `stats.syncInfo` read from the same fixed owned RPC endpoint. The initial
-selected-height wait allows 180 seconds and up to 30 reads. Earlier reads use
-the six-second interval. When readiness has not been observed, the last allowed
-read is reserved for the final second of that same window. It uses the remaining
-time as its HTTP limit and retains the two-second command capture allowance.
+selected-height wait allows 180 seconds and up to 30 reads. The runner schedules
+the reads at roughly 6.17-second intervals measured from the start of the
+window and skips fully elapsed slots after a local stall. Response and capture
+time count toward each interval. The final slot starts one second before the
+deadline. Each read uses the lesser of five seconds and the remaining time as
+its HTTP limit and retains the two-second command capture allowance.
 A response that finishes at or after the readiness deadline stays a candidate
 observation. Gateway and later height waits allow 90 seconds and up to 30 reads
 with the usual three-second interval. All phases share the 96-call budget.

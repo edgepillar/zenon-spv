@@ -397,20 +397,34 @@ class LocalRpc:
             self.startup_frontier_evidence.add(STARTUP_FRONTIERS_REPORT)
         return report
 
-    def _wait(self, read, ready, *, starting, wait_seconds=READINESS_WAIT_SECONDS,
-              reserve_final_probe=False):
+    def _wait(self, read, ready, *, starting, initial_frontier=False):
         # Preserve every actual attempt. A freshly published loopback port can
         # accept and then close a request before RPC initialization completes.
         # Retry only a complete, quiescent startup failure with no response
         # bytes; malformed data, partial responses and later read failures stop.
-        until = time.monotonic() + wait_seconds
-        interval = wait_seconds / READINESS_ATTEMPTS
+        start = time.monotonic()
+        if initial_frontier:
+            until = start + INITIAL_HEIGHT_WAIT_SECONDS
+            last_probe = until - INITIAL_FINAL_PROBE_SECONDS
+            interval = (last_probe - start) / (READINESS_ATTEMPTS - 1)
+        else:
+            until = start + READINESS_WAIT_SECONDS
+            interval = READINESS_WAIT_SECONDS / READINESS_ATTEMPTS
         for attempt in range(READINESS_ATTEMPTS):
+            if initial_frontier and attempt:
+                # Let response and capture time use part of the interval.
+                # Skip fully elapsed slots after a prolonged local stall.
+                final = attempt == READINESS_ATTEMPTS - 1
+                scheduled = last_probe if final else start + attempt * interval
+                now = time.monotonic()
+                if not final and now >= scheduled + interval:
+                    continue
+                if now < scheduled:
+                    time.sleep(scheduled - now)
             self.guard()
             require(time.monotonic() < until, "owned_rpc_readiness_deadline")
-            final_probe = reserve_final_probe and attempt + 1 == READINESS_ATTEMPTS
             try:
-                value = read(deadline=until) if final_probe else read()
+                value = read(deadline=until) if initial_frontier else read()
             except CommandFailed as error:
                 receipt = error.result.receipt
                 stdout_bytes = receipt["outputs"]["stdout"]["bytes"]
@@ -424,23 +438,17 @@ class LocalRpc:
                 if ready(value):
                     require(time.monotonic() < until, "owned_rpc_readiness_deadline")
                     return value
-            if attempt + 1 < READINESS_ATTEMPTS:
+            if not initial_frontier and attempt + 1 < READINESS_ATTEMPTS:
                 remaining = until - time.monotonic()
                 require(remaining > 0, "owned_rpc_readiness_deadline")
                 delay = min(interval, remaining)
-                if reserve_final_probe and attempt + 2 == READINESS_ATTEMPTS:
-                    # Use the last allowed read near the end of the initial
-                    # window. Earlier reads keep their established cadence.
-                    delay = max(0, remaining - INITIAL_FINAL_PROBE_SECONDS)
                 if delay > 0:
                     time.sleep(delay)
         raise Refused("owned_rpc_readiness_deadline")
 
     def wait_height(self, height, *, starting=False):
-        wait_seconds = INITIAL_HEIGHT_WAIT_SECONDS if starting else READINESS_WAIT_SECONDS
         return self._wait(self.frontier, lambda frontier: frontier.height >= height,
-                          starting=starting, wait_seconds=wait_seconds,
-                          reserve_final_probe=starting)
+                          starting=starting, initial_frontier=starting)
 
     def wait_gateway(self):
         domain = self.contract.data["selection"]["domain_id"]
