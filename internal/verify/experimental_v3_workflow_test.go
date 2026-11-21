@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -426,4 +427,138 @@ VkSjdOO7sEapNvaBZ2KiZG0o6DRGPkqrD1lSwhHYXA==
 			t.Fatalf("expected canonical absence under the H6 root: %v", err)
 		}
 	})
+}
+
+// Exact post-sync frontier response from run 43653383092, attempt 1, artifact 14136634774.
+const recordedChain69V1Frontier = `{"jsonrpc":"2.0","id":32,"result":{` +
+	`"version":1,"chainIdentifier":69,` +
+	`"hash":"6203eed405db9b47b93628ed4178740150d35dbb3353bcee75fd622133c9798e",` +
+	`"previousHash":"fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9",` +
+	`"height":2,"timestamp":1794699050,"data":"","content":[],` +
+	`"changesHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",` +
+	`"publicKey":"iBln1lKTR6B/c+4sXwWWsbS85EuCisCh/Xegw/GQNVk=",` +
+	`"signature":"uf300J8ZMowXXirZHrcpTCPuKNAdm73le+q2lFxZmHsKzamx+iBeEAwdLExSZRkGdMPhSxsmbQ73Sf8BkGVZAA==",` +
+	`"nextFusionPrice":0,"nextWorkPrice":0,` +
+	`"stateRoot":"0000000000000000000000000000000000000000000000000000000000000000",` +
+	`"producer":"z1qq9n7fpaqd8lpcljandzmx4xtku9w4ftwyg0mq"}}` +
+	"\n"
+
+func TestRecordedChain69V1FrontierEntersNativeState(t *testing.T) {
+	const height = 2
+	const timestamp = 1794699050
+	const genesisHash = "fab7609bae7fd78eb7d2b0d4a5023832f1a6730921b862f2415da25524698dc9"
+	const frontierHash = "6203eed405db9b47b93628ed4178740150d35dbb3353bcee75fd622133c9798e"
+	const wireSHA = "931a991acef939bd4d9c0f55e293c64402189940b406b612a0e8bed9668acbc4"
+
+	sum := sha256.Sum256([]byte(recordedChain69V1Frontier))
+	if len(recordedChain69V1Frontier) != 697 || hex.EncodeToString(sum[:]) != wireSHA {
+		t.Fatal("recorded chain-69 frontier bytes changed")
+	}
+	type reply struct {
+		Version string          `json:"jsonrpc"`
+		ID      uint64          `json:"id"`
+		Result  json.RawMessage `json:"result"`
+	}
+	var recorded reply
+	if err := json.Unmarshal([]byte(recordedChain69V1Frontier), &recorded); err != nil ||
+		recorded.Version != "2.0" || recorded.ID != 32 || len(recorded.Result) == 0 {
+		t.Fatalf("recorded chain-69 RPC envelope: %v", err)
+	}
+
+	// These test inputs are pinned separately from the RPC reader. The
+	// original node replay derived the matching producer slot from genesis.
+	anchor := verify.GenesisTrustRoot{ChainID: 69, Height: 1}
+	if err := anchor.HeaderHash.UnmarshalText([]byte(genesisHash)); err != nil {
+		t.Fatal(err)
+	}
+	producer, err := fetch.DecodeZenonAddress("z1qq9n7fpaqd8lpcljandzmx4xtku9w4ftwyg0mq")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client := fetch.NewClient("https://fixture.invalid")
+	client.HTTP.Transport = experimentalV3Transport(func(req *http.Request) (*http.Response, error) {
+		var call struct {
+			Method string            `json:"method"`
+			ID     uint64            `json:"id"`
+			Params []json.RawMessage `json:"params"`
+		}
+		if err := json.NewDecoder(req.Body).Decode(&call); err != nil ||
+			req.Method != http.MethodPost || call.Method != "ledger.getFrontierMomentum" || len(call.Params) != 0 {
+			t.Fatalf("unexpected frontier request: %v", err)
+		}
+		// Preserve the recorded result and match the local request ID.
+		response := recorded
+		response.ID = call.ID
+		raw, err := json.Marshal(response)
+		if err != nil {
+			return nil, err
+		}
+		return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(bytes.NewReader(raw))}, nil
+	})
+	header, err := client.FetchFrontier(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if header.Version != chain.MomentumVersion1 || header.ChainIdentifier != anchor.ChainID ||
+		header.Height != height || header.TimestampUnix != timestamp ||
+		hex.EncodeToString(header.HeaderHash[:]) != frontierHash || header.PreviousHash != anchor.HeaderHash {
+		t.Fatal("decoded frontier differs from the pinned signed H2")
+	}
+
+	for _, tc := range []struct {
+		name          string
+		slotTimestamp uint64
+		v2FromHeight  uint64
+		outcome       verify.Outcome
+		reason        verify.ReasonCode
+	}{
+		{"accept_v1", timestamp, 0, verify.OutcomeAccept, verify.ReasonOK},
+		{"reject_wrong_slot", timestamp + 10, 0, verify.OutcomeReject, verify.ReasonUnauthorizedProducer},
+		{"reject_inactive_version", timestamp, height, verify.OutcomeReject, verify.ReasonHeaderVersionInactive},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			schedule, err := verify.NewProducerSchedule(anchor.ChainID,
+				[]verify.ProducerCoverage{{FromHeight: height, ThroughHeight: height}},
+				[]verify.ProducerEntry{{Height: height, TimestampUnix: tc.slotTimestamp, ProducingAddr: producer}},
+				nil, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			options := verify.VerifyOptions{
+				Policy: verify.Policy{
+					W: 1, RetainHeaders: 2, MaxHeaders: 1,
+					ProtocolProfile: &verify.ProtocolProfile{
+						Version: 1, Anchor: anchor, ValidThrough: height, V2FromHeight: tc.v2FromHeight,
+						Source: "Recorded chain-69 genesis and original-node H2 replay",
+					},
+				},
+				ProducerAuth: verify.ProducerAuthOptions{Mode: verify.ProducerAuthRequired, Authorizer: verify.NewScheduleAuthorizer(schedule)},
+			}
+			state, err := verify.NewVerifiedState(anchor, options)
+			if err != nil {
+				t.Fatal(err)
+			}
+			result, next := state.Extend([]chain.Header{header})
+			if result.Outcome != tc.outcome || result.Reason != tc.reason || !state.Empty() {
+				t.Fatalf("frontier verification: %v, original state empty: %t", result, state.Empty())
+			}
+			if tc.outcome != verify.OutcomeAccept {
+				if !next.Empty() {
+					t.Fatal("rejected frontier advanced the retained state")
+				}
+				return
+			}
+			if tip, ok := next.Tip(); !ok || tip.Height != height || tip.HeaderHash != header.HeaderHash {
+				t.Fatal("accepted signed H2 missing from retained state")
+			}
+			if !slices.Equal(result.Proven, []verify.Guarantee{
+				verify.GuaranteeHeaderChainIntegrity, verify.GuaranteeSignatureAuthenticity, verify.GuaranteeProducerAuthorization,
+			}) || !slices.Equal(result.TrustAssumptions, []verify.TrustAssumption{
+				verify.TrustExternalProducerSchedule, verify.TrustExternalProtocolProfile, verify.TrustConfiguredAnchor,
+			}) {
+				t.Fatalf("frontier verification claims changed: %v, %v", result.Proven, result.TrustAssumptions)
+			}
+		})
+	}
 }
