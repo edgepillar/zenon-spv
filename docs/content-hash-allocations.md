@@ -12,7 +12,7 @@ address bytes first, unsigned height second, and hash bytes last. Unsigned
 uint64 order is identical to lexicographic order of its eight big-endian bytes.
 `AccountHeader.Bytes` and the hash loop share the canonical encoder. The input
 slice is never sorted or changed, and byte-identical duplicates still contribute
-once per occurrence. No proof is deduplicated or cached.
+once per occurrence. The hasher processes every member of the input list.
 
 This changes allocation and sorting work, not cryptographic semantics, accepted
 wire data, resource caps, target membership or trust policy. Empty input remains
@@ -139,10 +139,12 @@ recorded separately on Linux/macOS; Windows remains explicitly unavailable.
 Five local process samples do not establish a portable RSS improvement or safe
 concurrency level.
 
-The complete flat list is still hashed separately for each proof. Count and
-byte preflight limits still apply to every repeated list. K/W retention, target
-identity, captured profile/schedule, context pins and read-only persistence
-behavior are unchanged. No measurement establishes canonicality, consensus
+The historical samples use individual calls that hash each complete flat list.
+The [compiled batch path](flat-content-resources.md#what-is-measured) can
+reuse a matched content hash after comparing every member. Count and byte
+preflight still account for every repeated list. The verifier applies its
+captured profile, schedule, context pins and K/W retention to each proof.
+Retained-only queries remain read-only. No measurement establishes canonicality, consensus
 finality, network activation, state-value inclusion or real-network capacity.
 Consumer-selected trust inputs, hardware budgets, network observations and
 independent release review remain external gates.

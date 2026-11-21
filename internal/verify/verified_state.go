@@ -103,12 +103,32 @@ func (s VerifiedState) Extend(headers []chain.Header) (Result, VerifiedState) {
 // VerifyCommitment uses the same policy that created this state; a query cannot
 // lower the depth requirement or replace its activation profile. The private
 // window was checked before this immutable handle was returned, so an individual
-// query need not scan every retained header again. Evidence is never cached.
+// query need not scan every retained header again. Each call checks its evidence.
 func (s VerifiedState) VerifyCommitment(evidence proof.CommitmentEvidence) Result {
 	if s.data == nil {
 		return uninitializedStateResult()
 	}
 	return s.withStateTrust(verifyCommitmentInValidatedWindow(s.data.state, evidence, s.data.opts.Policy))
+}
+
+// VerifyCommitments evaluates a batch under the captured policy, with one result
+// per input in order. The previous authenticated flat list can be reused within
+// this call after comparing every member. Call PreflightCommitmentBounds first
+// for aggregate resource limits. Keep the batch and its member slices stable
+// until this call returns.
+func (s VerifiedState) VerifyCommitments(batch []proof.CommitmentEvidence) []Result {
+	results := make([]Result, len(batch))
+	if s.data == nil {
+		for i := range results {
+			results[i] = uninitializedStateResult()
+		}
+		return results
+	}
+	var previous matchedFlatContent
+	for i, evidence := range batch {
+		results[i] = s.withStateTrust(verifyCommitmentWithFlatContent(s.data.state, evidence, s.data.opts.Policy, &previous))
+	}
+	return results
 }
 
 // VerifySegment reuses this handle's immutable window validation for every

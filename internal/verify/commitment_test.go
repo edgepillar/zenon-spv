@@ -2,6 +2,8 @@ package verify
 
 import (
 	"crypto/ed25519"
+	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
@@ -152,6 +154,72 @@ func TestVerifyCommitment_BatchMixed(t *testing.T) {
 		t.Errorf("results[2]: %s", results[2])
 	}
 	_ = committed
+}
+
+func TestVerifiedStateCommitmentBatchMatchesSingleQueries(t *testing.T) {
+	window, evidence, committed := commitmentFixture(t)
+	policy := commitmentFixturePolicy()
+	policy.MaxFlatEvidenceMembers = len(committed)
+	state := VerifiedState{data: &verifiedStateData{state: window, opts: VerifyOptions{Policy: policy}}}
+
+	query := func(height uint64, target chain.AccountHeader, list []chain.AccountHeader) proof.CommitmentEvidence {
+		return proof.CommitmentEvidence{Height: height, Target: target, Flat: &proof.FlatContentEvidence{SortedHeaders: list}}
+	}
+	sameList := slices.Clone(committed)
+	changed := slices.Clone(committed)
+	changed[len(changed)-1].Hash[0] ^= 1
+	reordered := slices.Clone(committed)
+	slices.Reverse(reordered)
+	missing := evidence
+	missing.Flat = nil
+	height := evidence.Height
+	tests := []struct {
+		evidence proof.CommitmentEvidence
+		reason   ReasonCode
+	}{
+		{evidence, ReasonOK},
+		{query(height, committed[0], sameList), ReasonOK},
+		{query(height, chain.AccountHeader{Height: 77}, sameList), ReasonNotMember},
+		{query(height, committed[0], changed), ReasonInvalidContent},
+		{query(height, committed[0], reordered), ReasonOK},
+		{query(height-1, committed[0], reordered), ReasonHeightOutOfWindow},
+		{query(height+1, committed[0], reordered), ReasonInsufficientFinality},
+		{query(height, committed[0], append(slices.Clone(committed), committed[0])), ReasonOversizedEvidence},
+		{query(height, committed[0], nil), ReasonInvalidContent},
+		{missing, ReasonMissingProof},
+		{query(height, committed[2], reordered), ReasonOK},
+	}
+
+	batch := make([]proof.CommitmentEvidence, len(tests))
+	for i, test := range tests {
+		batch[i] = test.evidence
+	}
+	before := state.Snapshot()
+	results := state.VerifyCommitments(batch)
+	if len(results) != len(batch) {
+		t.Fatalf("batch returned %d results for %d commitments", len(results), len(batch))
+	}
+	for i, test := range tests {
+		want := state.VerifyCommitment(test.evidence)
+		if want.Reason != test.reason || !reflect.DeepEqual(results[i], want) {
+			t.Fatalf("commitment %d: batch %s, individual %s, want %s", i, results[i], want, test.reason)
+		}
+	}
+	if !reflect.DeepEqual(before, state.Snapshot()) || !slices.Equal(sameList, committed) {
+		t.Fatal("batch changed the owned state or caller evidence")
+	}
+
+	reordered[0].Hash[0] ^= 1
+	next := state.VerifyCommitments([]proof.CommitmentEvidence{query(height, committed[2], reordered)})
+	if next[0].Reason != ReasonInvalidContent || len(next[0].Proven) != 0 {
+		t.Fatalf("a later batch reused a changed list: %s", next[0])
+	}
+	var zero VerifiedState
+	uninitialized := zero.VerifyCommitments(batch[:2])
+	if len(uninitialized) != 2 || uninitialized[0].Reason != ReasonUninitializedState ||
+		uninitialized[1].Reason != ReasonUninitializedState || len(zero.VerifyCommitments(nil)) != 0 {
+		t.Fatal("zero state changed batch result semantics")
+	}
 }
 
 // TestAttack_CommitmentWithoutPostWindowRefuses demonstrates F2: the
