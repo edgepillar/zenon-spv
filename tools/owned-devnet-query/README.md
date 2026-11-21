@@ -451,6 +451,11 @@ It also binds a present opening proof to a refusal before signature checks and
 fixture commands. The reader reviews prior versions under their recorded rules
 and verifies the stages reached by each early failure.
 
+When a version-3 fixture configuration or deposit command times out, the reader
+can expose the actual exit and elapsed time from its bound start and completion
+receipts. A deposit timeout also requires the successful configuration receipt.
+Transaction submission stays unverified when the command output is incomplete.
+
 Exit 0 reports `RECORDED_CONSUMER_BYTES_MATCH`. This is agreement among the
 retained records and independently recomputed bytes. The original run identity,
 native signature verification, producer authority and any selected-network

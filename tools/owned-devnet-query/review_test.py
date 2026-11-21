@@ -1065,6 +1065,50 @@ class ReviewTests(unittest.TestCase):
         self.assertIsNone(report["comparison"])
         self.assertNotIn("recorded_fixture_commands", report)
 
+    def fixture_timeout_files(self, stage="fixture-deposit"):
+        contract, original = accepted_files(terminal_format=model.TERMINAL_FORMAT)
+        prefixes = ("evidence/opening-", "evidence/rpc-02.", "evidence/rpc-03.", "evidence/fixture-configure.")
+        if stage == "fixture-deposit":
+            prefixes += ("evidence/fixture-deposit.",)
+        files = {name: raw for name, raw in original.items() if name.startswith(prefixes)}
+        files["evidence/terminal.json"] = canonical({**terminal("UNKNOWN", contract),
+            "format": model.TERMINAL_FORMAT, "stage": stage})
+        label = "fixture-deposit" if stage == "fixture-deposit" else "fixture-configure"
+        path = f"evidence/{label}.complete.json"
+        receipt = json.loads(files[path])
+        receipt.update(reason="timeout", actual_exit=143, output_complete=False, elapsed_nanoseconds=420_000_000_000)
+        files[path] = canonical(receipt)
+        return contract, files, label, path
+
+    def test_fixture_timeout_preserves_exit_and_leaves_submission_unverified(self):
+        for stage in ("fixture-configuration", "fixture-deposit"):
+            with self.subTest(stage=stage):
+                contract, files, label, path = self.fixture_timeout_files(stage)
+                result = self.review(make_archive(files), contract)
+                self.assertEqual(result["recorded_fixture_timeout"], {"stage": stage, "command": label,
+                    "reason": "timeout", "actual_exit": 143, "output_complete": False,
+                    "elapsed_nanoseconds": 420_000_000_000, "process_group_quiescent": True,
+                    "completion": pin(files[path]), "transaction_submission_verified": False})
+                self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
+                self.assertIsNone(result["comparison"])
+                self.assertNotIn("recorded_fixture_commands", result)
+
+    def test_fixture_timeout_requires_start_binding_prior_configuration_and_no_consumer(self):
+        contract, files, _, path = self.fixture_timeout_files()
+        invalid = (
+            ({**files, path: canonical({**json.loads(files[path]), "process_group": 43})},
+             "review_recorded_command_start"),
+            ({k: v for k, v in files.items() if k != "evidence/fixture-configure.complete.json"},
+             "review_member_bound"),
+            ({**files, path: canonical({**json.loads(files[path]), "output_complete": True})},
+             "review_fixture_timeout_scope"),
+            ({**files, "evidence/consume-query.started.json": self.files["evidence/consume-query.started.json"]},
+             "review_fixture_timeout_scope"),
+        )
+        for changed, reason in invalid:
+            with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive(changed), contract)
+
     def test_replays_retained_opening_after_a_nonaccepting_terminal_outcome(self):
         for outcome in ("FAILURE", "REFUSED", "UNKNOWN"):
             with self.subTest(outcome=outcome):
