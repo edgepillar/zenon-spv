@@ -300,6 +300,36 @@ class Controls(unittest.TestCase):
         with self.assertRaisesRegex(Q.Refused, "foreign_recorded_boundary_trace"):
             Q.native_controls(encoded(rows), require_recorded_boundary=True)
 
+    def test_recorded_peer_bridge_requires_the_exact_message_and_boundary(self):
+        older = encoded(recorded_boundary_events())
+        self.assertNotIn("recorded_peer_bridge", Q.native_controls(older))
+        with self.assertRaisesRegex(Q.Refused, "native_trace_count"):
+            Q.native_controls(older, require_recorded_peer_bridge=True)
+
+        marker = Q.RECORDED_PEER_BRIDGE_MARKER
+        expected = Q.RECORDED_PEER_BRIDGE
+        rows = add_one_period_observation(recorded_boundary_events(), marker, expected)
+        report = Q.native_controls(encoded(rows), require_recorded_peer_bridge=True)
+        self.assertEqual(report["recorded_peer_bridge"], expected)
+        self.assertFalse(report["new_devnet_acceptance_established"])
+
+        for changed in ({"wire_bytes": 212}, {"wire_sha256": "0" * 64}, {"height": 3},
+                        {"parent_hash": expected["hash"]}, {"peer_precheck_passed": 1},
+                        {"unsigned_h3_refused_before_commit": False}, {"network_started": True}):
+            bad = add_one_period_observation(recorded_boundary_events(), marker, {**expected, **changed})
+            with self.subTest(changed=changed), self.assertRaisesRegex(Q.Refused, "recorded_peer_bridge_observation"):
+                Q.native_controls(encoded(bad), require_recorded_peer_bridge=True)
+
+        session_without_boundary = recorded_h2_events(Q.RECORDED_H2)
+        self.refused(add_one_period_observation(session_without_boundary, marker, expected))
+        duplicate = add_one_period_observation(rows[:], marker, expected)
+        with self.assertRaisesRegex(Q.Refused, "native_trace_count"):
+            Q.native_controls(encoded(duplicate), require_recorded_peer_bridge=True)
+        event = next(row for row in rows if marker in row.get("Output", ""))
+        event["Test"] = Q.TEST
+        with self.assertRaisesRegex(Q.Refused, "foreign_recorded_peer_bridge_trace"):
+            Q.native_controls(encoded(rows), require_recorded_peer_bridge=True)
+
     def test_recorded_proofs_report_the_three_selected_paths_with_legacy_rpc_refusals(self):
         proof = recorded_proof_observation()
         rows = add_one_period_observation(recorded_boundary_events(), Q.RECORDED_PROOFS_MARKER, proof)

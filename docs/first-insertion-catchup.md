@@ -119,19 +119,33 @@ and cost fixture. Current qualification requires both observations.
 [Original producer verification](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/consensus/consensus.go#L98-L115)
 
 The recorded-header result binds the archive reply to its signature and the
-source-genesis slot. In a separate temporary database the original node's VM
-validates and applies the recorded H2 and reproduces its empty change set.
-The ledger, cache and state-tree managers close and reopen at that exact H2.
-The state-root rule is inactive at H1 and active at the reopened H2. The
-original raw verifier accepts an unsigned H3 with version 3 and rejects incoming
+source-genesis slot. In the same short replay database, an in-memory writer
+passes the signed envelope through the node's `p2p.Send` and `Msg.Decode`.
+The qualifier checks the 213-byte RLP message against the independent digest
+`e2ed995b4d375303bdfb9a5b94862b9cbd52c8a0eb7c00faf079b56c3a7cbff1`.
+The message is the two-element list of momentum and empty prefetched blocks.
+Within the momentum, version, chain ID, hash, parent, height, timestamp, data,
+content, changes hash, public key and signature are encoded in that order.
+The three trailing optional zero fields are omitted. The archive preserves
+one size/digest observation for these in-memory bytes.
+[Node message codec](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/p2p/message.go#L46-L55) ·
+[Momentum field order](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/chain/nom/momentum.go#L38-L67)
+
+The original `ChainBridge` checks the decoded envelope and inserts the recorded
+H2 through the node's VM, cache, state tree and ledger. Its checked changes hash
+commits the empty patch. All managers close and reopen at the exact H2. The
+state-root rule is inactive at H1 and active at the reopened H2. The original
+raw verifier accepts version 3 for an unsigned H3 candidate and rejects incoming
 versions 1 and 2. Its hypothetical empty-patch root matches the reopened H2
-tree root. The reconstructed ledger remains at H2 for this observation.
-[VM apply path](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/vm/supervisor.go#L109-L133) ·
+tree root. The reconstructed ledger stays at H2 for this observation.
+[Receiver insertion](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/protocol/chain_bridge.go#L451-L500) ·
 [Version rule](https://github.com/digitalSloth/go-zenon/blob/2835c436b197fece5c76adf4ba8dc1decca2e3ea/verifier/momentum.go#L149-L167)
 
-This control uses the existing one-period execution and a second short database
-lifecycle. Its root is conditional on an empty H3 patch. The selected experiment
-must still supply the signed H3, accepted range and typed BatchEntry result.
+The current qualification requires the peer bridge record in the existing
+one-period case. Historical direct VM replays retain their original report
+shape. The root remains conditional on an empty H3 patch. Cross-node delivery
+and the selected signed H3, accepted range and typed BatchEntry result still
+require an actual selected experiment.
 
 ### Settlement proofs at the reopened H2
 
@@ -150,8 +164,9 @@ three rows present under the StateRoot of its separately accepted header.
 
 ### Ledger reads at the reopened unsigned H3 fixture
 
-The original VM refuses the unsigned H3 with `ErrMSignatureMissing` while the
-frontier stays at H2. The test then inserts this empty-patch fixture in its
+The original peer insertion path refuses the unsigned H3 with
+`ErrMSignatureMissing` while the frontier stays at H2. The test then inserts
+this empty-patch fixture in its
 temporary ledger and reopens the original managers at the exact H3 hash.
 The Ledger API returns the root in that header and supplies three absence
 proofs, each of which the original trie verifier checks against that root.

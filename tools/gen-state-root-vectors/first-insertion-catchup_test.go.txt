@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -34,6 +35,8 @@ import (
 	"github.com/zenon-network/go-zenon/consensus"
 	"github.com/zenon-network/go-zenon/consensus/storage"
 	"github.com/zenon-network/go-zenon/dp"
+	"github.com/zenon-network/go-zenon/p2p"
+	"github.com/zenon-network/go-zenon/protocol"
 	"github.com/zenon-network/go-zenon/rpc/api"
 	"github.com/zenon-network/go-zenon/rpc/server"
 	"github.com/zenon-network/go-zenon/verifier"
@@ -126,7 +129,7 @@ const spvRecordedStartupHeader = `{"jsonrpc":"2.0","id":32,"result":{` +
 	`"producer":"z1qq9n7fpaqd8lpcljandzmx4xtku9w4ftwyg0mq"}}` +
 	"\n"
 
-func spvCheckRecordedStartupHeader(t *testing.T, ch corechain.Chain, genesis types.HashHeight) *nom.Momentum {
+func spvCheckRecordedStartupHeader(t *testing.T, ch corechain.Chain, oracle consensus.Consensus, genesis types.HashHeight) *nom.Momentum {
 	t.Helper()
 	raw := []byte(spvRecordedStartupHeader)
 	pin := sha256.Sum256(raw)
@@ -153,7 +156,6 @@ func spvCheckRecordedStartupHeader(t *testing.T, ch corechain.Chain, genesis typ
 		t.Fatal("recorded header signature or producer address differs")
 	}
 	header.EnsureCache()
-	oracle := consensus.NewConsensus(db.NewMemDB(), ch, false)
 	matches, err := oracle.VerifyMomentumProducerAt(genesis, header)
 	if err != nil || !matches {
 		t.Fatal("recorded header producer does not match the source genesis slot")
@@ -533,6 +535,32 @@ func spvObservePrunedTypedHistory(t *testing.T, ch corechain.Chain, target, tip 
 	t.Logf("SPV_PRUNED_TYPED_HISTORY %s", data)
 }
 
+// The production sender and decoder share this in-memory writer. The signed
+// envelope comes from the archived RPC reply and no peer service is started.
+type spvStartupMessage struct {
+	detailed *nom.DetailedMomentum
+	size     uint32
+	digest   string
+}
+
+func (r *spvStartupMessage) WriteMsg(message p2p.Msg) error {
+	if message.Code != protocol.NewBlockMsg || message.Size == 0 || message.Size > 4096 {
+		return errors.New("recorded startup message is outside its bounds")
+	}
+	source := &io.LimitedReader{R: message.Payload, N: int64(message.Size)}
+	digest := sha256.New()
+	message.Payload = io.TeeReader(source, digest)
+	if err := message.Decode(&r.detailed); err != nil {
+		return err
+	}
+	if source.N != 0 || r.detailed == nil || r.detailed.Momentum == nil {
+		return errors.New("recorded startup message is incomplete")
+	}
+	r.detailed.Momentum.EnsureCache()
+	r.size, r.digest = message.Size, hex.EncodeToString(digest.Sum(nil))
+	return nil
+}
+
 func spvReplayRecordedStartupBoundary(t *testing.T, config *genesis.GenesisConfig, first types.HashHeight) {
 	t.Helper()
 	dir := t.TempDir()
@@ -553,18 +581,31 @@ func spvReplayRecordedStartupBoundary(t *testing.T, config *genesis.GenesisConfi
 	if err != nil || genesisRoot.IsZero() {
 		t.Fatal("source H1 state tree is unavailable")
 	}
-	header := spvCheckRecordedStartupHeader(t, ch, first)
-	detailed := &nom.DetailedMomentum{Momentum: header}
-	empty := db.NewPatch()
 	sourceConsensus := consensus.NewConsensus(db.NewMemDB(), ch, false)
-	result, err := vm.NewSupervisor(ch, sourceConsensus).ApplyMomentum(detailed)
-	if err != nil || result == nil || result.Momentum == nil || result.Changes == nil ||
-		!bytes.Equal(result.Changes.Dump(), empty.Dump()) {
-		t.Fatal("original VM did not apply the recorded H2 with its empty patch")
-	}
+	header := spvCheckRecordedStartupHeader(t, ch, sourceConsensus, first)
 	h2 := header.Identifier()
-	if result.Momentum.Identifier() != h2 || spvInsertStartupMomentum(ch, detailed, result.Changes) != nil {
-		t.Fatal("cannot commit the VM-verified H2 in the isolated replay")
+	var received spvStartupMessage
+	if err := p2p.Send(&received, protocol.NewBlockMsg, &nom.DetailedMomentum{Momentum: header}); err != nil {
+		t.Fatal("recorded H2 message could not round trip through the node codec", err)
+	}
+	detailed := received.detailed
+	decoded := detailed.Momentum
+	if decoded.Identifier() != h2 || decoded.ComputeHash() != header.Hash ||
+		!bytes.Equal(decoded.PublicKey, header.PublicKey) || !bytes.Equal(decoded.Signature, header.Signature) {
+		t.Fatal("recorded H2 identity or signature changed in the message codec")
+	}
+	empty := db.NewPatch()
+	if decoded.ChangesHash != db.PatchHash(empty) {
+		t.Fatal("recorded H2 does not bind an empty patch")
+	}
+	bridge := protocol.NewChainBridge(ch, sourceConsensus, verifier.NewVerifier(ch, sourceConsensus, vm.CanonicalBasePlasma),
+		vm.NewSupervisor(ch, sourceConsensus))
+	if err := bridge.VerifyMomentum(detailed); err != nil {
+		t.Fatal("original peer precheck rejected the recorded H2", err)
+	}
+	index, err := bridge.InsertChain([]*nom.DetailedMomentum{detailed})
+	if err != nil || index != 0 || ch.GetFrontierMomentumStore().Identifier() != h2 {
+		t.Fatal("original peer insertion did not commit the recorded H2", index, err)
 	}
 	err = ch.Stop()
 	ch = nil
@@ -629,10 +670,24 @@ func spvReplayRecordedStartupBoundary(t *testing.T, config *genesis.GenesisConfi
 	t.Logf("SPV_RECORDED_STARTUP_PROOFS %s", proofs)
 
 	unsigned := &nom.DetailedMomentum{Momentum: candidate}
-	result, err = vm.NewSupervisor(ch, sourceConsensus).ApplyMomentum(unsigned)
-	if !errors.Is(err, verifier.ErrMSignatureMissing) || result != nil || ch.GetFrontierMomentumStore().Identifier() != h2 {
-		t.Fatal("the unsigned H3 did not fail the original VM authentication check")
+	bridge = protocol.NewChainBridge(ch, sourceConsensus, verifier.NewVerifier(ch, sourceConsensus, vm.CanonicalBasePlasma),
+		vm.NewSupervisor(ch, sourceConsensus))
+	index, err = bridge.InsertChain([]*nom.DetailedMomentum{unsigned})
+	if index != 0 || !errors.Is(err, verifier.ErrMSignatureMissing) ||
+		ch.GetFrontierMomentumStore().Identifier() != h2 {
+		t.Fatal("the original peer bridge did not refuse unsigned H3 before advancing", index, err)
 	}
+	bridgeTrace := map[string]interface{}{
+		"format": "recorded-chain69-peer-bridge/v1", "wire_bytes": received.size, "wire_sha256": received.digest,
+		"height": h2.Height, "hash": h2.Hash.String(), "parent_hash": first.Hash.String(),
+		"peer_precheck_passed": true, "peer_insert_completed": true, "reopened_at_h2": true,
+		"unsigned_h3_refused_before_commit": true, "network_started": false, "accepted_header_authority": false,
+	}
+	bridgeData, err := json.Marshal(bridgeTrace)
+	if err != nil {
+		t.Fatal("recorded peer bridge observation encoding failed", err)
+	}
+	t.Logf("SPV_RECORDED_PEER_BRIDGE %s", bridgeData)
 	// Insert only into this isolated fixture to observe the Ledger read boundary.
 	if spvInsertStartupMomentum(ch, unsigned, empty) != nil {
 		t.Fatal("cannot insert the isolated H3 fixture")
