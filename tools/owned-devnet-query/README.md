@@ -213,9 +213,17 @@ limited to this exact refusal reply. The original node returned the same error
 in an isolated retained-history test. [Recorded pruning control](../../docs/first-insertion-catchup.md#pruned-versions-and-retained-absence-at-the-rpc-boundary)
 
 Archive review recomputes a successful opening proof from the retained bytes
-and selected profile. The actual BatchEntry query still requires the
-accepted header and its three complete membership proofs at the selected
-query height.
+and selected profile. After that proof passes, the runner uses the host OpenSSL
+Ed25519 verifier to check the H2 and H3 signatures over their recomputed
+32-byte hashes. Both commands must complete successfully before input
+downloads, package installation or fixture setup. Their small input files
+are staged in the runner's private scratch directory and removed after the
+checks. The archive binds a successful report to the original opening reply
+and the two completed command receipts.
+
+These checks establish signature validity for the observed candidate bytes.
+The actual BatchEntry query still needs the selected producer schedule, the
+accepted header and all three membership proofs at the query height.
 
 ### Capture the node's sync state after a startup refusal
 

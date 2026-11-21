@@ -255,8 +255,8 @@ def execute(environment, workspace, checkout):
         rpc = capture.LocalRpc(contract, record, workspace, "/usr/bin/curl", tool_environment, guard)
         wait_for_initial_height(rpc, contract.data["selection"]["source_expected_first_v3_height"],
                                 observe_nodes=engine.capture_startup_diagnostics)
-        opening = rpc.opening()
-        extra.update(("opening-momentums.json", f"rpc-{rpc.calls:02d}.request.json"))
+        opening, opening_rows = rpc.opening()
+        extra.update((capture.OPENING_FILE, f"rpc-{rpc.calls:02d}.request.json"))
         stage = "opening-proof"
         proof_request = f"rpc-{rpc.calls + 1:02d}.request.json"
         try:
@@ -269,6 +269,9 @@ def execute(environment, workspace, checkout):
             if proof_request in record.names:
                 extra.add(proof_request)
         extra.add(capture.OPENING_PROOF_FILE)
+        stage = "opening-signatures"
+        capture.verify_opening_signatures(record, opening, opening_rows, private, tool_environment, guard)
+        extra.add(capture.OPENING_SIGNATURE_REPORT)
         stage = "query-inputs"
         consumer = artifacts.fetch("consumer").binaries
         oracle = artifacts.fetch("parent_oracle").binaries

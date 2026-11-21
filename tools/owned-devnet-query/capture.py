@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import tempfile
 import time
 
 from artifacts import api_json
@@ -15,8 +16,8 @@ from closed_reader import LEDGER, ORACLE_NAME
 import model
 from model import Refused, canonical, exact_keys, require, same, uint
 from process import CommandFailed, regular_pin
-from query_checks import (address_bytes, consumer_result, fingerprints, header_facts, ledger_keys,
-                          opening_batch_witness, schedule_hash)
+from query_checks import (address_bytes, binary, consumer_result, fingerprints, header_facts, hex_bytes,
+                          ledger_keys, opening_batch_witness, schedule_hash)
 
 RPC_URL = "http://127.0.0.1:35997"
 STARTUP_FRONTIER_URLS = {"pillar": "http://127.0.0.1:35991", "rpc": RPC_URL}
@@ -31,6 +32,12 @@ SYNC_REPORT = "startup-sync.json"
 POST_SYNC_REPORT = "startup-post-sync-frontier.json"
 STARTUP_FRONTIERS_REPORT = "startup-peer-frontiers.json"
 FRONTIER_BYTES = 128 << 10
+OPENING_FILE = "opening-momentums.json"
+OPENING_BYTES = 384 << 10
+OPENING_SIGNATURE_REPORT = "opening-signatures.json"
+OPENING_SIGNATURE_LABELS = ("opening-signature-h2", "opening-signature-h3")
+OPENING_SIGNATURE_OK = b"Signature Verified Successfully\n"
+ED25519_SPKI_PREFIX = bytes.fromhex("302a300506032b6570032100")
 OPENING_PROOF_FILE = "opening-batch-proof.json"
 OPENING_PROOF_BYTES = 32 << 10
 OPENING_PROOF_VERSION_UNAVAILABLE = "opening_proof_version_unavailable"
@@ -146,6 +153,41 @@ def opening_headers(contract, rows):
     return genesis, anchor, first
 
 
+def opening_signature_report(opening, response_pin):
+    return {"format": "owned-devnet-opening-signatures/v1", "opening_response": response_pin,
+            "headers": [header.identifier() for header in opening[1:]],
+            "accepted_header_authority": False, "producer_schedule_verified": False}
+
+
+def verify_opening_signatures(recorder, opening, rows, private, environment, guard,
+                              *, openssl="/usr/bin/openssl"):
+    """Verify signatures over the already checked opening hashes."""
+    require(len(opening) == len(rows) == 3, "opening_signature_rows")
+    response_pin = regular_pin(recorder.directory / OPENING_FILE, OPENING_BYTES)
+    with tempfile.TemporaryDirectory(dir=private, prefix="opening-signatures-") as staging:
+        directory = Path(staging)
+        config = directory / "empty.cnf"
+        config.touch()
+        env = dict(environment, OPENSSL_CONF=str(config))
+        for label, header, row in zip(OPENING_SIGNATURE_LABELS, opening[1:], rows[1:]):
+            same(row["hash"], header.hash, "opening_signature_hash")
+            public = binary(row["publicKey"], 32)
+            signature = binary(row["signature"], 64)
+            require(len(public) == 32 and len(signature) == 64, "opening_signature_width")
+            (directory / "public-key.der").write_bytes(ED25519_SPKI_PREFIX + public)
+            (directory / "message.bin").write_bytes(hex_bytes(header.hash, 32))
+            (directory / "signature.bin").write_bytes(signature)
+            result = recorder.run(label, [openssl, "pkeyutl", "-verify", "-rawin", "-pubin",
+                "-keyform", "DER", "-inkey", "public-key.der", "-in", "message.bin",
+                "-sigfile", "signature.bin", "-provider", "default", "-propquery", "provider=default"],
+                directory, env, timeout=10, stdout_cap=128, stderr_cap=4096, guard=guard)
+            receipt = result.receipt
+            require(result.stdout(128) == OPENING_SIGNATURE_OK and result.stderr(4096) == b""
+                    and receipt["process_group_quiescent"] is True and receipt["reason"] is None,
+                    "opening_signature_result")
+    recorder.seal(OPENING_SIGNATURE_REPORT, canonical(opening_signature_report(opening, response_pin)))
+
+
 def opening_proof_target(contract, profile, header):
     selection = contract.data["selection"]
     require(header.height == selection["source_expected_first_v3_height"] and header.version == 3,
@@ -218,12 +260,12 @@ class LocalRpc:
         return header
 
     def opening(self):
-        result = self._read("ledger.getMomentumsByHeight", [1, 3], 384 << 10,
-                            stdout_name="opening-momentums.json")
+        result = self._read("ledger.getMomentumsByHeight", [1, 3], OPENING_BYTES,
+                            stdout_name=OPENING_FILE)
         rows = result.get("list")
         require(type(result.get("count")) is int and result["count"] >= 3,
                 "opening_frontier_count")
-        return opening_headers(self.contract, rows)
+        return opening_headers(self.contract, rows), rows
 
     def opening_proof(self, header, profile):
         key, parameters = opening_proof_target(self.contract, profile, header)

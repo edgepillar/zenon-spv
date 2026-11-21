@@ -16,6 +16,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import capture
+from capture import OPENING_BYTES, OPENING_FILE
 import inputs
 import model
 import node_diagnostics as node_diag
@@ -30,8 +31,6 @@ INDEX_BYTES = 512 << 10
 FILE_BYTES = 2 << 20
 MAX_FILES = 2048
 MAX_ARCHIVE = model.LIMITS["max_evidence_bytes"] + (2 << 20)
-OPENING_FILE = "opening-momentums.json"
-OPENING_BYTES = 384 << 10
 EXECUTE_STEP = "Run the reviewed fixture and read-only query"
 UPLOAD_STEP = "Retain selected evidence and command receipts"
 TERMINAL_CONCLUSIONS = ("success", "failure", "cancelled", "timed_out")
@@ -264,6 +263,24 @@ def recorded_opening_proof(evidence, contract, checkout, opening, opening_observ
             "header": header.identifier(), "state_root": header.root, "request_id": request_id,
             "request": evidence.pins["evidence/" + request_file], "response": response,
             "accepted_header_authority": False}
+
+
+def recorded_opening_signatures(evidence, opening, observation, proof):
+    name = capture.OPENING_SIGNATURE_REPORT
+    if "evidence/" + name not in evidence.pins:
+        return None
+    require(opening is not None and observation["request"] is not None and proof is not None
+            and proof.get("presence") in ("present", "absent"), "review_opening_signature_context")
+    report = capture.opening_signature_report(opening, observation["response"])
+    same(evidence.json(name), report, "review_opening_signature_report")
+    success = capture.OPENING_SIGNATURE_OK
+    pin = {"bytes": len(success), "sha256": hashlib.sha256(success).hexdigest()}
+    for label in capture.OPENING_SIGNATURE_LABELS:
+        recorded_output(evidence, label, label + ".stdout", external_pin=pin)
+        stderr = evidence.json(label + ".complete.json")["outputs"]["stderr"]
+        same(stderr, {"file": label + ".stderr", "bytes": 0, "sha256": hashlib.sha256(b"").hexdigest()},
+             "review_opening_signature_stderr")
+    return report
 
 
 def recorded_consumer(evidence, contract, checkout, selection, opening):
@@ -745,6 +762,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             require(binding_present, "review_opening_run_binding")
             opening, opening_observation = recorded_opening(evidence, contract)
         opening_proof = recorded_opening_proof(evidence, contract, checkout, opening, opening_observation, terminal)
+        opening_signatures = recorded_opening_signatures(evidence, opening, opening_observation, opening_proof)
         if accepted or (gateway_refusal and terminal["owned_runtime_observed_closed"]):
             require(opening is not None, "review_consumer_opening")
             comparison = recorded_consumer(evidence, contract, checkout, selection, opening)
@@ -767,6 +785,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["candidate_opening_observation"] = opening_observation
         if opening_proof is not None:
             report["candidate_opening_proof"] = opening_proof
+        if opening_signatures is not None:
+            report["recorded_opening_signatures"] = opening_signatures
         if startup_sync is not None:
             report["startup_sync_diagnostic"] = startup_sync
         if post_sync is not None:

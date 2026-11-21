@@ -1047,6 +1047,7 @@ class HostBoundaryTests(unittest.TestCase):
                 ("bad-proof", "opening-proof", "opening_proof_root_or_response"),
                 ("version-unavailable", "opening-proof", capture.OPENING_PROOF_VERSION_UNAVAILABLE),
                 ("other-proof-error", "opening-proof", "owned_rpc_result_envelope"),
+                ("bad-signature", "opening-signatures", "command_failed"),
                 ("bad-oracle", "query-inputs", "test_oracle_input_refusal"),
                 ("bad-toolchain", "node-toolchain", "test_node_toolchain_refusal"),
                 ("bad-packages", "packages", "test_package_refusal"),
@@ -1055,6 +1056,8 @@ class HostBoundaryTests(unittest.TestCase):
             trace = mock.Mock()
             consumer_failed = case == "bad-consumer"
             opening_failed = case in ("bad-opening", "bad-proof", "version-unavailable", "other-proof-error")
+            signature_failed = case == "bad-signature"
+            queries_admitted = not opening_failed and not signature_failed
 
             def rpc_factory(contract, record, root, curl, environment, guard):
                 rpc = actual_rpc(contract, record, root, curl, environment, guard)
@@ -1071,6 +1074,21 @@ class HostBoundaryTests(unittest.TestCase):
                 def local_transport(label, argv, cwd, env, **options):
                     if label == "consume-query":
                         return actual_run(label, argv, cwd, env, **options)
+                    if label in capture.OPENING_SIGNATURE_LABELS:
+                        height = capture.OPENING_SIGNATURE_LABELS.index(label) + 2
+                        trace.opening_signature(height)
+                        self.assertEqual(argv[:4], ["/usr/bin/openssl", "pkeyutl", "-verify", "-rawin"])
+                        self.assertEqual(Path(env["OPENSSL_CONF"]).read_bytes(), b"")
+                        row = rows[height - 1]
+                        self.assertEqual((cwd / "message.bin").read_bytes(), bytes.fromhex(row["hash"]))
+                        self.assertEqual((cwd / "public-key.der").read_bytes(),
+                                         capture.ED25519_SPKI_PREFIX + base64.b64decode(row["publicKey"]))
+                        self.assertEqual((cwd / "signature.bin").read_bytes(), base64.b64decode(row["signature"]))
+                        code = 1 if height == 3 and signature_failed else 0
+                        output = b"Signature Verification Failure\n" if code else capture.OPENING_SIGNATURE_OK
+                        return actual_run(label, [sys.executable, "-I", "-B", "-c",
+                            "import sys; sys.stdout.buffer.write(" + repr(output) + "); sys.exit(" + str(code) + ")"],
+                            cwd, {}, **options)
                     request = json.loads(argv[argv.index("--data-binary") + 1])
                     if request["method"] == "ledger.getFrontierMomentum":
                         self.assertEqual(request, {"jsonrpc": "2.0", "id": 1,
@@ -1163,8 +1181,10 @@ class HostBoundaryTests(unittest.TestCase):
                 if case != "bad-opening":
                     expected.append(mock.call.opening_proof())
                 if not opening_failed:
+                    expected.extend((mock.call.opening_signature(2), mock.call.opening_signature(3)))
+                if queries_admitted:
                     expected.extend((mock.call.fetch("consumer"), mock.call.fetch("parent_oracle")))
-                if not opening_failed and case != "bad-oracle":
+                if queries_admitted and case != "bad-oracle":
                     expected.extend((mock.call.enable_consumer(), mock.call.enable_oracle(),
                                      mock.call.fetch_node_toolchain()))
                 if case in ("bad-packages", "ready", "bad-consumer"):
@@ -1178,7 +1198,7 @@ class HostBoundaryTests(unittest.TestCase):
                         mock.call.consume_query()))
                 self.assertEqual(trace.mock_calls, expected)
                 terminal = json.loads((root / "evidence/terminal.json").read_bytes())
-                outcome = "FAILURE" if consumer_failed else "REFUSED"
+                outcome = "FAILURE" if consumer_failed or signature_failed else "REFUSED"
                 self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),
                                  (stage, outcome, reason))
                 index = json.loads((root / "evidence/evidence-index.json").read_bytes())
@@ -1234,6 +1254,21 @@ class HostBoundaryTests(unittest.TestCase):
                                          {"file": capture.OPENING_PROOF_FILE, **files[proof_response]})
                     else:
                         self.assertEqual(validated["presence"], "absent")
+                signature_report = "evidence/" + capture.OPENING_SIGNATURE_REPORT
+                self.assertEqual(signature_report in files, queries_admitted)
+                self.assertEqual("recorded_opening_signatures" in checked, queries_admitted)
+                if queries_admitted:
+                    self.assertEqual(checked["recorded_opening_signatures"], {
+                        "format": "owned-devnet-opening-signatures/v1", "opening_response": files[path],
+                        "headers": [header.identifier() for header in window.headers[1:3]],
+                        "accepted_header_authority": False, "producer_schedule_verified": False})
+                if not opening_failed:
+                    for label, actual_exit in zip(capture.OPENING_SIGNATURE_LABELS, (0, int(signature_failed))):
+                        receipt = root / "evidence" / (label + ".complete.json")
+                        self.assertEqual(json.loads(receipt.read_bytes())["actual_exit"], actual_exit)
+                        self.assertIn("evidence/" + receipt.name, files)
+                        self.assertNotIn("evidence/" + label + ".stdout", files)
+                self.assertEqual(list((root / "scratch").glob("opening-signatures-*")), [])
 
     def test_runner_refusal_exports_the_valid_frontier_without_other_command_streams(self):
         _, rows, _ = synthetic_window(last=5)
