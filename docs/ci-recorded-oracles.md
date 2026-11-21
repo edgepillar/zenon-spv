@@ -1,14 +1,16 @@
 # Separate recorded-oracle CI lane
 
-The CI workflow runs 33 recorded-data commands in a separate job on Linux amd64,
-macOS Intel amd64 and Windows amd64. The original 31-command selection keeps
-all its controls and selected programs. Two larger-retention invocations now
-use the explicit [bounded leaf commitment scope](retention-leaf-reuse.md); a new
-control invocation checks that scope. Two complete import control suites now
-use [explicit fresh child CLI recipes](import-resource-child-hex.md), with one
-additional recipe-control invocation. The other 30 commands retain their
-names and arguments from the 32-command leaf-scope selection. Commands remain sequential within that job. The
-native verifier jobs run on separate hosted runners alongside this lane.
+The CI workflow runs 32 recorded-data commands in a separate job on Linux amd64,
+macOS Intel amd64 and Windows amd64. Two larger-retention invocations use the
+[bounded leaf commitment scope](retention-leaf-reuse.md), with a separate control
+invocation. Two complete import control suites use
+[explicit fresh child CLI recipes](import-resource-child-hex.md), with a separate
+recipe-control invocation. The combined workspace command verifies the recorded
+observations first and then runs all five envelope controls in the same Python
+process. The recorded check constructs the reference import model. The envelope
+controls reuse that model and validate their own inputs. The completion receipt
+identifies the recorded checker after both checks succeed and their scopes close.
+The native verifier jobs run on separate hosted runners alongside this lane.
 See the [GitHub-hosted runner model](https://docs.github.com/en/actions/concepts/runners/github-hosted-runners)
 for its VM isolation and runner-image limits.
 
@@ -26,15 +28,17 @@ files. They check recorded resources rather than launching a new node, database
 workload or Go build. Some existing controls still launch fresh Python CLIs and
 use their own temporary test files.
 
-The current 33-command inventory has SHA-256
-`c285ca19653067b71f8132e09ec07e50178eef5ec927c096c368d349d3879b6b`.
+The current 32-command inventory has SHA-256
+`6a762cdddd5c8c8777571e048e4b0c7328d9914ae8e8964cfb82dc9b804015e1`.
 Its encoding is the ordered list of name/run objects, with sorted JSON keys,
-compact separators and a final LF. Workflow expressions remain unexpanded in
-that inventory. The preceding 32-command leaf-scope inventory remains
-`60f485ae21bfc88c968ddb251accefe716c87fa247ce15f4d5a452f53b8bf280`.
-The original 31-command inventory remains
-`16fbc16ba92476d4e64d5ea5377e7702dcdb032eaa41d2e2073263418cfb60f0`;
-do not relabel its earlier evidence as the new scope's qualification. The serial baseline is commit
+compact separators, unexpanded workflow expressions and a final LF. The earlier
+33-command inventory with separate workspace invocations had SHA-256
+`c285ca19653067b71f8132e09ec07e50178eef5ec927c096c368d349d3879b6b`.
+The 32-command leaf-scope inventory had SHA-256
+`60f485ae21bfc88c968ddb251accefe716c87fa247ce15f4d5a452f53b8bf280`. The original
+31-command inventory had SHA-256
+`16fbc16ba92476d4e64d5ea5377e7702dcdb032eaa41d2e2073263418cfb60f0`.
+Each inventory identifies its own evidence. The serial baseline is commit
 `59ab5184d2e983f2322ff9e730a86cd19217970b`; its workflow bytes have SHA-256
 `407cf9a5da9fca75957f570981694ecc7bd17a4f29ae3ce4f697f40a17d4421a`.
 

@@ -29,8 +29,13 @@ def main(argv=None):
     parser.add_argument('--source-revision', required=True)
     parser.add_argument('--reuse-graphs', action='store_true',
                         help='reuse bounded complete pure graph results for the selected driver checker only')
+    parser.add_argument('--check-recorded-workspace', action='store_true',
+                        help='check the recorded workspace before running the workspace envelope controls')
     args = parser.parse_args(argv)
     HEX.require(re.fullmatch(r'[0-9a-f]{40}', args.source_revision) is not None)
+    if args.check_recorded_workspace:
+        HEX.require(args.program == 'check_temp_workspace_test.py'
+                    and args.mode == 'translated' and args.reuse_graphs)
     runner_pin = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     graph = None
     if args.reuse_graphs:
@@ -45,6 +50,9 @@ def main(argv=None):
     control_names = []
     graph_scope = graph.selected_graphs(program, args.program) if graph is not None else nullcontext(None)
     with graph_scope as reused, HEX.selected_oracles(program, args.program, args.mode) as bindings:
+        if args.check_recorded_workspace:
+            # Validate the recording with the cold checker before the controls reuse its reference model.
+            program.CHECK.main([])
         if args.program.endswith('_test.py'):
             suite = unittest.defaultTestLoader.loadTestsFromModule(program)
             def names(tests):
@@ -81,6 +89,8 @@ def main(argv=None):
         'selected_function_identities_restored': True, 'checks_completed': True,
         'binding_manifest': bindings,
     }
+    if args.check_recorded_workspace:
+        report['recorded_workspace_checked_first'] = 'check_temp_workspace.py'
     print(json.dumps(report, sort_keys=True, separators=(',', ':')))
 
 
