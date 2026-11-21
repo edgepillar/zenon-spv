@@ -21,18 +21,46 @@ func BenchmarkRPCEnvelopeExtensions(b *testing.B) {
 	}
 
 	const prefix = `{"jsonrpc":"2.0","id":1,"result":`
-	row := `{"data":"` + strings.Repeat("Z", 20<<10) + `"}`
-	raw := make([]byte, 0, len(prefix)+400*(len(row)+1)+32)
+	const rowCount = 400
+	data := strings.Repeat("Z", 20<<10)
+	row := `{"data":"` + data + `"}`
+	raw := make([]byte, 0, len(prefix)+rowCount*(len(row)+1)+32)
 	raw = append(raw, prefix...)
 	raw = append(raw, `{"list":[`...)
-	for i := 0; i < 400; i++ {
+	for i := 0; i < rowCount; i++ {
 		if i > 0 {
 			raw = append(raw, ',')
 		}
 		raw = append(raw, row...)
 	}
 	raw = append(raw, `],"count":400}}`...)
-	benchmarkRPCEnvelopeFields(b, "page_result", raw, raw[len(prefix):len(raw)-1])
+	result := raw[len(prefix) : len(raw)-1]
+	benchmarkRPCEnvelopeFields(b, "page_result", raw, result)
+	for _, mode := range []struct {
+		name   string
+		decode func([]byte, *[]rpcMomentum) error
+	}{
+		{"streaming_reference", func(raw []byte, rows *[]rpcMomentum) error {
+			return json.Unmarshal(raw, &referenceRPCRangeDecoder{
+				target: rows, count: rowCount, rowTarget: newRPCEvidenceDecoder().momentum,
+			})
+		}},
+		{"borrowed_rows", func(raw []byte, rows *[]rpcMomentum) error {
+			decoder := rpcListDecoder[rpcMomentum]{target: rows, count: rowCount, rowTarget: newRPCEvidenceDecoder().momentum}
+			return decoder.UnmarshalJSON(raw)
+		}},
+	} {
+		b.Run("page_rows/"+mode.name, func(b *testing.B) {
+			b.ReportAllocs()
+			b.SetBytes(int64(len(result)))
+			for i := 0; i < b.N; i++ {
+				var rows []rpcMomentum
+				if err := mode.decode(result, &rows); err != nil || len(rows) != rowCount || rows[0].Data != data || rows[rowCount-1].Data != data {
+					b.Fatalf("range row projection mismatch: %v", err)
+				}
+			}
+		})
+	}
 }
 
 func benchmarkRPCEnvelopeFields(b *testing.B, name string, raw, expected []byte) {
