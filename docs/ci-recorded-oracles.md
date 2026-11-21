@@ -8,8 +8,9 @@ invocation. Two complete import control suites use
 recipe-control invocation. The combined workspace command verifies the recorded
 observations first and then runs all five envelope controls in the same Python
 process. The recorded check constructs the reference import model. The envelope
-controls reuse that model and validate their own inputs. The completion receipt
-identifies the recorded checker after both checks succeed and their scopes close.
+controls reuse that model and validate their own inputs. The dedicated workspace
+runner emits a source-bound completion receipt after both checks succeed and their
+scopes close. The CI step also runs the workspace runner controls.
 The native verifier jobs run on separate hosted runners alongside this lane.
 See the [GitHub-hosted runner model](https://docs.github.com/en/actions/concepts/runners/github-hosted-runners)
 for its VM isolation and runner-image limits.
@@ -29,7 +30,7 @@ workload or Go build. Some existing controls still launch fresh Python CLIs and
 use their own temporary test files.
 
 The current 32-command inventory has SHA-256
-`6a762cdddd5c8c8777571e048e4b0c7328d9914ae8e8964cfb82dc9b804015e1`.
+`b6740942f8c048d4a0f9490eddbfa1fcef396ad1952561293a8413425dd69eab`.
 Its encoding is the ordered list of name/run objects, with sorted JSON keys,
 compact separators, unexpanded workflow expressions and a final LF. The earlier
 33-command inventory with separate workspace invocations had SHA-256

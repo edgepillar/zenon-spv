@@ -355,49 +355,6 @@ class HexCLIControls(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertEqual(result.stdout, b'')
 
-    def test_workspace_pair_requires_the_selected_translated_graph_scope(self):
-        for selected, mode, extra in (('check_temp_workspace.py', 'translated', ['--reuse-graphs']),
-                                      ('check_temp_workspace_test.py', 'reference', ['--reuse-graphs']),
-                                      ('check_temp_workspace_test.py', 'translated', [])):
-            with self.subTest(program=selected, mode=mode, graph_reuse=bool(extra)), \
-                    mock.patch.object(RUN.HEX, 'load') as load:
-                with self.assertRaises(ValueError):
-                    RUN.main(['--program', selected, '--mode', mode, '--source-revision', 'ab' * 20,
-                              '--check-recorded-workspace', *extra])
-                load.assert_not_called()
-
-    def test_workspace_recording_failure_stops_controls(self):
-        selected = 'check_temp_workspace_test.py'
-        program = RUN.HEX.load('hex_workspace_pair_fixture', selected)
-        output = io.StringIO()
-        with mock.patch.object(RUN.HEX, 'load', return_value=program), \
-                mock.patch.object(program.CHECK, 'main', side_effect=ValueError('recording refused')) as check, \
-                mock.patch.object(RUN.unittest.TextTestRunner, 'run') as run, redirect_stdout(output):
-            with self.assertRaisesRegex(ValueError, 'recording refused'):
-                RUN.main(['--program', selected, '--mode', 'translated', '--source-revision', 'ab' * 20,
-                          '--reuse-graphs', '--check-recorded-workspace'])
-        check.assert_called_once_with([])
-        run.assert_not_called()
-        self.assertEqual(output.getvalue(), '')
-
-    def test_workspace_control_failure_does_not_emit_a_completion_recipe(self):
-        selected = 'check_temp_workspace_test.py'
-        program = RUN.HEX.load('hex_workspace_pair_fixture', selected)
-        output = io.StringIO()
-        recording = '{"workspace_children_bound":24}'
-
-        def run_controls(_):
-            self.assertEqual(output.getvalue(), recording + '\n')
-            return SimpleNamespace(wasSuccessful=lambda: False, skipped=[], testsRun=5)
-
-        with mock.patch.object(RUN.HEX, 'load', return_value=program), \
-                mock.patch.object(program.CHECK, 'main', side_effect=lambda _: print(recording)), \
-                mock.patch.object(RUN.unittest.TextTestRunner, 'run', side_effect=run_controls), redirect_stdout(output):
-            with self.assertRaises(ValueError):
-                RUN.main(['--program', selected, '--mode', 'translated', '--source-revision', 'ab' * 20,
-                          '--reuse-graphs', '--check-recorded-workspace'])
-        self.assertEqual(output.getvalue(), recording + '\n')
-
     def test_selected_data_forward_only_original_CLI_arguments(self):
         for selected in ('check_patch_resources.py', 'check_patch_import_comparison.py',
                          'check_tree_import_scale.py', 'check_tree_import_lifecycle.py',
