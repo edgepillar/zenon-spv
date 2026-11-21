@@ -1,11 +1,13 @@
 package conformance_test
 
 import (
+	"bytes"
 	"crypto/sha3"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"slices"
@@ -48,7 +50,7 @@ var flatWorkloads = []struct{ members, proofs int }{{1, 1}, {1000, 1}, {100000, 
 
 func flatWorkloadName(members, proofs int) string { return fmt.Sprintf("M%d_P%d", members, proofs) }
 
-func newFlatWorkload(t testing.TB, members, proofs int) flatWorkload {
+func newFlatFixture(t testing.TB, members, proofs int) flatWorkload {
 	t.Helper()
 	w := flatWorkload{}
 	raw, err := os.ReadFile("../testdata/conformance/content-scaling.json")
@@ -104,26 +106,103 @@ func newFlatWorkload(t testing.TB, members, proofs int) flatWorkload {
 	}
 	w.state = state
 	w.bundle = proof.HeaderBundle{Version: proof.WireVersion, ChainID: c.Anchor.ChainID, ClaimedGenesis: c.Anchor.HeaderHash}
+	flat := &proof.FlatContentEvidence{SortedHeaders: content}
 	for i := range proofs {
 		index := members - 1 // One proof searches for the final member.
 		if proofs > 1 {
 			index = i * (members - 1) / (proofs - 1)
 		}
-		w.bundle.Commitments = append(w.bundle.Commitments, proof.CommitmentEvidence{Height: 6001, Target: content[index],
-			Flat: &proof.FlatContentEvidence{SortedHeaders: content}})
-	}
-	// Marshal repeats the complete list per target, as the current wire format
-	// requires. In-memory sharing must not understate input size or budgets.
-	raw, err = json.Marshal(w.bundle)
-	if err != nil || int64(len(raw)) > w.opts.Policy.MaxBundleBytes {
-		t.Fatal("content workload exceeds the default wire byte cap")
-	}
-	w.bytes = int64(len(raw))
-	w.path = filepath.Join(t.TempDir(), "content-bundle.json")
-	if err := os.WriteFile(w.path, raw, 0o600); err != nil {
-		t.Fatal(err)
+		w.bundle.Commitments = append(w.bundle.Commitments, proof.CommitmentEvidence{Height: 6001, Target: content[index], Flat: flat})
 	}
 	return w
+}
+
+// Encode the fixture's shared list once. Each commitment still carries the
+// complete flat object in the file, and the output follows HeaderBundle's
+// compact JSON field order for this commitment-only fixture.
+func flatFixtureWire(bundle proof.HeaderBundle) (net.Buffers, int64, error) {
+	if len(bundle.Commitments) == 0 || len(bundle.Segments) != 0 || len(bundle.StateValueProofs) != 0 {
+		return nil, 0, errors.New("unexpected flat workload bundle shape")
+	}
+	flat := bundle.Commitments[0].Flat
+	for _, commitment := range bundle.Commitments {
+		if flat == nil || commitment.Flat != flat {
+			return nil, 0, errors.New("flat workload does not share one content list")
+		}
+	}
+	flatJSON, err := json.Marshal(flat)
+	if err != nil {
+		return nil, 0, err
+	}
+	prefix := bundle
+	prefix.Commitments = nil
+	bundleJSON, err := json.Marshal(prefix)
+	if err != nil {
+		return nil, 0, err
+	}
+	chunks := net.Buffers{bundleJSON[:len(bundleJSON)-1], []byte(`,"commitments":[`)}
+	for i, commitment := range bundle.Commitments {
+		commitment.Flat = nil
+		row, err := json.Marshal(commitment)
+		if err != nil {
+			return nil, 0, err
+		}
+		if i > 0 {
+			chunks = append(chunks, []byte(","))
+		}
+		chunks = append(chunks, row[:len(row)-1], []byte(`,"flat":`), flatJSON, []byte("}"))
+	}
+	chunks = append(chunks, []byte("]}"))
+	var size int64
+	for _, chunk := range chunks {
+		size += int64(len(chunk))
+	}
+	return chunks, size, nil
+}
+
+func newFlatWorkload(t testing.TB, members, proofs int) flatWorkload {
+	t.Helper()
+	w := newFlatFixture(t, members, proofs)
+	chunks, size, err := flatFixtureWire(w.bundle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if size > w.opts.Policy.MaxBundleBytes {
+		t.Fatal("content workload exceeds the default wire byte cap")
+	}
+	w.bytes = size
+	w.path = filepath.Join(t.TempDir(), "content-bundle.json")
+	file, err := os.OpenFile(w.path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	written, writeErr := chunks.WriteTo(file)
+	closeErr := file.Close()
+	if written != size || writeErr != nil || closeErr != nil {
+		t.Fatalf("write flat workload: wrote %d of %d bytes: %v", written, size, errors.Join(writeErr, closeErr))
+	}
+	return w
+}
+
+func TestFlatFixtureWireMatchesCompactJSON(t *testing.T) {
+	for _, grid := range []struct{ members, proofs int }{{1, 1}, {1000, 4}} {
+		t.Run(flatWorkloadName(grid.members, grid.proofs), func(t *testing.T) {
+			bundle := newFlatFixture(t, grid.members, grid.proofs).bundle
+			want, err := json.Marshal(bundle)
+			if err != nil {
+				t.Fatal(err)
+			}
+			chunks, size, err := flatFixtureWire(bundle)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got bytes.Buffer
+			written, err := chunks.WriteTo(&got)
+			if err != nil || written != size || size != int64(len(want)) || !bytes.Equal(want, got.Bytes()) {
+				t.Fatal("chunked flat fixture differs from compact bundle JSON", err)
+			}
+		})
+	}
 }
 
 func (w flatWorkload) load() (proof.HeaderBundle, error) {

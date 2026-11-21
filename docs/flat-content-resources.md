@@ -47,6 +47,28 @@ preflight budget. Every bundle fits the existing 64 MiB byte cap and default
 count caps. Tests also require absent/tampered targets and content to reject,
 and smaller per-proof/aggregate budgets to refuse without proof guarantees.
 
+## Fixture staging
+
+The four-proof fixture encodes its shared account-header list once and writes
+the encoded list at each of the four proof positions. The file still contains
+57,556,508 bytes and 400,000 encoded members. The bounded decoder and both
+proof count limits read the complete repeated lists. All four workload files
+matched the byte length and SHA-256 of the whole-value JSON encoder.
+
+Three local one-iteration samples on darwin/arm64 with Go 1.25.14, race and
+atomic coverage measured the four-proof encoding stage with output sent to
+a discard writer. Medians were 1,622 ms for whole-value marshaling and 413 ms
+for shared-list staging. The median allocation count fell from 800,073 to
+200,105. Cumulative allocated bytes varied with encoder buffer reuse, from
+102,358,176 to 370,794,768 for whole-value marshaling and from 92,708,008 to
+92,708,040 for shared-list staging. File writes and verifier execution have
+their own measurements.
+
+The content hash ordering and shared-query benchmarks use the in-memory
+fixture. Running their three fixture setups once avoids 14,673,700 logical
+temporary file bytes. The file-based scaling and compiled consumer tests
+exercise the actual bundle file.
+
 ## What is measured
 
 The [hash/address text buffer comparison](chain-text-hex-allocations.md)
