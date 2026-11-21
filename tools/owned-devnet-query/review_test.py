@@ -1015,6 +1015,47 @@ class ReviewTests(unittest.TestCase):
             del files["evidence/" + capture.CONSUMER_STDOUT]
             self.review(make_archive(files))
 
+    def test_opening_version_refusal_requires_the_bound_request_response_and_terminal(self):
+        files = self.opening_files("REFUSED")
+        _, profile = capture.selected_profile(self.contract, ROOT)
+        key = checks.ledger_keys(profile, 0)["batch_entry"]
+        response = (b'{"jsonrpc":"2.0","id":3,"error":{"code":-32000,'
+                    b'"message":"trie: no such version"}}\n')
+        response_path = "evidence/" + capture.OPENING_PROOF_FILE
+        files.update({
+            "evidence/terminal.json": canonical({**terminal("REFUSED", self.contract),
+                "stage": "opening-proof", "reason": capture.OPENING_PROOF_VERSION_UNAVAILABLE}),
+            "evidence/rpc-02.request.json": canonical(
+                {"jsonrpc": "2.0", "id": 2, "method": "ledger.getMomentumsByHeight", "params": [1, 3]}),
+            "evidence/rpc-03.request.json": canonical({"jsonrpc": "2.0", "id": 3,
+                "method": "ledger.getProof", "params": [3, base64.b64encode(key).decode("ascii")]}),
+            "evidence/rpc-03.started.json": canonical({
+                **json.loads(files["evidence/rpc-02.started.json"]), "label": "rpc-03"}),
+            "evidence/rpc-03.complete.json": canonical({
+                **json.loads(files["evidence/rpc-02.complete.json"]), "label": "rpc-03",
+                "outputs": {"stdout": {"file": capture.OPENING_PROOF_FILE, **pin(response)}}}),
+            response_path: response,
+        })
+        result = self.review(make_archive(files))
+        self.assertEqual(result["recorded_terminal_outcome"], "REFUSED")
+        self.assertIsNone(result["comparison"])
+        self.assertEqual(result["candidate_opening_proof"]["status"], "VERSION_UNAVAILABLE")
+        self.assertFalse(result["candidate_opening_proof"]["accepted_header_authority"])
+        for path, changes, reason in (
+                ("terminal.json", {"stage": "nodes"}, "review_opening_proof_refusal_scope"),
+                ("terminal.json", {"outcome": "FAILURE"}, "review_opening_proof_refusal_scope"),
+                ("terminal.json", {"reason": "command_failed"}, "review_opening_proof_refusal_scope"),
+                ("rpc-03.complete.json", {"actual_exit": 28}, "review_recorded_command_completion"),
+                ("rpc-03.complete.json", {"output_complete": False}, "review_recorded_command_completion"),
+                ("rpc-03.request.json", {"id": 4}, "review_opening_proof_request")):
+            with self.subTest(path=path, changes=changes), self.assertRaisesRegex(Refused, reason):
+                path = "evidence/" + path
+                changed = {**files, path: canonical({**json.loads(files[path]), **changes})}
+                self.review(make_archive(changed))
+        del files[response_path]
+        with self.assertRaisesRegex(Refused, "review_opening_proof_refusal_evidence"):
+            self.review(make_archive(files))
+
     def test_checks_the_exact_opening_request_when_retained(self):
         files = self.opening_files()
         path = "evidence/rpc-02.request.json"

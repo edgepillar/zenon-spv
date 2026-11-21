@@ -1045,6 +1045,8 @@ class HostBoundaryTests(unittest.TestCase):
         for case, stage, reason in (
                 ("bad-opening", "nodes", "opening_header_count"),
                 ("bad-proof", "opening-proof", "opening_proof_root_or_response"),
+                ("version-unavailable", "opening-proof", capture.OPENING_PROOF_VERSION_UNAVAILABLE),
+                ("other-proof-error", "opening-proof", "owned_rpc_result_envelope"),
                 ("bad-oracle", "query-inputs", "test_oracle_input_refusal"),
                 ("bad-toolchain", "node-toolchain", "test_node_toolchain_refusal"),
                 ("bad-packages", "packages", "test_package_refusal"),
@@ -1052,6 +1054,7 @@ class HostBoundaryTests(unittest.TestCase):
                 ("bad-consumer", "consumer", "consumer_reported_failure")):
             trace = mock.Mock()
             consumer_failed = case == "bad-consumer"
+            opening_failed = case in ("bad-opening", "bad-proof", "version-unavailable", "other-proof-error")
 
             def rpc_factory(contract, record, root, curl, environment, guard):
                 rpc = actual_rpc(contract, record, root, curl, environment, guard)
@@ -1086,6 +1089,13 @@ class HostBoundaryTests(unittest.TestCase):
                         if case == "bad-proof":
                             result["root"] = "1" * 64
                     response = model.canonical({"jsonrpc": "2.0", "id": request["id"], "result": result})
+                    if request["method"] == "ledger.getProof":
+                        if case == "version-unavailable":
+                            response = (b'{"jsonrpc":"2.0","id":3,"error":{"code":-32000,'
+                                        b'"message":"trie: no such version"}}\n')
+                        elif case == "other-proof-error":
+                            response = model.canonical({"jsonrpc": "2.0", "id": 3, "error": {
+                                "code": -32000, "message": "trie: no such version", "data": "unselected fixture detail"}})
                     return actual_run(label, [sys.executable, "-I", "-B", "-c",
                         "import sys; sys.stdout.write(" + repr(response.decode()) + ")"], cwd, {}, **options)
 
@@ -1152,9 +1162,9 @@ class HostBoundaryTests(unittest.TestCase):
                 expected.extend((mock.call.wait_height(3, starting=True), mock.call.opening()))
                 if case != "bad-opening":
                     expected.append(mock.call.opening_proof())
-                if case not in ("bad-opening", "bad-proof"):
+                if not opening_failed:
                     expected.extend((mock.call.fetch("consumer"), mock.call.fetch("parent_oracle")))
-                if case not in ("bad-opening", "bad-proof", "bad-oracle"):
+                if not opening_failed and case != "bad-oracle":
                     expected.extend((mock.call.enable_consumer(), mock.call.enable_oracle(),
                                      mock.call.fetch_node_toolchain()))
                 if case in ("bad-packages", "ready", "bad-consumer"):
@@ -1207,16 +1217,23 @@ class HostBoundaryTests(unittest.TestCase):
                     self.assertNotIn(proof_request, files)
                 else:
                     self.assertIn(proof_request, files)
-                if case in ("bad-opening", "bad-proof"):
+                if opening_failed and case != "version-unavailable":
                     self.assertNotIn(proof_response, files)
                     self.assertNotIn("candidate_opening_proof", checked)
                 else:
                     validated = checked["candidate_opening_proof"]
                     self.assertEqual(validated["header"], window.headers[2].identifier())
                     self.assertEqual(validated["ledger_key"], OPENING_BATCH_KEY)
-                    self.assertEqual(validated["presence"], "absent")
                     self.assertEqual(validated["request"], files[proof_request])
                     self.assertFalse(validated["accepted_header_authority"])
+                    if case == "version-unavailable":
+                        self.assertEqual(validated["status"], "VERSION_UNAVAILABLE")
+                        self.assertEqual(validated["rpc_error_code"], -32000)
+                        self.assertNotIn("presence", validated)
+                        self.assertEqual(validated["response"],
+                                         {"file": capture.OPENING_PROOF_FILE, **files[proof_response]})
+                    else:
+                        self.assertEqual(validated["presence"], "absent")
 
     def test_runner_refusal_exports_the_valid_frontier_without_other_command_streams(self):
         _, rows, _ = synthetic_window(last=5)

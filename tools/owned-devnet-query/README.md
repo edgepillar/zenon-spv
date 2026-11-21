@@ -205,8 +205,15 @@ The shared budget allows the extra read within the existing 96 calls. The
 successful path reserves up to 90 calls for the three readiness waits, one for
 the opening, one for this proof, two for query selection and two for the
 frontier around final collection. A checked reply and its paired request are
-retained once. Archive review recomputes the opening proof from the retained
-bytes and selected profile. The actual BatchEntry query still requires the
+retained once. The selected node's exact `trie: no such version` reply is
+also retained when it refuses this read. Archive review checks the original
+reply, paired request, completed command and terminal refusal. This reply
+records an unavailable tree version for the requested height. The export is
+limited to this exact refusal reply. The original node returned the same error
+in an isolated retained-history test. [Recorded pruning control](../../docs/first-insertion-catchup.md#pruned-versions-and-retained-absence-at-the-rpc-boundary)
+
+Archive review recomputes a successful opening proof from the retained bytes
+and selected profile. The actual BatchEntry query still requires the
 accepted header and its three complete membership proofs at the selected
 query height.
 

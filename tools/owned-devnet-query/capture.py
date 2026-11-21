@@ -33,6 +33,7 @@ STARTUP_FRONTIERS_REPORT = "startup-peer-frontiers.json"
 FRONTIER_BYTES = 128 << 10
 OPENING_PROOF_FILE = "opening-batch-proof.json"
 OPENING_PROOF_BYTES = 32 << 10
+OPENING_PROOF_VERSION_UNAVAILABLE = "opening_proof_version_unavailable"
 RPC_CALL_LIMIT = 96
 CONSUMER_STDOUT = "consume-query.stdout"
 CONSUMER_FAILURE_BYTES = 4096
@@ -79,6 +80,16 @@ def rpc_result(raw, request_id, limit):
             and envelope["id"] == request_id and type(envelope["result"]) is dict,
             "owned_rpc_result_identity")
     return envelope["result"]
+
+
+def opening_proof_result(raw, request_id, limit):
+    # The selected node emits this exact response for an unavailable tree
+    # version. Only these fixed bytes are eligible for refusal retention.
+    unavailable = (b'{"jsonrpc":"2.0","id":%d,"error":{"code":-32000,'
+                   b'"message":"trie: no such version"}}\n') % request_id
+    if raw == unavailable and len(raw) <= limit:
+        raise Refused(OPENING_PROOF_VERSION_UNAVAILABLE)
+    return rpc_result(raw, request_id, limit)
 
 
 def sync_info(row):
@@ -159,7 +170,8 @@ class LocalRpc:
         self.startup_frontier_attempted = False
         self.startup_frontier_evidence = set()
 
-    def _read(self, method, parameters, cap, *, stdout_name=None, startup_role=None, deadline=None):
+    def _read(self, method, parameters, cap, *, stdout_name=None, startup_role=None, deadline=None,
+              decode=rpc_result):
         connect_limit, http_limit, command_limit = "2", "5", 7
         if deadline is not None:
             # curl treats zero as unlimited. Round the allowance down and
@@ -190,7 +202,7 @@ class LocalRpc:
             "--data-binary", raw, url],
             self.directory, self.environment,
             timeout=command_limit, stdout_cap=cap, stderr_cap=4096, stdout_name=stdout_name, guard=self.guard)
-        return rpc_result(result.stdout(cap), request_id, cap)
+        return decode(result.stdout(cap), request_id, cap)
 
     def _frontier(self, name, *, startup_role=None, deadline=None):
         row = self._read("ledger.getFrontierMomentum", [], FRONTIER_BYTES,
@@ -216,7 +228,7 @@ class LocalRpc:
     def opening_proof(self, header, profile):
         key, parameters = opening_proof_target(self.contract, profile, header)
         witness = self._read("ledger.getProof", parameters, OPENING_PROOF_BYTES,
-                             stdout_name=OPENING_PROOF_FILE)
+                             stdout_name=OPENING_PROOF_FILE, decode=opening_proof_result)
         return opening_batch_witness(profile, header.root, key, witness)
 
     def capture_startup_sync(self):

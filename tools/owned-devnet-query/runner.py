@@ -261,6 +261,10 @@ def execute(environment, workspace, checkout):
         proof_request = f"rpc-{rpc.calls + 1:02d}.request.json"
         try:
             rpc.opening_proof(opening[2], profile)
+        except Refused as error:
+            if error.reason == capture.OPENING_PROOF_VERSION_UNAVAILABLE:
+                extra.add(capture.OPENING_PROOF_FILE)
+            raise
         finally:
             if proof_request in record.names:
                 extra.add(proof_request)

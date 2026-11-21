@@ -232,9 +232,11 @@ def recorded_opening(evidence, contract):
     return headers, observation
 
 
-def recorded_opening_proof(evidence, contract, checkout, opening, opening_observation):
+def recorded_opening_proof(evidence, contract, checkout, opening, opening_observation, terminal):
     name = capture.OPENING_PROOF_FILE
+    version_unavailable = terminal["reason"] == capture.OPENING_PROOF_VERSION_UNAVAILABLE
     if "evidence/" + name not in evidence.pins:
+        require(not version_unavailable, "review_opening_proof_refusal_evidence")
         return None
     require(opening is not None and opening_observation["request"] is not None, "review_opening_proof_context")
     request_id = model.uint(opening_observation["request_id"] + 1, capture.RPC_CALL_LIMIT)
@@ -246,9 +248,19 @@ def recorded_opening_proof(evidence, contract, checkout, opening, opening_observ
     same(evidence.json(request_file, 4096), {"jsonrpc": "2.0", "id": request_id,
          "method": "ledger.getProof", "params": parameters}, "review_opening_proof_request")
     response = recorded_output(evidence, label, name)
-    witness = capture.rpc_result(evidence.bytes("evidence/" + name, capture.OPENING_PROOF_BYTES),
-                                 request_id, capture.OPENING_PROOF_BYTES)
-    return {**opening_batch_witness(profile, header.root, key, witness), "ledger_key": key.hex(),
+    raw = evidence.bytes("evidence/" + name, capture.OPENING_PROOF_BYTES)
+    try:
+        witness = capture.opening_proof_result(raw, request_id, capture.OPENING_PROOF_BYTES)
+    except Refused as error:
+        if error.reason != capture.OPENING_PROOF_VERSION_UNAVAILABLE:
+            raise
+        require(version_unavailable and terminal["stage"] == "opening-proof" and terminal["outcome"] == "REFUSED",
+                "review_opening_proof_refusal_scope")
+        observation = {"status": "VERSION_UNAVAILABLE", "rpc_error_code": -32000}
+    else:
+        require(not version_unavailable, "review_opening_proof_refusal_scope")
+        observation = opening_batch_witness(profile, header.root, key, witness)
+    return {**observation, "ledger_key": key.hex(),
             "header": header.identifier(), "state_root": header.root, "request_id": request_id,
             "request": evidence.pins["evidence/" + request_file], "response": response,
             "accepted_header_authority": False}
@@ -732,7 +744,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         if accepted or "evidence/" + OPENING_FILE in evidence.pins:
             require(binding_present, "review_opening_run_binding")
             opening, opening_observation = recorded_opening(evidence, contract)
-        opening_proof = recorded_opening_proof(evidence, contract, checkout, opening, opening_observation)
+        opening_proof = recorded_opening_proof(evidence, contract, checkout, opening, opening_observation, terminal)
         if accepted or (gateway_refusal and terminal["owned_runtime_observed_closed"]):
             require(opening is not None, "review_consumer_opening")
             comparison = recorded_consumer(evidence, contract, checkout, selection, opening)
