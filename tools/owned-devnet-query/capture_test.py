@@ -537,7 +537,7 @@ def synthetic_window(last=4, state_root=bytes([77]) * 32, *, opening_root=None):
 
 
 def synthetic_reports(contract, window):
-    for raw, targets in capture.oracle_requests(contract, window):
+    for raw, targets in capture.oracle_requests(contract, window.headers):
         genesis, tip = window.headers[0], window.headers[-1]
         rows = []
         for header in targets:
@@ -594,14 +594,14 @@ class CaptureTests(unittest.TestCase):
 
     def test_closed_oracle_chunks_cover_anchor_and_all_v3_parents(self):
         contract, _, window = synthetic_window(67)
-        chunks = list(capture.oracle_requests(contract, window))
+        chunks = list(capture.oracle_requests(contract, window.headers))
         self.assertEqual([len(targets) for _, targets in chunks], [64, 2])
         self.assertEqual(chunks[0][1][0].height, 2)
         self.assertEqual(chunks[-1][1][-1].height, 67)
         for raw, _ in chunks:
             self.assertTrue(raw.startswith(b'{"expected_frontier":{"hash":'))
             self.assertTrue(raw.endswith(b'],"version":1}\n'))
-        schedule = capture.oracle_schedule(contract, window, synthetic_reports(contract, window))
+        schedule = capture.oracle_schedule(contract, window.headers, synthetic_reports(contract, window))
         self.assertEqual(schedule["coverage"], [{"from_height": 3, "through_height": 67}])
         self.assertEqual([row["height"] for row in schedule["entries"]], list(range(3, 68)))
 
@@ -615,7 +615,34 @@ class CaptureTests(unittest.TestCase):
             self.fail("a later ledger read ran after a mismatched parent")
 
         with self.assertRaisesRegex(model.Refused, "closed_oracle_header_or_parent_binding"):
-            capture.oracle_schedule(contract, window, reports())
+            capture.oracle_schedule(contract, window.headers, reports())
+
+    def test_closed_opening_freezes_one_frontier_then_reads_two_original_parent_slots(self):
+        contract, _, window = synthetic_window(5)
+        opening, frontier = window.headers[:3], window.headers[-1]
+        record, sources, oracle, workspace, environment = (mock.sentinel.record, mock.sentinel.sources,
+            mock.sentinel.oracle, mock.sentinel.workspace, mock.sentinel.environment)
+        trace = mock.Mock()
+        trace.rpc.calls = 9
+        trace.rpc.frontier.return_value = frontier
+        trace.engine.close_rpc.return_value = mock.sentinel.ledger
+        trace.read_parent.return_value = mock.sentinel.schedule, mock.sentinel.provenance
+        with mock.patch.object(capture, "read_closed_parent_schedule", trace.read_parent):
+            result = runner.closed_opening_after_timeout(contract, record, trace.engine, trace.rpc,
+                opening, sources, oracle, workspace, environment, trace.budget, "selected reader")
+        self.assertEqual(trace.mock_calls, [mock.call.budget.cap_diagnostic_time(120),
+            mock.call.engine.stop_producers_and_clients(), mock.call.rpc.frontier(), mock.call.engine.close_rpc(),
+            mock.call.read_parent(contract, record, trace.engine, mock.sentinel.ledger, opening,
+                frontier.identifier(), sources, oracle, workspace, environment, trace.budget.check, "selected reader"),
+            mock.call.budget.check(force=True)])
+        self.assertEqual(result, {"format": "owned-devnet-closed-opening-authorization/v1",
+            "frontier_request_id": 9, "closed_ledger": mock.sentinel.provenance})
+        capture.require_opening_frontier(opening, opening[2].identifier(), 3, opening[2].timestamp)
+        for marker in (opening[1], opening[2]):
+            identifier = marker.identifier()
+            identifier["hash"] = "f" * 64
+            with self.assertRaisesRegex(model.Refused, "closed_opening_frontier"):
+                capture.require_opening_frontier(opening, identifier, marker.version, marker.timestamp)
 
     def test_oracle_refuses_wrong_source_frontier_proof_block_and_missing_row(self):
         contract, _, window = synthetic_window()
@@ -629,15 +656,15 @@ class CaptureTests(unittest.TestCase):
             row = deepcopy(original)
             mutate(row)
             with self.assertRaises(model.Refused):
-                capture.oracle_schedule(contract, window, [row])
+                capture.oracle_schedule(contract, window.headers, [row])
         for reports in ([], [original, original]):
             with self.assertRaises(model.Refused):
-                capture.oracle_schedule(contract, window, reports)
+                capture.oracle_schedule(contract, window.headers, reports)
 
     def test_local_context_binds_v2_profile_and_retains_exact_depth(self):
         contract, _, window = synthetic_window()
         descriptor, profile = capture.selected_profile(CONTRACT, HERE.parents[1])
-        schedule = capture.oracle_schedule(contract, window, synthetic_reports(contract, window))
+        schedule = capture.oracle_schedule(contract, window.headers, synthetic_reports(contract, window))
         config, request, pins = capture.query_inputs(contract, window, schedule, profile)
         self.assertEqual(config["header_policy"], {"w": 1, "retain_headers": 2, "max_batch_headers": 2})
         self.assertEqual(config["header_profile"]["anchor"]["header_hash"], window.headers[1].hash)
@@ -1110,12 +1137,20 @@ class HostBoundaryTests(unittest.TestCase):
                 ("bad-toolchain", "node-toolchain", "test_node_toolchain_refusal"),
                 ("bad-packages", "packages", "test_package_refusal"),
                 ("ready", "fixture-configuration", "test_fixture_boundary"),
+                ("deposit-timeout", "fixture-deposit", "command_incomplete"),
                 ("bad-consumer", "consumer", "consumer_reported_failure")):
             trace = mock.Mock()
             consumer_failed = case == "bad-consumer"
+            deposit_timed_out = case == "deposit-timeout"
             batch_present = case == "batch-already-present"
             witness = opening_present_fixture() if batch_present else opening_absence_fixture()
             contract, rows, window = synthetic_window(state_root=bytes.fromhex(witness["root"]))
+            if deposit_timed_out:
+                data = contract.data
+                ref_gas = model.read_contract(HERE / "reference-gas-renewal-1-contract.json")
+                data["sources"]["devnet"] = ref_gas.data["sources"]["devnet"]
+                raw = model.canonical(data)
+                contract = model.Contract(raw, hashlib.sha256(raw).hexdigest())
             opening_failed = batch_present or case in ("bad-opening", "bad-proof", "version-unavailable", "other-proof-error")
             signature_failed = case == "bad-signature"
             queries_admitted = not opening_failed and not signature_failed
@@ -1124,11 +1159,12 @@ class HostBoundaryTests(unittest.TestCase):
                 rpc = actual_rpc(contract, record, root, curl, environment, guard)
                 trace.wait_height.side_effect = rpc.wait_height
                 rpc.wait_height = trace.wait_height
+                if consumer_failed or deposit_timed_out:
+                    rpc.wait_gateway = trace.wait_gateway
                 if consumer_failed:
                     initial_wait = trace.wait_height.side_effect
                     trace.wait_height.side_effect = lambda height, starting=False: (
                         initial_wait(height, starting=True) if starting else None)
-                    rpc.wait_gateway = trace.wait_gateway
                     rpc.select_query_header = mock.Mock(return_value=window.query)
                 actual_run = record.run
 
@@ -1189,7 +1225,8 @@ class HostBoundaryTests(unittest.TestCase):
                 with mock.patch.multiple(runner, dispatch=mock.DEFAULT, Budget=mock.DEFAULT,
                                          Engine=mock.DEFAULT, Artifacts=mock.DEFAULT, Installer=mock.DEFAULT,
                                          Sources=mock.DEFAULT, Packages=mock.DEFAULT, Builder=mock.DEFAULT,
-                                         fixture_flow=mock.DEFAULT, publish_paths=mock.DEFAULT) as dependencies, \
+                                         fixture_flow=mock.DEFAULT, closed_opening_after_timeout=mock.DEFAULT,
+                                         publish_paths=mock.DEFAULT) as dependencies, \
                         mock.patch.object(capture, "LocalRpc", side_effect=rpc_factory), \
                         mock.patch.multiple(capture, collect=mock.DEFAULT, read_closed_schedule=mock.DEFAULT,
                                             query=mock.DEFAULT) as post_fixture:
@@ -1220,7 +1257,13 @@ class HostBoundaryTests(unittest.TestCase):
                     def stop_at_fixture(*args):
                         self.assertIs(args[4], mock.sentinel.executable_node)
                         self.assertIs(args[5], mock.sentinel.prepared_packages)
-                        trace.fixture(args[-2])
+                        phase = args[-2]
+                        trace.fixture(phase)
+                        if deposit_timed_out:
+                            code = "import time; time.sleep(3)" if phase == "deposit" else "pass"
+                            return Recorder.run(args[1], "fixture-" + phase,
+                                [sys.executable, "-I", "-B", "-c", code], root, {},
+                                timeout=0.125 if phase == "deposit" else 5)
                         if not consumer_failed:
                             raise model.Refused("test_fixture_boundary")
 
@@ -1233,9 +1276,15 @@ class HostBoundaryTests(unittest.TestCase):
                     post_fixture["collect"].return_value = window
                     post_fixture["query"].side_effect = reject_query
                     dependencies["fixture_flow"].side_effect = stop_at_fixture
+                    dependencies["closed_opening_after_timeout"].side_effect = model.Refused("test_opening_diagnostic")
                     env = {"GH_TOKEN": "unused-test-value", "GITHUB_OUTPUT": str(root / "output")}
                     self.assertEqual(runner.execute(env, root, HERE.parents[1]), 1)
                     engine.cleanup.assert_called_once_with()
+                    if deposit_timed_out:
+                        dependencies["closed_opening_after_timeout"].assert_called_once()
+                        post_fixture["collect"].assert_not_called()
+                    else:
+                        dependencies["closed_opening_after_timeout"].assert_not_called()
                 expected = [mock.call.preflight(), mock.call.build_images(), mock.call.verify_runtime_files()]
                 expected.extend(mock.call.build_images().image_for(role) for role in model.SERVICES[:4])
                 expected.extend((mock.call.wait_height(3, starting=True), mock.call.opening()))
@@ -1248,18 +1297,21 @@ class HostBoundaryTests(unittest.TestCase):
                 if queries_admitted and case != "bad-oracle":
                     expected.extend((mock.call.enable_consumer(), mock.call.enable_oracle(),
                                      mock.call.fetch_node_toolchain()))
-                if case in ("bad-packages", "ready", "bad-consumer"):
+                if case in ("bad-packages", "ready", "bad-consumer", "deposit-timeout"):
                     expected.extend((mock.call.enable_node(), mock.call.prepare_packages()))
-                if case in ("ready", "bad-consumer"):
+                if case in ("ready", "bad-consumer", "deposit-timeout"):
                     expected.extend((mock.call.verify_runtime_files(), mock.call.fixture("configure")))
-                if consumer_failed:
+                if consumer_failed or deposit_timed_out:
                     expected.extend(mock.call.build_images().image_for(role) for role in model.SERVICES[4:])
-                    expected.extend((mock.call.wait_gateway(), mock.call.fixture("deposit"),
-                        mock.call.wait_height(window.query.height + contract.data["limits"]["header_depth"]),
-                        mock.call.consume_query()))
+                    expected.extend((mock.call.wait_gateway(), mock.call.fixture("deposit")))
+                if consumer_failed:
+                    expected.extend((mock.call.wait_height(window.query.height + contract.data["limits"]["header_depth"]),
+                                     mock.call.consume_query()))
                 self.assertEqual(trace.mock_calls, expected)
                 terminal = json.loads((root / "evidence/terminal.json").read_bytes())
                 outcome = "FAILURE" if consumer_failed or signature_failed else "REFUSED"
+                if deposit_timed_out:
+                    outcome = "UNKNOWN"
                 self.assertEqual((terminal["stage"], terminal["outcome"], terminal["reason"]),
                                  (stage, outcome, reason))
                 index = json.loads((root / "evidence/evidence-index.json").read_bytes())
@@ -1271,6 +1323,9 @@ class HostBoundaryTests(unittest.TestCase):
                 checked = review_exported(root, index, execution, contract)
                 self.assertEqual(checked["recorded_terminal_outcome"], outcome)
                 self.assertIsNone(checked["comparison"])
+                if deposit_timed_out:
+                    self.assertEqual(checked["recorded_fixture_timeout"]["command"], "fixture-deposit")
+                    self.assertNotIn("recorded_closed_opening_authorization", checked)
                 if consumer_failed:
                     raw = consumer_failure_fixture()
                     name = capture.CONSUMER_STDOUT

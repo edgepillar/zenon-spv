@@ -34,6 +34,7 @@ STARTUP_FRONTIERS_REPORT = "startup-peer-frontiers.json"
 FRONTIER_BYTES = 128 << 10
 OPENING_FILE = "opening-momentums.json"
 OPENING_BYTES = 384 << 10
+CLOSED_OPENING_REPORT = "closed-opening-authorization.json"
 OPENING_SIGNATURE_REPORT = "opening-signatures.json"
 OPENING_SIGNATURE_LABELS = ("opening-signature-h2", "opening-signature-h3")
 OPENING_SIGNATURE_OK = b"Signature Verified Successfully\n"
@@ -526,23 +527,32 @@ def collect(contract, recorder, rpc, binaries, opening, query, directory, enviro
     return Window(headers, query, provider, result)
 
 
-def oracle_requests(contract, window):
+def require_opening_frontier(opening, identifier, version, timestamp):
+    first = opening[2]
+    require(version == 3 and (identifier == first.identifier() and timestamp == first.timestamp
+            or identifier["height"] > first.height and timestamp > first.timestamp),
+            "closed_opening_frontier")
+
+
+def oracle_requests(contract, headers, frontier=None):
+    frontier = headers[-1].identifier() if frontier is None else frontier
     limit = contract.data["limits"]["oracle_targets_per_call"]
-    for offset in range(1, len(window.headers), limit):
-        targets = window.headers[offset:offset + limit]
-        raw = json.dumps({"expected_frontier": window.headers[-1].identifier(),
+    for offset in range(1, len(headers), limit):
+        targets = headers[offset:offset + limit]
+        raw = json.dumps({"expected_frontier": frontier,
             "targets": [header.identifier() for header in targets], "version": 1},
             sort_keys=True, separators=(",", ":"), allow_nan=False).encode("ascii") + b"\n"
         require(len(raw) <= 32 << 10, "closed_oracle_request_bound")
         yield raw, targets
 
 
-def oracle_schedule(contract, window, reports):
+def oracle_schedule(contract, headers, reports, frontier=None):
     """Require the closed ledger's own parent calculation for every target."""
+    frontier = headers[-1].identifier() if frontier is None else frontier
     reports = iter(reports)
     node = contract.data["sources"]["node"]["revision"]
     entries = []
-    for raw, targets in oracle_requests(contract, window):
+    for raw, targets in oracle_requests(contract, headers, frontier):
         report = next(reports, None)
         require(report is not None, "closed_oracle_report_count")
         exact_keys(report, ORACLE_FIELDS, "closed_oracle_report_fields")
@@ -551,12 +561,12 @@ def oracle_schedule(contract, window, reports):
                 and report["request_sha256"] == hashlib.sha256(raw).hexdigest()
                 and all(report[k] is True for k in ORACLE_TRUE)
                 and all(report[k] is False for k in ORACLE_FALSE), "closed_oracle_provenance")
-        same(report["genesis"], window.headers[0].identifier(), "closed_oracle_genesis")
-        same(report["frontier"], window.headers[-1].identifier(), "closed_oracle_frontier")
+        same(report["genesis"], headers[0].identifier(), "closed_oracle_genesis")
+        same(report["frontier"], frontier, "closed_oracle_frontier")
         rows = report["rows"]
         require(type(rows) is list and len(rows) == len(targets), "closed_oracle_row_count")
         for header, row in zip(targets, rows):
-            parent = window.headers[header.height - 2]
+            parent = headers[header.height - 2]
             exact_keys(row, ORACLE_ROW_FIELDS, "closed_oracle_row_fields")
             for key, value in {"header": header.identifier(), "parent": parent.identifier(),
                     "version": header.version, "state_root": header.root,
@@ -573,7 +583,7 @@ def oracle_schedule(contract, window, reports):
             uint(slot["proof_time"], minimum=0)
             proof_block = slot["proof_block"]
             exact_keys(proof_block, {"hash", "height"}, "closed_oracle_proof_block")
-            proof = window.headers[uint(proof_block["height"], maximum=parent.height) - 1]
+            proof = headers[uint(proof_block["height"], maximum=parent.height) - 1]
             same(proof_block, proof.identifier(), "closed_oracle_proof_block")
             same(slot["proof_block_timestamp"], proof.timestamp, "closed_oracle_proof_block_time")
             if header.version == 3:
@@ -581,8 +591,8 @@ def oracle_schedule(contract, window, reports):
                                 "producing_addr": producing_addr})
     require(next(reports, None) is None, "closed_oracle_report_count")
     schedule = {"chain_id": contract.data["selection"]["chain_id"],
-        "coverage": [{"from_height": window.headers[2].height,
-                      "through_height": window.headers[-1].height}], "entries": entries,
+        "coverage": [{"from_height": headers[2].height,
+                      "through_height": headers[-1].height}], "entries": entries,
         "generated_at": 0, "source_peers": [], "source_heights": {}}
     schedule["schedule_hash"] = schedule_hash(schedule).hex()
     return schedule
@@ -629,8 +639,8 @@ def query_inputs(contract, window, schedule, profile):
     return config, request, fingerprints(config, request)
 
 
-def read_closed_schedule(contract, recorder, engine, ledger, window, sources, binaries,
-                         directory, environment, guard, reader_source):
+def read_closed_parent_schedule(contract, recorder, engine, ledger, headers, frontier, sources, binaries,
+                                directory, environment, guard, reader_source):
     """Run only the source-bound oracle against the stopped owned volume."""
     require(LEDGER.fullmatch(ledger) is not None and engine.closed_ledger() == ledger,
             "closed_reader_ledger_binding")
@@ -647,7 +657,7 @@ def read_closed_schedule(contract, recorder, engine, ledger, window, sources, bi
     receipts = []
 
     def reports():
-        for index, (raw, _) in enumerate(oracle_requests(contract, window), 1):
+        for index, (raw, _) in enumerate(oracle_requests(contract, headers, frontier), 1):
             label = "parent-oracle-" + str(index).zfill(2)
             request = recorder.seal(label + ".request.json", raw)
             path = recorder.directory / request["file"]
@@ -660,16 +670,25 @@ def read_closed_schedule(contract, recorder, engine, ledger, window, sources, bi
             receipts.append({"request": request, "stdout": result.receipt["outputs"]["stdout"]})
             yield api_json(result.stdout(ORACLE_REPORT_BYTES), ORACLE_REPORT_BYTES)
 
-    schedule = oracle_schedule(contract, window, reports())
+    schedule = oracle_schedule(contract, headers, reports(), frontier)
     require(engine.closed_ledger() == ledger, "closed_reader_ledger_changed")
-    recorder.seal("closed-ledger-provenance.json", canonical({
+    provenance = {
         "format": "owned-devnet-closed-ledger-provenance/v1",
         "rpc_container_id": engine.owned["rpc"].identity, "engine_id": engine.admission.engine_id,
-        "genesis": window.headers[0].identifier(), "anchor": window.headers[1].identifier(),
-        "frontier": window.headers[-1].identifier(), "first_v3": window.headers[2].identifier(),
+        "genesis": headers[0].identifier(), "anchor": headers[1].identifier(),
+        "frontier": frontier, "first_v3": headers[2].identifier(),
         "oracle_binary": pin, "oracle_reports": receipts, "schedule_hash": schedule["schedule_hash"],
         "reader_source_sha256": hashlib.sha256(reader_source.encode("utf-8")).hexdigest(),
-        "ledger_copied": False, "ledger_opened_read_only": True}))
+        "ledger_copied": False, "ledger_opened_read_only": True}
+    return schedule, provenance
+
+
+def read_closed_schedule(contract, recorder, engine, ledger, window, sources, binaries,
+                         directory, environment, guard, reader_source):
+    schedule, provenance = read_closed_parent_schedule(contract, recorder, engine, ledger,
+        window.headers, window.headers[-1].identifier(), sources, binaries, directory, environment,
+        guard, reader_source)
+    recorder.seal("closed-ledger-provenance.json", canonical(provenance))
     return schedule
 
 

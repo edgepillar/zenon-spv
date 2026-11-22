@@ -456,6 +456,20 @@ can expose the actual exit and elapsed time from its bound start and completion
 receipts. A deposit timeout also requires the successful configuration receipt.
 Transaction submission stays unverified when the command output is incomplete.
 
+After a timed-out deposit with a quiescent process group, the reviewed
+reference-gas runner can retain the opening producer-slot observation. It
+stops the owned producers, executor, and gateway, captures one bounded RPC
+frontier, and closes the RPC node before reading its ledger. One invocation
+of the pinned read-only oracle covers the exact H2 and H3 hashes, with the
+captured frontier pinned separately. The diagnostic has a 120-second work
+deadline within the original budget and uses the existing cleanup reserve.
+
+Archive review checks the oracle input, original receipts, closed runtime,
+frontier, and both historical parent-slot bindings. The report describes
+the candidate opening and its source parent slots. The terminal outcome
+is the recorded deposit timeout. Header acceptance and transaction
+submission require their own evidence.
+
 For the reviewed reference-gas devnet source, a deposit timeout can retain
 `fixture-deposit-progress.json`. It records the ordered prefix of recognized,
 complete step lines and the private stdout pin. Raw stdout and stderr stay

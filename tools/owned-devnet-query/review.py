@@ -344,41 +344,30 @@ def recorded_opening_signatures(evidence, opening, observation, proof):
     return report
 
 
-def recorded_consumer(evidence, contract, checkout, selection, opening):
+def recorded_dispatch_selection(evidence, selection):
     same(evidence.json("dispatch-selection.json"), {"format": "owned-devnet-dispatch-selection/v1",
          "repository": REPOSITORY, **selection, "actor": "edgepillar", "host_attested": False,
          "explicit_dispatch_selected": True}, "review_dispatch_binding")
+
+
+def recorded_input_component(evidence, contract, role):
     components = contract.data["qualified_components"]
-    for role, workflow in WORKFLOWS.items():
-        component = components[role]
-        label = "input-" + role.replace("_", "-")
-        same(evidence.json(label + "-selection.json", folder="transport"), {
-            "component": role, "repository": REPOSITORY, "source_revision": components["source_revision"],
-            "workflow": workflow, "authenticated_distribution": False, "new_ci_execution_qualified": False,
-            **{key: component[key] for key in ("run_id", "run_attempt", "artifact_id", "archive")}},
-            "review_component_binding")
-        recorded_output(evidence, label + "-archive", f"artifact-{component['artifact_id']}.zip",
-                        folder="transport", external_pin=component["archive"])
+    component = components[role]
+    label = "input-" + role.replace("_", "-")
+    same(evidence.json(label + "-selection.json", folder="transport"), {
+        "component": role, "repository": REPOSITORY, "source_revision": components["source_revision"],
+        "workflow": WORKFLOWS[role], "authenticated_distribution": False, "new_ci_execution_qualified": False,
+        **{key: component[key] for key in ("run_id", "run_attempt", "artifact_id", "archive")}},
+        "review_component_binding")
+    recorded_output(evidence, label + "-archive", f"artifact-{component['artifact_id']}.zip",
+                    folder="transport", external_pin=component["archive"])
 
-    provider = evidence.json("provider.json", contract.data["limits"]["stdout_bytes"])
-    recorded_output(evidence, "collect-provider", "provider.json")
 
-    rows = provider["momentums"]
-    require(type(rows) is list and 0 < len(rows) < contract.data["limits"]["max_header_targets"],
-            "review_header_range")
-    query_selection = evidence.json("selected-query-header.json")
-    target_index = model.uint(query_selection["height"], len(rows) + 2, minimum=3) - 3
-    chain = contract.data["selection"]["chain_id"]
-    query, tip = (capture.Header.read(row, chain) for row in (rows[target_index], rows[-1]))
-    same(query_selection, query.identifier(), "review_query_header")
-    same(evidence.json("selected-capture-frontier.json"), tip.identifier(), "review_frontier")
-    window = capture.Window(capture.captured_headers(contract, opening, query, tip, provider),
-                            query, provider, None)
-
+def recorded_closed_schedule(evidence, contract, headers, frontier, provenance):
     oracle_outputs = []
 
     def oracle_reports():
-        for index, (request, _) in enumerate(capture.oracle_requests(contract, window), 1):
+        for index, (request, _) in enumerate(capture.oracle_requests(contract, headers, frontier), 1):
             label = f"parent-oracle-{index:02d}"
             name, output = label + ".request.json", label + ".stdout"
             require(evidence.bytes("evidence/" + name, 32 << 10) == request, "review_oracle_request")
@@ -386,12 +375,11 @@ def recorded_consumer(evidence, contract, checkout, selection, opening):
                                    "stdout": recorded_output(evidence, label, output)})
             yield evidence.json(output, capture.ORACLE_REPORT_BYTES)
 
-    schedule = capture.oracle_schedule(contract, window, oracle_reports())
-    provenance = evidence.json("closed-ledger-provenance.json")
+    schedule = capture.oracle_schedule(contract, headers, oracle_reports(), frontier)
     oracle_pin = contract.data["qualified_components"]["parent_oracle"]["binaries"][capture.ORACLE_NAME]
     for name, expected in {"format": "owned-devnet-closed-ledger-provenance/v1",
-            "genesis": opening[0].identifier(), "anchor": opening[1].identifier(),
-            "first_v3": opening[2].identifier(), "frontier": tip.identifier(), "oracle_binary": oracle_pin,
+            "genesis": headers[0].identifier(), "anchor": headers[1].identifier(),
+            "first_v3": headers[2].identifier(), "frontier": frontier, "oracle_binary": oracle_pin,
             "oracle_reports": oracle_outputs, "schedule_hash": schedule["schedule_hash"],
             "ledger_copied": False, "ledger_opened_read_only": True}.items():
         same(provenance[name], expected, "review_closed_ledger_binding")
@@ -409,6 +397,61 @@ def recorded_consumer(evidence, contract, checkout, selection, opening):
         closed[role] = model.digest(row["id"])
     require(len(set(closed.values())) == len(rows) and provenance["rpc_container_id"] == closed["rpc"],
             "review_owned_closure")
+    return schedule
+
+
+def recorded_closed_opening(evidence, contract, selection, terminal, timeout, opening, opening_observation,
+                           opening_proof, opening_signatures, frontiers):
+    path = "evidence/" + capture.CLOSED_OPENING_REPORT
+    if path not in evidence.pins:
+        return None
+    require(timeout is not None and timeout["command"] == fixture_progress.COMMAND
+            and timeout["process_group_quiescent"] is True and terminal["owned_runtime_observed_closed"] is True
+            and opening_signatures is not None and opening_proof is not None and opening_proof["presence"] == "absent"
+            and fixture_progress.supports(contract), "review_closed_opening_scope")
+    report = evidence.json(capture.CLOSED_OPENING_REPORT, 8 << 10)
+    exact_keys(report, {"format", "frontier_request_id", "closed_ledger"}, "review_closed_opening_fields")
+    same(report["format"], "owned-devnet-closed-opening-authorization/v1", "review_closed_opening_format")
+    request_id = model.uint(report["frontier_request_id"], capture.RPC_CALL_LIMIT)
+    require(frontiers and frontiers[-1]["request_id"] == request_id > opening_observation["request_id"],
+            "review_closed_opening_frontier_selection")
+    frontier = frontiers[-1]
+    capture.require_opening_frontier(opening, frontier["candidate_header"], frontier["version"], frontier["timestamp"])
+    provenance = report["closed_ledger"]
+    exact_keys(provenance, {"format", "rpc_container_id", "engine_id", "genesis", "anchor",
+        "frontier", "first_v3", "oracle_binary", "oracle_reports", "schedule_hash", "reader_source_sha256",
+        "ledger_copied", "ledger_opened_read_only"}, "review_closed_opening_provenance")
+    model.digest(provenance["engine_id"])
+    model.digest(provenance["reader_source_sha256"])
+    recorded_dispatch_selection(evidence, selection)
+    recorded_input_component(evidence, contract, "parent_oracle")
+    schedule = recorded_closed_schedule(evidence, contract, opening, frontier["candidate_header"], provenance)
+    return {"frontier_request_id": request_id, "closed_ledger_frontier": frontier["candidate_header"],
+            "target_headers": [header.identifier() for header in opening[1:]],
+            "v3_schedule_hash": schedule["schedule_hash"], "accepted_header_authority": False}
+
+
+def recorded_consumer(evidence, contract, checkout, selection, opening):
+    recorded_dispatch_selection(evidence, selection)
+    for role in WORKFLOWS:
+        recorded_input_component(evidence, contract, role)
+
+    provider = evidence.json("provider.json", contract.data["limits"]["stdout_bytes"])
+    recorded_output(evidence, "collect-provider", "provider.json")
+
+    rows = provider["momentums"]
+    require(type(rows) is list and 0 < len(rows) < contract.data["limits"]["max_header_targets"],
+            "review_header_range")
+    query_selection = evidence.json("selected-query-header.json")
+    target_index = model.uint(query_selection["height"], len(rows) + 2, minimum=3) - 3
+    chain = contract.data["selection"]["chain_id"]
+    query, tip = (capture.Header.read(row, chain) for row in (rows[target_index], rows[-1]))
+    same(query_selection, query.identifier(), "review_query_header")
+    same(evidence.json("selected-capture-frontier.json"), tip.identifier(), "review_frontier")
+    window = capture.Window(capture.captured_headers(contract, opening, query, tip, provider),
+                            query, provider, None)
+    schedule = recorded_closed_schedule(evidence, contract, window.headers, tip.identifier(),
+                                       evidence.json("closed-ledger-provenance.json"))
 
     descriptor, profile = capture.selected_profile(contract, checkout)
     config, request, pins = capture.query_inputs(contract, window, schedule, profile)
@@ -828,6 +871,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             opening, opening_observation = recorded_opening(evidence, contract)
         opening_proof = recorded_opening_proof(evidence, contract, checkout, opening, opening_observation, terminal)
         opening_signatures = recorded_opening_signatures(evidence, opening, opening_observation, opening_proof)
+        closed_opening = recorded_closed_opening(evidence, contract, selection, terminal, fixture_timeout,
+            opening, opening_observation, opening_proof, opening_signatures, frontiers)
         if accepted or (gateway_refusal and terminal["owned_runtime_observed_closed"]):
             require(opening is not None, "review_consumer_opening")
             if terminal["format"] in (model.TERMINAL_FORMAT_V2, model.TERMINAL_FORMAT):
@@ -859,6 +904,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["recorded_fixture_commands"] = fixture_commands
         if fixture_timeout is not None:
             report["recorded_fixture_timeout"] = fixture_timeout
+        if closed_opening is not None:
+            report["recorded_closed_opening_authorization"] = closed_opening
         if startup_sync is not None:
             report["startup_sync_diagnostic"] = startup_sync
         if post_sync is not None:

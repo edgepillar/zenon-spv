@@ -205,7 +205,7 @@ def accepted_files(*, gateway_matches=True, terminal_format=None):
         opening_witness = witnesses["batch_entry"]
         contract, headers, window = synthetic_window(state_root=root)
     oracle_reports = list(synthetic_reports(contract, window))
-    schedule = capture.oracle_schedule(contract, window, oracle_reports)
+    schedule = capture.oracle_schedule(contract, window.headers, oracle_reports)
     config, request, pins = capture.query_inputs(contract, window, schedule, profile)
     provider = {**window.provider, "witnesses": witnesses, "gateway": {
         "domainId": 1, "batchId": 0, "isFinalized": False,
@@ -290,7 +290,7 @@ def accepted_files(*, gateway_matches=True, terminal_format=None):
         output(label + "-archive", f"artifact-{component['artifact_id']}.zip",
                folder="transport", external_pin=component["archive"])
     reports = []
-    for index, ((raw, _), report) in enumerate(zip(capture.oracle_requests(contract, window), oracle_reports), 1):
+    for index, ((raw, _), report) in enumerate(zip(capture.oracle_requests(contract, window.headers), oracle_reports), 1):
         label = f"parent-oracle-{index:02d}"
         request_file = label + ".request.json"
         files["evidence/" + request_file] = raw
@@ -1155,6 +1155,97 @@ class ReviewTests(unittest.TestCase):
         for changed, selected, reason in invalid:
             with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
                 self.review(make_archive(changed), selected)
+
+    def closed_opening_files(self):
+        contract, files, _, timeout_path = self.fixture_timeout_files(progress_source=True)
+        _, original = accepted_files(terminal_format=model.TERMINAL_FORMAT)
+        files["evidence/terminal.json"] = canonical({
+            **json.loads(files["evidence/terminal.json"]), "owned_runtime_observed_closed": True})
+        files.update({name: raw for name, raw in original.items() if name.startswith("transport/input-parent-oracle")})
+        files["evidence/owned-container-cleanup.json"] = original["evidence/owned-container-cleanup.json"]
+        files["evidence/dispatch-selection.json"] = canonical({
+            **json.loads(original["evidence/dispatch-selection.json"]), "contract_sha256": contract.sha256})
+        opening_rows = json.loads(files["evidence/" + capture.OPENING_FILE])["result"]["list"]
+        opening = capture.opening_headers(contract, opening_rows)
+        frontier_row = json.loads(original["evidence/provider.json"])["momentums"][-1]
+        frontier = capture.Header.read(frontier_row, contract.data["selection"]["chain_id"]).identifier()
+        files["evidence/rpc-09.request.json"] = canonical(
+            {"jsonrpc": "2.0", "id": 9, "method": "ledger.getFrontierMomentum", "params": []})
+        last = "rpc-09.frontier.json"
+        raw = canonical({"jsonrpc": "2.0", "id": 9, "result": frontier_row})
+        files["evidence/" + last] = raw
+        files["evidence/rpc-09.started.json"] = canonical({
+            **json.loads(original["evidence/rpc-02.started.json"]), "label": "rpc-09"})
+        files["evidence/rpc-09.complete.json"] = canonical({
+            **json.loads(original["evidence/rpc-02.complete.json"]), "label": "rpc-09",
+            "outputs": {"stdout": {"file": last, **pin(raw)}}})
+        ((request, _),) = capture.oracle_requests(contract, opening, frontier)
+        request_file = "parent-oracle-01.request.json"
+        response_file = "parent-oracle-01.stdout"
+        oracle = json.loads(original["evidence/" + response_file])
+        oracle.update(rows=oracle["rows"][:2], request_sha256=pin(request)["sha256"])
+        schedule = capture.oracle_schedule(contract, opening, [oracle], frontier)
+        response = canonical(oracle)
+        stdout = {"file": response_file, **pin(response)}
+        files.update({"evidence/" + request_file: request, "evidence/" + response_file: response,
+            "evidence/parent-oracle-01.started.json": original["evidence/parent-oracle-01.started.json"],
+            "evidence/parent-oracle-01.complete.json": canonical({
+                **json.loads(original["evidence/parent-oracle-01.complete.json"]), "outputs": {"stdout": stdout}})})
+        provenance = {**json.loads(original["evidence/closed-ledger-provenance.json"]),
+            "engine_id": "e" * 64, "reader_source_sha256": "f" * 64, "schedule_hash": schedule["schedule_hash"],
+            "oracle_reports": [{"request": {"file": request_file, **pin(request)}, "stdout": stdout}]}
+        files["evidence/" + capture.CLOSED_OPENING_REPORT] = canonical({
+            "format": "owned-devnet-closed-opening-authorization/v1",
+            "frontier_request_id": 9, "closed_ledger": provenance})
+        return contract, files, timeout_path, opening
+
+    def test_closed_opening_replays_only_two_parents_at_the_later_closed_frontier(self):
+        contract, files, _, opening = self.closed_opening_files()
+        report = self.review(make_archive(files), contract)
+        observed = report["recorded_closed_opening_authorization"]
+        self.assertEqual(observed["frontier_request_id"], 9)
+        self.assertEqual(observed["closed_ledger_frontier"]["height"], 5)
+        self.assertEqual(observed["target_headers"], [header.identifier() for header in opening[1:]])
+        self.assertFalse(observed["accepted_header_authority"])
+        self.assertEqual(report["recorded_terminal_outcome"], "UNKNOWN")
+        self.assertFalse(report["recorded_fixture_timeout"]["transaction_submission_verified"])
+        self.assertIsNone(report["comparison"])
+
+    def test_closed_opening_requires_quiescence_owned_closure_and_bound_inputs(self):
+        contract, files, timeout_path, _ = self.closed_opening_files()
+        report_path = "evidence/" + capture.CLOSED_OPENING_REPORT
+        terminal_path = "evidence/terminal.json"
+        for path, changed, reason in (
+                (timeout_path, {"process_group_quiescent": False}, "review_closed_opening_scope"),
+                (terminal_path, {"owned_runtime_observed_closed": False}, "review_closed_opening_scope"),
+                (report_path, {"frontier_request_id": 8}, "review_closed_opening_frontier_selection")):
+            altered = canonical({**json.loads(files[path]), **changed})
+            with self.subTest(path=path), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive({**files, path: altered}), contract)
+        path = "transport/input-parent-oracle-selection.json"
+        with self.assertRaisesRegex(Refused, "review_component_binding"):
+            self.review(make_archive({**files, path: canonical({
+                **json.loads(files[path]), "artifact_id": 1})}), contract)
+
+    def test_closed_opening_rechecks_request_frontier_and_evidence_bound_parent(self):
+        contract, files, _, _ = self.closed_opening_files()
+        report_path = "evidence/" + capture.CLOSED_OPENING_REPORT
+        request_path = "evidence/parent-oracle-01.request.json"
+        request = json.loads(files[request_path])
+        request["expected_frontier"]["hash"] = "1" * 64
+        with self.assertRaisesRegex(Refused, "review_oracle_request"):
+            self.review(make_archive({**files, request_path: canonical(request)}), contract)
+        stdout = "evidence/parent-oracle-01.stdout"
+        raw = json.loads(files[stdout])
+        raw["rows"][1]["parent"]["hash"] = "2" * 64
+        raw = canonical(raw)
+        pin_row = {"file": "parent-oracle-01.stdout", **pin(raw)}
+        receipt = "evidence/parent-oracle-01.complete.json"
+        summary = json.loads(files[report_path])
+        summary["closed_ledger"]["oracle_reports"][0]["stdout"] = pin_row
+        with self.assertRaisesRegex(Refused, "closed_oracle_header_or_parent_binding"):
+            self.review(make_archive({**files, stdout: raw, report_path: canonical(summary),
+                receipt: canonical({**json.loads(files[receipt]), "outputs": {"stdout": pin_row}})}), contract)
 
     def test_replays_retained_opening_after_a_nonaccepting_terminal_outcome(self):
         for outcome in ("FAILURE", "REFUSED", "UNKNOWN"):
