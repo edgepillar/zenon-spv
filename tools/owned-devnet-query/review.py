@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime
 import hashlib
+import json
 from pathlib import Path
 import re
 import struct
@@ -509,6 +510,53 @@ def diagnostic_receipt(evidence, label, reason):
     return receipt
 
 
+def recorded_resources(evidence, contract):
+    commands = {}
+    for label in ("fixture-configure", "fixture-deposit"):
+        receipt = diagnostic_receipt(evidence, label, "review_resource_command")
+        if receipt is None or receipt.get("launch_outcome") != "STARTED":
+            continue
+        recorded_command_start(evidence, label, receipt, "evidence")
+        require(type(receipt.get("process_group_quiescent")) is bool, "review_resource_command")
+        if receipt["output_complete"]:
+            require(receipt["actual_exit"] is not None and receipt["process_group_quiescent"]
+                    and receipt["reason"] is None, "review_resource_command")
+        commands[label] = {name: receipt[name] for name in
+                           ("actual_exit", "output_complete", "process_group_quiescent")}
+        commands[label]["elapsed_nanoseconds"] = model.uint(receipt["elapsed_nanoseconds"], minimum=0)
+        commands[label]["completion"] = evidence.pins[f"evidence/{label}.complete.json"]
+
+    sampled_disk = None
+    budget = "budget-report.json"
+    path = "evidence/" + budget
+    if path in evidence.pins:
+        raw = evidence.bytes(path, 4096)
+        try:
+            # The monotonic sample timestamp is a float. Keep API metadata
+            # on its separate integer-only parser.
+            observation = json.loads(raw.decode("utf-8"))
+            encoded = canonical(observation)
+        except (ValueError, RecursionError) as error:
+            raise Refused("review_resource_budget_encoding") from error
+        require(type(observation) is dict and encoded == raw, "review_resource_budget_encoding")
+        same(observation["format"], "owned-devnet-budget-observation/v1", "review_resource_budget")
+        first_free = model.uint(observation["initial"]["free_bytes"], minimum=0)
+        samples = model.uint(observation["samples"])
+        peak = model.uint(observation["peak_observed_new_disk_bytes"], minimum=0)
+        last = observation["last_sample"]
+        last_free = model.uint(last["free_bytes"], minimum=0)
+        last_delta = model.uint(last["observed_new_disk_bytes"], minimum=0)
+        elapsed = last["elapsed_seconds"]
+        reserve = model.uint(observation["cleanup_reserve_seconds"], 600, minimum=60)
+        require(type(elapsed) in (int, float)
+                and 0 <= elapsed < contract.data["limits"]["max_elapsed_seconds"] - reserve
+                and peak >= last_delta == max(0, first_free - last_free), "review_resource_budget")
+        sampled_disk = {"samples": samples, "initial_free_bytes": first_free,
+                        "last_sample_elapsed_seconds": elapsed, "peak_observed_new_disk_bytes": peak,
+                        "observation": evidence.pins[path]}
+    return {"fixture_commands": commands, "sampled_disk": sampled_disk}
+
+
 def recorded_startup_sync(evidence, terminal):
     path = "evidence/" + capture.SYNC_REPORT
     bodies = {name for name in evidence.pins if name.endswith(".sync-info.json")}
@@ -818,7 +866,7 @@ def recorded_startup_nodes(evidence, terminal):
             "original_log_text_independently_rechecked": False, "accepted_header_authority": False}
 
 
-def review_stream(stream, archive_pin, source_revision, run_id, contract, checkout):
+def review_stream(stream, archive_pin, source_revision, run_id, contract, checkout, *, include_resources=False):
     model.pin(archive_pin, MAX_ARCHIVE)
     model.digest(source_revision, model.HEX40)
     model.uint(run_id)
@@ -884,6 +932,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
                 matched = comparison
             else:
                 gateway_mismatch = comparison
+        resources = recorded_resources(evidence, contract) if include_resources and binding_present else None
         evidence.verify_remaining()
         report = {"format": "owned-devnet-evidence-review/v1",
                 "status": "RECORDED_CONSUMER_BYTES_MATCH" if matched else "RECORDED_NON_ACCEPTING_OUTCOME",
@@ -892,6 +941,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
                 "comparison": matched, "materialized_bytes": 0, "native_consumer_reexecuted": False,
                 "hosted_run_provenance_checked": False, "new_devnet_acceptance_established": False,
                 "production_qualified": False}
+        if include_resources:
+            report["recorded_resource_observations"] = resources
         if frontiers:
             report["candidate_frontier_observations"] = frontiers
         if opening_observation is not None and not accepted:
@@ -935,6 +986,8 @@ def main(argv=None, stdout=None, stderr=None):
         parser.add_argument("--expect-artifact-id", type=int, required=True)
     if mode != "select-hosted":
         parser.add_argument("--archive", type=Path, required=True)
+        parser.add_argument("--include-resources", action="store_true",
+                            help="Report retained fixture durations and sampled disk use.")
     if not hosted:
         parser.add_argument("--expect-archive-sha256", required=True)
         parser.add_argument("--expect-archive-bytes", type=int, required=True)
@@ -965,7 +1018,8 @@ def main(argv=None, stdout=None, stderr=None):
         else:
             report = inputs._read_archive_file(args.archive, archive_pin["bytes"],
                 lambda stream: review_stream(stream, archive_pin, args.expect_source_revision,
-                                             args.expect_run_id, contract, HERE.parents[1]))
+                                             args.expect_run_id, contract, HERE.parents[1],
+                                             include_resources=args.include_resources))
             matched = report["comparison"] is not None
             if mode == "review-hosted":
                 execution = selected["execution_conclusion"]

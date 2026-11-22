@@ -456,6 +456,14 @@ can expose the actual exit and elapsed time from its bound start and completion
 receipts. A deposit timeout also requires the successful configuration receipt.
 Transaction submission stays unverified when the command output is incomplete.
 
+Add `--include-resources` to either archive review command to compare retained
+configuration and deposit durations with sampled runner disk use. The optional
+report checks the command start bindings and disk sample arithmetic and retains
+the corresponding member digests. A missing command or disk sample stays absent.
+The last sample time and sampled peak describe the recorded runner observation.
+The review reads the original archive in place and preserves its terminal outcome.
+Existing calls keep the same output and exit codes.
+
 After a timed-out deposit with a quiescent process group, the reviewed
 reference-gas runner can retain the opening producer-slot observation. It
 stops the owned producers, executor, and gateway, captures one bounded RPC
