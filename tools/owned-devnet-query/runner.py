@@ -16,6 +16,7 @@ from artifacts import API_LIMIT, Artifacts, api_json
 from budget import Budget, evidence_bytes
 import capture
 from engine import Engine, NODE_ROLES, STOP_STATE_FILE
+import fixture_progress
 from images import Builder
 import model
 from model import Refused, canonical, require, same
@@ -34,7 +35,8 @@ REVIEW_FILES = {"dispatch-selection.json", "engine-admission.json", "image-prepa
     "selected-query-header.json", "selected-capture-frontier.json", "closed-ledger-provenance.json",
     "query-config.json", "query-request.json", "query-context-pins.json", "consumer-comparison.json",
     "owned-container-cleanup.json", "budget-report.json", "terminal.json",
-    "input-consumer-selection.json", "input-parent-oracle-selection.json", "node-toolchain-intake.json"}
+    "input-consumer-selection.json", "input-parent-oracle-selection.json", "node-toolchain-intake.json",
+    fixture_progress.REPORT}
 
 
 def fresh_directory(path):
@@ -98,9 +100,14 @@ def fixture_flow(contract, recorder, engine, sources, node, prepared, phase, gua
     environment = prepared.environment
     environment.update({key: value for key, value in engine.environment.items() if key.startswith("DOCKER_")})
     tsx = source_root / "node_modules/tsx/dist/cli.mjs"
-    recorder.run("fixture-" + phase, [str(node.node), str(tsx), script, *arguments], source_root,
-                 environment, guard=guard, timeout=timeout, stdout_cap=model.FIXTURE_OUTPUT_BYTES,
-                 stderr_cap=model.FIXTURE_OUTPUT_BYTES)
+    try:
+        recorder.run("fixture-" + phase, [str(node.node), str(tsx), script, *arguments], source_root,
+                     environment, guard=guard, timeout=timeout, stdout_cap=model.FIXTURE_OUTPUT_BYTES,
+                     stderr_cap=model.FIXTURE_OUTPUT_BYTES)
+    except CommandFailed as error:
+        if phase == "deposit" and error.result.receipt["reason"] == "timeout" and fixture_progress.supports(contract):
+            recorder.seal(fixture_progress.REPORT, canonical(fixture_progress.observe(error.result)))
+        raise
     sources.verify()
     engine.require_running_closure(NODE_ROLES if phase == "configure" else model.SERVICES)
 

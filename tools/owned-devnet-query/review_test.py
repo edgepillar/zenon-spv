@@ -20,6 +20,7 @@ sys.path.insert(0, str(HERE))
 import capture
 from artifacts import WORKFLOWS
 from capture_test import CONTRACT, consumer_failure_fixture, synthetic_reports, synthetic_window
+import fixture_progress
 import model
 from model import Refused, canonical
 import query_checks as checks
@@ -1064,6 +1065,96 @@ class ReviewTests(unittest.TestCase):
         self.assertEqual(report["recorded_terminal_outcome"], "FAILURE")
         self.assertIsNone(report["comparison"])
         self.assertNotIn("recorded_fixture_commands", report)
+
+    def fixture_timeout_files(self, stage="fixture-deposit", *, progress_source=False):
+        contract, original = accepted_files(terminal_format=model.TERMINAL_FORMAT)
+        if progress_source:
+            data = contract.data
+            selected = model.read_contract(HERE / "reference-gas-renewal-1-contract.json")
+            data["sources"]["devnet"] = selected.data["sources"]["devnet"]
+            raw = canonical(data)
+            contract = model.Contract(raw, pin(raw)["sha256"])
+        prefixes = ("evidence/opening-", "evidence/rpc-02.", "evidence/rpc-03.", "evidence/fixture-configure.")
+        if stage == "fixture-deposit":
+            prefixes += ("evidence/fixture-deposit.",)
+        files = {name: raw for name, raw in original.items() if name.startswith(prefixes)}
+        files["evidence/terminal.json"] = canonical({**terminal("UNKNOWN", contract),
+            "format": model.TERMINAL_FORMAT, "stage": stage})
+        label = "fixture-deposit" if stage == "fixture-deposit" else "fixture-configure"
+        path = f"evidence/{label}.complete.json"
+        receipt = json.loads(files[path])
+        receipt.update(reason="timeout", actual_exit=143, output_complete=False, elapsed_nanoseconds=420_000_000_000)
+        files[path] = canonical(receipt)
+        return contract, files, label, path
+
+    def test_fixture_timeout_preserves_exit_and_leaves_submission_unverified(self):
+        for stage in ("fixture-configuration", "fixture-deposit"):
+            with self.subTest(stage=stage):
+                contract, files, label, path = self.fixture_timeout_files(stage)
+                result = self.review(make_archive(files), contract)
+                self.assertEqual(result["recorded_fixture_timeout"], {"stage": stage, "command": label,
+                    "reason": "timeout", "actual_exit": 143, "output_complete": False,
+                    "elapsed_nanoseconds": 420_000_000_000, "process_group_quiescent": True,
+                    "completion": pin(files[path]), "transaction_submission_verified": False})
+                self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
+                self.assertIsNone(result["comparison"])
+                self.assertNotIn("recorded_fixture_commands", result)
+
+    def test_fixture_timeout_requires_start_binding_prior_configuration_and_no_consumer(self):
+        contract, files, _, path = self.fixture_timeout_files()
+        invalid = (
+            ({**files, path: canonical({**json.loads(files[path]), "process_group": 43})},
+             "review_recorded_command_start"),
+            ({k: v for k, v in files.items() if k != "evidence/fixture-configure.complete.json"},
+             "review_member_bound"),
+            ({**files, path: canonical({**json.loads(files[path]), "output_complete": True})},
+             "review_fixture_timeout_scope"),
+            ({**files, "evidence/consume-query.started.json": self.files["evidence/consume-query.started.json"]},
+             "review_fixture_timeout_scope"),
+        )
+        for changed, reason in invalid:
+            with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive(changed), contract)
+
+    def test_fixture_progress_preserves_the_timeout_and_unverified_submission(self):
+        contract, files, _, path = self.fixture_timeout_files(progress_source=True)
+        for markers in (None, [], ["vault_artifacts", "vault_deploy_started"]):
+            with self.subTest(markers=markers):
+                summary = {"format": fixture_progress.FORMAT, "reported_checkpoints": markers,
+                           "stdout": json.loads(files[path])["outputs"]["stdout"]}
+                archive = make_archive({**files, "evidence/" + fixture_progress.REPORT: canonical(summary)})
+                result = self.review(archive, contract)
+                timeout = result["recorded_fixture_timeout"]
+                self.assertEqual(timeout["progress"], {**summary, "original_stdout_independently_rechecked": False})
+                self.assertFalse(timeout["transaction_submission_verified"])
+                self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
+                self.assertIsNone(result["comparison"])
+
+    def test_fixture_progress_requires_the_selected_source_and_a_bound_timeout_prefix(self):
+        contract, files, _, path = self.fixture_timeout_files(progress_source=True)
+        receipt = json.loads(files[path])
+        summary = {"format": fixture_progress.FORMAT, "reported_checkpoints": ["vault_artifacts"],
+                   "stdout": receipt["outputs"]["stdout"]}
+        report = "evidence/" + fixture_progress.REPORT
+        invalid = (
+            ({**files, report: canonical({**summary, "reported_checkpoints": ["deposit_step"]})},
+             contract, "review_fixture_progress_checkpoints"),
+            ({**files, report: canonical({**summary, "original_stdout": "private diagnostic"})},
+             contract, "review_fixture_progress_fields"),
+            ({**files, report: canonical({**summary, "stdout": {**summary["stdout"], "sha256": "1" * 64}})},
+             contract, "review_fixture_progress_stdout"),
+            ({**files, report: canonical(summary), path: canonical({**receipt, "process_group_quiescent": False})},
+             contract, "review_fixture_progress_checkpoints"),
+            ({**files, report: canonical(summary), path: canonical({**receipt, "reason": "guard_refused"})},
+             contract, "review_fixture_progress_scope"),
+            ({**files, report: canonical(summary), "evidence/fixture-deposit.stderr": b"private"},
+             contract, "review_member_selection"),
+        )
+        other, other_files, _, _ = self.fixture_timeout_files()
+        invalid += (({**other_files, report: canonical(summary)}, other, "review_fixture_progress_scope"),)
+        for changed, selected, reason in invalid:
+            with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive(changed), selected)
 
     def test_replays_retained_opening_after_a_nonaccepting_terminal_outcome(self):
         for outcome in ("FAILURE", "REFUSED", "UNKNOWN"):

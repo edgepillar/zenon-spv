@@ -17,6 +17,7 @@ sys.path.insert(0, str(HERE))
 
 import capture
 from capture import OPENING_BYTES, OPENING_FILE
+import fixture_progress
 import inputs
 import model
 import node_diagnostics as node_diag
@@ -174,6 +175,13 @@ class Evidence:
             same({"bytes": size, "sha256": digest.hexdigest()}, self.pins[name], "review_member_digest")
 
 
+def recorded_command_start(evidence, label, receipt, folder):
+    group = model.uint(receipt["process_group"])
+    same(evidence.json(label + ".started.json", folder=folder), {"format": "owned-devnet-command-started/v1",
+         "label": label, "pid": group, "process_group": group, "new_session_requested": True},
+         "review_recorded_command_start")
+
+
 def recorded_completion(evidence, label, *, folder="evidence", actual_exit=0):
     receipt = evidence.json(label + ".complete.json", folder=folder)
     require(receipt.get("format") == "owned-devnet-command-capture/v1"
@@ -181,10 +189,7 @@ def recorded_completion(evidence, label, *, folder="evidence", actual_exit=0):
             and type(receipt.get("actual_exit")) is int and receipt["actual_exit"] == actual_exit
             and receipt.get("output_complete") is True and receipt.get("reason") is None
             and receipt.get("process_group_quiescent") is True, "review_recorded_command_completion")
-    group = model.uint(receipt["process_group"])
-    same(evidence.json(label + ".started.json", folder=folder), {"format": "owned-devnet-command-started/v1",
-         "label": label, "pid": group, "process_group": group, "new_session_requested": True},
-         "review_recorded_command_start")
+    recorded_command_start(evidence, label, receipt, folder)
     return receipt
 
 
@@ -209,6 +214,31 @@ def recorded_fixture_commands(evidence):
         commands[label] = {"start": evidence.pins[f"evidence/{label}.started.json"],
                            "completion": evidence.pins[f"evidence/{label}.complete.json"]}
     return commands
+
+
+def recorded_fixture_timeout(evidence, terminal, binding_present):
+    stage = terminal["stage"]
+    labels = {"fixture-configuration": "fixture-configure", "fixture-deposit": "fixture-deposit"}
+    label = labels.get(stage) if type(stage) is str else None
+    if label is None or terminal["format"] != model.TERMINAL_FORMAT or terminal["reason"] != "command_incomplete":
+        return None
+    receipt = diagnostic_receipt(evidence, label, "review_fixture_timeout_receipt")
+    if receipt is None or receipt.get("reason") != "timeout":
+        return None
+    require(binding_present and terminal["outcome"] == "UNKNOWN" and receipt["output_complete"] is False
+            and receipt.get("launch_outcome") == "STARTED"
+            and type(receipt.get("process_group_quiescent")) is bool
+            and "evidence/consume-query.started.json" not in evidence.pins, "review_fixture_timeout_scope")
+    recorded_command_start(evidence, label, receipt, "evidence")
+    if label == "fixture-deposit":
+        recorded_completion(evidence, "fixture-configure")
+    else:
+        require("evidence/fixture-deposit.started.json" not in evidence.pins, "review_fixture_timeout_scope")
+    return {"stage": stage, "command": label, "reason": "timeout", "actual_exit": receipt["actual_exit"],
+            "output_complete": False, "elapsed_nanoseconds": model.uint(receipt["elapsed_nanoseconds"]),
+            "process_group_quiescent": receipt["process_group_quiescent"],
+            "completion": evidence.pins[f"evidence/{label}.complete.json"],
+            "transaction_submission_verified": False}
 
 
 def recorded_consumer_failure(evidence, terminal, binding_present):
@@ -776,6 +806,10 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         startup_peers = recorded_startup_peer_frontiers(evidence, terminal, post_sync, contract)
         startup_nodes = recorded_startup_nodes(evidence, terminal)
         file_logs = node_file_logs.recorded(evidence, terminal, startup_nodes, diagnostic_receipt)
+        fixture_timeout = recorded_fixture_timeout(evidence, terminal, binding_present)
+        fixture_checkpoint_report = fixture_progress.recorded(evidence, contract, fixture_timeout)
+        if fixture_checkpoint_report is not None:
+            fixture_timeout["progress"] = fixture_checkpoint_report
         consumer_failure = recorded_consumer_failure(evidence, terminal, binding_present)
         accepted = reported == "DEVNET_CONSUMER_ACCEPTED"
         gateway_refusal = terminal["reason"] == "gateway_stored_fields_differ"
@@ -823,6 +857,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["recorded_opening_signatures"] = opening_signatures
         if fixture_commands is not None:
             report["recorded_fixture_commands"] = fixture_commands
+        if fixture_timeout is not None:
+            report["recorded_fixture_timeout"] = fixture_timeout
         if startup_sync is not None:
             report["startup_sync_diagnostic"] = startup_sync
         if post_sync is not None:

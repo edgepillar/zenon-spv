@@ -451,6 +451,20 @@ It also binds a present opening proof to a refusal before signature checks and
 fixture commands. The reader reviews prior versions under their recorded rules
 and verifies the stages reached by each early failure.
 
+When a version-3 fixture configuration or deposit command times out, the reader
+can expose the actual exit and elapsed time from its bound start and completion
+receipts. A deposit timeout also requires the successful configuration receipt.
+Transaction submission stays unverified when the command output is incomplete.
+
+For the reviewed reference-gas devnet source, a deposit timeout can retain
+`fixture-deposit-progress.json`. It records the ordered prefix of recognized,
+complete step lines and the private stdout pin. Raw stdout and stderr stay
+private. An empty list means no recognized prefix was captured. A null list
+means the captured stdout was unavailable for validation. The archive reviewer
+checks the diagnostic against the bound command receipt and identifies it as a
+runner observation. The terminal outcome and transaction submission status
+still come from their existing checks.
+
 Exit 0 reports `RECORDED_CONSUMER_BYTES_MATCH`. This is agreement among the
 retained records and independently recomputed bytes. The original run identity,
 native signature verification, producer authority and any selected-network
@@ -507,6 +521,7 @@ python3 -I -B tools/owned-devnet-query/images_test.py
 python3 -I -B tools/owned-devnet-query/budget_test.py
 python3 -I -B tools/owned-devnet-query/query_checks_test.py
 python3 -I -B tools/owned-devnet-query/capture_test.py
+python3 -I -B tools/owned-devnet-query/fixture_progress_test.py
 python3 -I -B tools/owned-devnet-query/review_test.py
 python3 -I -B tools/owned-devnet-query/node_diagnostics_test.py
 python3 -I -B tools/owned-devnet-query/node_file_logs_test.py
