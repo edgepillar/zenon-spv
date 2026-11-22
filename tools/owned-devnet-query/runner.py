@@ -214,6 +214,22 @@ def publish_paths(path, workspace, entries):
         stream.write("SPV_OWNED_EVIDENCE_END\n")
 
 
+def closed_opening_after_timeout(contract, record, engine, rpc, opening, sources, oracle,
+                                 workspace, tool_environment, budget, reader_source):
+    budget.cap_diagnostic_time(120)
+    engine.stop_producers_and_clients()
+    frontier = rpc.frontier()
+    request_id = rpc.calls
+    identifier = frontier.identifier()
+    capture.require_opening_frontier(opening, identifier, frontier.version, frontier.timestamp)
+    ledger = engine.close_rpc()
+    _, provenance = capture.read_closed_parent_schedule(contract, record, engine, ledger,
+        opening, identifier, sources, oracle, workspace, tool_environment, budget.check, reader_source)
+    budget.check(force=True)
+    return {"format": "owned-devnet-closed-opening-authorization/v1",
+            "frontier_request_id": request_id, "closed_ledger": provenance}
+
+
 def execute(environment, workspace, checkout):
     record = Recorder(workspace / "evidence")
     transport = Recorder(workspace / "transport")
@@ -222,7 +238,7 @@ def execute(environment, workspace, checkout):
     gh_environment = dict(tool_environment, GH_TOKEN=environment["GH_TOKEN"],
         GH_HOST="github.com", GH_CONFIG_DIR=str(private / "gh"), GH_PROMPT_DISABLED="1",
         GH_NO_UPDATE_NOTIFIER="1", GH_NO_EXTENSION_UPDATE_NOTIFIER="1")
-    engine = budget = execution = contract = rpc = None
+    engine = budget = execution = contract = rpc = closed_opening = None
     stage, outcome, reason = "dispatch", "UNKNOWN", None
     extra = set()
     try:
@@ -314,7 +330,7 @@ def execute(environment, workspace, checkout):
         ledger = engine.close_rpc()
         schedule = capture.read_closed_schedule(contract, record, engine, ledger, window, sources,
                                                 oracle, workspace, tool_environment, guard, reader_source)
-        for index, _ in enumerate(capture.oracle_requests(contract, window), 1):
+        for index, _ in enumerate(capture.oracle_requests(contract, window.headers), 1):
             extra.update({f"parent-oracle-{index:02d}.request.json", f"parent-oracle-{index:02d}.stdout"})
         stage = "consumer"
         matched = capture.query(contract, record, window, schedule, descriptor, profile, consumer,
@@ -325,9 +341,19 @@ def execute(environment, workspace, checkout):
         require(matched["gateway_stored_fields_match"] is True, "gateway_stored_fields_differ")
         outcome = "DEVNET_CONSUMER_ACCEPTED"
     except CommandFailed as error:
-        outcome = "FAILURE" if error.result.receipt["output_complete"] is True else "UNKNOWN"
+        receipt = error.result.receipt
+        outcome = "FAILURE" if receipt["output_complete"] is True else "UNKNOWN"
         reason = "command_failed" if outcome == "FAILURE" else "command_incomplete"
-        if stage == "consumer" and capture.retainable_consumer_failure(error.result):
+        if (stage == "fixture-deposit" and outcome == "UNKNOWN" and receipt.get("label") == fixture_progress.COMMAND
+                and receipt["reason"] == "timeout" and receipt["process_group_quiescent"] is True
+                and fixture_progress.supports(contract)):
+            try:
+                closed_opening = closed_opening_after_timeout(contract, record, engine, rpc, opening, sources,
+                    oracle, workspace, tool_environment, budget, reader_source)
+            except (OSError, ValueError, KeyError, TypeError):
+                # Retain command receipts and the primary timeout even if this diagnostic is incomplete.
+                pass
+        elif stage == "consumer" and capture.retainable_consumer_failure(error.result):
             extra.add(capture.CONSUMER_STDOUT)
             reason = "consumer_reported_failure"
     except Refused as error:
@@ -344,6 +370,9 @@ def execute(environment, workspace, checkout):
             except (OSError, ValueError, KeyError, TypeError):
                 closure = None
         closed = closure is not None and all(row["observed_closed"] is True for row in closure)
+        if closed_opening is not None and closed and len(closure) == len(model.SERVICES):
+            record.seal(capture.CLOSED_OPENING_REPORT, canonical(closed_opening))
+            extra.update({capture.CLOSED_OPENING_REPORT, "parent-oracle-01.request.json", "parent-oracle-01.stdout"})
         if budget is not None:
             record.seal("budget-report.json", canonical(budget.report()))
         if outcome == "DEVNET_CONSUMER_ACCEPTED" and not closed:

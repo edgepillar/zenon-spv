@@ -122,6 +122,20 @@ class BudgetTests(unittest.TestCase):
             with self.assertRaisesRegex(model.Refused, "new_work_deadline"):
                 instance.check()
 
+    def test_diagnostic_time_cap_preserves_the_existing_cleanup_reserve(self):
+        for already_elapsed, allowed, reason in ((0, 120, "diagnostic_deadline"),
+                                                 (2390, 10, "new_work_deadline")):
+            with self.subTest(reason=reason), tempfile.TemporaryDirectory(prefix="budget-diagnostic-") as temporary:
+                instance, _, clock, _ = self.prepare(Path(temporary))
+                clock[0] += already_elapsed
+                instance.cap_diagnostic_time(120)
+                clock[0] += allowed - 0.125
+                instance.check()
+                clock[0] += 0.125
+                with self.assertRaisesRegex(model.Refused, reason):
+                    instance.check()
+                self.assertEqual(instance.report()["cleanup_reserve_seconds"], 300)
+
     def test_sampling_backoff_does_not_skip_deadline_or_allow_a_backward_clock(self):
         for delta in (-0.01, 2400):
             with self.subTest(delta=delta):

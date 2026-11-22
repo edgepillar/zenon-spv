@@ -110,6 +110,7 @@ class Budget:
         self.last_time, self.last = None, None
         self.peak_new_disk, self.peak_evidence, self.samples = 0, 0, 0
         self.failure = None
+        self.diagnostic_deadline = None
         self.engine_filesystem_bound = False
         self.check(force=True)
 
@@ -122,6 +123,12 @@ class Budget:
                 "engine_disk_filesystem_mismatch")
         self.engine_filesystem_bound = True
 
+    def cap_diagnostic_time(self, seconds):
+        require(type(seconds) is int and seconds > 0 and self.diagnostic_deadline is None,
+                "diagnostic_time_scope")
+        self.check(force=True)
+        self.diagnostic_deadline = self.last_time + seconds
+
     def check(self, force=False):
         require(self.failure is None, "budget_already_refused")
         try:
@@ -131,6 +138,7 @@ class Budget:
             elapsed = now - self.started
             limits = self.contract.data["limits"]
             require(elapsed < limits["max_elapsed_seconds"] - self.reserve, "new_work_deadline")
+            require(self.diagnostic_deadline is None or now < self.diagnostic_deadline, "diagnostic_deadline")
             if not force and self.last_time is not None and now - self.last_time < self.interval:
                 return
             info = self.directory.lstat()
