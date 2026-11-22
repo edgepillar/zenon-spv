@@ -808,18 +808,22 @@ class ReviewTests(unittest.TestCase):
     def setUpClass(cls):
         cls.contract, cls.files = accepted_files()
 
-    def review(self, raw, contract=None, archive_pin=None, run=RUN):
+    def review(self, raw, contract=None, archive_pin=None, run=RUN, *, include_resources=False):
         return review.review_stream(io.BytesIO(raw), archive_pin or pin(raw), SOURCE, run,
-                                    contract or self.contract, ROOT)
+                                    contract or self.contract, ROOT, include_resources=include_resources)
 
-    def hosted_review(self, raw, *, conclusion="success", execution="success", archive_sha256=None):
+    def hosted_review(self, raw, *, conclusion="success", execution="success", archive_sha256=None,
+                      include_resources=False, contract=None):
+        contract = contract or self.contract
         run, jobs, artifact = hosted_metadata()
         run["conclusion"] = jobs["jobs"][0]["conclusion"] = conclusion
         jobs["jobs"][0]["steps"][0]["conclusion"] = execution
         artifact.update(size_in_bytes=len(raw), digest="sha256:" + (archive_sha256 or pin(raw)["sha256"]))
         out, error = io.BytesIO(), io.StringIO()
         args = ["review-hosted", "--expect-source-revision", SOURCE, "--expect-run-id", str(RUN),
-                "--expect-artifact-id", str(ARTIFACT), "--expect-contract-sha256", self.contract.sha256]
+                "--expect-artifact-id", str(ARTIFACT), "--expect-contract-sha256", contract.sha256]
+        if include_resources:
+            args.append("--include-resources")
         with tempfile.TemporaryDirectory(prefix="owned-hosted-review-") as directory:
             root = Path(directory)
             archive = root / "original.zip"
@@ -829,7 +833,7 @@ class ReviewTests(unittest.TestCase):
                 path = root / (name + ".json")
                 path.write_bytes(canonical(row))
                 args.extend(("--" + name + "-metadata", str(path)))
-            with patch.object(review.model, "read_contract", return_value=self.contract):
+            with patch.object(review.model, "read_contract", return_value=contract):
                 exit_code = review.main(args, out, error)
             self.assertEqual(sorted(path.name for path in root.iterdir()),
                              ["artifact.json", "jobs.json", "original.zip", "run.json"])
@@ -1099,6 +1103,61 @@ class ReviewTests(unittest.TestCase):
                 self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
                 self.assertIsNone(result["comparison"])
                 self.assertNotIn("recorded_fixture_commands", result)
+
+    def test_hosted_review_opt_in_retains_sampled_resources_and_timeout(self):
+        contract, files, _, deposit_path = self.fixture_timeout_files()
+        configure_path = "evidence/fixture-configure.complete.json"
+        files[configure_path] = canonical({**json.loads(files[configure_path]), "elapsed_nanoseconds": 53})
+        budget_path = "evidence/budget-report.json"
+        files[budget_path] = canonical({"format": "owned-devnet-budget-observation/v1",
+            "initial": {"free_bytes": 900}, "samples": 11, "peak_observed_new_disk_bytes": 72,
+            "last_sample": {"elapsed_seconds": 601.25, "free_bytes": 854, "observed_new_disk_bytes": 46},
+            "cleanup_reserve_seconds": 300})
+        raw = make_archive(files)
+        code, default, error = self.hosted_review(raw, conclusion="failure", execution="failure", contract=contract)
+        self.assertEqual(code, 1, error)
+        with patch.object(review.inputs, "_hash_stream", wraps=review.inputs._hash_stream) as digest, \
+                patch.object(zipfile.ZipFile, "extractall", side_effect=AssertionError):
+            code, result, error = self.hosted_review(raw, conclusion="failure", execution="failure",
+                                                    include_resources=True, contract=contract)
+        self.assertEqual(code, 1, error)
+        digest.assert_called_once()
+        observations = result["archive_review"].pop("recorded_resource_observations")
+        self.assertEqual(result, default)
+        self.assertEqual(observations, {"fixture_commands": {
+            "fixture-configure": {"actual_exit": 0, "output_complete": True, "process_group_quiescent": True,
+                                  "elapsed_nanoseconds": 53, "completion": pin(files[configure_path])},
+            "fixture-deposit": {"actual_exit": 143, "output_complete": False, "process_group_quiescent": True,
+                                "elapsed_nanoseconds": 420_000_000_000, "completion": pin(files[deposit_path])}},
+            "sampled_disk": {"samples": 11, "initial_free_bytes": 900, "last_sample_elapsed_seconds": 601.25,
+                             "peak_observed_new_disk_bytes": 72, "observation": pin(files[budget_path])}})
+
+    def test_resource_projection_handles_missing_evidence_and_refuses_inconsistent_values(self):
+        empty = self.review(make_archive(self.opening_files()), include_resources=True)
+        self.assertEqual(empty["recorded_resource_observations"], {"fixture_commands": {}, "sampled_disk": None})
+        unbound = self.review(make_archive({"evidence/terminal.json": canonical(terminal("UNKNOWN"))}),
+                              include_resources=True)
+        self.assertIsNone(unbound["recorded_resource_observations"])
+        contract, files, _, _ = self.fixture_timeout_files()
+        configure_path = "evidence/fixture-configure.complete.json"
+        configure = {**json.loads(files[configure_path]), "elapsed_nanoseconds": 53}
+        budget_path = "evidence/budget-report.json"
+        budget = {"format": "owned-devnet-budget-observation/v1", "initial": {"free_bytes": 900},
+                  "samples": 2, "peak_observed_new_disk_bytes": 72, "cleanup_reserve_seconds": 300,
+                  "last_sample": {"elapsed_seconds": 601.25, "free_bytes": 854, "observed_new_disk_bytes": 46}}
+        files.update({configure_path: canonical(configure), budget_path: canonical(budget)})
+        for member, raw, reason in (
+            (configure_path, canonical({**configure, "process_group": 43}), "review_recorded_command_start"),
+            (configure_path, canonical({**configure, "elapsed_nanoseconds": True}), "integer_bounds"),
+            (budget_path, canonical({**budget, "peak_observed_new_disk_bytes": 45}), "review_resource_budget"),
+            (budget_path, canonical({**budget, "last_sample": {**budget["last_sample"], "free_bytes": 855}}),
+             "review_resource_budget"),
+            (budget_path, canonical(budget).replace(b'"samples": 2', b'"samples": 3, "samples": 2'),
+             "review_resource_budget_encoding"),
+            (budget_path, canonical(budget).replace(b"601.25", b"1e999"), "review_resource_budget_encoding"),
+        ):
+            with self.subTest(member=member, reason=reason), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive({**files, member: raw}), contract, include_resources=True)
 
     def test_fixture_timeout_requires_start_binding_prior_configuration_and_no_consumer(self):
         contract, files, _, path = self.fixture_timeout_files()
