@@ -115,6 +115,12 @@ It stops the producers and clients, records the RPC frontier, and uses the
 qualified `fetch-bundle` binary to collect the exact header range and three proofs.
 It requires the same frontier before closing the RPC node.
 
+The reviewed reference-gas deposit flow has a 900-second command deadline. It
+allows 420 seconds for setup and the pinned flow's 480-second finalized-receipt
+wait. Configuration and the original devnet cohort use 420-second command
+deadlines. The existing runner guard still enforces the experiment's overall
+time and disk budget and reserves cleanup time. Each phase runs once.
+
 The closed-ledger phase checks the complete stopped container roster and the
 original RPC volume. The narrow privileged supervisor binds that volume's
 `nom` directory read-only in private mount and network namespaces. Each call

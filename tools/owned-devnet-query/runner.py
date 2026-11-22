@@ -29,6 +29,10 @@ from sources import Preparer as Sources
 
 SYSTEM = {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "LANG": "C",
           "GOTOOLCHAIN": "local", "GOMAXPROCS": "2", "PYTHONDONTWRITEBYTECODE": "1"}
+FIXTURE_PHASE_SECONDS = 420
+# The pinned reference-gas flow allows 30 ten-second momentums plus 180
+# seconds for a finalized receipt after deposit setup.
+REFERENCE_GAS_FINALIZED_WAIT_SECONDS = 30 * 10 + 180
 REVIEW_FILES = {"dispatch-selection.json", "engine-admission.json", "image-preparation.json",
     "image-build-node.json", "image-build-executor.json",
     "selected-sources.json", "runtime-layout.json", "runtime-input-pins.json", "package-preparation.json",
@@ -84,12 +88,15 @@ def verify_checkout(recorder, checkout, execution, phase):
 
 def fixture_flow(contract, recorder, engine, sources, node, prepared, phase, guard):
     source_root = sources.paths["devnet"]
+    timeout = FIXTURE_PHASE_SECONDS
     if phase == "configure":
         engine.require_running_closure(NODE_ROLES)
-        script, arguments, timeout = "src/cli.ts", ["configure"], 420
+        script, arguments = "src/cli.ts", ["configure"]
     elif phase == "deposit":
         engine.require_running_closure()
-        script, arguments, timeout = "flows/deposit.ts", [], 420
+        script, arguments = "flows/deposit.ts", []
+        if fixture_progress.supports(contract):
+            timeout += REFERENCE_GAS_FINALIZED_WAIT_SECONDS
     else:
         raise Refused("fixture_flow_scope")
     sources.verify()
