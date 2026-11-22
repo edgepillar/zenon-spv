@@ -6,7 +6,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 import unittest
 from unittest import mock
 
@@ -17,6 +17,71 @@ spec.loader.exec_module(RUN)
 
 REVISION = 'ab' * 20
 RECORDING = '{"workspace_children_bound":24}'
+
+
+def scale_program(compute):
+    scale = ModuleType('test_scale_model')
+    scale.compute = compute
+    exec('from functools import lru_cache\n'
+         '@lru_cache(maxsize=1)\n'
+         'def expected_document():\n'
+         '    return compute()\n', vars(scale))
+    return SimpleNamespace(CHECK=SimpleNamespace(LIFE=SimpleNamespace(SCALE=scale))), scale
+
+
+class SharedScaleModelControls(unittest.TestCase):
+    def test_reuses_bound_model_and_keeps_reader_documents_independent(self):
+        first, first_scale = scale_program(mock.Mock(return_value={'cases': [{'root': 'original'}]}))
+        second, second_scale = scale_program(mock.Mock(side_effect=AssertionError('second model build')))
+        first_original = first_scale.expected_document
+        second_original = second_scale.expected_document
+        model = RUN.SharedScaleModel()
+        with mock.patch.object(RUN, 'scale_model_binding', return_value=b'bound'):
+            with model.select(first):
+                original = first_scale.expected_document()
+                original['cases'][0]['root'] = 'changed by first reader'
+            with model.select(second):
+                reused = second_scale.expected_document()
+                self.assertEqual(reused, {'cases': [{'root': 'original'}]})
+                self.assertIs(second_scale.expected_document(), reused)
+        self.assertIs(first_scale.expected_document, first_original)
+        self.assertIs(second_scale.expected_document, second_original)
+        self.assertEqual(first_original.cache_info().currsize, 0)
+        self.assertEqual(second_original.cache_info().currsize, 0)
+        self.assertEqual(model.report()['scale_models_reused'], 1)
+        first_scale.compute.assert_called_once_with()
+        second_scale.compute.assert_not_called()
+
+    def test_refuses_changed_model_inputs_before_replacing_second_reader(self):
+        first, first_scale = scale_program(mock.Mock(return_value={'cases': []}))
+        second, second_scale = scale_program(mock.Mock())
+        second_original = second_scale.expected_document
+        model = RUN.SharedScaleModel()
+        with mock.patch.object(RUN, 'scale_model_binding', side_effect=[b'first', b'first', b'different']):
+            with model.select(first):
+                first_scale.expected_document()
+            with self.assertRaises(ValueError), model.select(second):
+                self.fail('changed model inputs were admitted')
+        self.assertIs(second_scale.expected_document, second_original)
+        second_scale.compute.assert_not_called()
+
+    def test_shared_mode_failure_clears_cache_without_running_second_pair(self):
+        output = io.StringIO()
+        touched = []
+
+        def fail(_, kind, model):
+            self.assertIsNone(kind)
+            model.document = b'discard on failure'
+            touched.append(model)
+            raise ValueError('recorded pair refused')
+
+        with mock.patch.object(RUN, 'run_pair', side_effect=fail) as run, redirect_stdout(output):
+            with self.assertRaisesRegex(ValueError, 'recorded pair refused'):
+                RUN.main(['--source-revision', REVISION, '--shared-scale-model'])
+        run.assert_called_once()
+        self.assertEqual(len(touched), 1)
+        self.assertIsNone(touched[0].document)
+        self.assertEqual(output.getvalue(), '')
 
 
 class WorkspaceChecksControls(unittest.TestCase):
