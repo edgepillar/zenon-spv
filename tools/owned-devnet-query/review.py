@@ -17,6 +17,7 @@ sys.path.insert(0, str(HERE))
 
 import capture
 from capture import OPENING_BYTES, OPENING_FILE
+import fixture_progress
 import inputs
 import model
 import node_diagnostics as node_diag
@@ -806,6 +807,9 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         startup_nodes = recorded_startup_nodes(evidence, terminal)
         file_logs = node_file_logs.recorded(evidence, terminal, startup_nodes, diagnostic_receipt)
         fixture_timeout = recorded_fixture_timeout(evidence, terminal, binding_present)
+        fixture_checkpoint_report = fixture_progress.recorded(evidence, contract, fixture_timeout)
+        if fixture_checkpoint_report is not None:
+            fixture_timeout["progress"] = fixture_checkpoint_report
         consumer_failure = recorded_consumer_failure(evidence, terminal, binding_present)
         accepted = reported == "DEVNET_CONSUMER_ACCEPTED"
         gateway_refusal = terminal["reason"] == "gateway_stored_fields_differ"

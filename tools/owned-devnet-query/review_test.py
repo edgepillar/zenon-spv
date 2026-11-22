@@ -20,6 +20,7 @@ sys.path.insert(0, str(HERE))
 import capture
 from artifacts import WORKFLOWS
 from capture_test import CONTRACT, consumer_failure_fixture, synthetic_reports, synthetic_window
+import fixture_progress
 import model
 from model import Refused, canonical
 import query_checks as checks
@@ -1065,8 +1066,14 @@ class ReviewTests(unittest.TestCase):
         self.assertIsNone(report["comparison"])
         self.assertNotIn("recorded_fixture_commands", report)
 
-    def fixture_timeout_files(self, stage="fixture-deposit"):
+    def fixture_timeout_files(self, stage="fixture-deposit", *, progress_source=False):
         contract, original = accepted_files(terminal_format=model.TERMINAL_FORMAT)
+        if progress_source:
+            data = contract.data
+            selected = model.read_contract(HERE / "reference-gas-renewal-1-contract.json")
+            data["sources"]["devnet"] = selected.data["sources"]["devnet"]
+            raw = canonical(data)
+            contract = model.Contract(raw, pin(raw)["sha256"])
         prefixes = ("evidence/opening-", "evidence/rpc-02.", "evidence/rpc-03.", "evidence/fixture-configure.")
         if stage == "fixture-deposit":
             prefixes += ("evidence/fixture-deposit.",)
@@ -1108,6 +1115,46 @@ class ReviewTests(unittest.TestCase):
         for changed, reason in invalid:
             with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
                 self.review(make_archive(changed), contract)
+
+    def test_fixture_progress_preserves_the_timeout_and_unverified_submission(self):
+        contract, files, _, path = self.fixture_timeout_files(progress_source=True)
+        for markers in (None, [], ["vault_artifacts", "vault_deploy_started"]):
+            with self.subTest(markers=markers):
+                summary = {"format": fixture_progress.FORMAT, "reported_checkpoints": markers,
+                           "stdout": json.loads(files[path])["outputs"]["stdout"]}
+                archive = make_archive({**files, "evidence/" + fixture_progress.REPORT: canonical(summary)})
+                result = self.review(archive, contract)
+                timeout = result["recorded_fixture_timeout"]
+                self.assertEqual(timeout["progress"], {**summary, "original_stdout_independently_rechecked": False})
+                self.assertFalse(timeout["transaction_submission_verified"])
+                self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
+                self.assertIsNone(result["comparison"])
+
+    def test_fixture_progress_requires_the_selected_source_and_a_bound_timeout_prefix(self):
+        contract, files, _, path = self.fixture_timeout_files(progress_source=True)
+        receipt = json.loads(files[path])
+        summary = {"format": fixture_progress.FORMAT, "reported_checkpoints": ["vault_artifacts"],
+                   "stdout": receipt["outputs"]["stdout"]}
+        report = "evidence/" + fixture_progress.REPORT
+        invalid = (
+            ({**files, report: canonical({**summary, "reported_checkpoints": ["deposit_step"]})},
+             contract, "review_fixture_progress_checkpoints"),
+            ({**files, report: canonical({**summary, "original_stdout": "private diagnostic"})},
+             contract, "review_fixture_progress_fields"),
+            ({**files, report: canonical({**summary, "stdout": {**summary["stdout"], "sha256": "1" * 64}})},
+             contract, "review_fixture_progress_stdout"),
+            ({**files, report: canonical(summary), path: canonical({**receipt, "process_group_quiescent": False})},
+             contract, "review_fixture_progress_checkpoints"),
+            ({**files, report: canonical(summary), path: canonical({**receipt, "reason": "guard_refused"})},
+             contract, "review_fixture_progress_scope"),
+            ({**files, report: canonical(summary), "evidence/fixture-deposit.stderr": b"private"},
+             contract, "review_member_selection"),
+        )
+        other, other_files, _, _ = self.fixture_timeout_files()
+        invalid += (({**other_files, report: canonical(summary)}, other, "review_fixture_progress_scope"),)
+        for changed, selected, reason in invalid:
+            with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive(changed), selected)
 
     def test_replays_retained_opening_after_a_nonaccepting_terminal_outcome(self):
         for outcome in ("FAILURE", "REFUSED", "UNKNOWN"):
