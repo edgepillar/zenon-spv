@@ -43,6 +43,30 @@ class FixtureProgressTests(unittest.TestCase):
             + b"ok deposit sent receipt at finalized: SUCCESS, batch 0\nok vault sent 15 chunks\n"),
             ["vault_artifacts"])
 
+    def test_only_reference_gas_deposit_gets_the_finalized_wait_budget(self):
+        original = model.read_contract(HERE / "contract.json")
+        reference_gas = model.read_contract(HERE / "reference-gas-contract.json")
+        for contract, phase, script, arguments, timeout in (
+            (original, "deposit", "flows/deposit.ts", [], 420),
+            (reference_gas, "deposit", "flows/deposit.ts", [], 900),
+            (CONTRACT, "deposit", "flows/deposit.ts", [], 900),
+            (CONTRACT, "configure", "src/cli.ts", ["configure"], 420),
+        ):
+            with self.subTest(contract=contract.sha256, phase=phase):
+                recorder = Mock()
+                sources = Mock(paths={"devnet": HERE})
+                node = Mock(node=HERE / "node")
+                engine = Mock(environment={})
+                prepared = Mock(environment={}, report={"installed_entries": []})
+                guard = Mock()
+                with patch.object(runner, "installed_entries", return_value=[]), \
+                        patch.object(runner, "regular_pin", return_value=contract.data["node_toolchain"]["node_binary"]):
+                    runner.fixture_flow(contract, recorder, engine, sources, node, prepared, phase, guard)
+                recorder.run.assert_called_once_with(
+                    "fixture-" + phase, [str(node.node), str(HERE / "node_modules/tsx/dist/cli.mjs"),
+                                        script, *arguments], HERE, {}, guard=guard, timeout=timeout,
+                    stdout_cap=model.FIXTURE_OUTPUT_BYTES, stderr_cap=model.FIXTURE_OUTPUT_BYTES)
+
     @unittest.skipUnless(os.name == "posix", "fixture recorder requires POSIX process groups")
     def test_only_the_bounded_summary_is_exported_on_the_selected_deposit_timeout(self):
         with tempfile.TemporaryDirectory(prefix="owned-fixture-progress-") as directory:
