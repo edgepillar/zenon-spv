@@ -115,6 +115,16 @@ It stops the producers and clients, records the RPC frontier, and uses the
 qualified `fetch-bundle` binary to collect the exact header range and three proofs.
 It requires the same frontier before closing the RPC node.
 
+The reviewed reference-gas configuration flow has a 660-second command
+deadline. The pinned CLI waits for height 11, sends setup commands serially
+and waits 14 momentums before reading and confirming challenged settings. The
+configuration allowance adds two nominal ten-second momentums for each of up
+to 12 send/receive steps to the 420-second setup budget. The deposit flow has
+a 900-second deadline, including the pinned flow's 480-second finalized-receipt
+wait. The original devnet cohort uses a 420-second deadline per command. Both
+flows operate within the shared time and disk budget and cleanup reserve. Each
+phase runs once.
+
 The closed-ledger phase checks the complete stopped container roster and the
 original RPC volume. The narrow privileged supervisor binds that volume's
 `nom` directory read-only in private mount and network namespaces. Each call
@@ -451,6 +461,44 @@ It also binds a present opening proof to a refusal before signature checks and
 fixture commands. The reader reviews prior versions under their recorded rules
 and verifies the stages reached by each early failure.
 
+When a version-3 fixture configuration or deposit command times out, the reader
+can expose the actual exit and elapsed time from its bound start and completion
+receipts. A deposit timeout also requires the successful configuration receipt.
+Transaction submission stays unverified when the command output is incomplete.
+
+Add `--include-resources` to either archive review command to compare retained
+configuration and deposit durations with sampled runner disk use. The optional
+report checks the command start bindings and disk sample arithmetic and retains
+the corresponding member digests. A missing command or disk sample stays absent.
+The last sample time and sampled peak describe the recorded runner observation.
+The review reads the original archive in place and preserves its terminal outcome.
+Existing calls keep the same output and exit codes.
+
+After a timed-out deposit with a quiescent process group, the reviewed
+reference-gas runner can retain the opening producer-slot observation. It
+stops the owned producers, executor, and gateway, captures one bounded RPC
+frontier, and closes the RPC node before reading its ledger. One invocation
+of the pinned read-only oracle covers the exact H2 and H3 hashes, with the
+captured frontier pinned separately. The diagnostic has a 120-second work
+deadline within the original budget and uses the existing cleanup reserve.
+
+Archive review checks the oracle input, original receipts, closed runtime,
+frontier, and both historical parent-slot bindings. The report describes
+the candidate opening and its source parent slots. The terminal outcome
+is the recorded deposit timeout. Header acceptance and transaction
+submission require their own evidence.
+
+For the reviewed reference-gas devnet source, a timeout can retain
+`fixture-configure-progress.json` or `fixture-deposit-progress.json`. The
+configuration report records an ordered subsequence because the pinned CLI
+can skip settings already present. The deposit report records the ordered
+prefix of its fixed steps. Both use recognized, complete lines and retain the
+stdout pin. Raw stdout and stderr stay private. An empty list means the runner
+captured no recognized labels. A null list means the captured stdout was
+unavailable for validation. The archive reviewer binds the diagnostic to the
+matching command receipt. The terminal outcome and transaction submission
+status retain their existing evidence requirements.
+
 Exit 0 reports `RECORDED_CONSUMER_BYTES_MATCH`. This is agreement among the
 retained records and independently recomputed bytes. The original run identity,
 native signature verification, producer authority and any selected-network
@@ -507,6 +555,7 @@ python3 -I -B tools/owned-devnet-query/images_test.py
 python3 -I -B tools/owned-devnet-query/budget_test.py
 python3 -I -B tools/owned-devnet-query/query_checks_test.py
 python3 -I -B tools/owned-devnet-query/capture_test.py
+python3 -I -B tools/owned-devnet-query/fixture_progress_test.py
 python3 -I -B tools/owned-devnet-query/review_test.py
 python3 -I -B tools/owned-devnet-query/node_diagnostics_test.py
 python3 -I -B tools/owned-devnet-query/node_file_logs_test.py

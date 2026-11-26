@@ -1,6 +1,6 @@
 # Separate recorded-oracle CI lane
 
-The CI workflow runs 27 recorded-data commands in a separate job on Linux amd64,
+The CI workflow runs 26 recorded-data steps in a separate job on Linux amd64,
 macOS Intel amd64 and Windows amd64. Two larger-retention invocations use the
 [bounded leaf commitment scope](retention-leaf-reuse.md), with a separate control
 invocation. Two complete import control suites use
@@ -19,7 +19,15 @@ run. Both phases share the checker's expected document and one bounded
 in-memory graph scope keyed by the complete ordered state bytes. Each control
 still validates its own inputs. The runner retains the original checker report
 in the job log and emits a separate source-bound receipt with all control names
-and graph accounting after both phases finish. Each pair has its own process.
+and graph accounting after both phases finish.
+
+The workspace and driver/build pairs share one process and one bounded scale
+model. The first pair computes the model with the original reference checker.
+The second pair verifies the same source files, corpus digest, reference
+function and selection before decoding a private copy of the model. The
+256 KiB serialized-model limit applies between the pairs. The controller
+restores both original functions and clears the model after both reports and
+all 26 controls complete. Other pairs retain their own processes.
 The native verifier jobs run on separate hosted runners alongside this lane.
 See the [GitHub-hosted runner model](https://docs.github.com/en/actions/concepts/runners/github-hosted-runners)
 for its VM isolation and runner-image limits.
@@ -38,11 +46,13 @@ files. They check recorded resources rather than launching a new node, database
 workload or Go build. Some existing controls still launch fresh Python CLIs and
 use their own temporary test files.
 
-The current 27-command inventory has SHA-256
-`549a728ca9de3d33156f1ffb0902639d7f12a671ecfb0797893d1fcb3e96e0d9`.
+The current 26-step inventory has SHA-256
+`e38ae1b3ae132831a082d07473861eb58788e280a9717e752531120e7406a8c0`.
 Its encoding is the ordered list of name/run objects, with sorted JSON keys,
 compact separators, unexpanded workflow expressions and a final LF. The
-preceding 32-command inventory with separate tree checks had SHA-256
+preceding 27-step inventory with separate workspaces had SHA-256
+`549a728ca9de3d33156f1ffb0902639d7f12a671ecfb0797893d1fcb3e96e0d9`.
+The earlier 32-command inventory with separate tree checks had SHA-256
 `b6740942f8c048d4a0f9490eddbfa1fcef396ad1952561293a8413425dd69eab`. The earlier
 33-command inventory with separate workspace invocations had SHA-256
 `c285ca19653067b71f8132e09ec07e50178eef5ec927c096c368d349d3879b6b`.

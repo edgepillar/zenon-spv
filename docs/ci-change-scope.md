@@ -144,6 +144,24 @@ macOS and Windows job and exact-source artifacts. Skipped general jobs produce
 no native binary or oracle evidence. Keep their latest separately qualified
 source revisions explicit.
 
+### Portable closure refresh
+
+The portable dependency tree at `f2d26c950b99a206c66eaf76a15577a997cbd6cc`
+contains 1,204 records and 123,386 bytes. Its SHA-256 is
+`7ba366cf846f7b08c96dd176421acee045d92e53e378176cf114361d6ecd6bda`.
+Thirty dependency records changed since the previous pin, covering native
+verification and tests, paired recorded-oracle jobs, and owned fixture evidence.
+All four dedicated workflow byte pins match this tree. The selector update
+requires full CI. An eligible reader edit still needs its three-platform
+preparation run and exact-source artifacts.
+
+The closed-opening diagnostic updates four records in the portable
+dependency tree. The resulting tree at `4e0bd84583f69a9bbc11c9c0c73a5409dff888ac`
+contains 1,204 records and 123,386 bytes with SHA-256
+`0f591205a183a3decf1e4fb19fdcb950e6d80936a88f227311568bf96275dcae`.
+The runner change selects full CI and includes the corresponding fingerprint
+update for subsequent eligible edits.
+
 ### First-insertion catch-up controls
 
 The five files are execution inputs to the dedicated workflow alone. It tests

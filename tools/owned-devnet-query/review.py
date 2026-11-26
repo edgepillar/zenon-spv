@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime
 import hashlib
+import json
 from pathlib import Path
 import re
 import struct
@@ -17,6 +18,7 @@ sys.path.insert(0, str(HERE))
 
 import capture
 from capture import OPENING_BYTES, OPENING_FILE
+import fixture_progress
 import inputs
 import model
 import node_diagnostics as node_diag
@@ -174,6 +176,13 @@ class Evidence:
             same({"bytes": size, "sha256": digest.hexdigest()}, self.pins[name], "review_member_digest")
 
 
+def recorded_command_start(evidence, label, receipt, folder):
+    group = model.uint(receipt["process_group"])
+    same(evidence.json(label + ".started.json", folder=folder), {"format": "owned-devnet-command-started/v1",
+         "label": label, "pid": group, "process_group": group, "new_session_requested": True},
+         "review_recorded_command_start")
+
+
 def recorded_completion(evidence, label, *, folder="evidence", actual_exit=0):
     receipt = evidence.json(label + ".complete.json", folder=folder)
     require(receipt.get("format") == "owned-devnet-command-capture/v1"
@@ -181,10 +190,7 @@ def recorded_completion(evidence, label, *, folder="evidence", actual_exit=0):
             and type(receipt.get("actual_exit")) is int and receipt["actual_exit"] == actual_exit
             and receipt.get("output_complete") is True and receipt.get("reason") is None
             and receipt.get("process_group_quiescent") is True, "review_recorded_command_completion")
-    group = model.uint(receipt["process_group"])
-    same(evidence.json(label + ".started.json", folder=folder), {"format": "owned-devnet-command-started/v1",
-         "label": label, "pid": group, "process_group": group, "new_session_requested": True},
-         "review_recorded_command_start")
+    recorded_command_start(evidence, label, receipt, folder)
     return receipt
 
 
@@ -209,6 +215,31 @@ def recorded_fixture_commands(evidence):
         commands[label] = {"start": evidence.pins[f"evidence/{label}.started.json"],
                            "completion": evidence.pins[f"evidence/{label}.complete.json"]}
     return commands
+
+
+def recorded_fixture_timeout(evidence, terminal, binding_present):
+    stage = terminal["stage"]
+    labels = {"fixture-configuration": "fixture-configure", "fixture-deposit": "fixture-deposit"}
+    label = labels.get(stage) if type(stage) is str else None
+    if label is None or terminal["format"] != model.TERMINAL_FORMAT or terminal["reason"] != "command_incomplete":
+        return None
+    receipt = diagnostic_receipt(evidence, label, "review_fixture_timeout_receipt")
+    if receipt is None or receipt.get("reason") != "timeout":
+        return None
+    require(binding_present and terminal["outcome"] == "UNKNOWN" and receipt["output_complete"] is False
+            and receipt.get("launch_outcome") == "STARTED"
+            and type(receipt.get("process_group_quiescent")) is bool
+            and "evidence/consume-query.started.json" not in evidence.pins, "review_fixture_timeout_scope")
+    recorded_command_start(evidence, label, receipt, "evidence")
+    if label == "fixture-deposit":
+        recorded_completion(evidence, "fixture-configure")
+    else:
+        require("evidence/fixture-deposit.started.json" not in evidence.pins, "review_fixture_timeout_scope")
+    return {"stage": stage, "command": label, "reason": "timeout", "actual_exit": receipt["actual_exit"],
+            "output_complete": False, "elapsed_nanoseconds": model.uint(receipt["elapsed_nanoseconds"]),
+            "process_group_quiescent": receipt["process_group_quiescent"],
+            "completion": evidence.pins[f"evidence/{label}.complete.json"],
+            "transaction_submission_verified": False}
 
 
 def recorded_consumer_failure(evidence, terminal, binding_present):
@@ -314,41 +345,30 @@ def recorded_opening_signatures(evidence, opening, observation, proof):
     return report
 
 
-def recorded_consumer(evidence, contract, checkout, selection, opening):
+def recorded_dispatch_selection(evidence, selection):
     same(evidence.json("dispatch-selection.json"), {"format": "owned-devnet-dispatch-selection/v1",
          "repository": REPOSITORY, **selection, "actor": "edgepillar", "host_attested": False,
          "explicit_dispatch_selected": True}, "review_dispatch_binding")
+
+
+def recorded_input_component(evidence, contract, role):
     components = contract.data["qualified_components"]
-    for role, workflow in WORKFLOWS.items():
-        component = components[role]
-        label = "input-" + role.replace("_", "-")
-        same(evidence.json(label + "-selection.json", folder="transport"), {
-            "component": role, "repository": REPOSITORY, "source_revision": components["source_revision"],
-            "workflow": workflow, "authenticated_distribution": False, "new_ci_execution_qualified": False,
-            **{key: component[key] for key in ("run_id", "run_attempt", "artifact_id", "archive")}},
-            "review_component_binding")
-        recorded_output(evidence, label + "-archive", f"artifact-{component['artifact_id']}.zip",
-                        folder="transport", external_pin=component["archive"])
+    component = components[role]
+    label = "input-" + role.replace("_", "-")
+    same(evidence.json(label + "-selection.json", folder="transport"), {
+        "component": role, "repository": REPOSITORY, "source_revision": components["source_revision"],
+        "workflow": WORKFLOWS[role], "authenticated_distribution": False, "new_ci_execution_qualified": False,
+        **{key: component[key] for key in ("run_id", "run_attempt", "artifact_id", "archive")}},
+        "review_component_binding")
+    recorded_output(evidence, label + "-archive", f"artifact-{component['artifact_id']}.zip",
+                    folder="transport", external_pin=component["archive"])
 
-    provider = evidence.json("provider.json", contract.data["limits"]["stdout_bytes"])
-    recorded_output(evidence, "collect-provider", "provider.json")
 
-    rows = provider["momentums"]
-    require(type(rows) is list and 0 < len(rows) < contract.data["limits"]["max_header_targets"],
-            "review_header_range")
-    query_selection = evidence.json("selected-query-header.json")
-    target_index = model.uint(query_selection["height"], len(rows) + 2, minimum=3) - 3
-    chain = contract.data["selection"]["chain_id"]
-    query, tip = (capture.Header.read(row, chain) for row in (rows[target_index], rows[-1]))
-    same(query_selection, query.identifier(), "review_query_header")
-    same(evidence.json("selected-capture-frontier.json"), tip.identifier(), "review_frontier")
-    window = capture.Window(capture.captured_headers(contract, opening, query, tip, provider),
-                            query, provider, None)
-
+def recorded_closed_schedule(evidence, contract, headers, frontier, provenance):
     oracle_outputs = []
 
     def oracle_reports():
-        for index, (request, _) in enumerate(capture.oracle_requests(contract, window), 1):
+        for index, (request, _) in enumerate(capture.oracle_requests(contract, headers, frontier), 1):
             label = f"parent-oracle-{index:02d}"
             name, output = label + ".request.json", label + ".stdout"
             require(evidence.bytes("evidence/" + name, 32 << 10) == request, "review_oracle_request")
@@ -356,12 +376,11 @@ def recorded_consumer(evidence, contract, checkout, selection, opening):
                                    "stdout": recorded_output(evidence, label, output)})
             yield evidence.json(output, capture.ORACLE_REPORT_BYTES)
 
-    schedule = capture.oracle_schedule(contract, window, oracle_reports())
-    provenance = evidence.json("closed-ledger-provenance.json")
+    schedule = capture.oracle_schedule(contract, headers, oracle_reports(), frontier)
     oracle_pin = contract.data["qualified_components"]["parent_oracle"]["binaries"][capture.ORACLE_NAME]
     for name, expected in {"format": "owned-devnet-closed-ledger-provenance/v1",
-            "genesis": opening[0].identifier(), "anchor": opening[1].identifier(),
-            "first_v3": opening[2].identifier(), "frontier": tip.identifier(), "oracle_binary": oracle_pin,
+            "genesis": headers[0].identifier(), "anchor": headers[1].identifier(),
+            "first_v3": headers[2].identifier(), "frontier": frontier, "oracle_binary": oracle_pin,
             "oracle_reports": oracle_outputs, "schedule_hash": schedule["schedule_hash"],
             "ledger_copied": False, "ledger_opened_read_only": True}.items():
         same(provenance[name], expected, "review_closed_ledger_binding")
@@ -379,6 +398,61 @@ def recorded_consumer(evidence, contract, checkout, selection, opening):
         closed[role] = model.digest(row["id"])
     require(len(set(closed.values())) == len(rows) and provenance["rpc_container_id"] == closed["rpc"],
             "review_owned_closure")
+    return schedule
+
+
+def recorded_closed_opening(evidence, contract, selection, terminal, timeout, opening, opening_observation,
+                           opening_proof, opening_signatures, frontiers):
+    path = "evidence/" + capture.CLOSED_OPENING_REPORT
+    if path not in evidence.pins:
+        return None
+    require(timeout is not None and timeout["command"] == fixture_progress.COMMAND
+            and timeout["process_group_quiescent"] is True and terminal["owned_runtime_observed_closed"] is True
+            and opening_signatures is not None and opening_proof is not None and opening_proof["presence"] == "absent"
+            and fixture_progress.supports(contract), "review_closed_opening_scope")
+    report = evidence.json(capture.CLOSED_OPENING_REPORT, 8 << 10)
+    exact_keys(report, {"format", "frontier_request_id", "closed_ledger"}, "review_closed_opening_fields")
+    same(report["format"], "owned-devnet-closed-opening-authorization/v1", "review_closed_opening_format")
+    request_id = model.uint(report["frontier_request_id"], capture.RPC_CALL_LIMIT)
+    require(frontiers and frontiers[-1]["request_id"] == request_id > opening_observation["request_id"],
+            "review_closed_opening_frontier_selection")
+    frontier = frontiers[-1]
+    capture.require_opening_frontier(opening, frontier["candidate_header"], frontier["version"], frontier["timestamp"])
+    provenance = report["closed_ledger"]
+    exact_keys(provenance, {"format", "rpc_container_id", "engine_id", "genesis", "anchor",
+        "frontier", "first_v3", "oracle_binary", "oracle_reports", "schedule_hash", "reader_source_sha256",
+        "ledger_copied", "ledger_opened_read_only"}, "review_closed_opening_provenance")
+    model.digest(provenance["engine_id"])
+    model.digest(provenance["reader_source_sha256"])
+    recorded_dispatch_selection(evidence, selection)
+    recorded_input_component(evidence, contract, "parent_oracle")
+    schedule = recorded_closed_schedule(evidence, contract, opening, frontier["candidate_header"], provenance)
+    return {"frontier_request_id": request_id, "closed_ledger_frontier": frontier["candidate_header"],
+            "target_headers": [header.identifier() for header in opening[1:]],
+            "v3_schedule_hash": schedule["schedule_hash"], "accepted_header_authority": False}
+
+
+def recorded_consumer(evidence, contract, checkout, selection, opening):
+    recorded_dispatch_selection(evidence, selection)
+    for role in WORKFLOWS:
+        recorded_input_component(evidence, contract, role)
+
+    provider = evidence.json("provider.json", contract.data["limits"]["stdout_bytes"])
+    recorded_output(evidence, "collect-provider", "provider.json")
+
+    rows = provider["momentums"]
+    require(type(rows) is list and 0 < len(rows) < contract.data["limits"]["max_header_targets"],
+            "review_header_range")
+    query_selection = evidence.json("selected-query-header.json")
+    target_index = model.uint(query_selection["height"], len(rows) + 2, minimum=3) - 3
+    chain = contract.data["selection"]["chain_id"]
+    query, tip = (capture.Header.read(row, chain) for row in (rows[target_index], rows[-1]))
+    same(query_selection, query.identifier(), "review_query_header")
+    same(evidence.json("selected-capture-frontier.json"), tip.identifier(), "review_frontier")
+    window = capture.Window(capture.captured_headers(contract, opening, query, tip, provider),
+                            query, provider, None)
+    schedule = recorded_closed_schedule(evidence, contract, window.headers, tip.identifier(),
+                                       evidence.json("closed-ledger-provenance.json"))
 
     descriptor, profile = capture.selected_profile(contract, checkout)
     config, request, pins = capture.query_inputs(contract, window, schedule, profile)
@@ -434,6 +508,53 @@ def diagnostic_receipt(evidence, label, reason):
             and (receipt.get("actual_exit") is None or type(receipt.get("actual_exit")) is int)
             and type(receipt.get("output_complete")) is bool, reason)
     return receipt
+
+
+def recorded_resources(evidence, contract):
+    commands = {}
+    for label in ("fixture-configure", "fixture-deposit"):
+        receipt = diagnostic_receipt(evidence, label, "review_resource_command")
+        if receipt is None or receipt.get("launch_outcome") != "STARTED":
+            continue
+        recorded_command_start(evidence, label, receipt, "evidence")
+        require(type(receipt.get("process_group_quiescent")) is bool, "review_resource_command")
+        if receipt["output_complete"]:
+            require(receipt["actual_exit"] is not None and receipt["process_group_quiescent"]
+                    and receipt["reason"] is None, "review_resource_command")
+        commands[label] = {name: receipt[name] for name in
+                           ("actual_exit", "output_complete", "process_group_quiescent")}
+        commands[label]["elapsed_nanoseconds"] = model.uint(receipt["elapsed_nanoseconds"], minimum=0)
+        commands[label]["completion"] = evidence.pins[f"evidence/{label}.complete.json"]
+
+    sampled_disk = None
+    budget = "budget-report.json"
+    path = "evidence/" + budget
+    if path in evidence.pins:
+        raw = evidence.bytes(path, 4096)
+        try:
+            # The monotonic sample timestamp is a float. Keep API metadata
+            # on its separate integer-only parser.
+            observation = json.loads(raw.decode("utf-8"))
+            encoded = canonical(observation)
+        except (ValueError, RecursionError) as error:
+            raise Refused("review_resource_budget_encoding") from error
+        require(type(observation) is dict and encoded == raw, "review_resource_budget_encoding")
+        same(observation["format"], "owned-devnet-budget-observation/v1", "review_resource_budget")
+        first_free = model.uint(observation["initial"]["free_bytes"], minimum=0)
+        samples = model.uint(observation["samples"])
+        peak = model.uint(observation["peak_observed_new_disk_bytes"], minimum=0)
+        last = observation["last_sample"]
+        last_free = model.uint(last["free_bytes"], minimum=0)
+        last_delta = model.uint(last["observed_new_disk_bytes"], minimum=0)
+        elapsed = last["elapsed_seconds"]
+        reserve = model.uint(observation["cleanup_reserve_seconds"], 600, minimum=60)
+        require(type(elapsed) in (int, float)
+                and 0 <= elapsed < contract.data["limits"]["max_elapsed_seconds"] - reserve
+                and peak >= last_delta == max(0, first_free - last_free), "review_resource_budget")
+        sampled_disk = {"samples": samples, "initial_free_bytes": first_free,
+                        "last_sample_elapsed_seconds": elapsed, "peak_observed_new_disk_bytes": peak,
+                        "observation": evidence.pins[path]}
+    return {"fixture_commands": commands, "sampled_disk": sampled_disk}
 
 
 def recorded_startup_sync(evidence, terminal):
@@ -745,7 +866,7 @@ def recorded_startup_nodes(evidence, terminal):
             "original_log_text_independently_rechecked": False, "accepted_header_authority": False}
 
 
-def review_stream(stream, archive_pin, source_revision, run_id, contract, checkout):
+def review_stream(stream, archive_pin, source_revision, run_id, contract, checkout, *, include_resources=False):
     model.pin(archive_pin, MAX_ARCHIVE)
     model.digest(source_revision, model.HEX40)
     model.uint(run_id)
@@ -776,6 +897,10 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         startup_peers = recorded_startup_peer_frontiers(evidence, terminal, post_sync, contract)
         startup_nodes = recorded_startup_nodes(evidence, terminal)
         file_logs = node_file_logs.recorded(evidence, terminal, startup_nodes, diagnostic_receipt)
+        fixture_timeout = recorded_fixture_timeout(evidence, terminal, binding_present)
+        fixture_checkpoint_report = fixture_progress.recorded(evidence, contract, fixture_timeout)
+        if fixture_checkpoint_report is not None:
+            fixture_timeout["progress"] = fixture_checkpoint_report
         consumer_failure = recorded_consumer_failure(evidence, terminal, binding_present)
         accepted = reported == "DEVNET_CONSUMER_ACCEPTED"
         gateway_refusal = terminal["reason"] == "gateway_stored_fields_differ"
@@ -794,6 +919,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             opening, opening_observation = recorded_opening(evidence, contract)
         opening_proof = recorded_opening_proof(evidence, contract, checkout, opening, opening_observation, terminal)
         opening_signatures = recorded_opening_signatures(evidence, opening, opening_observation, opening_proof)
+        closed_opening = recorded_closed_opening(evidence, contract, selection, terminal, fixture_timeout,
+            opening, opening_observation, opening_proof, opening_signatures, frontiers)
         if accepted or (gateway_refusal and terminal["owned_runtime_observed_closed"]):
             require(opening is not None, "review_consumer_opening")
             if terminal["format"] in (model.TERMINAL_FORMAT_V2, model.TERMINAL_FORMAT):
@@ -805,6 +932,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
                 matched = comparison
             else:
                 gateway_mismatch = comparison
+        resources = recorded_resources(evidence, contract) if include_resources and binding_present else None
         evidence.verify_remaining()
         report = {"format": "owned-devnet-evidence-review/v1",
                 "status": "RECORDED_CONSUMER_BYTES_MATCH" if matched else "RECORDED_NON_ACCEPTING_OUTCOME",
@@ -813,6 +941,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
                 "comparison": matched, "materialized_bytes": 0, "native_consumer_reexecuted": False,
                 "hosted_run_provenance_checked": False, "new_devnet_acceptance_established": False,
                 "production_qualified": False}
+        if include_resources:
+            report["recorded_resource_observations"] = resources
         if frontiers:
             report["candidate_frontier_observations"] = frontiers
         if opening_observation is not None and not accepted:
@@ -823,6 +953,10 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["recorded_opening_signatures"] = opening_signatures
         if fixture_commands is not None:
             report["recorded_fixture_commands"] = fixture_commands
+        if fixture_timeout is not None:
+            report["recorded_fixture_timeout"] = fixture_timeout
+        if closed_opening is not None:
+            report["recorded_closed_opening_authorization"] = closed_opening
         if startup_sync is not None:
             report["startup_sync_diagnostic"] = startup_sync
         if post_sync is not None:
@@ -852,6 +986,8 @@ def main(argv=None, stdout=None, stderr=None):
         parser.add_argument("--expect-artifact-id", type=int, required=True)
     if mode != "select-hosted":
         parser.add_argument("--archive", type=Path, required=True)
+        parser.add_argument("--include-resources", action="store_true",
+                            help="Report retained fixture durations and sampled disk use.")
     if not hosted:
         parser.add_argument("--expect-archive-sha256", required=True)
         parser.add_argument("--expect-archive-bytes", type=int, required=True)
@@ -882,7 +1018,8 @@ def main(argv=None, stdout=None, stderr=None):
         else:
             report = inputs._read_archive_file(args.archive, archive_pin["bytes"],
                 lambda stream: review_stream(stream, archive_pin, args.expect_source_revision,
-                                             args.expect_run_id, contract, HERE.parents[1]))
+                                             args.expect_run_id, contract, HERE.parents[1],
+                                             include_resources=args.include_resources))
             matched = report["comparison"] is not None
             if mode == "review-hosted":
                 execution = selected["execution_conclusion"]

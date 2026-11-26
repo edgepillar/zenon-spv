@@ -20,6 +20,7 @@ sys.path.insert(0, str(HERE))
 import capture
 from artifacts import WORKFLOWS
 from capture_test import CONTRACT, consumer_failure_fixture, synthetic_reports, synthetic_window
+import fixture_progress
 import model
 from model import Refused, canonical
 import query_checks as checks
@@ -204,7 +205,7 @@ def accepted_files(*, gateway_matches=True, terminal_format=None):
         opening_witness = witnesses["batch_entry"]
         contract, headers, window = synthetic_window(state_root=root)
     oracle_reports = list(synthetic_reports(contract, window))
-    schedule = capture.oracle_schedule(contract, window, oracle_reports)
+    schedule = capture.oracle_schedule(contract, window.headers, oracle_reports)
     config, request, pins = capture.query_inputs(contract, window, schedule, profile)
     provider = {**window.provider, "witnesses": witnesses, "gateway": {
         "domainId": 1, "batchId": 0, "isFinalized": False,
@@ -289,7 +290,7 @@ def accepted_files(*, gateway_matches=True, terminal_format=None):
         output(label + "-archive", f"artifact-{component['artifact_id']}.zip",
                folder="transport", external_pin=component["archive"])
     reports = []
-    for index, ((raw, _), report) in enumerate(zip(capture.oracle_requests(contract, window), oracle_reports), 1):
+    for index, ((raw, _), report) in enumerate(zip(capture.oracle_requests(contract, window.headers), oracle_reports), 1):
         label = f"parent-oracle-{index:02d}"
         request_file = label + ".request.json"
         files["evidence/" + request_file] = raw
@@ -807,18 +808,22 @@ class ReviewTests(unittest.TestCase):
     def setUpClass(cls):
         cls.contract, cls.files = accepted_files()
 
-    def review(self, raw, contract=None, archive_pin=None, run=RUN):
+    def review(self, raw, contract=None, archive_pin=None, run=RUN, *, include_resources=False):
         return review.review_stream(io.BytesIO(raw), archive_pin or pin(raw), SOURCE, run,
-                                    contract or self.contract, ROOT)
+                                    contract or self.contract, ROOT, include_resources=include_resources)
 
-    def hosted_review(self, raw, *, conclusion="success", execution="success", archive_sha256=None):
+    def hosted_review(self, raw, *, conclusion="success", execution="success", archive_sha256=None,
+                      include_resources=False, contract=None):
+        contract = contract or self.contract
         run, jobs, artifact = hosted_metadata()
         run["conclusion"] = jobs["jobs"][0]["conclusion"] = conclusion
         jobs["jobs"][0]["steps"][0]["conclusion"] = execution
         artifact.update(size_in_bytes=len(raw), digest="sha256:" + (archive_sha256 or pin(raw)["sha256"]))
         out, error = io.BytesIO(), io.StringIO()
         args = ["review-hosted", "--expect-source-revision", SOURCE, "--expect-run-id", str(RUN),
-                "--expect-artifact-id", str(ARTIFACT), "--expect-contract-sha256", self.contract.sha256]
+                "--expect-artifact-id", str(ARTIFACT), "--expect-contract-sha256", contract.sha256]
+        if include_resources:
+            args.append("--include-resources")
         with tempfile.TemporaryDirectory(prefix="owned-hosted-review-") as directory:
             root = Path(directory)
             archive = root / "original.zip"
@@ -828,7 +833,7 @@ class ReviewTests(unittest.TestCase):
                 path = root / (name + ".json")
                 path.write_bytes(canonical(row))
                 args.extend(("--" + name + "-metadata", str(path)))
-            with patch.object(review.model, "read_contract", return_value=self.contract):
+            with patch.object(review.model, "read_contract", return_value=contract):
                 exit_code = review.main(args, out, error)
             self.assertEqual(sorted(path.name for path in root.iterdir()),
                              ["artifact.json", "jobs.json", "original.zip", "run.json"])
@@ -1064,6 +1069,265 @@ class ReviewTests(unittest.TestCase):
         self.assertEqual(report["recorded_terminal_outcome"], "FAILURE")
         self.assertIsNone(report["comparison"])
         self.assertNotIn("recorded_fixture_commands", report)
+
+    def fixture_timeout_files(self, stage="fixture-deposit", *, progress_source=False):
+        contract, original = accepted_files(terminal_format=model.TERMINAL_FORMAT)
+        if progress_source:
+            data = contract.data
+            selected = model.read_contract(HERE / "reference-gas-renewal-1-contract.json")
+            data["sources"]["devnet"] = selected.data["sources"]["devnet"]
+            raw = canonical(data)
+            contract = model.Contract(raw, pin(raw)["sha256"])
+        prefixes = ("evidence/opening-", "evidence/rpc-02.", "evidence/rpc-03.", "evidence/fixture-configure.")
+        if stage == "fixture-deposit":
+            prefixes += ("evidence/fixture-deposit.",)
+        files = {name: raw for name, raw in original.items() if name.startswith(prefixes)}
+        files["evidence/terminal.json"] = canonical({**terminal("UNKNOWN", contract),
+            "format": model.TERMINAL_FORMAT, "stage": stage})
+        label = "fixture-deposit" if stage == "fixture-deposit" else "fixture-configure"
+        path = f"evidence/{label}.complete.json"
+        receipt = json.loads(files[path])
+        receipt.update(reason="timeout", actual_exit=143, output_complete=False, elapsed_nanoseconds=420_000_000_000)
+        files[path] = canonical(receipt)
+        return contract, files, label, path
+
+    def test_fixture_timeout_preserves_exit_and_leaves_submission_unverified(self):
+        for stage in ("fixture-configuration", "fixture-deposit"):
+            with self.subTest(stage=stage):
+                contract, files, label, path = self.fixture_timeout_files(stage)
+                result = self.review(make_archive(files), contract)
+                self.assertEqual(result["recorded_fixture_timeout"], {"stage": stage, "command": label,
+                    "reason": "timeout", "actual_exit": 143, "output_complete": False,
+                    "elapsed_nanoseconds": 420_000_000_000, "process_group_quiescent": True,
+                    "completion": pin(files[path]), "transaction_submission_verified": False})
+                self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
+                self.assertIsNone(result["comparison"])
+                self.assertNotIn("recorded_fixture_commands", result)
+
+    def test_hosted_review_opt_in_retains_sampled_resources_and_timeout(self):
+        contract, files, _, deposit_path = self.fixture_timeout_files()
+        configure_path = "evidence/fixture-configure.complete.json"
+        files[configure_path] = canonical({**json.loads(files[configure_path]), "elapsed_nanoseconds": 53})
+        budget_path = "evidence/budget-report.json"
+        files[budget_path] = canonical({"format": "owned-devnet-budget-observation/v1",
+            "initial": {"free_bytes": 900}, "samples": 11, "peak_observed_new_disk_bytes": 72,
+            "last_sample": {"elapsed_seconds": 601.25, "free_bytes": 854, "observed_new_disk_bytes": 46},
+            "cleanup_reserve_seconds": 300})
+        raw = make_archive(files)
+        code, default, error = self.hosted_review(raw, conclusion="failure", execution="failure", contract=contract)
+        self.assertEqual(code, 1, error)
+        with patch.object(review.inputs, "_hash_stream", wraps=review.inputs._hash_stream) as digest, \
+                patch.object(zipfile.ZipFile, "extractall", side_effect=AssertionError):
+            code, result, error = self.hosted_review(raw, conclusion="failure", execution="failure",
+                                                    include_resources=True, contract=contract)
+        self.assertEqual(code, 1, error)
+        digest.assert_called_once()
+        observations = result["archive_review"].pop("recorded_resource_observations")
+        self.assertEqual(result, default)
+        self.assertEqual(observations, {"fixture_commands": {
+            "fixture-configure": {"actual_exit": 0, "output_complete": True, "process_group_quiescent": True,
+                                  "elapsed_nanoseconds": 53, "completion": pin(files[configure_path])},
+            "fixture-deposit": {"actual_exit": 143, "output_complete": False, "process_group_quiescent": True,
+                                "elapsed_nanoseconds": 420_000_000_000, "completion": pin(files[deposit_path])}},
+            "sampled_disk": {"samples": 11, "initial_free_bytes": 900, "last_sample_elapsed_seconds": 601.25,
+                             "peak_observed_new_disk_bytes": 72, "observation": pin(files[budget_path])}})
+
+    def test_resource_projection_handles_missing_evidence_and_refuses_inconsistent_values(self):
+        empty = self.review(make_archive(self.opening_files()), include_resources=True)
+        self.assertEqual(empty["recorded_resource_observations"], {"fixture_commands": {}, "sampled_disk": None})
+        unbound = self.review(make_archive({"evidence/terminal.json": canonical(terminal("UNKNOWN"))}),
+                              include_resources=True)
+        self.assertIsNone(unbound["recorded_resource_observations"])
+        contract, files, _, _ = self.fixture_timeout_files()
+        configure_path = "evidence/fixture-configure.complete.json"
+        configure = {**json.loads(files[configure_path]), "elapsed_nanoseconds": 53}
+        budget_path = "evidence/budget-report.json"
+        budget = {"format": "owned-devnet-budget-observation/v1", "initial": {"free_bytes": 900},
+                  "samples": 2, "peak_observed_new_disk_bytes": 72, "cleanup_reserve_seconds": 300,
+                  "last_sample": {"elapsed_seconds": 601.25, "free_bytes": 854, "observed_new_disk_bytes": 46}}
+        files.update({configure_path: canonical(configure), budget_path: canonical(budget)})
+        for member, raw, reason in (
+            (configure_path, canonical({**configure, "process_group": 43}), "review_recorded_command_start"),
+            (configure_path, canonical({**configure, "elapsed_nanoseconds": True}), "integer_bounds"),
+            (budget_path, canonical({**budget, "peak_observed_new_disk_bytes": 45}), "review_resource_budget"),
+            (budget_path, canonical({**budget, "last_sample": {**budget["last_sample"], "free_bytes": 855}}),
+             "review_resource_budget"),
+            (budget_path, canonical(budget).replace(b'"samples": 2', b'"samples": 3, "samples": 2'),
+             "review_resource_budget_encoding"),
+            (budget_path, canonical(budget).replace(b"601.25", b"1e999"), "review_resource_budget_encoding"),
+        ):
+            with self.subTest(member=member, reason=reason), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive({**files, member: raw}), contract, include_resources=True)
+
+    def test_fixture_timeout_requires_start_binding_prior_configuration_and_no_consumer(self):
+        contract, files, _, path = self.fixture_timeout_files()
+        invalid = (
+            ({**files, path: canonical({**json.loads(files[path]), "process_group": 43})},
+             "review_recorded_command_start"),
+            ({k: v for k, v in files.items() if k != "evidence/fixture-configure.complete.json"},
+             "review_member_bound"),
+            ({**files, path: canonical({**json.loads(files[path]), "output_complete": True})},
+             "review_fixture_timeout_scope"),
+            ({**files, "evidence/consume-query.started.json": self.files["evidence/consume-query.started.json"]},
+             "review_fixture_timeout_scope"),
+        )
+        for changed, reason in invalid:
+            with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive(changed), contract)
+
+    def test_fixture_progress_preserves_the_timeout_and_unverified_submission(self):
+        contract, files, _, path = self.fixture_timeout_files(progress_source=True)
+        for markers in (None, [], ["vault_artifacts", "vault_deploy_started"]):
+            with self.subTest(markers=markers):
+                summary = {"format": fixture_progress.FORMAT, "reported_checkpoints": markers,
+                           "stdout": json.loads(files[path])["outputs"]["stdout"]}
+                archive = make_archive({**files, "evidence/" + fixture_progress.REPORT: canonical(summary)})
+                result = self.review(archive, contract)
+                timeout = result["recorded_fixture_timeout"]
+                self.assertEqual(timeout["progress"], {**summary, "original_stdout_independently_rechecked": False})
+                self.assertFalse(timeout["transaction_submission_verified"])
+                self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
+                self.assertIsNone(result["comparison"])
+
+    def test_configuration_progress_is_bound_to_the_configuration_timeout(self):
+        contract, files, _, path = self.fixture_timeout_files("fixture-configuration", progress_source=True)
+        receipt = json.loads(files[path])
+        summary = {"format": fixture_progress.CONFIGURE_FORMAT,
+                   "reported_checkpoints": ["register_domain_received", "set_asset_config_received"],
+                   "stdout": receipt["outputs"]["stdout"]}
+        report = "evidence/" + fixture_progress.CONFIGURE_REPORT
+        result = self.review(make_archive({**files, report: canonical(summary)}), contract)
+        timeout = result["recorded_fixture_timeout"]
+        self.assertEqual(timeout["progress"], {**summary, "original_stdout_independently_rechecked": False})
+        self.assertEqual(timeout["command"], "fixture-configure")
+        self.assertFalse(timeout["transaction_submission_verified"])
+        self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
+        self.assertIsNone(result["comparison"])
+        for markers in (list(reversed(summary["reported_checkpoints"])), ["vault_artifacts"],
+                        ["register_domain_received"] * 2, ["already_configured", "configured"]):
+            changed = {**files, report: canonical({**summary, "reported_checkpoints": markers})}
+            with self.subTest(markers=markers), self.assertRaisesRegex(Refused, "review_fixture_progress_checkpoints"):
+                self.review(make_archive(changed), contract)
+        deposit, deposit_files, _, _ = self.fixture_timeout_files(progress_source=True)
+        with self.assertRaisesRegex(Refused, "review_fixture_progress_scope"):
+            self.review(make_archive({**deposit_files, report: canonical(summary)}), deposit)
+
+    def test_fixture_progress_requires_the_selected_source_and_a_bound_timeout_prefix(self):
+        contract, files, _, path = self.fixture_timeout_files(progress_source=True)
+        receipt = json.loads(files[path])
+        summary = {"format": fixture_progress.FORMAT, "reported_checkpoints": ["vault_artifacts"],
+                   "stdout": receipt["outputs"]["stdout"]}
+        report = "evidence/" + fixture_progress.REPORT
+        invalid = (
+            ({**files, report: canonical({**summary, "reported_checkpoints": ["deposit_step"]})},
+             contract, "review_fixture_progress_checkpoints"),
+            ({**files, report: canonical({**summary, "original_stdout": "private diagnostic"})},
+             contract, "review_fixture_progress_fields"),
+            ({**files, report: canonical({**summary, "stdout": {**summary["stdout"], "sha256": "1" * 64}})},
+             contract, "review_fixture_progress_stdout"),
+            ({**files, report: canonical(summary), path: canonical({**receipt, "process_group_quiescent": False})},
+             contract, "review_fixture_progress_checkpoints"),
+            ({**files, report: canonical(summary), path: canonical({**receipt, "reason": "guard_refused"})},
+             contract, "review_fixture_progress_scope"),
+            ({**files, report: canonical(summary), "evidence/fixture-deposit.stderr": b"private"},
+             contract, "review_member_selection"),
+        )
+        other, other_files, _, _ = self.fixture_timeout_files()
+        invalid += (({**other_files, report: canonical(summary)}, other, "review_fixture_progress_scope"),)
+        for changed, selected, reason in invalid:
+            with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive(changed), selected)
+
+    def closed_opening_files(self):
+        contract, files, _, timeout_path = self.fixture_timeout_files(progress_source=True)
+        _, original = accepted_files(terminal_format=model.TERMINAL_FORMAT)
+        files["evidence/terminal.json"] = canonical({
+            **json.loads(files["evidence/terminal.json"]), "owned_runtime_observed_closed": True})
+        files.update({name: raw for name, raw in original.items() if name.startswith("transport/input-parent-oracle")})
+        files["evidence/owned-container-cleanup.json"] = original["evidence/owned-container-cleanup.json"]
+        files["evidence/dispatch-selection.json"] = canonical({
+            **json.loads(original["evidence/dispatch-selection.json"]), "contract_sha256": contract.sha256})
+        opening_rows = json.loads(files["evidence/" + capture.OPENING_FILE])["result"]["list"]
+        opening = capture.opening_headers(contract, opening_rows)
+        frontier_row = json.loads(original["evidence/provider.json"])["momentums"][-1]
+        frontier = capture.Header.read(frontier_row, contract.data["selection"]["chain_id"]).identifier()
+        files["evidence/rpc-09.request.json"] = canonical(
+            {"jsonrpc": "2.0", "id": 9, "method": "ledger.getFrontierMomentum", "params": []})
+        last = "rpc-09.frontier.json"
+        raw = canonical({"jsonrpc": "2.0", "id": 9, "result": frontier_row})
+        files["evidence/" + last] = raw
+        files["evidence/rpc-09.started.json"] = canonical({
+            **json.loads(original["evidence/rpc-02.started.json"]), "label": "rpc-09"})
+        files["evidence/rpc-09.complete.json"] = canonical({
+            **json.loads(original["evidence/rpc-02.complete.json"]), "label": "rpc-09",
+            "outputs": {"stdout": {"file": last, **pin(raw)}}})
+        ((request, _),) = capture.oracle_requests(contract, opening, frontier)
+        request_file = "parent-oracle-01.request.json"
+        response_file = "parent-oracle-01.stdout"
+        oracle = json.loads(original["evidence/" + response_file])
+        oracle.update(rows=oracle["rows"][:2], request_sha256=pin(request)["sha256"])
+        schedule = capture.oracle_schedule(contract, opening, [oracle], frontier)
+        response = canonical(oracle)
+        stdout = {"file": response_file, **pin(response)}
+        files.update({"evidence/" + request_file: request, "evidence/" + response_file: response,
+            "evidence/parent-oracle-01.started.json": original["evidence/parent-oracle-01.started.json"],
+            "evidence/parent-oracle-01.complete.json": canonical({
+                **json.loads(original["evidence/parent-oracle-01.complete.json"]), "outputs": {"stdout": stdout}})})
+        provenance = {**json.loads(original["evidence/closed-ledger-provenance.json"]),
+            "engine_id": "e" * 64, "reader_source_sha256": "f" * 64, "schedule_hash": schedule["schedule_hash"],
+            "oracle_reports": [{"request": {"file": request_file, **pin(request)}, "stdout": stdout}]}
+        files["evidence/" + capture.CLOSED_OPENING_REPORT] = canonical({
+            "format": "owned-devnet-closed-opening-authorization/v1",
+            "frontier_request_id": 9, "closed_ledger": provenance})
+        return contract, files, timeout_path, opening
+
+    def test_closed_opening_replays_only_two_parents_at_the_later_closed_frontier(self):
+        contract, files, _, opening = self.closed_opening_files()
+        report = self.review(make_archive(files), contract)
+        observed = report["recorded_closed_opening_authorization"]
+        self.assertEqual(observed["frontier_request_id"], 9)
+        self.assertEqual(observed["closed_ledger_frontier"]["height"], 5)
+        self.assertEqual(observed["target_headers"], [header.identifier() for header in opening[1:]])
+        self.assertFalse(observed["accepted_header_authority"])
+        self.assertEqual(report["recorded_terminal_outcome"], "UNKNOWN")
+        self.assertFalse(report["recorded_fixture_timeout"]["transaction_submission_verified"])
+        self.assertIsNone(report["comparison"])
+
+    def test_closed_opening_requires_quiescence_owned_closure_and_bound_inputs(self):
+        contract, files, timeout_path, _ = self.closed_opening_files()
+        report_path = "evidence/" + capture.CLOSED_OPENING_REPORT
+        terminal_path = "evidence/terminal.json"
+        for path, changed, reason in (
+                (timeout_path, {"process_group_quiescent": False}, "review_closed_opening_scope"),
+                (terminal_path, {"owned_runtime_observed_closed": False}, "review_closed_opening_scope"),
+                (report_path, {"frontier_request_id": 8}, "review_closed_opening_frontier_selection")):
+            altered = canonical({**json.loads(files[path]), **changed})
+            with self.subTest(path=path), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive({**files, path: altered}), contract)
+        path = "transport/input-parent-oracle-selection.json"
+        with self.assertRaisesRegex(Refused, "review_component_binding"):
+            self.review(make_archive({**files, path: canonical({
+                **json.loads(files[path]), "artifact_id": 1})}), contract)
+
+    def test_closed_opening_rechecks_request_frontier_and_evidence_bound_parent(self):
+        contract, files, _, _ = self.closed_opening_files()
+        report_path = "evidence/" + capture.CLOSED_OPENING_REPORT
+        request_path = "evidence/parent-oracle-01.request.json"
+        request = json.loads(files[request_path])
+        request["expected_frontier"]["hash"] = "1" * 64
+        with self.assertRaisesRegex(Refused, "review_oracle_request"):
+            self.review(make_archive({**files, request_path: canonical(request)}), contract)
+        stdout = "evidence/parent-oracle-01.stdout"
+        raw = json.loads(files[stdout])
+        raw["rows"][1]["parent"]["hash"] = "2" * 64
+        raw = canonical(raw)
+        pin_row = {"file": "parent-oracle-01.stdout", **pin(raw)}
+        receipt = "evidence/parent-oracle-01.complete.json"
+        summary = json.loads(files[report_path])
+        summary["closed_ledger"]["oracle_reports"][0]["stdout"] = pin_row
+        with self.assertRaisesRegex(Refused, "closed_oracle_header_or_parent_binding"):
+            self.review(make_archive({**files, stdout: raw, report_path: canonical(summary),
+                receipt: canonical({**json.loads(files[receipt]), "outputs": {"stdout": pin_row}})}), contract)
 
     def test_replays_retained_opening_after_a_nonaccepting_terminal_outcome(self):
         for outcome in ("FAILURE", "REFUSED", "UNKNOWN"):
