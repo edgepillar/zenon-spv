@@ -1189,6 +1189,29 @@ class ReviewTests(unittest.TestCase):
                 self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
                 self.assertIsNone(result["comparison"])
 
+    def test_configuration_progress_is_bound_to_the_configuration_timeout(self):
+        contract, files, _, path = self.fixture_timeout_files("fixture-configuration", progress_source=True)
+        receipt = json.loads(files[path])
+        summary = {"format": fixture_progress.CONFIGURE_FORMAT,
+                   "reported_checkpoints": ["register_domain_received", "set_asset_config_received"],
+                   "stdout": receipt["outputs"]["stdout"]}
+        report = "evidence/" + fixture_progress.CONFIGURE_REPORT
+        result = self.review(make_archive({**files, report: canonical(summary)}), contract)
+        timeout = result["recorded_fixture_timeout"]
+        self.assertEqual(timeout["progress"], {**summary, "original_stdout_independently_rechecked": False})
+        self.assertEqual(timeout["command"], "fixture-configure")
+        self.assertFalse(timeout["transaction_submission_verified"])
+        self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
+        self.assertIsNone(result["comparison"])
+        for markers in (list(reversed(summary["reported_checkpoints"])), ["vault_artifacts"],
+                        ["register_domain_received"] * 2, ["already_configured", "configured"]):
+            changed = {**files, report: canonical({**summary, "reported_checkpoints": markers})}
+            with self.subTest(markers=markers), self.assertRaisesRegex(Refused, "review_fixture_progress_checkpoints"):
+                self.review(make_archive(changed), contract)
+        deposit, deposit_files, _, _ = self.fixture_timeout_files(progress_source=True)
+        with self.assertRaisesRegex(Refused, "review_fixture_progress_scope"):
+            self.review(make_archive({**deposit_files, report: canonical(summary)}), deposit)
+
     def test_fixture_progress_requires_the_selected_source_and_a_bound_timeout_prefix(self):
         contract, files, _, path = self.fixture_timeout_files(progress_source=True)
         receipt = json.loads(files[path])
