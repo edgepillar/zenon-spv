@@ -115,11 +115,15 @@ It stops the producers and clients, records the RPC frontier, and uses the
 qualified `fetch-bundle` binary to collect the exact header range and three proofs.
 It requires the same frontier before closing the RPC node.
 
-The reviewed reference-gas deposit flow has a 900-second command deadline. It
-allows 420 seconds for setup and the pinned flow's 480-second finalized-receipt
-wait. Configuration and the original devnet cohort use 420-second command
-deadlines. The existing runner guard still enforces the experiment's overall
-time and disk budget and reserves cleanup time. Each phase runs once.
+The reviewed reference-gas configuration flow has a 660-second command
+deadline. The pinned CLI waits for height 11, sends setup commands serially
+and waits 14 momentums before reading and confirming challenged settings. The
+configuration allowance adds two nominal ten-second momentums for each of up
+to 12 send/receive steps to the 420-second setup budget. The deposit flow has
+a 900-second deadline, including the pinned flow's 480-second finalized-receipt
+wait. The original devnet cohort uses a 420-second deadline per command. Both
+flows operate within the shared time and disk budget and cleanup reserve. Each
+phase runs once.
 
 The closed-ledger phase checks the complete stopped container roster and the
 original RPC volume. The narrow privileged supervisor binds that volume's
@@ -484,14 +488,16 @@ the candidate opening and its source parent slots. The terminal outcome
 is the recorded deposit timeout. Header acceptance and transaction
 submission require their own evidence.
 
-For the reviewed reference-gas devnet source, a deposit timeout can retain
-`fixture-deposit-progress.json`. It records the ordered prefix of recognized,
-complete step lines and the private stdout pin. Raw stdout and stderr stay
-private. An empty list means no recognized prefix was captured. A null list
-means the captured stdout was unavailable for validation. The archive reviewer
-checks the diagnostic against the bound command receipt and identifies it as a
-runner observation. The terminal outcome and transaction submission status
-still come from their existing checks.
+For the reviewed reference-gas devnet source, a timeout can retain
+`fixture-configure-progress.json` or `fixture-deposit-progress.json`. The
+configuration report records an ordered subsequence because the pinned CLI
+can skip settings already present. The deposit report records the ordered
+prefix of its fixed steps. Both use recognized, complete lines and retain the
+stdout pin. Raw stdout and stderr stay private. An empty list means the runner
+captured no recognized labels. A null list means the captured stdout was
+unavailable for validation. The archive reviewer binds the diagnostic to the
+matching command receipt. The terminal outcome and transaction submission
+status retain their existing evidence requirements.
 
 Exit 0 reports `RECORDED_CONSUMER_BYTES_MATCH`. This is agreement among the
 retained records and independently recomputed bytes. The original run identity,

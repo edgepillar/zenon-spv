@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-only
-"""Exercise deposit timeout diagnostics without starting the fixture."""
+"""Exercise fixture timeouts and diagnostics without starting the fixture."""
 
 import hashlib
 import json
@@ -25,6 +25,8 @@ THROUGH_DEPOSIT = (b"unrelated private diagnostic\n" + VAULT_ARTIFACT_STEP
     + b"ok vault deploy started\nok vault sent 15 chunks\nok all 15 chunks held by Settlement\n"
     + b"ok vault finalize sent\nok deployed vault as " + VAULT_ID + b"\n"
     + b"ok buy 96 bytes of storage\nok deposit sent\n")
+THROUGH_CONFIGURATION = (b"unrelated private diagnostic\nfuse admin received at momentum 12\n"
+                         b"registerDomain received at momentum 21\nsetAssetConfig received at momentum 36\r\n")
 
 
 class FixtureProgressTests(unittest.TestCase):
@@ -43,14 +45,26 @@ class FixtureProgressTests(unittest.TestCase):
             + b"ok deposit sent receipt at finalized: SUCCESS, batch 0\nok vault sent 15 chunks\n"),
             ["vault_artifacts"])
 
-    def test_only_reference_gas_deposit_gets_the_finalized_wait_budget(self):
+    def test_configuration_observes_optional_ordered_receipts_and_complete_lines(self):
+        seen = ["fuse_admin_received", "register_domain_received", "set_asset_config_received"]
+        self.assertEqual(progress.reported_configuration(THROUGH_CONFIGURATION
+            + b"fuse user received at momentum 37\nsetAssetConfig (confirm) received at momentum 51"), seen)
+        self.assertEqual(progress.reported_configuration(THROUGH_CONFIGURATION
+            + b"setAssetConfig (confirm) received at momentum 51\nconfigured\n"),
+            seen + ["confirm_asset_config_received", "configured"])
+        self.assertEqual(progress.reported_configuration(b"already configured\n"), ["already_configured"])
+        self.assertEqual(progress.reported_configuration(b"registerDomain received at momentum 0\nconfigured"), [])
+
+    def test_reference_gas_commands_get_cohort_specific_time_budgets(self):
         original = model.read_contract(HERE / "contract.json")
         reference_gas = model.read_contract(HERE / "reference-gas-contract.json")
         for contract, phase, script, arguments, timeout in (
             (original, "deposit", "flows/deposit.ts", [], 420),
+            (original, "configure", "src/cli.ts", ["configure"], 420),
             (reference_gas, "deposit", "flows/deposit.ts", [], 900),
+            (reference_gas, "configure", "src/cli.ts", ["configure"], 660),
             (CONTRACT, "deposit", "flows/deposit.ts", [], 900),
-            (CONTRACT, "configure", "src/cli.ts", ["configure"], 420),
+            (CONTRACT, "configure", "src/cli.ts", ["configure"], 660),
         ):
             with self.subTest(contract=contract.sha256, phase=phase):
                 recorder = Mock()
@@ -68,36 +82,40 @@ class FixtureProgressTests(unittest.TestCase):
                     stdout_cap=model.FIXTURE_OUTPUT_BYTES, stderr_cap=model.FIXTURE_OUTPUT_BYTES)
 
     @unittest.skipUnless(os.name == "posix", "fixture recorder requires POSIX process groups")
-    def test_only_the_bounded_summary_is_exported_on_the_selected_deposit_timeout(self):
-        with tempfile.TemporaryDirectory(prefix="owned-fixture-progress-") as directory:
-            root = Path(directory)
-            recorder = Recorder(root / "evidence")
-            raw = THROUGH_DEPOSIT
-            stdout = recorder.seal("fixture-deposit.stdout", raw)
-            recorder.seal("fixture-deposit.stderr", b"unrelated private error")
-            path = recorder.directory / stdout["file"]
-            receipt = {"reason": "timeout", "process_group_quiescent": True, "outputs": {"stdout": stdout}}
-            result = Result(recorder.directory, stdout["file"], "fixture-deposit.stderr",
-                            model.canonical(receipt), _file_identity(path.lstat()))
-            error = CommandFailed(result)
-            sources = Mock(paths={"devnet": root})
-            node = Mock(node=root / "node")
-            engine = Mock(environment={})
-            prepared = Mock(environment={}, report={"installed_entries": []})
-            with patch.object(recorder, "run", side_effect=error) as run, \
-                    patch.object(runner, "installed_entries", return_value=[]), \
-                    patch.object(runner, "regular_pin", return_value=CONTRACT.data["node_toolchain"]["node_binary"]):
-                with self.assertRaises(CommandFailed) as caught:
-                    runner.fixture_flow(CONTRACT, recorder, engine, sources, node, prepared, "deposit", None)
-            self.assertIs(caught.exception, error)
-            self.assertEqual(run.call_count, 1)
-            summary = (recorder.directory / progress.REPORT).read_bytes()
-            self.assertNotIn(VAULT_ID, summary)
-            self.assertNotIn(b"unrelated private", summary)
-            self.assertEqual(json.loads(summary)["reported_checkpoints"][-1], "deposit_step")
-            self.assertEqual(json.loads(summary)["stdout"]["sha256"], hashlib.sha256(raw).hexdigest())
-            entries = runner.evidence_index((recorder,), {})
-            self.assertEqual([row["path"] for row in entries], [f"evidence/{progress.REPORT}"])
+    def test_only_the_bounded_summary_is_exported_on_a_selected_fixture_timeout(self):
+        for phase, raw, report, checkpoint in (
+            ("deposit", THROUGH_DEPOSIT, progress.REPORT, "deposit_step"),
+            ("configure", THROUGH_CONFIGURATION, progress.CONFIGURE_REPORT, "set_asset_config_received"),
+        ):
+            with self.subTest(phase=phase), tempfile.TemporaryDirectory(prefix="owned-fixture-progress-") as directory:
+                root = Path(directory)
+                recorder = Recorder(root / "evidence")
+                stdout = recorder.seal(f"fixture-{phase}.stdout", raw)
+                stderr = recorder.seal(f"fixture-{phase}.stderr", b"unrelated private error")
+                path = recorder.directory / stdout["file"]
+                receipt = {"reason": "timeout", "process_group_quiescent": True, "outputs": {"stdout": stdout}}
+                result = Result(recorder.directory, stdout["file"], stderr["file"],
+                                model.canonical(receipt), _file_identity(path.lstat()))
+                error = CommandFailed(result)
+                sources = Mock(paths={"devnet": root})
+                node = Mock(node=root / "node")
+                engine = Mock(environment={})
+                prepared = Mock(environment={}, report={"installed_entries": []})
+                with patch.object(recorder, "run", side_effect=error) as run, \
+                        patch.object(runner, "installed_entries", return_value=[]), \
+                        patch.object(runner, "regular_pin", return_value=CONTRACT.data["node_toolchain"]["node_binary"]):
+                    with self.assertRaises(CommandFailed) as caught:
+                        runner.fixture_flow(CONTRACT, recorder, engine, sources, node, prepared, phase, None)
+                self.assertIs(caught.exception, error)
+                self.assertEqual(run.call_count, 1)
+                summary = (recorder.directory / report).read_bytes()
+                self.assertNotIn(VAULT_ID, summary)
+                self.assertNotIn(b"unrelated private", summary)
+                self.assertNotIn(b" at momentum ", summary)
+                self.assertEqual(json.loads(summary)["reported_checkpoints"][-1], checkpoint)
+                self.assertEqual(json.loads(summary)["stdout"]["sha256"], hashlib.sha256(raw).hexdigest())
+                entries = runner.evidence_index((recorder,), {})
+                self.assertEqual([row["path"] for row in entries], [f"evidence/{report}"])
 
     def test_unavailable_stdout_never_supplies_checkpoints(self):
         receipt = {"process_group_quiescent": False, "outputs": {"stdout": {}}}

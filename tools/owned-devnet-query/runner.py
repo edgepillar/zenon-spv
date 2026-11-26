@@ -30,6 +30,9 @@ from sources import Preparer as Sources
 SYSTEM = {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "LANG": "C",
           "GOTOOLCHAIN": "local", "GOMAXPROCS": "2", "PYTHONDONTWRITEBYTECODE": "1"}
 FIXTURE_PHASE_SECONDS = 420
+# The reviewed configuration can await 12 sequential receipts. Allow two
+# nominal ten-second momentums per receipt within the shared work budget.
+REFERENCE_GAS_CONFIGURE_RECEIPT_SECONDS = 12 * 2 * 10
 # The pinned reference-gas flow allows 30 ten-second momentums plus 180
 # seconds for a finalized receipt after deposit setup.
 REFERENCE_GAS_FINALIZED_WAIT_SECONDS = 30 * 10 + 180
@@ -40,7 +43,7 @@ REVIEW_FILES = {"dispatch-selection.json", "engine-admission.json", "image-prepa
     "query-config.json", "query-request.json", "query-context-pins.json", "consumer-comparison.json",
     "owned-container-cleanup.json", "budget-report.json", "terminal.json",
     "input-consumer-selection.json", "input-parent-oracle-selection.json", "node-toolchain-intake.json",
-    fixture_progress.REPORT}
+    fixture_progress.REPORT, fixture_progress.CONFIGURE_REPORT}
 
 
 def fresh_directory(path):
@@ -95,10 +98,13 @@ def fixture_flow(contract, recorder, engine, sources, node, prepared, phase, gua
     elif phase == "deposit":
         engine.require_running_closure()
         script, arguments = "flows/deposit.ts", []
-        if fixture_progress.supports(contract):
-            timeout += REFERENCE_GAS_FINALIZED_WAIT_SECONDS
     else:
         raise Refused("fixture_flow_scope")
+    reference_gas = fixture_progress.supports(contract)
+    configuring = phase == "configure"
+    if reference_gas:
+        timeout += (REFERENCE_GAS_CONFIGURE_RECEIPT_SECONDS if configuring
+                    else REFERENCE_GAS_FINALIZED_WAIT_SECONDS)
     sources.verify()
     same(installed_entries(contract, source_root), prepared.report["installed_entries"],
          "fixture_packages_changed")
@@ -112,8 +118,9 @@ def fixture_flow(contract, recorder, engine, sources, node, prepared, phase, gua
                      environment, guard=guard, timeout=timeout, stdout_cap=model.FIXTURE_OUTPUT_BYTES,
                      stderr_cap=model.FIXTURE_OUTPUT_BYTES)
     except CommandFailed as error:
-        if phase == "deposit" and error.result.receipt["reason"] == "timeout" and fixture_progress.supports(contract):
-            recorder.seal(fixture_progress.REPORT, canonical(fixture_progress.observe(error.result)))
+        if reference_gas and error.result.receipt["reason"] == "timeout":
+            report = fixture_progress.CONFIGURE_REPORT if configuring else fixture_progress.REPORT
+            recorder.seal(report, canonical(fixture_progress.observe(error.result, configuration=configuring)))
         raise
     sources.verify()
     engine.require_running_closure(NODE_ROLES if phase == "configure" else model.SERVICES)
