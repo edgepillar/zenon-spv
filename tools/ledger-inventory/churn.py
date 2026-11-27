@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: GPL-3.0-only
 """Replay a selected ordered raw-ledger patch into a bounded snapshot digest."""
 import hashlib
+import importlib.util
+import io
 import json
 from pathlib import Path
 import re
@@ -13,6 +15,7 @@ import inventory
 
 PLAN_FORMAT = "zenon-r1-ledger-churn-plan/v1"
 REPORT_FORMAT = "zenon-r1-ledger-churn/v1"
+PROJECTION_REPORT_FORMAT = "zenon-r1-ledger-churn-projection/v1"
 PLAN_BYTES = 8 << 10
 DEFAULT_PATCH_BYTES = 8 << 20
 HARD_PATCH_BYTES = 64 << 20
@@ -146,9 +149,28 @@ def add_record(row, key, size, wire):
     row["put_wire_bytes"] += wire
 
 
+class ReplayedValue:
+    """Feed a value to the projector while updating the full target digest."""
+
+    def __init__(self, read, digest):
+        self.read, self.digest = read, digest
+
+    def take(self, size):
+        part = self.read(size)
+        require(len(part) == size, "truncated_input")
+        self.digest.update(part)
+        return part
+
+    def value(self, size):
+        while size:
+            size -= len(self.take(min(size, inventory.CHUNK_BYTES)))
+        return False
+
+
 class Replay:
-    def __init__(self, after):
+    def __init__(self, after, projector=None):
         self.after = after
+        self.projector = projector
         self.families = {name: {"before": dict.fromkeys(COUNTERS, 0),
                                 "after": dict.fromkeys(COUNTERS, 0),
                                 "operations": dict.fromkeys(OPERATIONS, 0)}
@@ -172,15 +194,24 @@ class Replay:
         counts[operation_kind(current, edit.first)] += 1
         if edit.value is not None:
             self.begin_record(edit.family, key, len(edit.value))
-            self.hash.update(edit.value)
+            if self.projector is None:
+                self.hash.update(edit.value)
+            else:
+                self.copy_value(key, len(edit.value), io.BytesIO(edit.value).read)
+
+    def copy_value(self, key, size, read):
+        if self.projector is None:
+            hash_value(read, size, self.hash)
+        else:
+            self.projector.read_value(ReplayedValue(read, self.hash), key, size)
 
     def totals(self, name, fields):
         return {key: sum(row[name][key] for row in self.families.values()) for key in fields}
 
 
-def hash_value(reader, size, target):
+def hash_value(read, size, target):
     while size:
-        part = reader.take(min(size, inventory.CHUNK_BYTES))
+        part = read(min(size, inventory.CHUNK_BYTES))
         target.update(part)
         size -= len(part)
 
@@ -203,12 +234,12 @@ def replay_snapshot(stream, pin, caps, edits, replay):
             next_key = next(pending, None)
         if next_key == key:
             current = hashlib.sha256()
-            hash_value(reader, size, current)
+            hash_value(reader.take, size, current)
             replay.apply(key, edits.pop(key), (size, current.digest()))
             next_key = next(pending, None)
         else:
             replay.begin_record(name, key, size)
-            hash_value(reader, size, replay.hash)
+            replay.copy_value(key, size, reader.take)
         add_record(replay.families[name]["before"], key, size, reader.position - start)
         previous = key
         records += 1
@@ -223,16 +254,42 @@ def replay_snapshot(stream, pin, caps, edits, replay):
     require(replay.hash.hexdigest() == after["sha256"], "after_digest")
 
 
+def projection_options(profile, root, max_leaves):
+    if profile is None and root is None and max_leaves is None:
+        return None
+    require(digest(root), "projection_options")
+    path = Path(__file__).resolve().parents[1] / "ledger-export/snapshot_projection.py"
+    spec = importlib.util.spec_from_file_location("churn_snapshot_projection", path)
+    projection = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(projection)
+    limit = projection.DEFAULT_LEAVES if max_leaves is None else max_leaves
+    require(profile == projection.PROFILE and type(limit) is int and 0 < limit <= projection.MAX_LEAVES,
+            "projection_options")
+    return projection, root, limit
+
+
 def inspect(stream, plan_bytes, plan_sha256, configured_limits=None, *,
-            max_patch_bytes=DEFAULT_PATCH_BYTES, max_patch_records=DEFAULT_PATCH_RECORDS):
+            max_patch_bytes=DEFAULT_PATCH_BYTES, max_patch_records=DEFAULT_PATCH_RECORDS,
+            projection_profile=None, expect_candidate_root=None, max_projected_leaves=None):
     caps = inventory.limits(configured_limits)
     require(type(max_patch_bytes) is int and 0 < max_patch_bytes <= HARD_PATCH_BYTES
             and type(max_patch_records) is int and 0 < max_patch_records <= HARD_PATCH_RECORDS, "patch_limits")
+    options = projection_options(projection_profile, expect_candidate_root, max_projected_leaves)
     plan = read_plan(stream, plan_bytes, plan_sha256, caps, max_patch_bytes, max_patch_records)
-    replay = Replay(plan["after"])
-    edits = read_patch(stream, plan["patch"], caps, replay.families)
-    replay_snapshot(stream, plan["before"], caps, edits, replay)
-    return {"format": REPORT_FORMAT, "status": "SELECTED_PATCH_REPLAY_MATCHED",
+    projector = None
+    if options is not None:
+        projection, root, limit = options
+        projector = projection.Projector(root, limit, plan["after"]["momentum"])
+    replay = Replay(plan["after"], projector)
+    try:
+        edits = read_patch(stream, plan["patch"], caps, replay.families)
+        replay_snapshot(stream, plan["before"], caps, edits, replay)
+        projected = projector.finish() if projector is not None else None
+    except ValueError as error:
+        if options is None or not isinstance(error, projection.Refused):
+            raise
+        raise inventory.Refused(str(error)) from None
+    result = {"format": REPORT_FORMAT, "status": "SELECTED_PATCH_REPLAY_MATCHED",
             "selection": plan, "plan": {"bytes": plan_bytes, "sha256": plan_sha256},
             "limits": {**caps, "patch_bytes": max_patch_bytes, "patch_records": max_patch_records},
             "before_totals": replay.totals("before", COUNTERS), "after_totals": replay.totals("after", COUNTERS),
@@ -240,6 +297,10 @@ def inspect(stream, plan_bytes, plan_sha256, configured_limits=None, *,
             "input_bytes": plan_bytes + plan["patch"]["bytes"] + plan["before"]["bytes"],
             "after_snapshot_bytes_read": 0, "derived_snapshot_bytes_written": 0,
             "end_of_stream_observed": True, "scope": scope()}
+    if projected is not None:
+        result.update(format=PROJECTION_REPORT_FORMAT, status="SELECTED_PATCH_REPLAY_AND_CANDIDATE_PROJECTION_MATCHED",
+                      candidate_projection=projected)
+    return result
 
 
 def main(argv=None, stream=None):
@@ -248,12 +309,17 @@ def main(argv=None, stream=None):
     parser.add_argument("--plan-sha256", required=True)
     parser.add_argument("--max-patch-bytes", type=inventory.decimal, default=DEFAULT_PATCH_BYTES)
     parser.add_argument("--max-patch-records", type=inventory.decimal, default=DEFAULT_PATCH_RECORDS)
+    parser.add_argument("--projection-profile")
+    parser.add_argument("--expect-candidate-root")
+    parser.add_argument("--max-projected-leaves", type=inventory.decimal)
     for key, default in inventory.DEFAULT_LIMITS.items():
         parser.add_argument("--max-" + key.replace("_", "-"), type=inventory.decimal, default=default)
     args = parser.parse_args(argv)
     caps = {key: getattr(args, "max_" + key) for key in inventory.DEFAULT_LIMITS}
     return inspect(sys.stdin.buffer if stream is None else stream, args.plan_bytes, args.plan_sha256, caps,
-                   max_patch_bytes=args.max_patch_bytes, max_patch_records=args.max_patch_records)
+                   max_patch_bytes=args.max_patch_bytes, max_patch_records=args.max_patch_records,
+                   projection_profile=args.projection_profile, expect_candidate_root=args.expect_candidate_root,
+                   max_projected_leaves=args.max_projected_leaves)
 
 
 if __name__ == "__main__":
