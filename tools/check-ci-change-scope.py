@@ -40,15 +40,18 @@ NATIVE_FILES = frozenset("internal/verify/experimental_v3_" + name for name in (
 # Every other non-document tree record remains in this reviewed closure,
 # including workflows, research Go sources, Python helpers and fixture data.
 ORACLE_SOURCE_PINS = frozenset((
-    "0d2f615725b34825e58852c6d3aed63857aedd5a58d1ab975f5af377ef888078",
+    "f99b68899409e1ff66fcd900eb7b8482742c75e74d298a498ba7821f098fca3d",
 ))
 SHARED_TRANSPORT = "tools/ledger-transport/transport.py"
+SHARED_PROJECTION = "tools/ledger-export/snapshot_projection.py"
 TRANSPORT_FILES = frozenset("tools/ledger-transport/" + name for name in (
     "archive_index.py", "archive_index_test.py", "archive_tail.py", "archive_tail_test.py",
     "transport.py", "transport_test.py", "README.md", "THIRD_PARTY_NOTICES"))
 EXPORT_FILES = frozenset("tools/ledger-export/" + name for name in (
     "inventory_completed_export.py", "inventory_completed_export_test.py",
     "snapshot_projection.py", "README.md"))
+INVENTORY_FILES = frozenset("tools/ledger-inventory/" + name for name in (
+    "churn.py", "inventory_test.py", "README.md"))
 PREPARATION_FILES = frozenset("tools/owned-devnet-query/" + name for name in (
     "engine_test.py", "images_test.py", "inputs.py", "inputs_test.py",
     "capture_test.py", "review.py", "review_test.py", "README.md",
@@ -58,7 +61,7 @@ FIRST_INSERTION_FILES = frozenset("tools/gen-state-root-vectors/" + name for nam
     "first-insertion-catchup_test.go.txt", "first-insertion-cpu_test.go.txt",
     "first-insertion-export_test.go.txt", "qualify_first_insertion.py",
     "qualify_first_insertion_test.py"))
-PORTABLE_FILES = TRANSPORT_FILES | EXPORT_FILES | PREPARATION_FILES | FIRST_INSERTION_FILES
+PORTABLE_FILES = TRANSPORT_FILES | EXPORT_FILES | INVENTORY_FILES | PREPARATION_FILES | FIRST_INSERTION_FILES
 # The intake is the tool contract. The general roadmap is metadata only and
 # must not add an unrelated three-platform workflow to a portable tool change.
 TRANSPORT_DOCS = frozenset(("docs/state-root-r1-intake.md",))
@@ -67,6 +70,8 @@ PORTABLE_WORKFLOWS = (
      "ed2edac4230468ec912fa18c1eb377b4006b970eeb052670abc1f57eb9803a24"),
     (".github/workflows/ledger-export.yml", EXPORT_FILES | {SHARED_TRANSPORT}, 8084,
      "8fab1803332f60cac43a20b8940988b19c38b8dd0359f005f605dcc55dcb98fb"),
+    (".github/workflows/ledger-inventory.yml", INVENTORY_FILES | {SHARED_PROJECTION}, 6096,
+     "2d2804b11a4dac869ea0a20c851b71a892683491fbc0f79f6e1210acd8178846"),
     (".github/workflows/owned-devnet-query.yml", PREPARATION_FILES, 4453,
      "cf4ddd4e2c7a5388af336e42e5d47ce43ca112ed2c699731d4b8cd2137977d66"),
     (".github/workflows/first-insertion-catchup.yml",
@@ -75,7 +80,7 @@ PORTABLE_WORKFLOWS = (
 )
 # Keep every remaining non-document dependency, including all workflows.
 # Refresh only after reviewing dependencies and selecting full runtime CI.
-PORTABLE_SOURCE_PIN = "a28a7e18658e52304a10557d9136d445bb6c4a7f5ed1808d525abd6209debd0e"
+PORTABLE_SOURCE_PIN = "683a7b0b329fd788f1e8b55dcbc4625203fc8f2b5b32859368c555b6b2cb8998"
 MAX_FILTERED_DIFF_RECORDS = 256
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192

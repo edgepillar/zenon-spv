@@ -6,7 +6,7 @@ The general workflow first selects the exact Git change scope with
 recorded-oracle jobs. The small scope job still runs its controls and retains a
 source-bound selection report. Other workflows retain their existing triggers.
 The portable route selects the required three-platform workflows for a fixed set
-of archive, export and devnet preparation files.
+of archive, export, inventory and devnet preparation files.
 The native-v3 route below keeps all native jobs and selects only the unchanged
 recorded-oracle job out of the execution plan.
 Full-runtime jobs also retain small source-bound scope-control reports on all
@@ -98,12 +98,19 @@ files. Regular Markdown may accompany the changes.
 | --- | --- | --- |
 | `tools/ledger-transport` | `archive_index.py`, `archive_index_test.py`, `archive_tail.py`, `archive_tail_test.py`, `transport_test.py`, `README.md`, `THIRD_PARTY_NOTICES` | `ledger-transport.yml` |
 | `tools/ledger-transport` | `transport.py` | `ledger-transport.yml` and `ledger-export.yml` |
-| `tools/ledger-export` | `inventory_completed_export.py`, `inventory_completed_export_test.py`, `snapshot_projection.py`, `README.md` | `ledger-export.yml` |
+| `tools/ledger-export` | `inventory_completed_export.py`, `inventory_completed_export_test.py`, `README.md` | `ledger-export.yml` |
+| `tools/ledger-export` | `snapshot_projection.py` | `ledger-export.yml` and `ledger-inventory.yml` |
+| `tools/ledger-inventory` | `churn.py`, `inventory_test.py`, `README.md` | `ledger-inventory.yml` |
 | `tools/owned-devnet-query` | `engine_test.py`, `images_test.py`, `inputs.py`, `inputs_test.py`, `capture_test.py`, `review.py`, `review_test.py`, `README.md` | `owned-devnet-query.yml` |
 | `tools/owned-devnet-query` | `engine.py`, `node_diagnostics.py`, `node_diagnostics_test.py`, `node_file_logs.py`, `node_file_logs_test.py` | `owned-devnet-query.yml` |
 | `tools/gen-state-root-vectors` | `first-insertion-catchup_test.go.txt`, `first-insertion-cpu_test.go.txt`, `first-insertion-export_test.go.txt`, `qualify_first_insertion.py`, `qualify_first_insertion_test.py` | `first-insertion-catchup.yml` |
 
-The compiled export controls also consume `transport.py`.
+The compiled export controls also consume `transport.py`. Inventory replay
+loads the shared snapshot projector. The core `inventory.py` stays in the
+full-runtime closure because the exporter and transport also consume it.
+`ledger-inventory.yml` runs the existing Python controls on Linux, macOS and
+Windows. Each platform uploads one report with actual test names, the exact
+checkout, source tree, source byte digests and workflow attempt.
 `docs/state-root-r1-intake.md` adds `ledger-transport.yml` when part of a portable
 diff. `docs/first-insertion-catchup.md` adds `first-insertion-catchup.yml` in the
 same way. The general `docs/native-roadmap.md` is an evidence metadata input, not a
@@ -435,3 +442,15 @@ general CI and the applicable dedicated workflows. Later reviewed-leaf
 changes use the narrower routes only when their exact source and workflow
 pins match. Live typed consumption and representative snapshot data have
 separate acceptance requirements.
+
+### Ledger inventory workflow installation
+
+The scope update integrates the qualified projected replay and installs its
+Python workflow. The policy installation takes the full general lane. A later
+eligible replay-only change selects the inventory workflow. A projector
+change selects inventory and exporter controls together.
+
+| Closure | Entries | Encoded bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Native v3 | 1224 | 125316 | `f99b68899409e1ff66fcd900eb7b8482742c75e74d298a498ba7821f098fca3d` |
+| Portable tools | 1201 | 123117 | `683a7b0b329fd788f1e8b55dcbc4625203fc8f2b5b32859368c555b6b2cb8998` |
