@@ -319,8 +319,7 @@ def execute(environment, workspace, checkout):
         oracle.enable_execution()
         stage = "node-toolchain"
         node = Installer(contract, transport, workspace / "node-toolchain",
-                         ["/usr/bin/curl", "--disable"], tool_environment, guard).fetch()
-        node = node.enable_execution()
+                         ["/usr/bin/curl", "--disable"], tool_environment, guard, for_execution=True).fetch()
         stage = "packages"
         prepared = Packages(contract, record, sources, node, workspace / "packages",
                             tool_environment, guard).prepare()

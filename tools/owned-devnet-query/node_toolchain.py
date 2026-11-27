@@ -229,7 +229,7 @@ class _Sink:
         self.files.append(NodeFile(row["path"], row["sha256"], row["bytes"],
                                    row["executable"], _identity(info)))
 
-    def finish(self, report):
+    def finish(self, report, *, for_execution):
         for name, raw in WRAPPERS.items():
             relative = "bin/" + name
             with self.open(relative) as stream:
@@ -237,6 +237,9 @@ class _Sink:
             self.finish_file({"path": relative, "sha256": hashlib.sha256(raw).hexdigest(),
                               "bytes": len(raw), "executable": True})
         result = Installation(self.root, tuple(self.directories.items()), tuple(self.files), canonical(report))
+        if for_execution:
+            # The mode transition starts with a full read of the sealed installation.
+            return result.enable_execution()
         result.verify()
         return result
 
@@ -270,12 +273,16 @@ def _member(stream, size, name, executable, sink):
     return row if selected else None, bytes(package)
 
 
-def unpack_node(stream, selected, destination=None):
+def unpack_node(stream, selected, destination=None, *, for_execution=False):
     """Check the pinned format, optionally writing a fresh regular-file prefix.
 
-    Original content identity and inspection do not establish native execution,
-    an authenticated distribution or permission to run the selected scripts.
+    A caller can explicitly request local executable permissions after the
+    complete archive, manifest and installed-file checks. Intake runs no script.
     """
+    require(type(for_execution) is bool and (not for_execution or destination is not None),
+            "node_execution_destination")
+    if for_execution:
+        require(os.name == "posix", "node_execution_platform")
     selected = specification(selected)
     archive = {"sha256": selected["sha256"], "bytes": selected["archive_bytes"]}
     _hash_stream(stream, archive)
@@ -377,7 +384,7 @@ def unpack_node(stream, selected, destination=None):
                                                 "bytes": len(raw)} for name, raw in WRAPPERS.items()},
                   "files_extracted": 0 if sink is None else len(files) + len(WRAPPERS),
                   "authenticated_distribution": False}
-        return report if sink is None else sink.finish(report)
+        return report if sink is None else sink.finish(report, for_execution=for_execution)
     except Refused:
         raise
     except (lzma.LZMAError, tarfile.TarError, UnicodeError, ValueError, EOFError) as error:
@@ -387,13 +394,17 @@ def unpack_node(stream, selected, destination=None):
 class Installer:
     """One causal, bounded original download; a failed workspace is not retried."""
 
-    def __init__(self, contract, recorder, destination, command, environment, guard):
+    def __init__(self, contract, recorder, destination, command, environment, guard, *, for_execution=False):
         self.selected = specification(contract.data["node_toolchain"])
         self.recorder, self.destination = recorder, Path(destination)
         require(not self.destination.exists() and not self.destination.is_symlink(),
                 "node_destination_exists")
         require(type(command) is list and command and callable(guard), "node_download_command")
+        require(type(for_execution) is bool, "node_download_execution_mode")
+        if for_execution:
+            require(os.name == "posix", "node_execution_platform")
         self.command, self.environment, self.guard = list(command), dict(environment), guard
+        self.for_execution = for_execution
         self.attempted, self.result = False, None
 
     def fetch(self):
@@ -418,7 +429,7 @@ class Installer:
                     == {"sha256": selected["sha256"], "bytes": selected["archive_bytes"]},
                     "node_transport_content")
             with raw.open_stdout_for_validation(selected["archive_bytes"]) as stream:
-                result = unpack_node(stream, selected, self.destination)
+                result = unpack_node(stream, selected, self.destination, for_execution=self.for_execution)
             self.recorder.seal("node-toolchain-intake.json", canonical(result.inspection))
         self.result = result
         return result

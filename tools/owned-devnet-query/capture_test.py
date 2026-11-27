@@ -1252,10 +1252,9 @@ class HostBoundaryTests(unittest.TestCase):
                     trace.fetch.side_effect = [mock.Mock(binaries=consumer),
                         model.Refused(reason) if case == "bad-oracle" else mock.Mock(binaries=oracle)]
                     dependencies["Installer"].return_value.fetch = trace.fetch_node_toolchain
-                    trace.fetch_node_toolchain.return_value = mock.Mock(enable_execution=trace.enable_node)
+                    trace.fetch_node_toolchain.return_value = mock.sentinel.executable_node
                     if case == "bad-toolchain":
                         trace.fetch_node_toolchain.side_effect = model.Refused(reason)
-                    trace.enable_node.return_value = mock.sentinel.executable_node
                     dependencies["Packages"].return_value.prepare = trace.prepare_packages
                     trace.prepare_packages.return_value = mock.sentinel.prepared_packages
                     if case == "bad-packages":
@@ -1288,6 +1287,8 @@ class HostBoundaryTests(unittest.TestCase):
                     env = {"GH_TOKEN": "unused-test-value", "GITHUB_OUTPUT": str(root / "output")}
                     self.assertEqual(runner.execute(env, root, HERE.parents[1]), 1)
                     engine.cleanup.assert_called_once_with()
+                    if queries_admitted and case != "bad-oracle":
+                        self.assertEqual(dependencies["Installer"].call_args.kwargs, {"for_execution": True})
                     if timeout_phase is not None:
                         diagnostic = dependencies["closed_opening_after_timeout"]
                         diagnostic.assert_called_once()
@@ -1309,7 +1310,7 @@ class HostBoundaryTests(unittest.TestCase):
                     expected.extend((mock.call.enable_consumer(), mock.call.enable_oracle(),
                                      mock.call.fetch_node_toolchain()))
                 if case in ("bad-packages", "ready", "bad-consumer") or timeout_phase is not None:
-                    expected.extend((mock.call.enable_node(), mock.call.prepare_packages()))
+                    expected.append(mock.call.prepare_packages())
                 if case in ("ready", "bad-consumer") or timeout_phase is not None:
                     expected.extend((mock.call.verify_runtime_files(), mock.call.fixture("configure")))
                 if consumer_failed or deposit_timed_out:

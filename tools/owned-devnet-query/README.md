@@ -81,6 +81,9 @@ Before enabling execution, the installer inventories and hashes every selected
 file. It enables each executable through its checked file descriptor and
 rehashes it after the mode change. The final inventory also checks that the
 other files kept their identity, permissions and metadata from the first scan.
+The owned runner requests this transition during intake, so that first scan also
+serves as the installed-file verification. The complete archive and selected
+manifest are checked before any execution permission is enabled.
 Each separate verification still reads and hashes the complete installation.
 
 `packages.py` is the later native preparation step. It checks the enabled
