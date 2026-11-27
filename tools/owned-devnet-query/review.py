@@ -219,10 +219,10 @@ def recorded_fixture_commands(evidence):
 
 def recorded_fixture_timeout(evidence, terminal, binding_present):
     stage = terminal["stage"]
-    labels = {"fixture-configuration": "fixture-configure", "fixture-deposit": "fixture-deposit"}
-    label = labels.get(stage) if type(stage) is str else None
-    if label is None or terminal["format"] != model.TERMINAL_FORMAT or terminal["reason"] != "command_incomplete":
+    scope = fixture_progress.TIMEOUT_SCOPES.get(stage) if type(stage) is str else None
+    if scope is None or terminal["format"] != model.TERMINAL_FORMAT or terminal["reason"] != "command_incomplete":
         return None
+    label, _ = scope
     receipt = diagnostic_receipt(evidence, label, "review_fixture_timeout_receipt")
     if receipt is None or receipt.get("reason") != "timeout":
         return None
@@ -364,7 +364,7 @@ def recorded_input_component(evidence, contract, role):
                     folder="transport", external_pin=component["archive"])
 
 
-def recorded_closed_schedule(evidence, contract, headers, frontier, provenance):
+def recorded_closed_schedule(evidence, contract, headers, frontier, provenance, *, services=model.SERVICES):
     oracle_outputs = []
 
     def oracle_reports():
@@ -387,13 +387,13 @@ def recorded_closed_schedule(evidence, contract, headers, frontier, provenance):
     cleanup = evidence.json("owned-container-cleanup.json")
     rows = cleanup["containers"]
     require(cleanup.get("format") == "owned-devnet-cleanup/v1"
-            and type(rows) is list and len(rows) == len(model.SERVICES)
+            and type(rows) is list and len(rows) == len(services)
             and cleanup.get("volume_image_or_network_removal_performed") is False, "review_owned_closure")
     closed = {}
     for row in rows:
         exact_keys(row, {"id", "service", "observed_closed"}, "review_owned_closure")
         role = row["service"]
-        require(role in model.SERVICES and role not in closed and row["observed_closed"] is True,
+        require(role in services and role not in closed and row["observed_closed"] is True,
                 "review_owned_closure")
         closed[role] = model.digest(row["id"])
     require(len(set(closed.values())) == len(rows) and provenance["rpc_container_id"] == closed["rpc"],
@@ -406,7 +406,7 @@ def recorded_closed_opening(evidence, contract, selection, terminal, timeout, op
     path = "evidence/" + capture.CLOSED_OPENING_REPORT
     if path not in evidence.pins:
         return None
-    require(timeout is not None and timeout["command"] == fixture_progress.COMMAND
+    require(timeout is not None
             and timeout["process_group_quiescent"] is True and terminal["owned_runtime_observed_closed"] is True
             and opening_signatures is not None and opening_proof is not None and opening_proof["presence"] == "absent"
             and fixture_progress.supports(contract), "review_closed_opening_scope")
@@ -426,7 +426,9 @@ def recorded_closed_opening(evidence, contract, selection, terminal, timeout, op
     model.digest(provenance["reader_source_sha256"])
     recorded_dispatch_selection(evidence, selection)
     recorded_input_component(evidence, contract, "parent_oracle")
-    schedule = recorded_closed_schedule(evidence, contract, opening, frontier["candidate_header"], provenance)
+    services = fixture_progress.TIMEOUT_SCOPES[timeout["stage"]][1]
+    schedule = recorded_closed_schedule(evidence, contract, opening, frontier["candidate_header"], provenance,
+                                        services=services)
     return {"frontier_request_id": request_id, "closed_ledger_frontier": frontier["candidate_header"],
             "target_headers": [header.identifier() for header in opening[1:]],
             "v3_schedule_hash": schedule["schedule_hash"], "accepted_header_authority": False}

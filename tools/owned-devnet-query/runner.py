@@ -229,16 +229,17 @@ def publish_paths(path, workspace, entries):
 
 
 def closed_opening_after_timeout(contract, record, engine, rpc, opening, sources, oracle,
-                                 workspace, tool_environment, budget, reader_source):
+                                 workspace, tool_environment, budget, reader_source, *, services):
     budget.cap_diagnostic_time(120)
-    engine.stop_producers_and_clients()
+    engine.stop_producers_and_clients(services=services)
     frontier = rpc.frontier()
     request_id = rpc.calls
     identifier = frontier.identifier()
     capture.require_opening_frontier(opening, identifier, frontier.version, frontier.timestamp)
-    ledger = engine.close_rpc()
+    ledger = engine.close_rpc(services=services)
     _, provenance = capture.read_closed_parent_schedule(contract, record, engine, ledger,
-        opening, identifier, sources, oracle, workspace, tool_environment, budget.check, reader_source)
+        opening, identifier, sources, oracle, workspace, tool_environment, budget.check, reader_source,
+        services=services)
     budget.check(force=True)
     return {"format": "owned-devnet-closed-opening-authorization/v1",
             "frontier_request_id": request_id, "closed_ledger": provenance}
@@ -287,7 +288,7 @@ def execute(environment, workspace, checkout):
         stage = "nodes"
         files.verify()
         engine.create_layout()
-        for role in model.SERVICES[:4]:
+        for role in model.NODE_SERVICES:
             engine.create(role, images.image_for(role), files)
             engine.start(role)
         rpc = capture.LocalRpc(contract, record, workspace, "/usr/bin/curl", tool_environment, guard)
@@ -358,12 +359,13 @@ def execute(environment, workspace, checkout):
         receipt = error.result.receipt
         outcome = "FAILURE" if receipt["output_complete"] is True else "UNKNOWN"
         reason = "command_failed" if outcome == "FAILURE" else "command_incomplete"
-        if (stage == "fixture-deposit" and outcome == "UNKNOWN" and receipt.get("label") == fixture_progress.COMMAND
+        timeout_scope = fixture_progress.TIMEOUT_SCOPES.get(stage)
+        if (timeout_scope is not None and outcome == "UNKNOWN" and receipt.get("label") == timeout_scope[0]
                 and receipt["reason"] == "timeout" and receipt["process_group_quiescent"] is True
                 and fixture_progress.supports(contract)):
             try:
                 closed_opening = closed_opening_after_timeout(contract, record, engine, rpc, opening, sources,
-                    oracle, workspace, tool_environment, budget, reader_source)
+                    oracle, workspace, tool_environment, budget, reader_source, services=timeout_scope[1])
             except (OSError, ValueError, KeyError, TypeError):
                 # Retain command receipts and the primary timeout even if this diagnostic is incomplete.
                 pass
@@ -384,9 +386,11 @@ def execute(environment, workspace, checkout):
             except (OSError, ValueError, KeyError, TypeError):
                 closure = None
         closed = closure is not None and all(row["observed_closed"] is True for row in closure)
-        if closed_opening is not None and closed and len(closure) == len(model.SERVICES):
-            record.seal(capture.CLOSED_OPENING_REPORT, canonical(closed_opening))
-            extra.update({capture.CLOSED_OPENING_REPORT, "parent-oracle-01.request.json", "parent-oracle-01.stdout"})
+        if closed_opening is not None and closed:
+            services = fixture_progress.TIMEOUT_SCOPES[stage][1]
+            if len(closure) == len(services) and {row["service"] for row in closure} == set(services):
+                record.seal(capture.CLOSED_OPENING_REPORT, canonical(closed_opening))
+                extra.update({capture.CLOSED_OPENING_REPORT, "parent-oracle-01.request.json", "parent-oracle-01.stdout"})
         if budget is not None:
             record.seal("budget-report.json", canonical(budget.report()))
         if outcome == "DEVNET_CONSUMER_ACCEPTED" and not closed:
