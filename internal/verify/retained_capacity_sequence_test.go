@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -144,8 +145,20 @@ func (s *capacitySequence) resumeSaved(w uint64, k int, raw []byte) {
 
 func (s *capacitySequence) unchangedFile(raw []byte) {
 	s.t.Helper()
-	after, err := os.ReadFile(s.path)
-	if err != nil || !bytes.Equal(raw, after) {
+	file, err := os.Open(s.path)
+	if err != nil {
+		s.t.Fatal("cannot reopen saved state", err)
+	}
+	defer func() { _ = file.Close() }()
+	var buffer [32 << 10]byte
+	for len(raw) > 0 {
+		chunk := buffer[:min(len(buffer), len(raw))]
+		if _, err := io.ReadFull(file, chunk); err != nil || !bytes.Equal(chunk, raw[:len(chunk)]) {
+			s.t.Fatal("read-only resume changed the saved bytes")
+		}
+		raw = raw[len(chunk):]
+	}
+	if n, err := file.Read(buffer[:1]); n != 0 || err != io.EOF {
 		s.t.Fatal("read-only resume changed the saved bytes")
 	}
 }

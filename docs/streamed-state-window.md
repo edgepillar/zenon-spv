@@ -56,6 +56,31 @@ the outer `json.Unmarshal` syntax pass used by the complete loader.
 At K=4096 this structural parser observation allocates about 51% fewer bytes.
 It is not a measurement of the complete loader's memory use or elapsed time.
 
+## Decode directly into the retained window
+
+Decoding each header into its zero-initialized slot in the private window
+removes a temporary allocation per row. The count guard still runs before
+decoding each row, and the decoded window is published only on success.
+
+The same structural benchmark was run against `dea3d39` and this change on
+darwin/arm64 with Go 1.25.14 and `-cpu=1`. The values below are medians from six
+paired trials of six iterations, alternating which revision ran first.
+
+| Headers | Baseline B/op | Direct B/op | Baseline allocations/op | Direct allocations/op |
+| --- | ---: | ---: | ---: | ---: |
+| 16 | 27,476 | 23,380 | 232 | 216 |
+| 256 | 403,536 | 338,000 | 2,876 | 2,620 |
+| 4,096 | 8,020,053 | 6,971,479 | 45,123 | 41,027 |
+
+The timing ranges overlapped at all three capacities. The allocation figures
+measure the structural decoder.
+
+The retained-capacity sequence also compares saved state in 32 KiB chunks and
+checks EOF after read-only resumes. Each of the 18 cells still runs all 20
+operations. Across the selected 132 controls in one paired run, sampled
+allocations attributed to `os.readFileContents` were about 242 MiB before the
+change and 80 MiB after it. The samples include reads from the complete loader.
+
 ```sh
 go test -race -count=1 -run '^TestStreamedStateWindow' ./internal/verify
 go test -run '^$' -bench '^BenchmarkStreamedStateWindow/' -benchtime=3x -benchmem -cpu=1 -count=3 ./internal/verify
