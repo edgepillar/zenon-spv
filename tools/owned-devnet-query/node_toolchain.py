@@ -88,20 +88,25 @@ def _open_unchanged_file(path, expected):
     flags = (os.O_RDONLY | getattr(os, "O_BINARY", 0)
              | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
     with os.fdopen(os.open(path, flags), "rb") as stream:
-        require(_file_snapshot(os.fstat(stream.fileno())) == expected,
+        opened = os.fstat(stream.fileno())
+        # On Windows, path lookup and descriptor lookup derive mode and ctime differently.
+        require(stat.S_ISREG(opened.st_mode) and opened.st_nlink == expected.st_nlink
+                and _identity(opened) == _identity(expected)
+                and (os.name == "nt" or _file_snapshot(opened) == _file_snapshot(expected)),
                 "node_file_changed")
-        yield stream
+        yield stream, opened
 
 
 def _check_file_content(row, path, expected):
     sha, count = hashlib.sha256(), 0
-    with _open_unchanged_file(path, expected) as stream:
+    with _open_unchanged_file(path, expected) as (stream, opened):
         for chunk in iter(lambda: stream.read(65536), b""):
             count += len(chunk)
             require(count <= row.size, "node_file_changed")
             sha.update(chunk)
         after = os.fstat(stream.fileno())
-    require(_file_snapshot(after) == _file_snapshot(path.lstat()) == expected
+    require(_file_snapshot(after) == _file_snapshot(opened)
+            and _file_snapshot(path.lstat()) == _file_snapshot(expected)
             and count == row.size and sha.hexdigest() == row.sha256,
             "node_file_changed")
 
@@ -158,11 +163,11 @@ class Installation:
             if os.name == "posix":
                 wanted = 0o500 if self.execution_enabled and row.executable else 0o400
                 require(stat.S_IMODE(before.st_mode) == wanted, "node_file_permissions")
-            yield row, path, _file_snapshot(before)
+            yield row, path, before
 
     def verify(self):
-        for row, path, snapshot in self._files_on_disk():
-            _check_file_content(row, path, snapshot)
+        for row, path, before in self._files_on_disk():
+            _check_file_content(row, path, before)
         return self.inspection
 
     def enable_execution(self):
@@ -171,23 +176,24 @@ class Installation:
             self.verify()
             return self
         verified = {}
-        for row, path, snapshot in self._files_on_disk():
-            _check_file_content(row, path, snapshot)
-            verified[row.path] = snapshot
+        for row, path, before in self._files_on_disk():
+            _check_file_content(row, path, before)
+            verified[row.path] = before
         for row in self.files:
             if not row.executable:
                 continue
             path = self.root / row.path
-            with _open_unchanged_file(path, verified[row.path]) as stream:
-                require(_file_snapshot(path.lstat()) == verified[row.path], "node_file_changed")
+            before = verified[row.path]
+            with _open_unchanged_file(path, before) as (stream, _):
+                require(_file_snapshot(path.lstat()) == _file_snapshot(before), "node_file_changed")
                 os.fchmod(stream.fileno(), 0o500)
         result = replace(self, execution_enabled=True)
-        for row, path, snapshot in result._files_on_disk():
+        for row, path, after in result._files_on_disk():
             if row.executable:
-                _check_file_content(row, path, snapshot)
+                _check_file_content(row, path, after)
             else:
                 # No external code ran and only executable members changed mode.
-                require(snapshot == verified[row.path], "node_file_changed")
+                require(_file_snapshot(after) == _file_snapshot(verified[row.path]), "node_file_changed")
         return result
 
 
