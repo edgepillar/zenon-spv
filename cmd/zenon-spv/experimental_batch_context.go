@@ -3,7 +3,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -21,13 +20,6 @@ const experimentalContextQueryCommand = "query-experimental-batch-context"
 const experimentalContextConfigUsage = "Usage: zenon-spv inspect-experimental-batch-context-config --config <path>\n"
 const experimentalContextQueryUsage = "Usage: zenon-spv query-experimental-batch-context --config <path> --request <path> --expect-header-context <64-hex> --expect-query-context <64-hex> [--trusted-state <path> --expect-state-sha256 <64-hex>] [--compare-gateway] <bundle.json>\n"
 
-type experimentalContextCheckpointReport struct {
-	SHA256          string `json:"sha256"`
-	Bytes           uint64 `json:"bytes"`
-	ProviderHeaders uint32 `json:"provider_headers"`
-	Trust           string `json:"trust"`
-}
-
 type experimentalContextCLIReport struct {
 	SchemaVersion                 uint32                                          `json:"schema_version"`
 	Command                       string                                          `json:"command"`
@@ -38,8 +30,8 @@ type experimentalContextCLIReport struct {
 	HeaderContext                 *verify.ExperimentalV3Context                   `json:"header_context"`
 	QueryContext                  *verify.ExperimentalBatchContext                `json:"query_context"`
 	Headers                       *experimentalCLIHeaderReport                    `json:"headers"`
-	StateInput                    *experimentalContextCheckpointReport            `json:"state_input,omitempty"`
-	StateOutput                   *experimentalContextStateOutput                 `json:"state_output,omitempty"`
+	StateInput                    *experimentalCLIStateInputReport                `json:"state_input,omitempty"`
+	StateOutput                   *experimentalCLIStateOutput                     `json:"state_output,omitempty"`
 	Result                        *verify.ExperimentalBatchContextResult          `json:"result"`
 	Gateway                       *verify.ExperimentalBatchEntryGatewayComparison `json:"gateway_comparison"`
 	Persistence                   string                                          `json:"persistence"`
@@ -117,15 +109,9 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 		if selectedQuery, err = parseContextPin(queryPin); err != nil || selectedQuery == nil || selectedQuery.IsZero() {
 			return finish(64, "arguments", "usage")
 		}
-		pathSupplied := false
-		fs.Visit(func(f *flag.Flag) { pathSupplied = pathSupplied || f.Name == "trusted-state" })
-		if pathSupplied != checkpointPin.supplied || pathSupplied && *checkpointPath == "" {
+		selectedCheckpoint, err = parseExperimentalCLIFilePin(fs, "trusted-state", *checkpointPath, checkpointPin)
+		if err != nil {
 			return finish(64, "arguments", "usage")
-		}
-		if checkpointPin.supplied {
-			if selectedCheckpoint, err = parseContextPin(checkpointPin); err != nil || selectedCheckpoint == nil || selectedCheckpoint.IsZero() {
-				return finish(64, "arguments", "usage")
-			}
 		}
 		report.GatewayComparisonRequested = *compare
 	}
@@ -169,23 +155,11 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 	}
 	state := empty
 	if selectedCheckpoint != nil {
-		checkpoint, _, err := openExperimentalCLIInput(*checkpointPath, verify.MaxExperimentalV3StateBytes, openExperimentalCLIFile)
-		if err != nil {
-			return finish(70, "state_input", "invalid_input")
+		resumed, input, code, category := readExperimentalCLIState(empty, *checkpointPath, *selectedCheckpoint)
+		if code != 0 {
+			return finish(code, "state_input", category)
 		}
-		resumed, size, err := empty.ReadPinnedTrustedCheckpoint(checkpoint, [32]byte(*selectedCheckpoint))
-		closeErr := checkpoint.Close()
-		if closeErr != nil || errors.Is(err, verify.ErrExperimentalV3CheckpointInput) {
-			return finish(70, "state_input", "invalid_input")
-		}
-		if errors.Is(err, verify.ErrExperimentalV3CheckpointDigest) {
-			return finish(1, "state_input", "digest_mismatch")
-		}
-		if err != nil || resumed.Empty() {
-			return finish(70, "state_input", "invalid_checkpoint")
-		}
-		state = resumed
-		report.StateInput = &experimentalContextCheckpointReport{SHA256: hex.EncodeToString(selectedCheckpoint[:]), Bytes: uint64(size), Trust: "trusted_local_provenance_required"}
+		state, report.StateInput = resumed, input
 		report.Caveats = append(report.Caveats, "The selected checkpoint digest identifies bytes; trusted local provenance remains required for evicted ancestry and file authenticity.")
 	}
 	raw, err = readExperimentalCLIFile(fs.Arg(0), maxExperimentalBundleBytes, openExperimentalCLIFile)
@@ -236,7 +210,7 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 		if _, err := json.Marshal(report); err != nil {
 			return finish(70, "output", "encoding")
 		}
-		written, err := exportExperimentalContextState(state, stdout)
+		written, err := exportExperimentalCLIState(state, stdout)
 		if err != nil {
 			report.Persistence = "checkpoint_output_incomplete"
 			return finish(70, "checkpoint_output", "write_failed")

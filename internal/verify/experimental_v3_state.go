@@ -174,6 +174,15 @@ func (s ExperimentalV3State) RequireContextFingerprint(expected chain.Hash) erro
 	return nil
 }
 
+// Tip returns the identity of the latest retained experimental header.
+func (s ExperimentalV3State) Tip() (chain.HashHeight, bool) {
+	if s.Empty() {
+		return chain.HashHeight{}, false
+	}
+	h := s.data.headers[len(s.data.headers)-1].Header
+	return chain.HashHeight{Height: h.Height, Hash: h.HeaderHash}, true
+}
+
 func (s ExperimentalV3State) HeaderAtHeight(height uint64) (chain.CandidateV3Header, bool) {
 	h := s.experimentalV3Header(height)
 	if h == nil {
