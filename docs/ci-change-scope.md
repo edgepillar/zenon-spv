@@ -417,3 +417,21 @@ and 38,262 archive bytes in the main run, and 1,254 runner-seconds and 38,338
 archive bytes in the PR run. Those observations are from different runners.
 This selector update runs full CI. An eligible hosted event must separately
 establish its own skipped-job records, native results and artifacts.
+
+### Combined review of checkpoint and interrupted-capture changes
+
+The integrated review includes the archived fixture evidence, the interrupted
+capture reviewer and the trusted snapshot checkpoint commands. The new
+closure digests cover their combined Git tree. The reviewed leaf sets and
+the four dedicated workflow byte pins keep their existing coverage.
+
+| Closure | Entries | Encoded bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Native v3 | 1223 | 125224 | `0d2f615725b34825e58852c6d3aed63857aedd5a58d1ab975f5af377ef888078` |
+| Portable tools | 1203 | 123290 | `a28a7e18658e52304a10557d9136d445bb6c4a7f5ed1808d525abd6209debd0e` |
+
+The combined review changes source and selection policy, so it requires full
+general CI and the applicable dedicated workflows. Later reviewed-leaf
+changes use the narrower routes only when their exact source and workflow
+pins match. Live typed consumption and representative snapshot data have
+separate acceptance requirements.
