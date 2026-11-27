@@ -6,7 +6,7 @@ The general workflow first selects the exact Git change scope with
 recorded-oracle jobs. The small scope job still runs its controls and retains a
 source-bound selection report. Other workflows retain their existing triggers.
 The portable route selects the required three-platform workflows for a fixed set
-of archive, export and devnet preparation files.
+of archive, export, inventory and devnet preparation files.
 The native-v3 route below keeps all native jobs and selects only the unchanged
 recorded-oracle job out of the execution plan.
 Full-runtime jobs also retain small source-bound scope-control reports on all
@@ -97,13 +97,21 @@ files. Regular Markdown may accompany the changes.
 | Directory | Reviewed files | Required workflow |
 | --- | --- | --- |
 | `tools/ledger-transport` | `archive_index.py`, `archive_index_test.py`, `archive_tail.py`, `archive_tail_test.py`, `transport_test.py`, `README.md`, `THIRD_PARTY_NOTICES` | `ledger-transport.yml` |
-| `tools/ledger-transport` | `transport.py` | `ledger-transport.yml` and `ledger-export.yml` |
+| `tools/ledger-transport` | `transport.py` | `ledger-transport.yml`, `ledger-export.yml` and `ledger-inventory.yml` |
 | `tools/ledger-export` | `inventory_completed_export.py`, `inventory_completed_export_test.py`, `README.md` | `ledger-export.yml` |
+| `tools/ledger-export` | `snapshot_projection.py` | `ledger-export.yml` and `ledger-inventory.yml` |
+| `tools/ledger-inventory` | `churn.py`, `inventory_test.py`, `README.md` | `ledger-inventory.yml` |
 | `tools/owned-devnet-query` | `engine_test.py`, `images_test.py`, `inputs.py`, `inputs_test.py`, `capture_test.py`, `review.py`, `review_test.py`, `README.md` | `owned-devnet-query.yml` |
 | `tools/owned-devnet-query` | `engine.py`, `node_diagnostics.py`, `node_diagnostics_test.py`, `node_file_logs.py`, `node_file_logs_test.py` | `owned-devnet-query.yml` |
 | `tools/gen-state-root-vectors` | `first-insertion-catchup_test.go.txt`, `first-insertion-cpu_test.go.txt`, `first-insertion-export_test.go.txt`, `qualify_first_insertion.py`, `qualify_first_insertion_test.py` | `first-insertion-catchup.yml` |
 
-The compiled export controls also consume `transport.py`.
+The compiled export controls and manifest-backed inventory replay also consume
+`transport.py`. Inventory replay loads the shared snapshot projector. The core
+`inventory.py` stays in the full-runtime closure because the exporter and
+transport also consume it.
+`ledger-inventory.yml` runs the existing Python controls on Linux, macOS and
+Windows. Each platform uploads one report with actual test names, the exact
+checkout, source tree, source byte digests and workflow attempt.
 `docs/state-root-r1-intake.md` adds `ledger-transport.yml` when part of a portable
 diff. `docs/first-insertion-catchup.md` adds `first-insertion-catchup.yml` in the
 same way. The general `docs/native-roadmap.md` is an evidence metadata input, not a
@@ -306,7 +314,7 @@ the full root Go suite and their existing conformance, compiled consumer,
 platform and artifact steps at the new source revision. The general workflow's
 other triggers are unchanged.
 
-The selected recorded-oracle job has 33 Python commands. Its source-bound
+The selected recorded-oracle job has 26 Python commands. Its source-bound
 inventory includes the target-hex, complete-graph, child-resource and retention
 wrappers. Those commands replay the research module's pinned original-node
 bytes and synthetic recordings; they do not build or execute the ten native
@@ -319,9 +327,9 @@ documentation, these ten leaves and the selector/control pair. It includes the
 general workflow, other workflows, all other native sources, research sources,
 wrappers and fixtures. The same bounded tree framing, modes, duplicate checks
 and deterministic NUL-terminated record encoding used by the portable route
-apply. A changed dependency, new file or unexpected mode changes the pin and
-restores the complete lane until an explicit dependency review. The v3 pin
-remains at its separately reviewed dependency snapshot.
+apply. The full closure must match one of the reviewed snapshots below.
+Every other digest selects the complete lane until its dependencies are
+reviewed. The report records the exact matching digest.
 
 An eligible report uses `zenon-ci-change-scope/v3`, seven complete Git command
 receipts, the exact source pins, reviewed modified paths and closure facts. It
@@ -339,6 +347,25 @@ push need separate reconciliation of source scope, skipped provider records,
 native results and artifacts before claiming measured savings. Fewer selected
 jobs are not a controlled wall-time benchmark, node resource measurement,
 independent review or network/state-value acceptance.
+
+### Closure refresh for the first-insertion and startup-diagnostic changes
+
+The native closure advanced from `e9a047230298eb3e24579fd6162f413b7fc63c32`
+to `ec2f07e4e5411cedfc74b9f77576b7f7550c00dd`. The 13 changed closure
+records cover the dedicated first-insertion workflow and its five inputs,
+the five owned devnet diagnostic files, the general scope validator's
+first-insertion rules, and the line-ending attribute for the catch-up
+document. The recorded-oracle job definition is byte-identical across
+those revisions. The refreshed digest is
+`4bac97b17356cfa3dfebe40e4598cc57c095c529ba7b140214a6b23795ee3745`
+over 1,211 records and 123,968 bytes. These paths remain part of the closure.
+
+[PR #420's general CI](https://github.com/edgepillar/zenon-spv/actions/runs/44684143424)
+ran all three recorded-oracle jobs, using 2,096 runner-seconds, after its
+v3 test-only change encountered the prior closure pin. The same Git tree
+projects to the native-only route with the refreshed pin. The pin update
+itself runs full CI. Future native-only events must establish their own
+job selection and platform evidence before any measured savings are reported.
 
 ### Paired owned-input renewal
 
@@ -375,3 +402,67 @@ the offline pilot's native tests. In the initial Windows CI run for this PR,
 both controls failed near their prior 10-second limit (10.64 and 10.32
 seconds). The original failed roots and timings remain in the first attempt's
 [general CI record](https://github.com/edgepillar/zenon-spv/actions/runs/44769740235).
+
+### Reviewed closure snapshots after recorded-workspace pairing
+
+Both reviewed closures contain 1,223 records and 125,224 bytes. Their full
+general runs passed on Linux, macOS and Windows. The workflow definition and
+26-command recorded-oracle inventory match across the two trees. The second
+tree differs in the two retained-state sequence test files, which stay inside
+the closure. The existing ten eligible native-v3 files remain the only
+non-document changes that can select this route.
+
+| Qualified tree | Closure SHA-256 | Full general run |
+| --- | --- | --- |
+| `d55cd7cbe3dae4847e080605ee1f6bd797dac416` | `ebfdc9d14c44b16951cc43293ec8f3d3daa8e2eb02c52b46a58fe328ee53d5de` | [Main c64f545](https://github.com/edgepillar/zenon-spv/actions/runs/45911169119) |
+| `0682518f0118899d14f153bfd7c802a780c8745a` | `fb04292d178e007ad5b24c9a4a76578bf1c54dc8f6e0f021f774b6c5dc45a3bb` | [PR #439](https://github.com/edgepillar/zenon-spv/actions/runs/45914619049) |
+
+The 77 dependency record changes since the earlier first-insertion review
+include paired workspace and driver controls, the upload failure gate, native
+and fixture code, and workflow inputs. The two full runs cover the current
+recorded-oracle definition. Its three jobs used 1,506 summed runner-seconds
+and 38,262 archive bytes in the main run, and 1,254 runner-seconds and 38,338
+archive bytes in the PR run. Those observations are from different runners.
+This selector update runs full CI. An eligible hosted event must separately
+establish its own skipped-job records, native results and artifacts.
+
+### Combined review of checkpoint and interrupted-capture changes
+
+The integrated review includes the archived fixture evidence, the interrupted
+capture reviewer and the trusted snapshot checkpoint commands. The new
+closure digests cover their combined Git tree. The reviewed leaf sets and
+the four dedicated workflow byte pins keep their existing coverage.
+
+| Closure | Entries | Encoded bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Native v3 | 1223 | 125224 | `0d2f615725b34825e58852c6d3aed63857aedd5a58d1ab975f5af377ef888078` |
+| Portable tools | 1203 | 123290 | `a28a7e18658e52304a10557d9136d445bb6c4a7f5ed1808d525abd6209debd0e` |
+
+The combined review changes source and selection policy, so it requires full
+general CI and the applicable dedicated workflows. Later reviewed-leaf
+changes use the narrower routes only when their exact source and workflow
+pins match. Live typed consumption and representative snapshot data have
+separate acceptance requirements.
+
+### Ledger inventory workflow installation
+
+The scope update integrates the qualified projected replay and installs its
+Python workflow. The policy installation takes the full general lane. A later
+eligible replay-only change selects the inventory workflow. A projector
+change selects inventory and exporter controls together.
+
+| Closure | Entries | Encoded bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Native v3 | 1224 | 125316 | `f99b68899409e1ff66fcd900eb7b8482742c75e74d298a498ba7821f098fca3d` |
+| Portable tools | 1201 | 123117 | `683a7b0b329fd788f1e8b55dcbc4625203fc8f2b5b32859368c555b6b2cb8998` |
+
+### Manifest-backed replay
+
+Inventory replay shares the transport checker. Changes to that checker select
+all three portable consumers. The dependency and workflow update takes the
+full lane and records the updated closures.
+
+| Closure | Entries | Encoded bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Native v3 | 1224 | 125316 | `4a9f1a1917f1a4f3b609e855c6a65f011421da57624fb22bf429ab971ca5680f` |
+| Portable tools | 1201 | 123117 | `cbe59d89d51b8c3e36554507d1f9c72c1f8031627c9e86a51bab3a3747f479b1` |

@@ -266,10 +266,10 @@ whose width differs from the typed balance query. [Candidate fold](https://githu
 
 Each included value is streamed into its SHA3-256 leaf hash, using the
 SHA3-256 key path. After the completion, chunk, whole-stream, inventory and EOF
-checks pass, the helper sorts the retained path/digest pairs and folds the
-full-depth binary tree with constant-zero empty subtrees. It keeps no raw
-value map, tree database or secondary payload. The projected-leaf cap defaults
-to 32,768 and can be set up to 100,000. The existing input byte, record, key,
+checks pass, the helper sorts the retained leaves by their 32-byte paths and
+folds the full-depth binary tree with constant-zero empty subtrees. Each leaf
+occupies one 64-byte payload containing its path and digest. The projected-leaf
+cap defaults to 32,768 and can be set up to 100,000. The input byte, record, key,
 value and read bounds still apply. [Candidate hash rules](https://github.com/digitalSloth/go-zenon/blob/9c71ae82fc983e16f914ae085d4034030c8ebe3b/common/trie/hash.go)
 
 On success, `zenon-completed-frontier-transport-projection/v1` adds
@@ -295,6 +295,22 @@ seconds with 24.2 MiB peak consumer RSS, including the Python process. Fixture
 generation and the reference calculation were outside the measurement. No
 fixture files were written. The finite result carries no representative
 throughput or hardware budget.
+
+On macOS ARM64 with Python 3.9.6, three paired subprocess measurements per
+size compared the tuple representation at `c64f545` with the packed leaves.
+The synthetic rows use keys ordered by 20-byte account address, the
+source-genesis ratio of balance to storage leaves, stored-zero balances, and
+variable storage values. Each subprocess streams those rows to the projector
+in memory. Every pair matched the selected input, computed root, and mapping
+digest.
+
+| Projected leaves | Retained leaf objects before / after | Peak process RSS before / after | Sort and fold before / after |
+| ---: | ---: | ---: | ---: |
+| 19,257 | 3.49 / 1.95 MiB | 23.17 / 21.48 MiB | 1.42 / 1.42 s |
+| 100,000 | 18.03 / 10.01 MiB | 40.27 / 31.05 MiB | 7.28 / 7.36 s |
+
+Values are medians. Leaf object totals count the list, its records, and the
+tuple fields where present. Peak RSS covers the entire projection subprocess.
 
 ## Exact record space and bounds
 

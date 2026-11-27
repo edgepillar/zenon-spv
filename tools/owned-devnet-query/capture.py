@@ -640,9 +640,9 @@ def query_inputs(contract, window, schedule, profile):
 
 
 def read_closed_parent_schedule(contract, recorder, engine, ledger, headers, frontier, sources, binaries,
-                                directory, environment, guard, reader_source):
+                                directory, environment, guard, reader_source, *, services=model.SERVICES):
     """Run only the source-bound oracle against the stopped owned volume."""
-    require(LEDGER.fullmatch(ledger) is not None and engine.closed_ledger() == ledger,
+    require(LEDGER.fullmatch(ledger) is not None and engine.closed_ledger(services=services) == ledger,
             "closed_reader_ledger_binding")
     selected = contract.data["qualified_components"]["parent_oracle"]["binaries"]
     require(binaries.verify() == selected, "selected_oracle_binary_pins")
@@ -671,7 +671,7 @@ def read_closed_parent_schedule(contract, recorder, engine, ledger, headers, fro
             yield api_json(result.stdout(ORACLE_REPORT_BYTES), ORACLE_REPORT_BYTES)
 
     schedule = oracle_schedule(contract, headers, reports(), frontier)
-    require(engine.closed_ledger() == ledger, "closed_reader_ledger_changed")
+    require(engine.closed_ledger(services=services) == ledger, "closed_reader_ledger_changed")
     provenance = {
         "format": "owned-devnet-closed-ledger-provenance/v1",
         "rpc_container_id": engine.owned["rpc"].identity, "engine_id": engine.admission.engine_id,

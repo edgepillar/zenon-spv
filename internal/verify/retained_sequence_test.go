@@ -57,7 +57,11 @@ func newSequenceFixture(mode int) sequenceFixture {
 }
 
 func newSequenceFixtureSize(mode, count int) sequenceFixture {
-	f := sequenceFixture{anchor: GenesisTrustRoot{ChainID: 3, Height: 100, HeaderHash: chain.Hash{1}}}
+	f := sequenceFixture{
+		anchor:  GenesisTrustRoot{ChainID: 3, Height: 100, HeaderHash: chain.Hash{1}},
+		headers: make([]chain.Header, count),
+		members: make([]chain.AccountHeader, count),
+	}
 	if mode != 0 {
 		f.profile = &ProtocolProfile{Version: 1, Anchor: f.anchor, ValidThrough: 140,
 			V2FromHeight: 112, Source: "synthetic sequence fixture"}
@@ -79,7 +83,7 @@ func newSequenceFixtureSize(mode, count int) sequenceFixture {
 		}
 		h.HeaderHash = h.ComputeHash()
 		h.Signature = ed25519.Sign(key, h.HeaderHash[:])
-		f.headers, f.members = append(f.headers, h), append(f.members, member)
+		f.headers[i], f.members[i] = h, member
 		previous = h.HeaderHash
 	}
 	return f

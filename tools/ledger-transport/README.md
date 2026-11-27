@@ -95,6 +95,14 @@ match selected record counts and bytes. Transport success has not run inventory,
 imported state, compared a reconstructed root with an accepted header or qualified
 a representative workload.
 
+For a locally produced stream, `verify_emitted(reader, manifest_bytes,
+manifest_sha256, selection, emit, limits)` reads the same pinned manifest.
+The bounded producer sends canonical bytes to the supplied update callback.
+The return requires every chunk and the whole-stream SHA-256 to match after
+the producer finishes. The emitted-stream report records producer completion.
+The [manifest-backed ledger replay](../ledger-inventory/README.md#verify-the-target-chunk-manifest-during-replay)
+uses this form to check the target without a snapshot file.
+
 ## Verify only the missing range
 
 For an interrupted transfer, choose a contiguous group of missing chunks from

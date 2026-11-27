@@ -29,7 +29,8 @@ MAX_CONTRACT_BYTES = 64 << 10
 HEX40 = re.compile(r"[0-9a-f]{40}\Z")
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 NONCE = re.compile(r"[0-9a-f]{32}\Z")
-SERVICES = ("pillar", "pillar2", "pillar3", "rpc", "executor", "gateway")
+NODE_SERVICES = ("pillar", "pillar2", "pillar3", "rpc")
+SERVICES = NODE_SERVICES + ("executor", "gateway")
 PROJECT = "zeno-devnet"
 LABEL_OWNER = "org.zenon-spv.owner"
 LABEL_CONTRACT = "org.zenon-spv.contract"
@@ -553,11 +554,12 @@ def require_stopped_builder(admission, owned, current_engine_id, value):
     return owned.identity
 
 
-def require_runtime_closure(admission, owned, current_engine_id, inspected):
+def require_runtime_closure(admission, owned, current_engine_id, inspected, *, services=SERVICES):
+    require(services in (NODE_SERVICES, SERVICES), "runtime_service_scope")
     require(type(owned) is list and type(inspected) is list
-            and len(owned) == len(inspected) == len(SERVICES), "runtime_container_count")
+            and len(owned) == len(inspected) == len(services), "runtime_container_count")
     require(all(type(item) is OwnedContainer for item in owned), "runtime_journal_type")
-    require({item.service for item in owned} == set(SERVICES), "runtime_service_set")
+    require({item.service for item in owned} == set(services), "runtime_service_set")
     by_id = {}
     for item in inspected:
         identity, _ = inspect_container(admission, current_engine_id, item)

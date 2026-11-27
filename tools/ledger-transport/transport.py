@@ -13,6 +13,7 @@ import sys
 
 MANIFEST_FORMAT = "zenon-r1-transport-manifest/v1"
 RESULT_FORMAT = "zenon-r1-transport-check/v1"
+EMITTED_FORMAT = "zenon-r1-transport-emitted-check/v1"
 RANGE_FORMAT = "zenon-r1-transport-range/v1"
 READ_BYTES = 64 << 10
 MANIFEST_BYTES = 512 << 10
@@ -148,13 +149,47 @@ def chunk_plan(value, pin, caps):
     return tuple(plan)
 
 
-class _ChunkStream:
-    def __init__(self, reader, plan, expected_stream=None):
-        self.reader, self.expected_stream = reader, expected_stream
+class _ChunkDigests:
+    def __init__(self, plan, expected_stream=None):
+        self.expected_stream = expected_stream
         self.plan = iter(plan)
         self.whole = hashlib.sha256() if expected_stream is not None else None
         self.chunk = None
         self.remaining, self.rows = 0, []
+
+    def begin(self):
+        if self.remaining:
+            return True
+        next_chunk = next(self.plan, None)
+        if next_chunk is None:
+            return False
+        self.chunk_size, self.expected_chunk = next_chunk
+        self.remaining = self.chunk_size
+        # The first boundary uses the same digest state as the whole stream.
+        self.chunk = (self.whole if self.chunk is None and self.whole is not None
+                      else hashlib.sha256())
+        return True
+
+    def consume(self, part):
+        if self.whole is not None:
+            self.whole.update(part)
+        if self.chunk is not self.whole:
+            self.chunk.update(part)
+        self.remaining -= len(part)
+        if not self.remaining:
+            actual = self.chunk.hexdigest()
+            require(self.expected_chunk is None or actual == self.expected_chunk, "chunk_digest")
+            self.rows.append({"bytes": self.chunk_size, "sha256": actual})
+
+    def check_whole(self):
+        if self.whole is not None:
+            require(self.whole.hexdigest() == self.expected_stream, "stream_digest")
+
+
+class _ChunkStream:
+    def __init__(self, reader, plan, expected_stream=None):
+        self.reader = reader
+        self.digests = _ChunkDigests(plan, expected_stream)
         self.complete, self.failed = False, False
 
     def read(self, size):
@@ -169,31 +204,43 @@ class _ChunkStream:
     def _read(self, size):
         if self.complete:
             return b""
-        if not self.remaining:
-            next_chunk = next(self.plan, None)
-            if next_chunk is None:
-                require(not read_part(self.reader, 1), "trailing_input")
-                if self.whole is not None:
-                    require(self.whole.hexdigest() == self.expected_stream, "stream_digest")
-                self.complete = True
-                return b""
-            self.chunk_size, self.expected_chunk = next_chunk
-            self.remaining = self.chunk_size
-            # At the first boundary the whole-stream state covers exactly the first chunk.
-            self.chunk = (self.whole if self.chunk is None and self.whole is not None
-                          else hashlib.sha256())
-        part = read_part(self.reader, min(size, self.remaining))
+        if not self.digests.begin():
+            require(not read_part(self.reader, 1), "trailing_input")
+            self.digests.check_whole()
+            self.complete = True
+            return b""
+        part = read_part(self.reader, min(size, self.digests.remaining))
         require(bool(part), "stream_truncated")
-        if self.whole is not None:
-            self.whole.update(part)
-        if self.chunk is not self.whole:
-            self.chunk.update(part)
-        self.remaining -= len(part)
-        if not self.remaining:
-            actual = self.chunk.hexdigest()
-            require(self.expected_chunk is None or actual == self.expected_chunk, "chunk_digest")
-            self.rows.append({"bytes": self.chunk_size, "sha256": actual})
+        self.digests.consume(part)
         return part
+
+
+class _ChunkWriter:
+    def __init__(self, plan, expected_stream):
+        self.digests = _ChunkDigests(plan, expected_stream)
+        self.closed, self.failed = False, False
+
+    def update(self, raw):
+        require(not self.closed and not self.failed, "stream_refused")
+        self.failed = True
+        require(type(raw) is bytes, "emitted_bytes")
+        part = raw
+        while part:
+            require(self.digests.begin(), "trailing_input")
+            remaining = self.digests.remaining
+            if len(part) <= remaining:
+                self.digests.consume(part)
+                break
+            part = memoryview(part)
+            self.digests.consume(part[:remaining])
+            part = part[remaining:]
+        self.failed = False
+
+    def finish(self):
+        require(not self.closed and not self.failed, "stream_refused")
+        self.closed = True
+        require(not self.digests.begin(), "stream_truncated")
+        self.digests.check_whole()
 
 
 def _drain(stream):
@@ -205,7 +252,7 @@ def _inspect_stream(reader, pin, plan, inspect):
     stream = _ChunkStream(reader, plan, pin["sha256"])
     result = inspect(stream)
     require(stream.complete and not stream.failed, "stream_incomplete")
-    return stream.rows, result
+    return stream.digests.rows, result
 
 
 def describe_with(reader, selected, inspect, configured_limits=None):
@@ -263,6 +310,20 @@ def verify(reader, manifest_bytes, manifest_sha256, selected, configured_limits=
     return report
 
 
+def verify_emitted(reader, manifest_bytes, manifest_sha256, selected, emit, configured_limits=None):
+    """Check selected bytes supplied to an update callback by a bounded producer."""
+    caps = limits(configured_limits)
+    pin = selection(selected, caps)
+    _, plan = _read_manifest(reader, manifest_bytes, manifest_sha256, pin, caps)
+    writer = _ChunkWriter(plan, pin["sha256"])
+    result = emit(writer.update)
+    writer.finish()
+    return {"format": EMITTED_FORMAT, "status": "SELECTED_EMITTED_TRANSPORT_MATCHED",
+            "manifest": {"bytes": manifest_bytes, "sha256": manifest_sha256},
+            "selection": pin, "chunks_checked": len(writer.digests.rows),
+            "emitted_stream_completed": True, "limits": caps, "scope": scope()}, result
+
+
 def check_range(reader, manifest_bytes, manifest_sha256, selected, first_chunk, chunk_count,
                 configured_limits=None, *, verify_payload=False):
     """Plan a selected contiguous chunk range, or check its exact payload.
@@ -281,7 +342,7 @@ def check_range(reader, manifest_bytes, manifest_sha256, selected, first_chunk, 
     if verify_payload:
         stream = _ChunkStream(reader, part)
         _drain(stream)
-        chunks = stream.rows
+        chunks = stream.digests.rows
     else:
         require(not read_part(reader, 1), "trailing_input")
         chunks = [{"bytes": count, "sha256": sha256} for count, sha256 in part]
