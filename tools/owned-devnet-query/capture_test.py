@@ -686,23 +686,30 @@ class CaptureTests(unittest.TestCase):
         contract, rows, source = synthetic_window(5)
         opening, target, frontier = source.headers[:3], source.headers[-2], source.headers[-1]
         witnesses, gateway = {"batch_entry": {}}, {"domainId": 1, "batchId": 0}
-        batch = capture.DepositTimeoutBatch({"frontier_request_id": 9}, target, witnesses, gateway)
         rpc = capture.LocalRpc(contract, mock.Mock(), HERE, "unused-curl", {}, mock.Mock())
-        for calls, raw, error in ((14, {"count": 5, "list": rows[2:]}, None),
-                                  (14, {"count": 4, "list": rows[2:-1]}, "selected_header_range_or_depth"),
-                                  (15, None, "deposit_timeout_replay_rpc_budget")):
+        for calls, proof_rows, dto, raw, error in (
+                (14, witnesses, gateway, {"count": 5, "list": rows[2:]}, None),
+                (14, witnesses, None, {"count": 5, "list": rows[2:]}, None),
+                (14, witnesses, None, {"count": 4, "list": rows[2:-1]}, "selected_header_range_or_depth"),
+                (14, None, None, None, "deposit_timeout_replay_rpc_budget"),
+                (15, witnesses, None, None, "deposit_timeout_replay_rpc_budget")):
+            batch = capture.DepositTimeoutBatch({"frontier_request_id": 9}, target, proof_rows, dto)
             rpc.calls = calls
-            with self.subTest(calls=calls, error=error), mock.patch.object(rpc, "_read", return_value=raw) as read:
+            with self.subTest(calls=calls, has_gateway=dto is not None, error=error), \
+                    mock.patch.object(rpc, "_read", return_value=raw) as read:
                 if error is None:
                     window = rpc.deposit_timeout_window(opening, frontier, batch, deadline=90)
                     self.assertEqual(window.headers, source.headers)
                     self.assertEqual(window.query, target)
                     self.assertIs(window.provider["witnesses"], witnesses)
-                    self.assertIs(window.provider["gateway"], gateway)
+                    if dto is not None:
+                        self.assertIs(window.provider["gateway"], gateway)
+                    else:
+                        self.assertNotIn("gateway", window.provider)
                 else:
                     with self.assertRaisesRegex(model.Refused, error):
                         rpc.deposit_timeout_window(opening, frontier, batch, deadline=90)
-                if calls == 14:
+                if raw is not None:
                     read.assert_called_once_with("ledger.getMomentumsByHeight", [3, 3],
                         contract.data["limits"]["stdout_bytes"], stdout_name=capture.DEPOSIT_TIMEOUT_RANGE, deadline=90)
                 else:
@@ -711,13 +718,13 @@ class CaptureTests(unittest.TestCase):
     def test_timeout_native_query_runs_after_the_same_ledger_closes(self):
         contract, _, window = synthetic_window(5)
         opening, target, frontier = window.headers[:3], window.headers[-2], window.headers[-1]
-        batch = capture.DepositTimeoutBatch({"frontier_request_id": 9}, target, {"batch_entry": {}}, {"domainId": 1})
         record, sources, oracle, consumer, workspace, environment = (
             mock.sentinel.record, mock.sentinel.sources, mock.sentinel.oracle, mock.sentinel.consumer,
             mock.sentinel.workspace, mock.sentinel.environment)
         inputs = (mock.sentinel.descriptor, mock.sentinel.profile)
-        for succeeds in (True, False):
-            with self.subTest(succeeds=succeeds):
+        for dto, succeeds in (({"domainId": 1}, True), (None, True), (None, False)):
+            batch = capture.DepositTimeoutBatch({"frontier_request_id": 9}, target, {"batch_entry": {}}, dto)
+            with self.subTest(has_gateway=dto is not None, succeeds=succeeds):
                 trace = mock.Mock()
                 trace.rpc.calls = 9
                 trace.rpc.frontier.return_value = frontier
@@ -752,7 +759,9 @@ class CaptureTests(unittest.TestCase):
                 self.assertEqual(closed["closed_ledger"], mock.sentinel.opening_evidence)
                 self.assertIs(captured, batch)
                 if succeeds:
-                    self.assertEqual(replay, {"format": capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT,
+                    expected_format = (capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT if dto is not None
+                                       else capture.DEPOSIT_TIMEOUT_REPLAY_WITHOUT_GATEWAY_FORMAT)
+                    self.assertEqual(replay, {"format": expected_format,
                         "header_range_request_id": 15, "provider": mock.sentinel.provider_pin,
                         "closed_ledger": mock.sentinel.full_evidence})
                 else:

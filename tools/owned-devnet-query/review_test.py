@@ -1558,7 +1558,15 @@ class ReviewTests(unittest.TestCase):
         contract, files, _ = self.deposit_timeout_batch_files(gateway=gateway)
         _, full = accepted_files(gateway_matches=gateway == "match", terminal_format=model.TERMINAL_FORMAT)
         provider = json.loads(full["evidence/provider.json"])
-        provider["gateway"] = json.loads(files["evidence/" + capture.DEPOSIT_TIMEOUT_GATEWAY])["result"]
+        compare_gateway = gateway in ("match", "mismatch")
+        if compare_gateway:
+            provider["gateway"] = json.loads(files["evidence/" + capture.DEPOSIT_TIMEOUT_GATEWAY])["result"]
+        else:
+            del provider["gateway"]
+            selection = contract.data["selection"]
+            files["evidence/rpc-14.request.json"] = canonical({"jsonrpc": "2.0", "id": 14,
+                "method": "embedded.settlement.getBatch",
+                "params": [selection["domain_id"], int(selection["batch_id_decimal"])]})
 
         def record(label, name, value):
             raw = canonical(value)
@@ -1587,21 +1595,29 @@ class ReviewTests(unittest.TestCase):
             reports.append({"request": {"file": request_file, **pin(raw)}, "stdout": stdout})
         provenance["oracle_reports"] = reports
         cli = json.loads(full["evidence/consume-query.stdout"])
-        cli["gateway_comparison"]["frontier_is_finalized_hint"] = True
+        cli["gateway_comparison_requested"] = compare_gateway
+        if compare_gateway:
+            cli["gateway_comparison"]["frontier_is_finalized_hint"] = True
+        else:
+            cli["gateway_comparison"] = None
         record(capture.DEPOSIT_TIMEOUT_CONSUMER, capture.DEPOSIT_TIMEOUT_STDOUT, cli)
         comparison = json.loads(full["evidence/consumer-comparison.json"])
-        comparison["gateway_stored_fields_match"] = gateway == "match"
+        comparison["gateway_stored_fields_match"] = (gateway == "match") if compare_gateway else None
+        if not compare_gateway:
+            comparison["gateway_stored_fields_compared"] = 0
         files["evidence/consumer-comparison.json"] = canonical(comparison)
         for name in ("query-config.json", "query-request.json", "query-context-pins.json"):
             files["evidence/" + name] = full["evidence/" + name]
         files.update({name: value for name, value in full.items() if name.startswith("transport/input-consumer")})
         files["evidence/" + capture.DEPOSIT_TIMEOUT_REPLAY] = canonical({
-            "format": capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT, "header_range_request_id": 15,
+            "format": (capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT if compare_gateway
+                       else capture.DEPOSIT_TIMEOUT_REPLAY_WITHOUT_GATEWAY_FORMAT),
+            "header_range_request_id": 15,
             "provider": pin(canonical(provider)), "closed_ledger": provenance})
         return contract, files
 
     def test_timeout_native_replay_retains_typed_result_and_original_unknown(self):
-        for gateway in ("match", "mismatch"):
+        for gateway, expected_match in (("match", True), ("mismatch", False), ("invalid", None), (None, None)):
             with self.subTest(gateway=gateway):
                 contract, files = self.deposit_timeout_replay_files(gateway)
                 result = self.review(make_archive(files), contract)
@@ -1616,7 +1632,29 @@ class ReviewTests(unittest.TestCase):
                 self.assertEqual(replay["fixture_outcome"], "UNKNOWN")
                 self.assertFalse(replay["transaction_submission_verified"])
                 self.assertEqual(replay["comparison"]["three_membership_proofs_checked"], 3)
-                self.assertEqual(replay["comparison"]["gateway_stored_fields_match"], gateway == "match")
+                self.assertIs(replay["comparison"]["gateway_stored_fields_match"], expected_match)
+                self.assertEqual(replay["comparison"]["gateway_stored_fields_compared"],
+                                 0 if expected_match is None else 17)
+
+    def test_native_replay_without_gateway_refuses_a_claimed_comparison_or_unbound_request(self):
+        contract, files = self.deposit_timeout_replay_files(None)
+        request_path = "evidence/rpc-14.request.json"
+        replay_path = "evidence/" + capture.DEPOSIT_TIMEOUT_REPLAY
+        comparison_path = "evidence/consumer-comparison.json"
+        for path, change, reason in (
+                (request_path, None, "review_member_bound"),
+                (request_path, {"params": [1, 2]}, "review_deposit_timeout_batch_request"),
+                (replay_path, {"format": capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT},
+                 "review_deposit_timeout_replay_format"),
+                (comparison_path, {"gateway_stored_fields_match": True, "gateway_stored_fields_compared": 17},
+                 "review_consumer_comparison")):
+            rejected = dict(files)
+            if change is None:
+                del rejected[path]
+            else:
+                rejected[path] = canonical({**json.loads(files[path]), **change})
+            with self.subTest(path=path, reason=reason), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive(rejected), contract)
 
     def test_timeout_native_replay_refuses_unbound_range_ledger_and_receipt(self):
         contract, files = self.deposit_timeout_replay_files("match")

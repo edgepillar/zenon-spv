@@ -437,12 +437,17 @@ def recorded_closed_opening(evidence, contract, selection, terminal, timeout, op
             "v3_schedule_hash": schedule["schedule_hash"], "accepted_header_authority": False}
 
 
-def recorded_timeout_read(evidence, request_id, name, method, params, limit):
+def recorded_timeout_request(evidence, request_id, method, params):
     model.uint(request_id, capture.RPC_CALL_LIMIT)
-    require("evidence/" + name in evidence.pins, "review_member_bound")
     label = f"rpc-{request_id:02d}"
     same(evidence.json(label + ".request.json"), {"jsonrpc": "2.0", "id": request_id,
          "method": method, "params": params}, "review_deposit_timeout_batch_request")
+    return label
+
+
+def recorded_timeout_read(evidence, request_id, name, method, params, limit):
+    require("evidence/" + name in evidence.pins, "review_member_bound")
+    label = recorded_timeout_request(evidence, request_id, method, params)
     recorded_output(evidence, label, name)
     return capture.rpc_result(evidence.bytes("evidence/" + name, limit), request_id, limit)
 
@@ -524,14 +529,21 @@ def recorded_deposit_timeout_replay(evidence, contract, checkout, opening, close
         require(not any(re.fullmatch(r"evidence/timeout-parent-oracle-[0-9]{2}\.stdout", path)
                         for path in evidence.pins), "review_deposit_timeout_replay_report_missing")
         return None
-    require(batch is not None and batch.gateway is not None and opening is not None and closed_opening is not None,
+    require(batch is not None and batch.witnesses is not None and opening is not None and closed_opening is not None,
             "review_deposit_timeout_replay_scope")
     replay = evidence.json(capture.DEPOSIT_TIMEOUT_REPLAY, 32 << 10)
     exact_keys(replay, {"format", "header_range_request_id", "provider", "closed_ledger"},
                "review_deposit_timeout_replay_fields")
-    same(replay["format"], capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT, "review_deposit_timeout_replay_format")
+    compare_gateway = batch.gateway is not None
+    replay_format = (capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT if compare_gateway
+                     else capture.DEPOSIT_TIMEOUT_REPLAY_WITHOUT_GATEWAY_FORMAT)
+    same(replay["format"], replay_format, "review_deposit_timeout_replay_format")
     request_id = closed_opening["frontier_request_id"] + 6
     same(replay["header_range_request_id"], request_id, "review_deposit_timeout_replay_request")
+    if not compare_gateway:
+        selection = contract.data["selection"]
+        recorded_timeout_request(evidence, request_id - 1, "embedded.settlement.getBatch",
+                                 [selection["domain_id"], int(selection["batch_id_decimal"])])
     frontier = recorded_timeout_frontier(evidence, contract, closed_opening)
     raw = recorded_timeout_read(evidence, request_id, capture.DEPOSIT_TIMEOUT_RANGE, "ledger.getMomentumsByHeight",
         capture.deposit_timeout_range(contract, opening, frontier), contract.data["limits"]["stdout_bytes"])
@@ -554,10 +566,12 @@ def recorded_deposit_timeout_replay(evidence, contract, checkout, opening, close
         same(evidence.json(name, 256 << 10), expected, "review_query_inputs")
     recorded_output(evidence, capture.DEPOSIT_TIMEOUT_CONSUMER, capture.DEPOSIT_TIMEOUT_STDOUT)
     result = evidence.json(capture.DEPOSIT_TIMEOUT_STDOUT, 256 << 10)
-    comparison = consumer_result(result, configuration, request, window.provider, window.query.root, descriptor)
+    comparison = consumer_result(result, configuration, request, window.provider, window.query.root, descriptor,
+                                 compare_gateway=compare_gateway)
     same(comparison, evidence.json("consumer-comparison.json"), "review_consumer_comparison")
-    same(comparison["gateway_stored_fields_match"], batch.report["gateway_comparison"]["stored_fields_match"],
-         "review_deposit_timeout_gateway_comparison")
+    if compare_gateway:
+        same(comparison["gateway_stored_fields_match"], batch.report["gateway_comparison"]["stored_fields_match"],
+             "review_deposit_timeout_gateway_comparison")
     return {"provider": provider, "comparison": comparison, "native_consumer_completed": True,
             "fixture_outcome": "UNKNOWN", "transaction_submission_verified": False}
 

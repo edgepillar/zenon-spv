@@ -530,15 +530,21 @@ reports the same frozen frontier. The archive reader rechecks the header
 link, derives the keys locally and checks the proofs and any complete
 typed context.
 
-A version-2 observation can support a native replay. One more bounded read
+Three checked witnesses can support a native replay. One more bounded read
 gets the header range from the opening anchor through the same frozen
-frontier. The runner reuses the three witnesses and the gateway response.
-After the RPC node closes, the read-only oracle calculates the finite
-producer schedule for that range. The compiled CLI then checks the
-configured headers and consumes the typed query. The temporary provider
-document is rebuilt from the recorded responses and linked by its byte
-length and SHA-256 digest. The archive keeps the original inputs, schedule,
-and completed CLI output for an independent recheck.
+frontier. After the RPC node closes, the read-only oracle calculates the
+finite producer schedule for that range. The compiled CLI checks the
+configured headers and consumes the typed query using the same witnesses.
+The temporary provider document is rebuilt from the recorded responses and
+linked by its byte length and SHA-256 digest. The archive keeps the original
+inputs, schedule and completed CLI output for an independent recheck.
+
+A version-2 observation supplies the gateway response for comparison. If
+that read yields no usable response, the replay uses the three proofs
+with gateway comparison disabled. The archive retains the exact attempted
+gateway request and reports zero compared fields and a null match. This
+mode uses the same deadline and six-read ceiling. A completed typed result
+in this mode leaves the required gateway comparison open.
 
 The native replay is supplemental to the original timeout. Its comparison
 is recorded separately and the terminal outcome remains `UNKNOWN`.

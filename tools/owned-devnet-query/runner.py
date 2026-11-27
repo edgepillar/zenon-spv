@@ -245,7 +245,7 @@ def closed_opening_after_timeout(contract, record, engine, rpc, opening, sources
             # The batch read is supplemental. Close the RPC node and preserve
             # the existing opening observation if the batch read refused.
             pass
-        if batch_observation is not None and batch_observation.gateway is not None and consumer is not None:
+        if batch_observation is not None and batch_observation.witnesses is not None and consumer is not None:
             try:
                 # Give the original close and opening observation the last ten seconds.
                 work_deadline = budget.started + contract.data["limits"]["max_elapsed_seconds"] - budget.reserve
@@ -266,7 +266,9 @@ def closed_opening_after_timeout(contract, record, engine, rpc, opening, sources
             provider = capture.replay_deposit_timeout(contract, record, window, schedule, *batch_inputs, consumer,
                 workspace, tool_environment, budget.check)
             budget.check(force=True)
-            replay = {"format": capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT, "header_range_request_id": request_id + 6,
+            replay_format = (capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT if batch_observation.gateway is not None
+                             else capture.DEPOSIT_TIMEOUT_REPLAY_WITHOUT_GATEWAY_FORMAT)
+            replay = {"format": replay_format, "header_range_request_id": request_id + 6,
                       "provider": provider, "closed_ledger": replay_provenance}
         except (OSError, ValueError, KeyError, TypeError):
             # The opening and proof observations survive an incomplete native replay.
@@ -439,6 +441,8 @@ def execute(environment, workspace, checkout):
                     request_id = replay_observation["header_range_request_id"]
                     extra.update({capture.DEPOSIT_TIMEOUT_REPLAY, capture.DEPOSIT_TIMEOUT_RANGE,
                                   capture.DEPOSIT_TIMEOUT_STDOUT, f"rpc-{request_id:02d}.request.json"})
+                    if replay_observation["format"] == capture.DEPOSIT_TIMEOUT_REPLAY_WITHOUT_GATEWAY_FORMAT:
+                        extra.add(f"rpc-{request_id - 1:02d}.request.json")
                     for row in replay_observation["closed_ledger"]["oracle_reports"]:
                         extra.update((row["request"]["file"], row["stdout"]["file"]))
         if budget is not None:
