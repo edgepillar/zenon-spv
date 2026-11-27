@@ -232,3 +232,40 @@ The original fixture outcome remains `UNKNOWN`. This completes a bounded
 transport and header-root comparison for reconstructed fixtures.
 Representative capture, excluded-state provenance, import and restart, and
 successful live typed consumption remain open.
+
+## Restore the closed H3 ledger and rebuild derived stores
+
+A new probe used the same archived opening and reference-gas node
+`2835c436b197fece5c76adf4ba8dc1decca2e3ea`. After the seed process closed its
+managers, it selected the five regular files of the H3 LevelDB ledger. The
+restore copied those files into a fresh private directory and checked their
+sizes and SHA-256 values before opening it. The source and copy had distinct
+file identities. The selected file manifest has SHA-256
+`8461056ed1c5177e50874f4d45f9571f4d94fb0e88005b64f7fe5f871f5db47b`.
+
+| Fresh process | Frontier before and after | Observed result |
+| --- | --- | --- |
+| Import and advance | H3 to H4 | `Chain.Init` rebuilt the cache and StateTree from the three stored patches. The original verifier applied the recorded H4 successor. |
+| Reopen and roll back | H4 to H3 | The ledger and cache reopened at H4. A rollback request with the wrong hash at height 3 was refused. The exact H3 rollback then updated the ledger, cache and StateTree. |
+| Reopen after rollback | H3 to H3 | The reopened node was ready for state-root reads. The old H4 state version was unavailable. |
+
+At each stage the H3 StateRoot and all three absence proofs matched the
+prior recorded replay. The procedures used `Chain.Init` and `Chain.Stop`
+for lifecycle control and checked the recorded signatures. No network
+runtime or new signing was needed.
+
+A separate fresh database reconstructed the 99 records of the 14,896-byte
+effective-frontier stream. The read-only node manager recovered the exact H3
+identifier from that database and found no patch at heights 1, 2 or 3.
+The fuller ledger transfer supplied the history that the observed
+`Chain.Init` used for reconstruction. The balance/storage StateRoot
+comparison and the provenance of the complete closed ledger are separate
+checks.
+
+The complete ledger transfer used 34,582 logical bytes. Rebuilding the
+derived stores omitted 3,739 cache bytes and 16,425 StateTree bytes from the
+input transfer. The one copy took 2.4 ms and the qualification took 34.20
+seconds, including one Go build. All archived inputs were reused. These are
+single-host fixture measurements. The original runner outcome remains
+`UNKNOWN`. A representative capture, longer recovery and retention,
+excluded-state provenance and production import acceptance remain open.
