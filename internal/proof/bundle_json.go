@@ -1,6 +1,7 @@
 package proof
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -38,16 +39,19 @@ func (b *HeaderBundle) unmarshalJSON(raw []byte, limits DecodeLimits) error {
 func (b *HeaderBundle) unmarshalValidatedJSON(raw []byte, limits DecodeLimits) error {
 	var decoded HeaderBundle
 	evidence := newEvidenceDecoder(limits)
+	// Each array span has already passed whole-document validation. Pass it
+	// directly to its bounded reader so json.Unmarshal does not scan it again.
 	fields := []struct {
 		name   string
-		target any
+		decode func([]byte) error
 	}{
-		{"version", &decoded.Version}, {"chain_id", &decoded.ChainID},
-		{"claimed_genesis", &decoded.ClaimedGenesis},
-		{"headers", &bundleRows[chain.Header]{target: &decoded.Headers, field: "headers", limit: limits.MaxHeaders}},
-		{"commitments", &bundleRows[CommitmentEvidence]{target: &decoded.Commitments, field: "commitments", limit: limits.MaxCommitments, decode: evidence.commitment}},
-		{"segments", &bundleRows[AccountSegment]{target: &decoded.Segments, field: "segments", limit: limits.MaxSegments, decode: evidence.segment}},
-		{"state_value_proofs", &bundleRows[StateValueProof]{target: &decoded.StateValueProofs, field: "state_value_proofs", limit: limits.MaxStateValueProofs, decode: evidence.stateProof}},
+		{"version", func(value []byte) error { return json.Unmarshal(value, &decoded.Version) }},
+		{"chain_id", func(value []byte) error { return json.Unmarshal(value, &decoded.ChainID) }},
+		{"claimed_genesis", func(value []byte) error { return json.Unmarshal(value, &decoded.ClaimedGenesis) }},
+		{"headers", (&bundleRows[chain.Header]{target: &decoded.Headers, field: "headers", limit: limits.MaxHeaders}).UnmarshalJSON},
+		{"commitments", (&bundleRows[CommitmentEvidence]{target: &decoded.Commitments, field: "commitments", limit: limits.MaxCommitments, decode: evidence.commitment}).UnmarshalJSON},
+		{"segments", (&bundleRows[AccountSegment]{target: &decoded.Segments, field: "segments", limit: limits.MaxSegments, decode: evidence.segment}).UnmarshalJSON},
+		{"state_value_proofs", (&bundleRows[StateValueProof]{target: &decoded.StateValueProofs, field: "state_value_proofs", limit: limits.MaxStateValueProofs, decode: evidence.stateProof}).UnmarshalJSON},
 	}
 	cursor := bundleValueCursor{raw: raw}
 	cursor.space()
@@ -72,7 +76,7 @@ func (b *HeaderBundle) unmarshalValidatedJSON(raw []byte, limits DecodeLimits) e
 		cursor.space()
 		start = cursor.at
 		cursor.value()
-		var target any
+		var decode func([]byte) error
 		for i, field := range fields {
 			// Preserve Unicode aliases as well as ASCII case matching.
 			if !strings.EqualFold(name, field.name) {
@@ -82,11 +86,11 @@ func (b *HeaderBundle) unmarshalValidatedJSON(raw []byte, limits DecodeLimits) e
 				return fmt.Errorf("duplicate bundle field %q", field.name)
 			}
 			seen[i] = true
-			target = field.target
+			decode = field.decode
 			break
 		}
-		if target != nil {
-			if err := json.Unmarshal(raw[start:cursor.at], target); err != nil {
+		if decode != nil {
+			if err := decode(raw[start:cursor.at]); err != nil {
 				return err
 			}
 		}
@@ -129,14 +133,16 @@ func (c *bundleValueCursor) space() {
 func (c *bundleValueCursor) string() {
 	c.at++
 	for {
-		switch c.raw[c.at] {
-		case '\\':
-			c.at += 2
-		case '"':
-			c.at++
+		// Complete syntax validation guarantees a closing quote. Skip
+		// plain text in one scan and check the backslashes before a quote.
+		quote := c.at + bytes.IndexByte(c.raw[c.at:], '"')
+		escaped := false
+		for i := quote - 1; i >= c.at && c.raw[i] == '\\'; i-- {
+			escaped = !escaped
+		}
+		c.at = quote + 1
+		if !escaped {
 			return
-		default:
-			c.at++
 		}
 	}
 }

@@ -143,6 +143,17 @@ func TestBundleFieldSpansMatchBufferedDecoder(t *testing.T) {
 	} {
 		compareBundleFieldDecoders(t, []byte(raw), DecodeLimits{})
 	}
+	// Exercise escaped quotes after long plain spans and closing quotes
+	// preceded by even-length backslash runs. Known fields follow the span.
+	for _, length := range []int{0, 1, 2, 31, 32} {
+		slashes := strings.Repeat("\\", length)
+		quoted, err := json.Marshal(strings.Repeat("x", 4096) + slashes + `"[{}],:` + slashes)
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw := []byte(`{"extension":[` + string(quoted) + `],"ver\u0073ion":1,"chain_id":3,"headers":[]}`)
+		compareBundleFieldDecoders(t, raw, DecodeLimits{MaxHeaders: 1})
+	}
 	// Nested counters must not be refunded by duplicate/null fields or by a
 	// failed earlier parse; excess rows refuse before decoding their sentinel.
 	for _, tc := range []struct {

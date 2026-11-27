@@ -242,6 +242,32 @@ members and proof count. These samples motivate separate bounded-decoder and
 flat-hash allocation work, with this corpus retained as the correctness oracle.
 They do not establish stable latency thresholds or a safe concurrency level.
 
+## Reusing validated bundle arrays
+
+The bundle reader uses the complete JSON syntax check before locating array
+fields. It passes the validated spans directly to their bounded readers and
+searches quoted text for the next quote, checking the immediately preceding
+backslashes. The standard decoder still handles scalar conversion. Controls
+compare escaped quotes, duplicate and aliased fields, syntax errors, nested
+budgets, and receiver state with the independent buffered path.
+
+Six alternating pairs on darwin/arm64 with Go 1.25.14 measured the standard
+load-and-verify operation against `ffb5c20`. Both variants compile the
+same conformance test and load the same node-derived content fixture. Each
+sample uses two operations on one CPU. All cases verify their target identity
+and the configured producer schedule.
+
+| Members per proof | Proofs | Input bytes | Baseline median (ms/op) | Candidate median (ms/op) |
+| ---: | ---: | ---: | ---: | ---: |
+| 1,000 | 1 | 142,232 | 3.28 | 2.65 |
+| 100,000 | 1 | 14,389,236 | 253.51 | 197.56 |
+| 100,000 | 4 | 57,556,508 | 1000.09 | 772.88 |
+
+The large four-proof case used one additional allocation per operation. Median
+allocated bytes were 116,744,360 and 116,744,056, respectively. The observations
+describe this local warm-file workload. The suite also runs the ordinary
+compiled retained-state CLI on all four corpus shapes.
+
 ## Remaining acceptance gates
 
 The large list/batch path can allocate and hold much more memory than its JSON
