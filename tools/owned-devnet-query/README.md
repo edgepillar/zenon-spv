@@ -461,6 +461,15 @@ It also binds a present opening proof to a refusal before signature checks and
 fixture commands. The reader reviews prior versions under their recorded rules
 and verifies the stages reached by each early failure.
 
+If the version-3 native command ended with incomplete output after a closed
+capture, `recorded_interrupted_capture` rechecks the retained input pins,
+parent-slot schedule, context and all three proofs against the same captured
+root. It checks the typed rows against the selected descriptor and preserves
+the actual CLI exit. Missing or invalid membership leaves the proof check
+unverified. The review streams the original archive and keeps the run's
+`UNKNOWN` terminal and review exit 1. Accepted header authority and the
+completed gateway comparison still require the native consumer result.
+
 When a version-3 fixture configuration or deposit command times out, the reader
 can expose the actual exit and elapsed time from its bound start and completion
 receipts. A deposit timeout also requires the successful configuration receipt.
