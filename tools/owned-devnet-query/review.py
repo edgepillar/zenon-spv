@@ -510,21 +510,44 @@ def diagnostic_receipt(evidence, label, reason):
     return receipt
 
 
+def recorded_resource_command(evidence, label):
+    receipt = diagnostic_receipt(evidence, label, "review_resource_command")
+    if receipt is None or receipt.get("launch_outcome") != "STARTED":
+        return None
+    recorded_command_start(evidence, label, receipt, "evidence")
+    require(type(receipt.get("process_group_quiescent")) is bool, "review_resource_command")
+    if receipt["output_complete"]:
+        require(receipt["actual_exit"] is not None and receipt["process_group_quiescent"]
+                and receipt["reason"] is None, "review_resource_command")
+    return {**{name: receipt[name] for name in
+               ("actual_exit", "output_complete", "process_group_quiescent")},
+            "elapsed_nanoseconds": model.uint(receipt["elapsed_nanoseconds"], minimum=0),
+            "completion": evidence.pins[f"evidence/{label}.complete.json"]}
+
+
+def recorded_setup_resources(evidence):
+    labels = {"npm-ci": "package-npm-ci"}
+    for path in evidence.pins:
+        build = re.fullmatch(r"evidence/(docker-[0-9]{3,6}-build-(node|executor))\.complete\.json", path)
+        if build is not None:
+            label, role = build.groups()
+            stage = role + "-image-build"
+            require(stage not in labels, "review_resource_build_duplicate")
+            labels[stage] = label
+    commands = {}
+    for stage, label in labels.items():
+        observation = recorded_resource_command(evidence, label)
+        if observation is not None:
+            commands[stage] = {"label": label, **observation}
+    return commands
+
+
 def recorded_resources(evidence, contract):
     commands = {}
     for label in ("fixture-configure", "fixture-deposit"):
-        receipt = diagnostic_receipt(evidence, label, "review_resource_command")
-        if receipt is None or receipt.get("launch_outcome") != "STARTED":
-            continue
-        recorded_command_start(evidence, label, receipt, "evidence")
-        require(type(receipt.get("process_group_quiescent")) is bool, "review_resource_command")
-        if receipt["output_complete"]:
-            require(receipt["actual_exit"] is not None and receipt["process_group_quiescent"]
-                    and receipt["reason"] is None, "review_resource_command")
-        commands[label] = {name: receipt[name] for name in
-                           ("actual_exit", "output_complete", "process_group_quiescent")}
-        commands[label]["elapsed_nanoseconds"] = model.uint(receipt["elapsed_nanoseconds"], minimum=0)
-        commands[label]["completion"] = evidence.pins[f"evidence/{label}.complete.json"]
+        observation = recorded_resource_command(evidence, label)
+        if observation is not None:
+            commands[label] = observation
 
     sampled_disk = None
     budget = "budget-report.json"
@@ -554,7 +577,11 @@ def recorded_resources(evidence, contract):
         sampled_disk = {"samples": samples, "initial_free_bytes": first_free,
                         "last_sample_elapsed_seconds": elapsed, "peak_observed_new_disk_bytes": peak,
                         "observation": evidence.pins[path]}
-    return {"fixture_commands": commands, "sampled_disk": sampled_disk}
+    resources = {"fixture_commands": commands, "sampled_disk": sampled_disk}
+    setup = recorded_setup_resources(evidence)
+    if setup:
+        resources["setup_commands"] = setup
+    return resources
 
 
 def recorded_startup_sync(evidence, terminal):
@@ -987,7 +1014,7 @@ def main(argv=None, stdout=None, stderr=None):
     if mode != "select-hosted":
         parser.add_argument("--archive", type=Path, required=True)
         parser.add_argument("--include-resources", action="store_true",
-                            help="Report retained fixture durations and sampled disk use.")
+                            help="Report retained setup and fixture durations and sampled disk use.")
     if not hosted:
         parser.add_argument("--expect-archive-sha256", required=True)
         parser.add_argument("--expect-archive-bytes", type=int, required=True)
