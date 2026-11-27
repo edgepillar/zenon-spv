@@ -1,6 +1,7 @@
 package verify
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -158,26 +159,24 @@ func writeAtomicStateFile(path string, encode func(io.Writer) error, openDir fun
 // Only regular file targets are accepted; stream inputs have no read deadline.
 // This cannot authenticate the source of the file or re-prove evicted ancestry.
 func LoadHeaderState(path string) (HeaderState, error) {
-	f, info, err := openStateInput(path, openReadOnlyStateFile)
+	f, _, err := openStateInput(path, openReadOnlyStateFile)
 	if err != nil {
 		return HeaderState{}, err
 	}
 	defer func() { _ = f.Close() }()
-	return decodeSizedHeaderState(f, MaxStateFileBytes, info.Size())
+	return decodeHeaderState(f, MaxStateFileBytes)
 }
 
 func decodeHeaderState(r io.Reader, maxBytes int64) (HeaderState, error) {
-	return decodeSizedHeaderState(r, maxBytes, 0)
-}
-
-func decodeSizedHeaderState(r io.Reader, maxBytes, sizeHint int64) (HeaderState, error) {
-	raw, err := readStateBytes(r, maxBytes, sizeHint)
-	if err != nil {
+	var body persistedState
+	var parseErr error
+	if _, err := readBoundedState(r, maxBytes, func(input io.Reader) {
+		parseErr = body.decodeJSON(json.NewDecoder(bufio.NewReader(input)))
+	}); err != nil {
 		return HeaderState{}, err
 	}
-	var body persistedState
-	if err := json.Unmarshal(raw, &body); err != nil {
-		return HeaderState{}, fmt.Errorf("parse: %w", err)
+	if parseErr != nil {
+		return HeaderState{}, fmt.Errorf("parse: %w", parseErr)
 	}
 	if body.Version != stateFileVersion && body.Version != profileStateFileVersion && body.Version != retentionStateFileVersion {
 		return HeaderState{}, fmt.Errorf("unsupported state-file version %d (supported 1, 2, and 3)", body.Version)
@@ -216,10 +215,10 @@ func decodeSizedHeaderState(r io.Reader, maxBytes, sizeHint int64) (HeaderState,
 // cannot recover evicted history. Schema 3 requires explicit K on resume.
 // The owned loader also authorizes the full saved window before resizing.
 func LoadOrInit(path string, genesis GenesisTrustRoot, policy Policy) (HeaderState, error) {
-	return loadOrInit(path, genesis, policy, nil)
+	return loadOrInit(path, genesis, policy, true, nil)
 }
 
-func loadOrInit(path string, genesis GenesisTrustRoot, policy Policy, authorize func(HeaderState) error) (HeaderState, error) {
+func loadOrInit(path string, genesis GenesisTrustRoot, policy Policy, reserveCapacity bool, authorize func(HeaderState) error) (HeaderState, error) {
 	if err := policy.ValidateRetention(); err != nil {
 		return HeaderState{}, fmt.Errorf("%w: %w", ErrInvalidRetainedState, err)
 	}
@@ -228,7 +227,7 @@ func loadOrInit(path string, genesis GenesisTrustRoot, policy Policy, authorize 
 	}
 	loaded, err := LoadHeaderState(path)
 	if errors.Is(err, os.ErrNotExist) {
-		return NewHeaderState(genesis, policy), nil
+		return newHeaderState(genesis, policy, reserveCapacity), nil
 	}
 	if err != nil {
 		return HeaderState{}, err
@@ -260,11 +259,17 @@ func loadOrInit(path string, genesis GenesisTrustRoot, policy Policy, authorize 
 	loaded.Capacity = capacity
 	loaded.RetainHeaders = policy.RetainHeaders
 	window := loaded.RetainedWindow
-	if len(window) > capacity {
-		window = window[len(window)-capacity:]
+	retainedCount := min(len(window), capacity)
+	// The decoded window is already private. Copy its suffix when shrinking
+	// would otherwise keep evicted envelopes or capacity above the new limit.
+	// Preserve the raw API's append capacity and the non-nil empty window.
+	if reserveCapacity || cap(window) > capacity || window == nil {
+		storageCapacity := retainedCount
+		if reserveCapacity {
+			storageCapacity = capacity
+		}
+		loaded.RetainedWindow = make([]chain.Header, retainedCount, storageCapacity)
+		copy(loaded.RetainedWindow, window[len(window)-retainedCount:])
 	}
-	// Detach from the decoded backing array, releasing evicted envelopes and
-	// bounding the resumed state's header storage to the selected capacity.
-	loaded.RetainedWindow = append(make([]chain.Header, 0, capacity), window...)
 	return loaded, nil
 }

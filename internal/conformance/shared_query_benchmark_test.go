@@ -20,7 +20,7 @@ import (
 // individual request latency. Construction and preservation checks are untimed.
 func BenchmarkSharedImmutableQueries(b *testing.B) {
 	corpus := loadNodeAccountCorpus(b, "delayed-inclusion.json")
-	flat := newFlatWorkload(b, 1000, 1)
+	flat := newFlatFixture(b, 1000, 1)
 	for _, capacity := range []int{256, verify.MaxRetainHeaders} {
 		b.Run(fmt.Sprintf("K%d", capacity), func(b *testing.B) {
 			cell := func(name string, w retainedWorkload, input any, check func() bool) {

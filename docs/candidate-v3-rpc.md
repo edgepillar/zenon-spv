@@ -67,7 +67,7 @@ content sequence satisfies the node's full consensus validation rules.
 | --- | ---: |
 | Complete input, including surrounding whitespace | 256 KiB |
 | Decoded data | 16 KiB |
-| Content members, checked before appending the next member | 1,024 |
+| Content members, checked before decoding the next member | 1,024 |
 | Signed header preimage | 208 bytes |
 
 These are candidate transport budgets, not agreed network or proof limits. A
@@ -76,6 +76,30 @@ remote values and addresses are never copied into that error. Returned byte
 slices and content are detached from the input and other decodes. Signatures
 are checked for representation only: a width-correct invalid signature remains
 untrusted candidate data.
+
+## Header projection for the BatchEntry workflow
+
+The collector and the read-only CLI use `DecodeCandidateV3MomentumHeader`.
+It hashes each validated content member in received order as the member is
+decoded. The two callers retain the projected header. The collector also
+keeps the original wire bytes for the provider bundle. The full
+`DecodeCandidateV3Momentum` entry point still returns the decoded members.
+Both entry points enforce the same field, content count and header hash
+checks before returning a candidate.
+
+A local Go 1.25.14 darwin/arm64 comparison used three samples per case and
+one benchmark CPU. The baseline at `a7d33feb30793bb8328a54b1c3099798f9479938`
+used the full decoder and selected its header.
+
+| Input | Input bytes | Baseline B/op | Header projection B/op | Baseline allocs/op | Header projection allocs/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Recorded two-member momentum | 960 | 20,176 | 18,928 | 390 | 378 |
+| Synthetic momentum at the 1,024-member limit | 146,076 | 3,779,712 | 3,418,577 | 59,681 | 59,659 |
+
+The exact-limit case reuses the conformance test's independently calculated
+header hash and repeated fixture member. The measurements cover allocation
+volume during decoding. Live RPC latency and process resource limits have
+separate measurements.
 
 ## Reproduction and remaining acceptance
 

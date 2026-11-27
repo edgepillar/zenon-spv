@@ -63,20 +63,53 @@ request, checkpoint, profile or artifact cannot be substituted into the new
 selection. Proof/ABI limits, canonical rules, resource budgets and trust flags
 retain their original meanings.
 
+## Renewing the paired main CI inputs
+
+A reviewed change to the [renewal request](../.github/owned-devnet-input-renewal.json)
+selects both general CI and closed-parent CI. The request records the outgoing
+qualified component source and the reference-gas node selected for this
+renewal. Increase its request number for a new renewal of the same cohort.
+A pull request qualifies its own candidate. When both workflows pass on the
+subsequent `main` push, that revision supplies the source-matched pair.
+
+Both workflows use a 21-day retention request for the existing Linux consumer
+and closed-parent archives on the exact `main` push containing the renewal.
+Other uploads keep 14 days. Missing Git history or an unrecognized change keeps
+the default window. The selector adds no build or duplicate upload. Confirm the
+actual expiry from each artifact's metadata as part of qualification.
+
+Select both original Linux ZIPs from the same completed `main` revision, bind
+their workflow, run and attempt, and independently qualify their source and
+binary pins. Add a separately reviewed contract selection for the new pins and
+preserve the outgoing contract bytes for historical replay. A renewal request
+alone changes neither an approved contract digest nor active runner inputs.
+
+### First renewed Linux pair
+
+The separately selectable [renewed contract](../tools/owned-devnet-query/reference-gas-renewal-1-contract.json)
+has SHA-256 `7af671795d7a9a97d57432ce1b38d490580340e7b844a083298dbcaf8a5c4fe0`. Its consumer
+(run `44764773500`, artifact `14645836816`)
+and parent oracle (run `44764773665`, artifact
+`14644100853`) both come from fork main
+`58e03fa9ff58a752cfd1718245b31cba73dde473`, attempt 1. The Linux consumer
+and oracle archives were issued with 21-day retention. This contract changes
+the component pins while preserving the reference-gas descriptor, the typed
+query, the profile, the source cohort and the actual execution limits.
+
 ## Preparation and retained-input review
 
 The model command is offline and reports `PLAN_ONLY`:
 
 ```sh
 python3 -I -B tools/owned-devnet-query/model.py \
-  --contract tools/owned-devnet-query/reference-gas-contract.json
+  --contract tools/owned-devnet-query/reference-gas-renewal-1-contract.json
 ```
 
 Inspect an already retained, verified original Linux ZIP in place:
 
 ```sh
 python3 -I -B tools/owned-devnet-query/inputs.py \
-  --contract tools/owned-devnet-query/reference-gas-contract.json \
+  --contract tools/owned-devnet-query/reference-gas-renewal-1-contract.json \
   --component consumer --archive "$SPV_ARTIFACT_ZIP"
 ```
 
@@ -90,13 +123,13 @@ them again.
 The retained-result `review.py` commands accept the same explicit `--contract`
 option in addition to the separately expected contract digest. Their original
 default remains `contract.json`, preserving original recorded-result review.
-The three preparation jobs hash both contracts and both descriptor/profile
-pairs. The Linux host sample uses the reference-gas contract's unchanged
+The three preparation jobs hash every reviewed contract and its selected
+descriptor/profile pair. The Linux host sample uses the reference-gas contract's unchanged
 19 GiB admission requirement; a configured budget is not measured enforcement.
 
 For a future separately authorized dispatch, the existing acknowledged contract
-digest selects exactly one of the two reviewed filenames before artifact
-transport or engine contact. An unknown digest, a filename/cohort mismatch,
+digest selects exactly one reviewed contract before artifact transport or
+engine contact. An unknown digest, a filename/cohort mismatch,
 mixed source set, different artifact selection or expired input is refused.
 There is no latest lookup, fallback or implicit reset of existing devnet data.
 Preparing this contract does not dispatch a workflow, start services, execute

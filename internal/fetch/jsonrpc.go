@@ -94,17 +94,30 @@ func (c *Client) Call(ctx context.Context, method string, params any, out any) e
 }
 
 func (c *Client) callWithBudget(ctx context.Context, method string, params any, out any, budget *rpcResponseBudget) error {
+	result, err := c.callResultWithBudget(ctx, method, params, budget)
+	if err != nil || out == nil {
+		return err
+	}
+	if err := json.Unmarshal(result, out); err != nil {
+		return callFailure("unmarshal result", err)
+	}
+	return nil
+}
+
+// callResultWithBudget gives internal decoders the result span of the validated,
+// bounded response. A caller that retains a value copies the portion it owns.
+func (c *Client) callResultWithBudget(ctx context.Context, method string, params any, budget *rpcResponseBudget) (json.RawMessage, error) {
 	if budget.remaining <= 0 {
-		return ErrResponseTooLarge
+		return nil, ErrResponseTooLarge
 	}
 	request := rpcRequest{JSONRPC: "2.0", ID: 1, Method: method, Params: params}
 	body, err := json.Marshal(request)
 	if err != nil {
-		return callFailure("marshal request", err)
+		return nil, callFailure("marshal request", err)
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.URL, bytes.NewReader(body))
 	if err != nil {
-		return callFailure("new request", err)
+		return nil, callFailure("new request", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	// Keep the selected endpoint fixed without mutating the supplied client.
@@ -117,35 +130,29 @@ func (c *Client) callWithBudget(ctx context.Context, method string, params any, 
 	}
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return callFailure("post", err)
+		return nil, callFailure("post", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("rpc http %d", resp.StatusCode)
+		return nil, fmt.Errorf("rpc http %d", resp.StatusCode)
 	}
 	// D2: cap the body at the remaining range budget. Read one extra byte
 	// so we can distinguish "exactly at limit" from "exceeded limit".
 	raw, err := readRPCBody(resp.Body, budget.remaining)
 	if err != nil {
-		return callFailure("read body", err)
+		return nil, callFailure("read body", err)
 	}
 	if int64(len(raw)) > budget.remaining {
-		return fmt.Errorf("%w: read %d bytes, remaining %d", ErrResponseTooLarge, len(raw), budget.remaining)
+		return nil, fmt.Errorf("%w: read %d bytes, remaining %d", ErrResponseTooLarge, len(raw), budget.remaining)
 	}
 	budget.remaining -= int64(len(raw))
 	r, err := decodeRPCResponse(raw, request.ID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if r.Error != nil {
-		return r.Error
+		return nil, r.Error
 	}
-	if out == nil {
-		return nil
-	}
-	if err := json.Unmarshal(r.Result, out); err != nil {
-		return callFailure("unmarshal result", err)
-	}
-	return nil
+	return r.Result, nil
 }

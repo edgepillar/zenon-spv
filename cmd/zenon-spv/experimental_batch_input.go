@@ -35,6 +35,15 @@ type experimentalCLIConfig struct {
 	QueryProfile  verify.ExperimentalBatchEntryProfile
 }
 
+// experimentalCLIFieldSpan borrows an encoded field for synchronous decoding.
+// It must stay local to the enclosing input decoder.
+type experimentalCLIFieldSpan []byte
+
+// The standard decoder checks the complete value before calling this method.
+type discardedExperimentalCLIValue struct{}
+
+func (*discardedExperimentalCLIValue) UnmarshalJSON([]byte) error { return nil }
+
 // Exact required fields only. Null, aliases, duplicates and trailing values
 // cannot silently replace a trust input or disable a selected comparison.
 func decodeExperimentalCLIObject(raw []byte, fields map[string]any, nullable ...string) error {
@@ -54,19 +63,44 @@ func decodeExperimentalCLIObject(raw []byte, fields map[string]any, nullable ...
 			return errExperimentalCLIInput
 		}
 		seen[name] = true
-		var value json.RawMessage
+		start := d.InputOffset()
+		if d.Decode(&discardedExperimentalCLIValue{}) != nil {
+			return errExperimentalCLIInput
+		}
+		// The validated span starts after the field name and includes its colon.
+		_, value, ok := bytes.Cut(raw[start:d.InputOffset()], []byte{':'})
+		if !ok {
+			return errExperimentalCLIInput
+		}
+		value = bytes.Trim(value, " \t\n\r")
 		allowNull := false
 		for _, field := range nullable {
 			allowNull = allowNull || field == name
 		}
-		if d.Decode(&value) != nil || bytes.Equal(bytes.TrimSpace(value), []byte("null")) && !allowNull || json.Unmarshal(value, target) != nil {
+		if bytes.Equal(value, []byte("null")) && !allowNull {
 			return errExperimentalCLIInput
+		}
+		switch destination := target.(type) {
+		case *experimentalCLIFieldSpan:
+			if destination == nil {
+				return errExperimentalCLIInput
+			}
+			*destination = value
+		case *json.RawMessage:
+			if destination == nil {
+				return errExperimentalCLIInput
+			}
+			*destination = bytes.Clone(value)
+		default:
+			if json.Unmarshal(value, target) != nil {
+				return errExperimentalCLIInput
+			}
 		}
 	}
 	if token, err := d.Token(); err != nil || token != json.Delim('}') || len(seen) != len(fields) {
 		return errExperimentalCLIInput
 	}
-	if d.Decode(new(any)) != io.EOF {
+	if d.Decode(&discardedExperimentalCLIValue{}) != io.EOF {
 		return errExperimentalCLIInput
 	}
 	return nil
@@ -96,6 +130,17 @@ type experimentalCLIBundle struct {
 	Gateway *proof.CandidateSettlementBatch
 }
 
+type experimentalCLIRPCHeader chain.CandidateV3Header
+
+func (h *experimentalCLIRPCHeader) UnmarshalJSON(raw []byte) error {
+	header, err := fetch.DecodeCandidateV3MomentumHeader(raw)
+	if err != nil {
+		return err
+	}
+	*h = experimentalCLIRPCHeader(header)
+	return nil
+}
+
 func decodeExperimentalCLIHeaders(raw []byte, maxHeaders uint32) ([]chain.CandidateV3Header, error) {
 	if len(raw) > maxExperimentalBundleBytes || maxHeaders == 0 || maxHeaders > verify.MaxRetainHeaders {
 		return nil, errExperimentalCLIInput
@@ -109,17 +154,13 @@ func decodeExperimentalCLIHeaders(raw []byte, maxHeaders uint32) ([]chain.Candid
 		if len(headers) >= int(maxHeaders) {
 			return nil, errExperimentalCLIInput
 		}
-		var row json.RawMessage
-		if d.Decode(&row) != nil {
+		var header experimentalCLIRPCHeader
+		if d.Decode(&header) != nil {
 			return nil, errExperimentalCLIInput
 		}
-		candidate, err := fetch.DecodeCandidateV3Momentum(row)
-		if err != nil {
-			return nil, errExperimentalCLIInput
-		}
-		headers = append(headers, candidate.Header)
+		headers = append(headers, chain.CandidateV3Header(header))
 	}
-	if token, err := d.Token(); err != nil || token != json.Delim(']') || d.Decode(new(any)) != io.EOF {
+	if token, err := d.Token(); err != nil || token != json.Delim(']') || d.Decode(&discardedExperimentalCLIValue{}) != io.EOF {
 		return nil, errExperimentalCLIInput
 	}
 	return headers, nil
@@ -132,7 +173,8 @@ func decodeExperimentalCLIBundle(raw []byte, maxHeaders uint32, compare bool) (e
 		return experimentalCLIBundle{}, errExperimentalCLIInput
 	}
 	var version uint32
-	var rows, witness, gateway json.RawMessage
+	var rows experimentalCLIFieldSpan
+	var witness, gateway json.RawMessage
 	fields := map[string]any{"version": &version, "momentums": &rows, "witness": &witness}
 	if compare {
 		fields["gateway"] = &gateway
@@ -164,37 +206,44 @@ func decodeExperimentalCLIBundle(raw []byte, maxHeaders uint32, compare bool) (e
 	return next, nil
 }
 
-// Regular-file checks precede open and are repeated on the descriptor. The
-// file identity must match; byte caps include whitespace and concurrent growth.
-// This is bounded local input, not authentication of file provenance.
 func readExperimentalCLIFile(path string, limit int64, openFile func(string) (*os.File, error)) ([]byte, error) {
-	if limit <= 0 || limit > maxExperimentalBundleBytes {
-		return nil, errExperimentalCLIInput
-	}
-	selected, err := os.Lstat(path)
-	if err != nil || !selected.Mode().IsRegular() || selected.Size() > limit {
-		return nil, errExperimentalCLIInput
-	}
-	// Windows FileInfo resolves file IDs lazily through its saved path. Resolve
-	// the selected ID now so a later path replacement cannot redefine it.
-	if !os.SameFile(selected, selected) {
-		return nil, errExperimentalCLIInput
-	}
-	f, err := openFile(path)
+	f, size, err := openExperimentalCLIInput(path, limit, openFile)
 	if err != nil {
-		return nil, errExperimentalCLIInput
+		return nil, err
 	}
-	opened, err := f.Stat()
-	if err != nil || !opened.Mode().IsRegular() || !os.SameFile(selected, opened) || opened.Size() > limit {
-		_ = f.Close()
-		return nil, errExperimentalCLIInput
-	}
-	raw, readErr := readExperimentalCLIBytes(f, limit, opened.Size())
+	raw, readErr := readExperimentalCLIBytes(f, limit, size)
 	closeErr := f.Close()
 	if readErr != nil || closeErr != nil || int64(len(raw)) > limit {
 		return nil, errExperimentalCLIInput
 	}
 	return raw, nil
+}
+
+// Regular-file checks precede open and are repeated on the descriptor. The
+// file identity must match. The caller owns the descriptor and the read cap.
+func openExperimentalCLIInput(path string, limit int64, openFile func(string) (*os.File, error)) (*os.File, int64, error) {
+	if limit <= 0 || limit > maxExperimentalBundleBytes {
+		return nil, 0, errExperimentalCLIInput
+	}
+	selected, err := os.Lstat(path)
+	if err != nil || !selected.Mode().IsRegular() || selected.Size() > limit {
+		return nil, 0, errExperimentalCLIInput
+	}
+	// Windows FileInfo resolves file IDs lazily through its saved path. Resolve
+	// the selected ID now so a later path replacement cannot redefine it.
+	if !os.SameFile(selected, selected) {
+		return nil, 0, errExperimentalCLIInput
+	}
+	f, err := openFile(path)
+	if err != nil {
+		return nil, 0, errExperimentalCLIInput
+	}
+	opened, err := f.Stat()
+	if err != nil || !opened.Mode().IsRegular() || !os.SameFile(selected, opened) || opened.Size() > limit {
+		_ = f.Close()
+		return nil, 0, errExperimentalCLIInput
+	}
+	return f, opened.Size(), nil
 }
 
 // The opened regular file's size is an allocation hint, never an input bound.

@@ -16,6 +16,7 @@ from artifacts import API_LIMIT, Artifacts, api_json
 from budget import Budget, evidence_bytes
 import capture
 from engine import Engine, NODE_ROLES, STOP_STATE_FILE
+import fixture_progress
 from images import Builder
 import model
 from model import Refused, canonical, require, same
@@ -28,13 +29,21 @@ from sources import Preparer as Sources
 
 SYSTEM = {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "LANG": "C",
           "GOTOOLCHAIN": "local", "GOMAXPROCS": "2", "PYTHONDONTWRITEBYTECODE": "1"}
+FIXTURE_PHASE_SECONDS = 420
+# The reviewed configuration can await 12 sequential receipts. Allow two
+# nominal ten-second momentums per receipt within the shared work budget.
+REFERENCE_GAS_CONFIGURE_RECEIPT_SECONDS = 12 * 2 * 10
+# The pinned reference-gas flow allows 30 ten-second momentums plus 180
+# seconds for a finalized receipt after deposit setup.
+REFERENCE_GAS_FINALIZED_WAIT_SECONDS = 30 * 10 + 180
 REVIEW_FILES = {"dispatch-selection.json", "engine-admission.json", "image-preparation.json",
     "image-build-node.json", "image-build-executor.json",
     "selected-sources.json", "runtime-layout.json", "runtime-input-pins.json", "package-preparation.json",
     "selected-query-header.json", "selected-capture-frontier.json", "closed-ledger-provenance.json",
     "query-config.json", "query-request.json", "query-context-pins.json", "consumer-comparison.json",
     "owned-container-cleanup.json", "budget-report.json", "terminal.json",
-    "input-consumer-selection.json", "input-parent-oracle-selection.json", "node-toolchain-intake.json"}
+    "input-consumer-selection.json", "input-parent-oracle-selection.json", "node-toolchain-intake.json",
+    fixture_progress.REPORT, fixture_progress.CONFIGURE_REPORT}
 
 
 def fresh_directory(path):
@@ -82,14 +91,20 @@ def verify_checkout(recorder, checkout, execution, phase):
 
 def fixture_flow(contract, recorder, engine, sources, node, prepared, phase, guard):
     source_root = sources.paths["devnet"]
+    timeout = FIXTURE_PHASE_SECONDS
     if phase == "configure":
         engine.require_running_closure(NODE_ROLES)
-        script, arguments, timeout = "src/cli.ts", ["configure"], 420
+        script, arguments = "src/cli.ts", ["configure"]
     elif phase == "deposit":
         engine.require_running_closure()
-        script, arguments, timeout = "flows/deposit.ts", [], 420
+        script, arguments = "flows/deposit.ts", []
     else:
         raise Refused("fixture_flow_scope")
+    reference_gas = fixture_progress.supports(contract)
+    configuring = phase == "configure"
+    if reference_gas:
+        timeout += (REFERENCE_GAS_CONFIGURE_RECEIPT_SECONDS if configuring
+                    else REFERENCE_GAS_FINALIZED_WAIT_SECONDS)
     sources.verify()
     same(installed_entries(contract, source_root), prepared.report["installed_entries"],
          "fixture_packages_changed")
@@ -98,8 +113,15 @@ def fixture_flow(contract, recorder, engine, sources, node, prepared, phase, gua
     environment = prepared.environment
     environment.update({key: value for key, value in engine.environment.items() if key.startswith("DOCKER_")})
     tsx = source_root / "node_modules/tsx/dist/cli.mjs"
-    recorder.run("fixture-" + phase, [str(node.node), str(tsx), script, *arguments], source_root,
-                 environment, guard=guard, timeout=timeout, stdout_cap=1 << 20, stderr_cap=1 << 20)
+    try:
+        recorder.run("fixture-" + phase, [str(node.node), str(tsx), script, *arguments], source_root,
+                     environment, guard=guard, timeout=timeout, stdout_cap=model.FIXTURE_OUTPUT_BYTES,
+                     stderr_cap=model.FIXTURE_OUTPUT_BYTES)
+    except CommandFailed as error:
+        if reference_gas and error.result.receipt["reason"] == "timeout":
+            report = fixture_progress.CONFIGURE_REPORT if configuring else fixture_progress.REPORT
+            recorder.seal(report, canonical(fixture_progress.observe(error.result, configuration=configuring)))
+        raise
     sources.verify()
     engine.require_running_closure(NODE_ROLES if phase == "configure" else model.SERVICES)
 
@@ -111,7 +133,9 @@ def wait_for_initial_height(rpc, height, *, observe_nodes=None):
         if error.reason == "owned_rpc_readiness_deadline":
             observation = rpc.capture_startup_sync()
             if type(observation) is dict and observation.get("status") == "OBSERVED":
-                rpc.capture_post_sync_frontier(observation["request_id"])
+                after = rpc.capture_post_sync_frontier(observation["request_id"])
+                if type(after) is dict and after.get("status") == "OBSERVED":
+                    rpc.capture_startup_peer_frontiers(after["request_id"])
             if observe_nodes is not None:
                 observe_nodes()
         raise
@@ -156,6 +180,19 @@ def post_sync_frontier_evidence_files(rpc):
     return selected
 
 
+def startup_peer_evidence_files(rpc):
+    selected = set(rpc.startup_frontier_evidence)
+    if not selected:
+        return selected
+    report = capture.STARTUP_FRONTIERS_REPORT
+    labels = [f"startup-{role}-frontier" for role in capture.STARTUP_FRONTIER_URLS]
+    allowed = {report} | {label + suffix for label in labels for suffix in (".request.json", ".json")}
+    require(report in selected and selected <= allowed
+            and all(label + ".json" not in selected or label + ".request.json" in selected
+                    for label in labels), "startup_peer_frontier_selection")
+    return selected
+
+
 def evidence_index(recorders, extra):
     entries = []
     for recorder in recorders:
@@ -191,6 +228,22 @@ def publish_paths(path, workspace, entries):
         stream.write("SPV_OWNED_EVIDENCE_END\n")
 
 
+def closed_opening_after_timeout(contract, record, engine, rpc, opening, sources, oracle,
+                                 workspace, tool_environment, budget, reader_source):
+    budget.cap_diagnostic_time(120)
+    engine.stop_producers_and_clients()
+    frontier = rpc.frontier()
+    request_id = rpc.calls
+    identifier = frontier.identifier()
+    capture.require_opening_frontier(opening, identifier, frontier.version, frontier.timestamp)
+    ledger = engine.close_rpc()
+    _, provenance = capture.read_closed_parent_schedule(contract, record, engine, ledger,
+        opening, identifier, sources, oracle, workspace, tool_environment, budget.check, reader_source)
+    budget.check(force=True)
+    return {"format": "owned-devnet-closed-opening-authorization/v1",
+            "frontier_request_id": request_id, "closed_ledger": provenance}
+
+
 def execute(environment, workspace, checkout):
     record = Recorder(workspace / "evidence")
     transport = Recorder(workspace / "transport")
@@ -199,7 +252,7 @@ def execute(environment, workspace, checkout):
     gh_environment = dict(tool_environment, GH_TOKEN=environment["GH_TOKEN"],
         GH_HOST="github.com", GH_CONFIG_DIR=str(private / "gh"), GH_PROMPT_DISABLED="1",
         GH_NO_UPDATE_NOTIFIER="1", GH_NO_EXTENSION_UPDATE_NOTIFIER="1")
-    engine = budget = execution = contract = rpc = None
+    engine = budget = execution = contract = rpc = closed_opening = None
     stage, outcome, reason = "dispatch", "UNKNOWN", None
     extra = set()
     try:
@@ -224,21 +277,11 @@ def execute(environment, workspace, checkout):
         artifacts = Artifacts(contract, transport, workspace / "binaries", ["/usr/bin/gh"],
                               gh_environment, guard)
         artifacts.preflight()
-        consumer = artifacts.fetch("consumer").binaries
-        oracle = artifacts.fetch("parent_oracle").binaries
-        node = Installer(contract, transport, workspace / "node-toolchain",
-                         ["/usr/bin/curl", "--disable"], tool_environment, guard).fetch()
-        consumer.enable_execution()
-        oracle.enable_execution()
-        node = node.enable_execution()
         stage = "sources"
         sources = Sources(contract, record, workspace / "source", ["/usr/bin/git"],
                           tool_environment, guard).prepare()
         stage = "runtime-inputs"
         files = engine.prepare_files(sources)
-        stage = "packages"
-        prepared = Packages(contract, record, sources, node, workspace / "packages",
-                            tool_environment, guard).prepare()
         stage = "images"
         images = Builder(contract, engine, sources, workspace / "images").prepare()
         stage = "nodes"
@@ -250,8 +293,38 @@ def execute(environment, workspace, checkout):
         rpc = capture.LocalRpc(contract, record, workspace, "/usr/bin/curl", tool_environment, guard)
         wait_for_initial_height(rpc, contract.data["selection"]["source_expected_first_v3_height"],
                                 observe_nodes=engine.capture_startup_diagnostics)
-        opening = rpc.opening()
-        extra.add("opening-momentums.json")
+        opening, opening_rows = rpc.opening()
+        extra.update((capture.OPENING_FILE, f"rpc-{rpc.calls:02d}.request.json"))
+        stage = "opening-proof"
+        proof_request = f"rpc-{rpc.calls + 1:02d}.request.json"
+        try:
+            opening_proof = rpc.opening_proof(opening[2], profile)
+        except Refused as error:
+            if error.reason == capture.OPENING_PROOF_VERSION_UNAVAILABLE:
+                extra.add(capture.OPENING_PROOF_FILE)
+            raise
+        finally:
+            if proof_request in record.names:
+                extra.add(proof_request)
+        extra.add(capture.OPENING_PROOF_FILE)
+        require(opening_proof["presence"] == "absent", capture.OPENING_BATCH_ALREADY_PRESENT)
+        stage = "opening-signatures"
+        capture.verify_opening_signatures(record, opening, opening_rows, private, tool_environment, guard)
+        extra.add(capture.OPENING_SIGNATURE_REPORT)
+        stage = "query-inputs"
+        consumer = artifacts.fetch("consumer").binaries
+        oracle = artifacts.fetch("parent_oracle").binaries
+        consumer.enable_execution()
+        oracle.enable_execution()
+        stage = "node-toolchain"
+        node = Installer(contract, transport, workspace / "node-toolchain",
+                         ["/usr/bin/curl", "--disable"], tool_environment, guard).fetch()
+        node = node.enable_execution()
+        stage = "packages"
+        prepared = Packages(contract, record, sources, node, workspace / "packages",
+                            tool_environment, guard).prepare()
+        stage = "runtime-inputs"
+        files.verify()
         stage = "fixture-configuration"
         fixture_flow(contract, record, engine, sources, node, prepared, "configure", guard)
         stage = "fixture-deposit"
@@ -271,19 +344,32 @@ def execute(environment, workspace, checkout):
         ledger = engine.close_rpc()
         schedule = capture.read_closed_schedule(contract, record, engine, ledger, window, sources,
                                                 oracle, workspace, tool_environment, guard, reader_source)
-        for index, _ in enumerate(capture.oracle_requests(contract, window), 1):
+        for index, _ in enumerate(capture.oracle_requests(contract, window.headers), 1):
             extra.update({f"parent-oracle-{index:02d}.request.json", f"parent-oracle-{index:02d}.stdout"})
         stage = "consumer"
         matched = capture.query(contract, record, window, schedule, descriptor, profile, consumer,
                                 workspace, tool_environment, guard)
-        extra.add("consume-query.stdout")
+        extra.add(capture.CONSUMER_STDOUT)
         verify_checkout(record, checkout, execution, "final")
         budget.check(force=True)
         require(matched["gateway_stored_fields_match"] is True, "gateway_stored_fields_differ")
         outcome = "DEVNET_CONSUMER_ACCEPTED"
     except CommandFailed as error:
-        outcome = "FAILURE" if error.result.receipt["output_complete"] is True else "UNKNOWN"
+        receipt = error.result.receipt
+        outcome = "FAILURE" if receipt["output_complete"] is True else "UNKNOWN"
         reason = "command_failed" if outcome == "FAILURE" else "command_incomplete"
+        if (stage == "fixture-deposit" and outcome == "UNKNOWN" and receipt.get("label") == fixture_progress.COMMAND
+                and receipt["reason"] == "timeout" and receipt["process_group_quiescent"] is True
+                and fixture_progress.supports(contract)):
+            try:
+                closed_opening = closed_opening_after_timeout(contract, record, engine, rpc, opening, sources,
+                    oracle, workspace, tool_environment, budget, reader_source)
+            except (OSError, ValueError, KeyError, TypeError):
+                # Retain command receipts and the primary timeout even if this diagnostic is incomplete.
+                pass
+        elif stage == "consumer" and capture.retainable_consumer_failure(error.result):
+            extra.add(capture.CONSUMER_STDOUT)
+            reason = "consumer_reported_failure"
     except Refused as error:
         outcome, reason = "REFUSED", error.reason
     except KeyboardInterrupt:
@@ -298,6 +384,9 @@ def execute(environment, workspace, checkout):
             except (OSError, ValueError, KeyError, TypeError):
                 closure = None
         closed = closure is not None and all(row["observed_closed"] is True for row in closure)
+        if closed_opening is not None and closed and len(closure) == len(model.SERVICES):
+            record.seal(capture.CLOSED_OPENING_REPORT, canonical(closed_opening))
+            extra.update({capture.CLOSED_OPENING_REPORT, "parent-oracle-01.request.json", "parent-oracle-01.stdout"})
         if budget is not None:
             record.seal("budget-report.json", canonical(budget.report()))
         if outcome == "DEVNET_CONSUMER_ACCEPTED" and not closed:
@@ -305,7 +394,7 @@ def execute(environment, workspace, checkout):
         if outcome == "DEVNET_CONSUMER_ACCEPTED" and evidence_bytes(record.directory, record.identity) \
                 > model.LIMITS["max_evidence_bytes"] - (2 << 20):
             outcome, reason = "REFUSED", "final_evidence_reservation"
-        record.seal("terminal.json", canonical({"format": "owned-devnet-query-terminal/v1",
+        record.seal("terminal.json", canonical({"format": model.TERMINAL_FORMAT,
             "outcome": outcome, "stage": stage, "reason": reason,
             "source_revision": execution.source_revision if execution else None,
             "contract_sha256": contract.sha256 if contract else None,
@@ -317,6 +406,7 @@ def execute(environment, workspace, checkout):
             extra.update(frontier_evidence_files(rpc))
             extra.update(startup_sync_evidence_files(rpc))
             extra.update(post_sync_frontier_evidence_files(rpc))
+            extra.update(startup_peer_evidence_files(rpc))
         if node_diagnostics.REPORT in record.names:
             extra.add(node_diagnostics.REPORT)
         if node_file_logs.REPORT in record.names:

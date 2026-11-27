@@ -209,30 +209,63 @@ def ledger_keys(profile, batch):
             "domain_record": base + b"\x01" + domain, "domain_config": base + b"\x15" + domain}
 
 
+def proof_sibling_count(proof, maximum, reason):
+    count = int.from_bytes(proof[97:99], "big")
+    require(count <= maximum <= 256 and count == sum(bin(byte).count("1") for byte in proof[65:97]), reason)
+    return count
+
+
+def sparse_proof_root(path, proof, zero_sibling_reason):
+    zero = bytes(32)
+    current, cursor = proof[33:65], 99
+    for level in range(256):
+        sibling = zero
+        if proof[65 + level // 8] & (1 << (7 - level % 8)):
+            sibling = proof[cursor:cursor+32]
+            cursor += 32
+            require(sibling != zero, zero_sibling_reason)
+        if current == sibling == zero:
+            continue
+        current = H(sibling + current if path[31 - level // 8] & (1 << (level % 8)) else current + sibling)
+    return current
+
+
 def membership(root, path, proof, value, max_proof, max_value, max_siblings):
     require(type(proof) is bytes and type(value) is bytes and 103 <= len(proof) <= max_proof
             and len(value) <= max_value and proof[0] == 1 and len(path) == len(root) == 32,
             "independent_membership_bounds_or_presence")
     require(proof[1:33] == path and proof[33:65] == H(path + value), "independent_membership_leaf")
-    count = int.from_bytes(proof[97:99], "big")
-    require(count <= max_siblings <= 256 and count == sum(bin(byte).count("1") for byte in proof[65:97]),
-            "independent_membership_siblings")
+    count = proof_sibling_count(proof, max_siblings, "independent_membership_siblings")
     cursor = 99 + 32 * count
     require(len(proof) == cursor + 4 + len(value) and int.from_bytes(proof[cursor:cursor+4], "big") == len(value)
             and proof[cursor+4:] == value, "independent_membership_value_encoding")
-    current, cursor = proof[33:65], 99
-    for level in range(256):
-        sibling = bytes(32)
-        if proof[65 + level // 8] & (1 << (7 - level % 8)):
-            sibling = proof[cursor:cursor+32]
-            cursor += 32
-            require(sibling != bytes(32), "independent_membership_noncanonical_zero")
-        if current == sibling == bytes(32):
-            continue
-        current = H(sibling + current if path[31 - level // 8] & (1 << (level % 8)) else current + sibling)
-    require(current == root, "independent_membership_root")
+    require(sparse_proof_root(path, proof, "independent_membership_noncanonical_zero") == root,
+            "independent_membership_root")
     return count
 
+
+def opening_batch_witness(profile, header_root, key, witness):
+    """Check that the selected proof endpoint serves the opening candidate root."""
+    root, path = hex_bytes(header_root, 32), H(key)
+    require(root != bytes(32) and type(witness) is dict and set(witness) == {"root", "value", "proof"}
+            and witness["root"] == header_root, "opening_proof_root_or_response")
+    entry = profile["entry"]
+    proof = binary(witness["proof"], entry["max_proof_bytes"])
+    if witness["value"] is None:
+        presence = "absent"
+        require(len(proof) >= 99 and proof[0] == 0 and proof[1:33] == path
+                and proof[33:65] == bytes(32), "opening_proof_absence")
+        count = proof_sibling_count(proof, entry["max_siblings"], "opening_proof_siblings")
+        require(len(proof) == 99 + 32 * count, "opening_proof_absence_length")
+        require(sparse_proof_root(path, proof, "opening_proof_noncanonical_zero") == root,
+                "opening_proof_root")
+    else:
+        presence = "present"
+        maximum = entry["limits"]["max_value_bytes"]
+        value = binary(witness["value"], maximum)
+        count = membership(root, path, proof, value, entry["max_proof_bytes"], maximum, entry["max_siblings"])
+    return {"presence": presence, "path": path.hex(), "proof_bytes": len(proof),
+            "proof_sha256": hashlib.sha256(proof).hexdigest(), "siblings": count}
 
 def decode_abi(raw, schema, dynamic_caps, max_value, max_dynamic):
     require(type(raw) is bytes and 32 * (len(schema) + len(dynamic_caps)) <= len(raw) <= max_value,

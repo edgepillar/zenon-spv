@@ -92,13 +92,13 @@ func (d *collectedCandidateMomentumDecoder) UnmarshalJSON(raw []byte) error {
 	if !utf8.Valid(raw) {
 		return ErrCandidateV3Momentum
 	}
-	value, err := DecodeCandidateV3Momentum(raw)
+	header, err := DecodeCandidateV3MomentumHeader(raw)
 	if err != nil {
 		return err
 	}
 	// The projection contains a data hash, not the original data bytes. Preserve
 	// the validated wire row independently; it cannot be rebuilt from that hash.
-	*d.target = collectedCandidateMomentum{header: value.Header, wire: bytes.Clone(raw)}
+	*d.target = collectedCandidateMomentum{header: header, wire: bytes.Clone(raw)}
 	return nil
 }
 
@@ -229,22 +229,59 @@ func (c *Client) fetchCandidateBatchBundle(ctx context.Context, selected Candida
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	var output bytes.Buffer
-	encoder := json.NewEncoder(&output)
+	return encodeCandidateBatchBundle(rows, witness, witnesses, gateway)
+}
+
+func encodeCandidateBatchBundle(rows []json.RawMessage, witness json.RawMessage, witnesses *collectedBatchContextWitnesses, gateway json.RawMessage) ([]byte, error) {
+	const prefix = `{"version":1,"momentums":[`
+	var fields bytes.Buffer
+	encoder := json.NewEncoder(&fields)
 	encoder.SetEscapeHTML(false)
 	if err := encoder.Encode(struct {
-		Version   uint32                          `json:"version"`
-		Momentums []json.RawMessage               `json:"momentums"`
 		Witness   json.RawMessage                 `json:"witness,omitempty"`
 		Witnesses *collectedBatchContextWitnesses `json:"witnesses,omitempty"`
 		Gateway   json.RawMessage                 `json:"gateway,omitempty"`
-	}{1, rows, witness, witnesses, gateway}); err != nil {
+	}{witness, witnesses, gateway}); err != nil {
 		return nil, ErrInvalidRPCResponse
 	}
-	if output.Len() > MaxCandidateBatchBundleBytes {
+	suffix := fields.Bytes()
+	// Join the encoded fields to the array while preserving the closing brace
+	// and newline from the encoder. An empty object supplies only those bytes.
+	if suffix[1] == '}' {
+		suffix = suffix[1:]
+	} else {
+		suffix[0] = ','
+	}
+
+	size := len(prefix) + max(0, len(rows)-1) + len("]") + len(suffix)
+	var compacted bytes.Buffer
+	for i, row := range rows {
+		compacted.Reset()
+		if err := json.Compact(&compacted, row); err != nil {
+			return nil, ErrInvalidRPCResponse
+		}
+		// The collector owns each row. Reuse its storage when removing
+		// whitespace and use one row-sized buffer for all compaction.
+		if compacted.Len() < len(row) {
+			copy(row, compacted.Bytes())
+			rows[i] = row[:compacted.Len()]
+		}
+		size += compacted.Len()
+	}
+	if size > MaxCandidateBatchBundleBytes {
 		return nil, ErrResponseTooLarge
 	}
-	return output.Bytes(), nil
+
+	output := make([]byte, 0, size)
+	output = append(output, prefix...)
+	for i, row := range rows {
+		if i > 0 {
+			output = append(output, ',')
+		}
+		output = append(output, row...)
+	}
+	output = append(output, ']')
+	return append(output, suffix...), nil
 }
 
 func (c *Client) collectCandidateResult(ctx context.Context, method string, params []any, validate func([]byte) error) (json.RawMessage, error) {

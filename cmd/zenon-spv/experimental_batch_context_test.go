@@ -9,9 +9,11 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/0x3639/zenon-spv/internal/fetch"
 	"github.com/0x3639/zenon-spv/internal/proof"
 	"github.com/0x3639/zenon-spv/internal/verify"
 )
@@ -24,7 +26,7 @@ type batchContextCLIInputs struct {
 	configPath, requestPath, bundlePath string
 }
 
-func newBatchContextCLIInputs(t *testing.T) batchContextCLIInputs {
+func newBatchContextCLIInputs(t testing.TB) batchContextCLIInputs {
 	t.Helper()
 	raw, err := os.ReadFile("../../internal/testdata/conformance/batch-context-unit.json")
 	sum := sha256.Sum256(raw)
@@ -91,7 +93,7 @@ func newBatchContextCLIInputs(t *testing.T) batchContextCLIInputs {
 	return f
 }
 
-func (f batchContextCLIInputs) write(t *testing.T) {
+func (f batchContextCLIInputs) write(t testing.TB) {
 	t.Helper()
 	for path, value := range map[string]any{f.configPath: f.config, f.requestPath: f.request, f.bundlePath: f.bundle} {
 		if err := os.WriteFile(path, experimentalCLIJSON(t, value), 0600); err != nil {
@@ -163,7 +165,7 @@ func TestExperimentalBatchContextCLIConsumerAndGateway(t *testing.T) {
 }
 
 func TestExperimentalBatchContextCLIFailuresAndBounds(t *testing.T) {
-	for _, name := range []string{"request-context", "header-pin", "query-pin", "wrong-tip", "wrong-header", "old-profile", "old-bundle", "witnesses-null", "config-oversize", "proven-absence"} {
+	for _, name := range []string{"request-context", "header-pin", "query-pin", "wrong-tip", "wrong-header", "old-profile", "old-bundle", "witnesses-null", "unavailable-witness-before-invalid-header", "config-oversize", "proven-absence"} {
 		t.Run(name, func(t *testing.T) {
 			f := newBatchContextCLIInputs(t)
 			args := f.args()
@@ -188,6 +190,10 @@ func TestExperimentalBatchContextCLIFailuresAndBounds(t *testing.T) {
 				delete(f.bundle, "witnesses")
 			case "witnesses-null":
 				f.bundle["witnesses"] = nil
+			case "unavailable-witness-before-invalid-header":
+				f.bundle["momentums"] = []any{nil}
+				f.bundle["witnesses"].(map[string]any)["batch_entry"] = nil
+				want = 2
 			case "proven-absence":
 				f.request.BatchID = 1
 				row := f.bundle["witnesses"].(map[string]any)["batch_entry"].(map[string]any)
@@ -203,6 +209,10 @@ func TestExperimentalBatchContextCLIFailuresAndBounds(t *testing.T) {
 			report := batchContextCLIReport(t, experimentalContextQueryCommand, args, want)
 			if name == "proven-absence" && (report.Error == nil || report.Error.Category != "required_row_absent") {
 				t.Fatal("required-row absence became application BatchEntry absence")
+			}
+			if name == "unavailable-witness-before-invalid-header" &&
+				(report.Error == nil || report.Error.Stage != "witness" || report.Error.Category != "unavailable" || report.Headers != nil) {
+				t.Fatal("unavailable witness did not preserve the earlier refusal")
 			}
 		})
 	}
@@ -299,5 +309,71 @@ func TestExperimentalBatchContextCLIStrictSchemaAndArguments(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	if code := finishExperimentalBatchContext(report, 0, &stdout, &stderr); code != 70 || !bytes.Contains(stdout.Bytes(), []byte("encoding")) || bytes.Contains(stdout.Bytes(), []byte("batch_membership")) {
 		t.Fatal("lossy output accepted")
+	}
+}
+
+func TestExperimentalCLIRawFieldOwnership(t *testing.T) {
+	const array = `[ {"kind":"e\u0073caped:\"[]"}, 2 ]`
+	raw := []byte("{\"version\":1, \"momen\\u0074ums\" \t:\r\n" + array + " , \"witnesses\": null}")
+	var version uint32
+	var momentums, witnesses json.RawMessage
+	fields := map[string]any{"version": &version, "momentums": &momentums, "witnesses": &witnesses}
+	if err := decodeExperimentalCLIObject(raw, fields, "witnesses"); err != nil {
+		t.Fatal(err)
+	}
+	clear(raw)
+	if version != 1 || string(momentums) != array || string(witnesses) != "null" {
+		t.Fatal("decoded fields lost their original byte representation")
+	}
+	momentums[0] = '!'
+	if string(witnesses) != "null" {
+		t.Fatal("raw fields share writable storage")
+	}
+}
+
+func TestExperimentalBatchCLIHeaderFieldSpan(t *testing.T) {
+	f := newExperimentalCLIFixture(t)
+	rows := f.bundle["momentums"].([]json.RawMessage)
+	indented, err := json.MarshalIndent(rows, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw := []byte("{\"version\":1, \"momentums\"\r\n:\t" + string(indented) + ", \"witness\":" + string(experimentalCLIJSON(t, f.bundle["witness"])) + "}")
+	bundle, err := decodeExperimentalCLIBundle(raw, uint32(len(rows)), false)
+	if err != nil || len(bundle.Headers) != len(rows) {
+		t.Fatalf("header field: %v", err)
+	}
+	clear(raw)
+	for index, header := range bundle.Headers {
+		want, err := fetch.DecodeCandidateV3Momentum(rows[index])
+		if err != nil || !reflect.DeepEqual(header, want.Header) {
+			t.Fatalf("detached header %d: %v", index, err)
+		}
+	}
+}
+
+func BenchmarkExperimentalCLIBundleDecode(b *testing.B) {
+	fixture := newBatchContextCLIInputs(b)
+	recorded := fixture.bundle["momentums"].([]json.RawMessage)
+	for _, workload := range []struct {
+		name  string
+		count int
+	}{{"recorded", len(recorded)}, {"header-cap", verify.MaxRetainHeaders}} {
+		b.Run(workload.name, func(b *testing.B) {
+			rows := make([]json.RawMessage, workload.count)
+			for i := range rows {
+				rows[i] = recorded[i%len(recorded)]
+			}
+			fixture.bundle["momentums"] = rows
+			raw := experimentalCLIJSON(b, fixture.bundle)
+			b.SetBytes(int64(len(raw)))
+			b.ReportAllocs()
+			for b.Loop() {
+				got, err := decodeExperimentalContextCLIBundle(raw, uint32(len(rows)), false)
+				if err != nil || len(got.Headers) != len(rows) {
+					b.Fatalf("bundle decode: %v", err)
+				}
+			}
+		})
 	}
 }

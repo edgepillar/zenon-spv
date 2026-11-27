@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 """Regular-file controls only; no Go, engine, node, wallet or network execution."""
+import base64
 import contextlib
 import copy
+import hashlib
 import importlib.util
 import io
 import json
@@ -18,9 +20,15 @@ Q = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(Q)
 
 
-VISIBILITY = {"format": "first-insertion-frontier-visibility/v1", "before_height": 1, "during_height": 2,
-              "callback_held_during_read": True, "insert_returned_after_release": True,
-              "accepted_header_authority": False}
+LEGACY_VISIBILITY = {"format": "first-insertion-frontier-visibility/v1", "before_height": 1, "during_height": 2,
+                     "callback_held_during_read": True, "insert_returned_after_release": True,
+                     "accepted_header_authority": False}
+PERIOD_READ_VISIBILITY = {**LEGACY_VISIBILITY, "format": "first-insertion-frontier-visibility/v2",
+                          "first_period_read_held": True}
+VISIBILITY = {**PERIOD_READ_VISIBILITY, "format": "first-insertion-frontier-visibility/v3",
+              "rpc_method": "ledger.getFrontierMomentum", "rpc_transport": "in-memory-http"}
+BUILD_OUTPUT = {"Action": "build-output", "ImportPath": "github.com/shirou/gopsutil/host",
+                "Output": "warning: 'kIOMasterPortDefault' is deprecated\n"}
 
 
 def events():
@@ -46,6 +54,131 @@ def events():
     result.extend([{"Action": "pass", "Package": Q.PACKAGE, "Test": Q.TEST},
                    {"Action": "pass", "Package": Q.PACKAGE}])
     return result
+
+
+def add_one_period_observation(rows, marker, observation):
+    name = Q.TEST + "/one-period"
+    position = next(i for i, row in enumerate(rows) if row["Action"] == "pass" and row.get("Test") == name)
+    rows.insert(position, {"Action": "output", "Package": Q.PACKAGE, "Test": name,
+                           "Output": marker + json.dumps(observation) + "\n"})
+    return rows
+
+
+def recorded_h2_events(observation):
+    return add_one_period_observation(events(), Q.RECORDED_H2_MARKER, observation)
+
+
+def recorded_boundary_events():
+    return add_one_period_observation(recorded_h2_events(Q.RECORDED_H2), Q.RECORDED_BOUNDARY_MARKER,
+                                      {**Q.RECORDED_BOUNDARY, "unsigned_empty_patch_root": "5" * 64})
+
+
+def recorded_proof_observation():
+    witnesses = {}
+    for name, key in Q.RECORDED_PROOF_KEYS.items():
+        proof = b"\0" + hashlib.sha3_256(bytes.fromhex(key)).digest() + bytes(66)
+        witnesses[name] = {"key": key, "proof": base64.b64encode(proof).decode("ascii"),
+                           "value": None, "proof_rpc_refused": True}
+    return {"format": "recorded-chain69-h2-settlement-proofs/v1", "height": Q.RECORDED_H2["height"],
+            "hash": Q.RECORDED_H2["hash"], "local_tree_root": "5" * 64, "header_state_root": "0" * 64,
+            "root_rpc_refused": True, "witnesses": witnesses, "accepted_header_authority": False}
+
+
+def unsigned_h3_observation():
+    proof_pins = {name: Q.C.digest(base64.b64decode(witness["proof"]))
+                  for name, witness in recorded_proof_observation()["witnesses"].items()}
+    return {"format": "chain69-unsigned-h3-absence-rpc/v1", "height": 3, "version": 3,
+            "parent_hash": Q.RECORDED_H2["hash"], "timestamp": 1794699060,
+            "hash": "4d9c64721527b29f857d8361fbcb2c6f4b7d72465a6fb7c94bbf39966b3e34ee",
+            "header_state_root": "5" * 64, "ledger_root": "5" * 64, "proof_pins": proof_pins,
+            "reopened_fixture": True, "unsigned_vm_refused": True, "h2_remains_refused": True,
+            "accepted_header_authority": False}
+
+
+def unsigned_h3_events(observation):
+    rows = add_one_period_observation(recorded_boundary_events(), Q.RECORDED_PROOFS_MARKER,
+                                      recorded_proof_observation())
+    return add_one_period_observation(rows, Q.UNSIGNED_H3_MARKER, observation)
+
+
+def history_observation():
+    h3 = unsigned_h3_observation()
+    return {"format": "chain69-h3-history-at-h4-fixture/v1", "height": 3,
+            "hash": h3["hash"], "state_root": h3["ledger_root"], "tip_height": 4,
+            "tip_parent_hash": h3["hash"], "tip_timestamp": 1794699070, "tip_state_root": "6" * 64,
+            "tip_hash": "7864634898c7fac78f249bf493ee485fe4586c5f2a4af6b9cddf379244632054",
+            "tip_changes_hash": "9428a4aa60d16ed68b51e3820e184381a8c079d0574a20ffae5ca07f26f44552",
+            "proof_pins": h3["proof_pins"], "checked_at_tip_before_and_after_reopen": True,
+            "marker_absent_at_h3_and_present_at_h4": True, "accepted_header_authority": False}
+
+
+def history_events(observation):
+    return add_one_period_observation(unsigned_h3_events(unsigned_h3_observation()),
+                                      Q.H3_HISTORY_MARKER, observation)
+
+
+def sparse_layer_witnesses(values, selected):
+    """Build full sparse layers for the small synthetic negative-control set."""
+    def hash_bytes(raw):
+        return hashlib.sha3_256(raw).digest()
+
+    paths = {name: hash_bytes(bytes.fromhex(key)) for name, key in Q.RECORDED_PROOF_KEYS.items()}
+    empty = bytes(32)
+    layers = [{int.from_bytes(paths[name], "big"): hash_bytes(paths[name] + value)
+               for name, value in values.items()}]
+    for _ in range(256):
+        level = layers[-1]
+        layers.append({parent: hash_bytes(level.get(2 * parent, empty) + level.get(2 * parent + 1, empty))
+                       for parent in {index >> 1 for index in level}})
+    proofs = {}
+    for name in selected:
+        path, value = paths[name], values.get(name)
+        position = int.from_bytes(path, "big")
+        bitmap, siblings = bytearray(32), []
+        for level, layer in enumerate(layers[:-1]):
+            if (position ^ 1) in layer:
+                bitmap[level // 8] |= 128 >> (level % 8)
+                siblings.append(layer[position ^ 1])
+            position >>= 1
+        leaf = hash_bytes(path + value) if value is not None else empty
+        tail = len(value).to_bytes(4, "big") + value if value is not None else b""
+        raw = bytes([value is not None]) + path + leaf + bitmap + len(siblings).to_bytes(2, "big")
+        proofs[name] = base64.b64encode(raw + b"".join(siblings) + tail).decode("ascii")
+    return layers[-1][0].hex(), proofs
+
+
+def typed_history_observation():
+    values = Q.typed_history_values()
+    root, proofs = sparse_layer_witnesses(values, values)
+    later_root, absent = sparse_layer_witnesses({k: v for k, v in values.items() if k != "batch_entry"},
+                                               ("batch_entry",))
+    keys = {k: bytes.fromhex(v) for k, v in Q.RECORDED_PROOF_KEYS.items()}
+    sizes = {"batch_entry": b"\xa0\x06", "domain_record": b"\xc0\x03", "domain_config": b"\x40"}
+    patch = b"".join(bytes((1, len(keys[k]))) + keys[k] + sizes[k] + values[k] for k in values)
+    deletion = bytes((0, len(keys["batch_entry"]))) + keys["batch_entry"]
+
+    def header(height, parent, timestamp, root, changes):
+        digest = hashlib.sha3_256(changes).digest()
+        return {"height": height, "hash": Q.unsigned_v3_hash(height, parent, timestamp, root, digest),
+                "parent_hash": parent, "timestamp": timestamp, "state_root": root, "changes_hash": digest.hex()}
+
+    h4 = history_observation()
+    target = header(5, h4["tip_hash"], h4["tip_timestamp"] + 10, root, patch)
+    tip = header(6, target["hash"], target["timestamp"] + 10, later_root, deletion)
+    return {"format": "chain69-typed-rows-after-reopen/v1", "target": target, "tip": tip,
+            "memberships": proofs, "tip_batch_absence": absent["batch_entry"],
+            "checked_at_tip_before_and_after_reopen": True, "accepted_header_authority": False}
+
+
+def pruned_history_observation(history):
+    tip = history["tip"]
+    value = {"value": None, "proof": history["tip_batch_absence"], "root": tip["state_root"]}
+    tip_rpc = ('{"jsonrpc":"2.0","id":1,"result":' + json.dumps(value, separators=(",", ":")) + "}\n").encode()
+    return {"format": "chain69-pruned-typed-history/v1", "target_height": history["target"]["height"],
+            "target_hash": history["target"]["hash"], "tip_height": tip["height"], "tip_hash": tip["hash"],
+            "prune_below_height": tip["height"], "pruned_proof_keys": dict(Q.RECORDED_PROOF_KEYS),
+            "pruned_rpc_body": '{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"trie: no such version"}}\n',
+            "tip_absence_rpc": Q.C.digest(tip_rpc), "reopened_at_same_tip": True, "accepted_header_authority": False}
 
 
 def encoded(value):
@@ -75,12 +208,360 @@ class Controls(unittest.TestCase):
             Q.native_controls(encoded(value))
 
     def test_complete_three_case_observation_is_not_acceptance(self):
-        result = Q.native_controls(encoded(events()))
+        result = Q.native_controls(encoded(events()), require_frontier_rpc=True)
         self.assertEqual((result["root_tests"], result["subtests"]), (1, 3))
         self.assertFalse(result["actual_fixture_cause_established"])
         self.assertFalse(result["new_devnet_acceptance_established"])
         self.assertEqual(result["observations"]["fixture-window"]["completed_periods"], 182718)
         self.assertEqual(result["frontier_visibility"], VISIBILITY)
+
+    def test_archived_callback_report_cannot_qualify_the_original_listener_gate(self):
+        rows = events()
+        marker = next(row for row in rows if Q.VISIBILITY_MARKER in row.get("Output", ""))
+        marker["Output"] = Q.VISIBILITY_MARKER + json.dumps(LEGACY_VISIBILITY) + "\n"
+        raw = encoded(rows)
+        self.assertEqual(Q.native_controls(raw)["frontier_visibility"], LEGACY_VISIBILITY)
+        with self.assertRaisesRegex(Q.Refused, "frontier_visibility_observation"):
+            Q.native_controls(raw, require_first_period_read=True)
+        missing = {name: value for name, value in PERIOD_READ_VISIBILITY.items() if name != "first_period_read_held"}
+        marker["Output"] = Q.VISIBILITY_MARKER + json.dumps(missing) + "\n"
+        with self.assertRaisesRegex(Q.Refused, "frontier_visibility_fields"):
+            Q.native_controls(encoded(rows), require_first_period_read=True)
+
+    def test_earlier_storage_observations_keep_their_scope_under_the_rpc_gate(self):
+        rows = events()
+        marker = next(row for row in rows if Q.VISIBILITY_MARKER in row.get("Output", ""))
+        for earlier in (LEGACY_VISIBILITY, PERIOD_READ_VISIBILITY):
+            with self.subTest(edition=earlier["format"]):
+                marker["Output"] = Q.VISIBILITY_MARKER + json.dumps(earlier) + "\n"
+                raw = encoded(rows)
+                self.assertEqual(Q.native_controls(raw)["frontier_visibility"], earlier)
+                with self.assertRaisesRegex(Q.Refused, "frontier_visibility_observation"):
+                    Q.native_controls(raw, require_frontier_rpc=True)
+
+    def test_recorded_h2_is_bound_to_the_original_response_and_source_slot(self):
+        result = Q.native_controls(encoded(recorded_h2_events(Q.RECORDED_H2)),
+                                   require_frontier_rpc=True, require_recorded_h2=True)
+        self.assertEqual(result["recorded_h2"], Q.RECORDED_H2)
+        self.assertEqual(result["frontier_visibility"], VISIBILITY)
+        self.assertFalse(result["new_devnet_acceptance_established"])
+
+    def test_previous_rpc_observations_keep_their_scope(self):
+        raw = encoded(events())
+        self.assertNotIn("recorded_h2", Q.native_controls(raw, require_frontier_rpc=True))
+        with self.assertRaisesRegex(Q.Refused, "native_trace_count"):
+            Q.native_controls(raw, require_frontier_rpc=True, require_recorded_h2=True)
+
+    def test_recorded_h2_refuses_changed_scope_and_other_test_output(self):
+        for field, replacement in {
+            "version": True, "rpc_sha256": "0" * 64, "source_parent_slot_match": False,
+            "signature_verified": False, "accepted_header_authority": 0,
+        }.items():
+            with self.subTest(field=field), self.assertRaisesRegex(Q.Refused, "recorded_h2_observation"):
+                Q.native_controls(encoded(recorded_h2_events({**Q.RECORDED_H2, field: replacement})),
+                                  require_recorded_h2=True)
+        rows = recorded_h2_events(Q.RECORDED_H2)
+        marker = next(row for row in rows if Q.RECORDED_H2_MARKER in row.get("Output", ""))
+        index = rows.index(marker)
+        self.refused(rows[:index] + [marker] + rows[index:])
+        rows[index] = {**marker, "Test": Q.TEST}
+        with self.assertRaisesRegex(Q.Refused, "foreign_recorded_h2_trace"):
+            Q.native_controls(encoded(rows), require_recorded_h2=True)
+
+    def test_recorded_boundary_reports_the_unsigned_h3_scope(self):
+        observation = {**Q.RECORDED_BOUNDARY, "unsigned_empty_patch_root": "5" * 64}
+        rows = add_one_period_observation(recorded_h2_events(Q.RECORDED_H2),
+                                          Q.RECORDED_BOUNDARY_MARKER, observation)
+        result = Q.native_controls(encoded(rows), require_frontier_rpc=True, require_recorded_boundary=True)
+        self.assertEqual(result["recorded_boundary"], observation)
+        self.assertFalse(result["new_devnet_acceptance_established"])
+
+    def test_header_only_replay_keeps_its_older_scope(self):
+        raw = encoded(recorded_h2_events(Q.RECORDED_H2))
+        self.assertNotIn("recorded_boundary", Q.native_controls(raw, require_recorded_h2=True))
+        with self.assertRaisesRegex(Q.Refused, "native_trace_count"):
+            Q.native_controls(raw, require_recorded_boundary=True)
+
+    def test_recorded_boundary_requires_the_exact_parent_and_source_scope(self):
+        observation = {**Q.RECORDED_BOUNDARY, "unsigned_empty_patch_root": "5" * 64}
+        self.refused(add_one_period_observation(events(), Q.RECORDED_BOUNDARY_MARKER, observation))
+        for changes in ({"parent_hash": "2" * 64}, {"rejected_versions": [True, 2]},
+                        {"state_root_active_at_h1": True}, {"unsigned_header_committed": True},
+                        {"unsigned_empty_patch_root": "0" * 64}, {"unsigned_empty_patch_root": "A" * 64}):
+            with self.subTest(changes=changes):
+                self.refused(add_one_period_observation(recorded_h2_events(Q.RECORDED_H2),
+                                                       Q.RECORDED_BOUNDARY_MARKER, {**observation, **changes}))
+        rows = add_one_period_observation(recorded_h2_events(Q.RECORDED_H2),
+                                          Q.RECORDED_BOUNDARY_MARKER, observation)
+        marker = next(row for row in rows if Q.RECORDED_BOUNDARY_MARKER in row.get("Output", ""))
+        position = rows.index(marker)
+        self.refused(rows[:position] + [marker] + rows[position:])
+        marker["Test"] = Q.TEST
+        with self.assertRaisesRegex(Q.Refused, "foreign_recorded_boundary_trace"):
+            Q.native_controls(encoded(rows), require_recorded_boundary=True)
+
+    def test_recorded_peer_bridge_requires_the_exact_message_and_boundary(self):
+        older = encoded(recorded_boundary_events())
+        self.assertNotIn("recorded_peer_bridge", Q.native_controls(older))
+        with self.assertRaisesRegex(Q.Refused, "native_trace_count"):
+            Q.native_controls(older, require_recorded_peer_bridge=True)
+
+        marker = Q.RECORDED_PEER_BRIDGE_MARKER
+        expected = Q.RECORDED_PEER_BRIDGE
+        rows = add_one_period_observation(recorded_boundary_events(), marker, expected)
+        report = Q.native_controls(encoded(rows), require_recorded_peer_bridge=True)
+        self.assertEqual(report["recorded_peer_bridge"], expected)
+        self.assertFalse(report["new_devnet_acceptance_established"])
+
+        for changed in ({"wire_bytes": 212}, {"wire_sha256": "0" * 64}, {"height": 3},
+                        {"parent_hash": expected["hash"]}, {"peer_precheck_passed": 1},
+                        {"unsigned_h3_refused_before_commit": False}, {"network_started": True}):
+            bad = add_one_period_observation(recorded_boundary_events(), marker, {**expected, **changed})
+            with self.subTest(changed=changed), self.assertRaisesRegex(Q.Refused, "recorded_peer_bridge_observation"):
+                Q.native_controls(encoded(bad), require_recorded_peer_bridge=True)
+
+        session_without_boundary = recorded_h2_events(Q.RECORDED_H2)
+        self.refused(add_one_period_observation(session_without_boundary, marker, expected))
+        duplicate = add_one_period_observation(rows[:], marker, expected)
+        with self.assertRaisesRegex(Q.Refused, "native_trace_count"):
+            Q.native_controls(encoded(duplicate), require_recorded_peer_bridge=True)
+        event = next(row for row in rows if marker in row.get("Output", ""))
+        event["Test"] = Q.TEST
+        with self.assertRaisesRegex(Q.Refused, "foreign_recorded_peer_bridge_trace"):
+            Q.native_controls(encoded(rows), require_recorded_peer_bridge=True)
+
+    def test_recorded_fetch_requires_the_bridge_and_exact_notification_order(self):
+        bridge = add_one_period_observation(recorded_boundary_events(), Q.RECORDED_PEER_BRIDGE_MARKER,
+                                            Q.RECORDED_PEER_BRIDGE)
+        marker = Q.RECORDED_PEER_FETCH_MARKER
+        expected = Q.RECORDED_PEER_FETCH
+        self.assertNotIn("recorded_peer_fetch", Q.native_controls(encoded(bridge)))
+        with self.assertRaisesRegex(Q.Refused, "native_trace_count"):
+            Q.native_controls(encoded(bridge), require_recorded_peer_fetch=True)
+        with self.assertRaisesRegex(Q.Refused, "recorded_peer_fetch_observation"):
+            Q.native_controls(encoded(add_one_period_observation(recorded_boundary_events(), marker, expected)))
+
+        rows = add_one_period_observation(bridge[:], marker, expected)
+        result = Q.native_controls(encoded(rows), require_recorded_peer_fetch=True)
+        self.assertEqual(result["recorded_peer_fetch"], expected)
+        self.assertFalse(result["new_devnet_acceptance_established"])
+
+        for changed in ({"before_height": True}, {"before_hash": expected["held_hash"]}, {"held_height": 1},
+                        {"insert_returned_while_held": True}, {"relay_called_while_held": True},
+                        {"relayed_hash": expected["before_hash"]}, {"relay_propagate": 1},
+                        {"rpc_method": "other"}, {"network_started": True}, {"accepted_header_authority": True}):
+            bad = add_one_period_observation(bridge[:], marker, {**expected, **changed})
+            with self.subTest(changed=changed), self.assertRaisesRegex(Q.Refused, "recorded_peer_fetch_observation"):
+                Q.native_controls(encoded(bad), require_recorded_peer_fetch=True)
+        duplicate = add_one_period_observation(rows[:], marker, expected)
+        with self.assertRaisesRegex(Q.Refused, "native_trace_count"):
+            Q.native_controls(encoded(duplicate), require_recorded_peer_fetch=True)
+        event = next(row for row in rows if marker in row.get("Output", ""))
+        event["Test"] = Q.TEST
+        with self.assertRaisesRegex(Q.Refused, "foreign_recorded_peer_fetch_trace"):
+            Q.native_controls(encoded(rows), require_recorded_peer_fetch=True)
+
+    def test_recorded_proofs_report_the_three_selected_paths_with_legacy_rpc_refusals(self):
+        proof = recorded_proof_observation()
+        rows = add_one_period_observation(recorded_boundary_events(), Q.RECORDED_PROOFS_MARKER, proof)
+        result = Q.native_controls(encoded(rows), require_frontier_rpc=True, require_recorded_proofs=True)
+        self.assertEqual(result["recorded_proofs"], proof)
+        self.assertFalse(result["new_devnet_acceptance_established"])
+
+    def test_recorded_proofs_require_the_source_boundary_and_the_selected_test(self):
+        raw = encoded(recorded_boundary_events())
+        self.assertNotIn("recorded_proofs", Q.native_controls(raw, require_recorded_boundary=True))
+        with self.assertRaisesRegex(Q.Refused, "native_trace_count"):
+            Q.native_controls(raw, require_recorded_proofs=True)
+        observation = recorded_proof_observation()
+        self.refused(add_one_period_observation(recorded_h2_events(Q.RECORDED_H2),
+                                               Q.RECORDED_PROOFS_MARKER, observation))
+        rows = add_one_period_observation(recorded_boundary_events(), Q.RECORDED_PROOFS_MARKER, observation)
+        proof = next(row for row in rows if Q.RECORDED_PROOFS_MARKER in row.get("Output", ""))
+        proof["Test"] = Q.TEST
+        with self.assertRaisesRegex(Q.Refused, "foreign_recorded_proofs_trace"):
+            Q.native_controls(encoded(rows), require_recorded_proofs=True)
+
+    def test_recorded_proofs_refuse_changed_root_presence_paths_and_roster(self):
+        for field, value in (("local_tree_root", "6" * 64), ("header_state_root", "5" * 64),
+                             ("root_rpc_refused", False), ("accepted_header_authority", True)):
+            with self.subTest(field=field):
+                observation = {**recorded_proof_observation(), field: value}
+                self.refused(add_one_period_observation(recorded_boundary_events(), Q.RECORDED_PROOFS_MARKER, observation))
+        for field, value in (("key", Q.RECORDED_PROOF_KEYS["domain_record"]), ("value", ""), ("proof", "!!"),
+                             ("proof_rpc_refused", 1), ("proof", base64.b64encode(bytes(99)).decode("ascii"))):
+            with self.subTest(field=field):
+                observation = recorded_proof_observation()
+                observation["witnesses"]["batch_entry"][field] = value
+                self.refused(add_one_period_observation(recorded_boundary_events(), Q.RECORDED_PROOFS_MARKER, observation))
+        missing = recorded_proof_observation()
+        del missing["witnesses"]["domain_config"]
+        self.refused(add_one_period_observation(recorded_boundary_events(), Q.RECORDED_PROOFS_MARKER, missing))
+
+    def test_unsigned_h3_binds_the_reopened_header_and_reused_absence_proofs(self):
+        observation = unsigned_h3_observation()
+        result = Q.native_controls(encoded(unsigned_h3_events(observation)), require_unsigned_h3=True)
+        self.assertEqual(result["unsigned_h3_ledger"], observation)
+        self.assertFalse(result["new_devnet_acceptance_established"])
+
+    def test_unsigned_h3_requires_bounded_h2_proofs_and_a_selected_complete_trace(self):
+        observation = unsigned_h3_observation()
+        rows = unsigned_h3_events(observation)
+        without_h3 = [row for row in rows if Q.UNSIGNED_H3_MARKER not in row.get("Output", "")]
+        self.assertNotIn("unsigned_h3_ledger", Q.native_controls(encoded(without_h3)))
+        with self.assertRaisesRegex(Q.Refused, "native_trace_count"):
+            Q.native_controls(encoded(without_h3), require_unsigned_h3=True)
+        self.refused([row for row in rows if Q.RECORDED_PROOFS_MARKER not in row.get("Output", "")])
+        self.refused(add_one_period_observation(rows[:], Q.UNSIGNED_H3_MARKER, observation))
+        marker = next(row for row in rows if Q.UNSIGNED_H3_MARKER in row.get("Output", ""))
+        marker["Test"] = Q.TEST
+        with self.assertRaisesRegex(Q.Refused, "foreign_unsigned_h3_trace"):
+            Q.native_controls(encoded(rows), require_unsigned_h3=True)
+
+    def test_unsigned_h3_refuses_changed_scope_hash_and_proof_pins(self):
+        for field, value in (("height", True), ("version", 2), ("parent_hash", "a" * 64),
+                             ("hash", "b" * 64), ("ledger_root", "6" * 64),
+                             ("timestamp", 1794699061), ("reopened_fixture", False),
+                             ("unsigned_vm_refused", False), ("h2_remains_refused", False),
+                             ("accepted_header_authority", True)):
+            with self.subTest(field=field):
+                self.refused(unsigned_h3_events({**unsigned_h3_observation(), field: value}))
+        for field, value in (("sha256", "0" * 64), ("bytes", 99.0)):
+            with self.subTest(field=field):
+                observation = unsigned_h3_observation()
+                observation["proof_pins"]["batch_entry"][field] = value
+                self.refused(unsigned_h3_events(observation))
+        observation = unsigned_h3_observation()
+        del observation["proof_pins"]["domain_config"]
+        self.refused(unsigned_h3_events(observation))
+
+    def test_historical_h3_binds_the_original_proofs_and_distinct_h4_root(self):
+        observation = history_observation()
+        report = Q.native_controls(encoded(history_events(observation)), require_h3_history=True)
+        self.assertEqual(report["h3_history_at_h4"], observation)
+        self.assertFalse(report["new_devnet_acceptance_established"])
+
+    def test_historical_h3_requires_one_complete_one_period_observation(self):
+        rows = history_events(history_observation())
+        missing = [row for row in rows if Q.H3_HISTORY_MARKER not in row.get("Output", "")]
+        self.assertNotIn("h3_history_at_h4", Q.native_controls(encoded(missing)))
+        with self.assertRaisesRegex(Q.Refused, "native_trace_count"):
+            Q.native_controls(encoded(missing), require_h3_history=True)
+        with self.assertRaisesRegex(Q.Refused, "h3_history_requires_h3"):
+            Q.native_controls(encoded([row for row in rows if Q.UNSIGNED_H3_MARKER not in row.get("Output", "")]))
+        self.refused(add_one_period_observation(rows[:], Q.H3_HISTORY_MARKER, history_observation()))
+        next(row for row in rows if Q.H3_HISTORY_MARKER in row.get("Output", ""))["Test"] = Q.TEST
+        with self.assertRaisesRegex(Q.Refused, "foreign_h3_history_trace"):
+            Q.native_controls(encoded(rows))
+
+    def test_historical_h3_refuses_wrong_tip_history_and_proof_pins(self):
+        for field, value in (("tip_height", 4.0), ("tip_hash", "1" * 64),
+                             ("tip_parent_hash", "2" * 64), ("tip_timestamp", 1794699071),
+                             ("tip_state_root", "5" * 64), ("state_root", "6" * 64),
+                             ("tip_changes_hash", "3" * 64),
+                             ("checked_at_tip_before_and_after_reopen", False),
+                             ("marker_absent_at_h3_and_present_at_h4", False),
+                             ("accepted_header_authority", True)):
+            with self.subTest(field=field):
+                self.refused(history_events({**history_observation(), field: value}))
+        for field, value in (("bytes", 99.0), ("sha256", "0" * 64)):
+            with self.subTest(field=field):
+                observation = history_observation()
+                observation["proof_pins"]["batch_entry"][field] = value
+                self.refused(history_events(observation))
+
+    def test_typed_history_binds_three_raw_paths_and_tip_deletion(self):
+        row = typed_history_observation()
+        rows = add_one_period_observation(history_events(history_observation()), Q.TYPED_HISTORY_MARKER, row)
+        result = Q.native_controls(encoded(rows), require_typed_history=True)["typed_history"]
+        self.assertEqual(result["target"], row["target"])
+        self.assertEqual(result["tip"], row["tip"])
+        self.assertEqual(result["membership_pins"],
+                         {k: Q.C.digest(base64.b64decode(v)) for k, v in row["memberships"].items()})
+        self.assertEqual(result["tip_batch_absence_pin"], Q.C.digest(base64.b64decode(row["tip_batch_absence"])))
+        self.assertFalse(result["accepted_header_authority"])
+        self.assertNotIn("memberships", result)
+
+    def test_typed_history_requires_retained_h4_and_exactly_one_native_observation(self):
+        history = history_observation()
+        row = typed_history_observation()
+        rows = history_events(history)
+        self.assertNotIn("typed_history", Q.native_controls(encoded(rows)))
+        with self.assertRaisesRegex(Q.Refused, "native_trace_count"):
+            Q.native_controls(encoded(rows), require_typed_history=True)
+        rows = add_one_period_observation(rows, Q.TYPED_HISTORY_MARKER, row)
+        with self.assertRaisesRegex(Q.Refused, "typed_history_requires_h4"):
+            Q.native_controls(encoded([r for r in rows if Q.H3_HISTORY_MARKER not in r.get("Output", "")]))
+        self.refused(add_one_period_observation(rows[:], Q.TYPED_HISTORY_MARKER, row))
+        next(r for r in rows if Q.TYPED_HISTORY_MARKER in r.get("Output", ""))["Test"] = Q.TEST
+        with self.assertRaisesRegex(Q.Refused, "foreign_typed_history_trace"):
+            Q.native_controls(encoded(rows))
+
+    def test_typed_history_refuses_changed_ancestry_patch_and_proofs(self):
+        row = typed_history_observation()
+        mutations = [
+            {"target": {**row["target"], "parent_hash": "1" * 64}},
+            {"tip": {**row["tip"], "changes_hash": "2" * 64}},
+            {"tip": {**row["tip"], "state_root": row["target"]["state_root"]}},
+            {"memberships": {**row["memberships"], "domain_record": row["memberships"]["domain_config"]}},
+            {"memberships": {**row["memberships"], "batch_entry": row["tip_batch_absence"]}},
+            {"tip_batch_absence": row["memberships"]["batch_entry"]},
+            {"accepted_header_authority": True},
+            {"checked_at_tip_before_and_after_reopen": False},
+        ]
+        raw = base64.b64decode(row["memberships"]["batch_entry"])
+        for offset in (100, len(raw) - 1):
+            changed = raw[:offset] + bytes([raw[offset] ^ 1]) + raw[offset + 1:]
+            mutations.append({"memberships": {**row["memberships"],
+                                              "batch_entry": base64.b64encode(changed).decode("ascii")}})
+        for changes in mutations:
+            with self.subTest(changes=list(changes)):
+                self.refused(add_one_period_observation(history_events(history_observation()),
+                                                        Q.TYPED_HISTORY_MARKER, {**row, **changes}))
+
+    def test_pruned_history_distinguishes_wire_error_from_retained_absence(self):
+        history = typed_history_observation()
+        row = pruned_history_observation(history)
+        retained = add_one_period_observation(history_events(history_observation()), Q.TYPED_HISTORY_MARKER, history)
+        self.assertNotIn("pruned_typed_history", Q.native_controls(encoded(retained)))
+        rows = add_one_period_observation(retained, Q.PRUNED_TYPED_HISTORY_MARKER, row)
+        result = Q.native_controls(encoded(rows), require_pruned_typed_history=True)["pruned_typed_history"]
+        self.assertEqual(result["rpc_error_code"], -32000)
+        self.assertEqual(result["pruned_rpc_error"], Q.C.digest(row["pruned_rpc_body"].encode()))
+        self.assertEqual(result["tip_absence_rpc"], row["tip_absence_rpc"])
+        self.assertFalse(result["accepted_header_authority"])
+
+    def test_pruned_history_requires_retained_history_and_one_complete_observation(self):
+        history = typed_history_observation()
+        row = pruned_history_observation(history)
+        events_at_h4 = history_events(history_observation())
+        retained = add_one_period_observation(events_at_h4[:], Q.TYPED_HISTORY_MARKER, history)
+        with self.assertRaisesRegex(Q.Refused, "native_trace_count"):
+            Q.native_controls(encoded(retained), require_pruned_typed_history=True)
+        with self.assertRaisesRegex(Q.Refused, "pruned_history_requires_retained_history"):
+            Q.native_controls(encoded(add_one_period_observation(events_at_h4[:], Q.PRUNED_TYPED_HISTORY_MARKER, row)))
+        rows = add_one_period_observation(retained, Q.PRUNED_TYPED_HISTORY_MARKER, row)
+        self.refused(add_one_period_observation(rows[:], Q.PRUNED_TYPED_HISTORY_MARKER, row))
+        next(event for event in rows if Q.PRUNED_TYPED_HISTORY_MARKER in event.get("Output", ""))["Test"] = Q.TEST
+        with self.assertRaisesRegex(Q.Refused, "foreign_pruned_typed_history_trace"):
+            Q.native_controls(encoded(rows))
+
+    def test_pruned_history_refuses_changed_request_horizon_wire_or_retained_pin(self):
+        history = typed_history_observation()
+        row = pruned_history_observation(history)
+        retained = add_one_period_observation(history_events(history_observation()), Q.TYPED_HISTORY_MARKER, history)
+        mutations = (
+            {"target_hash": row["tip_hash"]}, {"prune_below_height": row["target_height"]},
+            {"tip_height": float(row["tip_height"])}, {"accepted_header_authority": True},
+            {"pruned_proof_keys": {**row["pruned_proof_keys"], "domain_config": Q.RECORDED_PROOF_KEYS["domain_record"]}},
+            {"pruned_rpc_body": '{"jsonrpc":"2.0","id":1,"result":null}\n'},
+            {"pruned_rpc_body": row["pruned_rpc_body"].replace("-32000", "-32601")},
+            {"tip_absence_rpc": Q.C.digest(row["pruned_rpc_body"].encode())},
+            {"tip_absence_rpc": {**row["tip_absence_rpc"], "bytes": float(row["tip_absence_rpc"]["bytes"])}},
+        )
+        for changes in mutations:
+            with self.subTest(fields=list(changes)):
+                self.refused(add_one_period_observation(retained[:], Q.PRUNED_TYPED_HISTORY_MARKER, {**row, **changes}))
 
     def test_split_trace_reassembled_only_in_its_own_test(self):
         value = events()
@@ -113,6 +594,29 @@ class Controls(unittest.TestCase):
         value = events()
         value[2]["Test"] = Q.TEST + "/unselected"
         self.refused(value)
+
+    def test_go_build_output_preserves_test_evidence(self):
+        rows = events()
+        mixed = [BUILD_OUTPUT, *rows[:2], BUILD_OUTPUT, *rows[2:]]
+        self.assertEqual(Q.native_controls(encoded(mixed), require_frontier_rpc=True),
+                         Q.native_controls(encoded(rows), require_frontier_rpc=True))
+
+    def test_failed_or_malformed_go_build_events_refused(self):
+        rows = events()
+        build_failure = {"Action": "build-fail", "ImportPath": BUILD_OUTPUT["ImportPath"]}
+        self.refused([BUILD_OUTPUT, build_failure, *rows])
+        for fields in ({"ImportPath": ""}, {"Output": 1}, {"Output": ""}, {"Package": Q.PACKAGE}, {"Test": Q.TEST}):
+            with self.subTest(fields=fields):
+                self.refused([{**BUILD_OUTPUT, **fields}, *rows])
+        self.refused([*rows, BUILD_OUTPUT])
+        with self.assertRaisesRegex(Q.Refused, "native_build_output"):
+            Q.native_controls(encoded([BUILD_OUTPUT, *cpu_events("reference")]), "reference")
+
+    def test_go_build_output_cannot_supply_test_observations(self):
+        rows = events()
+        visibility = next(row for row in rows if Q.VISIBILITY_MARKER in row.get("Output", ""))
+        rows.remove(visibility)
+        self.refused([{**BUILD_OUTPUT, "Output": visibility["Output"]}, *rows])
 
     def test_trace_cannot_come_from_root_or_another_test(self):
         for target in (None, Q.TEST, Q.TEST + "/one-day"):
@@ -192,6 +696,7 @@ class Controls(unittest.TestCase):
         for field, replacement in {
             "before_height": True, "during_height": 1, "callback_held_during_read": False,
             "insert_returned_after_release": False, "accepted_header_authority": True,
+            "first_period_read_held": 1, "rpc_method": "ledger.getMomentumByHeight", "rpc_transport": "tcp",
         }.items():
             rows = events()
             row = next(row for row in rows if Q.VISIBILITY_MARKER in row.get("Output", ""))

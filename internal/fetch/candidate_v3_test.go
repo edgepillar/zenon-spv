@@ -94,6 +94,10 @@ func candidateRPCRefused(t *testing.T, raw []byte) {
 	if err != ErrCandidateV3Momentum || !reflect.DeepEqual(got, CandidateV3Momentum{}) {
 		t.Fatal("invalid candidate must return the fixed diagnostic and no partial result", err)
 	}
+	header, err := DecodeCandidateV3MomentumHeader(raw)
+	if err != ErrCandidateV3Momentum || !reflect.DeepEqual(header, chain.CandidateV3Header{}) {
+		t.Fatal("header-only decode accepted an invalid candidate or exposed a partial header", err)
+	}
 }
 
 func TestCandidateV3MomentumRecordedNodeFragments(t *testing.T) {
@@ -102,6 +106,10 @@ func TestCandidateV3MomentumRecordedNodeFragments(t *testing.T) {
 			got, err := DecodeCandidateV3Momentum([]byte(row.Wire))
 			if err != nil {
 				t.Fatal(err)
+			}
+			header, err := DecodeCandidateV3MomentumHeader([]byte(row.Wire))
+			if err != nil || !reflect.DeepEqual(header, got.Header) {
+				t.Fatal("header-only projection differs from the full projection", err)
 			}
 			h := got.Header.Header
 			preimage, err := got.Header.Preimage()
@@ -297,8 +305,13 @@ func TestCandidateV3MomentumLimits(t *testing.T) {
 			}
 			raw := candidateRPCJSON(t, fields)
 			if test.ok {
-				if _, err := DecodeCandidateV3Momentum(raw); err != nil {
+				full, err := DecodeCandidateV3Momentum(raw)
+				if err != nil {
 					t.Fatal("independently hashed exact limit", err)
+				}
+				header, err := DecodeCandidateV3MomentumHeader(raw)
+				if err != nil || !reflect.DeepEqual(header, full.Header) {
+					t.Fatal("header-only projection disagrees at the exact limit", err)
 				}
 			} else {
 				candidateRPCRefused(t, raw)
@@ -318,13 +331,18 @@ func TestCandidateV3MomentumDetachedAndUnauthenticated(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	header, err := DecodeCandidateV3MomentumHeader(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
 	for i := range raw {
 		raw[i] = ' '
 	}
 	a.Header.Header.PublicKey[0] ^= 1
 	a.Header.Header.Signature[0] ^= 1
 	a.Content[0].Height++
-	if reflect.DeepEqual(a, b) || hashHex(b.Header.Header.ContentHash) != row.ContentHash ||
+	if reflect.DeepEqual(a, b) || !reflect.DeepEqual(header, b.Header) ||
+		hashHex(b.Header.Header.ContentHash) != row.ContentHash ||
 		ed25519.Verify(b.Header.Header.PublicKey, b.Header.Header.HeaderHash[:], b.Header.Header.Signature) {
 		t.Fatal("candidate values must be detached; encoding consistency must not imply valid signatures")
 	}

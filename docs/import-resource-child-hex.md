@@ -67,11 +67,9 @@ Those are historical producer observations, not new Go or node measurements.
 All original source, corpus, sample, callback, ownership and refusal checks
 remain required.
 
-The [recorded CI lane](ci-recorded-oracles.md) selects 33 commands: all preceding
-32 command names remain in order, two import-suite invocations use the new
-driver, and one invocation runs the new recipe controls. All native Go jobs,
-benchmarks, ordinary/race tests, timeouts, candidate binaries and acceptance
-rules remain unchanged.
+When the child recipes were introduced, the [recorded CI lane](ci-recorded-oracles.md)
+selected 33 commands. The 32 existing command names kept their order. Two
+import suites switched drivers and one recipe-control invocation was added.
 
 Each platform uploads one `import-resource-child-<platform>` artifact containing
 exactly `controls.json`, `resources.json` and `comparison.json`. The control

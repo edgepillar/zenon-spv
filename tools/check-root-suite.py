@@ -16,20 +16,56 @@ import sys
 
 sys.dont_write_bytecode = True
 HERE = Path(__file__).resolve().parent
-DEPENDENCY = (17361, "868167a81686d1fea06469e8b7b94da1558782ffc784fbaf091d91f741a314eb")
+DEPENDENCY = (17361, "dc1a5068520a202076c552d3fce04510eb6f717d7e0f5f4b502a16108b53da94")
 MODULE = "github.com/0x3639/zenon-spv"
 SOURCE_ROOT_GROUP = "compiled-source-enumeration/v1"
 COMPILED_NATIVE_OBSERVER_GROUP = "compiled-native-observers/v1"
+COMPILED_NATIVE_OBSERVER_GROUP_V2 = "compiled-native-observers/v2"
+COMPILED_NATIVE_OBSERVER_GROUP_V3 = "compiled-native-observers/v3"
+COMPILED_NATIVE_OBSERVER_GROUP_V4 = "compiled-native-observers/v4"
 SOURCE_ENUMERATION_ROOT = ("tools/offline-pilot", "TestCompiledPilotSourceEnumeration", 6)
+NATIVE_OBSERVER_ROOTS = (
+    ("internal/conformance", "TestCompiledAdvancingBlockObserver", 9),
+    ("internal/conformance", "TestCompiledNodeAccountBasicObserver", 58),
+    ("internal/conformance", "TestCompiledNodeAccountReceiveObserver", 52),
+    SOURCE_ENUMERATION_ROOT,
+)
+NATIVE_OBSERVER_ROOTS_V2 = NATIVE_OBSERVER_ROOTS + (
+    ("internal/conformance", "TestCompiledNodeAccountPoWObserver", 134),
+)
+CLI_CONTROL_REPORTS = {
+    "TestCompiledVerifierSelectionGuards": (25028, "dc5e1dac7d5745d8ed87f45aff79608fb06af1500b702ce1edacb6099a6f3b5c"),
+    "TestCompiledVerifierSyntaxPrivacy": (8077, "a59f8ecea585519f29932bbbfe81f2e6261746731662ac125dc5c4a931f8cf5d"),
+    "TestCompiledCollectorSyntaxPrivacy": (3272, "d19822ad5cd7707fb42a8c0ee994763d422343d2f195fbd2793ef1b0e79ab1b8"),
+    "TestCompiledMaintainerSyntaxPrivacy": (1722, "648477e152c8cf77ed3f8099ce68788964744f194254f214b9f003daa6b0f356"),
+}
+CLI_BUILD_CONTROL_REPORTS = {
+    "TestQueryCLIBuildPlan": (96, "93ba3f1edf85176b6d5793005aba8ee3eebf87c51a376e573e61a2dff6e9b155"),
+    "TestQueryCLIBuildFailure": (144, "76117fdcd74c9e572920611a379a6221c678f16784c2617fc5cd4b7158aba55c"),
+}
+CLI_BUILD_BATCH = "TestQueryCLIBuildBatch"
+CLI_BUILD_COMMANDS = (
+    "zenon-spv", "fetch-bundle", "derive-producer-schedule", "derive-checkpoints",
+    "verify-mainnet-genesis", "consume-query-report", "observe-block",
+)
+RECEIPT_ARRAY_LIMITS = {
+    ("source_root_controls", "cli_controls", "TestCompiledVerifierSelectionGuards", "controls"): 265,
+}
 SOURCE_ROOT_GROUPS = {
     SOURCE_ROOT_GROUP: (SOURCE_ENUMERATION_ROOT,),
-    COMPILED_NATIVE_OBSERVER_GROUP: (
-        ("internal/conformance", "TestCompiledAdvancingBlockObserver", 9),
-        ("internal/conformance", "TestCompiledNodeAccountBasicObserver", 58),
-        ("internal/conformance", "TestCompiledNodeAccountReceiveObserver", 52),
-        SOURCE_ENUMERATION_ROOT,
+    COMPILED_NATIVE_OBSERVER_GROUP: NATIVE_OBSERVER_ROOTS,
+    COMPILED_NATIVE_OBSERVER_GROUP_V2: NATIVE_OBSERVER_ROOTS_V2,
+    COMPILED_NATIVE_OBSERVER_GROUP_V3: NATIVE_OBSERVER_ROOTS_V2 + tuple(
+        ("internal/conformance", test, 0) for test in CLI_CONTROL_REPORTS
     ),
 }
+SOURCE_ROOT_GROUPS[COMPILED_NATIVE_OBSERVER_GROUP_V4] = SOURCE_ROOT_GROUPS[COMPILED_NATIVE_OBSERVER_GROUP_V3] + (
+    ("internal/conformance", "TestQueryCLIBuildPlan", 5),
+    ("internal/conformance", CLI_BUILD_BATCH, 0),
+    ("internal/conformance", "TestQueryCLIBuildFailureHelper", 0),
+    ("internal/conformance", "TestQueryCLIBuildFailure", 0),
+)
+NODE_ACCOUNT_POW_OBSERVER_REPORT = (523, "4a41ad86abce3301f54448dafd21901e3c6158fa9dda67dc72a0bed8bc89f1c1")
 RECEIPT_KEYS = {
     "format", "status", "error", "source", "source_matches_after_run", "test_parent_race_enabled",
     "coverage_enabled", "package_timeout", "overall_timeout", "package_inventory_succeeded", "test_process_succeeded",
@@ -149,13 +185,62 @@ def check_observer_resources(value, platform):
     return {"format": value["format"], "status": "consistent", "groups": len(rows), "process_observations": slot_count}
 
 
+def check_source_root_report(value, pin):
+    require(type(value) is dict)
+    raw = json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+    digest = hashlib.sha256(raw).hexdigest()
+    require((len(raw), digest) == pin)
+    return digest
+
+
+def check_cli_build_batch(value, selected_cases):
+    counts = {
+        "schema_version": 1, "commands": 7, "individual_go_build_invocations": 7,
+        "batch_go_build_invocations": 1, "rebuild_go_build_invocations": 1, "build_parallelism": 1,
+    }
+    controls = {"binary_bytes_equal", "independent_paths", "private_mutation_isolated", "fresh_rebuild",
+                "existing_exports_unchanged"}
+    times = {"reference_elapsed_ns", "batch_elapsed_ns"}
+    require(type(value) is dict and set(value) == set(counts) | controls | times | {"binaries"})
+    require(all(type(value[key]) is int and value[key] == count for key, count in counts.items()))
+    require(all(value[key] is True for key in controls)
+            and all(integer(value[key], (1 << 63) - 1) and value[key] > 0 for key in times))
+    binaries = value["binaries"]
+    require(type(binaries) is list and len(binaries) == len(CLI_BUILD_COMMANDS))
+    executed = {}
+    for case in selected_cases:
+        for binary in case["binaries"]:
+            name, pin = binary["command"], binary["sha256"]
+            require(name in CLI_BUILD_COMMANDS and digest(pin) and executed.get(name, pin) == pin)
+            executed[name] = pin
+    for binary, name in zip(binaries, CLI_BUILD_COMMANDS):
+        require(type(binary) is dict and set(binary) == {"command", "sha256", "bytes"} and binary["command"] == name
+                and digest(binary["sha256"]) and binary["sha256"] == executed.get(name)
+                and integer(binary["bytes"], 128 << 20) and binary["bytes"] > 0)
+    raw = json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+    require(len(raw) <= 2048)
+    return hashlib.sha256(raw).hexdigest()
+
+
 def check_source_roots(value, counts, passed_packages, report, required_group=None):
-    require(type(value) is dict and set(value) == {"format", "group", "status", "roots"}
-            and value["format"] == "zenon-source-root-controls/v1"
-            and type(value["group"]) is str and value["group"] in SOURCE_ROOT_GROUPS
-            and (required_group is None or value["group"] == required_group)
+    require(type(value) is dict and type(value.get("group")) is str and value["group"] in SOURCE_ROOT_GROUPS)
+    group = value["group"]
+    with_build = group == COMPILED_NATIVE_OBSERVER_GROUP_V4
+    with_cli = with_build or group == COMPILED_NATIVE_OBSERVER_GROUP_V3
+    with_pow = with_cli or group == COMPILED_NATIVE_OBSERVER_GROUP_V2
+    keys = {"format", "group", "status", "roots"}
+    version = 1
+    if with_pow:
+        keys.add("node_account_pow_observer")
+        version = 2
+    if with_cli:
+        keys.add("cli_controls")
+        version = 4 if with_build else 3
+    require(set(value) == keys
+            and value["format"] == f"zenon-source-root-controls/v{version}"
+            and (required_group is None or group == required_group)
             and value["status"] == "complete" and type(value["roots"]) is list)
-    expected = SOURCE_ROOT_GROUPS[value["group"]]
+    expected = SOURCE_ROOT_GROUPS[group]
     require(len(value["roots"]) == len(expected))
     selected = {(case["package"], case.get("test")) for case in report["cases"]}
     for row, (package, test, subtests) in zip(value["roots"], expected):
@@ -171,7 +256,22 @@ def check_source_roots(value, counts, passed_packages, report, required_group=No
     require(counts["root_tests"] >= len(report["cases"]) + len(expected)
             and counts["subtests"] >= passed + sum(case["passed_subtests"] + case["skipped_subtests"]
                                                    for case in report["cases"]))
-    return {"group": value["group"], "roots": len(expected), "passed_subtests": passed, "skipped_subtests": 0}
+    summary = {"group": group, "roots": len(expected), "passed_subtests": passed, "skipped_subtests": 0}
+    if with_pow:
+        summary["node_account_pow_observer_sha256"] = check_source_root_report(
+            value["node_account_pow_observer"], NODE_ACCOUNT_POW_OBSERVER_REPORT)
+    if with_cli:
+        controls = value["cli_controls"]
+        pins = CLI_CONTROL_REPORTS | CLI_BUILD_CONTROL_REPORTS if with_build else CLI_CONTROL_REPORTS
+        expected_controls = set(pins) | ({CLI_BUILD_BATCH} if with_build else set())
+        require(type(controls) is dict and set(controls) == expected_controls)
+        summary["cli_control_sha256"] = {
+            name: check_source_root_report(controls[name], pin) for name, pin in pins.items()
+        }
+        if with_build:
+            summary["cli_control_sha256"][CLI_BUILD_BATCH] = check_cli_build_batch(
+                controls[CLI_BUILD_BATCH], report["cases"])
+    return summary
 
 
 def check_receipt(value, report, race, coverage, package_timeout, overall_timeout, platform=None, required_group=None):
@@ -225,6 +325,10 @@ def check_receipt(value, report, race, coverage, package_timeout, overall_timeou
     return None
 
 
+def receipt_metadata(raw, candidate_checker):
+    return candidate_checker.metadata(raw, array_limits=RECEIPT_ARRAY_LIMITS)
+
+
 def verify(args):
     scenario = companion()
     selection = scenario.verify(args.report, args.expect_report_sha256, args.source, args.expect_revision,
@@ -233,7 +337,7 @@ def verify(args):
     require(digest(args.expect_receipt_sha256)
             and hashlib.sha256(receipt_raw).hexdigest() == args.expect_receipt_sha256)
     c = scenario.primitives().checker
-    receipt = c.metadata(receipt_raw)
+    receipt = receipt_metadata(receipt_raw, c)
     report_raw = scenario.read_regular(args.report, scenario.REPORT_LIMIT, "report")
     require(hashlib.sha256(report_raw).hexdigest() == args.expect_report_sha256)
     report = c.metadata(report_raw)

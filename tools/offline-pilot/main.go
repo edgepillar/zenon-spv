@@ -71,7 +71,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	})
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
-			return writeReport(stdout, stderr, []byte("Usage: offline-pilot [--race] [--timeout 10m] [--export-binaries ABSOLUTE_NEW_DIRECTORY]\nFull root module: add --full-suite --package-timeout 10m --suite-receipt ABSOLUTE_NEW_FILE [--coverage] [--suite-failure-diagnostics] [--suite-root-group compiled-source-enumeration/v1|compiled-native-observers/v1].\nRun from the repository root with dependencies already cached.\n"), 0)
+			return writeReport(stdout, stderr, []byte("Usage: offline-pilot [--race] [--timeout 10m] [--export-binaries ABSOLUTE_NEW_DIRECTORY]\nFull root module: add --full-suite --package-timeout 10m --suite-receipt ABSOLUTE_NEW_FILE [--coverage] [--suite-failure-diagnostics] [--suite-root-group compiled-source-enumeration/v1|compiled-native-observers/v1|compiled-native-observers/v2|compiled-native-observers/v3|compiled-native-observers/v4].\nRun from the repository root with dependencies already cached.\n"), 0)
 		}
 		_, _ = fmt.Fprintln(stderr, "offline-pilot: invalid arguments; use --help")
 		return 64

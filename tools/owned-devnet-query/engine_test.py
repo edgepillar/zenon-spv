@@ -267,10 +267,11 @@ class LifecycleTests(unittest.TestCase):
     def setUpClass(cls):
         cls.contract = model.read_contract(HERE / "contract.json")
 
-    def prepare(self, root):
-        recorder = FixtureRecorder(self.contract)
+    def prepare(self, root, contract=None):
+        contract = self.contract if contract is None else contract
+        recorder = FixtureRecorder(contract)
         identity = model.ExecutionIdentity("e" * 40, 1, 1, "edgepillar")
-        client = engine.Engine(self.contract, identity, recorder, root / "engine", ["fixture-docker"],
+        client = engine.Engine(contract, identity, recorder, root / "engine", ["fixture-docker"],
                                {"PATH": "/fixture/bin"}, lambda: None)
         with mock.patch.object(engine.platform, "system", return_value="Linux"), \
              mock.patch.object(engine.platform, "machine", return_value="x86_64"):
@@ -297,6 +298,67 @@ class LifecycleTests(unittest.TestCase):
             for role in model.SERVICES:
                 client.create(role, "sha256:" + "c" * 64, files)
                 client.start(role)
+
+    def runtime_source_fixture(self, root, wrong_pin=None):
+        devnet = root / "devnet"
+        files = {"scripts/devnet.sh": b"#!/bin/sh\nexport EXECUTOR_KEY=" + b"1" * 64 + b"\n",
+                 "config/executor.json": b'{"fixture":"executor"}\n',
+                 "config/gateway.json": b'{"fixture":"gateway"}\n'}
+        for name, raw in files.items():
+            path = devnet / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(raw)
+        data = self.contract.data
+        selected = {}
+        for row in data["source_files"]:
+            name = row["path"]
+            if row["role"] != "devnet" or name not in files:
+                continue
+            raw = files[name]
+            row.update(bytes=len(raw), sha256=hashlib.sha256(raw).hexdigest())
+            if name == wrong_pin:
+                row["sha256"] = hashlib.sha256(b"another approved source").hexdigest()
+            selected[name] = {key: row[key] for key in ("sha256", "bytes")}
+        raw = model.canonical(data)
+        contract = model.Contract(raw, hashlib.sha256(raw).hexdigest())
+        sources = engine.PreparedSources((mock.Mock(role="devnet", path=devnet),))
+        return contract, sources, selected
+
+    def test_runtime_preparation_reads_each_selected_input_once(self):
+        with tempfile.TemporaryDirectory(prefix="engine-runtime-inputs-") as temporary:
+            root = Path(temporary)
+            contract, sources, selected = self.runtime_source_fixture(root)
+            client, recorder = self.prepare(root, contract)
+            with mock.patch.object(engine.PreparedSources, "verify", autospec=True) as check_sources, \
+                 mock.patch.object(engine, "_read_archive_file", wraps=engine._read_archive_file) as read_script, \
+                 mock.patch.object(engine, "regular_pin", wraps=engine.regular_pin) as read_runtime:
+                files = client.prepare_files(sources)
+            check_sources.assert_called_once_with(sources)
+            read_script.assert_called_once()
+            self.assertEqual([call.args[0] for call in read_runtime.call_args_list],
+                             [files.executor, files.gateway, files.fixture])
+            self.assertEqual(files.fixture.read_bytes(), b"1" * 64 + b"\n")
+            pins = files.verify()
+            self.assertEqual(pins["executor"], selected["config/executor.json"])
+            self.assertEqual(pins["gateway"], selected["config/gateway.json"])
+            report = json.loads(recorder.seals["runtime-input-pins.json"])
+            self.assertEqual(report["pins"], pins)
+            self.assertFalse(report["fixture_plaintext_published"])
+
+    def test_runtime_preparation_checks_all_selected_file_pins(self):
+        for name, reason in (("scripts/devnet.sh", "fixture_source_binding"),
+                             ("config/executor.json", "runtime_file_content"),
+                             ("config/gateway.json", "runtime_file_content")):
+            with self.subTest(name=name), tempfile.TemporaryDirectory(
+                    prefix="engine-runtime-inputs-") as temporary:
+                root = Path(temporary)
+                contract, sources, _ = self.runtime_source_fixture(root, wrong_pin=name)
+                client, recorder = self.prepare(root, contract)
+                # This isolates the engine input boundary after cohort verification.
+                with mock.patch.object(engine.PreparedSources, "verify", autospec=True):
+                    with self.assertRaisesRegex(model.Refused, reason):
+                        client.prepare_files(sources)
+                self.assertNotIn("runtime-input-pins.json", recorder.seals)
 
     def test_builder_closes_before_six_services_and_rpc_freezes_to_its_own_nom(self):
         with tempfile.TemporaryDirectory(prefix="engine-regular-control-") as temporary:

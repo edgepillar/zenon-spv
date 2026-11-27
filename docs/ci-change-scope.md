@@ -61,6 +61,33 @@ preserves failure fallback while respecting workflow cancellation. A skipped
 job's reported success does not mean its tests ran; inspect its actual job and
 step records before describing qualification.
 
+## Runtime evidence uploads
+
+An individual artifact upload failure leaves subsequent independent checks and
+uploads enabled in the native and recorded-oracle jobs. After a failed
+upload, the same job waits ten seconds and makes one more upload from the
+existing files. Both attempts use the same artifact name without overwrite.
+The retry requires files and a completed upload receipt. An unresolved
+failure still fails the job at its final upload check. A cancelled job
+does not retry. Keep the original error and completed artifact IDs for
+the specific run and attempt. The scope job keeps its full-runtime fallback.
+
+If the service created the original artifact but did not acknowledge it,
+the retry may report an artifact name conflict. The original is kept and
+the job still reports the unresolved upload. A retry resends the artifact
+within the job without rerunning any test or build.
+
+On main at `d72d14fb0d4f3aa0bbad229ffe17fd5e31956c1c`, two macOS artifact
+creation calls reported `ENOTFOUND` and six expected archives were missing.
+The macOS root suite had completed before the upload failures. This is an
+observed CI transport failure, separate from the subsequent unexecuted checks.
+[Original main attempt](https://github.com/edgepillar/zenon-spv/actions/runs/44779488024/attempts/1)
+
+On PR #428 at `fa2ffe0abd90e5ee7ee71cb6ce68029e59f3acd8`, the macOS
+core Init and Stop archive was missing after the same DNS error. The
+job continued through the remaining checks and was marked failed at the
+upload gate. [Original PR attempt](https://github.com/edgepillar/zenon-spv/actions/runs/44852618386/attempts/1)
+
 ## Portable tool changes
 
 The `PORTABLE_WORKFLOWS_ONLY` route selects the union of the three-platform
@@ -116,6 +143,24 @@ an eligible PR or main push, verify each required workflow's actual Linux,
 macOS and Windows job and exact-source artifacts. Skipped general jobs produce
 no native binary or oracle evidence. Keep their latest separately qualified
 source revisions explicit.
+
+### Portable closure refresh
+
+The portable dependency tree at `f2d26c950b99a206c66eaf76a15577a997cbd6cc`
+contains 1,204 records and 123,386 bytes. Its SHA-256 is
+`7ba366cf846f7b08c96dd176421acee045d92e53e378176cf114361d6ecd6bda`.
+Thirty dependency records changed since the previous pin, covering native
+verification and tests, paired recorded-oracle jobs, and owned fixture evidence.
+All four dedicated workflow byte pins match this tree. The selector update
+requires full CI. An eligible reader edit still needs its three-platform
+preparation run and exact-source artifacts.
+
+The closed-opening diagnostic updates four records in the portable
+dependency tree. The resulting tree at `4e0bd84583f69a9bbc11c9c0c73a5409dff888ac`
+contains 1,204 records and 123,386 bytes with SHA-256
+`0f591205a183a3decf1e4fb19fdcb950e6d80936a88f227311568bf96275dcae`.
+The runner change selects full CI and includes the corresponding fingerprint
+update for subsequent eligible edits.
 
 ### First-insertion catch-up controls
 
@@ -261,7 +306,7 @@ the full root Go suite and their existing conformance, compiled consumer,
 platform and artifact steps at the new source revision. The general workflow's
 other triggers are unchanged.
 
-The selected recorded-oracle job has 33 Python commands. Its source-bound
+The selected recorded-oracle job has 26 Python commands. Its source-bound
 inventory includes the target-hex, complete-graph, child-resource and retention
 wrappers. Those commands replay the research module's pinned original-node
 bytes and synthetic recordings; they do not build or execute the ten native
@@ -274,9 +319,9 @@ documentation, these ten leaves and the selector/control pair. It includes the
 general workflow, other workflows, all other native sources, research sources,
 wrappers and fixtures. The same bounded tree framing, modes, duplicate checks
 and deterministic NUL-terminated record encoding used by the portable route
-apply. A changed dependency, new file or unexpected mode changes the pin and
-restores the complete lane until an explicit dependency review. The v3 pin
-remains at its separately reviewed dependency snapshot.
+apply. The full closure must match one of the reviewed snapshots below.
+Every other digest selects the complete lane until its dependencies are
+reviewed. The report records the exact matching digest.
 
 An eligible report uses `zenon-ci-change-scope/v3`, seven complete Git command
 receipts, the exact source pins, reviewed modified paths and closure facts. It
@@ -313,3 +358,62 @@ v3 test-only change encountered the prior closure pin. The same Git tree
 projects to the native-only route with the refreshed pin. The pin update
 itself runs full CI. Future native-only events must establish their own
 job selection and platform evidence before any measured savings are reported.
+
+### Paired owned-input renewal
+
+The explicit owned-input renewal request schedules the closed-parent workflow
+at the same source as the existing general workflow. The request remains a
+runtime dependency. It is outside both narrow change-scope file sets, so a
+renewal runs the complete general lane and has its own original CI artifacts.
+
+Relative to `ec2f07e4e5411cedfc74b9f77576b7f7550c00dd`, the two edited
+workflow files, the renewal request and the two retention selector files
+change five records in both closures. The portable closure contains 1,195
+records and 122,422 bytes with digest
+`dbbb683a47ad61c72568b1abca132c962ac6dc9e123e2b9a025b2489a9d8c77c`. The
+recorded-oracle closure contains 1,214 records and 124,260 bytes with digest
+`4b6971bfb7c952a22ac77cd98ce4959081a46581cb3248f65878717716e88b59`.
+The reviewed leaf sets and the recorded-oracle job definition retain the same
+coverage.
+
+### Renewed owned BatchEntry selection
+
+The reviewed source closure moves from `58e03fa9ff58a752cfd1718245b31cba73dde473` to the
+reference-gas contract that selects the renewed main Linux pair and the
+bounded runner that preserves nonaccepting query evidence. This change runs
+the full general and owned-preparation workflows. The independent native and
+portable selection rules retain the same coverage.
+
+The portable closure contains 1,196 records and 122,538 bytes
+with digest `631cad1d5bd788a1a1da5828ee38a77d10cf47c1f489c180baaeea5046d2df8f`.
+The recorded-oracle closure contains 1,215 records and 124,376 bytes
+with digest `17d736f154163aaa5d018e640c4773f6c51f58ba261ee32803757f814dba40f7`.
+
+The 30-second timeout applies to two installed Go `test2json` helpers used by
+the offline pilot's native tests. In the initial Windows CI run for this PR,
+both controls failed near their prior 10-second limit (10.64 and 10.32
+seconds). The original failed roots and timings remain in the first attempt's
+[general CI record](https://github.com/edgepillar/zenon-spv/actions/runs/44769740235).
+
+### Reviewed closure snapshots after recorded-workspace pairing
+
+Both reviewed closures contain 1,223 records and 125,224 bytes. Their full
+general runs passed on Linux, macOS and Windows. The workflow definition and
+26-command recorded-oracle inventory match across the two trees. The second
+tree differs in the two retained-state sequence test files, which stay inside
+the closure. The existing ten eligible native-v3 files remain the only
+non-document changes that can select this route.
+
+| Qualified tree | Closure SHA-256 | Full general run |
+| --- | --- | --- |
+| `d55cd7cbe3dae4847e080605ee1f6bd797dac416` | `ebfdc9d14c44b16951cc43293ec8f3d3daa8e2eb02c52b46a58fe328ee53d5de` | [Main c64f545](https://github.com/edgepillar/zenon-spv/actions/runs/45911169119) |
+| `0682518f0118899d14f153bfd7c802a780c8745a` | `fb04292d178e007ad5b24c9a4a76578bf1c54dc8f6e0f021f774b6c5dc45a3bb` | [PR #439](https://github.com/edgepillar/zenon-spv/actions/runs/45914619049) |
+
+The 77 dependency record changes since the earlier first-insertion review
+include paired workspace and driver controls, the upload failure gate, native
+and fixture code, and workflow inputs. The two full runs cover the current
+recorded-oracle definition. Its three jobs used 1,506 summed runner-seconds
+and 38,262 archive bytes in the main run, and 1,254 runner-seconds and 38,338
+archive bytes in the PR run. Those observations are from different runners.
+This selector update runs full CI. An eligible hosted event must separately
+establish its own skipped-job records, native results and artifacts.
