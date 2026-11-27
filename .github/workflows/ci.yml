@@ -85,7 +85,8 @@ jobs:
                       'archive_index.py', 'archive_index_test.py', 'archive_tail.py', 'archive_tail_test.py',
                       'transport.py', 'transport_test.py', 'README.md', 'THIRD_PARTY_NOTICES')}
                   exporter = {'tools/ledger-export/' + name for name in (
-                      'inventory_completed_export.py', 'inventory_completed_export_test.py', 'README.md')}
+                      'inventory_completed_export.py', 'inventory_completed_export_test.py',
+                      'snapshot_projection.py', 'README.md')}
                   preparation = {'tools/owned-devnet-query/' + name for name in (
                       'engine_test.py', 'images_test.py', 'inputs.py', 'inputs_test.py',
                       'capture_test.py', 'review.py', 'review_test.py', 'README.md',

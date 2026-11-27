@@ -40,17 +40,15 @@ NATIVE_FILES = frozenset("internal/verify/experimental_v3_" + name for name in (
 # Every other non-document tree record remains in this reviewed closure,
 # including workflows, research Go sources, Python helpers and fixture data.
 ORACLE_SOURCE_PINS = frozenset((
-    # Main c64f545, full run 45911169119.
-    "ebfdc9d14c44b16951cc43293ec8f3d3daa8e2eb02c52b46a58fe328ee53d5de",
-    # PR #439 merge tree 0682518, full run 45914619049.
-    "fb04292d178e007ad5b24c9a4a76578bf1c54dc8f6e0f021f774b6c5dc45a3bb",
+    "8365f9427bdee3d470b47a27e84b3391c04a0257f331aa4883eea77919f04129",
 ))
 SHARED_TRANSPORT = "tools/ledger-transport/transport.py"
 TRANSPORT_FILES = frozenset("tools/ledger-transport/" + name for name in (
     "archive_index.py", "archive_index_test.py", "archive_tail.py", "archive_tail_test.py",
     "transport.py", "transport_test.py", "README.md", "THIRD_PARTY_NOTICES"))
 EXPORT_FILES = frozenset("tools/ledger-export/" + name for name in (
-    "inventory_completed_export.py", "inventory_completed_export_test.py", "README.md"))
+    "inventory_completed_export.py", "inventory_completed_export_test.py",
+    "snapshot_projection.py", "README.md"))
 PREPARATION_FILES = frozenset("tools/owned-devnet-query/" + name for name in (
     "engine_test.py", "images_test.py", "inputs.py", "inputs_test.py",
     "capture_test.py", "review.py", "review_test.py", "README.md",
@@ -77,7 +75,7 @@ PORTABLE_WORKFLOWS = (
 )
 # Keep every remaining non-document dependency, including all workflows.
 # Refresh only after reviewing dependencies and selecting full runtime CI.
-PORTABLE_SOURCE_PIN = "a37c8297c0e0195bdf21eb52175986aebc25d1311e40905d038267f6851592ca"
+PORTABLE_SOURCE_PIN = "d169862ccff97bab8953bff5d7925ba54631760d228abcaabd8bf5050ed08cca"
 MAX_FILTERED_DIFF_RECORDS = 256
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192
