@@ -43,10 +43,10 @@ func (s *ProducerSchedule) decodeJSON(d *json.Decoder, maxRows int) error {
 	}{
 		{"chain_id", &next.ChainID, true},
 		{"coverage", func(d *json.Decoder) error {
-			return decodeScheduleRows(d, &next.Coverage, "coverage", maxRows)
+			return decodeScheduleRows(d, &next.Coverage, "coverage", maxRows, (*ProducerCoverage).requiredJSONFields)
 		}, true},
 		{"entries", func(d *json.Decoder) error {
-			return decodeScheduleRows(d, &next.Entries, "entries", maxRows)
+			return decodeScheduleRows(d, &next.Entries, "entries", maxRows, (*ProducerEntry).requiredJSONFields)
 		}, true},
 		{"schedule_hash", &next.ScheduleHash, true},
 		{"generated_at", &next.GeneratedAt, false},
@@ -113,7 +113,7 @@ func (s *ProducerSchedule) decodeJSON(d *json.Decoder, maxRows int) error {
 
 // Decode array rows directly from the schedule decoder so the selected count
 // limit applies before decoding the next row or growing the result.
-func decodeScheduleRows[T any](d *json.Decoder, target *[]T, name string, maxRows int) error {
+func decodeScheduleRows[T any](d *json.Decoder, target *[]T, name string, maxRows int, fieldsFor func(*T) map[string]any) error {
 	first, err := d.Token()
 	if err != nil {
 		return fmt.Errorf("%w: malformed field value", errInvalidScheduleJSON)
@@ -125,15 +125,17 @@ func decodeScheduleRows[T any](d *json.Decoder, target *[]T, name string, maxRow
 		return fmt.Errorf("%w: invalid %s", errInvalidScheduleJSON, name)
 	}
 	rows := make([]T, 0)
+	var value json.RawMessage
 	for d.More() {
 		if len(rows) == maxRows {
 			return ErrProducerScheduleTooLarge
 		}
 		var row T
-		if err := d.Decode(&row); err != nil {
+		rows = append(rows, row)
+		fields := fieldsFor(&rows[len(rows)-1])
+		if err := readRequiredObjectFields(d, fields, &value, false); err != nil || len(fields) != 0 {
 			return fmt.Errorf("%w: invalid %s", errInvalidScheduleJSON, name)
 		}
-		rows = append(rows, row)
 	}
 	if end, err := d.Token(); err != nil || end != json.Delim(']') {
 		return fmt.Errorf("%w: invalid %s", errInvalidScheduleJSON, name)
@@ -144,22 +146,26 @@ func decodeScheduleRows[T any](d *json.Decoder, target *[]T, name string, maxRow
 
 func (c *ProducerCoverage) UnmarshalJSON(raw []byte) error {
 	var next ProducerCoverage
-	if err := decodeRequiredObject(raw, map[string]any{
-		"from_height": &next.FromHeight, "through_height": &next.ThroughHeight,
-	}); err != nil {
+	if err := decodeRequiredObject(raw, next.requiredJSONFields()); err != nil {
 		return fmt.Errorf("%w: invalid coverage row", errInvalidScheduleJSON)
 	}
 	*c = next
 	return nil
 }
 
+func (c *ProducerCoverage) requiredJSONFields() map[string]any {
+	return map[string]any{"from_height": &c.FromHeight, "through_height": &c.ThroughHeight}
+}
+
 func (e *ProducerEntry) UnmarshalJSON(raw []byte) error {
 	var next ProducerEntry
-	if err := decodeRequiredObject(raw, map[string]any{
-		"height": &next.Height, "timestamp_unix": &next.TimestampUnix, "producing_addr": &next.ProducingAddr,
-	}); err != nil {
+	if err := decodeRequiredObject(raw, next.requiredJSONFields()); err != nil {
 		return fmt.Errorf("%w: invalid producer row", errInvalidScheduleJSON)
 	}
 	*e = next
 	return nil
+}
+
+func (e *ProducerEntry) requiredJSONFields() map[string]any {
+	return map[string]any{"height": &e.Height, "timestamp_unix": &e.TimestampUnix, "producing_addr": &e.ProducingAddr}
 }

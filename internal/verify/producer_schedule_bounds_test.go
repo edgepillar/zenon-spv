@@ -143,17 +143,72 @@ func TestProducerScheduleJSONCountLimit(t *testing.T) {
 	// now structurally invalid and fail before the count cap is reached.
 	raw := `[` + strings.Repeat(`{},`, MaxProducerScheduleEntries) + `{}]`
 	var rows []struct{}
+	fields := func(*struct{}) map[string]any { return nil }
 	d := json.NewDecoder(strings.NewReader(raw))
-	err := decodeScheduleRows(d, &rows, "entries", MaxProducerScheduleEntries)
+	err := decodeScheduleRows(d, &rows, "entries", MaxProducerScheduleEntries, fields)
 	if rows != nil || !errors.Is(err, ErrProducerScheduleTooLarge) {
 		t.Fatalf("JSON entry limit: published=%t err=%v", rows != nil, err)
 	}
 
 	// The first row outside the limit must never reach the row decoder.
 	d = json.NewDecoder(strings.NewReader(`[{},false]`))
-	err = decodeScheduleRows(d, &rows, "entries", 1)
+	err = decodeScheduleRows(d, &rows, "entries", 1, fields)
 	if rows != nil || !errors.Is(err, ErrProducerScheduleTooLarge) {
 		t.Fatalf("JSON row decoded beyond limit: published=%t err=%v", rows != nil, err)
+	}
+}
+
+func TestProducerScheduleRowDecoderBoundaries(t *testing.T) {
+	schedule := fixtureSchedule(t, 2)
+	first, err := json.Marshal(schedule.Entries[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := json.Marshal(schedule.Entries[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	escaped := strings.Replace(string(first), `"height"`, `"he\u0069ght"`, 1)
+	t.Run("shared object boundary", func(t *testing.T) {
+		var standalone ProducerEntry
+		if err := json.Unmarshal([]byte(escaped), &standalone); err != nil || standalone != schedule.Entries[0] {
+			t.Fatalf("standalone row changed: %v", err)
+		}
+		input := `{"entries":[` + escaped + "," + string(second) + `],"following":true}`
+		d := json.NewDecoder(iotest.OneByteReader(strings.NewReader(input)))
+		if token, err := d.Token(); err != nil || token != json.Delim('{') {
+			t.Fatal("expected the enclosing object")
+		}
+		if token, err := d.Token(); err != nil || token != "entries" {
+			t.Fatal("expected the entries field")
+		}
+		var got []ProducerEntry
+		if err := decodeScheduleRows(d, &got, "entries", 2, (*ProducerEntry).requiredJSONFields); err != nil ||
+			len(got) != 2 || got[0] != standalone || got[1] != schedule.Entries[1] {
+			t.Fatalf("nested rows changed: %v", err)
+		}
+		if token, err := d.Token(); err != nil || token != "following" {
+			t.Fatal("row reader consumed the next field")
+		}
+	})
+
+	for _, tc := range []struct {
+		name  string
+		input string
+	}{
+		{"missing row comma", "[" + escaped + string(second) + "]"},
+		{"null second row", "[" + escaped + ",null]"},
+		{"missing fields in second row", "[" + escaped + `,{"height":102}]`},
+		{"trailing comma", "[" + escaped + ",]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := []ProducerEntry{schedule.Entries[1]}
+			d := json.NewDecoder(strings.NewReader(tc.input))
+			err := decodeScheduleRows(d, &got, "entries", 2, (*ProducerEntry).requiredJSONFields)
+			if !errors.Is(err, errInvalidScheduleJSON) || len(got) != 1 || got[0] != schedule.Entries[1] {
+				t.Fatalf("invalid array changed its target: %v", err)
+			}
+		})
 	}
 }
 

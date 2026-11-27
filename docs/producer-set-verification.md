@@ -282,6 +282,24 @@ Allocation figures count cumulative Go allocations during loading,
 validation and index construction on this host. The compiled schedule
 export and verification workflow also passed with the recorded node data.
 
+The row reader consumes objects from the schedule's decoder and reuses a
+field buffer across each array. Nested and standalone rows share the
+required-field checks. The row limit is checked before reading the next
+object, and the caller handles the enclosing delimiter or end-of-input.
+
+A second darwin/arm64 comparison reused the same schedules, Go toolchain
+and trial design, with `25b89ad` as its baseline.
+
+| Entries | Baseline allocated B/op | Shared decoder B/op | Baseline ms/op | Shared decoder ms/op |
+| --- | ---: | ---: | ---: | ---: |
+| 4,096 | 9,897,597 | 6,554,688 | 11.72 | 8.07 |
+| 100,000 | 249,390,824 | 167,790,242 | 256.69 | 181.89 |
+| 1,000,000 | 2,501,374,016 | 1,685,373,336 | 2,360.56 | 1,695.83 |
+
+The row controls cover escaped field names, adjacent objects, null and
+incomplete rows, and the next field of the enclosing object. A malformed
+array leaves its existing destination intact.
+
 ---
 
 ## 3. Schedule wire shape
