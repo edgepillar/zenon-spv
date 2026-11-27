@@ -435,7 +435,14 @@ frontier, payload and manifest bindings and reported candidate root. A shared
 root at another height or hash is rejected. The JSON includes the accepted tip
 and the selected header context, including the depth policy and schedule hash.
 The native comparison reads the report while the projection tool reads the
-ledger stream in one pass.
+ledger stream in one pass. The
+[retained-fragment recount](../tools/ledger-export/README.md#recount-directly-from-retained-fragments)
+feeds previously held bytes and a recovered range to that same projection.
+Use the selected completed-export receipt and separately pinned manifest for
+the whole put stream. The compiled snapshot checker exercises one controlled
+range response through the fragment recount and compares the resulting report
+against both the configured header range and a pinned local checkpoint. A
+truncated response leaves the recount without a projection result.
 
 For repeated checks, use `export-experimental-snapshot-header-state` with the
 same options to capture the retained experimental header checkpoint. Its

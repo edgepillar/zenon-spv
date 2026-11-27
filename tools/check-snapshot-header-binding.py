@@ -5,8 +5,10 @@
 import argparse
 import base64
 import copy
+from email.message import Message
 import hashlib
 import importlib.util
+import io
 import json
 from pathlib import Path
 import platform
@@ -14,12 +16,14 @@ import re
 import subprocess
 import sys
 import tempfile
+import urllib.response
 
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "internal/testdata/conformance"
 EXPORT = ROOT / "tools/ledger-export"
 CHURN = ROOT / "tools/ledger-inventory/churn.py"
+RANGE = ROOT / "tools/ledger-transport/archive_tail.py"
 COMMAND = "inspect-experimental-snapshot-root"
 EXPORT_COMMAND = "export-experimental-snapshot-header-state"
 PROJECTION_LIMIT = 148 << 10
@@ -59,12 +63,16 @@ def invoke(argv, expected_exit, payload=None):
     return run.stdout, json.loads(run.stdout)
 
 
-def project(builder, records, height, header_hash, root):
+def projection_request(builder, records, height, header_hash, root):
     receipt, options, manifest, wire = builder.projection_fixture(
         records, height=height, hash_hex=header_hash)
-    raw, projection = invoke([sys.executable, "-I", "-B", str(EXPORT / "inventory_completed_export.py"),
-        *options, *builder.projection_options(root), builder.PROGRAM.RECEIPT_OPTION, json.dumps(receipt)],
-        0, manifest + wire)
+    command = [sys.executable, "-I", "-B", str(EXPORT / "inventory_completed_export.py"),
+               *options, *builder.projection_options(root), builder.PROGRAM.RECEIPT_OPTION, json.dumps(receipt)]
+    return command, manifest, wire
+
+
+def project(command, payload, wire, root):
+    raw, projection = invoke(command, 0, payload)
     assert projection["status"] == "SELECTED_CANDIDATE_PROJECTION_MATCHED"
     assert projection["candidate_projection"]["computed_root"] == root
     assert projection["candidate_projection"]["qualification"] == "MATH_ONLY"
@@ -75,6 +83,81 @@ def project(builder, records, height, header_hash, root):
 
 def byte_pin(raw):
     return {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+
+
+
+def recover_projection(command, manifest, wire, directory, controls):
+    spec = importlib.util.spec_from_file_location("snapshot_range_reader", RANGE)
+    downloader = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(downloader)
+    description = json.loads(manifest)
+    selected = description["selection"]
+    chunks = description["chunks"]
+    first = len(chunks) - 2
+    assert first > 0 and selected["sha256"] == byte_pin(wire)["sha256"]
+    offset = first * description["chunk_bytes"]
+    suffix_bytes = len(wire) - offset
+    span = f"{offset}-{len(wire) - 1}"
+    url, etag = "https://snapshot-fixture.invalid/stream", '"recorded-fixture"'
+    options = ["manifest-range", "--url", url, "--etag", etag,
+               "--expect-bytes", str(len(wire)), "--expect-sha256", selected["sha256"],
+               "--expect-height", str(selected["height"]), "--expect-hash", selected["hash"],
+               "--provenance-sha256", selected["provenance_sha256"],
+               "--manifest-bytes", str(len(manifest)), "--manifest-sha256", byte_pin(manifest)["sha256"],
+               "--first-chunk", str(first), "--chunk-count", "2"]
+
+    def recover(body):
+        requests = []
+        def open_response(request, timeout):
+            assert request.get_method() == "GET" and request.full_url == url and timeout == 15
+            assert request.get_header("Range") == f"bytes={span}"
+            assert request.get_header("If-match") == etag and request.get_header("Accept-encoding") == "identity"
+            requests.append(request.get_header("Range"))
+            headers = Message()
+            headers["Content-Range"] = f"bytes {span}/{len(wire)}"
+            headers["Content-Length"] = str(suffix_bytes)
+            headers["ETag"] = etag
+            return urllib.response.addinfourl(io.BytesIO(body), headers, url, 206)
+
+        raw_range, diagnostic = io.BytesIO(), io.StringIO()
+        code = downloader.main(options, raw_range, diagnostic, opener=open_response, reader=io.BytesIO(manifest))
+        assert requests == [f"bytes={span}"]
+        return code, json.loads(diagnostic.getvalue()), raw_range.getvalue()
+
+    code, recovered, suffix = recover(wire[offset:])
+    assert code == 0 and recovered["status"] == "SELECTED_MANIFEST_RANGE_MATCHED"
+    assert recovered["manifest"] == byte_pin(manifest) and recovered["selection"] == selected
+    assert recovered["range"] == {**byte_pin(suffix), "first_chunk": first, "offset": offset,
+                                  "chunk_count": 2, "chunks": chunks[first:]}
+    assert suffix == wire[offset:] and recovered["response_body_eof_observed"]
+
+    directory.mkdir()
+    prefix_path, suffix_path = directory / "prefix.raw", directory / "suffix.raw"
+    plan_path = directory / "fragment-plan.json"
+    prefix_path.write_bytes(wire[:offset])
+    suffix_path.write_bytes(suffix)
+    plan_path.write_bytes(encoded({"format": "zenon-r1-retained-fragments/v1", "fragments": [
+        {"path": str(prefix_path), "bytes": offset}, {"path": str(suffix_path), "bytes": suffix_bytes},
+    ]}))
+    selected_command = command + ["--transport-fragment-plan", str(plan_path)]
+    raw, projection = invoke(selected_command, 0, manifest)
+    assert projection["status"] == "SELECTED_CANDIDATE_PROJECTION_MATCHED"
+    assert set(directory.iterdir()) == {prefix_path, suffix_path, plan_path}
+    assert file_pin(prefix_path, offset) == byte_pin(wire[:offset])
+    assert file_pin(suffix_path, suffix_bytes) == byte_pin(suffix)
+
+    code, incomplete, partial = recover(wire[offset:-1])
+    assert (code, incomplete["status"], incomplete["reason"]) == (2, "UNKNOWN", "stream_truncated")
+    assert partial == wire[offset:-1] and len(partial) < suffix_bytes
+    suffix_path.write_bytes(partial)
+    _, refusal = invoke(selected_command, 2, manifest)
+    assert refusal["status"] == "UNKNOWN" and refusal["reason"] == "transport_fragment_file"
+    assert refusal["stream_inventory"] is None and "candidate_projection" not in refusal
+    controls.append({"name": "incomplete_recovered_fragment_refuses_projection", "exit": 2,
+                     "error": {"stage": "fragment_recount", "category": refusal["reason"]}})
+    return raw, {"conditional_requests": 1, "retrieved_range": byte_pin(suffix),
+                 "retained_prefix": byte_pin(wire[:offset]), "chunks_checked": len(chunks),
+                 "joined_payload_files": 0, "controlled_https_response": True, "live_https_peer_qualified": False}
 
 
 def project_replay(builder, records, before, after, root):
@@ -135,7 +218,7 @@ def check(verifier, revision, candidate_manifest):
 
     controls = []
     with tempfile.TemporaryDirectory(prefix="snapshot-header-binding-") as directory:
-        work = Path(directory)
+        work = Path(directory).resolve()
         config_path = work / "PRIVATE_SNAPSHOT_CONFIG.json"
         headers_path = work / "PRIVATE_SNAPSHOT_HEADERS.json"
         projection_path = work / "PRIVATE_SNAPSHOT_PROJECTION.json"
@@ -206,9 +289,14 @@ def check(verifier, revision, candidate_manifest):
         assert selected["header"] == {"height": height, "hash": header_hash, "state_root": trace["root_hex"],
                                       "tip_height": header["tip_height"], "tip_hash": header["tip_hash"]}
         assert selected["header_context"]["fingerprint"] == context
-        raw, projection = project(builder, records, height, header_hash, selected["header"]["state_root"])
+        root = selected["header"]["state_root"]
+        command, manifest, wire = projection_request(builder, records, height, header_hash, root)
+        raw, projection = project(command, manifest + wire, wire, root)
+        recovered_raw, recovery = recover_projection(command, manifest, wire, work / "fragments", controls)
+        assert recovered_raw == raw
         matched = native("same_frontier_projection", projection_flags(raw), 0)
         assert matched["status"] == "matched" and matched["header"] == selected["header"]
+        assert native("recovered_fragments_match_accepted_header", projection_flags(recovered_raw), 0) == matched
         comparison = matched["projection_comparison"]
         transport = projection["transport_verification"]
         stream = transport["selection"]
@@ -232,6 +320,8 @@ def check(verifier, revision, candidate_manifest):
             "sha256": hashlib.sha256(checkpoint).hexdigest(), "bytes": len(checkpoint),
             "provider_headers": 0, "trust": "trusted_local_provenance_required",
         }
+        assert native("recovered_fragments_match_checkpoint", projection_flags(recovered_raw) + checkpoint_args,
+                      0, momentum_input=None) == restored
         exported_again, _ = export_state("reexport_same_checkpoint", projection_flags(raw) + checkpoint_args, None)
         assert exported_again == checkpoint
 
@@ -269,7 +359,9 @@ def check(verifier, revision, candidate_manifest):
         assert (checkpoint_before.st_mode, checkpoint_before.st_ino, checkpoint_before.st_mtime_ns) == (
             checkpoint_after.st_mode, checkpoint_after.st_ino, checkpoint_after.st_mtime_ns)
 
-        other_raw, _ = project(builder, records, other["height"], other["hash"], trace["root_hex"])
+        other_command, other_manifest, other_wire = projection_request(
+            builder, records, other["height"], other["hash"], root)
+        other_raw, _ = project(other_command, other_manifest + other_wire, other_wire, root)
         export_state("no_checkpoint_on_projection_refusal", projection_flags(other_raw) + checkpoint_args,
                      None, 1, ("projection", "frontier_mismatch"))
         native("same_root_other_frontier", projection_flags(other_raw), 1, ("projection", "frontier_mismatch"))
@@ -366,7 +458,7 @@ def check(verifier, revision, candidate_manifest):
             "verifier": binary, "candidate_manifest": manifest_pin,
             "fixture_pins": {"batch-context-unit.json": UNIT_PIN, "batch-context-node-witness.json": NODE_PIN},
             "scope": "recorded_headers_and_generated_ledger", "controls": controls,
-            "matched": matched["header"], "projection": comparison,
+            "matched": matched["header"], "projection": comparison, "fragment_recovery": recovery,
             "inputs_share_original_snapshot": False, "node_or_network_started": False,
             "snapshot_import_performed": False, "production_qualified": False}
 
