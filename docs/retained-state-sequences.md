@@ -54,6 +54,8 @@ Read-only load attempts must preserve saved bytes, including failed attempts.
 Each case constructs its configured profile and producer schedule once. The
 loads pass a copy of those options with the selected W and K to the trusted state
 loader, which freezes the inputs and revalidates the saved window on every load.
+Each signed fixture allocates its header and member slices at the requested size
+before populating them in order. The cases use independent fixtures.
 The tail-only refusal builds a separate schedule for its narrower coverage.
 An expected rejection or refusal snapshots the state before extension to check
 rollback. Successful extensions check both the new state and its predecessor
