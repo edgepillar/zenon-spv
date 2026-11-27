@@ -1554,7 +1554,7 @@ class ReviewTests(unittest.TestCase):
             with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
                 self.review(make_archive(changed), contract)
 
-    def deposit_timeout_replay_files(self, gateway):
+    def deposit_timeout_replay_files(self, gateway, *, reuse_opening=False):
         contract, files, _ = self.deposit_timeout_batch_files(gateway=gateway)
         _, full = accepted_files(gateway_matches=gateway == "match", terminal_format=model.TERMINAL_FORMAT)
         provider = json.loads(full["evidence/provider.json"])
@@ -1585,13 +1585,21 @@ class ReviewTests(unittest.TestCase):
                {"jsonrpc": "2.0", "id": 15, "result": {"count": 5, "list": provider["momentums"]}})
         early = json.loads(files["evidence/" + capture.CLOSED_OPENING_REPORT])["closed_ledger"]
         provenance = {**early, **json.loads(full["evidence/closed-ledger-provenance.json"])}
-        reports = []
+        reports = list(early["oracle_reports"]) if reuse_opening else []
         for index, source in enumerate(provenance["oracle_reports"], 1):
             label = f"{capture.DEPOSIT_TIMEOUT_ORACLE}-{index:02d}"
             request_file = label + ".request.json"
             raw = full["evidence/" + source["request"]["file"]]
+            report = json.loads(full["evidence/" + source["stdout"]["file"]])
+            if reuse_opening:
+                request = json.loads(raw)
+                self.assertEqual(index, 1)
+                self.assertEqual([row["height"] for row in request["targets"]], [2, 3, 4, 5])
+                request["targets"] = request["targets"][2:]
+                raw = (json.dumps(request, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n").encode("ascii")
+                report.update(request_sha256=pin(raw)["sha256"], rows=report["rows"][2:])
             files["evidence/" + request_file] = raw
-            stdout = record(label, label + ".stdout", json.loads(full["evidence/" + source["stdout"]["file"]]))
+            stdout = record(label, label + ".stdout", report)
             reports.append({"request": {"file": request_file, **pin(raw)}, "stdout": stdout})
         provenance["oracle_reports"] = reports
         cli = json.loads(full["evidence/consume-query.stdout"])
@@ -1609,9 +1617,12 @@ class ReviewTests(unittest.TestCase):
         for name in ("query-config.json", "query-request.json", "query-context-pins.json"):
             files["evidence/" + name] = full["evidence/" + name]
         files.update({name: value for name, value in full.items() if name.startswith("transport/input-consumer")})
+        replay_format = (capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT if compare_gateway
+                         else capture.DEPOSIT_TIMEOUT_REPLAY_WITHOUT_GATEWAY_FORMAT)
+        if reuse_opening:
+            replay_format = capture.DEPOSIT_TIMEOUT_REPLAY_REUSING_OPENING_FORMAT
         files["evidence/" + capture.DEPOSIT_TIMEOUT_REPLAY] = canonical({
-            "format": (capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT if compare_gateway
-                       else capture.DEPOSIT_TIMEOUT_REPLAY_WITHOUT_GATEWAY_FORMAT),
+            "format": replay_format,
             "header_range_request_id": 15,
             "provider": pin(canonical(provider)), "closed_ledger": provenance})
         return contract, files
@@ -1635,6 +1646,31 @@ class ReviewTests(unittest.TestCase):
                 self.assertIs(replay["comparison"]["gateway_stored_fields_match"], expected_match)
                 self.assertEqual(replay["comparison"]["gateway_stored_fields_compared"],
                                  0 if expected_match is None else 17)
+
+    def test_native_replay_reuses_the_exact_opening_read_for_both_gateway_modes(self):
+        for gateway in ("match", "invalid"):
+            with self.subTest(gateway=gateway):
+                contract, old = self.deposit_timeout_replay_files(gateway)
+                _, files = self.deposit_timeout_replay_files(gateway, reuse_opening=True)
+                replay_key = "recorded_deposit_timeout_native_replay"
+                baseline = self.review(make_archive(old), contract)
+                latest = self.review(make_archive(files), contract)
+                self.assertEqual(baseline[replay_key], latest[replay_key])
+                self.assertEqual(latest["recorded_terminal_outcome"], "UNKNOWN")
+                self.assertIsNone(latest["comparison"])
+
+        replay_path = "evidence/" + capture.DEPOSIT_TIMEOUT_REPLAY
+        replay = json.loads(files[replay_path])
+        reports = replay["closed_ledger"]["oracle_reports"]
+        replay["closed_ledger"]["oracle_reports"] = reports[1:]
+        with self.assertRaisesRegex(Refused, "review_closed_ledger_binding"):
+            self.review(make_archive({**files, replay_path: canonical(replay)}), contract)
+        suffix_path = "evidence/timeout-parent-oracle-01.request.json"
+        early_targets = json.loads(files["evidence/parent-oracle-01.request.json"])["targets"]
+        suffix = json.loads(files[suffix_path])
+        suffix["targets"] = early_targets + suffix["targets"]
+        with self.assertRaisesRegex(Refused, "review_oracle_request"):
+            self.review(make_archive({**files, suffix_path: canonical(suffix)}), contract)
 
     def test_native_replay_without_gateway_refuses_a_claimed_comparison_or_unbound_request(self):
         contract, files = self.deposit_timeout_replay_files(None)

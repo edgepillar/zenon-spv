@@ -367,19 +367,27 @@ def recorded_input_component(evidence, contract, role):
 
 
 def recorded_closed_schedule(evidence, contract, headers, frontier, provenance, *, services=model.SERVICES,
-                             label_prefix="parent-oracle"):
+                             label_prefix="parent-oracle", reuse_opening=None):
     oracle_outputs = []
+    separate_opening = reuse_opening is not None
 
     def oracle_reports():
-        for index, (request, _) in enumerate(capture.oracle_requests(contract, headers, frontier), 1):
-            label = f"{label_prefix}-{index:02d}"
+        requests = capture.oracle_requests(contract, headers, frontier, separate_opening=separate_opening)
+        for index, (request, _) in enumerate(requests, 1):
+            if separate_opening and index == 1:
+                label = "parent-oracle-01"
+            else:
+                label = f"{label_prefix}-{index - int(separate_opening):02d}"
             name, output = label + ".request.json", label + ".stdout"
             require(evidence.bytes("evidence/" + name, 32 << 10) == request, "review_oracle_request")
             oracle_outputs.append({"request": {"file": name, **evidence.pins["evidence/" + name]},
                                    "stdout": recorded_output(evidence, label, output)})
             yield evidence.json(output, capture.ORACLE_REPORT_BYTES)
 
-    schedule = capture.oracle_schedule(contract, headers, oracle_reports(), frontier)
+    schedule = capture.oracle_schedule(contract, headers, oracle_reports(), frontier,
+                                       separate_opening=separate_opening)
+    if separate_opening:
+        same([oracle_outputs[0]], reuse_opening["oracle_reports"], "review_reused_opening_read")
     oracle_pin = contract.data["qualified_components"]["parent_oracle"]["binaries"][capture.ORACLE_NAME]
     for name, expected in {"format": "owned-devnet-closed-ledger-provenance/v1",
             "genesis": headers[0].identifier(), "anchor": headers[1].identifier(),
@@ -535,9 +543,11 @@ def recorded_deposit_timeout_replay(evidence, contract, checkout, opening, close
     exact_keys(replay, {"format", "header_range_request_id", "provider", "closed_ledger"},
                "review_deposit_timeout_replay_fields")
     compare_gateway = batch.gateway is not None
-    replay_format = (capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT if compare_gateway
-                     else capture.DEPOSIT_TIMEOUT_REPLAY_WITHOUT_GATEWAY_FORMAT)
-    same(replay["format"], replay_format, "review_deposit_timeout_replay_format")
+    reuse_opening = replay["format"] == capture.DEPOSIT_TIMEOUT_REPLAY_REUSING_OPENING_FORMAT
+    if not reuse_opening:
+        replay_format = (capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT if compare_gateway
+                         else capture.DEPOSIT_TIMEOUT_REPLAY_WITHOUT_GATEWAY_FORMAT)
+        same(replay["format"], replay_format, "review_deposit_timeout_replay_format")
     request_id = closed_opening["frontier_request_id"] + 6
     same(replay["header_range_request_id"], request_id, "review_deposit_timeout_replay_request")
     if not compare_gateway:
@@ -558,7 +568,8 @@ def recorded_deposit_timeout_replay(evidence, contract, checkout, opening, close
     for name in ("rpc_container_id", "engine_id", "reader_source_sha256"):
         same(provenance[name], early[name], "review_deposit_timeout_replay_ledger")
     schedule = recorded_closed_schedule(evidence, contract, window.headers, frontier.identifier(), provenance,
-                                       label_prefix=capture.DEPOSIT_TIMEOUT_ORACLE)
+                                       label_prefix=capture.DEPOSIT_TIMEOUT_ORACLE,
+                                       reuse_opening=early if reuse_opening else None)
     descriptor, profile = capture.selected_profile(contract, checkout)
     configuration, request, pins = capture.query_inputs(contract, window, schedule, profile)
     for name, expected in (("query-config.json", configuration), ("query-request.json", request),

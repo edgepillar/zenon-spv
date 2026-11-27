@@ -536,8 +536,8 @@ def synthetic_window(last=4, state_root=bytes([77]) * 32, *, opening_root=None):
     return contract, rows, capture.Window(headers, query, provider, None)
 
 
-def synthetic_reports(contract, window):
-    for raw, targets in capture.oracle_requests(contract, window.headers):
+def synthetic_reports(contract, window, *, separate_opening=False):
+    for raw, targets in capture.oracle_requests(contract, window.headers, separate_opening=separate_opening):
         genesis, tip = window.headers[0], window.headers[-1]
         rows = []
         for header in targets:
@@ -605,6 +605,70 @@ class CaptureTests(unittest.TestCase):
         self.assertEqual(schedule["coverage"], [{"from_height": 3, "through_height": 67}])
         self.assertEqual([row["height"] for row in schedule["entries"]], list(range(3, 68)))
 
+    def test_closed_reader_reuses_completed_opening_and_launches_only_the_suffix(self):
+        contract, _, window = synthetic_window(67)
+        opening, frontier = window.headers[:3], window.headers[-1].identifier()
+        ledger = "/var/lib/docker/volumes/spv-" + "a" * 32 + "-rpc-data/_data/nom"
+        trace = mock.Mock()
+        trace.engine.closed_ledger.return_value = ledger
+        trace.engine.owned = {"rpc": mock.Mock(identity="b" * 64)}
+        trace.engine.admission.engine_id = "c" * 64
+        trace.binaries.directory = HERE
+        trace.binaries.verify.return_value = contract.data["qualified_components"]["parent_oracle"]["binaries"]
+        trace.sources.paths = {"node": HERE}
+        trace.record.directory = HERE
+        selection = contract.data["selection"]
+        genesis = {"sha256": selection["genesis_file_sha256"], "bytes": selection["genesis_file_bytes"]}
+
+        def pin(name, raw):
+            return {"file": name, "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+
+        def runner_for(reports):
+            frames = iter(reports)
+
+            def run(label, *args, **kwargs):
+                raw = model.canonical(next(frames))
+                name = label + ".stdout"
+                result = mock.Mock(directory=HERE, stdout_name=name,
+                                   receipt={"outputs": {"stdout": pin(name, raw)}})
+                result.stdout.return_value = raw
+                return result
+            return run
+
+        def read(headers, **kwargs):
+            return capture.read_closed_parent_schedule(contract, trace.record, trace.engine, ledger, headers,
+                frontier, trace.sources, trace.binaries, HERE, {}, trace.guard, "selected reader", **kwargs)
+
+        trace.record.seal.side_effect = pin
+        with mock.patch.object(capture, "regular_pin", return_value=genesis), \
+                mock.patch.object(capture.os, "stat", return_value=mock.Mock(st_ino=1)):
+            trace.record.run.side_effect = runner_for(synthetic_reports(contract, window))
+            original, _, _ = read(window.headers)
+            self.assertEqual(trace.record.run.call_count, 2)
+            trace.record.run.reset_mock()
+            trace.record.seal.reset_mock()
+
+            trace.record.run.side_effect = runner_for(synthetic_reports(contract, window, separate_opening=True))
+            _, early, early_result = read(opening)
+            replay, provenance, _ = read(window.headers, label_prefix=capture.DEPOSIT_TIMEOUT_ORACLE,
+                                         reuse_opening=(early, early_result))
+            self.assertEqual(original, replay)
+            self.assertEqual(trace.record.run.call_count, 2)
+            self.assertEqual(provenance["oracle_reports"][0], early["oracle_reports"][0])
+            targets = [json.loads(args.args[1])["targets"] for args in trace.record.seal.call_args_list]
+            self.assertEqual([[row["height"] for row in group] for group in targets],
+                             [[2, 3], list(range(4, 68))])
+            self.assertEqual([item.args[0] for item in trace.record.run.call_args_list],
+                             ["parent-oracle-01", "timeout-parent-oracle-01"])
+
+            trace.record.run.reset_mock()
+            with self.assertRaisesRegex(model.Refused, "closed_oracle_opening_reuse_scope"):
+                read(window.headers, reuse_opening=({**early, "engine_id": "d" * 64}, early_result))
+            early_result.stdout.return_value = model.canonical(next(synthetic_reports(contract, window)))
+            with self.assertRaisesRegex(model.Refused, "closed_oracle_provenance"):
+                read(window.headers, reuse_opening=(early, early_result))
+            trace.record.run.assert_not_called()
+
     def test_oracle_rejects_mismatch_before_reading_the_next_chunk(self):
         contract, _, window = synthetic_window(67)
         first = next(synthetic_reports(contract, window))
@@ -626,7 +690,7 @@ class CaptureTests(unittest.TestCase):
         trace.rpc.calls = 9
         trace.rpc.frontier.return_value = frontier
         trace.engine.close_rpc.return_value = mock.sentinel.ledger
-        trace.read_parent.return_value = mock.sentinel.schedule, mock.sentinel.provenance
+        trace.read_parent.return_value = mock.sentinel.schedule, mock.sentinel.provenance, mock.sentinel.opening_result
         for services in (model.NODE_SERVICES, model.SERVICES):
             with self.subTest(services=services):
                 trace.reset_mock()
@@ -722,19 +786,22 @@ class CaptureTests(unittest.TestCase):
             mock.sentinel.record, mock.sentinel.sources, mock.sentinel.oracle, mock.sentinel.consumer,
             mock.sentinel.workspace, mock.sentinel.environment)
         inputs = (mock.sentinel.descriptor, mock.sentinel.profile)
-        for dto, succeeds in (({"domainId": 1}, True), (None, True), (None, False)):
+        for dto, failure in (({"domainId": 1}, None), (None, None), (None, "reader"), (None, "consumer")):
             batch = capture.DepositTimeoutBatch({"frontier_request_id": 9}, target, {"batch_entry": {}}, dto)
-            with self.subTest(has_gateway=dto is not None, succeeds=succeeds):
+            with self.subTest(has_gateway=dto is not None, failure=failure):
                 trace = mock.Mock()
                 trace.rpc.calls = 9
                 trace.rpc.frontier.return_value = frontier
                 trace.rpc.deposit_timeout_batch.return_value = batch
                 trace.rpc.deposit_timeout_window.return_value = window
                 trace.engine.close_rpc.return_value = mock.sentinel.ledger
-                trace.read_parent.side_effect = [(mock.sentinel.opening_schedule, mock.sentinel.opening_evidence),
-                                                 (mock.sentinel.full_schedule, mock.sentinel.full_evidence)]
+                tail = (mock.sentinel.full_schedule, mock.sentinel.full_evidence, mock.sentinel.opening_result)
+                trace.read_parent.side_effect = [
+                    (mock.sentinel.opening_schedule, mock.sentinel.opening_evidence, mock.sentinel.opening_result),
+                    model.Refused("suffix_unavailable") if failure == "reader" else tail]
                 trace.budget.started, trace.budget.reserve, trace.budget.diagnostic_deadline = 0, 300, 120
-                trace.replay.side_effect = [mock.sentinel.provider_pin if succeeds else model.Refused("native_replay")]
+                trace.replay.side_effect = [model.Refused("native_replay") if failure == "consumer"
+                                            else mock.sentinel.provider_pin]
                 with mock.patch.multiple(capture, read_closed_parent_schedule=trace.read_parent,
                                          replay_deposit_timeout=trace.replay):
                     closed, captured, replay = runner.closed_opening_after_timeout(contract, record, trace.engine,
@@ -751,17 +818,16 @@ class CaptureTests(unittest.TestCase):
                         "selected reader", services=model.SERVICES), mock.call.budget.check(force=True),
                     mock.call.read_parent(contract, record, trace.engine, mock.sentinel.ledger, window.headers,
                         frontier.identifier(), sources, oracle, workspace, environment, trace.budget.check,
-                        "selected reader", services=model.SERVICES, label_prefix=capture.DEPOSIT_TIMEOUT_ORACLE),
-                    mock.call.replay(contract, record, window, mock.sentinel.full_schedule, *inputs, consumer,
-                                     workspace, environment, trace.budget.check),
-                    *([mock.call.budget.check(force=True)] if succeeds else []),
+                        "selected reader", services=model.SERVICES, label_prefix=capture.DEPOSIT_TIMEOUT_ORACLE,
+                        reuse_opening=(mock.sentinel.opening_evidence, mock.sentinel.opening_result)),
+                    *([mock.call.replay(contract, record, window, mock.sentinel.full_schedule, *inputs, consumer,
+                                       workspace, environment, trace.budget.check)] if failure != "reader" else []),
+                    *([mock.call.budget.check(force=True)] if failure is None else []),
                 ])
                 self.assertEqual(closed["closed_ledger"], mock.sentinel.opening_evidence)
                 self.assertIs(captured, batch)
-                if succeeds:
-                    expected_format = (capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT if dto is not None
-                                       else capture.DEPOSIT_TIMEOUT_REPLAY_WITHOUT_GATEWAY_FORMAT)
-                    self.assertEqual(replay, {"format": expected_format,
+                if failure is None:
+                    self.assertEqual(replay, {"format": capture.DEPOSIT_TIMEOUT_REPLAY_REUSING_OPENING_FORMAT,
                         "header_range_request_id": 15, "provider": mock.sentinel.provider_pin,
                         "closed_ledger": mock.sentinel.full_evidence})
                 else:

@@ -539,6 +539,13 @@ The temporary provider document is rebuilt from the recorded responses and
 linked by its byte length and SHA-256 digest. The archive keeps the original
 inputs, schedule and completed CLI output for an independent recheck.
 
+The replay's version-2 record references the verified H2/H3 request and output
+from the opening authorization. Later reads start at H4 under the same closed
+ledger and frozen frontier. Archive review checks that the full schedule uses
+the exact opening references, then verifies the later requests and outputs in
+order. The opening remains reviewable if a later read fails. The earlier replay
+formats with a separate full-range oracle read remain readable.
+
 A version-2 observation supplies the gateway response for comparison. If
 that read yields no usable response, the replay uses the three proofs
 with gateway comparison disabled. The archive retains the exact attempted

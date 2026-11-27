@@ -254,21 +254,21 @@ def closed_opening_after_timeout(contract, record, engine, rpc, opening, sources
             except (OSError, ValueError, KeyError, TypeError):
                 pass
     ledger = engine.close_rpc(services=services)
-    _, provenance = capture.read_closed_parent_schedule(contract, record, engine, ledger,
+    _, provenance, opening_result = capture.read_closed_parent_schedule(contract, record, engine, ledger,
         opening, identifier, sources, oracle, workspace, tool_environment, budget.check, reader_source,
         services=services)
     budget.check(force=True)
     if window is not None:
         try:
-            schedule, replay_provenance = capture.read_closed_parent_schedule(contract, record, engine, ledger,
+            schedule, replay_provenance, _ = capture.read_closed_parent_schedule(contract, record, engine, ledger,
                 window.headers, identifier, sources, oracle, workspace, tool_environment, budget.check,
-                reader_source, services=services, label_prefix=capture.DEPOSIT_TIMEOUT_ORACLE)
+                reader_source, services=services, label_prefix=capture.DEPOSIT_TIMEOUT_ORACLE,
+                reuse_opening=(provenance, opening_result))
             provider = capture.replay_deposit_timeout(contract, record, window, schedule, *batch_inputs, consumer,
                 workspace, tool_environment, budget.check)
             budget.check(force=True)
-            replay_format = (capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT if batch_observation.gateway is not None
-                             else capture.DEPOSIT_TIMEOUT_REPLAY_WITHOUT_GATEWAY_FORMAT)
-            replay = {"format": replay_format, "header_range_request_id": request_id + 6,
+            replay = {"format": capture.DEPOSIT_TIMEOUT_REPLAY_REUSING_OPENING_FORMAT,
+                      "header_range_request_id": request_id + 6,
                       "provider": provider, "closed_ledger": replay_provenance}
         except (OSError, ValueError, KeyError, TypeError):
             # The opening and proof observations survive an incomplete native replay.
@@ -441,7 +441,7 @@ def execute(environment, workspace, checkout):
                     request_id = replay_observation["header_range_request_id"]
                     extra.update({capture.DEPOSIT_TIMEOUT_REPLAY, capture.DEPOSIT_TIMEOUT_RANGE,
                                   capture.DEPOSIT_TIMEOUT_STDOUT, f"rpc-{request_id:02d}.request.json"})
-                    if replay_observation["format"] == capture.DEPOSIT_TIMEOUT_REPLAY_WITHOUT_GATEWAY_FORMAT:
+                    if batch_observation.gateway is None:
                         extra.add(f"rpc-{request_id - 1:02d}.request.json")
                     for row in replay_observation["closed_ledger"]["oracle_reports"]:
                         extra.update((row["request"]["file"], row["stdout"]["file"]))
