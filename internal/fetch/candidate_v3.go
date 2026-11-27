@@ -65,7 +65,7 @@ func decodeCandidateV3Momentum(raw []byte, retainContent bool) (CandidateV3Momen
 	}
 	var next CandidateV3Momentum
 	h := &next.Header.Header
-	var data, publicKey, signature, content json.RawMessage
+	var data, publicKey, signature, content candidateRPCFieldSpan
 	var producer string
 	fields := map[string]any{
 		"version": &h.Version, "chainIdentifier": &h.ChainIdentifier,
@@ -104,6 +104,13 @@ func decodeCandidateV3Momentum(raw []byte, retainContent bool) (CandidateV3Momen
 	return next, nil
 }
 
+// candidateRPCFieldSpan borrows validated JSON bytes for synchronous decoding.
+type candidateRPCFieldSpan []byte
+
+type discardedCandidateRPCValue struct{}
+
+func (*discardedCandidateRPCValue) UnmarshalJSON([]byte) error { return nil }
+
 func decodeCandidateRPCObject(raw []byte, fields map[string]any) error {
 	return decodeCandidateRPCObjectNullable(raw, fields)
 }
@@ -116,6 +123,7 @@ func decodeCandidateRPCObjectNullable(raw []byte, fields map[string]any, nullabl
 		return ErrCandidateV3Momentum
 	}
 	seen := make(map[string]bool, len(fields))
+	var discarded discardedCandidateRPCValue
 	for d.More() {
 		token, err := d.Token()
 		if err != nil {
@@ -131,27 +139,38 @@ func decodeCandidateRPCObjectNullable(raw []byte, fields map[string]any, nullabl
 		for _, name := range nullable {
 			allowNull = allowNull || name == key
 		}
-		var value json.RawMessage
-		if err := d.Decode(&value); err != nil || (bytes.Equal(bytes.TrimSpace(value), []byte("null")) && !allowNull) {
+		start := d.InputOffset()
+		if err := d.Decode(&discarded); err != nil {
 			return ErrCandidateV3Momentum
 		}
-		if hash, ok := target.(*chain.Hash); ok {
+		// The decoder has checked the field syntax, including its colon.
+		_, value, ok := bytes.Cut(raw[start:d.InputOffset()], []byte{':'})
+		if !ok {
+			return ErrCandidateV3Momentum
+		}
+		value = bytes.Trim(value, " \t\r\n")
+		if bytes.Equal(value, []byte("null")) && !allowNull {
+			return ErrCandidateV3Momentum
+		}
+		switch destination := target.(type) {
+		case *chain.Hash:
 			decoded, err := decodeCandidateRPCHash(value)
 			if err != nil {
 				return ErrCandidateV3Momentum
 			}
-			*hash = decoded
-		} else if destination, ok := target.(*json.RawMessage); ok && destination != nil {
-			// The decoder has already checked the value and copied its bytes.
-			*destination = value
-		} else if err := json.Unmarshal(value, target); err != nil {
-			return ErrCandidateV3Momentum
+			*destination = decoded
+		case *candidateRPCFieldSpan:
+			*destination = value[:len(value):len(value)]
+		default:
+			if err := json.Unmarshal(value, target); err != nil {
+				return ErrCandidateV3Momentum
+			}
 		}
 	}
 	if end, err := d.Token(); err != nil || end != json.Delim('}') || len(seen) != len(fields) {
 		return ErrCandidateV3Momentum
 	}
-	if err := d.Decode(new(json.RawMessage)); err != io.EOF {
+	if err := d.Decode(&discarded); err != io.EOF {
 		return ErrCandidateV3Momentum
 	}
 	return nil
@@ -216,11 +235,11 @@ func decodeCandidateRPCContent(raw []byte, retainContent bool) ([]chain.AccountH
 		members = make([]chain.AccountHeader, 0)
 	}
 	digest := sha3.New256()
+	var value json.RawMessage
 	for count := 0; d.More(); count++ {
 		if count >= MaxCandidateV3MomentumContentMembers {
 			return nil, hash, ErrCandidateV3Momentum
 		}
-		var value json.RawMessage
 		if err := d.Decode(&value); err != nil {
 			return nil, hash, ErrCandidateV3Momentum
 		}
