@@ -175,6 +175,23 @@ resizing or migrating the state. A saved evicted tail cannot re-prove its missin
 ancestry or authenticate its own local-file provenance. This does not qualify
 original-node state-tree recovery or root rebuilding.
 
+The file loader now decodes directly from the bounded file stream. It checks
+complete input before resuming any state and reuses one buffer for the encoded
+headers. The SHA-256-pinned stream and the byte decoder use the same retained
+header parser.
+
+Three paired samples of four operations each on Go 1.25.14 darwin/arm64 read a
+4,096-header checkpoint of repeated recorded envelopes. The previous reader
+and the new reader reached the same noncontiguous-history refusal.
+
+| Read path | Prior allocation | Current allocation | Prior median time | Current median time |
+| --- | ---: | ---: | ---: | ---: |
+| Trusted regular file | 57,955,484 B/op | 51,635,996 B/op | 93.81 ms | 85.11 ms |
+| SHA-256-pinned stream | 54,876,992 B/op | 51,633,744 B/op | 80.10 ms | 81.12 ms |
+
+These allocation totals and timing medians cover the bounded read, parsing and
+early linkage refusal on one host.
+
 `DecodePinnedTrustedExperimentalV3State` adds the same trusted-local decoding
 contract for a bounded, caller-owned byte buffer and an independently selected
 nonzero SHA-256 pin. Hashing and decoding use the same buffer, so a consumer can
@@ -182,8 +199,9 @@ read one regular file once without a path/hash/reopen race. The caller must not
 mutate the buffer concurrently. Retained authentication is rechecked and input
 bytes are not retained. The digest does not authenticate local provenance or
 restore evicted ancestry. The [three-row CLI](experimental-batch-context-query.md)
-uses this path only with an explicit checkpoint selector and both context pins;
-the query never rewrites its checkpoint or imports one from provider JSON.
+uses the bounded stream API `ReadPinnedTrustedCheckpoint` with an explicit local
+checkpoint selector and both context pins. Checkpoint queries open the selected
+file read-only.
 The separate [checkpoint export command](experimental-checkpoint-export.md)
 streams a v4 artifact only after a successful three-row query. The Go
 `WriteCheckpoint` method shares the bounded encoder, strips the informational
