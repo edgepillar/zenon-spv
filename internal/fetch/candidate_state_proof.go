@@ -5,7 +5,6 @@ package fetch
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"unicode/utf8"
 
@@ -34,7 +33,7 @@ func DecodeCandidateStateWitness(raw []byte) (proof.CandidateStateWitness, error
 		return proof.CandidateStateWitness{}, ErrCandidateStateWitness
 	}
 	var next proof.CandidateStateWitness
-	var value, witness json.RawMessage
+	var value, witness candidateRPCFieldSpan
 	if decodeCandidateRPCObjectNullable(raw, map[string]any{"root": &next.Root, "value": &value, "proof": &witness}, "value") != nil {
 		return proof.CandidateStateWitness{}, ErrCandidateStateWitness
 	}

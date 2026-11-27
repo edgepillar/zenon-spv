@@ -5,7 +5,6 @@ package fetch
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"unicode/utf8"
 
@@ -26,7 +25,7 @@ func DecodeCandidateSettlementBatch(raw []byte) (proof.CandidateSettlementBatch,
 	}
 	var next proof.CandidateSettlementBatch
 	v := &next.Entry
-	var asset, data json.RawMessage
+	var asset, data candidateRPCFieldSpan
 	if decodeCandidateRPCObjectNullable(raw, map[string]any{
 		"domainId": &next.DomainID, "batchId": &next.BatchID,
 		"protocolVersion": &v.ProtocolVersion, "firstInputSeq": &v.FirstInputSeq, "lastInputSeq": &v.LastInputSeq,

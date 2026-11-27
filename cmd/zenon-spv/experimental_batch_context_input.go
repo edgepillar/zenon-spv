@@ -48,8 +48,7 @@ func decodeExperimentalContextCLIBundle(raw []byte, maxHeaders uint32, compare b
 		return experimentalContextCLIBundle{}, errExperimentalCLIInput
 	}
 	var version uint32
-	var rows experimentalCLIFieldSpan
-	var witnesses, gateway json.RawMessage
+	var rows, witnesses, gateway experimentalCLIFieldSpan
 	fields := map[string]any{"version": &version, "momentums": &rows, "witnesses": &witnesses}
 	if compare {
 		fields["gateway"] = &gateway
@@ -57,7 +56,7 @@ func decodeExperimentalContextCLIBundle(raw []byte, maxHeaders uint32, compare b
 	if decodeExperimentalCLIObject(raw, fields, "witnesses", "gateway") != nil || version != 1 {
 		return experimentalContextCLIBundle{}, errExperimentalCLIInput
 	}
-	var entry, record, config json.RawMessage
+	var entry, record, config experimentalCLIFieldSpan
 	if decodeExperimentalCLIObject(witnesses, map[string]any{
 		"batch_entry": &entry, "domain_record": &record, "domain_config": &config,
 	}, "batch_entry", "domain_record", "domain_config") != nil {
@@ -65,7 +64,7 @@ func decodeExperimentalContextCLIBundle(raw []byte, maxHeaders uint32, compare b
 	}
 	var next experimentalContextCLIBundle
 	for _, hint := range [...]struct {
-		raw    json.RawMessage
+		raw    experimentalCLIFieldSpan
 		target *proof.CandidateStateWitness
 	}{{entry, &next.Witnesses.BatchEntry}, {record, &next.Witnesses.DomainRecord}, {config, &next.Witnesses.DomainConfig}} {
 		if int64(len(hint.raw)) > fetch.MaxCandidateStateResponseBytes {
