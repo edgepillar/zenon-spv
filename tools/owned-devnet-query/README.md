@@ -77,6 +77,12 @@ extracted file. Materialization creates regular files only, followed by regular
 npm/npx wrappers after complete verification. Native execution remains a separate
 action; a matching ELF header or vendor archive does not prove native execution.
 
+Before enabling execution, the installer inventories and hashes every selected
+file. It enables each executable through its checked file descriptor and
+rehashes it after the mode change. The final inventory also checks that the
+other files kept their identity, permissions and metadata from the first scan.
+Each separate verification still reads and hashes the complete installation.
+
 `packages.py` is the later native preparation step. It checks the enabled
 toolchain and source snapshots, observes actual Node/npm versions, and runs
 `npm ci` with required upstream preparation scripts. Cache, temporary data,

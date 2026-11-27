@@ -258,6 +258,43 @@ class RegularMaterializationTests(unittest.TestCase):
                 with self.assertRaisesRegex(model.Refused, "node_execution_platform"):
                     result.enable_execution()
 
+    @unittest.skipUnless(os.name == "posix", "POSIX execution permission transition")
+    def test_permission_transition_rereads_only_executable_file_contents(self):
+        raw, selected = fixture()
+        with tempfile.TemporaryDirectory(prefix="node-regular-control-") as temporary:
+            result = node_toolchain.unpack_node(io.BytesIO(raw), selected, Path(temporary) / "prefix")
+            all_files = [row.path for row in result.files]
+            executable_files = [row.path for row in result.files if row.executable]
+            with mock.patch.object(node_toolchain, "_check_file_content",
+                                   wraps=node_toolchain._check_file_content) as check:
+                enabled = result.enable_execution()
+                self.assertEqual([call.args[0].path for call in check.call_args_list],
+                                 all_files + executable_files)
+                check.reset_mock()
+                enabled.verify()
+                self.assertEqual([call.args[0].path for call in check.call_args_list], all_files)
+
+    @unittest.skipUnless(os.name == "posix", "POSIX execution permission transition")
+    def test_permission_transition_refuses_a_rewritten_data_file_with_restored_mtime(self):
+        raw, selected = fixture()
+        with tempfile.TemporaryDirectory(prefix="node-regular-control-") as temporary:
+            result = node_toolchain.unpack_node(io.BytesIO(raw), selected, Path(temporary) / "prefix")
+            path = result.root / "include/node/node_api.h"
+            original = path.stat()
+            changed = path.read_bytes().replace(b"header", b"alterd")
+            fchmod = os.fchmod
+
+            def chmod_and_write(descriptor, mode):
+                fchmod(descriptor, mode)
+                path.chmod(0o600)
+                path.write_bytes(changed)
+                path.chmod(0o400)
+                os.utime(path, ns=(original.st_atime_ns, original.st_mtime_ns))
+
+            with mock.patch.object(node_toolchain.os, "fchmod", side_effect=chmod_and_write):
+                with self.assertRaisesRegex(model.Refused, "node_file_changed"):
+                    result.enable_execution()
+
 
 @unittest.skipUnless(os.name == "posix", "Recorded POSIX leases are not Windows qualification")
 class LeaseTests(unittest.TestCase):
