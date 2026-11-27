@@ -48,6 +48,49 @@ batch. It checked the zero leaf and folded the five siblings along the local
 path to each H3 root. Changing the last proof byte changed the folded root.
 The replay read the retained archives in place.
 
+## Original-node replay of the recorded openings
+
+The selected reference-gas node
+[`2835c436b197fece5c76adf4ba8dc1decca2e3ea`](https://github.com/digitalSloth/go-zenon/tree/2835c436b197fece5c76adf4ba8dc1decca2e3ea)
+replayed both original signed openings in separate test ledgers built from the
+pinned genesis. Both H2/H3 pairs have empty account-block content and empty
+patches. The original `ApplyMomentum` path checked the signatures, producer
+slots, patch hash and version selected by the parent. At H3 it also checked
+the signed StateRoot against the root computed by the node. The state-root
+rule was inactive at H1 and active at H2 in both replays.
+
+The test derived the Settlement key from domain 1 and batch 0. The node
+regenerated the original H3 root and all 259 proof bytes in each ledger. The
+returned value was absent in both cases. The existing
+[closed-ledger oracle](../tools/gen-state-root-vectors/closed-devnet-parent-oracle.go.txt)
+then reopened each reconstructed ledger read-only and checked both producer
+slots. Each lookup used the corresponding H1 or H2 parent. All four election
+lookups used H1 as their proof block.
+
+| Run | H2 and H3 timestamps (Unix seconds) | Tick | Producer at both slots |
+| --- | --- | --- | --- |
+| `44961621978` | `1795303590`, `1795303680` | `184601` | `z1qzedcjmds6cwuqu7wkrvl0dadwwauzaana6g8e` |
+| `45905746425` | `1795732640`, `1795732730` | `186031` | `z1qq9n7fpaqd8lpcljandzmx4xtku9w4ftwyg0mq` |
+
+Each oracle also refused the other run's H2 target and H3 frontier. The five
+raw-ledger files in each test copy matched their pre-read SHA-256 inventory.
+The test used Go 1.25.14 on macOS arm64 with CGO and the `devnet` build tag.
+It verified 484 original node files against Git tree
+`f89d645c7f5be85dfe10dc7a510d80df7965d22f` and checked the ZIP and expanded
+file checksums for 25 Go modules. The source archive SHA-256 is
+`76d974ab3588518dddf9ea5eb4032b43228f9a732d14006330477037a905884a`.
+
+The completed tagged run reused the original archives and local module
+inputs. Its worker took 20.70 seconds and recorded 292,573,185 logical bytes
+in the temporary workspace before cleanup. This sample measures workspace
+size after the command. The retained record includes the exact test inputs,
+native output and separate controller status for an earlier untagged run.
+
+This check uses reconstructed test ledgers and the original recorded signed
+bytes. The original fixture outcomes remain `UNKNOWN`. The first accepted
+typed consumer still requires the selected run's closed-ledger schedule and
+three present proofs under one accepted header root.
+
 ## Remaining acceptance evidence
 
 The captures provide two observed opening transitions and independently
