@@ -134,6 +134,39 @@ This is a configured-header and proof-refusal replay for the archived inputs.
 The original fixture outcome remains `UNKNOWN`. The selected live target
 still requires three present proofs and completed typed consumption.
 
+## Restoring the H3 and H4 checkpoints
+
+A local Go 1.25.14 test on Darwin arm64 reused the same recorded headers,
+schedule and witnesses with SPV source `c64f545`. The test wrote the version-4
+checkpoint through the existing Go encoder and passed the saved file and its
+SHA-256 pin to the existing CLI handler. It restored H3, appended the original
+H4, and obtained the same H3 root and identical final checkpoint bytes as the
+continuous replay. The byte check independently matched both retained
+checkpoints to the original headers and selected context. The six CLI calls
+left the files' identities and bytes intact.
+
+| Query form | Provider headers | Provider JSON bytes | Local checkpoint bytes |
+| --- | ---: | ---: | ---: |
+| Anchor replay | 2 | 2,892 | 0 |
+| H3 checkpoint with H4 | 1 | 2,224 | 1,642 |
+| H4 checkpoint with proofs only | 0 | 1,557 | 2,514 |
+
+All three forms returned exit 2 and `query/required_row_absent` at the same
+H3 root. Reusing H3 without a successor returned exit 2 and
+`query/outside_owned_scope`. Supplying the H3 digest for the H4 checkpoint
+returned exit 1 and `state_input/digest_mismatch`. The export command returned
+exit 2 for the absence and emitted zero checkpoint bytes.
+
+The H3 and H4 checkpoint SHA-256 values are
+`02c047d01123595d966f41b95edeee743a59bd42a93a889a0dd4a7c58670a270` and
+`d6856d1a309c257f3b65b477aff6c9dcb29b36fc4972bdc98db48c06fcb59b44`.
+For this two-header sample, proof-only reuse saves 1,335 provider bytes and
+reads 2,514 local bytes. The byte counts cover the provider document and
+checkpoint. The configuration and request are common to the three forms.
+This sample measures document size. The test used one build and existing
+module inputs, took 9.63 seconds, and observed 156,457,595 bytes of temporary
+workspace data after execution and before cleanup.
+
 ## Remaining acceptance evidence
 
 The captures provide two observed opening transitions and independently
@@ -157,3 +190,82 @@ reported both archives unexpired. The earlier listed expiry is 11 December 2026
 at 15:36 UTC, so the next dispatch must repeat the availability check.
 [Consumer artifact](https://github.com/edgepillar/zenon-spv/actions/runs/44764773500/artifacts/14645836816),
 [parent-oracle artifact](https://github.com/edgepillar/zenon-spv/actions/runs/44764773665/artifacts/14644100853).
+
+## Closed-fixture snapshot transport and header comparison
+
+For run `45905746425`, the pinned reference-gas node reconstructed two
+closed LevelDB ledgers from the recorded headers, one ending at H3 and one at
+H4. The read-only producer oracle checked each frontier after the corresponding
+manager stopped. The exporter read the selected effective raw ledger of each
+copy. The two exports retain distinct height, full hash and payload digests.
+
+| Closed fixture frontier | Put records | Put bytes | Chunks at 1 KiB | Balance/storage leaves |
+| --- | ---: | ---: | ---: | ---: |
+| Recorded H3 | 99 | 14,896 | 15 | 32 |
+| Recorded H4 | 101 | 15,213 | 15 | 32 |
+
+The completion, inventory and transport checks read the retained streams
+through EOF. A separate check recomputed every chunk SHA-256 from the original
+put bytes. Both framed reads produced the same balance/storage mapping digest
+`71898584c1d9d4175e3ebd6c85c9d9dafbeb3f1c6afe3ee2b14f35536c90c90e`
+and the recorded StateRoot. Each framed result reported `MATH_ONLY`.
+
+The compiled verifier first selected H3 with the configured H2 anchor, explicit
+H3–H4 schedule and `W=1`. It matched the H3 report to the selected header and
+its StateRoot. The same comparison refused the H4 report with exit 1 and
+`projection/frontier_mismatch` even though the roots matched. Selecting H4
+itself returned exit 2 and `selection/insufficient_depth`. The verifier used
+`c64f5453521f4f334bcb6205bbe00d9adfed3980`. The exporter and framed
+projection used `265531259b4734b384cbc2b063cffb6b47307225`. The macOS
+executables came from retained CI archives. [Verifier archive](https://github.com/edgepillar/zenon-spv/actions/runs/45911169119/artifacts/15161063070) · [Exporter archive](https://github.com/edgepillar/zenon-spv/actions/runs/45938634780/artifacts/15171727047)
+
+The native replays reused 21 read-only module directories after checking their
+expanded contents and cached ZIPs against the recorded Go module digests.
+That avoided staging 92,977,144 bytes of module inputs per replay. The
+completed node commands reported 406,769,897 and 404,452,373 bytes as their
+largest sampled build-workspace sizes. The framed reads and verifier checks
+took 3.40 seconds on macOS arm64 with the retained amd64 executables running
+through Rosetta. The controller reused the completed H3 export after an
+orchestration error and retained interrupted runs with their failure status.
+
+The original fixture outcome remains `UNKNOWN`. This completes a bounded
+transport and header-root comparison for reconstructed fixtures.
+Representative capture, excluded-state provenance, import and restart, and
+successful live typed consumption remain open.
+
+## Restore the closed H3 ledger and rebuild derived stores
+
+A new probe used the same archived opening and reference-gas node
+`2835c436b197fece5c76adf4ba8dc1decca2e3ea`. After the seed process closed its
+managers, it selected the five regular files of the H3 LevelDB ledger. The
+restore copied those files into a fresh private directory and checked their
+sizes and SHA-256 values before opening it. The source and copy had distinct
+file identities. The selected file manifest has SHA-256
+`8461056ed1c5177e50874f4d45f9571f4d94fb0e88005b64f7fe5f871f5db47b`.
+
+| Fresh process | Frontier before and after | Observed result |
+| --- | --- | --- |
+| Import and advance | H3 to H4 | `Chain.Init` rebuilt the cache and StateTree from the three stored patches. The original verifier applied the recorded H4 successor. |
+| Reopen and roll back | H4 to H3 | The ledger and cache reopened at H4. A rollback request with the wrong hash at height 3 was refused. The exact H3 rollback then updated the ledger, cache and StateTree. |
+| Reopen after rollback | H3 to H3 | The reopened node was ready for state-root reads. The old H4 state version was unavailable. |
+
+At each stage the H3 StateRoot and all three absence proofs matched the
+prior recorded replay. The procedures used `Chain.Init` and `Chain.Stop`
+for lifecycle control and checked the recorded signatures. No network
+runtime or new signing was needed.
+
+A separate fresh database reconstructed the 99 records of the 14,896-byte
+effective-frontier stream. The read-only node manager recovered the exact H3
+identifier from that database and found no patch at heights 1, 2 or 3.
+The fuller ledger transfer supplied the history that the observed
+`Chain.Init` used for reconstruction. The balance/storage StateRoot
+comparison and the provenance of the complete closed ledger are separate
+checks.
+
+The complete ledger transfer used 34,582 logical bytes. Rebuilding the
+derived stores omitted 3,739 cache bytes and 16,425 StateTree bytes from the
+input transfer. The one copy took 2.4 ms and the qualification took 34.20
+seconds, including one Go build. All archived inputs were reused. These are
+single-host fixture measurements. The original runner outcome remains
+`UNKNOWN`. A representative capture, longer recovery and retention,
+excluded-state provenance and production import acceptance remain open.
