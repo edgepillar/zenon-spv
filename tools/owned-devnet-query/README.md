@@ -506,6 +506,25 @@ H2 and H3 hashes and binds the captured frontier separately. The diagnostic
 uses a 120-second work deadline within the original budget and retains the
 existing cleanup reserve.
 
+After a deposit timeout, the runner can also read the selected BatchEntry
+at the immediate v3 parent of the frozen frontier. The target must come
+after the opening block and link to the frontier's parent hash. The
+runner verifies the bounded proof against that header's StateRoot.
+If the BatchEntry is present, it also tries the domain record and domain
+config proofs under the same root. A complete set is checked against the
+selected ABI and source rules. An absent BatchEntry or unavailable
+companion proof still yields the verified BatchEntry observation.
+The path uses at most four additional RPC reads within the original
+diagnostic deadline. It runs after producers and clients have stopped.
+
+The selected responses are retained with their request and command
+receipts only after the owned services close and the opening oracle
+reports the same frozen frontier. The archive reader rechecks the header
+link, derives the keys locally and checks the proofs and any complete
+typed context. This report retains the original UNKNOWN outcome.
+The selected header still requires the full producer schedule and
+native consumer checks for typed acceptance.
+
 Archive review binds the oracle, original receipts, stopped service set,
 frontier and both historical parent slots to the recorded timeout stage. The
 terminal outcome remains UNKNOWN. Header acceptance and transaction submission

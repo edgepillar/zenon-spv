@@ -630,24 +630,56 @@ class CaptureTests(unittest.TestCase):
         for services in (model.NODE_SERVICES, model.SERVICES):
             with self.subTest(services=services):
                 trace.reset_mock()
+                trace.rpc.deposit_timeout_batch.side_effect = model.Refused("no_candidate_batch")
+                batch_inputs = (mock.sentinel.descriptor, mock.sentinel.profile) if services == model.SERVICES else None
                 with mock.patch.object(capture, "read_closed_parent_schedule", trace.read_parent):
-                    result = runner.closed_opening_after_timeout(contract, record, trace.engine, trace.rpc,
+                    result, batch = runner.closed_opening_after_timeout(contract, record, trace.engine, trace.rpc,
                         opening, sources, oracle, workspace, environment, trace.budget, "selected reader",
-                        services=services)
-                self.assertEqual(trace.mock_calls, [mock.call.budget.cap_diagnostic_time(120),
-                    mock.call.engine.stop_producers_and_clients(services=services), mock.call.rpc.frontier(),
+                        services=services, batch_inputs=batch_inputs)
+                expected = [mock.call.budget.cap_diagnostic_time(120),
+                    mock.call.engine.stop_producers_and_clients(services=services), mock.call.rpc.frontier()]
+                if batch_inputs is not None:
+                    expected.append(mock.call.rpc.deposit_timeout_batch(frontier, *batch_inputs))
+                expected.extend([
                     mock.call.engine.close_rpc(services=services),
                     mock.call.read_parent(contract, record, trace.engine, mock.sentinel.ledger, opening,
                         frontier.identifier(), sources, oracle, workspace, environment, trace.budget.check,
                         "selected reader", services=services), mock.call.budget.check(force=True)])
+                self.assertEqual(trace.mock_calls, expected)
                 self.assertEqual(result, {"format": "owned-devnet-closed-opening-authorization/v1",
                     "frontier_request_id": 9, "closed_ledger": mock.sentinel.provenance})
+                self.assertIsNone(batch)
         capture.require_opening_frontier(opening, opening[2].identifier(), 3, opening[2].timestamp)
         for marker in (opening[1], opening[2]):
             identifier = marker.identifier()
             identifier["hash"] = "f" * 64
             with self.assertRaisesRegex(model.Refused, "closed_opening_frontier"):
                 capture.require_opening_frontier(opening, identifier, marker.version, marker.timestamp)
+
+    def test_deposit_timeout_batch_skips_the_opening_and_other_proofs_after_absence(self):
+        witness = opening_absence_fixture()
+        contract, rows, window = synthetic_window(5, bytes.fromhex(witness["root"]))
+        descriptor, profile = capture.selected_profile(contract, HERE.parents[1])
+        rpc = capture.LocalRpc(contract, mock.Mock(), HERE, "unused-curl", {}, mock.Mock())
+        rpc.calls = 8
+        with mock.patch.object(rpc, "_read", side_effect=[{"count": 1, "list": rows[3:4]}, witness]) as read:
+            with self.assertRaisesRegex(model.Refused, "deposit_timeout_no_later_target"):
+                rpc.deposit_timeout_batch(window.headers[3], descriptor, profile)
+            read.assert_not_called()
+            report = rpc.deposit_timeout_batch(window.headers[-1], descriptor, profile)
+        expected_params = capture.state_proof_parameters(window.headers[3], bytes.fromhex(OPENING_BATCH_KEY))
+        self.assertEqual(read.call_args_list, [
+            mock.call("ledger.getMomentumsByHeight", [4, 1], capture.FRONTIER_BYTES,
+                      stdout_name=capture.DEPOSIT_TIMEOUT_HEADER),
+            mock.call("ledger.getProof", expected_params, capture.OPENING_PROOF_BYTES,
+                      stdout_name=capture.DEPOSIT_TIMEOUT_PROOFS["batch_entry"])])
+        self.assertEqual(report["header"], window.headers[3].identifier())
+        self.assertEqual(report["batch_witness"]["presence"], "absent")
+        self.assertIsNone(report["context_proof_totals"])
+        rpc.calls = capture.RPC_CALL_LIMIT - 1
+        with mock.patch.object(rpc, "_read") as read, self.assertRaisesRegex(model.Refused, "deposit_timeout_rpc_budget"):
+            rpc.deposit_timeout_batch(window.headers[-1], descriptor, profile)
+        read.assert_not_called()
 
     def test_oracle_refuses_wrong_source_frontier_proof_block_and_missing_row(self):
         contract, _, window = synthetic_window()

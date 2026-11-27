@@ -17,7 +17,7 @@ import model
 from model import Refused, canonical, exact_keys, require, same, uint
 from process import CommandFailed, regular_pin
 from query_checks import (address_bytes, binary, consumer_result, fingerprints, header_facts, hex_bytes,
-                          ledger_keys, opening_batch_witness, schedule_hash)
+                          ledger_keys, opening_batch_witness, schedule_hash, selected_semantics, witness_rows)
 
 RPC_URL = "http://127.0.0.1:35997"
 STARTUP_FRONTIER_URLS = {"pillar": "http://127.0.0.1:35991", "rpc": RPC_URL}
@@ -35,6 +35,11 @@ FRONTIER_BYTES = 128 << 10
 OPENING_FILE = "opening-momentums.json"
 OPENING_BYTES = 384 << 10
 CLOSED_OPENING_REPORT = "closed-opening-authorization.json"
+DEPOSIT_TIMEOUT_BATCH = "deposit-timeout-batch.json"
+DEPOSIT_TIMEOUT_HEADER = "deposit-timeout-query-header.json"
+DEPOSIT_TIMEOUT_PROOFS = {name: "deposit-timeout-" + name.replace("_", "-") + "-proof.json"
+                          for name in ("batch_entry", "domain_record", "domain_config")}
+DEPOSIT_TIMEOUT_BATCH_FORMAT = "owned-devnet-deposit-timeout-batch/v1"
 OPENING_SIGNATURE_REPORT = "opening-signatures.json"
 OPENING_SIGNATURE_LABELS = ("opening-signature-h2", "opening-signature-h3")
 OPENING_SIGNATURE_OK = b"Signature Verified Successfully\n"
@@ -195,7 +200,32 @@ def opening_proof_target(contract, profile, header):
     require(header.height == selection["source_expected_first_v3_height"] and header.version == 3,
             "opening_proof_header")
     key = ledger_keys(profile, int(selection["batch_id_decimal"]))["batch_entry"]
-    return key, [header.height, base64.b64encode(key).decode("ascii")]
+    return key, state_proof_parameters(header, key)
+
+
+def state_proof_parameters(header, key):
+    return [header.height, base64.b64encode(key).decode("ascii")]
+
+
+def deposit_timeout_target_height(contract, frontier):
+    selected, limits = contract.data["selection"], contract.data["limits"]
+    # This retained diagnostic needs the immediate signed parent of the tip.
+    # The reviewed chain-69 contracts select a depth of one.
+    require(limits["header_depth"] == 1 and frontier.version == 3
+            and frontier.height > selected["source_expected_first_v3_height"] + 1,
+            "deposit_timeout_no_later_target")
+    return frontier.height - limits["header_depth"]
+
+
+def deposit_timeout_header(contract, frontier, result):
+    height = deposit_timeout_target_height(contract, frontier)
+    rows = result.get("list")
+    require(type(result.get("count")) is int and result["count"] >= 1
+            and type(rows) is list and len(rows) == 1, "deposit_timeout_header_range")
+    header = Header.read(rows[0], contract.data["selection"]["chain_id"])
+    require(header.version == 3 and header.height == height and header.hash == frontier.parent_hash
+            and header.timestamp < frontier.timestamp, "deposit_timeout_header_link")
+    return header
 
 
 class LocalRpc:
@@ -274,6 +304,37 @@ class LocalRpc:
         witness = self._read("ledger.getProof", parameters, OPENING_PROOF_BYTES,
                              stdout_name=OPENING_PROOF_FILE, decode=opening_proof_result)
         return opening_batch_witness(profile, header.root, key, witness)
+
+    def deposit_timeout_batch(self, frontier, descriptor, profile):
+        """Capture ready proofs under the stopped producers' candidate frontier."""
+        height = deposit_timeout_target_height(self.contract, frontier)
+        frontier_request = self.calls
+        require(frontier_request + 2 <= RPC_CALL_LIMIT, "deposit_timeout_rpc_budget")
+        header = deposit_timeout_header(self.contract, frontier, self._read(
+            "ledger.getMomentumsByHeight", [height, 1], FRONTIER_BYTES, stdout_name=DEPOSIT_TIMEOUT_HEADER))
+        batch = int(self.contract.data["selection"]["batch_id_decimal"])
+        keys = ledger_keys(profile, batch)
+
+        def proof(name):
+            return self._read("ledger.getProof", state_proof_parameters(header, keys[name]), OPENING_PROOF_BYTES,
+                              stdout_name=DEPOSIT_TIMEOUT_PROOFS[name])
+
+        entry = proof("batch_entry")
+        observed = opening_batch_witness(profile, header.root, keys["batch_entry"], entry)
+        totals = None
+        if observed["presence"] == "present" and self.calls + 2 <= RPC_CALL_LIMIT:
+            try:
+                checked = witness_rows(profile, batch, header.root, {"batch_entry": entry,
+                    "domain_record": proof("domain_record"), "domain_config": proof("domain_config")})
+                selected_semantics(descriptor, checked["decoded"])
+                totals = checked["totals"]
+            except (OSError, ValueError, KeyError, TypeError):
+                # Preserve the independently checked entry even if its two
+                # companion reads or the typed context check refused.
+                pass
+        return {"format": DEPOSIT_TIMEOUT_BATCH_FORMAT, "frontier_request_id": frontier_request,
+                "header": header.identifier(), "state_root": header.root, "batch_witness": observed,
+                "context_proof_totals": totals}
 
     def capture_startup_sync(self):
         """One diagnostic after node readiness fails; never retry readiness."""

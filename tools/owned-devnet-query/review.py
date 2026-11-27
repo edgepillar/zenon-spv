@@ -26,7 +26,7 @@ import node_file_logs
 from artifacts import API_LIMIT, REPOSITORY, WORKFLOWS, api_json
 from model import Refused, canonical, exact_keys, require, same
 from process import FILE
-from query_checks import consumer_result, opening_batch_witness, selected_semantics, witness_rows
+from query_checks import consumer_result, ledger_keys, opening_batch_witness, selected_semantics, witness_rows
 
 INDEX = "evidence/evidence-index.json"
 INDEX_BYTES = 512 << 10
@@ -432,6 +432,62 @@ def recorded_closed_opening(evidence, contract, selection, terminal, timeout, op
     return {"frontier_request_id": request_id, "closed_ledger_frontier": frontier["candidate_header"],
             "target_headers": [header.identifier() for header in opening[1:]],
             "v3_schedule_hash": schedule["schedule_hash"], "accepted_header_authority": False}
+
+
+def recorded_deposit_timeout_batch(evidence, contract, checkout, timeout, closed_opening):
+    members = {name for name in (capture.DEPOSIT_TIMEOUT_HEADER, *capture.DEPOSIT_TIMEOUT_PROOFS.values())
+               if "evidence/" + name in evidence.pins}
+    if "evidence/" + capture.DEPOSIT_TIMEOUT_BATCH not in evidence.pins:
+        require(not members, "review_deposit_timeout_batch_report_missing")
+        return None
+    require(timeout is not None and timeout["stage"] == "fixture-deposit" and closed_opening is not None,
+            "review_deposit_timeout_batch_scope")
+    summary = evidence.json(capture.DEPOSIT_TIMEOUT_BATCH, 4096)
+    exact_keys(summary, {"format", "frontier_request_id", "header", "state_root", "batch_witness",
+                         "context_proof_totals"}, "review_deposit_timeout_batch_fields")
+    same(summary["format"], capture.DEPOSIT_TIMEOUT_BATCH_FORMAT, "review_deposit_timeout_batch_format")
+    after = closed_opening["frontier_request_id"]
+    same(summary["frontier_request_id"], after, "review_deposit_timeout_batch_frontier")
+    raw = evidence.bytes(f"evidence/rpc-{after:02d}.frontier.json", capture.FRONTIER_BYTES)
+    frontier = capture.Header.read(capture.rpc_result(raw, after, capture.FRONTIER_BYTES),
+                                  contract.data["selection"]["chain_id"])
+    same(frontier.identifier(), closed_opening["closed_ledger_frontier"], "review_deposit_timeout_batch_frontier")
+
+    def recorded_read(request_id, name, method, params, limit):
+        model.uint(request_id, capture.RPC_CALL_LIMIT)
+        require(name in members, "review_member_bound")
+        label = f"rpc-{request_id:02d}"
+        same(evidence.json(label + ".request.json"), {"jsonrpc": "2.0", "id": request_id,
+             "method": method, "params": params}, "review_deposit_timeout_batch_request")
+        recorded_output(evidence, label, name)
+        return capture.rpc_result(evidence.bytes("evidence/" + name, limit), request_id, limit)
+
+    height = capture.deposit_timeout_target_height(contract, frontier)
+    header = capture.deposit_timeout_header(contract, frontier, recorded_read(after + 1,
+        capture.DEPOSIT_TIMEOUT_HEADER, "ledger.getMomentumsByHeight", [height, 1], capture.FRONTIER_BYTES))
+    same(summary["header"], header.identifier(), "review_deposit_timeout_batch_header")
+    same(summary["state_root"], header.root, "review_deposit_timeout_batch_root")
+    descriptor, profile = capture.selected_profile(contract, checkout)
+    batch = int(contract.data["selection"]["batch_id_decimal"])
+    keys = ledger_keys(profile, batch)
+
+    def proof(name, request_id):
+        return recorded_read(request_id, capture.DEPOSIT_TIMEOUT_PROOFS[name], "ledger.getProof",
+                             capture.state_proof_parameters(header, keys[name]), capture.OPENING_PROOF_BYTES)
+
+    entry = proof("batch_entry", after + 2)
+    observed = opening_batch_witness(profile, header.root, keys["batch_entry"], entry)
+    same(summary["batch_witness"], observed, "review_deposit_timeout_batch_proof")
+    expected = {capture.DEPOSIT_TIMEOUT_HEADER, capture.DEPOSIT_TIMEOUT_PROOFS["batch_entry"]}
+    if summary["context_proof_totals"] is not None:
+        require(observed["presence"] == "present", "review_deposit_timeout_batch_context")
+        checked = witness_rows(profile, batch, header.root, {"batch_entry": entry,
+            "domain_record": proof("domain_record", after + 3), "domain_config": proof("domain_config", after + 4)})
+        selected_semantics(descriptor, checked["decoded"])
+        same(summary["context_proof_totals"], checked["totals"], "review_deposit_timeout_batch_totals")
+        expected.update(capture.DEPOSIT_TIMEOUT_PROOFS.values())
+    require(members == expected, "review_deposit_timeout_batch_members")
+    return {**summary, "accepted_header_authority": False, "native_consumer_completed": False}
 
 
 def recorded_consumer_inputs(evidence, contract, checkout, selection, opening):
@@ -983,6 +1039,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         opening_signatures = recorded_opening_signatures(evidence, opening, opening_observation, opening_proof)
         closed_opening = recorded_closed_opening(evidence, contract, selection, terminal, fixture_timeout,
             opening, opening_observation, opening_proof, opening_signatures, frontiers)
+        timeout_batch = recorded_deposit_timeout_batch(evidence, contract, checkout, fixture_timeout, closed_opening)
         interrupted = (terminal["format"] == model.TERMINAL_FORMAT and reported == "UNKNOWN"
                        and terminal["stage"] == "consumer" and terminal["reason"] == "command_incomplete"
                        and terminal["owned_runtime_observed_closed"]
@@ -1026,6 +1083,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["recorded_fixture_timeout"] = fixture_timeout
         if closed_opening is not None:
             report["recorded_closed_opening_authorization"] = closed_opening
+        if timeout_batch is not None:
+            report["recorded_deposit_timeout_batch"] = timeout_batch
         if startup_sync is not None:
             report["startup_sync_diagnostic"] = startup_sync
         if post_sync is not None:

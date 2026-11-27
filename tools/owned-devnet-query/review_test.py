@@ -1441,6 +1441,82 @@ class ReviewTests(unittest.TestCase):
                 self.assertFalse(report["recorded_fixture_timeout"]["transaction_submission_verified"])
                 self.assertIsNone(report["comparison"])
 
+    def deposit_timeout_batch_files(self, *, companion_available=True, stage="fixture-deposit"):
+        contract, files, _, _ = self.closed_opening_files(stage)
+        _, accepted = accepted_files(terminal_format=model.TERMINAL_FORMAT)
+        provider = json.loads(accepted["evidence/provider.json"])
+        headers = provider["momentums"]
+        chain = contract.data["selection"]["chain_id"]
+        descriptor, profile = capture.selected_profile(contract, ROOT)
+        rpc = capture.LocalRpc(contract, None, ROOT, "unused-curl", {}, None)
+        rpc.calls = 9
+        responses = {capture.DEPOSIT_TIMEOUT_HEADER: {"count": 1, "list": [headers[-2]]}}
+        responses.update({filename: provider["witnesses"][name]
+                          for name, filename in capture.DEPOSIT_TIMEOUT_PROOFS.items()})
+        if not companion_available:
+            del responses[capture.DEPOSIT_TIMEOUT_PROOFS["domain_record"]]
+
+        def read(method, params, limit, *, stdout_name):
+            self.assertIn(limit, (capture.FRONTIER_BYTES, capture.OPENING_PROOF_BYTES))
+            rpc.calls += 1
+            if stdout_name not in responses:
+                raise Refused("test_companion_unavailable")
+            label = f"rpc-{rpc.calls:02d}"
+            request = {"jsonrpc": "2.0", "id": rpc.calls, "method": method, "params": params}
+            raw = canonical({"jsonrpc": "2.0", "id": rpc.calls, "result": responses[stdout_name]})
+            files.update({"evidence/" + stdout_name: raw,
+                "evidence/" + label + ".request.json": canonical(request),
+                "evidence/" + label + ".started.json": canonical({
+                    **json.loads(files["evidence/rpc-09.started.json"]), "label": label}),
+                "evidence/" + label + ".complete.json": canonical({
+                    **json.loads(files["evidence/rpc-09.complete.json"]), "label": label,
+                    "outputs": {"stdout": {"file": stdout_name, **pin(raw)}}})})
+            return responses[stdout_name]
+
+        with patch.object(rpc, "_read", side_effect=read):
+            report = rpc.deposit_timeout_batch(capture.Header.read(headers[-1], chain), descriptor, profile)
+        files["evidence/" + capture.DEPOSIT_TIMEOUT_BATCH] = canonical(report)
+        return contract, files, report
+
+    def test_deposit_timeout_batch_rechecks_ready_witnesses_and_preserves_unknown(self):
+        for available in (True, False):
+            with self.subTest(companion_available=available):
+                contract, files, selected = self.deposit_timeout_batch_files(companion_available=available)
+                result = self.review(make_archive(files), contract)
+                candidate = result["recorded_deposit_timeout_batch"]
+                self.assertEqual(candidate, {**selected, "accepted_header_authority": False,
+                                             "native_consumer_completed": False})
+                self.assertEqual(candidate["header"]["height"], 4)
+                self.assertEqual(candidate["batch_witness"]["presence"], "present")
+                self.assertEqual(candidate["context_proof_totals"] is not None, available)
+                self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
+                self.assertFalse(result["recorded_fixture_timeout"]["transaction_submission_verified"])
+                self.assertIsNone(result["comparison"])
+
+    def test_deposit_timeout_batch_requires_exact_linked_requests_and_summary(self):
+        contract, files, selected = self.deposit_timeout_batch_files()
+        report = "evidence/" + capture.DEPOSIT_TIMEOUT_BATCH
+        request = "evidence/rpc-11.request.json"
+        proof = "evidence/" + capture.DEPOSIT_TIMEOUT_PROOFS["domain_config"]
+        for path, replacement, reason in (
+                (request, canonical({**json.loads(files[request]), "params": [5, "AA=="]}),
+                 "review_deposit_timeout_batch_request"),
+                (report, canonical({**selected, "state_root": "f" * 64}), "review_deposit_timeout_batch_root"),
+                (report, canonical({**selected, "context_proof_totals": None}), "review_deposit_timeout_batch_members"),
+                (proof, None, "review_member_bound"),
+                (report, None, "review_deposit_timeout_batch_report_missing"),
+        ):
+            changed = dict(files)
+            if replacement is None:
+                del changed[path]
+            else:
+                changed[path] = replacement
+            with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive(changed), contract)
+        contract, configured, _ = self.deposit_timeout_batch_files(stage="fixture-configuration")
+        with self.assertRaisesRegex(Refused, "review_deposit_timeout_batch_scope"):
+            self.review(make_archive(configured), contract)
+
     def test_configuration_and_deposit_openings_require_their_exact_closed_rosters(self):
         member = "evidence/owned-container-cleanup.json"
         config_contract, configured, _, _ = self.closed_opening_files("fixture-configuration")
