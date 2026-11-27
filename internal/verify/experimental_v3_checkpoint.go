@@ -3,9 +3,7 @@
 package verify
 
 import (
-	"bufio"
 	"crypto/sha256"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -59,10 +57,7 @@ func (s ExperimentalV3State) DecodePinnedTrustedCheckpoint(raw []byte, expectedS
 func (s ExperimentalV3State) ReadPinnedTrustedCheckpoint(r io.Reader, expectedSHA256 [sha256.Size]byte) (ExperimentalV3State, int64, error) {
 	digest := sha256.New()
 	var file experimentalV3File
-	var parseErr error
-	size, err := readBoundedState(io.TeeReader(r, digest), MaxExperimentalV3StateBytes, func(input io.Reader) {
-		parseErr = file.decodeJSON(json.NewDecoder(bufio.NewReader(input)))
-	})
+	size, err, parseErr := file.readJSON(io.TeeReader(r, digest))
 	if err != nil {
 		return ExperimentalV3State{}, 0, fmt.Errorf("%w: %w", ErrExperimentalV3CheckpointInput, err)
 	}
