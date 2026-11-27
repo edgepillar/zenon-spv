@@ -108,3 +108,106 @@ func TestExperimentalV3CheckpointExportWriteFailures(t *testing.T) {
 		t.Fatal("failed output changed the immutable handle", err)
 	}
 }
+
+func checkpointEncodingFixture(t testing.TB, count int) ExperimentalV3State {
+	t.Helper()
+	f := experimentalV3RetentionInputs(t, MaxRetainHeaders, MaxRetainHeaders)
+	state := experimentalV3New(t, f)
+	// Repeat the recorded envelopes to exercise encoding at capacity. This
+	// does not construct a contiguous chain or produce any new signatures.
+	state.data.headers = make(experimentalV3Window, count)
+	for i := range state.data.headers {
+		state.data.headers[i] = f.headers[i%len(f.headers)]
+	}
+	return state
+}
+
+func encodeWholeExperimentalV3Checkpoint(destination io.Writer, state ExperimentalV3State, profile ExperimentalV3Profile) error {
+	encoder := json.NewEncoder(&limitedStateWriter{
+		destination: experimentalV3CompleteWriter{destination}, remaining: MaxExperimentalV3StateBytes,
+	})
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(experimentalV3File{Format: experimentalV3StateFormat, Version: 4,
+		Context: state.data.config.context.Fingerprint, Profile: profile,
+		Policy: state.data.config.policy, Headers: state.data.headers})
+}
+
+func TestExperimentalV3CheckpointWindowEncoding(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		count int
+	}{
+		{"empty", 0},
+		{"whole", 63},
+		{"stream", 64},
+		{"capacity", MaxRetainHeaders},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			state := checkpointEncodingFixture(t, test.count)
+			profile := state.data.config.profile
+			profile.Source = "Selected <source> & \"operator\""
+			var whole, candidate bytes.Buffer
+			if err := encodeWholeExperimentalV3Checkpoint(&whole, state, profile); err != nil {
+				t.Fatal(err)
+			}
+			writer := experimentalCheckpointWriteFunc(func(raw []byte) (int, error) {
+				if test.count >= 64 && len(raw) > 16<<10 {
+					t.Fatalf("large checkpoint wrote %d bytes at once", len(raw))
+				}
+				return candidate.Write(raw)
+			})
+			if err := state.encodeExperimentalV3Checkpoint(writer, profile); err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(whole.Bytes(), candidate.Bytes()) {
+				t.Fatal("version-4 checkpoint bytes changed")
+			}
+			if test.count != MaxRetainHeaders {
+				return
+			}
+			// Fail after the first complete chunk. A late output error must
+			// stop the writer and leave only the already accepted prefix.
+			cause := errors.New("later checkpoint write")
+			candidate.Reset()
+			calls := 0
+			fail := experimentalCheckpointWriteFunc(func(raw []byte) (int, error) {
+				calls++
+				if calls == 2 {
+					return 0, cause
+				}
+				return candidate.Write(raw)
+			})
+			if err := state.WriteCheckpoint(fail); !errors.Is(err, cause) || calls != 2 || candidate.Len() != 16<<10 {
+				t.Fatal("large checkpoint did not retain the first chunk and report the late error", calls, err)
+			}
+		})
+	}
+}
+
+func BenchmarkExperimentalV3CheckpointWindowEncoding(b *testing.B) {
+	state := checkpointEncodingFixture(b, MaxRetainHeaders)
+	profile := state.data.config.profile
+	profile.Source = experimentalV3ExportSource
+	var expected bytes.Buffer
+	if err := encodeWholeExperimentalV3Checkpoint(&expected, state, profile); err != nil {
+		b.Fatal(err)
+	}
+	b.Run("whole", func(b *testing.B) {
+		b.SetBytes(int64(expected.Len()))
+		b.ReportAllocs()
+		for b.Loop() {
+			if err := encodeWholeExperimentalV3Checkpoint(io.Discard, state, profile); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+	b.Run("stream", func(b *testing.B) {
+		b.SetBytes(int64(expected.Len()))
+		b.ReportAllocs()
+		for b.Loop() {
+			if err := state.WriteCheckpoint(io.Discard); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+}

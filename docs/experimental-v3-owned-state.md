@@ -208,6 +208,23 @@ streams a v4 artifact only after a successful three-row query. The Go
 private Source label, and detects incomplete stream writes. Existing `Save`
 keeps its source label and file behavior; export adds no provenance authority.
 
+The version-4 writer encodes windows of 64 headers or more one header at
+a time with a 16 KiB output buffer. Smaller windows use the single-object
+encoder. The byte comparison covers empty, 63-header, 64-header and
+4,096-header windows, including escaping of the local Source label. A late
+output error stops the writer, and the atomic `Save` still discards an
+incomplete temporary file. Existing checkpoint digests and the 8 MiB
+output limit apply to both paths.
+
+Three samples of eight operations on Go 1.25.14 darwin/arm64 encoded
+4,096 repeated recorded envelopes to a discard writer. The table gives
+median measurements for encoding that fixture.
+
+| Encoder | Allocated bytes/op | Allocations/op | Time/op |
+| --- | ---: | ---: | ---: |
+| Single JSON object | 27,010,815 | 32,829 | 26.54 ms |
+| Header-by-header | 7,097,960 | 36,885 | 24.57 ms |
+
 The shared atomic-writer extraction preserves native serialized bytes. A
 2,073-byte v1/v2 saved-state vector from the existing public signed fixture has
 independent Python SHA-256
