@@ -40,6 +40,32 @@ def selected_range(raw=b"abcdefgh", offset=8):
     return {**pin, "offset": offset, "range_bytes": len(raw), "range_sha256": sha(raw)}
 
 
+MANIFEST_FIXTURE = b"01234567abcdefghABCDEFG"
+MANIFEST_CHUNK_BYTES = 8
+TRANSPORT = tool.load_transport()
+
+
+def manifest_fixture(payload=MANIFEST_FIXTURE):
+    pin = {"bytes": len(payload), "sha256": sha(payload), "height": 3, "hash": "23" * 32,
+           "provenance_sha256": "34" * 32, "record_space": "effective-raw-ledger"}
+    chunks = [payload[i:i + MANIFEST_CHUNK_BYTES] for i in range(0, len(payload), MANIFEST_CHUNK_BYTES)]
+    value = {"format": "zenon-r1-transport-manifest/v1", "selection": pin,
+             "chunk_bytes": MANIFEST_CHUNK_BYTES,
+             "chunks": [{"bytes": len(ch), "sha256": sha(ch)} for ch in chunks],
+             "scope": TRANSPORT.scope()}
+    return pin, value
+
+
+def manifest_arguments(pin, raw, first=1, count=2):
+    return ["manifest-range", "--url", selected()["url"], "--etag", selected()["etag"],
+            "--expect-bytes", str(pin["bytes"]), "--expect-sha256", pin["sha256"],
+            "--expect-height", str(pin["height"]), "--expect-hash", pin["hash"],
+            "--provenance-sha256", pin["provenance_sha256"],
+            "--manifest-bytes", str(len(raw)), "--manifest-sha256", sha(raw),
+            "--max-chunk-bytes", str(MANIFEST_CHUNK_BYTES),
+            "--first-chunk", str(first), "--chunk-count", str(count)]
+
+
 class Response:
     def __init__(self, raw=b"abcdefgh", pin=None):
         self.pin = selected(len(raw)) if pin is None else dict(pin)
@@ -592,6 +618,187 @@ runpy.run_path(sys.argv[0],run_name="__main__")
         checked = json.loads(verified.stdout)
         self.assertEqual(checked["status"], "SELECTED_RANGE_MATCHED")
         self.assertFalse(checked["whole_stream_digest_verified"])
+
+    def manifest_range(self, *, response=None, manifest=None, args=None, writer=None, clock=tool.time.monotonic):
+        pin, value = manifest_fixture()
+        if manifest is None:
+            manifest = io.BytesIO(TRANSPORT.encoded(value))
+        if args is None:
+            args = manifest_arguments(pin, TRANSPORT.encoded(value))
+        if response is None:
+            response = Response(MANIFEST_FIXTURE[8:],
+                                {**selected_range(MANIFEST_FIXTURE[8:]), "archive_bytes": len(MANIFEST_FIXTURE)})
+        raw, diagnostic, opener = io.BytesIO() if writer is None else writer, io.StringIO(), mock.Mock(return_value=response)
+        status = tool.main(args, raw, diagnostic, opener, clock, reader=manifest)
+        self.assertNotIn("PRIVATE", diagnostic.getvalue())
+        return status, json.loads(diagnostic.getvalue()), raw.getvalue(), opener, response
+
+    def test_manifest_range_recovers_two_chunks_and_short_final_in_one_request(self):
+        pin, manifest = manifest_fixture()
+        status, report, raw, opener, response = self.manifest_range()
+        self.assertEqual(status, 0)
+        self.assertEqual(report, {
+            "format": "zenon-r1-archive-manifest-range/v1", "status": "SELECTED_MANIFEST_RANGE_MATCHED",
+            "manifest": {"bytes": len(TRANSPORT.encoded(manifest)), "sha256": sha(TRANSPORT.encoded(manifest))},
+            "selection": pin,
+            "range": {"first_chunk": 1, "chunk_count": 2, "offset": 8, "bytes": 15,
+                      "chunks": manifest["chunks"][1:], "sha256": sha(MANIFEST_FIXTURE[8:])},
+            "conditional_range_headers_matched": True, "response_body_eof_observed": True,
+            "stdout_flushed": True, "scope": tool.scope(),
+        })
+        opener.assert_called_once()
+        request, timeout = opener.call_args.args
+        self.assertEqual(request.get_header("Range"), "bytes=8-22")
+        self.assertEqual(request.get_header("If-match"), '"selected-version"')
+        self.assertEqual(request.get_header("Accept-encoding"), "identity")
+        self.assertEqual(timeout, 15)
+        self.assertEqual(raw, MANIFEST_FIXTURE[8:])
+        self.assertEqual(response.requests, [8, 7, 1])
+        self.assertTrue(response.closed)
+
+    def test_manifest_range_checks_manifest_selection_and_eof_before_https(self):
+        pin, value = manifest_fixture()
+        raw = TRANSPORT.encoded(value)
+        valid = manifest_arguments(pin, raw)
+        other = {**value, "selection": {**pin, "height": 4}}
+        other_raw = TRANSPORT.encoded(other)
+        cases = (
+            (raw[:-1], valid, "manifest_truncated"),
+            (raw + b"PRIVATE", valid, "manifest_trailing_input"),
+            (other_raw, manifest_arguments(pin, other_raw), "manifest_selection"),
+            (raw, [sha(b"PRIVATE") if s == sha(raw) else s for s in valid], "manifest_digest"),
+            (raw, valid + ["--max-range-bytes", "14"], "range_limit"),
+            (raw, manifest_arguments(pin, raw, first=2, count=2), "range_selection"),
+        )
+        for supplied, arguments, reason in cases:
+            with self.subTest(reason=reason):
+                status, report, output, opener, response = self.manifest_range(
+                    manifest=io.BytesIO(supplied), args=arguments)
+                self.assertEqual((status, report["reason"], output), (2, reason, b""))
+                opener.assert_not_called()
+                self.assertEqual(response.requests, [])
+                self.assertNotIn("range", report)
+
+    def test_manifest_range_option_errors_and_help_do_not_read(self):
+        pin, value = manifest_fixture()
+        arguments = manifest_arguments(pin, TRANSPORT.encoded(value))
+        cases = (arguments + ["--etag", '"other"'], arguments + ["--offset", "0"],
+                 arguments + ["--max-range-bytes", str((64 << 20) + 1)],
+                 ["manifest-range", "--help"])
+        for case in cases:
+            reader = mock.Mock()
+            output, diagnostic, opener = io.BytesIO(), io.StringIO(), mock.Mock()
+            code = tool.main(case, output, diagnostic, opener, reader=reader)
+            self.assertEqual(code, 0 if case[-1] == "--help" else 64)
+            reader.read.assert_not_called()
+            opener.assert_not_called()
+            self.assertEqual(output.getvalue(), b"")
+            self.assertNotIn("PRIVATE", diagnostic.getvalue())
+
+    def test_manifest_range_rejects_changed_response_before_consuming(self):
+        for field, value in (("ETag", '"different"'), ("Content-Range", "bytes 7-21/23"),
+                             ("Content-Length", "14")):
+            response = Response(MANIFEST_FIXTURE[8:],
+                                {**selected_range(MANIFEST_FIXTURE[8:]), "archive_bytes": 23})
+            response.headers.replace_header(field, value)
+            with self.subTest(field=field):
+                code, report, raw, opener, checked = self.manifest_range(response=response)
+                self.assertEqual((code, report["status"], raw), (2, "UNKNOWN", b""))
+                opener.assert_called_once()
+                self.assertFalse(checked.requests)
+                self.assertTrue(checked.closed)
+
+    def test_manifest_range_stops_on_bad_middle_digest(self):
+        pin, manifest = manifest_fixture()
+        body = MANIFEST_FIXTURE[:8] + b"*" * 8 + MANIFEST_FIXTURE[16:]
+        response = Response(body, {**selected_range(MANIFEST_FIXTURE, offset=0), "archive_bytes": 23})
+        args = manifest_arguments(pin, TRANSPORT.encoded(manifest), first=0, count=3)
+        code, report, raw, opener, checked = self.manifest_range(response=response, args=args)
+        self.assertEqual((code, report["status"], report["reason"]), (2, "UNKNOWN", "chunk_digest"))
+        self.assertNotIn("range", report)
+        self.assertTrue(report["stdout_may_contain_unverified_range"])
+        opener.assert_called_once()
+        self.assertEqual(raw, body[:16])
+        self.assertEqual(checked.requests, [8, 8])
+        self.assertTrue(checked.closed)
+
+    def test_manifest_range_requires_framed_eof_and_never_writes_extra_response_bytes(self):
+        body = MANIFEST_FIXTURE[8:]
+        pin = {**selected_range(body), "archive_bytes": 23}
+        for item, expected, reason in ((body[:-1], body[:-1], "stream_truncated"),
+                                      (body + b"X", body, "trailing_input")):
+            with self.subTest(reason=reason):
+                code, report, raw, _, response = self.manifest_range(response=Response(item, pin))
+                self.assertEqual((code, report["reason"], raw), (2, reason, expected))
+                self.assertTrue(response.closed)
+                self.assertNotIn("range", report)
+
+    def test_manifest_range_enforces_deadline_and_complete_output(self):
+        pin = {**selected_range(MANIFEST_FIXTURE[8:]), "archive_bytes": 23}
+        response = Response(MANIFEST_FIXTURE[8:], pin)
+        response.short = 3
+        clock = lambda: 16 if response.position else 0
+        code, report, raw, _, checked = self.manifest_range(response=response, clock=clock)
+        self.assertEqual((code, report["reason"], raw), (2, "deadline", b""))
+        self.assertTrue(checked.closed)
+
+        class Short(io.BytesIO):
+            def write(self, part):
+                return super().write(part[:1])
+
+        code, report, raw, _, checked = self.manifest_range(writer=Short())
+        self.assertEqual((code, report["reason"], raw), (2, "output_incomplete", b"a"))
+        self.assertTrue(checked.closed)
+
+    def test_manifest_range_full_coverage_stays_a_range_receipt(self):
+        pin, manifest = manifest_fixture()
+        args = manifest_arguments(pin, TRANSPORT.encoded(manifest), first=0, count=3)
+        response = Response(MANIFEST_FIXTURE, {**selected_range(MANIFEST_FIXTURE, offset=0), "archive_bytes": 23})
+        code, report, raw, _, checked = self.manifest_range(response=response, args=args)
+        self.assertEqual((code, report["range"]["bytes"], raw), (0, 23, MANIFEST_FIXTURE))
+        self.assertFalse(report["scope"]["whole_archive_sha256_verified"])
+        self.assertTrue(checked.closed)
+
+    def test_manifest_range_cli_completes_verified_stream_from_existing_prefix(self):
+        pin, value = manifest_fixture()
+        manifest = TRANSPORT.encoded(value)
+        harness = '''import io, runpy, sys, urllib.request, urllib.response
+from email.message import Message
+class Fixture(urllib.request.HTTPSHandler):
+ calls = 0
+ def https_open(self, request):
+  Fixture.calls += 1
+  assert Fixture.calls == 1 and request.get_method() == "GET"
+  assert request.get_header("Range") == "bytes=8-22"
+  assert request.get_header("If-match") == '"selected-version"'
+  headers=Message()
+  headers["Content-Range"]="bytes 8-22/23"
+  headers["Content-Length"]="15"
+  headers["ETag"]='"selected-version"'
+  response=urllib.response.addinfourl(io.BytesIO(b"abcdefghABCDEFG"),headers,request.full_url,206)
+  response.msg="Partial Content"
+  return response
+original=urllib.request.build_opener
+urllib.request.build_opener=lambda *handlers: original(*handlers,Fixture())
+sys.argv=sys.argv[1:]
+runpy.run_path(sys.argv[0],run_name="__main__")
+'''
+        flags = manifest_arguments(pin, manifest)
+        result = subprocess.run([sys.executable, "-I", "-B", "-c", harness,
+                                 str(HERE / "archive_tail.py"), *flags],
+                                input=manifest, capture_output=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, MANIFEST_FIXTURE[8:])
+        self.assertEqual(json.loads(result.stderr)["status"], "SELECTED_MANIFEST_RANGE_MATCHED")
+        self.assertNotIn(b"PRIVATE", result.stderr)
+        context = flags[5:-4]
+        verified = subprocess.run([sys.executable, "-I", "-B", str(HERE / "transport.py"), "verify", *context],
+                                  input=manifest + MANIFEST_FIXTURE[:8] + result.stdout,
+                                  capture_output=True, timeout=10)
+        self.assertEqual(verified.returncode, 0, verified.stderr)
+        check = json.loads(verified.stdout)
+        self.assertEqual((check["status"], check["selection"], check["chunks_checked"]),
+                         ("SELECTED_TRANSPORT_MATCHED", pin, 3))
 
     def test_range_bad_digest_and_incomplete_body_report_unknown(self):
         pin = selected_range()
