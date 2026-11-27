@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "internal/testdata/conformance"
 EXPORT = ROOT / "tools/ledger-export"
 COMMAND = "inspect-experimental-snapshot-root"
+EXPORT_COMMAND = "export-experimental-snapshot-header-state"
 PROJECTION_LIMIT = 148 << 10
 UNIT_PIN = "e4bfbdb7bff55f9719782c7e609240b2ba9aeefd0d0f42b7ee1948286e890366"
 NODE_PIN = "773cda402e08709ffd73adfea355f73269b1470b7336c5a027ddd5b331ab9d96"
@@ -112,8 +113,9 @@ def check(verifier, revision, candidate_manifest):
         options = ["--config", str(config_path), "--expect-header-context", context,
                    "--expect-height", str(height), "--expect-header-hash", header_hash]
 
-        def native(name, flags, expected, error=None):
-            raw, report = invoke([str(verifier), COMMAND, *flags, str(headers_path)], expected)
+        def native(name, flags, expected, error=None, momentum_input=headers_path):
+            paths = [str(momentum_input)] if momentum_input is not None else []
+            raw, report = invoke([str(verifier), COMMAND, *flags, *paths], expected)
             assert b"PRIVATE_SNAPSHOT_" not in raw
             assert report["command"] == COMMAND and report["exit_code"] == expected
             assert report["scope"] == "EXPERIMENTAL_CONFIGURED_HEADER_ROOT"
@@ -124,9 +126,39 @@ def check(verifier, revision, candidate_manifest):
                 assert report["error"] == {"stage": error[0], "category": error[1]}
                 assert report["header"] is None and report["projection_comparison"] is None
             else:
-                assert report["error"] is None and report["header_checks"]["outcome"] == "ACCEPT"
+                assert report["error"] is None
+                if momentum_input is None:
+                    assert report["header_checks"] is None
+                else:
+                    assert report["header_checks"]["outcome"] == "ACCEPT"
             controls.append({"name": name, "exit": expected, "error": report["error"]})
             return report
+
+        def export_state(name, flags, momentum_input, expected=0, error=None):
+            paths = [str(momentum_input)] if momentum_input is not None else []
+            run = subprocess.run([str(verifier), EXPORT_COMMAND, *flags, *paths],
+                                 cwd=ROOT, capture_output=True, timeout=25)
+            assert run.returncode == expected and 0 < len(run.stderr) <= PROJECTION_LIMIT
+            assert b"PRIVATE_SNAPSHOT_" not in run.stdout + run.stderr
+            report = json.loads(run.stderr)
+            assert report["command"] == EXPORT_COMMAND and report["exit_code"] == expected
+            assert report["scope"] == "EXPERIMENTAL_CONFIGURED_HEADER_ROOT"
+            assert not report["production_state_value_guarantee"]
+            if expected == 0:
+                assert report["error"] is None and 0 < len(run.stdout) <= PROJECTION_LIMIT
+                assert report["state_output"] == {
+                    "sha256": hashlib.sha256(run.stdout).hexdigest(), "bytes": len(run.stdout),
+                    "complete": True, "trust": "trusted_local_provenance_required",
+                    "provenance_label_removed": True,
+                }
+            else:
+                assert report["error"] == {"stage": error[0], "category": error[1]}
+                assert run.stdout == b"" and "state_output" not in report
+            controls.append({"name": name, "exit": expected, "error": report["error"]})
+            return run.stdout, report
+
+        def checkpoint_flags(path, raw):
+            return ["--trusted-state", str(path), "--expect-state-sha256", hashlib.sha256(raw).hexdigest()]
 
         def replace_flag(flag, value):
             result = list(options)
@@ -155,8 +187,60 @@ def check(verifier, revision, candidate_manifest):
             "provenance_sha256": stream["provenance_sha256"],
             "producer_receipt_sha256": projection["producer_completion"]["producer_receipt_sha256"]}
 
+        checkpoint, emitted = export_state("export_matched_state", projection_flags(raw), headers_path)
+        checkpoint_path = work / "PRIVATE_SNAPSHOT_STATE.json"
+        checkpoint_path.write_bytes(checkpoint)
+        checkpoint_before = checkpoint_path.stat()
+        checkpoint_args = checkpoint_flags(checkpoint_path, checkpoint)
+        assert emitted["projection_comparison"] == comparison and emitted["header"] == matched["header"]
+        assert "state_input" not in emitted and "state_output" not in matched and "state_input" not in matched
+        restored = native("checkpoint_without_provider_headers", projection_flags(raw) + checkpoint_args,
+                          0, momentum_input=None)
+        assert restored["header"] == matched["header"] and restored["projection_comparison"] == comparison
+        assert restored["state_input"] == {
+            "sha256": hashlib.sha256(checkpoint).hexdigest(), "bytes": len(checkpoint),
+            "provider_headers": 0, "trust": "trusted_local_provenance_required",
+        }
+        exported_again, _ = export_state("reexport_same_checkpoint", projection_flags(raw) + checkpoint_args, None)
+        assert exported_again == checkpoint
+
         other = unit["momentums"][-3]
+        earlier = replace_flag("--expect-height", other["height"])
+        earlier[earlier.index("--expect-header-hash") + 1] = other["hash"]
+        successor_path = work / "PRIVATE_SNAPSHOT_SUCCESSORS.json"
+        successor_path.write_bytes(encoded(unit["momentums"][:-1]))
+        earlier_bytes, _ = export_state("export_earlier_tip", earlier, successor_path)
+        earlier_path = work / "PRIVATE_SNAPSHOT_EARLIER.json"
+        earlier_path.write_bytes(earlier_bytes)
+        earlier_args = checkpoint_flags(earlier_path, earlier_bytes)
+        successor_path.write_bytes(encoded(unit["momentums"][-1:]))
+        resumed = native("checkpoint_and_successor", projection_flags(raw) + earlier_args, 0,
+                         momentum_input=successor_path)
+        assert resumed["header"] == matched["header"] and resumed["projection_comparison"] == comparison
+        assert resumed["state_input"]["provider_headers"] == 1
+        native("checkpoint_and_repeated_tip", options + checkpoint_args, 1, ("headers", "not_accepted"),
+               momentum_input=successor_path)
+        native("checkpoint_unpaired_path", options + checkpoint_args[:2], 64, ("arguments", "usage"),
+               momentum_input=None)
+        native("checkpoint_unpaired_digest", options + checkpoint_args[2:], 64, ("arguments", "usage"),
+               momentum_input=None)
+        native("missing_headers_and_checkpoint", options, 64, ("arguments", "usage"), momentum_input=None)
+        native("checkpoint_wrong_digest", options + checkpoint_args[:3] + ["aa" * 32], 1,
+               ("state_input", "digest_mismatch"), momentum_input=None)
+        native("checkpoint_wrong_context", replace_flag("--expect-header-context", "aa" * 32) + checkpoint_args,
+               70, ("configuration_pin", "mismatch"), momentum_input=None)
+        invalid_state = checkpoint + b"{}"
+        earlier_path.write_bytes(invalid_state)
+        native("checkpoint_invalid_bytes", options + checkpoint_flags(earlier_path, invalid_state), 70,
+               ("state_input", "invalid_checkpoint"), momentum_input=None)
+        checkpoint_after = checkpoint_path.stat()
+        assert checkpoint_path.read_bytes() == checkpoint
+        assert (checkpoint_before.st_mode, checkpoint_before.st_ino, checkpoint_before.st_mtime_ns) == (
+            checkpoint_after.st_mode, checkpoint_after.st_ino, checkpoint_after.st_mtime_ns)
+
         other_raw, _ = project(builder, records, other["height"], other["hash"], trace["root_hex"])
+        export_state("no_checkpoint_on_projection_refusal", projection_flags(other_raw) + checkpoint_args,
+                     None, 1, ("projection", "frontier_mismatch"))
         native("same_root_other_frontier", projection_flags(other_raw), 1, ("projection", "frontier_mismatch"))
         native("wrong_report_digest", projection_flags(raw, "aa" * 32), 1, ("projection", "digest_mismatch"))
         native("unpaired_report_path", options + ["--projection-report", str(projection_path)], 64,
@@ -169,6 +253,8 @@ def check(verifier, revision, candidate_manifest):
         tip = replace_flag("--expect-height", header["tip_height"])
         tip[tip.index("--expect-header-hash") + 1] = header["tip_hash"]
         native("insufficient_depth", tip, 2, ("selection", "insufficient_depth"))
+        native("checkpoint_preserves_depth", tip + checkpoint_args, 2, ("selection", "insufficient_depth"),
+               momentum_input=None)
         native("unavailable_height", replace_flag("--expect-height", 1), 2, ("selection", "header_unavailable"))
 
         changed = copy.deepcopy(projection)

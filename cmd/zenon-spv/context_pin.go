@@ -50,3 +50,16 @@ func parseContextPin(value *contextPinFlag) (*chain.Hash, error) {
 	}
 	return &hash, nil
 }
+
+// parseExperimentalCLIFilePin requires a local path and its selected nonzero
+// SHA-256 together. It carries neither path nor pin text into diagnostics.
+func parseExperimentalCLIFilePin(fs *flag.FlagSet, name, path string, pin *contextPinFlag) (*chain.Hash, error) {
+	pathSupplied := false
+	fs.Visit(func(f *flag.Flag) { pathSupplied = pathSupplied || f.Name == name })
+	selected, err := parseContextPin(pin)
+	if err != nil || pathSupplied != pin.supplied ||
+		pathSupplied && (path == "" || selected == nil || selected.IsZero()) {
+		return nil, errExperimentalCLIInput
+	}
+	return selected, nil
+}
