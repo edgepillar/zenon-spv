@@ -467,7 +467,7 @@ class CIChangeScopeControls(unittest.TestCase):
                                    if diff is None else diff)
             raw = native_tree()
             runner.overrides["ls-tree"] = raw, receipt(raw)
-        with mock.patch.object(M, "ORACLE_SOURCE_PIN", M.oracle_fingerprint(native_tree())["sha256"]):
+        with mock.patch.object(M, "ORACLE_SOURCE_PINS", {M.oracle_fingerprint(native_tree())["sha256"]}):
             return M.select_scope(ROOT, selected, runner)
 
     def test_native_reviewed_modified_leaves_keep_native_and_skip_only_oracles(self):
@@ -489,6 +489,27 @@ class CIChangeScopeControls(unittest.TestCase):
         self.assertEqual(report["selection"], selected)
         self.assertIs(report["run_runtime"], True)
         self.assertIs(report["run_recorded_oracles"], False)
+
+    def test_native_scope_selects_the_exact_match_from_two_reviewed_closures(self):
+        first = native_tree()
+        second = first + tree_record(b"internal/verify/retained_sequence_test.go")
+        changed = second + tree_record(b"tools/unreviewed_dependency.py")
+        pins = [M.oracle_fingerprint(tree)["sha256"] for tree in (first, second, changed)]
+        self.assertEqual(len(set(pins)), 3)
+        with mock.patch.object(M, "ORACLE_SOURCE_PINS", frozenset(pins[:2])):
+            for raw, expected in ((first, pins[0]), (second, pins[1]), (changed, None)):
+                with self.subTest(expected=expected):
+                    runner = FixtureRunner(diff=record(b"internal/verify/experimental_v3_state.go"))
+                    runner.overrides["ls-tree"] = raw, receipt(raw)
+                    report = M.select_scope(ROOT, runner.selection, runner)
+                    self.assertIs(report["run_runtime"], True)
+                    self.assertIs(report["run_recorded_oracles"], expected is None)
+                    if expected is None:
+                        self.assertEqual(report["reason"], "oracle_source_pin")
+                    else:
+                        self.assertEqual(report["oracle_closure"]["expected_sha256"], expected)
+                        self.assertEqual(self.workflow_guard(self.guard_bytes(report)),
+                                         (None, "run_runtime=true\nrun_recorded_oracles=false\n"))
 
     def test_native_additions_deletions_modes_aliases_and_incomplete_records_keep_full_lane(self):
         path = b"internal/verify/experimental_v3_state.go"

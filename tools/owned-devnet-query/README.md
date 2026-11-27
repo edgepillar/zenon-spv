@@ -467,12 +467,16 @@ receipts. A deposit timeout also requires the successful configuration receipt.
 Transaction submission stays unverified when the command output is incomplete.
 
 Add `--include-resources` to either archive review command to compare retained
-configuration and deposit durations with sampled runner disk use. The optional
-report checks the command start bindings and disk sample arithmetic and retains
-the corresponding member digests. A missing command or disk sample stays absent.
-The last sample time and sampled peak describe the recorded runner observation.
-The review reads the original archive in place and preserves its terminal outcome.
-Existing calls keep the same output and exit codes.
+command durations with sampled runner disk use. The optional `setup_commands`
+field reports the node image build, executor image build and npm installation
+where start and completion receipts are available. The `fixture_commands` field
+reports configuration and deposit. Each command observation preserves the actual
+exit and output completeness, with its completion digest. The reviewer checks
+the command start bindings and disk sample arithmetic. Missing observations
+remain absent. Command times describe individual subprocesses. The sampled disk
+peak describes the runner as a whole. The review reads the original archive in
+place and preserves its terminal outcome. Existing calls without this option
+keep the same output and exit codes.
 
 After a timed-out deposit with a quiescent process group, the reviewed
 reference-gas runner can retain the opening producer-slot observation. It

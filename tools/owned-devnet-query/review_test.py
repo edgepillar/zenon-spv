@@ -1159,6 +1159,65 @@ class ReviewTests(unittest.TestCase):
             with self.subTest(member=member, reason=reason), self.assertRaisesRegex(Refused, reason):
                 self.review(make_archive({**files, member: raw}), contract, include_resources=True)
 
+    def setup_resource_files(self):
+        contract, files, _, _ = self.fixture_timeout_files()
+        config = "evidence/fixture-configure"
+        started = json.loads(files[config + ".started.json"])
+        completed = json.loads(files[config + ".complete.json"])
+        for label, duration in (("docker-020-build-node", 59), ("docker-022-build-executor", 29),
+                                ("package-npm-ci", 39)):
+            files[f"evidence/{label}.started.json"] = canonical({**started, "label": label})
+            files[f"evidence/{label}.complete.json"] = canonical({
+                **completed, "label": label, "elapsed_nanoseconds": duration * 10**9})
+        files[config + ".complete.json"] = canonical({**completed, "elapsed_nanoseconds": 53})
+        return contract, files
+
+    def test_resource_projection_reads_bound_setup_receipts_without_extracting(self):
+        contract, files = self.setup_resource_files()
+        raw = make_archive(files)
+        default = self.review(raw, contract)
+        with patch.object(zipfile.ZipFile, "extractall", side_effect=AssertionError):
+            reported = self.review(raw, contract, include_resources=True)
+        setup = reported.pop("recorded_resource_observations")["setup_commands"]
+        self.assertEqual(reported, default)
+        self.assertEqual(set(setup), {"node-image-build", "executor-image-build", "npm-ci"})
+        for stage, label, seconds in (("node-image-build", "docker-020-build-node", 59),
+                                      ("executor-image-build", "docker-022-build-executor", 29),
+                                      ("npm-ci", "package-npm-ci", 39)):
+            self.assertEqual(setup[stage], {"label": label, "actual_exit": 0, "output_complete": True,
+                "process_group_quiescent": True, "elapsed_nanoseconds": seconds * 10**9,
+                "completion": pin(files[f"evidence/{label}.complete.json"])})
+
+    def test_resource_projection_refuses_ambiguous_setup_and_preserves_incomplete_exit(self):
+        contract, files = self.setup_resource_files()
+        node = "evidence/docker-020-build-node.complete.json"
+        npm = "evidence/package-npm-ci.complete.json"
+        receipt = json.loads(files[npm])
+        for changed, reason in (
+            ({**files, "evidence/docker-040-build-node.complete.json": files[node]},
+             "review_resource_build_duplicate"),
+            ({**files, npm: canonical({**receipt, "process_group": 43})}, "review_recorded_command_start"),
+            ({name: raw for name, raw in files.items() if name != "evidence/package-npm-ci.started.json"},
+             "review_member_bound"),
+            ({**files, npm: canonical({**receipt, "elapsed_nanoseconds": True})}, "integer_bounds"),
+        ):
+            with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive(changed), contract, include_resources=True)
+        for launched in ("STARTED", "NOT_STARTED"):
+            with self.subTest(launched=launched):
+                changed = {**files, npm: canonical({
+                    **receipt, "launch_outcome": launched, "reason": "timeout",
+                    "actual_exit": 143 if launched == "STARTED" else None, "output_complete": False})}
+                report = self.review(make_archive(changed), contract, include_resources=True)
+                setup = report["recorded_resource_observations"]["setup_commands"]
+                if launched == "STARTED":
+                    self.assertEqual(setup["npm-ci"]["actual_exit"], 143)
+                    self.assertIs(setup["npm-ci"]["output_complete"], False)
+                else:
+                    self.assertNotIn("npm-ci", setup)
+                self.assertEqual(report["recorded_terminal_outcome"], "UNKNOWN")
+                self.assertIsNone(report["comparison"])
+
     def test_fixture_timeout_requires_start_binding_prior_configuration_and_no_consumer(self):
         contract, files, _, path = self.fixture_timeout_files()
         invalid = (
