@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"testing/iotest"
 	"unicode/utf8"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
@@ -55,12 +56,12 @@ func TestStreamedStateWindowExperimentalV3Parity(t *testing.T) {
 	delete(fields, "retained_headers")
 	rest := experimentalV3JSON(t, fields)
 	withWindow := func(field string, value []byte) []byte {
-		return []byte("{"+field+":"+string(value)+","+string(rest[1:]))
+		return []byte("{" + field + ":" + string(value) + "," + string(rest[1:]))
 	}
 	first := withWindow("\"retained_headers\"", array)
 	alias := withWindow("\"retained_hea\\u0064ers\"", array)
-	duplicate := []byte("{\"retained_headers\":"+string(array)+","+string(alias[1:]))
-	unknown := []byte(string(first[:len(first)-1])+",\"unknown\":false}")
+	duplicate := []byte("{\"retained_headers\":" + string(array) + "," + string(alias[1:]))
+	unknown := []byte(string(first[:len(first)-1]) + ",\"unknown\":false}")
 	tests := []struct {
 		name string
 		raw  []byte
@@ -92,6 +93,11 @@ func TestStreamedStateWindowExperimentalV3Parity(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, want) {
 				t.Fatal("decoded value or failure atomicity changed")
+			}
+			streamed := initial
+			size, inputErr, parseErr := streamed.readJSON(iotest.OneByteReader(bytes.NewReader(tc.raw)))
+			if size != int64(len(tc.raw)) || inputErr != nil || parseErr != err || !reflect.DeepEqual(streamed, want) {
+				t.Fatal("bounded stream changed decoding or failure atomicity", size, inputErr, parseErr)
 			}
 		})
 	}
