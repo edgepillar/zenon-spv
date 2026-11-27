@@ -116,6 +116,8 @@ The [HTTPS range command](#recover-one-verified-https-range) accepts a single
 planned chunk when the URL serves the exact selected stream. For a
 range-capable transport, the last byte is `offset + bytes - 1`. Keep source
 identity, transfer and storage ownership in the existing controller.
+The [manifest range command](#recover-consecutive-chunks-with-one-https-request)
+can recover several consecutive missing chunks in one request.
 To check the replacement, use `verify-range` with the same arguments and supply
 the exact manifest followed immediately by only the selected bytes, then EOF.
 An existing manifest object and selected fragment can be streamed together
@@ -389,3 +391,40 @@ and framed response EOF. Once every chunk is available, the existing
 digest. The range receipt keeps whole-archive and ledger acceptance fields
 false. The portable tests exercise the CLI from a planned middle chunk
 through a controlled HTTPS response to the independent `verify-range` check.
+
+## Recover consecutive chunks with one HTTPS request
+
+Use `manifest-range` when the missing chunks form a contiguous range.
+Pass the exact selected manifest on stdin and supply the stream, frontier,
+provenance and manifest pins independently. Select a strong ETag for the
+representation and use zero-based chunk indices.
+
+```sh
+python3 -I -B tools/ledger-transport/archive_tail.py manifest-range \
+  --url "$ARCHIVE_URL" --etag "$STRONG_ETAG" \
+  --expect-bytes "$R1_BYTES" --expect-sha256 "$R1_SHA256" \
+  --expect-height "$R1_HEIGHT" --expect-hash "$R1_HASH" \
+  --provenance-sha256 "$R1_PROVENANCE_SHA256" \
+  --manifest-bytes "$R1_MANIFEST_BYTES" --manifest-sha256 "$R1_MANIFEST_SHA256" \
+  --first-chunk "$R1_FIRST_MISSING_CHUNK" --chunk-count "$R1_MISSING_CHUNKS" \
+  --max-range-bytes "$R1_PLANNED_RANGE_BYTES" < "$R1_MANIFEST_OBJECT"
+```
+
+The command checks the manifest digest, selection, range and manifest EOF
+before making one conditional GET. It admits only the exact 206 response
+and verifies each selected chunk in order, including a shorter final chunk.
+The aggregate network bound defaults to 1 MiB and can be raised to 64 MiB.
+The optional timeout is 15 seconds by default. Use an outer process deadline
+for the full command, including the manifest input.
+
+Reserve the planned byte count and stream the binary stdout once through
+the storage controller. Admit that fragment after actual exit 0, complete
+capture and the `SELECTED_MANIFEST_RANGE_MATCHED` receipt. Check the captured
+size and digest against `range.bytes` and `range.sha256`. The receipt lists
+each expected chunk and carries the manifest and target identities.
+On refusal, retain any emitted bytes with the failed attempt.
+
+Once the missing ranges are present, run `transport.py verify` on the complete
+ordered stream to check its independent SHA-256. Both the previous verified
+fragments and the new range can feed that check without a combined staging
+file. The range receipt keeps `whole_archive_sha256_verified` false.
