@@ -1382,7 +1382,7 @@ class ReviewTests(unittest.TestCase):
             with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
                 self.review(make_archive(changed), selected)
 
-    def closed_opening_files(self, stage="fixture-deposit", *, frontier_height=5):
+    def closed_opening_files(self, stage="fixture-deposit", *, frontier_height=5, frontier_request=9):
         contract, files, _, timeout_path = self.fixture_timeout_files(stage, progress_source=True)
         _, original = accepted_files(terminal_format=model.TERMINAL_FORMAT, frontier_height=frontier_height)
         files["evidence/terminal.json"] = canonical({
@@ -1398,15 +1398,16 @@ class ReviewTests(unittest.TestCase):
         opening = capture.opening_headers(contract, opening_rows)
         frontier_row = json.loads(original["evidence/provider.json"])["momentums"][-1]
         frontier = capture.Header.read(frontier_row, contract.data["selection"]["chain_id"]).identifier()
-        files["evidence/rpc-09.request.json"] = canonical(
-            {"jsonrpc": "2.0", "id": 9, "method": "ledger.getFrontierMomentum", "params": []})
-        last = "rpc-09.frontier.json"
-        raw = canonical({"jsonrpc": "2.0", "id": 9, "result": frontier_row})
+        label = f"rpc-{frontier_request:02d}"
+        files[f"evidence/{label}.request.json"] = canonical(
+            {"jsonrpc": "2.0", "id": frontier_request, "method": "ledger.getFrontierMomentum", "params": []})
+        last = label + ".frontier.json"
+        raw = canonical({"jsonrpc": "2.0", "id": frontier_request, "result": frontier_row})
         files["evidence/" + last] = raw
-        files["evidence/rpc-09.started.json"] = canonical({
-            **json.loads(original["evidence/rpc-02.started.json"]), "label": "rpc-09"})
-        files["evidence/rpc-09.complete.json"] = canonical({
-            **json.loads(original["evidence/rpc-02.complete.json"]), "label": "rpc-09",
+        files[f"evidence/{label}.started.json"] = canonical({
+            **json.loads(original["evidence/rpc-02.started.json"]), "label": label})
+        files[f"evidence/{label}.complete.json"] = canonical({
+            **json.loads(original["evidence/rpc-02.complete.json"]), "label": label,
             "outputs": {"stdout": {"file": last, **pin(raw)}}})
         ((request, _),) = capture.oracle_requests(contract, opening, frontier)
         request_file = "parent-oracle-01.request.json"
@@ -1425,7 +1426,7 @@ class ReviewTests(unittest.TestCase):
             "oracle_reports": [{"request": {"file": request_file, **pin(request)}, "stdout": stdout}]}
         files["evidence/" + capture.CLOSED_OPENING_REPORT] = canonical({
             "format": "owned-devnet-closed-opening-authorization/v1",
-            "frontier_request_id": 9, "closed_ledger": provenance})
+            "frontier_request_id": frontier_request, "closed_ledger": provenance})
         return contract, files, timeout_path, opening
 
     def test_closed_opening_replays_only_two_parents_at_the_later_closed_frontier(self):
@@ -1441,6 +1442,63 @@ class ReviewTests(unittest.TestCase):
                 self.assertEqual(report["recorded_terminal_outcome"], "UNKNOWN")
                 self.assertFalse(report["recorded_fixture_timeout"]["transaction_submission_verified"])
                 self.assertIsNone(report["comparison"])
+
+    def configuration_timeout_pillar_files(self, *, stage="fixture-configuration", frontier_request=5):
+        contract, files, _, _ = self.closed_opening_files(stage, frontier_request=frontier_request)
+        label = capture.CONFIGURATION_TIMEOUT_PILLAR
+        path = "evidence/" + label
+        ref = f"evidence/rpc-{frontier_request:02d}"
+        request = json.loads(files[ref + ".request.json"])
+        files[path + ".request.json"] = canonical({**request, "id": 4})
+        files[path + ".started.json"] = canonical({**json.loads(files[ref + ".started.json"]), "label": label})
+        receipt = {**json.loads(files[ref + ".complete.json"]), "label": label}
+        return contract, files, path, receipt
+
+    def test_configuration_timeout_pillar_compares_ordered_observations_without_header_authority(self):
+        contract, files, path, receipt = self.configuration_timeout_pillar_files()
+        closed = json.loads(files["evidence/rpc-05.frontier.json"])["result"]
+        variants = synthetic_window(6)[1]
+        for row, comparison in ((closed, "same_candidate"), (variants[-1], "pillar_ahead_of_closed_rpc"),
+                                (variants[-2], "different_candidate_at_same_height"),
+                                (variants[-3], "pillar_behind_closed_rpc")):
+            with self.subTest(comparison=comparison):
+                body = canonical({"jsonrpc": "2.0", "id": 4, "result": row})
+                stdout = {"file": capture.CONFIGURATION_TIMEOUT_PILLAR + ".json", **pin(body)}
+                replay = self.review(make_archive({**files, path + ".json": body,
+                    path + ".complete.json": canonical({**receipt, "outputs": {"stdout": stdout}})}), contract)
+                observed = replay["recorded_configuration_timeout_pillar"]
+                self.assertEqual(observed["comparison"], comparison)
+                self.assertEqual(observed["observation"]["candidate_header"]["hash"], row["hash"])
+                self.assertEqual(observed["closed_rpc_frontier"]["hash"], closed["hash"])
+                self.assertEqual((observed["actual_exit"], observed["output_complete"]), (0, True))
+                self.assertFalse(observed["accepted_header_authority"])
+                self.assertEqual(replay["recorded_terminal_outcome"], "UNKNOWN")
+                self.assertFalse(replay["recorded_fixture_timeout"]["transaction_submission_verified"])
+
+    def test_configuration_timeout_pillar_keeps_failure_receipts_and_rejects_unbound_observations(self):
+        contract, files, path, receipt = self.configuration_timeout_pillar_files()
+        complete = path + ".complete.json"
+        request = path + ".request.json"
+        failed = {**files, complete: canonical({**receipt, "actual_exit": 7})}
+        observed = self.review(make_archive(failed), contract)["recorded_configuration_timeout_pillar"]
+        self.assertEqual((observed["actual_exit"], observed["output_complete"]), (7, True))
+        self.assertIsNone(observed["observation"])
+        self.assertIsNone(observed["comparison"])
+        self.assertIsNotNone(observed["closed_rpc_frontier"])
+        for changed, reason in (
+                ({name: raw for name, raw in failed.items() if name != request},
+                 "review_configuration_timeout_pillar_members"),
+                ({**failed, request: canonical({**json.loads(files[request]), "id": 5})}, "review_frontier_request"),
+                ({**failed, path + ".json": files["evidence/rpc-05.frontier.json"]},
+                 "review_recorded_command_completion"),
+        ):
+            with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive(changed), contract)
+        for error, options in (("review_configuration_timeout_pillar_scope", {"stage": "fixture-deposit"}),
+                               ("review_configuration_timeout_pillar_order", {"frontier_request": 6})):
+            shifted, data, _, _ = self.configuration_timeout_pillar_files(**options)
+            with self.subTest(error=error), self.assertRaisesRegex(Refused, error):
+                self.review(make_archive(data), shifted)
 
     def deposit_timeout_batch_files(self, *, companion_available=True, stage="fixture-deposit", gateway=None,
                                     frontier_height=5):

@@ -22,6 +22,11 @@ from query_checks import (address_bytes, binary, compare_frontier_batch, consume
 
 RPC_URL = "http://127.0.0.1:35997"
 STARTUP_FRONTIER_URLS = {"pillar": "http://127.0.0.1:35991", "rpc": RPC_URL}
+CONFIGURATION_TIMEOUT_PILLAR = "configuration-timeout-pillar-frontier"
+PEER_FRONTIER_URLS = {
+    **{f"startup-{role}-frontier": url for role, url in STARTUP_FRONTIER_URLS.items()},
+    CONFIGURATION_TIMEOUT_PILLAR: STARTUP_FRONTIER_URLS["pillar"],
+}
 GATEWAY_URL = "http://127.0.0.1:35999"
 READINESS_ATTEMPTS = 30
 READINESS_WAIT_SECONDS = 90
@@ -265,8 +270,9 @@ class LocalRpc:
         self.post_sync_observed_request = None
         self.startup_frontier_attempted = False
         self.startup_frontier_evidence = set()
+        self.configuration_timeout_pillar_evidence = set()
 
-    def _read(self, method, parameters, cap, *, stdout_name=None, startup_role=None, deadline=None,
+    def _read(self, method, parameters, cap, *, stdout_name=None, peer_frontier=None, deadline=None,
               decode=rpc_result):
         connect_limit, http_limit, command_limit = "2", "5", 7
         if deadline is not None:
@@ -280,12 +286,11 @@ class LocalRpc:
             command_limit = http_seconds + 2
         url = GATEWAY_URL if method == "zeno_getHead" else RPC_URL
         label = f"rpc-{self.calls + 1:02d}"
-        if startup_role is not None:
-            require(type(startup_role) is str and startup_role in STARTUP_FRONTIER_URLS
-                    and method == "ledger.getFrontierMomentum" and parameters == [], "startup_frontier_read_scope")
-            label = f"startup-{startup_role}-frontier"
-            url = STARTUP_FRONTIER_URLS[startup_role]
-            require(stdout_name == label + ".json" and cap == FRONTIER_BYTES, "startup_frontier_output_scope")
+        if peer_frontier is not None:
+            require(type(peer_frontier) is str and peer_frontier in PEER_FRONTIER_URLS
+                    and method == "ledger.getFrontierMomentum" and parameters == [], "peer_frontier_read_scope")
+            label, url = peer_frontier, PEER_FRONTIER_URLS[peer_frontier]
+            require(stdout_name == label + ".json" and cap == FRONTIER_BYTES, "peer_frontier_output_scope")
         self.calls += 1
         require(self.calls <= RPC_CALL_LIMIT, "owned_rpc_call_bound")
         request_id = self.calls
@@ -300,9 +305,9 @@ class LocalRpc:
             timeout=command_limit, stdout_cap=cap, stderr_cap=4096, stdout_name=stdout_name, guard=self.guard)
         return decode(result.stdout(cap), request_id, cap)
 
-    def _frontier(self, name, *, startup_role=None, deadline=None):
+    def _frontier(self, name, *, peer_frontier=None, deadline=None):
         row = self._read("ledger.getFrontierMomentum", [], FRONTIER_BYTES,
-                         stdout_name=name, startup_role=startup_role, deadline=deadline)
+                         stdout_name=name, peer_frontier=peer_frontier, deadline=deadline)
         return Header.read(row, self.contract.data["selection"]["chain_id"]), row
 
     def frontier(self, *, deadline=None):
@@ -498,7 +503,7 @@ class LocalRpc:
                 label = f"startup-{role}-frontier"
                 request, response = label + ".request.json", label + ".json"
                 try:
-                    self._frontier(response, startup_role=role)
+                    self._frontier(response, peer_frontier=label)
                 except CommandFailed as error:
                     diagnostic_failure(row, error)
                 except Refused:
@@ -516,6 +521,27 @@ class LocalRpc:
             self.recorder.seal(STARTUP_FRONTIERS_REPORT, canonical(report))
             self.startup_frontier_evidence.add(STARTUP_FRONTIERS_REPORT)
         return report
+
+    def capture_configuration_timeout_pillar(self, *, deadline):
+        """Read the primary pillar once and reserve the final RPC slot."""
+        label = CONFIGURATION_TIMEOUT_PILLAR
+        request, response = label + ".request.json", label + ".json"
+        require(request not in self.recorder.names, "configuration_timeout_pillar_already_attempted")
+        if self.calls + 2 > RPC_CALL_LIMIT:
+            return
+        try:
+            self.guard()
+            self._frontier(response, peer_frontier=label, deadline=min(deadline, time.monotonic() + 2))
+        except CommandFailed as error:
+            if error.result.receipt.get("reason") == "interrupted":
+                raise KeyboardInterrupt from error
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+        else:
+            self.configuration_timeout_pillar_evidence.add(response)
+        finally:
+            if request in self.recorder.names:
+                self.configuration_timeout_pillar_evidence.add(request)
 
     def _wait(self, read, ready, *, starting, initial_frontier=False):
         # Preserve every actual attempt. A freshly published loopback port can

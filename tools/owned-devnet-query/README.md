@@ -564,6 +564,15 @@ frontier and both historical parent slots to the recorded timeout stage. The
 terminal outcome remains UNKNOWN. Header acceptance and transaction submission
 require their own evidence.
 
+After a configuration timeout, the runner can sample the primary pillar's
+frontier once before stopping the producers. The read uses the existing
+loopback endpoint, at most two seconds of HTTP time, and leaves an RPC slot
+for the frozen frontier. The archive can retain the request and command
+receipt even if the response or closed-ledger oracle is unavailable. When
+both frontiers are available, the reader compares the earlier pillar
+candidate with the later frozen RPC candidate. These sequential observations
+describe the sampled nodes and carry no header authority.
+
 For the reviewed reference-gas devnet source, a timeout can retain
 `fixture-configure-progress.json` or `fixture-deposit-progress.json`. The
 configuration report records an ordered subsequence because the pinned CLI

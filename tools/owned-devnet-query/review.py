@@ -445,6 +445,47 @@ def recorded_closed_opening(evidence, contract, selection, terminal, timeout, op
             "v3_schedule_hash": schedule["schedule_hash"], "accepted_header_authority": False}
 
 
+def recorded_configuration_timeout_pillar(evidence, contract, timeout, opening_proof, opening_signatures,
+                                          closed_opening):
+    label = capture.CONFIGURATION_TIMEOUT_PILLAR
+    prefix = "evidence/" + label
+    members = {path for path in evidence.pins if path.startswith(prefix + ".")}
+    if not members:
+        return None
+    request, response = prefix + ".request.json", prefix + ".json"
+    require(request in members and members <= {request, response, prefix + ".launch.json",
+            prefix + ".started.json", prefix + ".complete.json"}, "review_configuration_timeout_pillar_members")
+    require(timeout is not None and timeout["stage"] == "fixture-configuration"
+            and timeout["process_group_quiescent"] is True and fixture_progress.supports(contract)
+            and opening_proof is not None and opening_proof["presence"] == "absent"
+            and opening_signatures is not None, "review_configuration_timeout_pillar_scope")
+    request_id = model.uint(opening_proof["request_id"] + 1, capture.RPC_CALL_LIMIT - 1)
+    frontier_request(evidence, label, request_id)
+    receipt = diagnostic_receipt(evidence, label, "review_configuration_timeout_pillar_receipt")
+    if receipt is not None and receipt.get("launch_outcome") == "STARTED":
+        recorded_command_start(evidence, label, receipt, "evidence")
+    observation = None
+    if response in members:
+        observation = frontier_observation(evidence, contract, label, label + ".json", request_id)
+    closed_frontier = comparison = None
+    if closed_opening is not None:
+        same(closed_opening["frontier_request_id"], request_id + 1, "review_configuration_timeout_pillar_order")
+        closed_frontier = closed_opening["closed_ledger_frontier"]
+        if observation is not None:
+            pillar = observation["candidate_header"]
+            if pillar == closed_frontier:
+                comparison = "same_candidate"
+            elif pillar["height"] == closed_frontier["height"]:
+                comparison = "different_candidate_at_same_height"
+            else:
+                comparison = ("pillar_ahead_of_closed_rpc" if pillar["height"] > closed_frontier["height"]
+                              else "pillar_behind_closed_rpc")
+    return {"request_id": request_id, "observation": observation, "closed_rpc_frontier": closed_frontier,
+            "comparison": comparison, "actual_exit": receipt["actual_exit"] if receipt is not None else None,
+            "output_complete": receipt["output_complete"] if receipt is not None else None,
+            "accepted_header_authority": False}
+
+
 def recorded_timeout_request(evidence, request_id, method, params):
     model.uint(request_id, capture.RPC_CALL_LIMIT)
     label = f"rpc-{request_id:02d}"
@@ -1154,6 +1195,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         opening_signatures = recorded_opening_signatures(evidence, opening, opening_observation, opening_proof)
         closed_opening = recorded_closed_opening(evidence, contract, selection, terminal, fixture_timeout,
             opening, opening_observation, opening_proof, opening_signatures, frontiers)
+        timeout_pillar = recorded_configuration_timeout_pillar(
+            evidence, contract, fixture_timeout, opening_proof, opening_signatures, closed_opening)
         timeout_batch, frontier_capture = recorded_deposit_timeout_batch(
             evidence, contract, checkout, fixture_timeout, closed_opening)
         timeout_replay = recorded_deposit_timeout_replay(evidence, contract, checkout, opening, closed_opening,
@@ -1201,6 +1244,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["recorded_fixture_timeout"] = fixture_timeout
         if closed_opening is not None:
             report["recorded_closed_opening_authorization"] = closed_opening
+        if timeout_pillar is not None:
+            report["recorded_configuration_timeout_pillar"] = timeout_pillar
         if timeout_batch is not None:
             report["recorded_deposit_timeout_batch"] = timeout_batch.report
         if timeout_replay is not None:

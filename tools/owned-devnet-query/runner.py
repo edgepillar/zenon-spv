@@ -232,6 +232,11 @@ def closed_opening_after_timeout(contract, record, engine, rpc, opening, sources
                                  workspace, tool_environment, budget, reader_source, *, services,
                                  opening_row, batch_inputs=None, consumer=None):
     budget.cap_diagnostic_time(120)
+    work_deadline = budget.started + contract.data["limits"]["max_elapsed_seconds"] - budget.reserve
+    # Leave time for the closure and its frozen RPC frontier.
+    deadline = min(budget.diagnostic_deadline, work_deadline) - 10
+    if services == model.NODE_SERVICES:
+        rpc.capture_configuration_timeout_pillar(deadline=deadline)
     engine.stop_producers_and_clients(services=services)
     frontier, frontier_row = rpc.frontier_with_row()
     request_id = rpc.calls
@@ -247,9 +252,6 @@ def closed_opening_after_timeout(contract, record, engine, rpc, opening, sources
             pass
         if batch_observation is not None and batch_observation.witnesses is not None and consumer is not None:
             try:
-                # Give the original close and opening observation the last ten seconds.
-                work_deadline = budget.started + contract.data["limits"]["max_elapsed_seconds"] - budget.reserve
-                deadline = min(budget.diagnostic_deadline, work_deadline) - 10
                 window, range_request_id = rpc.deposit_timeout_window(opening, frontier, batch_observation,
                     opening_row=opening_row, frontier_row=frontier_row, deadline=deadline)
             except (OSError, ValueError, KeyError, TypeError):
@@ -468,6 +470,7 @@ def execute(environment, workspace, checkout):
             extra.update(startup_sync_evidence_files(rpc))
             extra.update(post_sync_frontier_evidence_files(rpc))
             extra.update(startup_peer_evidence_files(rpc))
+            extra.update(rpc.configuration_timeout_pillar_evidence)
         if node_diagnostics.REPORT in record.names:
             extra.add(node_diagnostics.REPORT)
         if node_file_logs.REPORT in record.names:

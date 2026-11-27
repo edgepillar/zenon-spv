@@ -418,7 +418,7 @@ class StartupPeerFrontierTests(unittest.TestCase):
         def peer_transport(label, argv, cwd, environment, **options):
             request = json.loads(argv[argv.index("--data-binary") + 1])
             self.raw = model.canonical({"jsonrpc": "2.0", "id": request["id"],
-                                        "result": rows[2 if label == "startup-pillar-frontier" else 0]})
+                                        "result": rows[2 if argv[-1] == capture.STARTUP_FRONTIER_URLS["pillar"] else 0]})
             return transport(label, argv, cwd, environment, **options)
 
         self.recorder.run.reset_mock()
@@ -480,6 +480,43 @@ class StartupPeerFrontierTests(unittest.TestCase):
                          {"startup-pillar-frontier.request.json"}):
             with self.subTest(selected=selected), self.assertRaises(model.Refused):
                 runner.startup_peer_evidence_files(mock.Mock(startup_frontier_evidence=selected))
+
+    def test_configuration_timeout_reads_the_primary_once_and_reserves_the_frozen_rpc_slot(self):
+        label = capture.CONFIGURATION_TIMEOUT_PILLAR
+        self.rpc.calls = capture.RPC_CALL_LIMIT - 2
+        with mock.patch.object(capture.time, "monotonic", return_value=100):
+            self.rpc.capture_configuration_timeout_pillar(deadline=130)
+        call = self.recorder.run.call_args
+        self.assertEqual((call.args[0], call.args[1][-1]), (label, capture.STARTUP_FRONTIER_URLS["pillar"]))
+        argv = call.args[1]
+        self.assertEqual(argv[argv.index("--max-time") + 1], "2.000")
+        self.assertEqual((call.kwargs["timeout"], call.kwargs["stdout_cap"]), (4, capture.FRONTIER_BYTES))
+        request = {"jsonrpc": "2.0", "id": 95, "method": "ledger.getFrontierMomentum", "params": []}
+        self.assertEqual(json.loads(self.payloads[label + ".request.json"]), request)
+        self.assertEqual(json.loads(self.payloads[label + ".json"])["id"], 95)
+        self.assertEqual(self.rpc.configuration_timeout_pillar_evidence, {label + ".request.json", label + ".json"})
+        with self.assertRaisesRegex(model.Refused, "configuration_timeout_pillar_already_attempted"):
+            self.rpc.capture_configuration_timeout_pillar(deadline=130)
+        self.assertEqual(self.recorder.run.call_count, 1)
+        self.rpc.frontier()
+        self.assertEqual(self.rpc.calls, capture.RPC_CALL_LIMIT)
+
+    def test_configuration_timeout_observation_leaves_the_frozen_read_available_on_failure(self):
+        label = capture.CONFIGURATION_TIMEOUT_PILLAR
+        for calls, deadline, guard, reached in ((95, 104, None, False),
+                (94, 100, None, False), (94, 104, model.Refused("budget_refused"), False),
+                (94, 104, None, True)):
+            with self.subTest(calls=calls, deadline=deadline, guard=guard):
+                self.setUp()
+                self.rpc.calls = calls
+                self.guard.side_effect = [guard]
+                self.recorder.run.side_effect = lambda *args, **kwargs: mock.Mock(stdout=lambda cap: b"incomplete")
+                with mock.patch.object(capture.time, "monotonic", return_value=100):
+                    self.rpc.capture_configuration_timeout_pillar(deadline=deadline)
+                self.assertEqual(self.rpc.calls, calls + int(reached))
+                self.assertEqual(self.rpc.configuration_timeout_pillar_evidence,
+                                 {label + ".request.json"} if reached else set())
+                self.assertEqual(self.recorder.run.call_count, int(reached))
 
     def test_readiness_uses_only_observed_post_sync_and_keeps_original_refusal(self):
         for after in (None, {"status": "REFUSED"}, {"status": "OBSERVED", "request_id": 32}):
@@ -691,6 +728,7 @@ class CaptureTests(unittest.TestCase):
         trace.rpc.frontier_with_row.return_value = frontier, rows[-1]
         trace.engine.close_rpc.return_value = mock.sentinel.ledger
         trace.read_parent.return_value = mock.sentinel.schedule, mock.sentinel.provenance, mock.sentinel.opening_result
+        trace.budget.started, trace.budget.reserve, trace.budget.diagnostic_deadline = 0, 300, 120
         for services in (model.NODE_SERVICES, model.SERVICES):
             with self.subTest(services=services):
                 trace.reset_mock()
@@ -700,8 +738,11 @@ class CaptureTests(unittest.TestCase):
                     result, batch, replay = runner.closed_opening_after_timeout(contract, record, trace.engine, trace.rpc,
                         opening, sources, oracle, workspace, environment, trace.budget, "selected reader",
                         services=services, opening_row=rows[2], batch_inputs=batch_inputs)
-                expected = [mock.call.budget.cap_diagnostic_time(120),
-                    mock.call.engine.stop_producers_and_clients(services=services), mock.call.rpc.frontier_with_row()]
+                expected = [mock.call.budget.cap_diagnostic_time(120)]
+                if services == model.NODE_SERVICES:
+                    expected.append(mock.call.rpc.capture_configuration_timeout_pillar(deadline=110))
+                expected.extend([mock.call.engine.stop_producers_and_clients(services=services),
+                                 mock.call.rpc.frontier_with_row()])
                 if batch_inputs is not None:
                     expected.append(mock.call.rpc.deposit_timeout_batch(frontier, *batch_inputs))
                 expected.extend([
@@ -1408,7 +1449,12 @@ class HostBoundaryTests(unittest.TestCase):
                             "import sys; sys.stdout.buffer.write(" + repr(output) + "); sys.exit(" + str(code) + ")"],
                             cwd, {}, **options)
                     request = json.loads(argv[argv.index("--data-binary") + 1])
-                    if request["method"] == "ledger.getFrontierMomentum":
+                    if label == capture.CONFIGURATION_TIMEOUT_PILLAR:
+                        self.assertEqual(request, {"jsonrpc": "2.0", "id": 4,
+                            "method": "ledger.getFrontierMomentum", "params": []})
+                        self.assertEqual(argv[-1], capture.STARTUP_FRONTIER_URLS["pillar"])
+                        result = rows[-1]
+                    elif request["method"] == "ledger.getFrontierMomentum":
                         self.assertEqual(request, {"jsonrpc": "2.0", "id": 1,
                             "method": "ledger.getFrontierMomentum", "params": []})
                         result = rows[2]
@@ -1494,10 +1540,15 @@ class HostBoundaryTests(unittest.TestCase):
                             "import sys; sys.stdout.buffer.write(" + repr(consumer_failure_fixture()) + "); sys.exit(2)"],
                             root, {}, stdout_cap=capture.CONSUMER_FAILURE_BYTES)
 
+                    def refuse_closed_opening(contract, record, engine, rpc, *args, **kwargs):
+                        if timeout_phase == "configure":
+                            rpc.capture_configuration_timeout_pillar(deadline=capture.time.monotonic() + 2)
+                        raise model.Refused("test_opening_diagnostic")
+
                     post_fixture["collect"].return_value = window
                     post_fixture["query"].side_effect = reject_query
                     dependencies["fixture_flow"].side_effect = stop_at_fixture
-                    dependencies["closed_opening_after_timeout"].side_effect = model.Refused("test_opening_diagnostic")
+                    dependencies["closed_opening_after_timeout"].side_effect = refuse_closed_opening
                     env = {"GH_TOKEN": "unused-test-value", "GITHUB_OUTPUT": str(root / "output")}
                     self.assertEqual(runner.execute(env, root, HERE.parents[1]), 1)
                     engine.cleanup.assert_called_once_with()
@@ -1552,6 +1603,13 @@ class HostBoundaryTests(unittest.TestCase):
                 if timeout_phase is not None:
                     self.assertEqual(checked["recorded_fixture_timeout"]["command"], "fixture-" + timeout_phase)
                     self.assertNotIn("recorded_closed_opening_authorization", checked)
+                pillar = checked.get("recorded_configuration_timeout_pillar")
+                if timeout_phase == "configure":
+                    self.assertEqual(pillar["observation"]["candidate_header"], window.headers[-1].identifier())
+                    self.assertEqual((pillar["actual_exit"], pillar["output_complete"]), (0, True))
+                    self.assertIsNone(pillar["comparison"])
+                else:
+                    self.assertIsNone(pillar)
                 if consumer_failed:
                     raw = consumer_failure_fixture()
                     name = capture.CONSUMER_STDOUT
