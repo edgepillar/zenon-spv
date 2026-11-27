@@ -3,14 +3,18 @@
 """Reconcile export completion, then recount the same retained put stream.
 
 The caller selects the frontier, provenance, limits and actual producer capture
-through a protected channel. No database, network, child or output file is opened.
+through a protected channel. Fragments are read only from caller-selected files.
+The tool opens no database, network connection, child process or output file.
 This joins existing checks; it does not authenticate the caller or ledger state.
 """
+from contextlib import closing
 import hashlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
+import stat
 import sys
 
 
@@ -36,6 +40,8 @@ PROJECTION_FORMAT = "zenon-completed-frontier-transport-projection/v1"
 RECEIPT_OPTION = "--producer-receipt-json"
 MANIFEST_BYTES_OPTION = "--transport-manifest-bytes"
 MANIFEST_SHA_OPTION = "--transport-manifest-sha256"
+FRAGMENT_PLAN_OPTION = "--transport-fragment-plan"
+FRAGMENT_PLAN_FORMAT = "zenon-r1-retained-fragments/v1"
 DESCRIPTION_CHUNK_OPTION = "--describe-transport-chunk-bytes"
 PROJECTION_PROFILE_OPTION = "--projection-profile"
 PROJECTION_ROOT_OPTION = "--expect-candidate-root"
@@ -45,7 +51,9 @@ USAGE = ("inventory-completed-export: require --producer-receipt-json JSON and t
          "consume-completion selection, actual capture and optional --max-* arguments; "
          "feed the same retained put stream on stdin. To check transport during the "
          "recount, supply --transport-manifest-bytes and --transport-manifest-sha256 "
-         "and feed the exact manifest immediately before the put stream. Framed mode "
+         "and feed the exact manifest immediately before the put stream. With "
+         "--transport-fragment-plan PATH, feed just the exact manifest on stdin and "
+         "read the payload from that private ordered local plan. Framed mode "
          "also accepts --projection-profile zenon-l1-balance-storage-sha3/v1 and "
          "--expect-candidate-root HEX for a root-only comparison. To create a manifest "
          "during an unframed recount, supply --describe-transport-chunk-bytes N.\n")
@@ -69,12 +77,13 @@ def unknown(reason, completion=None):
 
 
 def arguments(args):
-    COMPLETION.require(type(args) in (list, tuple) and len(args) <= 44 and
+    COMPLETION.require(type(args) in (list, tuple) and len(args) <= 46 and
                        all(type(v) is str for v in args) and
                        sum(map(len, args)) <= 32 << 10, "options")
     common, selected, index = [], {}, 0
     option_limits = {RECEIPT_OPTION: COMPLETION.REPORT_BYTES,
                      MANIFEST_BYTES_OPTION: 20, MANIFEST_SHA_OPTION: 64,
+                     FRAGMENT_PLAN_OPTION: 4096,
                      DESCRIPTION_CHUNK_OPTION: 20,
                      PROJECTION_PROFILE_OPTION: 64, PROJECTION_ROOT_OPTION: 64,
                      PROJECTION_LIMIT_OPTION: 20}
@@ -101,6 +110,9 @@ def arguments(args):
         digest = selected[MANIFEST_SHA_OPTION]
         COMPLETION.require(0 < size <= TRANSPORT.MANIFEST_BYTES and COMPLETION.hex_digest(digest), "options")
         manifest = size, digest
+    fragment_plan = selected.get(FRAGMENT_PLAN_OPTION)
+    COMPLETION.require(fragment_plan is not None or len(args) <= 44, "options")
+    COMPLETION.require(fragment_plan is None or manifest is not None, "options")
     if DESCRIPTION_CHUNK_OPTION in selected:
         describe_chunk = COMPLETION.decimal(selected[DESCRIPTION_CHUNK_OPTION])
         COMPLETION.require(manifest is None and 0 < describe_chunk <= TRANSPORT.HARD_LIMITS["chunk_bytes"], "options")
@@ -113,8 +125,109 @@ def arguments(args):
     elif manifest is None:
         COMPLETION.require(len(args) <= (36 if describe_chunk is not None else 34), "options")
     else:
-        COMPLETION.require(len(args) <= 38, "options")
-    return common, receipt, manifest, projection, describe_chunk
+        COMPLETION.require(len(args) <= (40 if fragment_plan is not None else 38), "options")
+    return common, receipt, manifest, projection, describe_chunk, fragment_plan
+
+
+
+def retained_path(value):
+    TRANSPORT.require(type(value) is str and 0 < len(value) <= 4096 and
+                      not value.startswith(("//", "\\\\")) and
+                      all(ord(ch) >= 32 and ord(ch) != 127 for ch in value), "fragment_path")
+    path = Path(value)
+    TRANSPORT.require(path.is_absolute() and ".." not in path.parts, "fragment_path")
+    return path
+
+
+def file_identity(info):
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink, info.st_size,
+            info.st_mtime_ns, info.st_ctime_ns, getattr(info, "st_file_attributes", 0))
+
+
+def open_retained_file(path, limit, size=None):
+    flags = (os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+             | getattr(os, "O_NONBLOCK", 0))
+    try:
+        before = path.lstat()
+        TRANSPORT.require(stat.S_ISREG(before.st_mode) and before.st_nlink == 1
+                          and not (getattr(before, "st_file_attributes", 0) & 0x400)
+                          and 0 < before.st_size <= limit and (size is None or before.st_size == size),
+                          "fragment_file")
+        TRANSPORT.require(path.resolve(strict=True) == path, "fragment_path")
+        stream = os.fdopen(os.open(path, flags), "rb")
+    except OSError:
+        raise TRANSPORT.Refused("fragment_file_unavailable") from None
+    try:
+        TRANSPORT.require(file_identity(os.fstat(stream.fileno())) == file_identity(before),
+                          "fragment_file_changed")
+    except BaseException:
+        stream.close()
+        raise
+    return stream, before
+
+
+def retained_eof(path, stream, before):
+    TRANSPORT.require(not stream.read(1), "fragment_trailing_bytes")
+    expected = file_identity(before)
+    TRANSPORT.require(file_identity(os.fstat(stream.fileno())) == file_identity(path.lstat()) == expected,
+                      "fragment_file_changed")
+
+
+def read_fragment_plan(path, payload_bytes):
+    path = retained_path(path)
+    stream, before = open_retained_file(path, TRANSPORT.MANIFEST_BYTES)
+    with stream:
+        raw = TRANSPORT.read_exact(stream, before.st_size)
+        retained_eof(path, stream, before)
+    try:
+        value = TRANSPORT.parse_manifest(raw)
+    except TRANSPORT.Refused:
+        raise TRANSPORT.Refused("fragment_plan") from None
+    TRANSPORT.require(type(value) is dict and set(value) == {"format", "fragments"}
+                      and value["format"] == FRAGMENT_PLAN_FORMAT
+                      and type(value["fragments"]) is list
+                      and len(value["fragments"]) <= TRANSPORT.HARD_LIMITS["chunks"], "fragment_plan")
+    parts, remaining = [], payload_bytes
+    for row in value["fragments"]:
+        TRANSPORT.require(type(row) is dict and set(row) == {"path", "bytes"}
+                          and type(row["bytes"]) is int and 0 < row["bytes"] <= remaining, "fragment_plan")
+        parts.append((retained_path(row["path"]), row["bytes"]))
+        remaining -= row["bytes"]
+    TRANSPORT.require(remaining == 0, "fragment_plan_bytes")
+    return parts
+
+
+class FramedFragments:
+    def __init__(self, manifest, manifest_bytes, parts):
+        self.manifest, self.manifest_bytes, self.parts = manifest, manifest_bytes, iter(parts)
+        self.current = None
+
+    def read(self, size):
+        if self.manifest_bytes:
+            data = TRANSPORT.read_part(self.manifest, min(size, self.manifest_bytes))
+            self.manifest_bytes -= len(data)
+            return data
+        if self.manifest is not None:
+            TRANSPORT.require(not TRANSPORT.read_part(self.manifest, 1), "fragment_manifest_trailing")
+            self.manifest = None
+        if self.current is None:
+            part = next(self.parts, None)
+            if part is None:
+                return b""
+            self.path, self.remaining = part
+            self.current, self.before = open_retained_file(self.path, self.remaining, self.remaining)
+        data = TRANSPORT.read_part(self.current, min(size, self.remaining))
+        TRANSPORT.require(bool(data), "fragment_truncated")
+        self.remaining -= len(data)
+        if not self.remaining:
+            retained_eof(self.path, self.current, self.before)
+            self.close()
+        return data
+
+    def close(self):
+        if self.current is not None:
+            self.current.close()
+            self.current = None
 
 
 def run(args, stream, output, diagnostics):
@@ -124,7 +237,7 @@ def run(args, stream, output, diagnostics):
             diagnostics.write(USAGE)
             result, code = unknown("help_only"), 0
         else:
-            common, receipt, manifest, projection, describe_chunk = arguments(args)
+            common, receipt, manifest, projection, describe_chunk, fragment_plan = arguments(args)
             capture = io.StringIO()
             code = COMPLETION.run(common, io.BytesIO(receipt), capture, diagnostics)
             matched = json.loads(capture.getvalue())
@@ -147,7 +260,11 @@ def run(args, stream, output, diagnostics):
                     pin = {**matched["inventory_selection"], **matched["selected_frontier"]}
                     del pin["records"]  # Transport binds bytes and the full frontier, not record counts.
                     caps = {**TRANSPORT.HARD_LIMITS, "bytes": matched["inventory_limits"]["bytes"]}
-                    if manifest is not None:
+                    if fragment_plan is not None:
+                        parts = read_fragment_plan(fragment_plan, pin["bytes"])
+                        with closing(FramedFragments(stream, manifest[0], parts)) as framed:
+                            transport, report = TRANSPORT.verify_with(framed, *manifest, pin, recount, caps)
+                    elif manifest is not None:
                         transport, report = TRANSPORT.verify_with(stream, *manifest, pin, recount, caps)
                     else:
                         caps["chunk_bytes"] = describe_chunk

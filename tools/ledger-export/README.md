@@ -246,6 +246,35 @@ individual command remain distinct preserved records. This extends the finite
 [source-genesis workflow comparison](../../docs/source-genesis-ledger-export.md);
 it supplies no representative R1 dataset or network acceptance.
 
+### Recount directly from retained fragments
+
+Keep the selected completed-export receipt, the manifest and the retained
+pieces of its put stream. In a private plan file, list the existing regular
+files in stream order and record each file's exact byte length. Use physical
+absolute paths, including for the plan itself. The plan stays local because it
+contains those paths.
+
+```json
+{
+  "format": "zenon-r1-retained-fragments/v1",
+  "fragments": [
+    {"path": "/absolute/path/to/retained-prefix.raw", "bytes": 11264},
+    {"path": "/absolute/path/to/recovered-range.raw", "bytes": 3632}
+  ]
+}
+```
+
+Use the same arguments as the framed recount, add
+`--transport-fragment-plan "$R1_FRAGMENT_PLAN"` and provide only the manifest
+file on binary stdin. The selected byte count is still the whole original put
+stream. The tool opens one fragment at a time, confirms its exact length and
+EOF, and sends the bytes through the existing chunk and whole-stream checks.
+The plan has a 512 KiB limit and can select up to 4,096 fragments. The
+transport, inventory and optional projection reports keep the same format
+and trust scope. A successful recount requires the complete ordered bytes,
+including any missing ranges recovered before this step. No joined ledger
+file is created.
+
 ### Compare the candidate L1 projection during the recount
 
 Add these options to the framed command above. Select the expected root

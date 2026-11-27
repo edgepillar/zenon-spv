@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""Finite completion-to-inventory controls with no dataset or fixture files."""
+"""Finite completion-to-inventory controls for streams and retained fragments."""
 import copy
 import hashlib
 import importlib.util
@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -546,6 +547,122 @@ class CompletedExport(unittest.TestCase):
         for output in (Short(), FailedFlush()):
             self.assertEqual(PROGRAM.run(args + [PROGRAM.RECEIPT_OPTION, json.dumps(receipt)],
                                          io.BytesIO(wire), output, io.StringIO()), 70)
+
+
+    def test_cli_recounts_retained_fragments_with_the_same_projection_bytes(self):
+        receipt, args, manifest, wire = projection_fixture()
+        args += projection_options()
+        code, baseline = self.invoke(receipt, args, io.BytesIO(manifest + wire), format_name=PROGRAM.PROJECTION_FORMAT)
+        self.assertEqual(code, 0)
+        with tempfile.TemporaryDirectory(prefix="snapshot-fragments-") as scratch:
+            root = Path(scratch).resolve()
+            paths = self.fragment_inputs(root, (wire[:5], wire[5:101], wire[101:]))
+            before = {p.name: p.read_bytes() for p in root.iterdir()}
+            argv = [sys.executable, "-I", "-B", str(HERE / "inventory_completed_export.py"), *args,
+                    PROGRAM.RECEIPT_OPTION, json.dumps(receipt), PROGRAM.FRAGMENT_PLAN_OPTION, str(paths)]
+            result = subprocess.run(argv, input=manifest, capture_output=True, timeout=10)
+            self.assertEqual((result.returncode, result.stderr), (0, b""))
+            self.assertEqual(json.loads(result.stdout), baseline)
+            self.assertEqual({p.name: p.read_bytes() for p in root.iterdir()}, before)
+            self.assertNotIn(str(root).encode(), result.stdout)
+
+    def test_fragments_require_manifest_and_completed_producer(self):
+        receipt, args, wire = FIXTURE.fixture()
+        _, options = frame_options(manifest_for(receipt, wire))
+        selected = [PROGRAM.FRAGMENT_PLAN_OPTION, "PRIVATE_TEST_MARKER"]
+        with mock.patch.object(PROGRAM, "read_fragment_plan", side_effect=AssertionError("plan opened")):
+            code, _ = self.invoke(receipt, args + selected, NoRead())
+            self.assertEqual(code, 64)
+            failed = FIXTURE.changed(args, "--producer-exit", "143")
+            code, result = self.invoke(receipt, failed + options + selected, NoRead())
+            self.assertNotEqual(code, 0)
+            self.assertFalse(result["producer_completion_matched"])
+
+    def test_bad_or_extended_manifest_never_opens_payload_fragments(self):
+        receipt, args, manifest, wire = projection_fixture()
+        with tempfile.TemporaryDirectory(prefix="snapshot-fragments-") as scratch:
+            root = Path(scratch).resolve()
+            plan = self.fragment_inputs(root, (wire[:75], wire[75:]))
+            args += [PROGRAM.FRAGMENT_PLAN_OPTION, str(plan)]
+            for raw, expected in ((manifest[:-1] + bytes([manifest[-1] ^ 1]), "transport_manifest_digest"),
+                                  (manifest + b"x", "transport_fragment_manifest_trailing")):
+                with self.subTest(expected=expected), mock.patch.object(
+                        PROGRAM, "open_retained_file", wraps=PROGRAM.open_retained_file) as opened:
+                    code, result = self.invoke(receipt, args, io.BytesIO(raw))
+                    self.assertEqual((code, result["reason"]), (2, expected))
+                    self.assertEqual([call.args[0] for call in opened.call_args_list], [plan])
+
+    def test_missing_wrong_sized_or_unsafe_fragment_plan_is_unknown(self):
+        receipt, args, manifest, wire = projection_fixture()
+        with tempfile.TemporaryDirectory(prefix="snapshot-fragments-") as scratch:
+            root = Path(scratch).resolve()
+            plan = self.fragment_inputs(root, (wire[:67], wire[67:]))
+            args += [PROGRAM.FRAGMENT_PLAN_OPTION, str(plan)]
+            original = json.loads(plan.read_bytes())
+            invalid = {
+                "transport_fragment_plan_bytes": lambda rows: rows.pop(),
+                "transport_fragment_path": lambda rows: rows[0].update(path="fragment-0"),
+                "transport_fragment_file": lambda rows: rows[0].update(path=str(root)),
+                "transport_fragment_file_unavailable": lambda rows: rows[0].update(path=str(root / "missing")),
+            }
+            for expected, change in invalid.items():
+                with self.subTest(expected=expected):
+                    changed = copy.deepcopy(original)
+                    change(changed["fragments"])
+                    plan.write_text(json.dumps(changed), encoding="utf-8")
+                    code, result = self.invoke(receipt, args, io.BytesIO(manifest))
+                    self.assertNotEqual(code, 0)
+                    self.assertEqual(result["reason"], expected)
+            plan.write_text(json.dumps(original), encoding="utf-8")
+            (root / "fragment-0").write_bytes(wire[:68])
+            code, result = self.invoke(receipt, args, io.BytesIO(manifest))
+            self.assertEqual((code, result["reason"]), (2, "transport_fragment_file"))
+
+    def test_corrupt_or_out_of_order_fragments_withhold_the_projection(self):
+        receipt, args, manifest, wire = projection_fixture()
+        args += projection_options()
+        with tempfile.TemporaryDirectory(prefix="snapshot-fragments-") as scratch:
+            root = Path(scratch).resolve()
+            plan = self.fragment_inputs(root, (wire[:75], wire[75:]))
+            args += [PROGRAM.FRAGMENT_PLAN_OPTION, str(plan)]
+            original = json.loads(plan.read_bytes())
+            original["fragments"].reverse()
+            plan.write_text(json.dumps(original), encoding="utf-8")
+            code, result = self.invoke(receipt, args, io.BytesIO(manifest))
+            self.assertEqual(code, 2)
+            self.assertNotIn("candidate_projection", result)
+            damaged = wire[75:-1] + bytes([wire[-1] ^ 1])
+            self.fragment_inputs(root, (wire[:75], damaged))
+            code, result = self.invoke(receipt, args, io.BytesIO(manifest))
+            self.assertEqual((code, result["reason"]), (2, "transport_chunk_digest"))
+            self.assertNotIn("candidate_projection", result)
+
+    def test_fragment_growth_after_open_cannot_complete_the_stream(self):
+        with tempfile.TemporaryDirectory(prefix="snapshot-fragments-") as scratch:
+            path = Path(scratch).resolve() / "part"
+            path.write_bytes(b"abc")
+            framed = PROGRAM.FramedFragments(io.BytesIO(b""), 0, [(path, 3)])
+            try:
+                self.assertEqual(framed.read(1), b"a")
+                with path.open("ab") as changed:
+                    changed.write(b"d")
+                with self.assertRaisesRegex(PROGRAM.TRANSPORT.Refused, "fragment_trailing_bytes|fragment_file_changed"):
+                    framed.read(2)
+            finally:
+                framed.close()
+            self.assertIsNone(framed.current)
+
+    @staticmethod
+    def fragment_inputs(root, payloads):
+        fragments = []
+        for i, payload in enumerate(payloads):
+            path = root / f"fragment-{i}"
+            path.write_bytes(payload)
+            fragments.append({"path": str(path), "bytes": len(payload)})
+        plan = root / "plan.json"
+        plan.write_text(json.dumps({"format": PROGRAM.FRAGMENT_PLAN_FORMAT, "fragments": fragments}),
+                        encoding="utf-8")
+        return plan
 
     def test_fresh_cli_success_failure_and_help_use_no_fixture_files(self):
         receipt, args, wire = FIXTURE.fixture()
