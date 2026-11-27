@@ -87,6 +87,20 @@ reservation is limited by encoded bytes, active row allowances and a fixed
 ceiling; it does not replace the original decoder or qualify a latency gain.
 The full repeated wire lists and every existing workload below remain intact.
 
+The compact flat-row decoder reuses the most recently decoded address when
+the next row contains the same 40 hex bytes. The reuse is local to one
+validated array. Each row owns its address value and continues to consume a
+slot under both limits. Alternate JSON spellings and malformed address
+cases are tested against the ordinary decoder.
+
+Six paired darwin/arm64 samples on Go 1.25.14 decoded 100,000 rows per
+operation. With repeated addresses, median time fell from 10.60 to 9.10 ms
+for the prevalidated array and from 63.21 to 61.92 ms with JSON validation.
+With distinct addresses, medians were 10.50 and 10.68 ms for the array
+and 63.68 and 63.35 ms with JSON validation. Allocation counts and bytes
+matched in each workload. These timings cover decoding of controlled
+arrays with fixture construction outside the timer.
+
 `BenchmarkFlatContent` supplies two operations for each row:
 
 - `Verify`: preflight and verify the already-decoded batch, including checks of

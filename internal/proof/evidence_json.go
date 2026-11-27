@@ -107,6 +107,11 @@ func (flat *flatEvidenceJSON) UnmarshalJSON(raw []byte) error {
 
 const compactFlatAddressPrefix = `{"address":"`
 
+type compactFlatAddress struct {
+	text  []byte
+	value chain.Address
+}
+
 // encoding/json checks the complete value before invoking this private
 // callback. The direct path accepts the standard compact row layout and the
 // first other layout hands the remaining rows to the ordinary decoder.
@@ -116,11 +121,12 @@ func decodeFlatAccountHeaderRows(rows *bundleRows[chain.AccountHeader], raw []by
 	}
 	cursor := bundleValueCursor{raw: raw, at: 1}
 	decoded := make([]chain.AccountHeader, 0, rows.initialCapacity(raw[1:]))
+	var lastAddress compactFlatAddress
 	for {
 		if err := rows.checkRowLimit(len(decoded)); err != nil {
 			return err
 		}
-		row, consumed := parseCompactFlatAccountHeader(raw[cursor.at:])
+		row, consumed := parseCompactFlatAccountHeader(raw[cursor.at:], &lastAddress)
 		if consumed == 0 {
 			// The current row and the closing bracket already belong to a
 			// validated array. Retain the decoded prefix and its budget charges.
@@ -144,7 +150,7 @@ func decodeFlatAccountHeaderRows(rows *bundleRows[chain.AccountHeader], raw []by
 
 // Return the length of one compact object at the start of the remaining
 // input. A zero length selects the ordinary decoder for this row.
-func parseCompactFlatAccountHeader(raw []byte) (chain.AccountHeader, int) {
+func parseCompactFlatAccountHeader(raw []byte, lastAddress *compactFlatAddress) (chain.AccountHeader, int) {
 	const (
 		heightPrefix = `","height":`
 		hashPrefix   = `,"hash":"`
@@ -174,8 +180,18 @@ func parseCompactFlatAccountHeader(raw []byte) (chain.AccountHeader, int) {
 	if err != nil {
 		return row, 0
 	}
-	if row.Address.UnmarshalText(raw[addressStart:addressEnd]) != nil ||
-		row.Hash.UnmarshalText(raw[heightEnd+len(hashPrefix):end-len(suffix)]) != nil {
+	addressText := raw[addressStart:addressEnd]
+	if bytes.Equal(addressText, lastAddress.text) {
+		row.Address = lastAddress.value
+	} else {
+		if row.Address.UnmarshalText(addressText) != nil {
+			return chain.AccountHeader{}, 0
+		}
+		// This slice is local to the validated array decode. Returned
+		// account headers own their fixed-size address bytes.
+		*lastAddress = compactFlatAddress{text: addressText, value: row.Address}
+	}
+	if row.Hash.UnmarshalText(raw[heightEnd+len(hashPrefix):end-len(suffix)]) != nil {
 		return chain.AccountHeader{}, 0
 	}
 	row.Height = n
