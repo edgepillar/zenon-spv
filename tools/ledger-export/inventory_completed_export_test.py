@@ -418,12 +418,14 @@ class CompletedExport(unittest.TestCase):
 
     def test_root_fold_handles_shared_prefixes_and_path_collision(self):
         paths = (0, 1, (1 << 128) - 1, 1 << 255, (1 << 256) - 1)
-        leaves = [(path, bytes([index]) * 32) for index, path in enumerate(paths, 1)]
+        leaves = [path.to_bytes(32, "big") + bytes([index]) * 32 for index, path in enumerate(paths, 1)]
         self.assertEqual(PROGRAM.PROJECTION.root_from_digests(leaves[::-1]).hex(),
                          "6302da4a5b709630fbe236a1952eb572d0bcf92979e7ff933746d3363915bda2")
         self.assertEqual(PROGRAM.PROJECTION.root_from_digests([]), bytes(32))
-        with self.assertRaisesRegex(PROGRAM.PROJECTION.Refused, "projection_path_collision"):
-            PROGRAM.PROJECTION.root_from_digests([leaves[0], leaves[0]])
+        for leaf in (leaves[0], bytes(32) + b"\xff" * 32):
+            with self.subTest(digest=leaf[32:]), self.assertRaisesRegex(
+                    PROGRAM.PROJECTION.Refused, "projection_path_collision"):
+                PROGRAM.PROJECTION.root_from_digests([leaves[0], leaf])
 
     def test_projection_matches_seven_recorded_nodetree_roots(self):
         fixture = HERE.parent / "gen-state-root-vectors/testdata/candidate-l1-applier.json"
