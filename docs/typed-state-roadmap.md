@@ -465,6 +465,14 @@ checkpoint digest and byte count. The checkpoint contains retained headers.
 Snapshot transport, state projection and node import each need their own
 evidence.
 
+The compiled controls pass the checkpoint from a recovered projection to the
+three-witness `BatchEntry` query with separately pinned header and query
+contexts. The proof-only input carries zero provider headers and reproduces the
+three typed rows from the anchor replay. An independent check compares all 17
+stored gateway fields. The controls preserve the membership result when the
+gateway supplies a different finalization height and reject a mismatched proof
+root or checkpoint digest. The replay uses the recorded test configuration.
+
 The two pinned node revisions share the L1 fold, SMT hash and compute blobs.
 Both use a 20-byte address in that fold. This supports comparison under the
 selected experimental profile and the balance/storage projection. The

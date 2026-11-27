@@ -26,6 +26,7 @@ CHURN = ROOT / "tools/ledger-inventory/churn.py"
 RANGE = ROOT / "tools/ledger-transport/archive_tail.py"
 COMMAND = "inspect-experimental-snapshot-root"
 EXPORT_COMMAND = "export-experimental-snapshot-header-state"
+TYPED_QUERY = "query-experimental-batch-context"
 PROJECTION_LIMIT = 148 << 10
 UNIT_PIN = "e4bfbdb7bff55f9719782c7e609240b2ba9aeefd0d0f42b7ee1948286e890366"
 NODE_PIN = "773cda402e08709ffd73adfea355f73269b1470b7336c5a027ddd5b331ab9d96"
@@ -84,6 +85,86 @@ def project(command, payload, wire, root):
 def byte_pin(raw):
     return {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
 
+
+def check_typed_checkpoint(verifier, unit, trace, checkpoint, state_input, controls):
+    sys.path.insert(0, str(ROOT / "tools/owned-devnet-query"))
+    try:
+        import query_checks
+    finally:
+        sys.path.pop(0)
+
+    config, request = unit["config"], unit["request"]
+    profile, pins = config["query_profile"], unit["expected"]
+    root = trace["root_hex"]
+    witnesses = {
+        row["name"]: {"root": root, "value": base64.b64encode(bytes.fromhex(row["value_hex"])).decode("ascii"),
+                      "proof": base64.b64encode(bytes.fromhex(row["proof_hex"])).decode("ascii")}
+        for row in trace["rows"] if row["present"]
+    }
+    independently_decoded = query_checks.witness_rows(profile, request["batch_id"], root, witnesses)
+    entry = independently_decoded["decoded"]["entry"]
+    gateway = {
+        name[0].lower() + name[1:]: base64.b64encode(value).decode("ascii") if isinstance(value, bytes) else value
+        for name, value in entry.items()
+    }
+    gateway.update(domainId=profile["entry"]["domain_id"], batchId=request["batch_id"], isFinalized=True)
+    provider = {"version": 1, "momentums": unit["momentums"], "witnesses": witnesses, "gateway": gateway}
+    proof_only = {**provider, "momentums": []}
+    work = checkpoint.parent
+    config_path = work / "PRIVATE_TYPED_CONFIG.json"
+    request_path = work / "PRIVATE_TYPED_REQUEST.json"
+    provider_path = work / "PRIVATE_TYPED_PROVIDER.json"
+    config_path.write_bytes(encoded(config))
+    request_path.write_bytes(encoded(request))
+    options = [str(verifier), TYPED_QUERY, "--config", str(config_path), "--request", str(request_path),
+               "--expect-header-context", pins["header_context"], "--expect-query-context", pins["context"],
+               "--compare-gateway"]
+    state_args = ["--trusted-state", str(checkpoint), "--expect-state-sha256", state_input["sha256"]]
+    before = checkpoint.stat()
+
+    def query(name, bundle, extra=(), exit_code=0, error=None):
+        provider_path.write_bytes(encoded(bundle))
+        raw, report = invoke(options + list(extra) + [str(provider_path)], exit_code)
+        assert b"PRIVATE_TYPED_" not in raw and b"PRIVATE_SNAPSHOT_" not in raw
+        assert report["command"] == TYPED_QUERY and report["exit_code"] == exit_code
+        assert report["scope"] == "EXPERIMENTAL_CONFIGURED_HEADER_THREE_ROW_MEMBERSHIP"
+        assert report["persistence"] == "read_only" and report["rpc_requests"] == 0
+        assert report["production_state_value_guarantee"] is False and "state_output" not in report
+        assert report["error"] == (None if error is None else {"stage": error[0], "category": error[1]})
+        if exit_code:
+            assert report["result"] is None and report["gateway_comparison"] is None
+        controls.append({"name": name, "exit": exit_code, "error": report["error"]})
+        return report
+
+    anchor = query("typed_anchor_checks_three_memberships", provider)
+    independent = query_checks.consumer_result(anchor, config, request, provider, root)
+    assert independent["gateway_stored_fields_compared"] == 17 and independent["gateway_stored_fields_match"]
+    restored = query("typed_query_from_snapshot_checkpoint", proof_only, state_args)
+    assert restored["status"] == "matched" and restored["headers"] is None and restored["state_input"] == state_input
+    for name in ("header_context", "query_context", "gateway_comparison"):
+        assert restored[name] == anchor[name]
+    result = {**anchor["result"], "header_trust": anchor["result"]["header_trust"] + ["TRUST_PERSISTED_STATE"]}
+    assert restored["result"] == result
+
+    mismatch = {**proof_only, "gateway": {**gateway, "finalizeAtHeight": gateway["finalizeAtHeight"] + 1}}
+    changed = query("typed_checkpoint_gateway_mismatch_preserves_membership", mismatch, state_args)
+    assert changed["result"] == result and changed["state_input"] == state_input
+    assert changed["gateway_comparison"] == {**restored["gateway_comparison"], "stored_fields_match": False}
+    incorrect = {**witnesses["domain_config"], "root": "aa" * 32}
+    query("typed_checkpoint_refuses_wrong_witness_root",
+          {**proof_only, "witnesses": {**witnesses, "domain_config": incorrect}},
+          state_args, 1, ("query", "invalid_witness"))
+    query("typed_query_refuses_wrong_snapshot_checkpoint_digest", proof_only,
+          [*state_args[:-1], "aa" * 32], 1, ("state_input", "digest_mismatch"))
+    after = checkpoint.stat()
+    assert (before.st_dev, before.st_ino, before.st_mode, before.st_mtime_ns) == (
+        after.st_dev, after.st_ino, after.st_mode, after.st_mtime_ns)
+    assert file_pin(checkpoint, PROJECTION_LIMIT) == {key: state_input[key] for key in ("bytes", "sha256")}
+    return {"query_fingerprint": pins["query"], "checkpoint": state_input,
+            "anchor_provider_headers": len(provider["momentums"]),
+            "anchor_provider_bytes": len(encoded(provider)), "proof_only_provider_bytes": len(encoded(proof_only)),
+            "membership_proofs_checked": independent["three_membership_proofs_checked"],
+            "stored_gateway_fields_compared": independent["gateway_stored_fields_compared"]}
 
 
 def recover_projection(command, manifest, wire, directory, controls):
@@ -306,7 +387,7 @@ def check(verifier, revision, candidate_manifest):
             "provenance_sha256": stream["provenance_sha256"],
             "producer_receipt_sha256": projection["producer_completion"]["producer_receipt_sha256"]}
 
-        checkpoint, emitted = export_state("export_matched_state", projection_flags(raw), headers_path)
+        checkpoint, emitted = export_state("export_matched_state", projection_flags(recovered_raw), headers_path)
         checkpoint_path = work / "PRIVATE_SNAPSHOT_STATE.json"
         checkpoint_path.write_bytes(checkpoint)
         checkpoint_before = checkpoint_path.stat()
@@ -322,6 +403,8 @@ def check(verifier, revision, candidate_manifest):
         }
         assert native("recovered_fragments_match_checkpoint", projection_flags(recovered_raw) + checkpoint_args,
                       0, momentum_input=None) == restored
+        typed_handoff = check_typed_checkpoint(verifier, unit, trace, checkpoint_path,
+                                               restored["state_input"], controls)
         exported_again, _ = export_state("reexport_same_checkpoint", projection_flags(raw) + checkpoint_args, None)
         assert exported_again == checkpoint
 
@@ -459,6 +542,7 @@ def check(verifier, revision, candidate_manifest):
             "fixture_pins": {"batch-context-unit.json": UNIT_PIN, "batch-context-node-witness.json": NODE_PIN},
             "scope": "recorded_headers_and_generated_ledger", "controls": controls,
             "matched": matched["header"], "projection": comparison, "fragment_recovery": recovery,
+            "typed_checkpoint_handoff": typed_handoff,
             "inputs_share_original_snapshot": False, "node_or_network_started": False,
             "snapshot_import_performed": False, "production_qualified": False}
 
