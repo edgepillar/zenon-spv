@@ -91,6 +91,49 @@ bytes. The original fixture outcomes remain `UNKNOWN`. The first accepted
 typed consumer still requires the selected run's closed-ledger schedule and
 three present proofs under one accepted header root.
 
+## Retained H4 and the native CLI at depth one
+
+The second archive also retains the completed `ledger.getFrontierMomentum`
+response for request 30. Its signed v3 H4 has hash
+`168e78a461a62a8dd3298fed62118a6c56aba25dc27c2bc89084cda3fc7bf0b2`
+and directly links to that run's H3. The 703-byte response has SHA-256
+`01ef2c931f8cf3da3913003aa3941ddbbc5db02075389ad89b8c170dcad80446`.
+
+The original-node test replayed the three signed successors of genesis and
+closed the reconstructed ledger at H4. The read-only oracle checked all three
+producer slots, including H4 at Unix time `1795732740`, and left the five
+raw-ledger files byte-identical. A read of H3 after H4 reproduced the archived
+BatchEntry absence and yielded two more absence witnesses. All three were
+checked independently against the same H3 root and their locally derived keys.
+
+| H3 witness | Proof bytes | SHA-256 |
+| --- | ---: | --- |
+| BatchEntry, recorded RPC | 259 | `5dc5adc0b21bee3b5fa405fe4c2c07e431a6bff36ce73a688f16f67e6796e37e` |
+| Domain record, reconstructed ledger | 323 | `941ace369adada3cd6356d98e768d82180b997b8898fedbc7027c2e784a396b5` |
+| Domain config, reconstructed ledger | 291 | `7703b4eff18d1ec51d3e4f913b459924dbb0a87959652951eb903cb129de30f4` |
+
+The compiled `c64f545` CLI used the recorded H2 anchor, explicit v3 coverage
+at H3–H4, the reconstructed producer slots, and required depth `W=1`. Its
+header and query context pins matched independent byte calculations. It
+accepted both headers under those configured inputs. The three canonical
+proofs passed verification against H3's owned root, and the command returned
+exit 2, `query/required_row_absent`, with a null typed result.
+
+| Control | Native result |
+| --- | --- |
+| H3 as tip | Exit 2, `query/outside_owned_scope` |
+| H2 anchor from the other run | Exit 1, `ReasonBrokenLinkage` |
+| Changed configured H4 slot time | Exit 1, `ReasonUnauthorizedProducer` |
+| Changed domain-config sibling | Exit 1, `query/invalid_witness` |
+| Substituted provider root | Exit 1, `query/invalid_witness` |
+
+The node replay took 17.78 seconds and the single CLI build with seven
+invocations took 8.22 seconds. Both used retained archive and module inputs,
+and their temporary workspaces were removed after recording the evidence.
+This is a configured-header and proof-refusal replay for the archived inputs.
+The original fixture outcome remains `UNKNOWN`. The selected live target
+still requires three present proofs and completed typed consumption.
+
 ## Remaining acceptance evidence
 
 The captures provide two observed opening transitions and independently
