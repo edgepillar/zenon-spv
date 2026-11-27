@@ -230,6 +230,22 @@ and input bytes. The baseline is `b6a87570abc29fd0dcce4cc32505243e449f0745`.
 The larger input repeats the four fixture rows to exercise the parser's header
 count cap. The benchmark measures decoding allocations with prepared bytes.
 
+The candidate RPC decoder now reads syntax-checked JSON fields from the input
+span while constructing the typed result. The CLI uses the same borrowing
+pattern for witness and gateway fields during synchronous decoding. The
+decoded header, proof, value and gateway data own their storage. The
+three-witness ownership test clears the source buffer after decoding and
+compares the returned values.
+
+A second paired Go 1.25.14 darwin/arm64 observation uses the same two workloads,
+six operations per sample and three samples per version. The baseline is
+`c64f5453521f4f334bcb6205bbe00d9adfed3980`.
+
+| Input | Baseline B/op | Candidate B/op | Baseline allocs/op | Candidate allocs/op |
+| --- | ---: | ---: | ---: | ---: |
+| Four recorded headers and three witnesses | 122,552 | 104,226 | 1,304 | 1,159 |
+| 4,096 headers and three witnesses | 68,659,877 | 64,811,434 | 1,048,878 | 925,973 |
+
 ```sh
 go test -run '^$' -bench '^BenchmarkExperimentalCLIBundleDecode$' -benchmem -benchtime=8x -cpu=1 -count=3 ./cmd/zenon-spv
 ```

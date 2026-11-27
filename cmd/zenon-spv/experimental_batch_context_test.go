@@ -352,6 +352,36 @@ func TestExperimentalBatchCLIHeaderFieldSpan(t *testing.T) {
 	}
 }
 
+func TestExperimentalBatchContextBundleDetachedWitnesses(t *testing.T) {
+	f := newBatchContextCLIInputs(t)
+	f.bundle["gateway"] = experimentalCLIGateway()
+	raw := experimentalCLIJSON(t, f.bundle)
+	bundle, err := decodeExperimentalContextCLIBundle(raw, 4, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	clear(raw)
+
+	witnesses := f.bundle["witnesses"].(map[string]any)
+	for _, row := range []struct {
+		name string
+		got  proof.CandidateStateWitness
+	}{
+		{"batch_entry", bundle.Witnesses.BatchEntry},
+		{"domain_record", bundle.Witnesses.DomainRecord},
+		{"domain_config", bundle.Witnesses.DomainConfig},
+	} {
+		want, err := fetch.DecodeCandidateStateWitness(experimentalCLIJSON(t, witnesses[row.name]))
+		if err != nil || !reflect.DeepEqual(row.got, want) {
+			t.Fatalf("detached witness %s: %v", row.name, err)
+		}
+	}
+	wantGateway, err := fetch.DecodeCandidateSettlementBatch(experimentalCLIJSON(t, f.bundle["gateway"]))
+	if err != nil || bundle.Gateway == nil || !reflect.DeepEqual(*bundle.Gateway, wantGateway) {
+		t.Fatalf("detached gateway: %v", err)
+	}
+}
+
 func BenchmarkExperimentalCLIBundleDecode(b *testing.B) {
 	fixture := newBatchContextCLIInputs(b)
 	recorded := fixture.bundle["momentums"].([]json.RawMessage)
