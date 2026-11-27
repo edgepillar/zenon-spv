@@ -530,16 +530,19 @@ reports the same frozen frontier. The archive reader rechecks the header
 link, derives the keys locally and checks the proofs and any complete
 typed context.
 
-Three checked witnesses can support a native replay. One more bounded read
-gets the header range from the opening anchor through the same frozen
-frontier. After the RPC node closes, the read-only oracle calculates the
-finite producer schedule for that range. The compiled CLI checks the
+Three checked witnesses can support a native replay. The version-3 replay
+reuses the original RPC rows for the opening H3, the selected parent, and
+the frozen frontier. At H5 these rows cover the full range. At later
+frontiers one bounded RPC request retrieves only the intervening rows.
+After the RPC node closes, the read-only oracle calculates the finite
+producer schedule for the full range. The compiled CLI checks the
 configured headers and consumes the typed query using the same witnesses.
-The temporary provider document is rebuilt from the recorded responses and
-linked by its byte length and SHA-256 digest. The archive keeps the original
-inputs, schedule and completed CLI output for an independent recheck.
+The archive reader reconstructs the provider from the recorded responses
+and checks its byte length and SHA-256 digest. It also checks the original
+inputs, schedule and completed CLI output. Earlier replay formats with a
+full header-range read remain readable.
 
-The replay's version-2 record references the verified H2/H3 request and output
+Replay versions 2 and 3 reference the verified H2/H3 request and output
 from the opening authorization. Later reads start at H4 under the same closed
 ledger and frozen frontier. Archive review checks that the full schedule uses
 the exact opening references, then verifies the later requests and outputs in

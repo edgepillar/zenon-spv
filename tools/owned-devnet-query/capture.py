@@ -49,6 +49,7 @@ DEPOSIT_TIMEOUT_REPLAY = "deposit-timeout-native-replay.json"
 DEPOSIT_TIMEOUT_REPLAY_FORMAT = "owned-devnet-deposit-timeout-native-replay/v1"
 DEPOSIT_TIMEOUT_REPLAY_WITHOUT_GATEWAY_FORMAT = "owned-devnet-deposit-timeout-native-replay-without-gateway/v1"
 DEPOSIT_TIMEOUT_REPLAY_REUSING_OPENING_FORMAT = "owned-devnet-deposit-timeout-native-replay/v2"
+DEPOSIT_TIMEOUT_REPLAY_REUSING_HEADERS_FORMAT = "owned-devnet-deposit-timeout-native-replay/v3"
 DEPOSIT_TIMEOUT_ORACLE = "timeout-parent-oracle"
 DEPOSIT_TIMEOUT_CONSUMER = "timeout-consume-query"
 DEPOSIT_TIMEOUT_STDOUT = DEPOSIT_TIMEOUT_CONSUMER + ".stdout"
@@ -161,6 +162,7 @@ class Header:
 class DepositTimeoutBatch:
     report: dict
     header: Header
+    header_row: dict
     witnesses: dict | None = None
     gateway: dict | None = None
 
@@ -245,7 +247,7 @@ def deposit_timeout_header(contract, frontier, result):
     header = Header.read(rows[0], contract.data["selection"]["chain_id"])
     require(header.version == 3 and header.height == height and header.hash == frontier.parent_hash
             and header.timestamp < frontier.timestamp, "deposit_timeout_header_link")
-    return header
+    return header, rows[0]
 
 
 class LocalRpc:
@@ -301,15 +303,19 @@ class LocalRpc:
     def _frontier(self, name, *, startup_role=None, deadline=None):
         row = self._read("ledger.getFrontierMomentum", [], FRONTIER_BYTES,
                          stdout_name=name, startup_role=startup_role, deadline=deadline)
-        return Header.read(row, self.contract.data["selection"]["chain_id"])
+        return Header.read(row, self.contract.data["selection"]["chain_id"]), row
 
     def frontier(self, *, deadline=None):
+        header, _ = self.frontier_with_row(deadline=deadline)
+        return header
+
+    def frontier_with_row(self, *, deadline=None):
         name = f"rpc-{self.calls + 1:02d}.frontier.json"
-        header = self._frontier(name, deadline=deadline)
+        observation = self._frontier(name, deadline=deadline)
         # Retain the original response only after envelope/header parsing.
         # Readiness is a candidate observation, never accepted-header authority.
         self.retained_frontiers.add(name)
-        return header
+        return observation
 
     def opening(self):
         result = self._read("ledger.getMomentumsByHeight", [1, 3], OPENING_BYTES,
@@ -330,7 +336,7 @@ class LocalRpc:
         height = deposit_timeout_target_height(self.contract, frontier)
         frontier_request = self.calls
         require(frontier_request + 2 <= RPC_CALL_LIMIT, "deposit_timeout_rpc_budget")
-        header = deposit_timeout_header(self.contract, frontier, self._read(
+        header, header_row = deposit_timeout_header(self.contract, frontier, self._read(
             "ledger.getMomentumsByHeight", [height, 1], FRONTIER_BYTES, stdout_name=DEPOSIT_TIMEOUT_HEADER))
         batch = int(self.contract.data["selection"]["batch_id_decimal"])
         keys = ledger_keys(profile, batch)
@@ -370,15 +376,22 @@ class LocalRpc:
                   "context_proof_totals": totals}
         if gateway_comparison is not None:
             report.update(format=DEPOSIT_TIMEOUT_BATCH_GATEWAY_FORMAT, gateway_comparison=gateway_comparison)
-        return DepositTimeoutBatch(report, header, witnesses, gateway)
+        return DepositTimeoutBatch(report, header, header_row, witnesses, gateway)
 
-    def deposit_timeout_window(self, opening, frontier, batch, *, deadline):
+    def deposit_timeout_window(self, opening, frontier, batch, *, opening_row, frontier_row, deadline):
         require(batch.witnesses is not None and self.calls == batch.report["frontier_request_id"] + 5
-                and self.calls < RPC_CALL_LIMIT, "deposit_timeout_replay_rpc_budget")
-        parameters = deposit_timeout_range(self.contract, opening, frontier)
-        raw = self._read("ledger.getMomentumsByHeight", parameters, self.contract.data["limits"]["stdout_bytes"],
-                         stdout_name=DEPOSIT_TIMEOUT_RANGE, deadline=deadline)
-        return deposit_timeout_window(self.contract, opening, frontier, batch, raw)
+                and self.calls <= RPC_CALL_LIMIT, "deposit_timeout_replay_rpc_budget")
+        parameters = deposit_timeout_middle_range(self.contract, opening, frontier)
+        result = request_id = None
+        if parameters is not None:
+            require(self.calls < RPC_CALL_LIMIT, "deposit_timeout_replay_rpc_budget")
+            result = self._read("ledger.getMomentumsByHeight", parameters,
+                                self.contract.data["limits"]["stdout_bytes"],
+                                stdout_name=DEPOSIT_TIMEOUT_RANGE, deadline=deadline)
+            request_id = self.calls
+        window = deposit_timeout_window_from_retained_headers(self.contract, opening, frontier, batch,
+            opening_row=opening_row, frontier_row=frontier_row, middle_result=result)
+        return window, request_id
 
     def capture_startup_sync(self):
         """One diagnostic after node readiness fails; never retry readiness."""
@@ -618,11 +631,32 @@ def deposit_timeout_range(contract, opening, frontier):
     return [anchor + 1, size]
 
 
-def deposit_timeout_window(contract, opening, frontier, batch, raw):
-    _, size = deposit_timeout_range(contract, opening, frontier)
-    uint(raw["count"], minimum=size)
+def deposit_timeout_middle_range(contract, opening, frontier):
+    start, size = deposit_timeout_range(contract, opening, frontier)
+    # The H3 opening, selected parent and frozen tip already have captured rows.
+    require(size >= 3, "deposit_timeout_range_size")
+    return [start + 1, size - 3] if size > 3 else None
+
+
+def deposit_timeout_window_from_retained_headers(contract, opening, frontier, batch, *, opening_row,
+                                                 frontier_row, middle_result):
+    parameters = deposit_timeout_middle_range(contract, opening, frontier)
+    middle = []
+    if parameters is None:
+        require(middle_result is None, "deposit_timeout_middle_unexpected")
+    else:
+        count = parameters[1]
+        require(type(middle_result) is dict and type(middle_result.get("list")) is list
+                and len(middle_result["list"]) == count, "deposit_timeout_middle_range")
+        uint(middle_result.get("count"), minimum=count)
+        middle = middle_result["list"]
+    return deposit_timeout_window(contract, opening, frontier, batch,
+                                  [opening_row, *middle, batch.header_row, frontier_row])
+
+
+def deposit_timeout_window(contract, opening, frontier, batch, rows):
     require(batch.witnesses is not None, "deposit_timeout_replay_inputs")
-    provider = {"version": 1, "momentums": raw["list"], "witnesses": batch.witnesses}
+    provider = {"version": 1, "momentums": rows, "witnesses": batch.witnesses}
     compare_gateway = batch.gateway is not None
     if compare_gateway:
         provider["gateway"] = batch.gateway

@@ -193,13 +193,14 @@ def selected_witnesses(descriptor, profile, *, submission_height=3):
     return root, witnesses, checks.decode_rows(profile, values)
 
 
-def accepted_files(*, gateway_matches=True, terminal_format=None):
+def accepted_files(*, gateway_matches=True, terminal_format=None, frontier_height=5):
     descriptor, profile = capture.selected_profile(CONTRACT, ROOT)
     requires_absence = terminal_format == model.TERMINAL_FORMAT
-    root, witnesses, typed = selected_witnesses(descriptor, profile, submission_height=4 if requires_absence else 3)
+    root, witnesses, typed = selected_witnesses(
+        descriptor, profile, submission_height=frontier_height - 1 if requires_absence else 3)
     if requires_absence:
         opening_witness = opening_absence_fixture()
-        contract, headers, window = synthetic_window(last=5, state_root=root,
+        contract, headers, window = synthetic_window(last=frontier_height, state_root=root,
                                                      opening_root=bytes.fromhex(opening_witness["root"]))
     else:
         opening_witness = witnesses["batch_entry"]
@@ -1381,9 +1382,9 @@ class ReviewTests(unittest.TestCase):
             with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
                 self.review(make_archive(changed), selected)
 
-    def closed_opening_files(self, stage="fixture-deposit"):
+    def closed_opening_files(self, stage="fixture-deposit", *, frontier_height=5):
         contract, files, _, timeout_path = self.fixture_timeout_files(stage, progress_source=True)
-        _, original = accepted_files(terminal_format=model.TERMINAL_FORMAT)
+        _, original = accepted_files(terminal_format=model.TERMINAL_FORMAT, frontier_height=frontier_height)
         files["evidence/terminal.json"] = canonical({
             **json.loads(files["evidence/terminal.json"]), "owned_runtime_observed_closed": True})
         files.update({name: raw for name, raw in original.items() if name.startswith("transport/input-parent-oracle")})
@@ -1441,9 +1442,10 @@ class ReviewTests(unittest.TestCase):
                 self.assertFalse(report["recorded_fixture_timeout"]["transaction_submission_verified"])
                 self.assertIsNone(report["comparison"])
 
-    def deposit_timeout_batch_files(self, *, companion_available=True, stage="fixture-deposit", gateway=None):
-        contract, files, _, _ = self.closed_opening_files(stage)
-        _, accepted = accepted_files(terminal_format=model.TERMINAL_FORMAT)
+    def deposit_timeout_batch_files(self, *, companion_available=True, stage="fixture-deposit", gateway=None,
+                                    frontier_height=5):
+        contract, files, _, _ = self.closed_opening_files(stage, frontier_height=frontier_height)
+        _, accepted = accepted_files(terminal_format=model.TERMINAL_FORMAT, frontier_height=frontier_height)
         provider = json.loads(accepted["evidence/provider.json"])
         headers = provider["momentums"]
         chain = contract.data["selection"]["chain_id"]
@@ -1554,9 +1556,11 @@ class ReviewTests(unittest.TestCase):
             with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
                 self.review(make_archive(changed), contract)
 
-    def deposit_timeout_replay_files(self, gateway, *, reuse_opening=False):
-        contract, files, _ = self.deposit_timeout_batch_files(gateway=gateway)
-        _, full = accepted_files(gateway_matches=gateway == "match", terminal_format=model.TERMINAL_FORMAT)
+    def deposit_timeout_replay_files(self, gateway, *, reuse_opening=False, reuse_headers=False, frontier_height=5):
+        reuse_opening = reuse_opening or reuse_headers
+        contract, files, _ = self.deposit_timeout_batch_files(gateway=gateway, frontier_height=frontier_height)
+        _, full = accepted_files(gateway_matches=gateway == "match", terminal_format=model.TERMINAL_FORMAT,
+                                 frontier_height=frontier_height)
         provider = json.loads(full["evidence/provider.json"])
         compare_gateway = gateway in ("match", "mismatch")
         if compare_gateway:
@@ -1579,10 +1583,14 @@ class ReviewTests(unittest.TestCase):
                     "outputs": {"stdout": output}})})
             return output
 
-        files["evidence/rpc-15.request.json"] = canonical({"jsonrpc": "2.0", "id": 15,
-            "method": "ledger.getMomentumsByHeight", "params": [3, len(provider["momentums"])]})
-        record("rpc-15", capture.DEPOSIT_TIMEOUT_RANGE,
-               {"jsonrpc": "2.0", "id": 15, "result": {"count": 5, "list": provider["momentums"]}})
+        header_rows = provider["momentums"][1:-2] if reuse_headers else provider["momentums"]
+        range_request = None
+        if header_rows:
+            range_request = 15
+            files["evidence/rpc-15.request.json"] = canonical({"jsonrpc": "2.0", "id": 15,
+                "method": "ledger.getMomentumsByHeight", "params": [4 if reuse_headers else 3, len(header_rows)]})
+            record("rpc-15", capture.DEPOSIT_TIMEOUT_RANGE,
+                   {"jsonrpc": "2.0", "id": 15, "result": {"count": frontier_height, "list": header_rows}})
         early = json.loads(files["evidence/" + capture.CLOSED_OPENING_REPORT])["closed_ledger"]
         provenance = {**early, **json.loads(full["evidence/closed-ledger-provenance.json"])}
         reports = list(early["oracle_reports"]) if reuse_opening else []
@@ -1594,7 +1602,7 @@ class ReviewTests(unittest.TestCase):
             if reuse_opening:
                 request = json.loads(raw)
                 self.assertEqual(index, 1)
-                self.assertEqual([row["height"] for row in request["targets"]], [2, 3, 4, 5])
+                self.assertEqual([row["height"] for row in request["targets"]], list(range(2, frontier_height + 1)))
                 request["targets"] = request["targets"][2:]
                 raw = (json.dumps(request, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n").encode("ascii")
                 report.update(request_sha256=pin(raw)["sha256"], rows=report["rows"][2:])
@@ -1619,11 +1627,13 @@ class ReviewTests(unittest.TestCase):
         files.update({name: value for name, value in full.items() if name.startswith("transport/input-consumer")})
         replay_format = (capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT if compare_gateway
                          else capture.DEPOSIT_TIMEOUT_REPLAY_WITHOUT_GATEWAY_FORMAT)
-        if reuse_opening:
+        if reuse_headers:
+            replay_format = capture.DEPOSIT_TIMEOUT_REPLAY_REUSING_HEADERS_FORMAT
+        elif reuse_opening:
             replay_format = capture.DEPOSIT_TIMEOUT_REPLAY_REUSING_OPENING_FORMAT
         files["evidence/" + capture.DEPOSIT_TIMEOUT_REPLAY] = canonical({
             "format": replay_format,
-            "header_range_request_id": 15,
+            "header_range_request_id": range_request,
             "provider": pin(canonical(provider)), "closed_ledger": provenance})
         return contract, files
 
@@ -1691,6 +1701,49 @@ class ReviewTests(unittest.TestCase):
                 rejected[path] = canonical({**json.loads(files[path]), **change})
             with self.subTest(path=path, reason=reason), self.assertRaisesRegex(Refused, reason):
                 self.review(make_archive(rejected), contract)
+
+    def test_native_replay_rebuilds_identical_provider_and_typed_result_from_retained_rows(self):
+        for frontier_height in (5, 6, 7):
+            for gateway in ("match", "mismatch", "invalid"):
+                with self.subTest(frontier_height=frontier_height, gateway=gateway):
+                    contract, old = self.deposit_timeout_replay_files(
+                        gateway, reuse_opening=True, frontier_height=frontier_height)
+                    _, files = self.deposit_timeout_replay_files(
+                        gateway, reuse_headers=True, frontier_height=frontier_height)
+                    key = "recorded_deposit_timeout_native_replay"
+                    baseline = self.review(make_archive(old), contract)
+                    latest = self.review(make_archive(files), contract)
+                    self.assertEqual(latest, baseline | {"archive": latest["archive"],
+                                                        "indexed_files": latest["indexed_files"]})
+                    self.assertTrue(latest[key]["native_consumer_completed"])
+                    self.assertEqual(latest["recorded_terminal_outcome"], "UNKNOWN")
+                    replay = json.loads(files["evidence/" + capture.DEPOSIT_TIMEOUT_REPLAY])
+                    if frontier_height == 5:
+                        self.assertIsNone(replay["header_range_request_id"])
+                        self.assertNotIn("evidence/" + capture.DEPOSIT_TIMEOUT_RANGE, files)
+                        self.assertNotIn("evidence/rpc-15.request.json", files)
+                    else:
+                        rows = json.loads(files["evidence/" + capture.DEPOSIT_TIMEOUT_RANGE])["result"]["list"]
+                        self.assertEqual([row["height"] for row in rows], list(range(4, frontier_height - 1)))
+
+    def test_native_replay_binds_only_the_expected_middle_range(self):
+        range_path = "evidence/" + capture.DEPOSIT_TIMEOUT_RANGE
+        request_path = "evidence/rpc-15.request.json"
+        replay_path = "evidence/" + capture.DEPOSIT_TIMEOUT_REPLAY
+        contract, short = self.deposit_timeout_replay_files("match", reuse_headers=True)
+        _, old = self.deposit_timeout_replay_files("match", reuse_opening=True)
+        for path in (range_path, request_path):
+            with self.subTest(unexpected=path), self.assertRaisesRegex(Refused, "review_deposit_timeout_middle_unexpected"):
+                self.review(make_archive({**short, path: old[path]}), contract)
+        report = json.loads(short[replay_path])
+        with self.assertRaisesRegex(Refused, "review_deposit_timeout_replay_request"):
+            self.review(make_archive({**short, replay_path: canonical({**report, "header_range_request_id": 15})}),
+                        contract)
+        contract, middle = self.deposit_timeout_replay_files(None, reuse_headers=True, frontier_height=6)
+        with self.assertRaisesRegex(Refused, "review_member_bound"):
+            self.review(make_archive({name: raw for name, raw in middle.items() if name != range_path}), contract)
+        with self.assertRaisesRegex(Refused, "review_deposit_timeout_batch_request"):
+            self.review(make_archive({**middle, request_path: old[request_path]}), contract)
 
     def test_timeout_native_replay_refuses_unbound_range_ledger_and_receipt(self):
         contract, files = self.deposit_timeout_replay_files("match")
