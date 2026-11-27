@@ -230,6 +230,33 @@ zero snapshot bytes. A different selected root returned
 transport chunk checks, accepted-header authority and excluded-state
 provenance through their existing trust inputs. [Archived capture record](https://github.com/edgepillar/zenon-spv/pull/450)
 
+### Verify the target chunk manifest during replay
+
+Select the target transport manifest's exact byte count and SHA-256 separately.
+With both manifest options present, input order is plan, target manifest,
+patch and base. Existing commands keep their original three input frames.
+
+```bash
+set -o pipefail
+cat "$R1_CHURN_PLAN_OBJECT" "$R1_TARGET_MANIFEST_OBJECT" "$R1_PATCH_OBJECT" "$R1_BEFORE_OBJECT" |
+  python3 -I -B tools/ledger-inventory/churn.py \
+    --plan-bytes "$R1_PLAN_BYTES" --plan-sha256 "$R1_PLAN_SHA256" \
+    --after-manifest-bytes "$R1_TARGET_MANIFEST_BYTES" \
+    --after-manifest-sha256 "$R1_TARGET_MANIFEST_SHA256" \
+    --projection-profile zenon-l1-balance-storage-sha3/v1 \
+    --expect-candidate-root "$R1_TARGET_ROOT"
+```
+
+The manifest selection must match the plan's after frontier, full target
+digest, byte count and provenance pin. The replay checks each declared chunk
+as it emits canonical records. It keeps the chunk digests and the full-stream
+digest in memory and writes zero target bytes. `after_transport` reports the
+checked manifest pin and chunk count. `candidate_projection` reports the
+separately selected mathematical root comparison when requested. The
+transport and root checks withhold successful reports until replay completes.
+The manifest-backed mode keeps the same trusted-input requirements for any
+later accepted-header comparison and snapshot import.
+
 ### Repeated-key allocation observation
 
 A paired in-memory observation compared the replay at

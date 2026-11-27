@@ -9,6 +9,7 @@ on:
       - 'tools/ledger-inventory/inventory.py'
       - 'tools/ledger-inventory/inventory_test.py'
       - 'tools/ledger-export/snapshot_projection.py'
+      - 'tools/ledger-transport/transport.py'
       - '.github/workflows/ledger-inventory.yml'
   pull_request:
     branches: [main]
@@ -18,6 +19,7 @@ on:
       - 'tools/ledger-inventory/inventory.py'
       - 'tools/ledger-inventory/inventory_test.py'
       - 'tools/ledger-export/snapshot_projection.py'
+      - 'tools/ledger-transport/transport.py'
       - '.github/workflows/ledger-inventory.yml'
 
 permissions:
@@ -85,8 +87,10 @@ jobs:
           assert 0 < len(names) == len(set(names)) == report['tests'] and names == report['passed_names']
 
           projection = 'tools/ledger-export/snapshot_projection.py'
+          transport = 'tools/ledger-transport/transport.py'
           scripts = tuple('tools/ledger-inventory/' + name for name in ('inventory.py', 'inventory_test.py', 'churn.py'))
-          files = (*scripts, projection, 'tools/ledger-inventory/README.md', '.github/workflows/ledger-inventory.yml')
+          files = (*scripts, projection, transport,
+                   'tools/ledger-inventory/README.md', '.github/workflows/ledger-inventory.yml')
           source = {}
           for name in files:
               path = root / name
@@ -100,6 +104,7 @@ jobs:
               source[name] = {'git': pin(selected), 'checkout': pin(working), 'relation': relation}
           assert report['source_pins'] == {Path(name).name: source[name]['checkout']['sha256'] for name in scripts}
           assert report['projection_source_sha256'] == source[projection]['checkout']['sha256']
+          assert report['transport_source_sha256'] == source[transport]['checkout']['sha256']
           assert report['representative_dataset_collected'] is False and report['state_value_acceptance_enabled'] is False
 
           result = {

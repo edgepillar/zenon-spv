@@ -40,7 +40,7 @@ NATIVE_FILES = frozenset("internal/verify/experimental_v3_" + name for name in (
 # Every other non-document tree record remains in this reviewed closure,
 # including workflows, research Go sources, Python helpers and fixture data.
 ORACLE_SOURCE_PINS = frozenset((
-    "f99b68899409e1ff66fcd900eb7b8482742c75e74d298a498ba7821f098fca3d",
+    "4a9f1a1917f1a4f3b609e855c6a65f011421da57624fb22bf429ab971ca5680f",
 ))
 SHARED_TRANSPORT = "tools/ledger-transport/transport.py"
 SHARED_PROJECTION = "tools/ledger-export/snapshot_projection.py"
@@ -70,8 +70,8 @@ PORTABLE_WORKFLOWS = (
      "ed2edac4230468ec912fa18c1eb377b4006b970eeb052670abc1f57eb9803a24"),
     (".github/workflows/ledger-export.yml", EXPORT_FILES | {SHARED_TRANSPORT}, 8084,
      "8fab1803332f60cac43a20b8940988b19c38b8dd0359f005f605dcc55dcb98fb"),
-    (".github/workflows/ledger-inventory.yml", INVENTORY_FILES | {SHARED_PROJECTION}, 6096,
-     "2d2804b11a4dac869ea0a20c851b71a892683491fbc0f79f6e1210acd8178846"),
+    (".github/workflows/ledger-inventory.yml", INVENTORY_FILES | {SHARED_PROJECTION, SHARED_TRANSPORT}, 6372,
+     "12289ec09b93f2e74a1e31f0d0c7088c9cd48e5d42eb71ea569c2aa53fee98d6"),
     (".github/workflows/owned-devnet-query.yml", PREPARATION_FILES, 4453,
      "cf4ddd4e2c7a5388af336e42e5d47ce43ca112ed2c699731d4b8cd2137977d66"),
     (".github/workflows/first-insertion-catchup.yml",
@@ -80,7 +80,7 @@ PORTABLE_WORKFLOWS = (
 )
 # Keep every remaining non-document dependency, including all workflows.
 # Refresh only after reviewing dependencies and selecting full runtime CI.
-PORTABLE_SOURCE_PIN = "683a7b0b329fd788f1e8b55dcbc4625203fc8f2b5b32859368c555b6b2cb8998"
+PORTABLE_SOURCE_PIN = "cbe59d89d51b8c3e36554507d1f9c72c1f8031627c9e86a51bab3a3747f479b1"
 MAX_FILTERED_DIFF_RECORDS = 256
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192

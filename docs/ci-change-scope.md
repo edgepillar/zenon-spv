@@ -97,7 +97,7 @@ files. Regular Markdown may accompany the changes.
 | Directory | Reviewed files | Required workflow |
 | --- | --- | --- |
 | `tools/ledger-transport` | `archive_index.py`, `archive_index_test.py`, `archive_tail.py`, `archive_tail_test.py`, `transport_test.py`, `README.md`, `THIRD_PARTY_NOTICES` | `ledger-transport.yml` |
-| `tools/ledger-transport` | `transport.py` | `ledger-transport.yml` and `ledger-export.yml` |
+| `tools/ledger-transport` | `transport.py` | `ledger-transport.yml`, `ledger-export.yml` and `ledger-inventory.yml` |
 | `tools/ledger-export` | `inventory_completed_export.py`, `inventory_completed_export_test.py`, `README.md` | `ledger-export.yml` |
 | `tools/ledger-export` | `snapshot_projection.py` | `ledger-export.yml` and `ledger-inventory.yml` |
 | `tools/ledger-inventory` | `churn.py`, `inventory_test.py`, `README.md` | `ledger-inventory.yml` |
@@ -105,9 +105,10 @@ files. Regular Markdown may accompany the changes.
 | `tools/owned-devnet-query` | `engine.py`, `node_diagnostics.py`, `node_diagnostics_test.py`, `node_file_logs.py`, `node_file_logs_test.py` | `owned-devnet-query.yml` |
 | `tools/gen-state-root-vectors` | `first-insertion-catchup_test.go.txt`, `first-insertion-cpu_test.go.txt`, `first-insertion-export_test.go.txt`, `qualify_first_insertion.py`, `qualify_first_insertion_test.py` | `first-insertion-catchup.yml` |
 
-The compiled export controls also consume `transport.py`. Inventory replay
-loads the shared snapshot projector. The core `inventory.py` stays in the
-full-runtime closure because the exporter and transport also consume it.
+The compiled export controls and manifest-backed inventory replay also consume
+`transport.py`. Inventory replay loads the shared snapshot projector. The core
+`inventory.py` stays in the full-runtime closure because the exporter and
+transport also consume it.
 `ledger-inventory.yml` runs the existing Python controls on Linux, macOS and
 Windows. Each platform uploads one report with actual test names, the exact
 checkout, source tree, source byte digests and workflow attempt.
@@ -454,3 +455,14 @@ change selects inventory and exporter controls together.
 | --- | ---: | ---: | --- |
 | Native v3 | 1224 | 125316 | `f99b68899409e1ff66fcd900eb7b8482742c75e74d298a498ba7821f098fca3d` |
 | Portable tools | 1201 | 123117 | `683a7b0b329fd788f1e8b55dcbc4625203fc8f2b5b32859368c555b6b2cb8998` |
+
+### Manifest-backed replay
+
+Inventory replay shares the transport checker. Changes to that checker select
+all three portable consumers. The dependency and workflow update takes the
+full lane and records the updated closures.
+
+| Closure | Entries | Encoded bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Native v3 | 1224 | 125316 | `4a9f1a1917f1a4f3b609e855c6a65f011421da57624fb22bf429ab971ca5680f` |
+| Portable tools | 1201 | 123117 | `cbe59d89d51b8c3e36554507d1f9c72c1f8031627c9e86a51bab3a3747f479b1` |

@@ -725,7 +725,7 @@ class CIChangeScopeControls(unittest.TestCase):
             for path in sorted(M.PORTABLE_FILES):
                 with self.subTest(event=event, path=path):
                     if path == "tools/ledger-transport/transport.py":
-                        required = [TRANSPORT, EXPORT]
+                        required = [TRANSPORT, EXPORT, INVENTORY]
                     elif path == "tools/ledger-export/snapshot_projection.py":
                         required = [EXPORT, INVENTORY]
                     else:
@@ -837,7 +837,7 @@ class CIChangeScopeControls(unittest.TestCase):
         leaves = ((b"tools/owned-devnet-query/review.py", [PREPARATION]),
                   (b"tools/ledger-export/inventory_completed_export.py", [EXPORT]),
                   (b"tools/ledger-transport/archive_tail.py", [TRANSPORT]),
-                  (b"tools/ledger-transport/transport.py", [TRANSPORT, EXPORT]))
+                  (b"tools/ledger-transport/transport.py", [TRANSPORT, EXPORT, INVENTORY]))
         for event in ("pull_request", "push"):
             for change, old_mode, new_mode in ((b"A", b"000000", b"100644"),
                                                (b"M", b"100644", b"100644"),
@@ -1082,7 +1082,7 @@ class CIChangeScopeControls(unittest.TestCase):
         text = (ROOT / INVENTORY).read_text(encoding="utf-8")
         triggers = text.split("on:\n", 1)[1].split("\npermissions:", 1)[0]
         paths = sorted((*M.INVENTORY_FILES, "tools/ledger-inventory/inventory.py",
-                        "tools/ledger-export/snapshot_projection.py", INVENTORY))
+                        "tools/ledger-export/snapshot_projection.py", "tools/ledger-transport/transport.py", INVENTORY))
         for event in ("push", "pull_request"):
             selected = triggers.split("  " + event + ":\n", 1)[1].split("\n  pull_request:", 1)[0]
             filters = re.findall(r"^      - '([^']+)'$", selected, re.MULTILINE)

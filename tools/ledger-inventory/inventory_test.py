@@ -670,10 +670,22 @@ def projection_replay_case():
     return (before, operations, after), root, hashlib.sha256(mapping).hexdigest()
 
 
+def target_manifest(plan, target, width):
+    transport = CHURN.load_source("inventory_test_transport", "ledger-transport/transport.py")
+    after = plan["after"]
+    selected = {**after["momentum"], "bytes": after["bytes"], "sha256": after["sha256"],
+                "record_space": plan["record_space"], "provenance_sha256": plan["provenance_sha256"]}
+    return {"format": "zenon-r1-transport-manifest/v1", "selection": selected, "chunk_bytes": width,
+            "chunks": [{"bytes": len(block), "sha256": hashlib.sha256(block).hexdigest()}
+                       for block in (target[i:i + width] for i in range(0, len(target), width))],
+            "scope": transport.scope()}
+
+
 class LedgerChurnTests(unittest.TestCase):
-    def check(self, plan, patch, before, *, reader=io.BytesIO, **options):
+    def check(self, plan, patch, before, *, reader=io.BytesIO, manifest=b"", **options):
         raw = INV.encoded(plan)
-        return CHURN.inspect(reader(raw + patch + before), len(raw), hashlib.sha256(raw).hexdigest(), **options)
+        return CHURN.inspect(reader(raw + manifest + patch + before), len(raw),
+                             hashlib.sha256(raw).hexdigest(), **options)
 
     def test_replays_ordered_puts_deletes_empty_values_and_repeated_keys(self):
         account = b"\x03" + b"A" * 20
@@ -917,6 +929,73 @@ class LedgerChurnTests(unittest.TestCase):
                 self.assertNotIn("candidate_projection", report)
                 self.assertNotIn("families", report)
 
+    def test_target_transport_and_projection_match_in_a_single_replay(self):
+        inputs, root, mapping = projection_replay_case()
+        plan, patch, before = replay_case(*inputs)
+        target = dump(inputs[2])
+        value = target_manifest(plan, target, 4096)
+        manifest = INV.encoded(value)
+        report = self.check(plan, patch, before, reader=ShortReads, manifest=manifest,
+                            after_manifest_bytes=len(manifest), after_manifest_sha256=hashlib.sha256(manifest).hexdigest(),
+                            projection_profile="zenon-l1-balance-storage-sha3/v1", expect_candidate_root=root)
+        self.assertEqual(report["format"], "zenon-r1-ledger-churn-transport/v1")
+        self.assertEqual(report["status"], "SELECTED_PATCH_REPLAY_TRANSPORT_AND_PROJECTION_MATCHED")
+        checked = report["after_transport"]
+        self.assertEqual(checked["selection"], value["selection"])
+        self.assertEqual(checked["chunks_checked"], len(value["chunks"]))
+        self.assertTrue(checked["emitted_stream_completed"])
+        self.assertEqual((report["after_snapshot_bytes_read"], report["derived_snapshot_bytes_written"]), (0, 0))
+        self.assertEqual(report["input_bytes"], len(INV.encoded(plan)) + len(manifest) + len(patch) + len(before))
+        self.assertEqual(report["candidate_projection"]["computed_root"], root)
+        self.assertEqual(report["candidate_projection"]["mapping_sha256"], mapping)
+        self.assertFalse(report["candidate_projection"]["accepted_header_binding"])
+
+    def test_target_transport_requires_both_manifest_arguments_before_reading(self):
+        blocked = mock.Mock()
+        for options in ({"after_manifest_bytes": 10}, {"after_manifest_sha256": "00" * 32},
+                        {"after_manifest_bytes": True, "after_manifest_sha256": "00" * 32},
+                        {"after_manifest_bytes": (512 << 10) + 1, "after_manifest_sha256": "00" * 32}):
+            with self.subTest(options=options), self.assertRaisesRegex(CHURN.inventory.Refused, "after_manifest_options"):
+                CHURN.inspect(blocked, 1, "00" * 32, **options)
+        blocked.read.assert_not_called()
+
+    def test_target_manifest_selects_the_same_frontier_and_allows_an_empty_target(self):
+        for before, operations, after in (([], [], []), ([(b"a", b"b")], [], [(b"a", b"b")])):
+            with self.subTest(size=len(after)):
+                plan, patch, old = replay_case(before, operations, after)
+                value = target_manifest(plan, dump(after), 3)
+                raw = INV.encoded(value)
+                report = self.check(plan, patch, old, manifest=raw, after_manifest_bytes=len(raw),
+                                    after_manifest_sha256=hashlib.sha256(raw).hexdigest())
+                self.assertEqual(report["status"], "SELECTED_PATCH_REPLAY_AND_TRANSPORT_MATCHED")
+                self.assertEqual(report["after_transport"]["chunks_checked"], len(value["chunks"]))
+                value["selection"]["hash"] = "ef" * 32
+                wrong = INV.encoded(value)
+                with self.assertRaisesRegex(CHURN.inventory.Refused, "after_transport_manifest_selection"):
+                    self.check(plan, patch, old, manifest=wrong, after_manifest_bytes=len(wrong),
+                               after_manifest_sha256=hashlib.sha256(wrong).hexdigest())
+
+    def test_target_transport_refusal_withholds_projection_and_counts_on_cli(self):
+        inputs, root, _ = projection_replay_case()
+        plan, patch, old = replay_case(*inputs)
+        value = target_manifest(plan, dump(inputs[2]), 4096)
+        valid = INV.encoded(value)
+        value["chunks"][2]["sha256"] = "00" * 32
+        raw = INV.encoded(plan)
+        for manifest, selected_root, reason in ((INV.encoded(value), root, "after_transport_chunk_digest"),
+                                                (valid, "00" * 32, "projection_root_mismatch")):
+            with self.subTest(reason=reason):
+                command = [sys.executable, "-I", "-B", str(HERE / "churn.py"), "--plan-bytes", str(len(raw)),
+                           "--plan-sha256", hashlib.sha256(raw).hexdigest(), "--projection-profile",
+                           "zenon-l1-balance-storage-sha3/v1", "--expect-candidate-root", selected_root,
+                           "--after-manifest-bytes", str(len(manifest)),
+                           "--after-manifest-sha256", hashlib.sha256(manifest).hexdigest()]
+                result = subprocess.run(command, input=raw + manifest + patch + old, capture_output=True, timeout=10)
+                self.assertEqual((result.returncode, result.stderr), (1, b""))
+                report = json.loads(result.stdout)
+                self.assertEqual((report["status"], report["reason"]), ("UNKNOWN", reason))
+                self.assertFalse({"after_transport", "candidate_projection", "families"} & report.keys())
+
     def test_large_untouched_value_is_read_once_without_an_after_stream(self):
         size = 16 << 20
         value = VirtualValue(size)
@@ -991,6 +1070,8 @@ if __name__ == "__main__":
                                       for name in ("inventory.py", "inventory_test.py", "churn.py")},
                       "projection_source_sha256": hashlib.sha256(
                           (HERE.parent / "ledger-export/snapshot_projection.py").read_bytes()).hexdigest(),
+                      "transport_source_sha256": hashlib.sha256(
+                          (HERE.parent / "ledger-transport/transport.py").read_bytes()).hexdigest(),
                       "large_value_is_generated_in_memory": True, "large_fixture_files_created": False,
                       "measurements": MEASUREMENTS,
                       "representative_dataset_collected": False, "state_value_acceptance_enabled": False}, sort_keys=True))
