@@ -1487,7 +1487,7 @@ class ReviewTests(unittest.TestCase):
             return responses[stdout_name]
 
         with patch.object(rpc, "_read", side_effect=read):
-            report = rpc.deposit_timeout_batch(capture.Header.read(headers[-1], chain), descriptor, profile)
+            report = rpc.deposit_timeout_batch(capture.Header.read(headers[-1], chain), descriptor, profile).report
         if report["format"] == capture.DEPOSIT_TIMEOUT_BATCH_FORMAT:
             # The runner selects the optional DTO and request only when its
             # shape and identity passed the read-side checks.
@@ -1553,6 +1553,96 @@ class ReviewTests(unittest.TestCase):
                 changed[path] = replacement
             with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
                 self.review(make_archive(changed), contract)
+
+    def deposit_timeout_replay_files(self, gateway):
+        contract, files, _ = self.deposit_timeout_batch_files(gateway=gateway)
+        _, full = accepted_files(gateway_matches=gateway == "match", terminal_format=model.TERMINAL_FORMAT)
+        provider = json.loads(full["evidence/provider.json"])
+        provider["gateway"] = json.loads(files["evidence/" + capture.DEPOSIT_TIMEOUT_GATEWAY])["result"]
+
+        def record(label, name, value):
+            raw = canonical(value)
+            output = {"file": name, **pin(raw)}
+            files.update({"evidence/" + name: raw,
+                "evidence/" + label + ".started.json": canonical({
+                    **json.loads(files["evidence/rpc-09.started.json"]), "label": label}),
+                "evidence/" + label + ".complete.json": canonical({
+                    **json.loads(files["evidence/rpc-09.complete.json"]), "label": label,
+                    "outputs": {"stdout": output}})})
+            return output
+
+        files["evidence/rpc-15.request.json"] = canonical({"jsonrpc": "2.0", "id": 15,
+            "method": "ledger.getMomentumsByHeight", "params": [3, len(provider["momentums"])]})
+        record("rpc-15", capture.DEPOSIT_TIMEOUT_RANGE,
+               {"jsonrpc": "2.0", "id": 15, "result": {"count": 5, "list": provider["momentums"]}})
+        early = json.loads(files["evidence/" + capture.CLOSED_OPENING_REPORT])["closed_ledger"]
+        provenance = {**early, **json.loads(full["evidence/closed-ledger-provenance.json"])}
+        reports = []
+        for index, source in enumerate(provenance["oracle_reports"], 1):
+            label = f"{capture.DEPOSIT_TIMEOUT_ORACLE}-{index:02d}"
+            request_file = label + ".request.json"
+            raw = full["evidence/" + source["request"]["file"]]
+            files["evidence/" + request_file] = raw
+            stdout = record(label, label + ".stdout", json.loads(full["evidence/" + source["stdout"]["file"]]))
+            reports.append({"request": {"file": request_file, **pin(raw)}, "stdout": stdout})
+        provenance["oracle_reports"] = reports
+        cli = json.loads(full["evidence/consume-query.stdout"])
+        cli["gateway_comparison"]["frontier_is_finalized_hint"] = True
+        record(capture.DEPOSIT_TIMEOUT_CONSUMER, capture.DEPOSIT_TIMEOUT_STDOUT, cli)
+        comparison = json.loads(full["evidence/consumer-comparison.json"])
+        comparison["gateway_stored_fields_match"] = gateway == "match"
+        files["evidence/consumer-comparison.json"] = canonical(comparison)
+        for name in ("query-config.json", "query-request.json", "query-context-pins.json"):
+            files["evidence/" + name] = full["evidence/" + name]
+        files.update({name: value for name, value in full.items() if name.startswith("transport/input-consumer")})
+        files["evidence/" + capture.DEPOSIT_TIMEOUT_REPLAY] = canonical({
+            "format": capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT, "header_range_request_id": 15,
+            "provider": pin(canonical(provider)), "closed_ledger": provenance})
+        return contract, files
+
+    def test_timeout_native_replay_retains_typed_result_and_original_unknown(self):
+        for gateway in ("match", "mismatch"):
+            with self.subTest(gateway=gateway):
+                contract, files = self.deposit_timeout_replay_files(gateway)
+                result = self.review(make_archive(files), contract)
+                replay = result["recorded_deposit_timeout_native_replay"]
+                self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
+                self.assertEqual(result["recorded_fixture_timeout"]["actual_exit"], 143)
+                self.assertFalse(result["recorded_fixture_timeout"]["output_complete"])
+                self.assertFalse(result["new_devnet_acceptance_established"])
+                self.assertIsNone(result["comparison"])
+                self.assertFalse(result["recorded_deposit_timeout_batch"]["native_consumer_completed"])
+                self.assertTrue(replay["native_consumer_completed"])
+                self.assertEqual(replay["fixture_outcome"], "UNKNOWN")
+                self.assertFalse(replay["transaction_submission_verified"])
+                self.assertEqual(replay["comparison"]["three_membership_proofs_checked"], 3)
+                self.assertEqual(replay["comparison"]["gateway_stored_fields_match"], gateway == "match")
+
+    def test_timeout_native_replay_refuses_unbound_range_ledger_and_receipt(self):
+        contract, files = self.deposit_timeout_replay_files("match")
+        path = "evidence/" + capture.DEPOSIT_TIMEOUT_REPLAY
+        summary = json.loads(files[path])
+        request_path = "evidence/rpc-15.request.json"
+        complete_path = f"evidence/{capture.DEPOSIT_TIMEOUT_CONSUMER}.complete.json"
+        complete = json.loads(files[complete_path])
+        for path_to_change, value, reason in (
+                (path, None, "review_deposit_timeout_replay_report_missing"),
+                (path, {**summary, "provider": {"bytes": 1, "sha256": "a" * 64}},
+                 "review_deposit_timeout_replay_provider"),
+                (path, {**summary, "closed_ledger": {**summary["closed_ledger"], "engine_id": "a" * 64}},
+                 "review_deposit_timeout_replay_ledger"),
+                (request_path, {**json.loads(files[request_path]), "params": [4, 2]},
+                 "review_deposit_timeout_batch_request"),
+                (complete_path, {**complete, "actual_exit": 143, "output_complete": False},
+                 "review_recorded_command_completion"),
+        ):
+            rejected = dict(files)
+            if value is None:
+                del rejected[path_to_change]
+            else:
+                rejected[path_to_change] = canonical(value)
+            with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive(rejected), contract)
 
     def test_deposit_timeout_batch_requires_exact_linked_requests_and_summary(self):
         contract, files, selected = self.deposit_timeout_batch_files()

@@ -147,7 +147,8 @@ class Evidence:
             path = model.relative_name(record["path"])
             parent, _, name = path.partition("/")
             retained_stream = parent == "evidence" and (
-                name == capture.CONSUMER_STDOUT or re.fullmatch(r"parent-oracle-[0-9]{2}\.stdout", name))
+                name in (capture.CONSUMER_STDOUT, capture.DEPOSIT_TIMEOUT_STDOUT)
+                or re.fullmatch(r"(?:timeout-)?parent-oracle-[0-9]{2}\.stdout", name))
             require(parent in {"evidence", "transport"} and FILE.fullmatch(name) is not None
                     and (name.endswith(".json") or retained_stream)
                     and path in self.rows and path not in self.pins, "review_member_selection")
@@ -365,12 +366,13 @@ def recorded_input_component(evidence, contract, role):
                     folder="transport", external_pin=component["archive"])
 
 
-def recorded_closed_schedule(evidence, contract, headers, frontier, provenance, *, services=model.SERVICES):
+def recorded_closed_schedule(evidence, contract, headers, frontier, provenance, *, services=model.SERVICES,
+                             label_prefix="parent-oracle"):
     oracle_outputs = []
 
     def oracle_reports():
         for index, (request, _) in enumerate(capture.oracle_requests(contract, headers, frontier), 1):
-            label = f"parent-oracle-{index:02d}"
+            label = f"{label_prefix}-{index:02d}"
             name, output = label + ".request.json", label + ".stdout"
             require(evidence.bytes("evidence/" + name, 32 << 10) == request, "review_oracle_request")
             oracle_outputs.append({"request": {"file": name, **evidence.pins["evidence/" + name]},
@@ -435,6 +437,25 @@ def recorded_closed_opening(evidence, contract, selection, terminal, timeout, op
             "v3_schedule_hash": schedule["schedule_hash"], "accepted_header_authority": False}
 
 
+def recorded_timeout_read(evidence, request_id, name, method, params, limit):
+    model.uint(request_id, capture.RPC_CALL_LIMIT)
+    require("evidence/" + name in evidence.pins, "review_member_bound")
+    label = f"rpc-{request_id:02d}"
+    same(evidence.json(label + ".request.json"), {"jsonrpc": "2.0", "id": request_id,
+         "method": method, "params": params}, "review_deposit_timeout_batch_request")
+    recorded_output(evidence, label, name)
+    return capture.rpc_result(evidence.bytes("evidence/" + name, limit), request_id, limit)
+
+
+def recorded_timeout_frontier(evidence, contract, closed_opening):
+    after = closed_opening["frontier_request_id"]
+    raw = evidence.bytes(f"evidence/rpc-{after:02d}.frontier.json", capture.FRONTIER_BYTES)
+    frontier = capture.Header.read(capture.rpc_result(raw, after, capture.FRONTIER_BYTES),
+                                  contract.data["selection"]["chain_id"])
+    same(frontier.identifier(), closed_opening["closed_ledger_frontier"], "review_deposit_timeout_batch_frontier")
+    return frontier
+
+
 def recorded_deposit_timeout_batch(evidence, contract, checkout, timeout, closed_opening):
     members = {name for name in (capture.DEPOSIT_TIMEOUT_HEADER, *capture.DEPOSIT_TIMEOUT_PROOFS.values(),
                                  capture.DEPOSIT_TIMEOUT_GATEWAY)
@@ -454,22 +475,9 @@ def recorded_deposit_timeout_batch(evidence, contract, checkout, timeout, closed
             "review_deposit_timeout_batch_format")
     after = closed_opening["frontier_request_id"]
     same(summary["frontier_request_id"], after, "review_deposit_timeout_batch_frontier")
-    raw = evidence.bytes(f"evidence/rpc-{after:02d}.frontier.json", capture.FRONTIER_BYTES)
-    frontier = capture.Header.read(capture.rpc_result(raw, after, capture.FRONTIER_BYTES),
-                                  contract.data["selection"]["chain_id"])
-    same(frontier.identifier(), closed_opening["closed_ledger_frontier"], "review_deposit_timeout_batch_frontier")
-
-    def recorded_read(request_id, name, method, params, limit):
-        model.uint(request_id, capture.RPC_CALL_LIMIT)
-        require(name in members, "review_member_bound")
-        label = f"rpc-{request_id:02d}"
-        same(evidence.json(label + ".request.json"), {"jsonrpc": "2.0", "id": request_id,
-             "method": method, "params": params}, "review_deposit_timeout_batch_request")
-        recorded_output(evidence, label, name)
-        return capture.rpc_result(evidence.bytes("evidence/" + name, limit), request_id, limit)
-
+    frontier = recorded_timeout_frontier(evidence, contract, closed_opening)
     height = capture.deposit_timeout_target_height(contract, frontier)
-    header = capture.deposit_timeout_header(contract, frontier, recorded_read(after + 1,
+    header = capture.deposit_timeout_header(contract, frontier, recorded_timeout_read(evidence, after + 1,
         capture.DEPOSIT_TIMEOUT_HEADER, "ledger.getMomentumsByHeight", [height, 1], capture.FRONTIER_BYTES))
     same(summary["header"], header.identifier(), "review_deposit_timeout_batch_header")
     same(summary["state_root"], header.root, "review_deposit_timeout_batch_root")
@@ -478,30 +486,80 @@ def recorded_deposit_timeout_batch(evidence, contract, checkout, timeout, closed
     keys = ledger_keys(profile, batch)
 
     def proof(name, request_id):
-        return recorded_read(request_id, capture.DEPOSIT_TIMEOUT_PROOFS[name], "ledger.getProof",
-                             capture.state_proof_parameters(header, keys[name]), capture.OPENING_PROOF_BYTES)
+        return recorded_timeout_read(evidence, request_id, capture.DEPOSIT_TIMEOUT_PROOFS[name],
+            "ledger.getProof", capture.state_proof_parameters(header, keys[name]), capture.OPENING_PROOF_BYTES)
 
     entry = proof("batch_entry", after + 2)
     observed = opening_batch_witness(profile, header.root, keys["batch_entry"], entry)
     same(summary["batch_witness"], observed, "review_deposit_timeout_batch_proof")
     expected = {capture.DEPOSIT_TIMEOUT_HEADER, capture.DEPOSIT_TIMEOUT_PROOFS["batch_entry"]}
     require(not gateway_selected or summary["context_proof_totals"] is not None, "review_deposit_timeout_gateway_scope")
+    witnesses = gateway = None
     if summary["context_proof_totals"] is not None:
         require(observed["presence"] == "present", "review_deposit_timeout_batch_context")
-        checked = witness_rows(profile, batch, header.root, {"batch_entry": entry,
-            "domain_record": proof("domain_record", after + 3), "domain_config": proof("domain_config", after + 4)})
+        witnesses = {"batch_entry": entry, "domain_record": proof("domain_record", after + 3),
+                     "domain_config": proof("domain_config", after + 4)}
+        checked = witness_rows(profile, batch, header.root, witnesses)
         selected_semantics(descriptor, checked["decoded"])
         same(summary["context_proof_totals"], checked["totals"], "review_deposit_timeout_batch_totals")
         expected.update(capture.DEPOSIT_TIMEOUT_PROOFS.values())
         if gateway_selected:
             domain = contract.data["selection"]["domain_id"]
-            row = recorded_read(after + 5, capture.DEPOSIT_TIMEOUT_GATEWAY,
-                                "embedded.settlement.getBatch", [domain, batch], capture.DEPOSIT_TIMEOUT_GATEWAY_BYTES)
-            gateway = compare_frontier_batch(row, domain, batch, checked["decoded"]["entry"], raw_rpc=True)
-            same(summary["gateway_comparison"], gateway, "review_deposit_timeout_gateway_comparison")
+            gateway = recorded_timeout_read(evidence, after + 5, capture.DEPOSIT_TIMEOUT_GATEWAY,
+                "embedded.settlement.getBatch", [domain, batch], capture.DEPOSIT_TIMEOUT_GATEWAY_BYTES)
+            comparison = compare_frontier_batch(gateway, domain, batch, checked["decoded"]["entry"], raw_rpc=True)
+            same(summary["gateway_comparison"], comparison, "review_deposit_timeout_gateway_comparison")
             expected.add(capture.DEPOSIT_TIMEOUT_GATEWAY)
     require(members == expected, "review_deposit_timeout_batch_members")
-    return {**summary, "accepted_header_authority": False, "native_consumer_completed": False}
+    return capture.DepositTimeoutBatch(
+        {**summary, "accepted_header_authority": False, "native_consumer_completed": False},
+        header, witnesses, gateway)
+
+
+def recorded_deposit_timeout_replay(evidence, contract, checkout, opening, closed_opening, batch):
+    if "evidence/" + capture.DEPOSIT_TIMEOUT_REPLAY not in evidence.pins:
+        require(not any("evidence/" + name in evidence.pins
+                        for name in (capture.DEPOSIT_TIMEOUT_RANGE, capture.DEPOSIT_TIMEOUT_STDOUT)),
+                "review_deposit_timeout_replay_report_missing")
+        require(not any(re.fullmatch(r"evidence/timeout-parent-oracle-[0-9]{2}\.stdout", path)
+                        for path in evidence.pins), "review_deposit_timeout_replay_report_missing")
+        return None
+    require(batch is not None and batch.gateway is not None and opening is not None and closed_opening is not None,
+            "review_deposit_timeout_replay_scope")
+    replay = evidence.json(capture.DEPOSIT_TIMEOUT_REPLAY, 32 << 10)
+    exact_keys(replay, {"format", "header_range_request_id", "provider", "closed_ledger"},
+               "review_deposit_timeout_replay_fields")
+    same(replay["format"], capture.DEPOSIT_TIMEOUT_REPLAY_FORMAT, "review_deposit_timeout_replay_format")
+    request_id = closed_opening["frontier_request_id"] + 6
+    same(replay["header_range_request_id"], request_id, "review_deposit_timeout_replay_request")
+    frontier = recorded_timeout_frontier(evidence, contract, closed_opening)
+    raw = recorded_timeout_read(evidence, request_id, capture.DEPOSIT_TIMEOUT_RANGE, "ledger.getMomentumsByHeight",
+        capture.deposit_timeout_range(contract, opening, frontier), contract.data["limits"]["stdout_bytes"])
+    window = capture.deposit_timeout_window(contract, opening, frontier, batch, raw)
+    _, provider = capture.deposit_timeout_provider(contract, window)
+    same(replay["provider"], provider, "review_deposit_timeout_replay_provider")
+
+    recorded_input_component(evidence, contract, "consumer")
+    provenance = replay["closed_ledger"]
+    early = evidence.json(capture.CLOSED_OPENING_REPORT, 8 << 10)["closed_ledger"]
+    exact_keys(provenance, set(early), "review_deposit_timeout_replay_ledger")
+    for name in ("rpc_container_id", "engine_id", "reader_source_sha256"):
+        same(provenance[name], early[name], "review_deposit_timeout_replay_ledger")
+    schedule = recorded_closed_schedule(evidence, contract, window.headers, frontier.identifier(), provenance,
+                                       label_prefix=capture.DEPOSIT_TIMEOUT_ORACLE)
+    descriptor, profile = capture.selected_profile(contract, checkout)
+    configuration, request, pins = capture.query_inputs(contract, window, schedule, profile)
+    for name, expected in (("query-config.json", configuration), ("query-request.json", request),
+                           ("query-context-pins.json", pins)):
+        same(evidence.json(name, 256 << 10), expected, "review_query_inputs")
+    recorded_output(evidence, capture.DEPOSIT_TIMEOUT_CONSUMER, capture.DEPOSIT_TIMEOUT_STDOUT)
+    result = evidence.json(capture.DEPOSIT_TIMEOUT_STDOUT, 256 << 10)
+    comparison = consumer_result(result, configuration, request, window.provider, window.query.root, descriptor)
+    same(comparison, evidence.json("consumer-comparison.json"), "review_consumer_comparison")
+    same(comparison["gateway_stored_fields_match"], batch.report["gateway_comparison"]["stored_fields_match"],
+         "review_deposit_timeout_gateway_comparison")
+    return {"provider": provider, "comparison": comparison, "native_consumer_completed": True,
+            "fixture_outcome": "UNKNOWN", "transaction_submission_verified": False}
 
 
 def recorded_consumer_inputs(evidence, contract, checkout, selection, opening):
@@ -1054,6 +1112,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         closed_opening = recorded_closed_opening(evidence, contract, selection, terminal, fixture_timeout,
             opening, opening_observation, opening_proof, opening_signatures, frontiers)
         timeout_batch = recorded_deposit_timeout_batch(evidence, contract, checkout, fixture_timeout, closed_opening)
+        timeout_replay = recorded_deposit_timeout_replay(evidence, contract, checkout, opening, closed_opening, timeout_batch)
         interrupted = (terminal["format"] == model.TERMINAL_FORMAT and reported == "UNKNOWN"
                        and terminal["stage"] == "consumer" and terminal["reason"] == "command_incomplete"
                        and terminal["owned_runtime_observed_closed"]
@@ -1098,7 +1157,9 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         if closed_opening is not None:
             report["recorded_closed_opening_authorization"] = closed_opening
         if timeout_batch is not None:
-            report["recorded_deposit_timeout_batch"] = timeout_batch
+            report["recorded_deposit_timeout_batch"] = timeout_batch.report
+        if timeout_replay is not None:
+            report["recorded_deposit_timeout_native_replay"] = timeout_replay
         if startup_sync is not None:
             report["startup_sync_diagnostic"] = startup_sync
         if post_sync is not None:

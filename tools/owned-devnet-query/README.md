@@ -520,16 +520,28 @@ either a match or a mismatch. The `isFinalized` value remains the frontier
 DTO's unauthenticated hint. An unavailable or malformed DTO leaves the
 three-proof observation intact. The version-2 diagnostic includes the
 comparison and its exact request and response. Version 1 remains readable.
-The path uses at most five additional RPC reads within the original
-diagnostic deadline. It runs after producers and clients have stopped.
+The proof and gateway observation uses at most five additional RPC reads
+within the original diagnostic deadline. It runs after producers and clients
+have stopped.
 
 The selected responses are retained with their request and command
 receipts only after the owned services close and the opening oracle
 reports the same frozen frontier. The archive reader rechecks the header
 link, derives the keys locally and checks the proofs and any complete
-typed context. This report retains the original UNKNOWN outcome.
-The selected header still requires the full producer schedule and
-native consumer checks for typed acceptance.
+typed context.
+
+A version-2 observation can support a native replay. One more bounded read
+gets the header range from the opening anchor through the same frozen
+frontier. The runner reuses the three witnesses and the gateway response.
+After the RPC node closes, the read-only oracle calculates the finite
+producer schedule for that range. The compiled CLI then checks the
+configured headers and consumes the typed query. The temporary provider
+document is rebuilt from the recorded responses and linked by its byte
+length and SHA-256 digest. The archive keeps the original inputs, schedule,
+and completed CLI output for an independent recheck.
+
+The native replay is supplemental to the original timeout. Its comparison
+is recorded separately and the terminal outcome remains `UNKNOWN`.
 
 Archive review binds the oracle, original receipts, stopped service set,
 frontier and both historical parent slots to the recorded timeout stage. The

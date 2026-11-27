@@ -44,6 +44,12 @@ DEPOSIT_TIMEOUT_BATCH_FORMAT = "owned-devnet-deposit-timeout-batch/v1"
 DEPOSIT_TIMEOUT_BATCH_GATEWAY_FORMAT = "owned-devnet-deposit-timeout-batch/v2"
 DEPOSIT_TIMEOUT_GATEWAY = "deposit-timeout-frontier-batch.json"
 DEPOSIT_TIMEOUT_GATEWAY_BYTES = 32 << 10
+DEPOSIT_TIMEOUT_RANGE = "deposit-timeout-header-range.json"
+DEPOSIT_TIMEOUT_REPLAY = "deposit-timeout-native-replay.json"
+DEPOSIT_TIMEOUT_REPLAY_FORMAT = "owned-devnet-deposit-timeout-native-replay/v1"
+DEPOSIT_TIMEOUT_ORACLE = "timeout-parent-oracle"
+DEPOSIT_TIMEOUT_CONSUMER = "timeout-consume-query"
+DEPOSIT_TIMEOUT_STDOUT = DEPOSIT_TIMEOUT_CONSUMER + ".stdout"
 OPENING_SIGNATURE_REPORT = "opening-signatures.json"
 OPENING_SIGNATURE_LABELS = ("opening-signature-h2", "opening-signature-h3")
 OPENING_SIGNATURE_OK = b"Signature Verified Successfully\n"
@@ -147,6 +153,14 @@ class Header:
 
     def identifier(self):
         return {"hash": self.hash, "height": self.height}
+
+
+@dataclass(frozen=True)
+class DepositTimeoutBatch:
+    report: dict
+    header: Header
+    witnesses: dict | None = None
+    gateway: dict | None = None
 
 
 def opening_headers(contract, rows):
@@ -325,13 +339,15 @@ class LocalRpc:
 
         entry = proof("batch_entry")
         observed = opening_batch_witness(profile, header.root, keys["batch_entry"], entry)
-        totals = gateway_comparison = None
+        totals = gateway_comparison = witnesses = gateway = None
         if observed["presence"] == "present" and self.calls + 2 <= RPC_CALL_LIMIT:
             try:
-                checked = witness_rows(profile, batch, header.root, {"batch_entry": entry,
-                    "domain_record": proof("domain_record"), "domain_config": proof("domain_config")})
+                rows = {"batch_entry": entry, "domain_record": proof("domain_record"),
+                        "domain_config": proof("domain_config")}
+                checked = witness_rows(profile, batch, header.root, rows)
                 selected_semantics(descriptor, checked["decoded"])
                 totals = checked["totals"]
+                witnesses = rows
             except (OSError, ValueError, KeyError, TypeError):
                 # Preserve the independently checked entry even if its two
                 # companion reads or the typed context check refused.
@@ -343,6 +359,7 @@ class LocalRpc:
                                  DEPOSIT_TIMEOUT_GATEWAY_BYTES, stdout_name=DEPOSIT_TIMEOUT_GATEWAY)
                 gateway_comparison = compare_frontier_batch(row, domain, batch, checked["decoded"]["entry"],
                                                             raw_rpc=True)
+                gateway = row
             except (OSError, ValueError, KeyError, TypeError):
                 # The three proofs remain useful without a gateway observation.
                 pass
@@ -351,7 +368,15 @@ class LocalRpc:
                   "context_proof_totals": totals}
         if gateway_comparison is not None:
             report.update(format=DEPOSIT_TIMEOUT_BATCH_GATEWAY_FORMAT, gateway_comparison=gateway_comparison)
-        return report
+        return DepositTimeoutBatch(report, header, witnesses, gateway)
+
+    def deposit_timeout_window(self, opening, frontier, batch, *, deadline):
+        require(batch.gateway is not None and self.calls == batch.report["frontier_request_id"] + 5
+                and self.calls < RPC_CALL_LIMIT, "deposit_timeout_replay_rpc_budget")
+        parameters = deposit_timeout_range(self.contract, opening, frontier)
+        raw = self._read("ledger.getMomentumsByHeight", parameters, self.contract.data["limits"]["stdout_bytes"],
+                         stdout_name=DEPOSIT_TIMEOUT_RANGE, deadline=deadline)
+        return deposit_timeout_window(self.contract, opening, frontier, batch, raw)
 
     def capture_startup_sync(self):
         """One diagnostic after node readiness fails; never retry readiness."""
@@ -580,6 +605,23 @@ class Window:
     provider_result: object
 
 
+def deposit_timeout_range(contract, opening, frontier):
+    anchor = opening[1].height
+    size = frontier.height - anchor
+    # The pinned RPC accepts up to 1,024 rows. The owned contract bounds this range below 512.
+    require(1 <= size < contract.data["limits"]["max_header_targets"], "deposit_timeout_range_size")
+    return [anchor + 1, size]
+
+
+def deposit_timeout_window(contract, opening, frontier, batch, raw):
+    _, size = deposit_timeout_range(contract, opening, frontier)
+    uint(raw["count"], minimum=size)
+    require(batch.witnesses is not None and batch.gateway is not None, "deposit_timeout_replay_inputs")
+    provider = {"version": 1, "momentums": raw["list"], "witnesses": batch.witnesses, "gateway": batch.gateway}
+    headers = captured_headers(contract, opening, batch.header, frontier, provider)
+    return Window(headers, batch.header, provider, None)
+
+
 def collect(contract, recorder, rpc, binaries, opening, query, directory, environment, guard):
     """Collect only after the controller stops the producers and clients."""
     frontier = rpc.frontier()
@@ -718,7 +760,8 @@ def query_inputs(contract, window, schedule, profile):
 
 
 def read_closed_parent_schedule(contract, recorder, engine, ledger, headers, frontier, sources, binaries,
-                                directory, environment, guard, reader_source, *, services=model.SERVICES):
+                                directory, environment, guard, reader_source, *, services=model.SERVICES,
+                                label_prefix="parent-oracle"):
     """Run only the source-bound oracle against the stopped owned volume."""
     require(LEDGER.fullmatch(ledger) is not None and engine.closed_ledger(services=services) == ledger,
             "closed_reader_ledger_binding")
@@ -736,7 +779,7 @@ def read_closed_parent_schedule(contract, recorder, engine, ledger, headers, fro
 
     def reports():
         for index, (raw, _) in enumerate(oracle_requests(contract, headers, frontier), 1):
-            label = "parent-oracle-" + str(index).zfill(2)
+            label = f"{label_prefix}-{index:02d}"
             request = recorder.seal(label + ".request.json", raw)
             path = recorder.directory / request["file"]
             result = recorder.run(label, ["/usr/bin/sudo", "-n", "--", "/usr/bin/timeout",
@@ -819,22 +862,49 @@ def retainable_consumer_failure(result):
     return True
 
 
-def query(contract, recorder, window, schedule, descriptor, profile, binaries, directory, environment, guard):
+def _query_provider(contract, recorder, window, schedule, descriptor, profile, binaries, directory, environment,
+                    guard, provider_path, label, stdout_name):
     config, request, pins = query_inputs(contract, window, schedule, profile)
     config_file = recorder.seal("query-config.json", canonical(config))
     request_file = recorder.seal("query-request.json", canonical(request))
     recorder.seal("query-context-pins.json", canonical(pins))
     same(binaries.verify(), contract.data["qualified_components"]["consumer"]["binaries"],
          "selected_consumer_binary_pins")
-    provider = window.provider_result
-    with provider.open_stdout(contract.data["limits"]["stdout_bytes"]):
-        result = recorder.run("consume-query", [str(binaries.directory / "zenon-spv"),
-            "query-experimental-batch-context", "--config", str(recorder.directory / config_file["file"]),
-            "--request", str(recorder.directory / request_file["file"]),
-            "--expect-header-context", pins["header_context"], "--expect-query-context", pins["context"],
-            "--compare-gateway", str(provider.directory / provider.stdout_name)],
-            directory, environment, guard=guard, timeout=60, stdout_cap=256 << 10, stderr_cap=4096)
+    result = recorder.run(label, [str(binaries.directory / "zenon-spv"),
+        "query-experimental-batch-context", "--config", str(recorder.directory / config_file["file"]),
+        "--request", str(recorder.directory / request_file["file"]),
+        "--expect-header-context", pins["header_context"], "--expect-query-context", pins["context"],
+        "--compare-gateway", str(provider_path)],
+        directory, environment, guard=guard, timeout=60, stdout_cap=256 << 10, stderr_cap=4096,
+        stdout_name=stdout_name)
     report = api_json(result.stdout(256 << 10), 256 << 10)
     matched = consumer_result(report, config, request, window.provider, window.query.root, descriptor)
     recorder.seal("consumer-comparison.json", canonical(matched))
     return matched
+
+
+def query(contract, recorder, window, schedule, descriptor, profile, binaries, directory, environment, guard):
+    provider = window.provider_result
+    with provider.open_stdout(contract.data["limits"]["stdout_bytes"]):
+        return _query_provider(contract, recorder, window, schedule, descriptor, profile, binaries,
+                               directory, environment, guard, provider.directory / provider.stdout_name,
+                               "consume-query", CONSUMER_STDOUT)
+
+
+def deposit_timeout_provider(contract, window):
+    raw = canonical(window.provider)
+    require(0 < len(raw) <= contract.data["limits"]["stdout_bytes"], "deposit_timeout_provider_size")
+    return raw, {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+
+
+def replay_deposit_timeout(contract, recorder, window, schedule, descriptor, profile, binaries,
+                           directory, environment, guard):
+    raw, expected = deposit_timeout_provider(contract, window)
+    with tempfile.TemporaryDirectory(dir=environment["TMPDIR"], prefix="timeout-provider-") as temporary:
+        path = Path(temporary) / "provider.json"
+        path.write_bytes(raw)
+        path.chmod(0o400)
+        _query_provider(contract, recorder, window, schedule, descriptor, profile, binaries,
+                        directory, environment, guard, path, DEPOSIT_TIMEOUT_CONSUMER, DEPOSIT_TIMEOUT_STDOUT)
+        same(regular_pin(path, len(raw)), expected, "deposit_timeout_provider_changed")
+    return expected
