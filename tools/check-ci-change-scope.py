@@ -39,7 +39,12 @@ NATIVE_FILES = frozenset("internal/verify/experimental_v3_" + name for name in (
     "retention_test.go"))
 # Every other non-document tree record remains in this reviewed closure,
 # including workflows, research Go sources, Python helpers and fixture data.
-ORACLE_SOURCE_PIN = "fa7d0b29aef4795fa0b748f6c3108742c96b2ea8c9540ff3db53128ae2c2bd66"
+ORACLE_SOURCE_PINS = frozenset((
+    # Main c64f545, full run 45911169119.
+    "ebfdc9d14c44b16951cc43293ec8f3d3daa8e2eb02c52b46a58fe328ee53d5de",
+    # PR #439 merge tree 0682518, full run 45914619049.
+    "fb04292d178e007ad5b24c9a4a76578bf1c54dc8f6e0f021f774b6c5dc45a3bb",
+))
 SHARED_TRANSPORT = "tools/ledger-transport/transport.py"
 TRANSPORT_FILES = frozenset("tools/ledger-transport/" + name for name in (
     "archive_index.py", "archive_index_test.py", "archive_tail.py", "archive_tail_test.py",
@@ -397,12 +402,13 @@ def select_scope(root, selection, runner=run_git):
             report.update(format=NATIVE_FORMAT, run_recorded_oracles=True)
             closure = oracle_fingerprint(query(
                 ["ls-tree", "-r", "-z", "--full-tree", checkout], MAX_TREE_BYTES))
-            if closure["sha256"] != ORACLE_SOURCE_PIN:
+            pin = closure["sha256"]
+            if pin not in ORACLE_SOURCE_PINS:
                 raise ScopeError("oracle_source_pin")
             report.update(status="NATIVE_RUNTIME_ONLY", run_runtime=True,
                           run_recorded_oracles=False, reason="modified_native_v3_leaves",
                           documentation_paths=documents, native_paths=native,
-                          oracle_closure={**closure, "expected_sha256": ORACLE_SOURCE_PIN,
+                          oracle_closure={**closure, "expected_sha256": pin,
                                           "matched": True})
         elif portable:
             # Leave room below GitHub's path-filter diff limit, including docs.

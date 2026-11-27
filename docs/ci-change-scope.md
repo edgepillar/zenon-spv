@@ -306,7 +306,7 @@ the full root Go suite and their existing conformance, compiled consumer,
 platform and artifact steps at the new source revision. The general workflow's
 other triggers are unchanged.
 
-The selected recorded-oracle job has 33 Python commands. Its source-bound
+The selected recorded-oracle job has 26 Python commands. Its source-bound
 inventory includes the target-hex, complete-graph, child-resource and retention
 wrappers. Those commands replay the research module's pinned original-node
 bytes and synthetic recordings; they do not build or execute the ten native
@@ -319,9 +319,9 @@ documentation, these ten leaves and the selector/control pair. It includes the
 general workflow, other workflows, all other native sources, research sources,
 wrappers and fixtures. The same bounded tree framing, modes, duplicate checks
 and deterministic NUL-terminated record encoding used by the portable route
-apply. A changed dependency, new file or unexpected mode changes the pin and
-restores the complete lane until an explicit dependency review. The v3 pin
-remains at its separately reviewed dependency snapshot.
+apply. The full closure must match one of the reviewed snapshots below.
+Every other digest selects the complete lane until its dependencies are
+reviewed. The report records the exact matching digest.
 
 An eligible report uses `zenon-ci-change-scope/v3`, seven complete Git command
 receipts, the exact source pins, reviewed modified paths and closure facts. It
@@ -339,6 +339,25 @@ push need separate reconciliation of source scope, skipped provider records,
 native results and artifacts before claiming measured savings. Fewer selected
 jobs are not a controlled wall-time benchmark, node resource measurement,
 independent review or network/state-value acceptance.
+
+### Closure refresh for the first-insertion and startup-diagnostic changes
+
+The native closure advanced from `e9a047230298eb3e24579fd6162f413b7fc63c32`
+to `ec2f07e4e5411cedfc74b9f77576b7f7550c00dd`. The 13 changed closure
+records cover the dedicated first-insertion workflow and its five inputs,
+the five owned devnet diagnostic files, the general scope validator's
+first-insertion rules, and the line-ending attribute for the catch-up
+document. The recorded-oracle job definition is byte-identical across
+those revisions. The refreshed digest is
+`4bac97b17356cfa3dfebe40e4598cc57c095c529ba7b140214a6b23795ee3745`
+over 1,211 records and 123,968 bytes. These paths remain part of the closure.
+
+[PR #420's general CI](https://github.com/edgepillar/zenon-spv/actions/runs/44684143424)
+ran all three recorded-oracle jobs, using 2,096 runner-seconds, after its
+v3 test-only change encountered the prior closure pin. The same Git tree
+projects to the native-only route with the refreshed pin. The pin update
+itself runs full CI. Future native-only events must establish their own
+job selection and platform evidence before any measured savings are reported.
 
 ### Paired owned-input renewal
 
@@ -375,3 +394,26 @@ the offline pilot's native tests. In the initial Windows CI run for this PR,
 both controls failed near their prior 10-second limit (10.64 and 10.32
 seconds). The original failed roots and timings remain in the first attempt's
 [general CI record](https://github.com/edgepillar/zenon-spv/actions/runs/44769740235).
+
+### Reviewed closure snapshots after recorded-workspace pairing
+
+Both reviewed closures contain 1,223 records and 125,224 bytes. Their full
+general runs passed on Linux, macOS and Windows. The workflow definition and
+26-command recorded-oracle inventory match across the two trees. The second
+tree differs in the two retained-state sequence test files, which stay inside
+the closure. The existing ten eligible native-v3 files remain the only
+non-document changes that can select this route.
+
+| Qualified tree | Closure SHA-256 | Full general run |
+| --- | --- | --- |
+| `d55cd7cbe3dae4847e080605ee1f6bd797dac416` | `ebfdc9d14c44b16951cc43293ec8f3d3daa8e2eb02c52b46a58fe328ee53d5de` | [Main c64f545](https://github.com/edgepillar/zenon-spv/actions/runs/45911169119) |
+| `0682518f0118899d14f153bfd7c802a780c8745a` | `fb04292d178e007ad5b24c9a4a76578bf1c54dc8f6e0f021f774b6c5dc45a3bb` | [PR #439](https://github.com/edgepillar/zenon-spv/actions/runs/45914619049) |
+
+The 77 dependency record changes since the earlier first-insertion review
+include paired workspace and driver controls, the upload failure gate, native
+and fixture code, and workflow inputs. The two full runs cover the current
+recorded-oracle definition. Its three jobs used 1,506 summed runner-seconds
+and 38,262 archive bytes in the main run, and 1,254 runner-seconds and 38,338
+archive bytes in the PR run. Those observations are from different runners.
+This selector update runs full CI. An eligible hosted event must separately
+establish its own skipped-job records, native results and artifacts.
