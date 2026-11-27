@@ -167,6 +167,28 @@ This sample measures document size. The test used one build and existing
 module inputs, took 9.63 seconds, and observed 156,457,595 bytes of temporary
 workspace data after execution and before cleanup.
 
+## Replaying the original headers in candidate CI
+
+The [chain-69 regression fixture](../internal/testdata/conformance/chain69-recorded-absence.json)
+retains the original H3 and H4 wire fields and the recorded BatchEntry witness.
+The two companion witnesses and finite producer slots come from the pinned
+node replay. The fixture preparation checked the original archive members and
+their command receipts, then matched the replayed slots against the recorded
+chain. The fixture pins both sources and retains the original `UNKNOWN`.
+
+The existing snapshot control step runs seven additional checks with the
+compiled candidate on Linux, macOS and Windows. It checks the configured H3
+root, exports the retained window, and checks the same three absences after a
+checkpoint reload with zero provider headers. It also checks insufficient
+depth, a changed domain proof and a changed H4 signature. The checker
+recomputes the two header hashes, context pins, local keys and proof roots
+before invoking the binary. The CI inputs are the small fixture and the
+existing candidate binary.
+
+The archive replay establishes the configured-header absence behavior for this
+recorded chain. The selected live BatchEntry still needs three present proofs
+and a completed typed consumer result.
+
 ## Remaining acceptance evidence
 
 The captures provide two observed opening transitions and independently

@@ -30,6 +30,13 @@ TYPED_QUERY = "query-experimental-batch-context"
 PROJECTION_LIMIT = 148 << 10
 UNIT_PIN = "e4bfbdb7bff55f9719782c7e609240b2ba9aeefd0d0f42b7ee1948286e890366"
 NODE_PIN = "773cda402e08709ffd73adfea355f73269b1470b7336c5a027ddd5b331ab9d96"
+RECORDED_CHAIN69_PIN = "bfc8830e7077ee41b3beef700801b3bc41f885a1a20966979fe393648df11707"
+
+sys.path.insert(0, str(ROOT / "tools/owned-devnet-query"))
+try:
+    import query_checks
+finally:
+    sys.path.pop(0)
 
 
 def load_json(path, limit, digest=None):
@@ -87,12 +94,6 @@ def byte_pin(raw):
 
 
 def check_typed_checkpoint(verifier, unit, trace, checkpoint, state_input, controls):
-    sys.path.insert(0, str(ROOT / "tools/owned-devnet-query"))
-    try:
-        import query_checks
-    finally:
-        sys.path.pop(0)
-
     config, request = unit["config"], unit["request"]
     profile, pins = config["query_profile"], unit["expected"]
     root = trace["root_hex"]
@@ -165,6 +166,98 @@ def check_typed_checkpoint(verifier, unit, trace, checkpoint, state_input, contr
             "anchor_provider_bytes": len(encoded(provider)), "proof_only_provider_bytes": len(encoded(proof_only)),
             "membership_proofs_checked": independent["three_membership_proofs_checked"],
             "stored_gateway_fields_compared": independent["gateway_stored_fields_compared"]}
+
+
+def check_recorded_chain69(verifier, work, controls, inspect_root, export_state):
+    raw, fixture = load_json(DATA / "chain69-recorded-absence.json", 16 << 10, RECORDED_CHAIN69_PIN)
+    assert fixture["format"] == "zenon-recorded-chain69-typed-absence/v1"
+    assert fixture["capture"]["outcome"] == "UNKNOWN"
+    config, request, provider = (fixture[name] for name in ("config", "request", "provider"))
+    pins = query_checks.fingerprints(config, request)
+    assert pins == fixture["context_pins"] and request["context"] == pins["context"]
+    header, tip = map(query_checks.header_facts, provider["momentums"])
+    assert (header["height"], tip["height"], header["version"], tip["version"]) == (3, 4, 3, 3)
+    assert header["parent_hash"] == config["header_profile"]["anchor"]["header_hash"]
+    assert tip["parent_hash"] == header["hash"] and config["header_policy"]["w"] == 1
+    identity = {"height": request["height"], "hash": request["header_hash"],
+                "state_root": header["root"], "tip_height": request["tip_height"], "tip_hash": request["tip_hash"]}
+    assert identity == {"height": header["height"], "hash": header["hash"], "state_root": header["root"],
+                        "tip_height": tip["height"], "tip_hash": tip["hash"]}
+    profile = config["query_profile"]
+    keys = query_checks.ledger_keys(profile, request["batch_id"])
+    assert set(provider["witnesses"]) == set(keys) and "gateway" not in provider
+    proofs = {name: query_checks.opening_batch_witness(profile, header["root"], key, provider["witnesses"][name])
+              for name, key in keys.items()}
+    assert proofs == fixture["proofs"] and all(row["presence"] == "absent" for row in proofs.values())
+
+    header_config, query_config, headers, request_path, bundle_path, checkpoint = (
+        work / ("PRIVATE_SNAPSHOT_CHAIN69_" + name + ".json") for name in
+        ("header-config", "query-config", "headers", "request", "provider", "checkpoint"))
+    header_config.write_bytes(encoded({name: config[name] for name in
+                                     ("version", "header_profile", "header_policy", "producer_schedule")}))
+    query_config.write_bytes(encoded(config))
+    headers.write_bytes(encoded(provider["momentums"]))
+    snapshot_flags = ["--config", str(header_config), "--expect-header-context", pins["header_context"],
+                      "--expect-height", str(header["height"]), "--expect-header-hash", header["hash"]]
+    selected = inspect_root("recorded_chain69_accepts_configured_header_root", snapshot_flags, 0, momentum_input=headers)
+    assert selected["header"] == identity and selected["header_context"]["fingerprint"] == pins["header_context"]
+    checkpoint_raw, sealed = export_state("recorded_chain69_exports_exact_window", snapshot_flags, headers)
+    saved = json.loads(checkpoint_raw)
+    assert sealed["header"] == identity and saved["context"] == pins["header_context"] and saved["version"] == 4
+    projected = []
+    for row in provider["momentums"]:
+        assert row["content"] == []
+        projected.append({**{k: v for k, v in row.items() if k not in ("data", "content", "producer")},
+                          "dataHash": query_checks.H(query_checks.binary(row["data"], 16 << 10)).hex(),
+                          "contentHash": query_checks.H(b"").hex()})
+    assert saved["retained_headers"] == projected
+    checkpoint.write_bytes(checkpoint_raw)
+    checkpoint_pin = byte_pin(checkpoint_raw)
+    assert checkpoint_pin == {"bytes": 2514,
+                              "sha256": "d6856d1a309c257f3b65b477aff6c9dcb29b36fc4972bdc98db48c06fcb59b44"}
+
+    options = [str(verifier), TYPED_QUERY, "--config", str(query_config), "--request", str(request_path),
+               "--expect-header-context", pins["header_context"], "--expect-query-context", pins["context"]]
+    accepted = {"outcome": "ACCEPT", "reason": "ReasonOK", "failed_at": -1}
+
+    def query(name, bundle, code, error, expected_headers, *, request_data=request, flags=()):
+        request_path.write_bytes(encoded(request_data))
+        bundle_path.write_bytes(encoded(bundle))
+        raw, report = invoke(options + list(flags) + [str(bundle_path)], code)
+        assert b"PRIVATE_SNAPSHOT_" not in raw
+        assert (report["command"], report["exit_code"], report["headers"]) == (TYPED_QUERY, code, expected_headers)
+        assert report["error"] == {"stage": error[0], "category": error[1]}
+        assert report["result"] is None and report["gateway_comparison"] is None and "state_output" not in report
+        assert report["persistence"] == "read_only" and report["rpc_requests"] == 0
+        assert report["production_state_value_guarantee"] is False
+        controls.append({"name": name, "exit": code, "error": report["error"]})
+        return report
+
+    absent = ("query", "required_row_absent")
+    query("recorded_chain69_refuses_three_absent_rows", provider, 2, absent, accepted)
+    proof_only = {**provider, "momentums": []}
+    restored = query("recorded_chain69_reuses_checkpoint_for_absence", proof_only, 2, absent, None,
+                     flags=["--trusted-state", str(checkpoint), "--expect-state-sha256", checkpoint_pin["sha256"]])
+    assert restored["state_input"] == {**checkpoint_pin, "provider_headers": 0,
+                                      "trust": "trusted_local_provenance_required"}
+    assert file_pin(checkpoint, PROJECTION_LIMIT) == checkpoint_pin
+    query("recorded_chain69_refuses_without_h4_depth", {**provider, "momentums": provider["momentums"][:1]},
+          2, ("query", "outside_owned_scope"), accepted,
+          request_data={**request, "tip_height": header["height"], "tip_hash": header["hash"]})
+
+    bad = copy.deepcopy(provider)
+    proof = bytearray(base64.b64decode(bad["witnesses"]["domain_config"]["proof"], validate=True))
+    proof[-1] ^= 1
+    bad["witnesses"]["domain_config"]["proof"] = base64.b64encode(proof).decode("ascii")
+    query("recorded_chain69_refuses_changed_domain_proof", bad, 1, ("query", "invalid_witness"), accepted)
+    bad = copy.deepcopy(provider)
+    signature = bytearray(base64.b64decode(bad["momentums"][-1]["signature"], validate=True))
+    signature[0] ^= 1
+    bad["momentums"][-1]["signature"] = base64.b64encode(signature).decode("ascii")
+    query("recorded_chain69_rejects_changed_h4_signature", bad, 1, ("headers", "not_accepted"),
+          {"outcome": "REJECT", "reason": "ReasonInvalidSignature", "failed_at": 1})
+    return {"fixture": byte_pin(raw), "capture": fixture["capture"], "configured_header": identity,
+            "proofs": proofs, "checkpoint": checkpoint_pin, "typed_value_established": False}
 
 
 def recover_projection(command, manifest, wire, directory, controls):
@@ -535,6 +628,8 @@ def check(verifier, revision, candidate_manifest):
         headers_path.write_bytes(encoded(changed_headers))
         native("invalid_signature", projection_flags(raw), 1, ("headers", "not_accepted"))
 
+        chain69 = check_recorded_chain69(verifier, work, controls, native, export_state)
+
     assert file_pin(verifier, 128 << 20) == binary
     return {"format": "zenon-snapshot-header-binding-controls/v1", "status": "PASS", "source_revision": revision,
             "platform": platform.system().lower(), "machine": platform.machine().lower(),
@@ -542,7 +637,7 @@ def check(verifier, revision, candidate_manifest):
             "fixture_pins": {"batch-context-unit.json": UNIT_PIN, "batch-context-node-witness.json": NODE_PIN},
             "scope": "recorded_headers_and_generated_ledger", "controls": controls,
             "matched": matched["header"], "projection": comparison, "fragment_recovery": recovery,
-            "typed_checkpoint_handoff": typed_handoff,
+            "typed_checkpoint_handoff": typed_handoff, "recorded_chain69": chain69,
             "inputs_share_original_snapshot": False, "node_or_network_started": False,
             "snapshot_import_performed": False, "production_qualified": False}
 
