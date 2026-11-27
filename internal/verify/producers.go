@@ -1,7 +1,6 @@
 package verify
 
 import (
-	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -340,20 +339,22 @@ func LoadProducerSchedule(path string) (*ProducerSchedule, error) {
 }
 
 func decodeProducerSchedule(r io.Reader, maxBytes int64) (*ProducerSchedule, error) {
-	b, err := io.ReadAll(io.LimitReader(r, maxBytes+1))
+	if maxBytes < 0 || maxBytes > MaxProducerScheduleFileBytes {
+		return nil, fmt.Errorf("%w: invalid schedule byte limit", ErrProducerScheduleTooLarge)
+	}
+	var s ProducerSchedule
+	var parseErr error
+	size, err := readBoundedInput(r, maxBytes, func(input io.Reader) {
+		parseErr = s.decodeJSON(json.NewDecoder(input), MaxProducerScheduleEntries)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("read schedule: %w", err)
 	}
-	if int64(len(b)) > maxBytes {
+	if size > maxBytes {
 		return nil, fmt.Errorf("%w: file exceeds %d bytes", ErrProducerScheduleTooLarge, maxBytes)
 	}
-	d := json.NewDecoder(bytes.NewReader(b))
-	var s ProducerSchedule
-	if err := d.Decode(&s); err != nil {
-		return nil, fmt.Errorf("decode schedule: %w", err)
-	}
-	if err := d.Decode(new(any)); err != io.EOF {
-		return nil, errors.New("decode schedule: trailing JSON")
+	if parseErr != nil {
+		return nil, fmt.Errorf("decode schedule: %w", parseErr)
 	}
 	if err := s.Validate(); err != nil {
 		return nil, fmt.Errorf("validate schedule: %w", err)

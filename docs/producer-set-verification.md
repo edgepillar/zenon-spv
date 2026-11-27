@@ -234,8 +234,11 @@ The loader caps a sidecar at 256 MiB, with at most 1,000,000 entries
 and 1,000,000 coverage ranges. These hard limits retain room for the
 million-momentum design; they are not typical memory-use estimates.
 Split longer observations into separate, explicitly selected schedules.
-The file-size check and bounded read precede JSON decoding. Array decoding
-stops at the count limit; malformed or empty authority rows fail earlier.
+After checking the file size, the loader decodes rows from a bounded stream.
+It reads at most the byte limit plus one probe byte, even when the parser
+fails early. A terminal read error takes precedence over a byte overflow,
+and both take precedence over a JSON error. Array decoding stops at the
+count limit. Malformed or empty authority rows fail earlier.
 Count checks also precede index allocation
 and owned-state schedule copies. Validation walks
 sorted coverage and entries together in linear time, including terminal
@@ -261,6 +264,23 @@ coverage, dense entries, and the content hash. A failed parse leaves any
 existing in-memory schedule unchanged. CLI schedule failures precede state
 loading, writer locking, and watch RPC requests; JSON diagnostics exclude
 private filenames, arbitrary field names, and metadata values.
+
+The same generated schedules were loaded by `4b8b88a` and the streaming
+loader on darwin/arm64 with Go 1.25.14. The 4,096- and 100,000-entry figures
+are medians of six paired trials of three operations, with alternating
+revision order. The 1,000,000-entry row records one complete load per revision.
+Each operation parsed the sidecar, validated its content hash and coverage,
+and checked the first and last indexed entries.
+
+| Entries | Baseline allocated B/op | Streamed B/op | Baseline ms/op | Streamed ms/op |
+| --- | ---: | ---: | ---: | ---: |
+| 4,096 | 12,917,005 | 9,897,597 | 14.82 | 12.12 |
+| 100,000 | 348,404,056 | 249,390,840 | 297.05 | 269.43 |
+| 1,000,000 | 3,385,025,184 | 2,501,374,048 | 3,123.52 | 2,544.18 |
+
+Allocation figures count cumulative Go allocations during loading,
+validation and index construction on this host. The compiled schedule
+export and verification workflow also passed with the recorded node data.
 
 ---
 

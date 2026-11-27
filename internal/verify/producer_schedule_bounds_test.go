@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/iotest"
 )
 
 func TestProducerScheduleTerminalHeight(t *testing.T) {
@@ -156,8 +158,8 @@ func TestProducerScheduleJSONCountLimit(t *testing.T) {
 }
 
 func TestProducerScheduleByteLimit(t *testing.T) {
-	// A stream may report no file size, or a file may grow after Stat. The
-	// decoder must stop after the limit plus one byte without parsing it.
+	// A stream may report no file size, or a file may grow after Stat.
+	// Inspect at most the limit plus one byte.
 	input := bytes.NewReader(bytes.Repeat([]byte{' '}, 8192))
 	s, err := decodeProducerSchedule(input, 1024)
 	if s != nil || !errors.Is(err, ErrProducerScheduleTooLarge) {
@@ -181,5 +183,57 @@ func TestProducerScheduleByteLimit(t *testing.T) {
 	}
 	if s, err := LoadProducerSchedule(path); s != nil || !errors.Is(err, ErrProducerScheduleTooLarge) {
 		t.Fatalf("file limit: schedule=%v err=%v", s != nil, err)
+	}
+}
+
+func TestProducerScheduleStreamCompletion(t *testing.T) {
+	want := fixtureSchedule(t, 2)
+	raw, err := json.Marshal(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw = append(raw, '\n', '\t')
+	for _, reader := range []io.Reader{
+		iotest.OneByteReader(bytes.NewReader(raw)),
+		stateReadFailure{bytes.NewReader(raw), io.EOF},
+	} {
+		got, err := decodeProducerSchedule(reader, int64(len(raw)))
+		if err != nil || got == nil || got.ScheduleHash != want.ScheduleHash {
+			t.Fatalf("complete stream at the exact byte limit: %v", err)
+		}
+		expected, _ := want.LookupEntry(101)
+		if entry, ok := got.LookupEntry(101); !ok || entry != expected {
+			t.Fatal("complete stream did not build the expected lookup index")
+		}
+	}
+	failure := errors.New("controlled terminal schedule read error")
+	invalid := []byte("{\"unknown\":" + strings.Repeat(" ", 4096))
+	for _, tc := range []struct {
+		name  string
+		input []byte
+		limit int
+		err   error
+		want  error
+	}{
+		{"invalid object exceeds limit", invalid, 2048, nil, ErrProducerScheduleTooLarge},
+		{"drain after early parse failure", invalid, len(invalid), failure, failure},
+		{"complete object with read error", raw, len(raw), failure, failure},
+		{"overflow probe with read error", raw, len(raw) - 1, failure, failure},
+		{"trailing closing token", append(bytes.Clone(raw), ']'), len(raw) + 1, nil, errInvalidScheduleJSON},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			input := bytes.NewReader(tc.input)
+			var reader io.Reader = input
+			if tc.err != nil {
+				reader = stateReadFailure{input, tc.err}
+			}
+			got, err := decodeProducerSchedule(reader, int64(tc.limit))
+			if got != nil || !errors.Is(err, tc.want) {
+				t.Fatalf("unexpected stream outcome: schedule=%v err=%v", got != nil, err)
+			}
+			if read := len(tc.input) - input.Len(); read != min(len(tc.input), tc.limit+1) {
+				t.Fatalf("unexpected bounded stream length: %d", read)
+			}
+		})
 	}
 }

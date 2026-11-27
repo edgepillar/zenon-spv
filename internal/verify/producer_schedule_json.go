@@ -31,6 +31,10 @@ func (s *ProducerSchedule) unmarshalJSON(raw []byte, maxRows int) error {
 	if len(raw) > MaxProducerScheduleFileBytes {
 		return ErrProducerScheduleTooLarge
 	}
+	return s.decodeJSON(json.NewDecoder(bytes.NewReader(raw)), maxRows)
+}
+
+func (s *ProducerSchedule) decodeJSON(d *json.Decoder, maxRows int) error {
 	var next ProducerSchedule
 	fields := []struct {
 		name     string
@@ -50,7 +54,6 @@ func (s *ProducerSchedule) unmarshalJSON(raw []byte, maxRows int) error {
 		{"source_heights", &next.SourceHeights, false},
 	}
 	seen := make([]bool, len(fields))
-	d := json.NewDecoder(bytes.NewReader(raw))
 	if token, err := d.Token(); err != nil || token != json.Delim('{') {
 		return fmt.Errorf("%w: expected an object", errInvalidScheduleJSON)
 	}
@@ -96,7 +99,7 @@ func (s *ProducerSchedule) unmarshalJSON(raw []byte, maxRows int) error {
 	if token, err := d.Token(); err != nil || token != json.Delim('}') {
 		return fmt.Errorf("%w: malformed object ending", errInvalidScheduleJSON)
 	}
-	if err := d.Decode(new(json.RawMessage)); err != io.EOF {
+	if _, err := d.Token(); err != io.EOF {
 		return fmt.Errorf("%w: trailing JSON", errInvalidScheduleJSON)
 	}
 	for i, field := range fields {

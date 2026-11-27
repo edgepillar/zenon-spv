@@ -7,12 +7,12 @@ import (
 
 // Remember the first terminal result. A JSON decoder can consume bytes from
 // the same read as an I/O error and still return a complete JSON token.
-type boundedStateInput struct {
+type boundedInput struct {
 	reader io.LimitedReader
 	err    error
 }
 
-func (r *boundedStateInput) Read(raw []byte) (int, error) {
+func (r *boundedInput) Read(raw []byte) (int, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
@@ -21,21 +21,27 @@ func (r *boundedStateInput) Read(raw []byte) (int, error) {
 	return n, err
 }
 
+// readBoundedInput uses a caller-validated limit and reads through EOF or the
+// overflow probe, including when the decoder returns early.
+func readBoundedInput(r io.Reader, maxBytes int64, decode func(io.Reader)) (int64, error) {
+	input := boundedInput{reader: io.LimitedReader{R: r, N: maxBytes + 1}}
+	decode(&input)
+	_, err := io.Copy(io.Discard, &input)
+	return maxBytes + 1 - input.reader.N, err
+}
+
 func readBoundedState(r io.Reader, maxBytes int64, decode func(io.Reader)) (int64, error) {
 	if maxBytes < 0 || maxBytes > MaxStateFileBytes {
 		return 0, fmt.Errorf("%w: invalid state byte limit", ErrInvalidRetainedState)
 	}
-	input := boundedStateInput{reader: io.LimitedReader{R: r, N: maxBytes + 1}}
-	decode(&input)
-	// Finish the same bounded stream after an early parser return. The caller
-	// can then give input errors and an overflow byte precedence over parsing.
-	if _, err := io.Copy(io.Discard, &input); err != nil {
+	size, err := readBoundedInput(r, maxBytes, decode)
+	if err != nil {
 		return 0, fmt.Errorf("read: %w", err)
 	}
-	if input.reader.N == 0 {
+	if size > maxBytes {
 		return 0, ErrStateFileTooLarge
 	}
-	return maxBytes + 1 - input.reader.N, nil
+	return size, nil
 }
 
 // A stat size is an allocation hint, never the input boundary. Read to EOF
