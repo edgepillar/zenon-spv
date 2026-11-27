@@ -197,6 +197,39 @@ with a static reason and no partial counts. The selected adjacent pair and
 digest match remain separate from authenticated parent linkage, complete
 patch provenance, representative measurements and accepted state roots.
 
+### Compare the target candidate root during replay
+
+Supply the independently selected candidate root and profile with the same
+plan, patch and base frames. The optional leaf bound defaults to 32,768 and
+accepts up to 100,000.
+
+```bash
+set -o pipefail
+cat "$R1_CHURN_PLAN_OBJECT" "$R1_PATCH_OBJECT" "$R1_BEFORE_OBJECT" |
+  python3 -I -B tools/ledger-inventory/churn.py \
+    --plan-bytes "$R1_PLAN_BYTES" --plan-sha256 "$R1_PLAN_SHA256" \
+    --projection-profile zenon-l1-balance-storage-sha3/v1 \
+    --expect-candidate-root "$R1_TARGET_ROOT"
+```
+
+Replay feeds effective target records directly to the existing candidate
+balance and storage fold while hashing the full target wire stream. The fold
+checks the raw ledger frontier at key `00` against the selected after height
+and hash. It compares the root after the replay has matched the target byte
+count, record count, SHA-256 and input EOF. The result
+`SELECTED_PATCH_REPLAY_AND_CANDIDATE_PROJECTION_MATCHED` includes the root,
+mapping digest and leaf counts alongside the replay totals. A refusal
+withholds both the projected result and replay totals.
+
+For the reconstructed chain-69 H3 and H4 captures, the projected replay read
+14,896 bytes of base, 359 bytes of endpoint delta and 702 bytes of plan. The
+101-record target matched the previously selected full-stream digest and
+32-leaf root. The check read zero bytes from the full H4 snapshot and wrote
+zero snapshot bytes. A different selected root returned
+`projection_root_mismatch`. The projection result is `MATH_ONLY`. Apply
+transport chunk checks, accepted-header authority and excluded-state
+provenance through their existing trust inputs. [Archived capture record](https://github.com/edgepillar/zenon-spv/pull/450)
+
 ### Repeated-key allocation observation
 
 A paired in-memory observation compared the replay at
