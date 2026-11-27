@@ -153,25 +153,26 @@ func (c CandidateV3Header) validateWire() error {
 	return nil
 }
 
-func decodeCandidateV3Object(raw []byte, fields map[string]any) error {
+// remaining is a private field map made for this object. Consuming its entries
+// rejects duplicate keys and lets the same map detect missing fields at EOF.
+func decodeCandidateV3Object(raw []byte, remaining map[string]any) error {
 	d := json.NewDecoder(bytes.NewReader(raw))
 	start, err := d.Token()
 	if err != nil || start != json.Delim('{') {
 		return errors.New("expected one JSON object")
 	}
-	seen := make(map[string]bool, len(fields))
+	var value json.RawMessage
 	for d.More() {
 		token, err := d.Token()
 		if err != nil {
 			return errors.New("malformed JSON object")
 		}
 		key, ok := token.(string)
-		target, known := fields[key]
-		if !ok || !known || seen[key] {
+		target, known := remaining[key]
+		if !ok || !known {
 			return errors.New("unknown or duplicate field")
 		}
-		seen[key] = true
-		var value json.RawMessage
+		delete(remaining, key)
 		if err := d.Decode(&value); err != nil {
 			return errors.New("malformed JSON field")
 		}
@@ -189,7 +190,7 @@ func decodeCandidateV3Object(raw []byte, fields map[string]any) error {
 	if err := d.Decode(new(json.RawMessage)); err != io.EOF {
 		return errors.New("trailing JSON")
 	}
-	if len(seen) != len(fields) {
+	if len(remaining) != 0 {
 		return errors.New("missing required field")
 	}
 	return nil

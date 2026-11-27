@@ -192,6 +192,25 @@ and the new reader reached the same noncontiguous-history refusal.
 These allocation totals and timing medians cover the bounded read, parsing and
 early linkage refusal on one host.
 
+The projected header decoder reuses one value buffer per JSON object and
+consumes each field from its private map. An unknown or repeated field still
+fails immediately, and any fields left in the map cause a missing-field
+failure. The complete decoded header is published only after its wire checks.
+
+Six paired darwin/arm64 trials with Go 1.25.14 and four iterations per trial
+used the same 4,096 repeated recorded envelopes, alternating the revision
+order. The SHA-256-pinned read reached the same noncontiguous-history refusal
+as `e8151cf`. This table gives local medians.
+
+| Read path | Baseline B/op | Reused B/op | Baseline allocations/op | Reused allocations/op |
+| --- | ---: | ---: | ---: | ---: |
+| Structural window parser | 51,620,932 | 46,771,250 | 958,827 | 848,235 |
+| SHA-256-pinned stream | 51,633,796 | 46,784,082 | 958,837 | 848,245 |
+
+The pinned-stream timing medians were 79.66 and 77.88 ms. Timing ranges
+overlapped for the structural parser. The recorded signed cohort, context
+and digest refusal controls, and compiled CLI checkpoint query also passed.
+
 `DecodePinnedTrustedExperimentalV3State` adds the same trusted-local decoding
 contract for a bounded, caller-owned byte buffer and an independently selected
 nonzero SHA-256 pin. Hashing and decoding use the same buffer, so a consumer can
