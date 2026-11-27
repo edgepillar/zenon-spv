@@ -134,6 +134,39 @@ This is a configured-header and proof-refusal replay for the archived inputs.
 The original fixture outcome remains `UNKNOWN`. The selected live target
 still requires three present proofs and completed typed consumption.
 
+## Restoring the H3 and H4 checkpoints
+
+A local Go 1.25.14 test on Darwin arm64 reused the same recorded headers,
+schedule and witnesses with SPV source `c64f545`. The test wrote the version-4
+checkpoint through the existing Go encoder and passed the saved file and its
+SHA-256 pin to the existing CLI handler. It restored H3, appended the original
+H4, and obtained the same H3 root and identical final checkpoint bytes as the
+continuous replay. The byte check independently matched both retained
+checkpoints to the original headers and selected context. The six CLI calls
+left the files' identities and bytes intact.
+
+| Query form | Provider headers | Provider JSON bytes | Local checkpoint bytes |
+| --- | ---: | ---: | ---: |
+| Anchor replay | 2 | 2,892 | 0 |
+| H3 checkpoint with H4 | 1 | 2,224 | 1,642 |
+| H4 checkpoint with proofs only | 0 | 1,557 | 2,514 |
+
+All three forms returned exit 2 and `query/required_row_absent` at the same
+H3 root. Reusing H3 without a successor returned exit 2 and
+`query/outside_owned_scope`. Supplying the H3 digest for the H4 checkpoint
+returned exit 1 and `state_input/digest_mismatch`. The export command returned
+exit 2 for the absence and emitted zero checkpoint bytes.
+
+The H3 and H4 checkpoint SHA-256 values are
+`02c047d01123595d966f41b95edeee743a59bd42a93a889a0dd4a7c58670a270` and
+`d6856d1a309c257f3b65b477aff6c9dcb29b36fc4972bdc98db48c06fcb59b44`.
+For this two-header sample, proof-only reuse saves 1,335 provider bytes and
+reads 2,514 local bytes. The byte counts cover the provider document and
+checkpoint. The configuration and request are common to the three forms.
+This sample measures document size. The test used one build and existing
+module inputs, took 9.63 seconds, and observed 156,457,595 bytes of temporary
+workspace data after execution and before cleanup.
+
 ## Remaining acceptance evidence
 
 The captures provide two observed opening transitions and independently
