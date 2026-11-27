@@ -478,19 +478,20 @@ peak describes the runner as a whole. The review reads the original archive in
 place and preserves its terminal outcome. Existing calls without this option
 keep the same output and exit codes.
 
-After a timed-out deposit with a quiescent process group, the reviewed
-reference-gas runner can retain the opening producer-slot observation. It
-stops the owned producers, executor, and gateway, captures one bounded RPC
-frontier, and closes the RPC node before reading its ledger. One invocation
-of the pinned read-only oracle covers the exact H2 and H3 hashes, with the
-captured frontier pinned separately. The diagnostic has a 120-second work
-deadline within the original budget and uses the existing cleanup reserve.
+After a configuration or deposit timeout with a quiescent process group, the
+reviewed reference-gas runner can retain the opening producer-slot observation.
+Configuration requires the three owned producers and the RPC node. Deposit
+also requires the executor and gateway. The runner stops all selected services
+except the RPC node, captures one bounded RPC frontier, then closes the RPC
+node. The pinned read-only oracle makes one in-place ledger read for the exact
+H2 and H3 hashes and binds the captured frontier separately. The diagnostic
+uses a 120-second work deadline within the original budget and retains the
+existing cleanup reserve.
 
-Archive review checks the oracle input, original receipts, closed runtime,
-frontier, and both historical parent-slot bindings. The report describes
-the candidate opening and its source parent slots. The terminal outcome
-is the recorded deposit timeout. Header acceptance and transaction
-submission require their own evidence.
+Archive review binds the oracle, original receipts, stopped service set,
+frontier and both historical parent slots to the recorded timeout stage. The
+terminal outcome remains UNKNOWN. Header acceptance and transaction submission
+require their own evidence.
 
 For the reviewed reference-gas devnet source, a timeout can retain
 `fixture-configure-progress.json` or `fixture-deposit-progress.json`. The

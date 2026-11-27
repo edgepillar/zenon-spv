@@ -1297,13 +1297,16 @@ class ReviewTests(unittest.TestCase):
             with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
                 self.review(make_archive(changed), selected)
 
-    def closed_opening_files(self):
-        contract, files, _, timeout_path = self.fixture_timeout_files(progress_source=True)
+    def closed_opening_files(self, stage="fixture-deposit"):
+        contract, files, _, timeout_path = self.fixture_timeout_files(stage, progress_source=True)
         _, original = accepted_files(terminal_format=model.TERMINAL_FORMAT)
         files["evidence/terminal.json"] = canonical({
             **json.loads(files["evidence/terminal.json"]), "owned_runtime_observed_closed": True})
         files.update({name: raw for name, raw in original.items() if name.startswith("transport/input-parent-oracle")})
-        files["evidence/owned-container-cleanup.json"] = original["evidence/owned-container-cleanup.json"]
+        closure = json.loads(original["evidence/owned-container-cleanup.json"])
+        if stage == "fixture-configuration":
+            closure["containers"] = [row for row in closure["containers"] if row["service"] in model.NODE_SERVICES]
+        files["evidence/owned-container-cleanup.json"] = canonical(closure)
         files["evidence/dispatch-selection.json"] = canonical({
             **json.loads(original["evidence/dispatch-selection.json"]), "contract_sha256": contract.sha256})
         opening_rows = json.loads(files["evidence/" + capture.OPENING_FILE])["result"]["list"]
@@ -1341,16 +1344,33 @@ class ReviewTests(unittest.TestCase):
         return contract, files, timeout_path, opening
 
     def test_closed_opening_replays_only_two_parents_at_the_later_closed_frontier(self):
-        contract, files, _, opening = self.closed_opening_files()
-        report = self.review(make_archive(files), contract)
-        observed = report["recorded_closed_opening_authorization"]
-        self.assertEqual(observed["frontier_request_id"], 9)
-        self.assertEqual(observed["closed_ledger_frontier"]["height"], 5)
-        self.assertEqual(observed["target_headers"], [header.identifier() for header in opening[1:]])
-        self.assertFalse(observed["accepted_header_authority"])
-        self.assertEqual(report["recorded_terminal_outcome"], "UNKNOWN")
-        self.assertFalse(report["recorded_fixture_timeout"]["transaction_submission_verified"])
-        self.assertIsNone(report["comparison"])
+        for stage in ("fixture-configuration", "fixture-deposit"):
+            with self.subTest(stage=stage):
+                contract, files, _, opening = self.closed_opening_files(stage)
+                report = self.review(make_archive(files), contract)
+                observed = report["recorded_closed_opening_authorization"]
+                self.assertEqual(observed["frontier_request_id"], 9)
+                self.assertEqual(observed["closed_ledger_frontier"]["height"], 5)
+                self.assertEqual(observed["target_headers"], [header.identifier() for header in opening[1:]])
+                self.assertFalse(observed["accepted_header_authority"])
+                self.assertEqual(report["recorded_terminal_outcome"], "UNKNOWN")
+                self.assertFalse(report["recorded_fixture_timeout"]["transaction_submission_verified"])
+                self.assertIsNone(report["comparison"])
+
+    def test_configuration_and_deposit_openings_require_their_exact_closed_rosters(self):
+        member = "evidence/owned-container-cleanup.json"
+        config_contract, configured, _, _ = self.closed_opening_files("fixture-configuration")
+        deposit_contract, deposited, _, _ = self.closed_opening_files()
+        four = json.loads(configured[member])
+        rows = four["containers"]
+        wrong_roles = canonical({**four, "containers": [*rows[:-1], {**rows[-1], "service": "executor"}]})
+        wrong_id = canonical({**four, "containers": [
+            {**row, "id": "f" * 64} if row["service"] == "rpc" else row for row in rows]})
+        for contract, files, different in ((config_contract, configured, deposited[member]),
+                (deposit_contract, deposited, configured[member]), (config_contract, configured, wrong_roles),
+                (config_contract, configured, wrong_id)):
+            with self.assertRaisesRegex(Refused, "review_owned_closure"):
+                self.review(make_archive({**files, member: different}), contract)
 
     def test_closed_opening_requires_quiescence_owned_closure_and_bound_inputs(self):
         contract, files, timeout_path, _ = self.closed_opening_files()
