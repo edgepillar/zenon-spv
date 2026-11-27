@@ -278,7 +278,7 @@ class LifecycleTests(unittest.TestCase):
             client.probe()
         return client, recorder
 
-    def runtime(self, root, client):
+    def runtime(self, root, client, services=model.SERVICES):
         client.create("buildkit", "sha256:" + "c" * 64)
         client.start("buildkit")
         client.close_builder()
@@ -295,7 +295,7 @@ class LifecycleTests(unittest.TestCase):
         mount = engine._mount
         with mock.patch.object(engine, "_mount", side_effect=lambda path, target:
                                mount(PurePosixPath("/fixture-runtime", path.name), target)):
-            for role in model.SERVICES:
+            for role in services:
                 client.create(role, "sha256:" + "c" * 64, files)
                 client.start(role)
 
@@ -373,6 +373,26 @@ class LifecycleTests(unittest.TestCase):
             self.assertTrue(all(value["State"]["Running"] is False for value in recorder.containers.values()))
             self.assertFalse(any(call[:2] in (["volume", "rm"], ["image", "rm"], ["network", "rm"])
                                  for call in recorder.calls))
+
+    def test_configuration_closure_requires_all_four_owned_nodes_and_no_extra_container(self):
+        with tempfile.TemporaryDirectory(prefix="engine-configuration-closure-") as temporary:
+            root = Path(temporary)
+            client, recorder = self.prepare(root)
+            self.runtime(root, client, model.NODE_SERVICES)
+            with self.assertRaisesRegex(model.Refused, "runtime_was_not_fully_started"):
+                client.stop_producers_and_clients()
+            self.assertTrue(all(value["State"]["Running"] for value in recorder.containers.values()))
+            client.stop_producers_and_clients(services=model.NODE_SERVICES)
+            rpc_id = client.owned["rpc"].identity
+            self.assertEqual([identity for identity, value in recorder.containers.items()
+                              if value["State"]["Running"]], [rpc_id])
+            ledger = client.close_rpc(services=model.NODE_SERVICES)
+            self.assertEqual(ledger, "/fixture-volumes/spv-" + client.nonce + "-rpc-data/_data/nom")
+            self.assertEqual(len(recorder.containers), 4)
+            self.assertTrue(all(value["State"]["Running"] is False for value in recorder.containers.values()))
+            recorder.extra_ids.add("f" * 64)
+            with self.assertRaisesRegex(model.Refused, "closed_runtime_roster_changed"):
+                client.closed_ledger(services=model.NODE_SERVICES)
 
     def test_runtime_creation_refuses_before_builder_close(self):
         with tempfile.TemporaryDirectory(prefix="engine-regular-control-") as temporary:

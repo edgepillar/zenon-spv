@@ -14,6 +14,10 @@ FORMAT = "owned-devnet-fixture-deposit-progress/v1"
 CONFIGURE_COMMAND = "fixture-configure"
 CONFIGURE_REPORT = "fixture-configure-progress.json"
 CONFIGURE_FORMAT = "owned-devnet-fixture-configure-progress/v1"
+TIMEOUT_SCOPES = {
+    "fixture-configuration": (CONFIGURE_COMMAND, model.NODE_SERVICES),
+    "fixture-deposit": (COMMAND, model.SERVICES),
+}
 DEVNET_SOURCE = {"repository": "Zeno-L2/zeno-devnet",
                  "revision": "cf1c9c0e0f0ca3b257bdbd019c5589c2c27f748f", "fetch": "git"}
 

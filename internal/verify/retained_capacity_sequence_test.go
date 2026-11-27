@@ -16,20 +16,28 @@ import (
 // full windows, including the largest explicit capacity. Signing constructs
 // synthetic envelopes; it does not supply the list or query oracle.
 type capacitySequence struct {
-	t       *testing.T
-	fixture sequenceFixture
-	model   sequenceModel
-	state   VerifiedState
-	path    string
-	targets []int
-	old     []capacityPredecessor
-	covered map[ReasonCode]bool
-	steps   int
+	t           *testing.T
+	fixture     sequenceFixture
+	baseOptions VerifyOptions
+	model       sequenceModel
+	state       VerifiedState
+	path        string
+	targets     []int
+	old         []capacityPredecessor
+	covered     map[ReasonCode]bool
+	steps       int
 }
 
 type capacityPredecessor struct {
 	state VerifiedState
 	model sequenceModel
+}
+
+func (s *capacitySequence) options(m sequenceModel) VerifyOptions {
+	// Each load still validates the saved state and freezes its own trust inputs.
+	opts := s.baseOptions
+	opts.Policy.W, opts.Policy.RetainHeaders = m.w, m.k
+	return opts
 }
 
 func (s *capacitySequence) remember() {
@@ -80,7 +88,10 @@ func (s *capacitySequence) extend(count int, fault string) {
 			break
 		}
 	}
-	before := s.state.Snapshot()
+	var before HeaderState
+	if want != OutcomeAccept {
+		before = s.state.Snapshot()
+	}
 	r, next := s.state.Extend(batch)
 	if r.Outcome != want || r.Reason != reason || r.FailedAt != at {
 		s.t.Fatalf("step=%d count=%d fault=%s: got %s, want %v/%v at %d", s.steps, count, fault, r, want, reason, at)
@@ -116,7 +127,7 @@ func (s *capacitySequence) resumeSaved(w uint64, k int, raw []byte) {
 		s.t.Fatal(err)
 	}
 	m := s.model.resized(w, k)
-	loaded, err := LoadTrustedState(s.path, s.fixture.anchor, s.fixture.options(s.t, m))
+	loaded, err := LoadTrustedState(s.path, s.fixture.anchor, s.options(m))
 	if err != nil {
 		s.t.Fatal(err)
 	}
@@ -142,7 +153,7 @@ func (s *capacitySequence) unchangedFile(raw []byte) {
 func (s *capacitySequence) refuseShrink(raw []byte) {
 	s.t.Helper()
 	m := s.model.resized(6, 8)
-	opts := s.fixture.options(s.t, m)
+	opts := s.options(m)
 	first, last := s.fixture.headers[m.indices[0]], s.fixture.headers[m.next-1]
 	opts.ProducerAuth = ProducerAuthOptions{Mode: ProducerAuthRequired,
 		Authorizer: s.fixture.authorizer(s.t, first.Height, last.Height)}
@@ -157,8 +168,8 @@ func (s *capacitySequence) refuseShrink(raw []byte) {
 
 func (s *capacitySequence) refuseSelections(raw []byte) {
 	s.t.Helper()
+	opts := s.options(s.model)
 	for _, k := range []int{0, int(s.model.w), MaxRetainHeaders + 1} {
-		opts := s.fixture.options(s.t, s.model)
 		opts.Policy.RetainHeaders = k
 		_, err := LoadTrustedState(s.path, s.fixture.anchor, opts)
 		if err == nil || k != 0 && !errors.Is(err, ErrInvalidRetentionPolicy) {
@@ -188,11 +199,12 @@ func TestRetainedCapacitySequenceModel(t *testing.T) {
 							fixture.schedule = fixture.anchor.Height + uint64(2*k+12)
 						}
 						m := sequenceModel{w: w, k: k}
-						state, err := NewVerifiedState(fixture.anchor, fixture.options(t, m))
+						opts := fixture.options(t, m)
+						state, err := NewVerifiedState(fixture.anchor, opts)
 						if err != nil {
 							t.Fatal(err)
 						}
-						s := capacitySequence{t: t, fixture: fixture, model: m, state: state,
+						s := capacitySequence{t: t, fixture: fixture, baseOptions: opts, model: m, state: state,
 							path: filepath.Join(t.TempDir(), "state.json"), targets: []int{0, k / 2, k - 1},
 							covered: make(map[ReasonCode]bool)}
 						s.check()
