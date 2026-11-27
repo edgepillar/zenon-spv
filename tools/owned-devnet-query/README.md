@@ -514,7 +514,13 @@ If the BatchEntry is present, it also tries the domain record and domain
 config proofs under the same root. A complete set is checked against the
 selected ABI and source rules. An absent BatchEntry or unavailable
 companion proof still yields the verified BatchEntry observation.
-The path uses at most four additional RPC reads within the original
+After all three proofs pass, one bounded frontier batch read can compare
+all 17 stored fields with the proven BatchEntry. The comparison records
+either a match or a mismatch. The `isFinalized` value remains the frontier
+DTO's unauthenticated hint. An unavailable or malformed DTO leaves the
+three-proof observation intact. The version-2 diagnostic includes the
+comparison and its exact request and response. Version 1 remains readable.
+The path uses at most five additional RPC reads within the original
 diagnostic deadline. It runs after producers and clients have stopped.
 
 The selected responses are retained with their request and command

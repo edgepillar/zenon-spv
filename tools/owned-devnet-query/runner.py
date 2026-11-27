@@ -406,6 +406,8 @@ def execute(environment, workspace, checkout):
                     names = [capture.DEPOSIT_TIMEOUT_HEADER, capture.DEPOSIT_TIMEOUT_PROOFS["batch_entry"]]
                     if batch_observation["context_proof_totals"] is not None:
                         names.extend(capture.DEPOSIT_TIMEOUT_PROOFS[name] for name in ("domain_record", "domain_config"))
+                    if batch_observation["format"] == capture.DEPOSIT_TIMEOUT_BATCH_GATEWAY_FORMAT:
+                        names.append(capture.DEPOSIT_TIMEOUT_GATEWAY)
                     first = batch_observation["frontier_request_id"] + 1
                     extra.update({capture.DEPOSIT_TIMEOUT_BATCH, *names})
                     extra.update(f"rpc-{index:02d}.request.json" for index in range(first, first + len(names)))

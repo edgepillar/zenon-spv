@@ -16,8 +16,9 @@ from closed_reader import LEDGER, ORACLE_NAME
 import model
 from model import Refused, canonical, exact_keys, require, same, uint
 from process import CommandFailed, regular_pin
-from query_checks import (address_bytes, binary, consumer_result, fingerprints, header_facts, hex_bytes,
-                          ledger_keys, opening_batch_witness, schedule_hash, selected_semantics, witness_rows)
+from query_checks import (address_bytes, binary, compare_frontier_batch, consumer_result, fingerprints,
+                          header_facts, hex_bytes, ledger_keys, opening_batch_witness, schedule_hash,
+                          selected_semantics, witness_rows)
 
 RPC_URL = "http://127.0.0.1:35997"
 STARTUP_FRONTIER_URLS = {"pillar": "http://127.0.0.1:35991", "rpc": RPC_URL}
@@ -40,6 +41,9 @@ DEPOSIT_TIMEOUT_HEADER = "deposit-timeout-query-header.json"
 DEPOSIT_TIMEOUT_PROOFS = {name: "deposit-timeout-" + name.replace("_", "-") + "-proof.json"
                           for name in ("batch_entry", "domain_record", "domain_config")}
 DEPOSIT_TIMEOUT_BATCH_FORMAT = "owned-devnet-deposit-timeout-batch/v1"
+DEPOSIT_TIMEOUT_BATCH_GATEWAY_FORMAT = "owned-devnet-deposit-timeout-batch/v2"
+DEPOSIT_TIMEOUT_GATEWAY = "deposit-timeout-frontier-batch.json"
+DEPOSIT_TIMEOUT_GATEWAY_BYTES = 32 << 10
 OPENING_SIGNATURE_REPORT = "opening-signatures.json"
 OPENING_SIGNATURE_LABELS = ("opening-signature-h2", "opening-signature-h3")
 OPENING_SIGNATURE_OK = b"Signature Verified Successfully\n"
@@ -321,7 +325,7 @@ class LocalRpc:
 
         entry = proof("batch_entry")
         observed = opening_batch_witness(profile, header.root, keys["batch_entry"], entry)
-        totals = None
+        totals = gateway_comparison = None
         if observed["presence"] == "present" and self.calls + 2 <= RPC_CALL_LIMIT:
             try:
                 checked = witness_rows(profile, batch, header.root, {"batch_entry": entry,
@@ -332,9 +336,22 @@ class LocalRpc:
                 # Preserve the independently checked entry even if its two
                 # companion reads or the typed context check refused.
                 pass
-        return {"format": DEPOSIT_TIMEOUT_BATCH_FORMAT, "frontier_request_id": frontier_request,
-                "header": header.identifier(), "state_root": header.root, "batch_witness": observed,
-                "context_proof_totals": totals}
+        if totals is not None and self.calls < RPC_CALL_LIMIT:
+            try:
+                domain = self.contract.data["selection"]["domain_id"]
+                row = self._read("embedded.settlement.getBatch", [domain, batch],
+                                 DEPOSIT_TIMEOUT_GATEWAY_BYTES, stdout_name=DEPOSIT_TIMEOUT_GATEWAY)
+                gateway_comparison = compare_frontier_batch(row, domain, batch, checked["decoded"]["entry"],
+                                                            raw_rpc=True)
+            except (OSError, ValueError, KeyError, TypeError):
+                # The three proofs remain useful without a gateway observation.
+                pass
+        report = {"format": DEPOSIT_TIMEOUT_BATCH_FORMAT, "frontier_request_id": frontier_request,
+                  "header": header.identifier(), "state_root": header.root, "batch_witness": observed,
+                  "context_proof_totals": totals}
+        if gateway_comparison is not None:
+            report.update(format=DEPOSIT_TIMEOUT_BATCH_GATEWAY_FORMAT, gateway_comparison=gateway_comparison)
+        return report
 
     def capture_startup_sync(self):
         """One diagnostic after node readiness fails; never retry readiness."""

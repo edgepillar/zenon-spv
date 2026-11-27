@@ -26,7 +26,8 @@ import node_file_logs
 from artifacts import API_LIMIT, REPOSITORY, WORKFLOWS, api_json
 from model import Refused, canonical, exact_keys, require, same
 from process import FILE
-from query_checks import consumer_result, ledger_keys, opening_batch_witness, selected_semantics, witness_rows
+from query_checks import (compare_frontier_batch, consumer_result, ledger_keys, opening_batch_witness,
+                          selected_semantics, witness_rows)
 
 INDEX = "evidence/evidence-index.json"
 INDEX_BYTES = 512 << 10
@@ -435,7 +436,8 @@ def recorded_closed_opening(evidence, contract, selection, terminal, timeout, op
 
 
 def recorded_deposit_timeout_batch(evidence, contract, checkout, timeout, closed_opening):
-    members = {name for name in (capture.DEPOSIT_TIMEOUT_HEADER, *capture.DEPOSIT_TIMEOUT_PROOFS.values())
+    members = {name for name in (capture.DEPOSIT_TIMEOUT_HEADER, *capture.DEPOSIT_TIMEOUT_PROOFS.values(),
+                                 capture.DEPOSIT_TIMEOUT_GATEWAY)
                if "evidence/" + name in evidence.pins}
     if "evidence/" + capture.DEPOSIT_TIMEOUT_BATCH not in evidence.pins:
         require(not members, "review_deposit_timeout_batch_report_missing")
@@ -443,9 +445,13 @@ def recorded_deposit_timeout_batch(evidence, contract, checkout, timeout, closed
     require(timeout is not None and timeout["stage"] == "fixture-deposit" and closed_opening is not None,
             "review_deposit_timeout_batch_scope")
     summary = evidence.json(capture.DEPOSIT_TIMEOUT_BATCH, 4096)
-    exact_keys(summary, {"format", "frontier_request_id", "header", "state_root", "batch_witness",
-                         "context_proof_totals"}, "review_deposit_timeout_batch_fields")
-    same(summary["format"], capture.DEPOSIT_TIMEOUT_BATCH_FORMAT, "review_deposit_timeout_batch_format")
+    gateway_selected = summary.get("format") == capture.DEPOSIT_TIMEOUT_BATCH_GATEWAY_FORMAT
+    fields = {"format", "frontier_request_id", "header", "state_root", "batch_witness", "context_proof_totals"}
+    if gateway_selected:
+        fields.add("gateway_comparison")
+    exact_keys(summary, fields, "review_deposit_timeout_batch_fields")
+    require(gateway_selected or summary["format"] == capture.DEPOSIT_TIMEOUT_BATCH_FORMAT,
+            "review_deposit_timeout_batch_format")
     after = closed_opening["frontier_request_id"]
     same(summary["frontier_request_id"], after, "review_deposit_timeout_batch_frontier")
     raw = evidence.bytes(f"evidence/rpc-{after:02d}.frontier.json", capture.FRONTIER_BYTES)
@@ -479,6 +485,7 @@ def recorded_deposit_timeout_batch(evidence, contract, checkout, timeout, closed
     observed = opening_batch_witness(profile, header.root, keys["batch_entry"], entry)
     same(summary["batch_witness"], observed, "review_deposit_timeout_batch_proof")
     expected = {capture.DEPOSIT_TIMEOUT_HEADER, capture.DEPOSIT_TIMEOUT_PROOFS["batch_entry"]}
+    require(not gateway_selected or summary["context_proof_totals"] is not None, "review_deposit_timeout_gateway_scope")
     if summary["context_proof_totals"] is not None:
         require(observed["presence"] == "present", "review_deposit_timeout_batch_context")
         checked = witness_rows(profile, batch, header.root, {"batch_entry": entry,
@@ -486,6 +493,13 @@ def recorded_deposit_timeout_batch(evidence, contract, checkout, timeout, closed
         selected_semantics(descriptor, checked["decoded"])
         same(summary["context_proof_totals"], checked["totals"], "review_deposit_timeout_batch_totals")
         expected.update(capture.DEPOSIT_TIMEOUT_PROOFS.values())
+        if gateway_selected:
+            domain = contract.data["selection"]["domain_id"]
+            row = recorded_read(after + 5, capture.DEPOSIT_TIMEOUT_GATEWAY,
+                                "embedded.settlement.getBatch", [domain, batch], capture.DEPOSIT_TIMEOUT_GATEWAY_BYTES)
+            gateway = compare_frontier_batch(row, domain, batch, checked["decoded"]["entry"], raw_rpc=True)
+            same(summary["gateway_comparison"], gateway, "review_deposit_timeout_gateway_comparison")
+            expected.add(capture.DEPOSIT_TIMEOUT_GATEWAY)
     require(members == expected, "review_deposit_timeout_batch_members")
     return {**summary, "accepted_header_authority": False, "native_consumer_completed": False}
 

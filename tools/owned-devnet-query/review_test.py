@@ -1441,7 +1441,7 @@ class ReviewTests(unittest.TestCase):
                 self.assertFalse(report["recorded_fixture_timeout"]["transaction_submission_verified"])
                 self.assertIsNone(report["comparison"])
 
-    def deposit_timeout_batch_files(self, *, companion_available=True, stage="fixture-deposit"):
+    def deposit_timeout_batch_files(self, *, companion_available=True, stage="fixture-deposit", gateway=None):
         contract, files, _, _ = self.closed_opening_files(stage)
         _, accepted = accepted_files(terminal_format=model.TERMINAL_FORMAT)
         provider = json.loads(accepted["evidence/provider.json"])
@@ -1455,9 +1455,22 @@ class ReviewTests(unittest.TestCase):
                           for name, filename in capture.DEPOSIT_TIMEOUT_PROOFS.items()})
         if not companion_available:
             del responses[capture.DEPOSIT_TIMEOUT_PROOFS["domain_record"]]
+        if gateway is not None:
+            row = provider["gateway"]
+            row["isFinalized"] = True
+            if gateway == "mismatch":
+                row["finalizeAtHeight"] += 1
+            elif gateway == "foreign":
+                row["domainId"] += 1
+            elif gateway == "invalid":
+                row["state"] = True
+            elif gateway == "unexpected":
+                row["unexpected"] = "unselected fixture data"
+            responses[capture.DEPOSIT_TIMEOUT_GATEWAY] = row
 
         def read(method, params, limit, *, stdout_name):
-            self.assertIn(limit, (capture.FRONTIER_BYTES, capture.OPENING_PROOF_BYTES))
+            self.assertIn(limit, (capture.FRONTIER_BYTES, capture.OPENING_PROOF_BYTES,
+                                  capture.DEPOSIT_TIMEOUT_GATEWAY_BYTES))
             rpc.calls += 1
             if stdout_name not in responses:
                 raise Refused("test_companion_unavailable")
@@ -1475,6 +1488,11 @@ class ReviewTests(unittest.TestCase):
 
         with patch.object(rpc, "_read", side_effect=read):
             report = rpc.deposit_timeout_batch(capture.Header.read(headers[-1], chain), descriptor, profile)
+        if report["format"] == capture.DEPOSIT_TIMEOUT_BATCH_FORMAT:
+            # The runner selects the optional DTO and request only when its
+            # shape and identity passed the read-side checks.
+            files.pop("evidence/" + capture.DEPOSIT_TIMEOUT_GATEWAY, None)
+            files.pop("evidence/rpc-14.request.json", None)
         files["evidence/" + capture.DEPOSIT_TIMEOUT_BATCH] = canonical(report)
         return contract, files, report
 
@@ -1492,6 +1510,49 @@ class ReviewTests(unittest.TestCase):
                 self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
                 self.assertFalse(result["recorded_fixture_timeout"]["transaction_submission_verified"])
                 self.assertIsNone(result["comparison"])
+
+    def test_deposit_timeout_gateway_preserves_match_mismatch_and_proof_only_results(self):
+        for gateway in ("match", "mismatch", "foreign", "invalid", "unexpected", None):
+            with self.subTest(gateway=gateway):
+                contract, files, source = self.deposit_timeout_batch_files(gateway=gateway)
+                result = self.review(make_archive(files), contract)
+                captured = result["recorded_deposit_timeout_batch"]
+                self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
+                self.assertFalse(captured["native_consumer_completed"])
+                self.assertIsNone(result["comparison"])
+                self.assertIsNotNone(captured["context_proof_totals"])
+                comparison = captured.get("gateway_comparison")
+                if gateway in ("match", "mismatch"):
+                    self.assertEqual(source["format"], capture.DEPOSIT_TIMEOUT_BATCH_GATEWAY_FORMAT)
+                    self.assertEqual(comparison, {"stored_fields_compared": 17,
+                        "stored_fields_match": gateway == "match", "frontier_is_finalized_hint": True,
+                        "frontier_identity_authenticated": False})
+                else:
+                    self.assertEqual(source["format"], capture.DEPOSIT_TIMEOUT_BATCH_FORMAT)
+                    self.assertIsNone(comparison)
+
+    def test_deposit_timeout_gateway_requires_the_bound_request_and_comparison(self):
+        contract, files, selected = self.deposit_timeout_batch_files(gateway="match")
+        report = "evidence/" + capture.DEPOSIT_TIMEOUT_BATCH
+        request = "evidence/rpc-14.request.json"
+        payload = "evidence/" + capture.DEPOSIT_TIMEOUT_GATEWAY
+        wrong_comparison = {**selected["gateway_comparison"], "stored_fields_match": False}
+        for path, replacement, reason in (
+                (request, canonical({**json.loads(files[request]), "params": [1, 1]}),
+                 "review_deposit_timeout_batch_request"),
+                (report, canonical({**selected, "gateway_comparison": wrong_comparison}),
+                 "review_deposit_timeout_gateway_comparison"),
+                (report, canonical({**selected, "context_proof_totals": None}),
+                 "review_deposit_timeout_gateway_scope"),
+                (payload, None, "review_member_bound"),
+        ):
+            changed = dict(files)
+            if replacement is None:
+                del changed[path]
+            else:
+                changed[path] = replacement
+            with self.subTest(reason=reason), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive(changed), contract)
 
     def test_deposit_timeout_batch_requires_exact_linked_requests_and_summary(self):
         contract, files, selected = self.deposit_timeout_batch_files()
