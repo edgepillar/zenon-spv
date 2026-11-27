@@ -190,3 +190,45 @@ reported both archives unexpired. The earlier listed expiry is 11 December 2026
 at 15:36 UTC, so the next dispatch must repeat the availability check.
 [Consumer artifact](https://github.com/edgepillar/zenon-spv/actions/runs/44764773500/artifacts/14645836816),
 [parent-oracle artifact](https://github.com/edgepillar/zenon-spv/actions/runs/44764773665/artifacts/14644100853).
+
+## Closed-fixture snapshot transport and header comparison
+
+For run `45905746425`, the pinned reference-gas node reconstructed two
+closed LevelDB ledgers from the recorded headers, one ending at H3 and one at
+H4. The read-only producer oracle checked each frontier after the corresponding
+manager stopped. The exporter read the selected effective raw ledger of each
+copy. The two exports retain distinct height, full hash and payload digests.
+
+| Closed fixture frontier | Put records | Put bytes | Chunks at 1 KiB | Balance/storage leaves |
+| --- | ---: | ---: | ---: | ---: |
+| Recorded H3 | 99 | 14,896 | 15 | 32 |
+| Recorded H4 | 101 | 15,213 | 15 | 32 |
+
+The completion, inventory and transport checks read the retained streams
+through EOF. A separate check recomputed every chunk SHA-256 from the original
+put bytes. Both framed reads produced the same balance/storage mapping digest
+`71898584c1d9d4175e3ebd6c85c9d9dafbeb3f1c6afe3ee2b14f35536c90c90e`
+and the recorded StateRoot. Each framed result reported `MATH_ONLY`.
+
+The compiled verifier first selected H3 with the configured H2 anchor, explicit
+H3–H4 schedule and `W=1`. It matched the H3 report to the selected header and
+its StateRoot. The same comparison refused the H4 report with exit 1 and
+`projection/frontier_mismatch` even though the roots matched. Selecting H4
+itself returned exit 2 and `selection/insufficient_depth`. The verifier used
+`c64f5453521f4f334bcb6205bbe00d9adfed3980`. The exporter and framed
+projection used `265531259b4734b384cbc2b063cffb6b47307225`. The macOS
+executables came from retained CI archives. [Verifier archive](https://github.com/edgepillar/zenon-spv/actions/runs/45911169119/artifacts/15161063070) · [Exporter archive](https://github.com/edgepillar/zenon-spv/actions/runs/45938634780/artifacts/15171727047)
+
+The native replays reused 21 read-only module directories after checking their
+expanded contents and cached ZIPs against the recorded Go module digests.
+That avoided staging 92,977,144 bytes of module inputs per replay. The
+completed node commands reported 406,769,897 and 404,452,373 bytes as their
+largest sampled build-workspace sizes. The framed reads and verifier checks
+took 3.40 seconds on macOS arm64 with the retained amd64 executables running
+through Rosetta. The controller reused the completed H3 export after an
+orchestration error and retained interrupted runs with their failure status.
+
+The original fixture outcome remains `UNKNOWN`. This completes a bounded
+transport and header-root comparison for reconstructed fixtures.
+Representative capture, excluded-state provenance, import and restart, and
+successful live typed consumption remain open.
