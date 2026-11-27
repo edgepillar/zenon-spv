@@ -104,7 +104,7 @@ func runExperimentalSnapshotRoot(command string, args []string, stdout, stderr i
 	fs.SetOutput(io.Discard)
 	configPath := fs.String("config", "", "independently selected experimental header configuration")
 	heightText := fs.String("expect-height", "", "independently selected header height")
-	projectionPath := fs.String("projection-report", "", "selected completed S1 projection report")
+	projectionPath := fs.String("projection-report", "", "selected completed or replayed S1 projection report")
 	checkpointPath := fs.String("trusted-state", "", "explicit trusted local experimental header checkpoint")
 	contextPin, headerPin, projectionPin, checkpointPin := new(contextPinFlag), new(contextPinFlag), new(contextPinFlag), new(contextPinFlag)
 	fs.Var(contextPin, "expect-header-context", "independently selected experimental header context fingerprint")

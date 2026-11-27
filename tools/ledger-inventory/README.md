@@ -257,6 +257,34 @@ transport and root checks withhold successful reports until replay completes.
 The manifest-backed mode keeps the same trusted-input requirements for any
 later accepted-header comparison and snapshot import.
 
+### Compare the replay with a configured header
+
+Pass the original manifest-backed replay report to the verifier with a
+separately selected report digest, header context, height and hash. Supply
+the recorded header extension or an independently pinned trusted checkpoint
+that already covers the selected height and depth.
+
+```bash
+zenon-spv inspect-experimental-snapshot-root \
+  --config "$SPV_HEADER_CONFIG" --expect-header-context "$SPV_HEADER_CONTEXT" \
+  --expect-height "$SPV_HEIGHT" --expect-header-hash "$SPV_HEADER_HASH" \
+  --projection-report "$R1_REPLAY_REPORT" --expect-projection-sha256 "$R1_REPLAY_SHA256" \
+  "$SPV_RECORDED_HEADERS"
+```
+
+The verifier checks the plan's encoding and digest, the replay byte counts,
+and the target identity shared by the plan and transport report. It compares
+the candidate root with the root of the configured, accepted header after
+enforcing depth. The result retains the base identity and base, patch, plan,
+manifest and target pins. The exact replay report bytes serve as the selected
+projection input. The target stream stays in the replay pipeline.
+
+This comparison keeps the producer and snapshot lineage within the caller's
+selected provenance. The native report leaves projection recomputation,
+report provenance, excluded-state authentication and production state-value
+guarantees unset. Snapshot import and node recovery have their own
+qualification requirements.
+
 ### Repeated-key allocation observation
 
 A paired in-memory observation compared the replay at

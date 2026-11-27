@@ -11,6 +11,7 @@ import (
 
 const maxSnapshotProjectionReportBytes = 148 << 10
 const experimentalSnapshotProjectionProfile = "zenon-l1-balance-storage-sha3/v1"
+const completedSnapshotProjectionFormat = "zenon-completed-frontier-transport-projection/v1"
 
 type snapshotBytePin struct {
 	Bytes  uint64     `json:"bytes"`
@@ -22,12 +23,13 @@ func (p *snapshotBytePin) UnmarshalJSON(raw []byte) error {
 }
 
 type experimentalProjectionComparison struct {
-	ReportSHA256          chain.Hash      `json:"report_sha256"`
-	Profile               string          `json:"profile"`
-	Manifest              snapshotBytePin `json:"manifest"`
-	Stream                snapshotBytePin `json:"stream"`
-	ProvenanceSHA256      chain.Hash      `json:"provenance_sha256"`
-	ProducerReceiptSHA256 chain.Hash      `json:"producer_receipt_sha256"`
+	ReportSHA256          chain.Hash                `json:"report_sha256"`
+	Profile               string                    `json:"profile"`
+	Manifest              snapshotBytePin           `json:"manifest"`
+	Stream                snapshotBytePin           `json:"stream"`
+	ProvenanceSHA256      chain.Hash                `json:"provenance_sha256"`
+	ProducerReceiptSHA256 *chain.Hash               `json:"producer_receipt_sha256,omitempty"`
+	Replay                *snapshotReplayComparison `json:"replay,omitempty"`
 }
 
 type snapshotProjectionSelection struct {
@@ -51,21 +53,38 @@ func (s *snapshotInventorySelection) UnmarshalJSON(raw []byte) error {
 	})
 }
 
-// Decode only the fixed S1 report. The selected digest identifies the report
+// The selected digest identifies the report
 // bytes, and the independently verified header supplies the comparison root.
 // This decoder does not read or attest to the underlying projection input.
 func decodeSnapshotProjectionReport(raw []byte) (snapshotProjectionSelection, error) {
+	var kind struct {
+		Format string `json:"format"`
+	}
+	if len(raw) > maxSnapshotProjectionReportBytes || json.Unmarshal(raw, &kind) != nil {
+		return snapshotProjectionSelection{}, errExperimentalCLIInput
+	}
+	switch kind.Format {
+	case completedSnapshotProjectionFormat:
+		return decodeCompletedSnapshotProjection(raw)
+	case replayedSnapshotProjectionFormat:
+		return decodeReplayedSnapshotProjection(raw)
+	default:
+		return snapshotProjectionSelection{}, errExperimentalCLIInput
+	}
+}
+
+func decodeCompletedSnapshotProjection(raw []byte) (snapshotProjectionSelection, error) {
 	var selected snapshotProjectionSelection
 	var format, status string
 	var completionMatched, inventoryComplete bool
 	var completion, inventory, transport, projection, reason json.RawMessage
 	var scope map[string]bool
-	if len(raw) > maxSnapshotProjectionReportBytes || decodeExperimentalCLIObject(raw, map[string]any{
+	if decodeExperimentalCLIObject(raw, map[string]any{
 		"format": &format, "status": &status, "reason": &reason, "scope": &scope,
 		"producer_completion_matched": &completionMatched, "stream_recount_completed": &inventoryComplete,
 		"producer_completion": &completion, "stream_inventory": &inventory,
 		"transport_verification": &transport, "candidate_projection": &projection,
-	}, "reason") != nil || format != "zenon-completed-frontier-transport-projection/v1" ||
+	}, "reason") != nil || format != completedSnapshotProjectionFormat ||
 		status != "SELECTED_CANDIDATE_PROJECTION_MATCHED" || !bytes.Equal(reason, []byte("null")) ||
 		!completionMatched || !inventoryComplete || len(scope) == 0 {
 		return selected, errExperimentalCLIInput
@@ -111,15 +130,16 @@ func checkSnapshotProjectionInputs(completion, inventory []byte, selected *snaps
 	var captureMatched bool
 	var frontier, reason json.RawMessage
 	var captured snapshotInventorySelection
+	var producerReceipt chain.Hash
 	out := &selected.Comparison
 	if decodeExperimentalCLIObject(completion, map[string]any{
 		"format": &format, "status": &status, "reason": &reason, "capture_matched": &captureMatched,
 		"selected_frontier": &frontier, "inventory_selection": &captured,
-		"producer_receipt_sha256": &out.ProducerReceiptSHA256, "inventory_limits": new(json.RawMessage),
+		"producer_receipt_sha256": &producerReceipt, "inventory_limits": new(json.RawMessage),
 		"statistics_origin": new(json.RawMessage), "scope": new(json.RawMessage),
 	}, "reason") != nil || format != "zenon-frontier-export-completion/v1" ||
 		status != "SELECTED_EXPORT_COMPLETION_MATCHED" || !bytes.Equal(reason, []byte("null")) ||
-		!captureMatched || out.ProducerReceiptSHA256.IsZero() {
+		!captureMatched || producerReceipt.IsZero() {
 		return 0, errExperimentalCLIInput
 	}
 	var height uint64
@@ -146,6 +166,7 @@ func checkSnapshotProjectionInputs(completion, inventory []byte, selected *snaps
 		!selectionMatched || !eof || records != captured.Records || readBytes != out.Stream.Bytes || recounted != captured {
 		return 0, errExperimentalCLIInput
 	}
+	out.ProducerReceiptSHA256 = &producerReceipt
 	return records, nil
 }
 

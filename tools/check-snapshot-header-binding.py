@@ -19,6 +19,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "internal/testdata/conformance"
 EXPORT = ROOT / "tools/ledger-export"
+CHURN = ROOT / "tools/ledger-inventory/churn.py"
 COMMAND = "inspect-experimental-snapshot-root"
 EXPORT_COMMAND = "export-experimental-snapshot-header-state"
 PROJECTION_LIMIT = 148 << 10
@@ -70,6 +71,36 @@ def project(builder, records, height, header_hash, root):
     assert projection["stream_inventory"]["input_bytes"] == len(wire)
     assert projection["transport_verification"]["selection"]["sha256"] == hashlib.sha256(wire).hexdigest()
     return raw, projection
+
+
+def byte_pin(raw):
+    return {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+
+
+def project_replay(builder, records, before, after, root):
+    _, _, _, base = builder.projection_fixture(records, height=before["height"], hash_hex=before["hash"])
+    receipt, _, manifest, target = builder.projection_fixture(
+        records, height=after["height"], hash_hex=after["hash"])
+    _, _, _, patch = builder.projection_fixture((), height=after["height"], hash_hex=after["hash"])
+    plan = {
+        "format": "zenon-r1-ledger-churn-plan/v1",
+        "record_space": "effective-raw-ledger",
+        "provenance_sha256": receipt["selection"]["provenance_sha256"],
+        "before": {**byte_pin(base), "records": len(records) + 1, "momentum": before},
+        "after": {**byte_pin(target), "records": len(records) + 1, "momentum": after},
+        "patch": {**byte_pin(patch), "records": 1},
+    }
+    plan_bytes = encoded(plan)
+    raw, report = invoke([sys.executable, "-I", "-B", str(CHURN),
+        "--plan-bytes", str(len(plan_bytes)), "--plan-sha256", byte_pin(plan_bytes)["sha256"],
+        "--after-manifest-bytes", str(len(manifest)), "--after-manifest-sha256", byte_pin(manifest)["sha256"],
+        "--projection-profile", builder.PROGRAM.PROJECTION.PROFILE, "--expect-candidate-root", root],
+        0, plan_bytes + manifest + patch + base)
+    assert report["status"] == "SELECTED_PATCH_REPLAY_TRANSPORT_AND_PROJECTION_MATCHED"
+    assert report["selection"] == plan and report["plan"] == byte_pin(plan_bytes)
+    assert report["candidate_projection"]["computed_root"] == root
+    assert report["after_snapshot_bytes_read"] == report["derived_snapshot_bytes_written"] == 0
+    return raw, report
 
 
 def check(verifier, revision, candidate_manifest):
@@ -273,6 +304,51 @@ def check(verifier, revision, candidate_manifest):
         native("duplicate_report_field", projection_flags(duplicate), 70, ("projection", "invalid_report"))
         native("oversized_report", projection_flags(raw.ljust(PROJECTION_LIMIT + 1, b" ")), 70,
                ("projection", "invalid_input"))
+
+        base = {"height": other["height"], "hash": other["hash"]}
+        target = {"height": height, "hash": header_hash}
+        replay_raw, replay = project_replay(builder, records, base, target, trace["root_hex"])
+        replay_comparison = {
+            "report_sha256": byte_pin(replay_raw)["sha256"],
+            "profile": replay["candidate_projection"]["profile"],
+            "manifest": replay["after_transport"]["manifest"],
+            "stream": {key: replay["selection"]["after"][key] for key in ("bytes", "sha256")},
+            "provenance_sha256": replay["selection"]["provenance_sha256"],
+            "replay": {"plan": replay["plan"], "base_height": base["height"], "base_hash": base["hash"],
+                       "base": {key: replay["selection"]["before"][key] for key in ("bytes", "sha256")},
+                       "patch": {key: replay["selection"]["patch"][key] for key in ("bytes", "sha256")}},
+        }
+        replay_matched = native("manifest_replay_matches_accepted_header", projection_flags(replay_raw), 0)
+        assert replay_matched["header"] == matched["header"]
+        assert replay_matched["projection_comparison"] == replay_comparison
+        replay_restored = native("manifest_replay_matches_checkpoint", projection_flags(replay_raw) + checkpoint_args,
+                                 0, momentum_input=None)
+        assert replay_restored["header"] == matched["header"]
+        assert replay_restored["projection_comparison"] == replay_comparison
+        bad_root = copy.deepcopy(replay)
+        bad_root["candidate_projection"].update(expected_root="aa" * 32, computed_root="aa" * 32)
+        native("replay_different_root", projection_flags(encoded(bad_root)), 1, ("projection", "root_mismatch"))
+        other_base = {"height": other["height"] - 1, "hash": other["previousHash"]}
+        other_replayed, _ = project_replay(builder, records, other_base, base, trace["root_hex"])
+        native("replay_same_root_other_frontier", projection_flags(other_replayed), 1,
+               ("projection", "frontier_mismatch"))
+        for name, section, field, value in (
+                ("replay_plan_digest", "plan", "sha256", "aa" * 32),
+                ("replay_emission_incomplete", "after_transport", "emitted_stream_completed", False),
+                ("replay_wrong_raw_digest", "after_transport", "selection",
+                 {**replay["after_transport"]["selection"], "sha256": "aa" * 32}),
+                ("replay_wrong_byte_accounting", "after_totals", "put_wire_bytes", 1),
+                ("replay_claimed_parent_authentication", "scope", "momentum_parent_link_authenticated", True),
+                ("replay_claimed_projection_authority", "candidate_projection", "accepted_header_binding", True)):
+            changed = copy.deepcopy(replay)
+            changed[section][field] = value
+            native(name, projection_flags(encoded(changed)), 70, ("projection", "invalid_report"))
+        changed = copy.deepcopy(replay)
+        del changed["after_transport"]
+        changed.update(format="zenon-r1-ledger-churn-projection/v1",
+                       status="SELECTED_PATCH_REPLAY_AND_CANDIDATE_PROJECTION_MATCHED")
+        native("replay_without_manifest", projection_flags(encoded(changed)), 70, ("projection", "invalid_report"))
+
         changed_headers = copy.deepcopy(unit["momentums"])
         changed_headers[-2]["stateRoot"] = "aa" * 32
         headers_path.write_bytes(encoded(changed_headers))

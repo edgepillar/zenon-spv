@@ -466,3 +466,14 @@ full lane and records the updated closures.
 | --- | ---: | ---: | --- |
 | Native v3 | 1224 | 125316 | `4a9f1a1917f1a4f3b609e855c6a65f011421da57624fb22bf429ab971ca5680f` |
 | Portable tools | 1201 | 123117 | `cbe59d89d51b8c3e36554507d1f9c72c1f8031627c9e86a51bab3a3747f479b1` |
+
+### Configured header comparison for replay
+
+The native verifier and its packaged control consume the original
+manifest-backed replay report. The decoder and its control remain in both
+dependency closures. The change takes the full general lane.
+
+| Closure | Entries | Encoded bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Native v3 | 1225 | 125415 | `bb2e1d38bee607318fece2a61ec5fcf5d033ea2fea20ee0a9cdfb9d36b06fb71` |
+| Portable tools | 1202 | 123216 | `987c68d3024ab3006f490c1c8139f567d58d5e99d2d6ac09ebfd65b189caadb5` |
