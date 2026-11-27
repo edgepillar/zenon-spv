@@ -967,6 +967,90 @@ class ReviewTests(unittest.TestCase):
         self.assertFalse(result["native_consumer_reexecuted"])
         self.assertNotIn("candidate_opening_observation", result)
 
+    def interrupted_capture_files(self):
+        contract, files = accepted_files(terminal_format=model.TERMINAL_FORMAT)
+        end = "evidence/terminal.json"
+        files[end] = canonical({**json.loads(files[end]), "outcome": "UNKNOWN", "reason": "command_incomplete"})
+        completion = "evidence/consume-query.complete.json"
+        files[completion] = canonical({**json.loads(files[completion]), "actual_exit": -15,
+            "output_complete": False, "reason": "timeout", "outputs": {
+                "stdout": {"file": capture.CONSUMER_STDOUT, **pin(b"")},
+                "stderr": {"file": "consume-query.stderr", **pin(b"")}}})
+        del files["evidence/" + capture.CONSUMER_STDOUT]
+        del files["evidence/consumer-comparison.json"]
+        return contract, files
+
+    def test_hosted_interrupted_consumer_rechecks_the_closure_and_three_proofs_in_place(self):
+        contract, files = self.interrupted_capture_files()
+        raw = make_archive(files)
+        with patch.object(zipfile.ZipFile, "extractall", side_effect=AssertionError):
+            code, result, error = self.hosted_review(raw, contract=contract, conclusion="failure", execution="failure")
+        self.assertEqual(code, 1, error)
+        report = result["archive_review"]
+        observed = report["recorded_interrupted_capture"]
+        self.assertEqual(report["recorded_terminal_outcome"], "UNKNOWN")
+        self.assertIsNone(report["comparison"])
+        self.assertEqual(report["materialized_bytes"], 0)
+        self.assertFalse(report["native_consumer_reexecuted"])
+        self.assertFalse(report["new_devnet_acceptance_established"])
+        self.assertFalse(observed["accepted_header_authority"])
+        self.assertEqual(observed["status"], "PROOFS_MATCH_CAPTURED_ROOT")
+        self.assertEqual(observed["request"], json.loads(files["evidence/query-request.json"]))
+        provider = json.loads(files["evidence/provider.json"])
+        self.assertEqual(observed["root"], provider["witnesses"]["domain_record"]["root"])
+        for field in ("proof", "value"):
+            self.assertEqual(observed["proof_totals"][field],
+                             sum(len(base64.b64decode(row[field])) for row in provider["witnesses"].values()))
+        self.assertGreater(observed["proof_totals"]["siblings"], 0)
+        self.assertEqual(observed["input_pins"], {name: pin(files["evidence/" + name]) for name in (
+            "provider.json", "closed-ledger-provenance.json", "query-config.json", "query-request.json",
+            "query-context-pins.json")})
+        self.assertEqual(observed["consumer"], {"actual_exit": -15, "output_complete": False,
+            "completion": pin(files["evidence/consume-query.complete.json"])})
+
+    def test_interrupted_capture_preserves_unknown_when_witness_value_is_missing(self):
+        contract, files = self.interrupted_capture_files()
+        path = "evidence/provider.json"
+        provider = json.loads(files[path])
+        provider["witnesses"]["domain_config"]["value"] = None
+        files[path] = canonical(provider)
+        completion = "evidence/collect-provider.complete.json"
+        receipt = json.loads(files[completion])
+        receipt["outputs"]["stdout"] = {"file": "provider.json", **pin(files[path])}
+        files[completion] = canonical(receipt)
+        result = self.review(make_archive(files), contract)
+        observed = result["recorded_interrupted_capture"]
+        self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
+        self.assertEqual(observed["status"], "PROOFS_UNVERIFIED")
+        self.assertEqual(observed["proof_refusal"], "independent_membership_leaf")
+        self.assertIsNone(observed["proof_totals"])
+
+    def test_interrupted_capture_without_verified_closure_has_no_proof_report(self):
+        contract, files = self.interrupted_capture_files()
+        for name, change in (("terminal.json", {"owned_runtime_observed_closed": False}),
+                             ("consume-query.complete.json", {"process_group_quiescent": False})):
+            with self.subTest(name=name):
+                path = "evidence/" + name
+                raw = canonical({**json.loads(files[path]), **change})
+                result = self.review(make_archive({**files, path: raw}), contract)
+                self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
+                self.assertNotIn("recorded_interrupted_capture", result)
+        del files["evidence/closed-ledger-provenance.json"]
+        result = self.review(make_archive(files), contract)
+        self.assertEqual(result["recorded_terminal_outcome"], "UNKNOWN")
+        self.assertNotIn("recorded_interrupted_capture", result)
+
+    def test_interrupted_capture_requires_the_exact_input_selection_and_command_receipt(self):
+        contract, files = self.interrupted_capture_files()
+        for name, change, reason in (
+                ("query-request.json", {"batch_id": 1}, "review_query_inputs"),
+                ("consume-query.started.json", {"process_group": 43}, "review_recorded_command_start"),
+                ("consume-query.complete.json", {"output_complete": True}, "review_interrupted_consumer_scope")):
+            with self.subTest(name=name), self.assertRaisesRegex(Refused, reason):
+                path = "evidence/" + name
+                raw = canonical({**json.loads(files[path]), **change})
+                self.review(make_archive({**files, path: raw}), contract)
+
     def opening_files(self, outcome="FAILURE"):
         files = {"evidence/" + name: self.files["evidence/" + name] for name in (
             review.OPENING_FILE, "rpc-02.started.json", "rpc-02.complete.json")}

@@ -26,7 +26,7 @@ import node_file_logs
 from artifacts import API_LIMIT, REPOSITORY, WORKFLOWS, api_json
 from model import Refused, canonical, exact_keys, require, same
 from process import FILE
-from query_checks import consumer_result, opening_batch_witness
+from query_checks import consumer_result, opening_batch_witness, selected_semantics, witness_rows
 
 INDEX = "evidence/evidence-index.json"
 INDEX_BYTES = 512 << 10
@@ -432,7 +432,7 @@ def recorded_closed_opening(evidence, contract, selection, terminal, timeout, op
             "v3_schedule_hash": schedule["schedule_hash"], "accepted_header_authority": False}
 
 
-def recorded_consumer(evidence, contract, checkout, selection, opening):
+def recorded_consumer_inputs(evidence, contract, checkout, selection, opening):
     recorded_dispatch_selection(evidence, selection)
     for role in WORKFLOWS:
         recorded_input_component(evidence, contract, role)
@@ -459,11 +459,44 @@ def recorded_consumer(evidence, contract, checkout, selection, opening):
     for name, expected in (("query-config.json", config), ("query-request.json", request),
                            ("query-context-pins.json", pins)):
         same(evidence.json(name, 256 << 10), expected, "review_query_inputs")
+    return window, config, request, descriptor
+
+
+def recorded_consumer(evidence, contract, checkout, selection, opening):
+    window, config, request, descriptor = recorded_consumer_inputs(evidence, contract, checkout, selection, opening)
     result = evidence.json(capture.CONSUMER_STDOUT, 256 << 10)
     recorded_output(evidence, "consume-query", capture.CONSUMER_STDOUT)
-    matched = consumer_result(result, config, request, provider, query.root, descriptor)
+    matched = consumer_result(result, config, request, window.provider, window.query.root, descriptor)
     same(evidence.json("consumer-comparison.json"), matched, "review_consumer_comparison")
     return matched
+
+
+def recorded_interrupted_capture(evidence, contract, checkout, selection, opening):
+    """Recheck the prepared query when its native command produced incomplete output."""
+    receipt = diagnostic_receipt(evidence, "consume-query", "review_interrupted_consumer_receipt")
+    if (receipt is None or receipt.get("launch_outcome") != "STARTED"
+            or receipt.get("process_group_quiescent") is not True):
+        return None
+    require(receipt["output_complete"] is False and type(receipt.get("reason")) is str and receipt["reason"]
+            and "evidence/" + capture.CONSUMER_STDOUT not in evidence.pins
+            and "evidence/consumer-comparison.json" not in evidence.pins, "review_interrupted_consumer_scope")
+    recorded_command_start(evidence, "consume-query", receipt, "evidence")
+    window, config, request, descriptor = recorded_consumer_inputs(evidence, contract, checkout, selection, opening)
+    root = window.query.root
+    totals, refusal = None, None
+    try:
+        checked = witness_rows(config["query_profile"], request["batch_id"], root, window.provider["witnesses"])
+        selected_semantics(descriptor, checked["decoded"])
+        totals = checked["totals"]
+    except Refused as error:
+        refusal = error.reason
+    return {"status": "PROOFS_MATCH_CAPTURED_ROOT" if totals is not None else "PROOFS_UNVERIFIED",
+            "request": request, "root": root, "proof_totals": totals, "proof_refusal": refusal,
+            "input_pins": {name: evidence.pins["evidence/" + name] for name in ("provider.json",
+                "closed-ledger-provenance.json", "query-config.json", "query-request.json", "query-context-pins.json")},
+            "consumer": {"actual_exit": receipt["actual_exit"], "output_complete": False,
+                         "completion": evidence.pins["evidence/consume-query.complete.json"]},
+            "accepted_header_authority": False}
 
 
 def recorded_frontiers(evidence, contract):
@@ -913,7 +946,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             require(binding_present and terminal["stage"] == "consumer" and reported == "REFUSED",
                     "review_gateway_refusal_scope")
 
-        opening = opening_observation = matched = gateway_mismatch = fixture_commands = None
+        opening = opening_observation = matched = gateway_mismatch = fixture_commands = interrupted_capture = None
         if accepted or "evidence/" + OPENING_FILE in evidence.pins:
             require(binding_present, "review_opening_run_binding")
             opening, opening_observation = recorded_opening(evidence, contract)
@@ -921,17 +954,24 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         opening_signatures = recorded_opening_signatures(evidence, opening, opening_observation, opening_proof)
         closed_opening = recorded_closed_opening(evidence, contract, selection, terminal, fixture_timeout,
             opening, opening_observation, opening_proof, opening_signatures, frontiers)
-        if accepted or (gateway_refusal and terminal["owned_runtime_observed_closed"]):
+        interrupted = (terminal["format"] == model.TERMINAL_FORMAT and reported == "UNKNOWN"
+                       and terminal["stage"] == "consumer" and terminal["reason"] == "command_incomplete"
+                       and terminal["owned_runtime_observed_closed"]
+                       and {"evidence/provider.json", "evidence/closed-ledger-provenance.json"} <= evidence.pins.keys())
+        if accepted or (gateway_refusal and terminal["owned_runtime_observed_closed"]) or interrupted:
             require(opening is not None, "review_consumer_opening")
             if terminal["format"] in (model.TERMINAL_FORMAT_V2, model.TERMINAL_FORMAT):
                 require(opening_signatures is not None, "review_consumer_opening_gate")
                 fixture_commands = recorded_fixture_commands(evidence)
-            comparison = recorded_consumer(evidence, contract, checkout, selection, opening)
-            same(comparison["gateway_stored_fields_match"], accepted, "review_consumer_gateway")
-            if accepted:
-                matched = comparison
+            if interrupted:
+                interrupted_capture = recorded_interrupted_capture(evidence, contract, checkout, selection, opening)
             else:
-                gateway_mismatch = comparison
+                comparison = recorded_consumer(evidence, contract, checkout, selection, opening)
+                same(comparison["gateway_stored_fields_match"], accepted, "review_consumer_gateway")
+                if accepted:
+                    matched = comparison
+                else:
+                    gateway_mismatch = comparison
         resources = recorded_resources(evidence, contract) if include_resources and binding_present else None
         evidence.verify_remaining()
         report = {"format": "owned-devnet-evidence-review/v1",
@@ -969,6 +1009,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["startup_file_log_diagnostics"] = file_logs
         if consumer_failure is not None:
             report["recorded_consumer_failure"] = consumer_failure
+        if interrupted_capture is not None:
+            report["recorded_interrupted_capture"] = interrupted_capture
         if gateway_mismatch is not None:
             report["recorded_gateway_mismatch"] = gateway_mismatch
         return report
