@@ -437,6 +437,27 @@ and the selected header context, including the depth policy and schedule hash.
 The native comparison reads the report while the projection tool reads the
 ledger stream in one pass.
 
+For repeated checks, use `export-experimental-snapshot-header-state` with the
+same options to capture the retained experimental header checkpoint. Its
+stdout contains the checkpoint bytes and stderr contains the JSON report.
+Keep the checkpoint after exit zero and complete capture, and match the byte
+count and SHA-256 against `state_output`. The export works after successful
+header-root selection and, when requested, a successful projection comparison.
+
+To resume, keep the independently selected configuration, context, height
+and hash. Add `--trusted-state "$LOCAL_CHECKPOINT"` and
+`--expect-state-sha256 "$CHECKPOINT_SHA256"`. The checkpoint must come from
+trusted local persistence. The SHA-256 pin identifies the bytes. The verifier
+rechecks the retained headers and applies the same depth requirement when
+selecting a root. Omit the momentum file when the checkpoint contains the
+required range, or supply only consecutive successors of its tip.
+
+A checkpoint-only report has `header_checks: null` and
+`state_input.provider_headers: 0`. The state-input report records the local
+checkpoint digest and byte count. The checkpoint contains retained headers.
+Snapshot transport, state projection and node import each need their own
+evidence.
+
 The two pinned node revisions share the L1 fold, SMT hash and compute blobs.
 Both use a 20-byte address in that fold. This supports comparison under the
 selected experimental profile and the balance/storage projection. The

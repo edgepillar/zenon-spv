@@ -15,6 +15,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import subprocess
 import sys
 import unittest
@@ -30,9 +31,10 @@ SPEC.loader.exec_module(M)
 BASE, FEATURE, CHECKOUT, TREE = (character * 40 for character in "1234")
 TRANSPORT = ".github/workflows/ledger-transport.yml"
 EXPORT = ".github/workflows/ledger-export.yml"
+INVENTORY = ".github/workflows/ledger-inventory.yml"
 PREPARATION = ".github/workflows/owned-devnet-query.yml"
 FIRST_INSERTION = ".github/workflows/first-insertion-catchup.yml"
-PORTABLE_WORKFLOW_PATHS = (TRANSPORT, EXPORT, PREPARATION, FIRST_INSERTION)
+PORTABLE_WORKFLOW_PATHS = (TRANSPORT, EXPORT, INVENTORY, PREPARATION, FIRST_INSERTION)
 
 
 def selection(event="pull_request"):
@@ -467,7 +469,7 @@ class CIChangeScopeControls(unittest.TestCase):
                                    if diff is None else diff)
             raw = native_tree()
             runner.overrides["ls-tree"] = raw, receipt(raw)
-        with mock.patch.object(M, "ORACLE_SOURCE_PIN", M.oracle_fingerprint(native_tree())["sha256"]):
+        with mock.patch.object(M, "ORACLE_SOURCE_PINS", {M.oracle_fingerprint(native_tree())["sha256"]}):
             return M.select_scope(ROOT, selected, runner)
 
     def test_native_reviewed_modified_leaves_keep_native_and_skip_only_oracles(self):
@@ -489,6 +491,27 @@ class CIChangeScopeControls(unittest.TestCase):
         self.assertEqual(report["selection"], selected)
         self.assertIs(report["run_runtime"], True)
         self.assertIs(report["run_recorded_oracles"], False)
+
+    def test_native_scope_selects_the_exact_match_from_two_reviewed_closures(self):
+        first = native_tree()
+        second = first + tree_record(b"internal/verify/retained_sequence_test.go")
+        changed = second + tree_record(b"tools/unreviewed_dependency.py")
+        pins = [M.oracle_fingerprint(tree)["sha256"] for tree in (first, second, changed)]
+        self.assertEqual(len(set(pins)), 3)
+        with mock.patch.object(M, "ORACLE_SOURCE_PINS", frozenset(pins[:2])):
+            for raw, expected in ((first, pins[0]), (second, pins[1]), (changed, None)):
+                with self.subTest(expected=expected):
+                    runner = FixtureRunner(diff=record(b"internal/verify/experimental_v3_state.go"))
+                    runner.overrides["ls-tree"] = raw, receipt(raw)
+                    report = M.select_scope(ROOT, runner.selection, runner)
+                    self.assertIs(report["run_runtime"], True)
+                    self.assertIs(report["run_recorded_oracles"], expected is None)
+                    if expected is None:
+                        self.assertEqual(report["reason"], "oracle_source_pin")
+                    else:
+                        self.assertEqual(report["oracle_closure"]["expected_sha256"], expected)
+                        self.assertEqual(self.workflow_guard(self.guard_bytes(report)),
+                                         (None, "run_runtime=true\nrun_recorded_oracles=false\n"))
 
     def test_native_additions_deletions_modes_aliases_and_incomplete_records_keep_full_lane(self):
         path = b"internal/verify/experimental_v3_state.go"
@@ -703,9 +726,12 @@ class CIChangeScopeControls(unittest.TestCase):
                 with self.subTest(event=event, path=path):
                     if path == "tools/ledger-transport/transport.py":
                         required = [TRANSPORT, EXPORT]
+                    elif path == "tools/ledger-export/snapshot_projection.py":
+                        required = [EXPORT, INVENTORY]
                     else:
                         directory = path.split("/")[1]
                         required = [{"ledger-transport": TRANSPORT, "ledger-export": EXPORT,
+                                     "ledger-inventory": INVENTORY,
                                      "owned-devnet-query": PREPARATION,
                                      "gen-state-root-vectors": FIRST_INSERTION}[directory]]
                     runner = FixtureRunner(selected, record(path.encode()) + record())
@@ -726,13 +752,15 @@ class CIChangeScopeControls(unittest.TestCase):
     def test_portable_mixed_diff_selects_the_union(self):
         archive = record(b"tools/ledger-transport/archive_tail.py")
         exporter = record(b"tools/ledger-export/inventory_completed_export.py")
+        inventory = record(b"tools/ledger-inventory/churn.py")
         preparation = record(b"tools/owned-devnet-query/review.py")
         insertion = record(b"tools/gen-state-root-vectors/qualify_first_insertion.py")
         for paths, required in ((archive + exporter, [TRANSPORT, EXPORT]),
                                 (exporter + preparation, [EXPORT, PREPARATION]),
+                                (exporter + inventory, [EXPORT, INVENTORY]),
                                 (archive + preparation, [TRANSPORT, PREPARATION]),
                                 (preparation + insertion, [PREPARATION, FIRST_INSERTION]),
-                                (archive + exporter + preparation + insertion, list(PORTABLE_WORKFLOW_PATHS))):
+                                (archive + exporter + inventory + preparation + insertion, list(PORTABLE_WORKFLOW_PATHS))):
             with self.subTest(required=required):
                 report = self.portable_result(FixtureRunner(diff=paths))
                 self.assertEqual(report["required_workflows"], required)
@@ -901,6 +929,7 @@ class CIChangeScopeControls(unittest.TestCase):
 
     def test_portable_additions_deletions_mode_changes_and_invalid_diffs_keep_runtime(self):
         for path in (b"tools/ledger-transport/archive_tail.py",
+                     b"tools/ledger-inventory/churn.py",
                      b"tools/gen-state-root-vectors/first-insertion-catchup_test.go.txt"):
             for raw in (record(path, b"A", b"000000"), record(path, b"D", new_mode=b"000000"),
                         record(path, old_mode=b"100755", new_mode=b"100755"),
@@ -927,6 +956,7 @@ class CIChangeScopeControls(unittest.TestCase):
 
     def test_portable_workflow_pins_bind_base_checkout_and_working_bytes(self):
         diff = (record(b"tools/ledger-transport/transport.py")
+                + record(b"tools/ledger-inventory/churn.py")
                 + record(b"tools/owned-devnet-query/review.py")
                 + record(b"tools/gen-state-root-vectors/qualify_first_insertion.py"))
         for path in PORTABLE_WORKFLOW_PATHS:
@@ -973,7 +1003,8 @@ class CIChangeScopeControls(unittest.TestCase):
         diff = record(b"tools/ledger-transport/archive_tail.py")
         for path, oid in ((b"internal/proof/core.go", b"a" * 40),
                           (b".github/workflows/ci.yml", b"b" * 40),
-                          (EXPORT.encode(), b"a" * 40), (PREPARATION.encode(), b"a" * 40),
+                          (EXPORT.encode(), b"a" * 40), (INVENTORY.encode(), b"a" * 40),
+                          (PREPARATION.encode(), b"a" * 40),
                           (FIRST_INSERTION.encode(), b"a" * 40),
                           (b"tools/owned-devnet-query/contract.json", b"a" * 40)):
             raw = baseline.replace(tree_record(path, oid=oid), tree_record(path, oid=b"c" * 40))
@@ -992,6 +1023,7 @@ class CIChangeScopeControls(unittest.TestCase):
         diff = record(b"tools/ledger-transport/archive_tail.py")
         for path in (b"tools/owned-devnet-query/review.py",
                      b"tools/ledger-export/inventory_completed_export.py",
+                     b"tools/ledger-inventory/churn.py",
                      b"tools/gen-state-root-vectors/qualify_first_insertion.py", b"docs/contract.md"):
             original = tree_record(path)
             runner = FixtureRunner(diff=diff)
@@ -1021,10 +1053,11 @@ class CIChangeScopeControls(unittest.TestCase):
 
     def test_portable_output_guard_rejects_missing_or_altered_workflow_obligations(self):
         diff = (record(b"tools/ledger-transport/transport.py")
+                + record(b"tools/ledger-inventory/churn.py")
                 + record(b"tools/owned-devnet-query/review.py")
                 + record(b"tools/gen-state-root-vectors/qualify_first_insertion.py") + record())
         result = self.portable_result(FixtureRunner(diff=diff))
-        for key, value in (("required_workflows", [TRANSPORT, EXPORT, PREPARATION]),
+        for key, value in (("required_workflows", [TRANSPORT, EXPORT, PREPARATION, FIRST_INSERTION]),
                            ("portable_workflows", result["portable_workflows"][:-1]),
                            ("portable_event_tree", FEATURE),
                            ("portable_paths", result["portable_paths"] * 2),
@@ -1044,6 +1077,20 @@ class CIChangeScopeControls(unittest.TestCase):
         for version in ("v2", "v4", "v5"):
             historical = {**result, "format": "zenon-ci-change-scope/" + version}
             self.assertIsNotNone(self.workflow_guard(self.guard_bytes(historical))[0])
+
+    def test_inventory_workflow_runs_the_same_tests_for_each_reviewed_event_and_platform(self):
+        text = (ROOT / INVENTORY).read_text(encoding="utf-8")
+        triggers = text.split("on:\n", 1)[1].split("\npermissions:", 1)[0]
+        paths = sorted((*M.INVENTORY_FILES, "tools/ledger-inventory/inventory.py",
+                        "tools/ledger-export/snapshot_projection.py", INVENTORY))
+        for event in ("push", "pull_request"):
+            selected = triggers.split("  " + event + ":\n", 1)[1].split("\n  pull_request:", 1)[0]
+            filters = re.findall(r"^      - '([^']+)'$", selected, re.MULTILINE)
+            self.assertEqual(sorted(filters), paths)
+            self.assertIn("    branches: [main]", selected)
+        self.assertEqual(re.findall(r"^            platform: ([-a-z0-9]+)$", text, re.MULTILINE),
+                         ["linux-amd64", "darwin-amd64", "windows-amd64"])
+        self.assertIn('run: python -I -B tools/ledger-inventory/inventory_test.py --source-revision "$GITHUB_SHA"', text)
 
 
 class ControlResult(unittest.TextTestResult):

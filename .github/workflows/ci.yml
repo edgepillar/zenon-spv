@@ -85,7 +85,10 @@ jobs:
                       'archive_index.py', 'archive_index_test.py', 'archive_tail.py', 'archive_tail_test.py',
                       'transport.py', 'transport_test.py', 'README.md', 'THIRD_PARTY_NOTICES')}
                   exporter = {'tools/ledger-export/' + name for name in (
-                      'inventory_completed_export.py', 'inventory_completed_export_test.py', 'README.md')}
+                      'inventory_completed_export.py', 'inventory_completed_export_test.py',
+                      'snapshot_projection.py', 'README.md')}
+                  inventory = {'tools/ledger-inventory/' + name for name in (
+                      'churn.py', 'inventory_test.py', 'README.md')}
                   preparation = {'tools/owned-devnet-query/' + name for name in (
                       'engine_test.py', 'images_test.py', 'inputs.py', 'inputs_test.py',
                       'capture_test.py', 'review.py', 'review_test.py', 'README.md',
@@ -95,7 +98,7 @@ jobs:
                       'first-insertion-catchup_test.go.txt', 'first-insertion-cpu_test.go.txt',
                       'first-insertion-export_test.go.txt', 'qualify_first_insertion.py',
                       'qualify_first_insertion_test.py')}
-                  allowed = transport | exporter | preparation | first_insertion
+                  allowed = transport | exporter | inventory | preparation | first_insertion
                   paths, documents = value['portable_paths'], value['documentation_paths']
                   assert type(paths) is list and type(documents) is list
                   assert 0 < len(paths) <= len(allowed) and len(paths) + len(documents) <= 256
@@ -115,6 +118,9 @@ jobs:
                   if shared in names or names & exporter:
                       required['.github/workflows/ledger-export.yml'] = (
                           '8fab1803332f60cac43a20b8940988b19c38b8dd0359f005f605dcc55dcb98fb', 8084)
+                  if names & (inventory | {'tools/ledger-export/snapshot_projection.py'}):
+                      required['.github/workflows/ledger-inventory.yml'] = (
+                          '2d2804b11a4dac869ea0a20c851b71a892683491fbc0f79f6e1210acd8178846', 6096)
                   if names & preparation:
                       required['.github/workflows/owned-devnet-query.yml'] = (
                           'cf4ddd4e2c7a5388af336e42e5d47ce43ca112ed2c699731d4b8cd2137977d66', 4453)

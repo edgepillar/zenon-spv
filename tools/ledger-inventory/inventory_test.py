@@ -641,6 +641,35 @@ def replay_case(before, operations, after):
     return plan, patch, old
 
 
+def projection_replay_case():
+    def meta(marker, height):
+        return b"\x0a\x22\x0a\x20" + bytes([marker]) * 32 + b"\x10" + varint(height)
+
+    prefix = b"\x03" + b"A" * 20
+    balance = prefix + b"\x03" + b"B" * 10
+    retained, replaced, removed, empty = (prefix + b"\x04" + s for s in (b"a", b"b", b"c", b"d"))
+    excluded = prefix + b"\x05"
+    large = b"v" * ((65 << 10) + 3)
+    before = [(b"\x00", meta(0xab, 100)), (retained, large), (replaced, b"old"),
+              (removed, b"deleted"), (excluded, b"private-excluded")]
+    operations = [(replaced, b"temporary"), (removed, None), (b"\x00", meta(0xcd, 101)),
+                  (balance, bytes(32)), (empty, b""), (replaced, large + b"!")]
+    folded = [(balance, bytes(32)), (retained, large), (replaced, large + b"!")]
+    after = [(b"\x00", meta(0xcd, 101)), *folded, (empty, b""), (excluded, b"private-excluded")]
+    def digest(data):
+        return hashlib.sha3_256(data).digest()
+
+    nodes = {int.from_bytes(digest(key), "big"): digest(digest(key) + value) for key, value in folded}
+    zero = bytes(32)
+    for _ in range(256):
+        nodes = {parent: digest(nodes.get(2 * parent, zero) + nodes.get(2 * parent + 1, zero))
+                 for parent in {n // 2 for n in nodes}}
+    root = nodes[0].hex()
+    mapping = b"".join(len(key).to_bytes(8, "big") + key + len(value).to_bytes(8, "big") + value
+                       for key, value in folded)
+    return (before, operations, after), root, hashlib.sha256(mapping).hexdigest()
+
+
 class LedgerChurnTests(unittest.TestCase):
     def check(self, plan, patch, before, *, reader=io.BytesIO, **options):
         raw = INV.encoded(plan)
@@ -818,6 +847,76 @@ class LedgerChurnTests(unittest.TestCase):
             if code:
                 self.assertNotIn("families", report)
 
+    def test_projection_matches_independent_fold_of_effective_target_values(self):
+        inputs, expected_root, mapping = projection_replay_case()
+        case = replay_case(*inputs)
+        report = self.check(*case, reader=ShortReads, projection_profile="zenon-l1-balance-storage-sha3/v1",
+                            expect_candidate_root=expected_root, max_projected_leaves=3)
+        self.assertEqual(report.pop("format"), "zenon-r1-ledger-churn-projection/v1")
+        self.assertEqual(report.pop("status"), "SELECTED_PATCH_REPLAY_AND_CANDIDATE_PROJECTION_MATCHED")
+        projection = report.pop("candidate_projection")
+        self.assertEqual(projection, {"profile": "zenon-l1-balance-storage-sha3/v1", "qualification": "MATH_ONLY",
+                         "expected_root": expected_root, "computed_root": expected_root, "mapping_sha256": mapping,
+                         "leaves": 3, "balance_prefix_leaves": 1, "contract_storage_leaves": 2,
+                         "empty_folded_records": 1, "max_leaves": 3, "value_files_written": 0,
+                         "raw_frontier_metadata_matched": True, "accepted_header_binding": False,
+                         "excluded_state_authenticated": False})
+        legacy = self.check(*case)
+        del legacy["format"], legacy["status"]
+        self.assertEqual(report, legacy)
+        self.assertEqual((report["after_snapshot_bytes_read"], report["derived_snapshot_bytes_written"]), (0, 0))
+
+    def test_projection_requires_profile_root_and_limit_before_reading(self):
+        blocked = mock.Mock()
+        root = "9a" * 32
+        profile = "zenon-l1-balance-storage-sha3/v1"
+        for options in ({"projection_profile": profile}, {"expect_candidate_root": root},
+                        {"projection_profile": "unknown", "expect_candidate_root": root},
+                        {"projection_profile": profile, "expect_candidate_root": root.upper()},
+                        {"projection_profile": profile, "expect_candidate_root": root, "max_projected_leaves": True},
+                        {"projection_profile": profile, "expect_candidate_root": root, "max_projected_leaves": 100001}):
+            with self.subTest(options=options), self.assertRaisesRegex(CHURN.inventory.Refused, "projection_options"):
+                CHURN.inspect(blocked, 1, "00" * 32, **options)
+        blocked.read.assert_not_called()
+
+    def test_projection_requires_matching_frontier_complete_replay_and_root(self):
+        inputs, root, _ = projection_replay_case()
+        before, operations, after = inputs
+        profile = "zenon-l1-balance-storage-sha3/v1"
+        plan, patch, old = replay_case(*inputs)
+        bad_after = {**plan, "after": {**plan["after"], "sha256": "00" * 32}}
+        for case, selected_root, limit, reason in (
+                (replay_case(before, [operation for operation in operations if operation[0] != b"\x00"],
+                             [before[0], *after[1:]]), root, 3, "projection_frontier_mismatch"),
+                (replay_case(before, [*operations, (b"\x00", None)], after[1:]),
+                 root, 3, "projection_frontier_missing"),
+                ((plan, patch, old), root, 2, "projection_leaf_limit"),
+                ((plan, patch, old), "00" * 32, 3, "projection_root_mismatch"),
+                ((plan, patch, old + b"x"), root, 3, "trailing_input"),
+                ((bad_after, patch, old), "00" * 32, 3, "after_digest")):
+            with self.subTest(reason=reason), self.assertRaisesRegex(CHURN.inventory.Refused, reason):
+                self.check(*case, projection_profile=profile, expect_candidate_root=selected_root,
+                           max_projected_leaves=limit)
+
+    def test_projection_cli_withholds_counts_and_root_on_refusal(self):
+        inputs, root, _ = projection_replay_case()
+        plan, patch, old = replay_case(*inputs)
+        raw = INV.encoded(plan)
+        args = [sys.executable, "-I", "-B", str(HERE / "churn.py"), "--plan-bytes", str(len(raw)),
+                "--plan-sha256", hashlib.sha256(raw).hexdigest(), "--projection-profile",
+                "zenon-l1-balance-storage-sha3/v1", "--max-projected-leaves", "3", "--expect-candidate-root"]
+        for selected, code in ((root, 0), ("00" * 32, 1)):
+            result = subprocess.run(args + [selected], input=raw + patch + old, capture_output=True, timeout=10)
+            self.assertEqual((result.returncode, result.stderr), (code, b""))
+            self.assertNotIn(b"private-excluded", result.stdout)
+            report = json.loads(result.stdout)
+            if code == 0:
+                self.assertEqual(report["candidate_projection"]["computed_root"], root)
+            else:
+                self.assertEqual(report["reason"], "projection_root_mismatch")
+                self.assertNotIn("candidate_projection", report)
+                self.assertNotIn("families", report)
+
     def test_large_untouched_value_is_read_once_without_an_after_stream(self):
         size = 16 << 20
         value = VirtualValue(size)
@@ -890,6 +989,8 @@ if __name__ == "__main__":
                       "source_revision": args.source_revision,
                       "source_pins": {name: hashlib.sha256((HERE / name).read_bytes()).hexdigest()
                                       for name in ("inventory.py", "inventory_test.py", "churn.py")},
+                      "projection_source_sha256": hashlib.sha256(
+                          (HERE.parent / "ledger-export/snapshot_projection.py").read_bytes()).hexdigest(),
                       "large_value_is_generated_in_memory": True, "large_fixture_files_created": False,
                       "measurements": MEASUREMENTS,
                       "representative_dataset_collected": False, "state_value_acceptance_enabled": False}, sort_keys=True))

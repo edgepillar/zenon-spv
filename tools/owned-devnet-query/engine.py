@@ -27,7 +27,7 @@ from model import Refused, canonical, require
 from process import CommandFailed, regular_pin
 from sources import PreparedSources
 
-NODE_ROLES = frozenset(("pillar", "pillar2", "pillar3", "rpc"))
+NODE_ROLES = frozenset(model.NODE_SERVICES)
 ADDRESSES = {"pillar": "172.30.0.10", "rpc": "172.30.0.11",
              "pillar2": "172.30.0.12", "pillar3": "172.30.0.13"}
 PORTS = {"pillar": ((35991, 35997),), "rpc": ((35997, 35997), (35998, 35998)),
@@ -581,10 +581,16 @@ class Engine:
         finally:
             self.recorder.seal(file_logs.REPORT, canonical(report))
 
-    def stop_producers_and_clients(self):
-        require(set(model.SERVICES) <= self.started, "runtime_was_not_fully_started")
-        for role in ("gateway", "executor", "pillar3", "pillar2", "pillar"):
-            self.stop(role)
+    def _require_started_roster(self, services):
+        require(services in (model.NODE_SERVICES, model.SERVICES)
+                and set(self.owned) == set(services) and set(services) <= self.started,
+                "runtime_was_not_fully_started")
+
+    def stop_producers_and_clients(self, *, services=model.SERVICES):
+        self._require_started_roster(services)
+        for role in reversed(services):
+            if role != "rpc":
+                self.stop(role)
         # RPC remains alive only for the bounded final header/proof capture.
 
     def require_running_closure(self, roles=model.SERVICES):
@@ -606,29 +612,28 @@ class Engine:
                     "runtime_service_not_running")
         return True
 
-    def close_rpc(self):
-        require(set(model.SERVICES) <= self.started, "runtime_was_not_fully_started")
+    def close_rpc(self, *, services=model.SERVICES):
+        self._require_started_roster(services)
         self.stop("rpc")
-        return self.closed_ledger()
+        return self.closed_ledger(services=services)
 
-    def closed_ledger(self):
-        require(set(self.owned) == set(model.SERVICES)
-                and set(model.SERVICES) <= self.started, "runtime_was_not_fully_started")
+    def closed_ledger(self, *, services=model.SERVICES):
+        self._require_started_roster(services)
         roster = self._run("closed-closure-inventory",
                            ["container", "ls", "--all", "--quiet", "--no-trunc"]).stdout()
         rows = roster.decode("ascii").splitlines()
-        require(len(rows) == len(model.SERVICES)
+        require(len(rows) == len(services)
                 and set(rows) == {item.identity for item in self.owned.values()},
                 "closed_runtime_roster_changed")
-        values = [self._inspect(self.owned[role]) for role in model.SERVICES]
-        model.require_runtime_closure(self.admission, [self.owned[r] for r in model.SERVICES],
-                                      self.admission.engine_id, values)
-        for role, value in zip(model.SERVICES, values):
+        values = [self._inspect(self.owned[role]) for role in services]
+        model.require_runtime_closure(self.admission, [self.owned[r] for r in services],
+                                      self.admission.engine_id, values, services=services)
+        for role, value in zip(services, values):
             model.require_stopped_container(self.admission, self.owned[role], self.admission.engine_id, value)
         # The pinned node's offline reader opens <DataPath>/nom directly.
         # Do not create, copy, initialize or append another ledger directory.
         return closed_nom_path(self.admission, self.owned["rpc"], self.inspected_at_create["rpc"],
-                               values[model.SERVICES.index("rpc")], self.volumes["rpc"])
+                               values[services.index("rpc")], self.volumes["rpc"])
 
     def cleanup(self):
         require(self.cleanup_deadline is None, "owned_cleanup_already_attempted")

@@ -461,32 +461,46 @@ It also binds a present opening proof to a refusal before signature checks and
 fixture commands. The reader reviews prior versions under their recorded rules
 and verifies the stages reached by each early failure.
 
+If the version-3 native command ended with incomplete output after a closed
+capture, `recorded_interrupted_capture` rechecks the retained input pins,
+parent-slot schedule, context and all three proofs against the same captured
+root. It checks the typed rows against the selected descriptor and preserves
+the actual CLI exit. Missing or invalid membership leaves the proof check
+unverified. The review streams the original archive and keeps the run's
+`UNKNOWN` terminal and review exit 1. Accepted header authority and the
+completed gateway comparison still require the native consumer result.
+
 When a version-3 fixture configuration or deposit command times out, the reader
 can expose the actual exit and elapsed time from its bound start and completion
 receipts. A deposit timeout also requires the successful configuration receipt.
 Transaction submission stays unverified when the command output is incomplete.
 
 Add `--include-resources` to either archive review command to compare retained
-configuration and deposit durations with sampled runner disk use. The optional
-report checks the command start bindings and disk sample arithmetic and retains
-the corresponding member digests. A missing command or disk sample stays absent.
-The last sample time and sampled peak describe the recorded runner observation.
-The review reads the original archive in place and preserves its terminal outcome.
-Existing calls keep the same output and exit codes.
+command durations with sampled runner disk use. The optional `setup_commands`
+field reports the node image build, executor image build and npm installation
+where start and completion receipts are available. The `fixture_commands` field
+reports configuration and deposit. Each command observation preserves the actual
+exit and output completeness, with its completion digest. The reviewer checks
+the command start bindings and disk sample arithmetic. Missing observations
+remain absent. Command times describe individual subprocesses. The sampled disk
+peak describes the runner as a whole. The review reads the original archive in
+place and preserves its terminal outcome. Existing calls without this option
+keep the same output and exit codes.
 
-After a timed-out deposit with a quiescent process group, the reviewed
-reference-gas runner can retain the opening producer-slot observation. It
-stops the owned producers, executor, and gateway, captures one bounded RPC
-frontier, and closes the RPC node before reading its ledger. One invocation
-of the pinned read-only oracle covers the exact H2 and H3 hashes, with the
-captured frontier pinned separately. The diagnostic has a 120-second work
-deadline within the original budget and uses the existing cleanup reserve.
+After a configuration or deposit timeout with a quiescent process group, the
+reviewed reference-gas runner can retain the opening producer-slot observation.
+Configuration requires the three owned producers and the RPC node. Deposit
+also requires the executor and gateway. The runner stops all selected services
+except the RPC node, captures one bounded RPC frontier, then closes the RPC
+node. The pinned read-only oracle makes one in-place ledger read for the exact
+H2 and H3 hashes and binds the captured frontier separately. The diagnostic
+uses a 120-second work deadline within the original budget and retains the
+existing cleanup reserve.
 
-Archive review checks the oracle input, original receipts, closed runtime,
-frontier, and both historical parent-slot bindings. The report describes
-the candidate opening and its source parent slots. The terminal outcome
-is the recorded deposit timeout. Header acceptance and transaction
-submission require their own evidence.
+Archive review binds the oracle, original receipts, stopped service set,
+frontier and both historical parent slots to the recorded timeout stage. The
+terminal outcome remains UNKNOWN. Header acceptance and transaction submission
+require their own evidence.
 
 For the reviewed reference-gas devnet source, a timeout can retain
 `fixture-configure-progress.json` or `fixture-deposit-progress.json`. The
