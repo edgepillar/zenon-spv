@@ -208,6 +208,12 @@ checks exact targets, context/tip, required guarantees and allowed trust.
 The [outer reader](observer-report-consumer.md) additionally checks the actual
 observer completion through its protected report channel.
 
+The [archived native CLI replay](native-archived-cli-replay.md) records five
+preselected testnet targets and the actual wrong-target refusal using the
+exact runtime binaries. It establishes one offline consumer case with the
+selected saved state and trust inputs. Independent operator acceptance,
+trust-input authentication and reviewed distribution remain open.
+
 The ordinary observer also routes Linux/macOS interrupt and termination
 signals through cancellation, joined child completion and private staging
 cleanup. Controlled verifier/consumer processes exercise those boundaries;
