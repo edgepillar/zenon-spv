@@ -275,6 +275,34 @@ and trust scope. A successful recount requires the complete ordered bytes,
 including any missing ranges recovered before this step. No joined ledger
 file is created.
 
+### Stream one recovered range into the recount
+
+Use `zenon-r1-retained-fragments/v2` when one missing fragment arrives
+through a verified range stream. Put exactly one `null` path at the
+fragment's position in the original put stream and select its exact byte
+length. Each other entry selects a retained local file.
+
+```json
+{
+  "format": "zenon-r1-retained-fragments/v2",
+  "fragments": [
+    {"path": "/absolute/path/to/retained-prefix.raw", "bytes": 11264},
+    {"path": null, "bytes": 3632}
+  ]
+}
+```
+
+Feed the pinned manifest followed immediately by the recovered fragment on
+binary stdin. The tool reads the other fragments in plan order and checks EOF
+after the streamed fragment. The chunk digests and whole-stream digest cover
+all fragments. Short, extended or changed fragments withhold the inventory
+and projection result. Recounting consumes the recovered range in one pass.
+
+Retain the range producer's actual exit, completion and digest in the
+caller's evidence. When composing a pipeline, check both processes before
+using the recount report. Use a `v1` plan when all fragments are retained
+as files.
+
 ### Compare the candidate L1 projection during the recount
 
 Add these options to the framed command above. Select the expected root

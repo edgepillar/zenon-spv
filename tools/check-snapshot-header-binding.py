@@ -306,32 +306,30 @@ def recover_projection(command, manifest, wire, directory, controls):
     assert suffix == wire[offset:] and recovered["response_body_eof_observed"]
 
     directory.mkdir()
-    prefix_path, suffix_path = directory / "prefix.raw", directory / "suffix.raw"
+    prefix_path = directory / "prefix.raw"
     plan_path = directory / "fragment-plan.json"
     prefix_path.write_bytes(wire[:offset])
-    suffix_path.write_bytes(suffix)
-    plan_path.write_bytes(encoded({"format": "zenon-r1-retained-fragments/v1", "fragments": [
-        {"path": str(prefix_path), "bytes": offset}, {"path": str(suffix_path), "bytes": suffix_bytes},
+    plan_path.write_bytes(encoded({"format": "zenon-r1-retained-fragments/v2", "fragments": [
+        {"path": str(prefix_path), "bytes": offset}, {"path": None, "bytes": suffix_bytes},
     ]}))
     selected_command = command + ["--transport-fragment-plan", str(plan_path)]
-    raw, projection = invoke(selected_command, 0, manifest)
+    raw, projection = invoke(selected_command, 0, manifest + suffix)
     assert projection["status"] == "SELECTED_CANDIDATE_PROJECTION_MATCHED"
-    assert set(directory.iterdir()) == {prefix_path, suffix_path, plan_path}
-    assert file_pin(prefix_path, offset) == byte_pin(wire[:offset])
-    assert file_pin(suffix_path, suffix_bytes) == byte_pin(suffix)
 
     code, incomplete, partial = recover(wire[offset:-1])
     assert (code, incomplete["status"], incomplete["reason"]) == (2, "UNKNOWN", "stream_truncated")
     assert partial == wire[offset:-1] and len(partial) < suffix_bytes
-    suffix_path.write_bytes(partial)
-    _, refusal = invoke(selected_command, 2, manifest)
-    assert refusal["status"] == "UNKNOWN" and refusal["reason"] == "transport_fragment_file"
+    _, refusal = invoke(selected_command, 2, manifest + partial)
+    assert refusal["status"] == "UNKNOWN" and refusal["reason"] == "transport_fragment_truncated"
     assert refusal["stream_inventory"] is None and "candidate_projection" not in refusal
+    assert set(directory.iterdir()) == {prefix_path, plan_path}
+    assert file_pin(prefix_path, offset) == byte_pin(wire[:offset])
     controls.append({"name": "incomplete_recovered_fragment_refuses_projection", "exit": 2,
                      "error": {"stage": "fragment_recount", "category": refusal["reason"]}})
     return raw, {"conditional_requests": 1, "retrieved_range": byte_pin(suffix),
                  "retained_prefix": byte_pin(wire[:offset]), "chunks_checked": len(chunks),
-                 "joined_payload_files": 0, "controlled_https_response": True, "live_https_peer_qualified": False}
+                 "recovered_range_files": 0, "joined_payload_files": 0,
+                 "controlled_https_response": True, "live_https_peer_qualified": False}
 
 
 def project_replay(builder, records, before, after, root):

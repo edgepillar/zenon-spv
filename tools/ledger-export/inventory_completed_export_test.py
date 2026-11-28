@@ -570,6 +570,69 @@ class CompletedExport(unittest.TestCase):
             self.assertEqual({p.name: p.read_bytes() for p in root.iterdir()}, before)
             self.assertNotIn(str(root).encode(), result.stdout)
 
+    def test_streamed_fragment_preserves_projection_and_retained_inputs(self):
+        receipt, args, manifest, wire = projection_fixture()
+        args += projection_options()
+        code, framed = self.invoke(receipt, args, io.BytesIO(manifest + wire),
+                                   format_name=PROGRAM.PROJECTION_FORMAT)
+        self.assertEqual(code, 0)
+        parts = (wire[:5], wire[5:101], wire[101:])
+        class ShortReads(io.BytesIO):
+            def read(self, size):
+                return super().read(min(size, 7))
+
+        for index, selected in enumerate(parts):
+            with self.subTest(index=index), tempfile.TemporaryDirectory(prefix="snapshot-fragments-") as scratch:
+                root = Path(scratch).resolve()
+                plan = self.fragment_inputs(root, parts, streamed=index)
+                before = {p.name: p.read_bytes() for p in root.iterdir()}
+                stream = ShortReads(manifest + selected)
+                code, result = self.invoke(receipt, args + [PROGRAM.FRAGMENT_PLAN_OPTION, str(plan)],
+                                           stream, format_name=PROGRAM.PROJECTION_FORMAT)
+                self.assertEqual((code, result), (0, framed))
+                self.assertFalse(stream.closed)
+                self.assertEqual(stream.tell(), len(manifest) + len(selected))
+                self.assertEqual({p.name: p.read_bytes() for p in root.iterdir()}, before)
+                self.assertNotIn(f"fragment-{index}", before)
+
+    def test_streamed_fragment_requires_complete_exact_bytes_and_eof(self):
+        receipt, args, manifest, wire = projection_fixture()
+        args += projection_options()
+        selected = wire[5:101]
+        with tempfile.TemporaryDirectory(prefix="snapshot-fragments-") as scratch:
+            plan = self.fragment_inputs(Path(scratch).resolve(), (wire[:5], selected, wire[101:]), streamed=1)
+            args += [PROGRAM.FRAGMENT_PLAN_OPTION, str(plan)]
+            damaged = bytes([selected[0] ^ 1]) + selected[1:]
+            for raw, expected in ((b"", "transport_fragment_truncated"),
+                                  (selected[:-1], "transport_fragment_truncated"),
+                                  (selected + b"x", "transport_fragment_trailing_bytes"),
+                                  (damaged, "transport_chunk_digest")):
+                with self.subTest(expected=expected):
+                    stream = io.BytesIO(manifest + raw)
+                    code, result = self.invoke(receipt, args, stream)
+                    self.assertEqual((code, result["reason"]), (2, expected))
+                    self.assertIsNone(result["stream_inventory"])
+                    self.assertNotIn("candidate_projection", result)
+                    self.assertFalse(stream.closed)
+
+    def test_plan_format_selects_one_stream_before_payload_reads(self):
+        receipt, args, _, wire = projection_fixture()
+        with tempfile.TemporaryDirectory(prefix="snapshot-fragments-") as scratch:
+            root = Path(scratch).resolve()
+            plan = self.fragment_inputs(root, (wire[:73], wire[73:]), streamed=1)
+            args += [PROGRAM.FRAGMENT_PLAN_OPTION, str(plan)]
+            version_two = json.loads(plan.read_bytes())
+            missing = copy.deepcopy(version_two)
+            missing["fragments"][1]["path"] = str(root / "unused")
+            repeated = copy.deepcopy(version_two)
+            repeated["fragments"][0]["path"] = None
+            legacy = {**version_two, "format": PROGRAM.FRAGMENT_PLAN_FORMAT}
+            for value in (missing, repeated, legacy):
+                with self.subTest(value=value):
+                    plan.write_text(json.dumps(value), encoding="utf-8")
+                    code, result = self.invoke(receipt, args, NoRead())
+                    self.assertEqual((code, result["reason"]), (2, "transport_fragment_plan_stream"))
+
     def test_fragments_require_manifest_and_completed_producer(self):
         receipt, args, wire = FIXTURE.fixture()
         _, options = frame_options(manifest_for(receipt, wire))
@@ -671,15 +734,18 @@ class CompletedExport(unittest.TestCase):
             self.assertIsNone(framed.current)
 
     @staticmethod
-    def fragment_inputs(root, payloads):
+    def fragment_inputs(root, payloads, *, streamed=None):
         fragments = []
         for i, payload in enumerate(payloads):
-            path = root / f"fragment-{i}"
-            path.write_bytes(payload)
-            fragments.append({"path": str(path), "bytes": len(payload)})
+            path = None
+            if streamed != i:
+                file = root / f"fragment-{i}"
+                file.write_bytes(payload)
+                path = str(file)
+            fragments.append({"path": path, "bytes": len(payload)})
+        format_name = PROGRAM.FRAGMENT_PLAN_FORMAT if streamed is None else PROGRAM.STREAMED_FRAGMENT_PLAN_FORMAT
         plan = root / "plan.json"
-        plan.write_text(json.dumps({"format": PROGRAM.FRAGMENT_PLAN_FORMAT, "fragments": fragments}),
-                        encoding="utf-8")
+        plan.write_text(json.dumps({"format": format_name, "fragments": fragments}), encoding="utf-8")
         return plan
 
     def test_fresh_cli_success_failure_and_help_use_no_fixture_files(self):
