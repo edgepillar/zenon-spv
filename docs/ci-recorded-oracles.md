@@ -1,33 +1,27 @@
 # Separate recorded-oracle CI lane
 
-The CI workflow runs 26 recorded-data steps in a separate job on Linux amd64,
+The CI workflow runs 22 recorded-data steps in a separate job on Linux amd64,
 macOS Intel amd64 and Windows amd64. Two larger-retention invocations use the
 [bounded leaf commitment scope](retention-leaf-reuse.md), with a separate control
 invocation. Two complete import control suites use
 [explicit fresh child CLI recipes](import-resource-child-hex.md), with a separate
-recipe-control invocation. The combined workspace command verifies the recorded
-observations first and then runs all five envelope controls in the same Python
-process. The recorded check constructs the reference import model. The envelope
-controls reuse that model and validate their own inputs. The dedicated workspace
-runner emits a source-bound completion receipt after both checks succeed and their
-scopes close. The CI step also runs the workspace runner controls.
-The same runner pairs the original recorded check and the complete control
-suite for file-backed NodeTree import, reference-child lifecycle, driver and
-build resources, sparse oracle projection and complete driver projection.
-Each pair validates the recording with the original checker before its controls
-run. Both phases share the checker's expected document and one bounded
-in-memory graph scope keyed by the complete ordered state bytes. Each control
-still validates its own inputs. The runner retains the original checker report
-in the job log and emits a separate source-bound receipt with all control names
-and graph accounting after both phases finish.
+recipe-control invocation.
 
-The workspace and driver/build pairs share one process and one bounded scale
-model. The first pair computes the model with the original reference checker.
-The second pair verifies the same source files, corpus digest, reference
-function and selection before decoding a private copy of the model. The
-256 KiB serialized-model limit applies between the pairs. The controller
-restores both original functions and clears the model after both reports and
-all 26 controls complete. Other pairs retain their own processes.
+One Python process checks the recorded workspace, driver/build resources,
+file-backed NodeTree import, reference-child lifecycle, sparse oracle projection,
+and complete driver projection. For each pair, the original checker verifies
+the recording before the complete control suite runs. The pair shares one
+bounded graph scope keyed by the complete ordered state bytes. Its original
+report and separate source-bound completion record include the full check results
+and the control names.
+
+The first pair computes the scale model with the original reference checker.
+The other five pairs verify the source files, corpus digest, reference function,
+and selection before decoding their own copies from the bounded 256 KiB
+serialized model. Individual pairs retain independent check inputs and the
+controller restores each selected function when that pair finishes. The final
+completion record requires one computation and five reuses, with the model
+cleared. The original per-pair commands remain available for separate replay.
 The native verifier jobs run on separate hosted runners alongside this lane.
 See the [GitHub-hosted runner model](https://docs.github.com/en/actions/concepts/runners/github-hosted-runners)
 for its VM isolation and runner-image limits.
@@ -46,11 +40,13 @@ files. They check recorded resources rather than launching a new node, database
 workload or Go build. Some existing controls still launch fresh Python CLIs and
 use their own temporary test files.
 
-The current 26-step inventory has SHA-256
-`e38ae1b3ae132831a082d07473861eb58788e280a9717e752531120e7406a8c0`.
+The current 22-step inventory has SHA-256
+`303d665899283f8d95286c26b1b85c5f033e591b48e605c052ec4a561e8037d0`.
 Its encoding is the ordered list of name/run objects, with sorted JSON keys,
-compact separators, unexpanded workflow expressions and a final LF. The
-preceding 27-step inventory with separate workspaces had SHA-256
+compact separators, unexpanded workflow expressions and a final LF. The prior
+26-step inventory with two shared scale readers had SHA-256
+`e38ae1b3ae132831a082d07473861eb58788e280a9717e752531120e7406a8c0`.
+The preceding 27-step inventory with separate workspaces had SHA-256
 `549a728ca9de3d33156f1ffb0902639d7f12a671ecfb0797893d1fcb3e96e0d9`.
 The earlier 32-command inventory with separate tree checks had SHA-256
 `b6740942f8c048d4a0f9490eddbfa1fcef396ad1952561293a8413425dd69eab`. The earlier
@@ -72,17 +68,26 @@ The manifest selects the command inventory; it does not report test success or
 authenticate execution. Require the actual hosted job and every selected step
 to complete successfully, and reconcile their source/run/platform identity.
 
-The scheduling change's artifact is that small JSON manifest, retained for 14
-days. The later leaf scope and import child scope each upload three small result
-reports per platform. Always-run uploads preserve available reports after a control
-fails; incomplete output is not completion. No fixture, source
-tree, database, executable or second payload ZIP is copied into it. Native
-candidate artifacts keep their existing identities and qualification scope.
-Use the approved local task-storage manager for bounded artifact transport and
-retain each verified object once. Do not download native payloads merely to
-qualify this workflow-only scheduling change.
+The recorded-oracle archive contains the small selection manifest and the
+grouped check's original results and completion records in
+`scale-model-checks.jsonl`. A complete file has six original reports, six
+per-pair completion records and the final model-reuse record. The leaf and
+import-child scopes upload their own small reports per platform. Always-run
+uploads preserve available reports after a control fails. Actual job and step
+outcomes and the final completion record establish whether the grouped check
+finished. The archive contains reports and their pins. Use the approved local
+task-storage manager for bounded artifact transport and retain each verified
+object once.
 
 ## Timing evidence and acceptance
+
+One Darwin arm64 run with Python 3.9.6 compared the five prior invocations
+with the grouped invocation. Both ran all 146 controls and produced the same
+six original checker reports byte for byte. Model computations fell from
+five to one. Total elapsed time was 69.51 seconds for the prior invocations
+and 19.90 seconds for the grouped invocation. The grouped output used 61,452
+bytes and the model cache wrote no files. These are local observations over
+the recorded inputs.
 
 One local Darwin arm64 comparison ran each of the five pairs once in each
 mode with the same recorded inputs. The paired run retained all 141 controls

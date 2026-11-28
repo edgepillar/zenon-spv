@@ -477,3 +477,16 @@ dependency closures. The change takes the full general lane.
 | --- | ---: | ---: | --- |
 | Native v3 | 1225 | 125415 | `bb2e1d38bee607318fece2a61ec5fcf5d033ea2fea20ee0a9cdfb9d36b06fb71` |
 | Portable tools | 1202 | 123216 | `987c68d3024ab3006f490c1c8139f567d58d5e99d2d6ac09ebfd65b189caadb5` |
+
+### Recorded scale model reuse
+
+The recorded-oracle job shares the independently computed scale model across
+six existing checker/control pairs. All pairs retain their individual reports
+and source bindings. The 22-step workflow records the grouped output in the
+recorded-oracle archive. This workflow and source update selects full general
+CI.
+
+| Closure | Entries | Encoded bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Native v3 | 1228 | 125714 | `84124b25b80360a67d58d38f438ad2c3b4dc2ecc30d0ff102a662273ba48595e` |
+| Portable tools | 1205 | 123515 | `9a631b1a3516c9b4002c94a8a52a1ba8bf9028eff7b612cf77cf54fe05bfe44f` |

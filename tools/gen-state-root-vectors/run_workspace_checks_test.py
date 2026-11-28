@@ -19,28 +19,28 @@ REVISION = 'ab' * 20
 RECORDING = '{"workspace_children_bound":24}'
 
 
-def scale_program(compute):
+def scale_module(compute):
     scale = ModuleType('test_scale_model')
     scale.compute = compute
     exec('from functools import lru_cache\n'
          '@lru_cache(maxsize=1)\n'
          'def expected_document():\n'
          '    return compute()\n', vars(scale))
-    return SimpleNamespace(CHECK=SimpleNamespace(LIFE=SimpleNamespace(SCALE=scale))), scale
+    return scale
 
 
 class SharedScaleModelControls(unittest.TestCase):
     def test_reuses_bound_model_and_keeps_reader_documents_independent(self):
-        first, first_scale = scale_program(mock.Mock(return_value={'cases': [{'root': 'original'}]}))
-        second, second_scale = scale_program(mock.Mock(side_effect=AssertionError('second model build')))
+        first_scale = scale_module(mock.Mock(return_value={'cases': [{'root': 'original'}]}))
+        second_scale = scale_module(mock.Mock(side_effect=AssertionError('second model build')))
         first_original = first_scale.expected_document
         second_original = second_scale.expected_document
         model = RUN.SharedScaleModel()
         with mock.patch.object(RUN, 'scale_model_binding', return_value=b'bound'):
-            with model.select(first):
+            with model.select(first_scale):
                 original = first_scale.expected_document()
                 original['cases'][0]['root'] = 'changed by first reader'
-            with model.select(second):
+            with model.select(second_scale):
                 reused = second_scale.expected_document()
                 self.assertEqual(reused, {'cases': [{'root': 'original'}]})
                 self.assertIs(second_scale.expected_document(), reused)
@@ -53,17 +53,56 @@ class SharedScaleModelControls(unittest.TestCase):
         second_scale.compute.assert_not_called()
 
     def test_refuses_changed_model_inputs_before_replacing_second_reader(self):
-        first, first_scale = scale_program(mock.Mock(return_value={'cases': []}))
-        second, second_scale = scale_program(mock.Mock())
+        first_scale = scale_module(mock.Mock(return_value={'cases': []}))
+        second_scale = scale_module(mock.Mock())
         second_original = second_scale.expected_document
         model = RUN.SharedScaleModel()
         with mock.patch.object(RUN, 'scale_model_binding', side_effect=[b'first', b'first', b'different']):
-            with model.select(first):
+            with model.select(first_scale):
                 first_scale.expected_document()
-            with self.assertRaises(ValueError), model.select(second):
+            with self.assertRaises(ValueError), model.select(second_scale):
                 self.fail('changed model inputs were admitted')
         self.assertIs(second_scale.expected_document, second_original)
         second_scale.compute.assert_not_called()
+
+    def test_shared_mode_completes_only_when_each_selected_pair_reads_the_model(self):
+        expected = [None, 'tree-driver-resources', 'tree-import-scale', 'tree-import-lifecycle',
+                    'oracle-projection', 'projected-driver']
+
+        for missing_reader in (None, 'oracle-projection'):
+            with self.subTest(missing_reader=missing_reader):
+                output = io.StringIO()
+                touched = []
+
+                def record(revision, name, model):
+                    self.assertEqual(revision, REVISION)
+                    touched.append((name, model))
+                    if name is None:
+                        self.assertIsNone(model.document)
+                        model.document, model.binding = b'{}', b'bound'
+                        model.computed += 1
+                    elif name != missing_reader:
+                        model.reused += 1
+                    return 3
+
+                args = ['--source-revision', REVISION, '--shared-scale-model']
+                with mock.patch.object(RUN, 'run_pair', side_effect=record), redirect_stdout(output):
+                    if missing_reader is None:
+                        RUN.main(args)
+                    else:
+                        with self.assertRaises(ValueError):
+                            RUN.main(args)
+                self.assertEqual([name for name, _ in touched], expected)
+                model = touched[0][1]
+                self.assertTrue(all(other is model for _, other in touched))
+                self.assertIsNone(model.document)
+                if missing_reader is None:
+                    report = json.loads(output.getvalue())
+                    self.assertEqual(report['tests_run'], 18)
+                    self.assertEqual(report['scale_models_reused'], 5)
+                    self.assertTrue(report['model_cache_cleared'])
+                else:
+                    self.assertEqual(output.getvalue(), '')
 
     def test_shared_mode_failure_clears_cache_without_running_second_pair(self):
         output = io.StringIO()

@@ -1794,7 +1794,7 @@ jobs:
            "workflow":{"path":".github/workflows/ci.yml","git_content_sha256":hashlib.sha256(workflow).hexdigest(),"git_content_bytes":len(workflow),
             "checkout_content_sha256":hashlib.sha256(working).hexdigest(),"checkout_content_bytes":len(working),"checkout_relation":relation},
            "serial_baseline":{"revision":"59ab5184d2e983f2322ff9e730a86cd19217970b","workflow_sha256":"407cf9a5da9fca75957f570981694ecc7bd17a4f29ae3ce4f697f40a17d4421a"},
-           "selected_command_inventory":{"commands":26,"sha256":"e38ae1b3ae132831a082d07473861eb58788e280a9717e752531120e7406a8c0","encoding":"sorted-key compact JSON list plus LF; unexpanded workflow expressions"},
+           "selected_command_inventory":{"commands":22,"sha256":"303d665899283f8d95286c26b1b85c5f033e591b48e605c052ec4a561e8037d0","encoding":"sorted-key compact JSON list plus LF; unexpanded workflow expressions"},
            "scope":{"selection_record_only":True,"test_completion_reported":False,
             "actual_completion_requires_hosted_job_and_step_records":True,
             "existing_fresh_Python_CLI_controls_retained":True,"new_Go_builds":False,
@@ -1810,11 +1810,11 @@ jobs:
               handle.write(raw)
           print(raw.decode(),end="")
           PY
-      - name: Recorded workspace and driver resource controls
+      - name: Recorded workspace, import and oracle resource controls
         shell: bash
         run: |
           python -I -B tools/gen-state-root-vectors/run_workspace_checks_test.py -v
-          python -I -B tools/gen-state-root-vectors/run_workspace_checks.py --shared-scale-model --source-revision "${{ github.sha }}"
+          python -I -B tools/gen-state-root-vectors/run_workspace_checks.py --shared-scale-model --source-revision "${{ github.sha }}" > "$RUNNER_TEMP/recorded-oracle-selection/scale-model-checks.jsonl"
       - name: Import resource child recipe controls
         id: import_child_controls
         shell: bash
@@ -1880,14 +1880,6 @@ jobs:
       - name: Independent recorded larger NodeTree retention
         shell: bash
         run: python -I -B tools/gen-state-root-vectors/run_retention_leaves.py --program check_tree_scale.py --mode reused --source-revision "${{ github.sha }}" > "$RUNNER_TEMP/retention-leaf-reuse/retention-observations.jsonl"
-      - name: Larger file NodeTree import recording and controls
-        run: python -I -B tools/gen-state-root-vectors/run_workspace_checks.py --tree-check tree-import-scale --source-revision "${{ github.sha }}"
-      - name: Reference child lifecycle recording and controls
-        run: python -I -B tools/gen-state-root-vectors/run_workspace_checks.py --tree-check tree-import-lifecycle --source-revision "${{ github.sha }}"
-      - name: Sparse oracle projection recording and controls
-        run: python -I -B tools/gen-state-root-vectors/run_workspace_checks.py --tree-check oracle-projection --source-revision "${{ github.sha }}"
-      - name: Complete driver projection recording and controls
-        run: python -I -B tools/gen-state-root-vectors/run_workspace_checks.py --tree-check projected-driver --source-revision "${{ github.sha }}"
       - name: Upload bounded retention leaf reuse reports
         id: upload_retention_leaf_reuse
         continue-on-error: true
@@ -1898,14 +1890,16 @@ jobs:
           path: ${{ runner.temp }}/retention-leaf-reuse/
           if-no-files-found: error
           retention-days: 14
-      - name: Upload only the small oracle selection manifest
+      - name: Upload oracle selection and scale-model checks
         id: upload_oracle_selection
         continue-on-error: true
         if: always()
         uses: ./.github/actions/upload-runtime-evidence
         with:
           name: recorded-oracles-${{ matrix.platform }}
-          path: ${{ runner.temp }}/recorded-oracle-selection/manifest.json
+          path: |
+            ${{ runner.temp }}/recorded-oracle-selection/manifest.json
+            ${{ runner.temp }}/recorded-oracle-selection/scale-model-checks.jsonl
           if-no-files-found: error
           retention-days: 14
       - name: Require evidence uploads to succeed
