@@ -13,7 +13,7 @@ native review candidate remains `6ecc231`. [Source and evidence details](typed-q
 | D0 / G0 | One chain-69, domain 1, batch 0 attempt was selected and bound to its runner, contract and component sources. Its one-run authorization was consumed. |
 | D1–D2 / G1 | The experiment checked the configured H2 anchor and v3 range H3–H127 under finite closed-ledger producer slots. Intended-network agreement remains open. |
 | D3 and native D5 / G2 | The selected owned read succeeded at H126. Three present rows matched one header root and all 17 stored gateway fields matched. Exact-main macOS reproduced the result offline. |
-| D4 | The retained empty L2 commitment supports a checked absence at a selected test path. The first actual vault storage value still needs its contract ID, key, accepted batch and gateway proof. [Read-only storage consumer](owned-l2-storage-read.md) |
+| D4 | The native CLI can bind a single storage witness to the selected three-row BatchEntry. The retained empty L2 commitment supports a checked absence at a test path. The first actual vault storage value needs its contract ID, key, accepted batch and gateway proof. [Read-only storage consumer](owned-l2-storage-read.md) |
 | N2 / G3 | The full-identifier reorg and reopen comparison is recorded. A supported node/profile decision and wider lifecycle qualification remain open. |
 | N1 and S1 / G4 | Keep the snapshot transport and typed-root checks separate. R1 still needs an authorized representative capture. [Data intake](https://github.com/edgepillar/zenon-spv/issues/270) |
 | G5 | Intended-network trust inputs and a scoped consumer pilot remain open. |

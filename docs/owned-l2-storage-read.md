@@ -55,6 +55,49 @@ the collection request. An unavailable or pruned witness remains a refusal.
 The explicit `--empty-root` mode only accepts a proven zero commitment and
 reports the proof origin as `local_empty_commitment`.
 
+## Read the storage path in the native CLI
+
+A caller with verified configuration and proofs from a different selected
+batch can use the ordinary read-only three-row CLI. The two L2 file options
+are paired and belong to the query command. Select the L1 request, both
+context pins, and the contract ID and local key independently of the proof
+provider. The storage request file contains exactly `contract_id` and
+`local_key_hex`, both lowercase hex. The ID is 32 bytes and the local key
+is at most 32 bytes. For a typed vault key, use the pinned vault interface
+and its storage-key codec before preparing this file.
+
+```sh
+zenon-spv query-experimental-batch-context \
+  --config "$CONFIG" --request "$L1_REQUEST" \
+  --expect-header-context "$HEADER_CONTEXT" \
+  --expect-query-context "$QUERY_CONTEXT" \
+  --l2-storage-request "$L2_REQUEST" --l2-proof-result "$L2_WITNESS" \
+  "$L1_PROVIDER"
+```
+
+The L2 witness file contains the result object from one numeric-batch
+`zeno_getProof` read. The native CLI first verifies the three L1 rows with
+the configured header and then checks the one path against the
+`PostStateRoot` of that exact proven BatchEntry. The selected domain, batch,
+root and locally derived path must match the result object. A successful
+report adds `l2_storage` with the bound identity, presence, raw value and
+proof digest. Present-empty is `""` and proven absence is `null`.
+A JSON null witness is unavailable and returns exit 2. A mismatched identity
+or invalid proof returns exit 1. These outcomes carry no typed result or L2
+storage claim. The optional inputs are capped at 2 KiB and 64 KiB. This
+path has the same experimental trust assumptions and performs zero RPC
+requests. [Three-row CLI contract](experimental-batch-context-query.md)
+[Gateway proof response](https://github.com/Zeno-L2/zeno-executor/blob/a14bf0e08dad8eabeb1a0e0add9bbaf1e2adac9f/internal/gateway/api.go#L517-L532)
+
+The native replay used the original chain-69 L1 rows from attempt 1 and a
+locally derived canonical L2 proof for the proven empty commitment. It
+reproduced the original three-row result with all 17 gateway fields
+matching. The compiled CLI accepted the selected probe's absence, rejected
+the same proof with a different batch identity and refused a null witness.
+The nonzero-batch membership and present-empty controls use independent
+single-leaf byte oracles. A recorded positive vault witness remains a
+separate input. [Chain-69 artifact](https://github.com/edgepillar/zenon-spv/actions/runs/46148797542/attempts/1)
+
 The next consumer query is one vault balance stored in the contract's
 `balances` mapping at an explicitly selected post-deposit batch. It needs
 the exact vault ID from its deployment record, the local key derived under
