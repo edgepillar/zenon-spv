@@ -356,11 +356,12 @@ Notes:
 The JSON form mirrors the Go struct. The loader accepts exactly one object
 with known fields only; unknown fields and trailing data are errors.
 Validation rejects unsorted entries, gaps, entries outside coverage,
-overlapping ranges, and a recomputed `ScheduleHash` mismatch. Failed
-revalidation clears any previous lookup index. As before, callers must keep
-a successfully validated schedule read-only; the owned state API captures
-its own copy. These integrity checks do not authenticate the operator or
-the metadata, and a content hash is not an attestation signature.
+overlapping ranges, and a recomputed `ScheduleHash` mismatch. Each validated
+range records the offset of its first entry. Lookup finds the range and
+selects the entry by height within it. Failed revalidation clears the index.
+Callers must keep a successfully validated schedule read-only. The owned state
+API captures its own copy. These integrity checks do not authenticate the
+operator or the metadata, and a content hash is not an attestation signature.
 
 ---
 

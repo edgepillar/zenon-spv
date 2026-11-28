@@ -28,6 +28,83 @@ func TestProducerScheduleTerminalHeight(t *testing.T) {
 	}
 }
 
+func TestProducerScheduleRangeLookup(t *testing.T) {
+	coverage := []ProducerCoverage{{0, 2}, {3, 5}, {17, 17}, {math.MaxUint64 - 1, math.MaxUint64}}
+	heights := []uint64{0, 1, 2, 3, 4, 5, 17, math.MaxUint64 - 1, math.MaxUint64}
+	entries := make([]ProducerEntry, len(heights))
+	want := make(map[uint64]ProducerEntry, len(heights))
+	for i, height := range heights {
+		entry := ProducerEntry{Height: height, TimestampUnix: uint64(i + 100)}
+		entry.ProducingAddr[1] = byte(i + 1)
+		entries[i] = entry
+		want[height] = entry
+	}
+	s, err := NewProducerSchedule(3, coverage, entries, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	probes := append(heights, 6, 16, 18, math.MaxUint64-2)
+	for _, height := range probes {
+		entry, present := s.LookupEntry(height)
+		expected, covered := want[height]
+		if present != covered || entry != expected {
+			t.Fatalf("height %d: got %+v/%t, want %+v/%t", height, entry, present, expected, covered)
+		}
+	}
+}
+
+func BenchmarkProducerScheduleValidatedIndex(b *testing.B) {
+	for _, test := range []struct {
+		name  string
+		width int
+	}{
+		{"contiguous", MaxProducerScheduleEntries},
+		{"gapped", 1000},
+		{"singletons", 1},
+	} {
+		b.Run(test.name, func(b *testing.B) {
+			const count = MaxProducerScheduleEntries
+			coverage := make([]ProducerCoverage, 0, count/test.width)
+			entries := make([]ProducerEntry, count)
+			for first := 0; first < count; first += test.width {
+				last := min(first+test.width, count)
+				startHeight := uint64(first + first/test.width + 1)
+				coverage = append(coverage, ProducerCoverage{startHeight, startHeight + uint64(last-first-1)})
+				for i := first; i < last; i++ {
+					entries[i].Height = startHeight + uint64(i-first)
+					entries[i].TimestampUnix = uint64(i + 100)
+				}
+			}
+			schedule := ProducerSchedule{
+				ChainID: 3, Coverage: coverage, Entries: entries,
+				ScheduleHash: computeScheduleHash(3, coverage, entries),
+			}
+			b.Run("validate", func(b *testing.B) {
+				b.ReportAllocs()
+				for b.Loop() {
+					if err := schedule.Validate(); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+			b.Run("lookup", func(b *testing.B) {
+				if err := schedule.Validate(); err != nil {
+					b.Fatal(err)
+				}
+				b.ReportAllocs()
+				next := 0
+				for b.Loop() {
+					expected := entries[next]
+					if got, ok := schedule.LookupEntry(expected.Height); !ok || got != expected {
+						b.Fatal("lookup did not return the selected entry")
+					}
+					next = (next + 7919) % count
+				}
+			})
+		})
+	}
+}
+
 func TestProducerScheduleDenseCoverageBoundaries(t *testing.T) {
 	cases := []struct {
 		name     string

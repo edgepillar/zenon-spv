@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"time"
 
 	"golang.org/x/crypto/sha3"
@@ -164,6 +165,11 @@ type ProducerEntry struct {
 	ProducingAddr chain.Address `json:"producing_addr"`
 }
 
+type producerScheduleRange struct {
+	ProducerCoverage
+	entryOffset int
+}
+
 // ProducerSchedule is the operator-attested per-momentum schedule
 // loaded via --schedule. The substantive content (ChainID + Coverage
 // + Entries) hashes to ScheduleHash; tampering with any entry
@@ -180,9 +186,8 @@ type ProducerSchedule struct {
 
 	ScheduleHash chain.Hash `json:"schedule_hash"`
 
-	// idx maps height -> Entries index, populated by Validate so
-	// LookupEntry runs in O(1). Not serialized.
-	idx map[uint64]int `json:"-"`
+	// idx records one offset per validated dense coverage range.
+	idx []producerScheduleRange
 }
 
 // These limits accommodate the existing million-momentum sidecar design.
@@ -297,24 +302,32 @@ func (s *ProducerSchedule) Validate() error {
 	if recomputed != s.ScheduleHash {
 		return fmt.Errorf("producer schedule: ScheduleHash mismatch (recomputed=%x stored=%x)", recomputed, s.ScheduleHash)
 	}
-	s.idx = make(map[uint64]int, len(s.Entries))
-	for i, e := range s.Entries {
-		s.idx[e.Height] = i
+	index := make([]producerScheduleRange, len(s.Coverage))
+	offset := 0
+	for i, c := range s.Coverage {
+		index[i] = producerScheduleRange{ProducerCoverage: c, entryOffset: offset}
+		// Dense coverage was checked above and fits within the entry cap.
+		offset += int(c.ThroughHeight-c.FromHeight) + 1
 	}
+	s.idx = index
 	return nil
 }
 
 // LookupEntry returns the entry at the given height and whether the
 // height is covered. Validate must have been called first.
 func (s *ProducerSchedule) LookupEntry(height uint64) (ProducerEntry, bool) {
-	if s.idx == nil {
+	i := sort.Search(len(s.idx), func(i int) bool {
+		return s.idx[i].ThroughHeight >= height
+	})
+	if i == len(s.idx) || height < s.idx[i].FromHeight {
 		return ProducerEntry{}, false
 	}
-	i, ok := s.idx[height]
-	if !ok {
+	r := s.idx[i]
+	entry := r.entryOffset + int(height-r.FromHeight)
+	if entry >= len(s.Entries) || s.Entries[entry].Height != height {
 		return ProducerEntry{}, false
 	}
-	return s.Entries[i], true
+	return s.Entries[entry], true
 }
 
 // LoadProducerSchedule reads, parses, and validates a schedule from

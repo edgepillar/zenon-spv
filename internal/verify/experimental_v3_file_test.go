@@ -254,7 +254,7 @@ func TestExperimentalV3PersistenceRejectsChangedSettings(t *testing.T) {
 	}
 	// An index supplied by the caller is never authority: a fresh validated copy
 	// is used, while a changed substantive schedule hash cannot retain the pin.
-	f.schedule.idx = map[uint64]int{13: 0}
+	f.schedule.idx = fixtureSchedule(t, 2).idx
 	loaded, err := LoadTrustedExperimentalV3State(path, f.profile, f.policy, f.schedule, f.pin)
 	if err != nil || loaded.Empty() {
 		t.Fatal("caller index was not rebuilt", err)
