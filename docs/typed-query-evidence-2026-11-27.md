@@ -338,3 +338,42 @@ This evidence covers reconstructed fixtures and a configured CLI context.
 Both original runner outcomes remain `UNKNOWN`. A depth-one successor for
 the replacement branch, a present typed `BatchEntry` consumed end to end, and
 production recovery and fork-choice acceptance remain open.
+
+## Replay with experimentally hash-bound node storage
+
+The two full input files of the [existing recovery patch](../tools/gen-state-root-vectors/node-recovery-9c71-patch.json)
+matched the chain-69 node revision `2835c436b197fece5c76adf4ba8dc1decca2e3ea`
+byte for byte. Both replacements were checked against their before and after
+file lengths, Git blobs and SHA-256 values. The derived node tree before
+adding the replay harness is `79140277a54a167be84d79366eb51b0f0fc7a95a`.
+
+The patched build repeated the same five processes on a separate fresh ledger.
+All five succeeded and reproduced the full frontier identities, root values,
+removed-height refusals and three proof byte strings of the original replay.
+Five additional cases also called the node's state-tree methods directly.
+
+| Stage | Input refused by both native read methods |
+| --- | --- |
+| Starting H4 | Replacement H3 identifier |
+| Before rewinding to v1 H2 | Replacement H2 identifier |
+| After applying replacement H3 | Starting H3 identifier |
+| After reopening replacement H3 | Starting H3 identifier |
+| After reopening replacement H3 | Height 3 with the hash omitted |
+
+In each case `StateRoot` and `GetProof` returned
+`ErrVersionIdentityMismatch` without producing a usable root, value or proof.
+The replay continued to check the full identity of valid reads against the
+ledger. The five phases and nine independent proof checks matched the
+original replay results.
+
+The patched harness SHA-256 is
+`f91629e76077cc0bdf8ac8c717c406bc888225ef101d78c98b6f294a7f3a013e`.
+The same 25 module pins and both original archives were reused. The build took
+37.31 seconds and the five process runs took 3.25 seconds in total. The
+largest sampled build workspace was 441,970,081 logical bytes. The closed
+ledger, cache and StateTree contained 34,705 logical bytes.
+
+This comparison qualifies the two-file patch for the selected offline replay
+on fresh research data. The patch changes the StateTree disk format. Existing
+database migration, live reorg, broader retention and recovery qualification,
+and production state-proof acceptance remain open.
