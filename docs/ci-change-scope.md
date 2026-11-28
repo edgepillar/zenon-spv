@@ -490,3 +490,18 @@ CI.
 | --- | ---: | ---: | --- |
 | Native v3 | 1228 | 125714 | `84124b25b80360a67d58d38f438ad2c3b4dc2ecc30d0ff102a662273ba48595e` |
 | Portable tools | 1205 | 123515 | `9a631b1a3516c9b4002c94a8a52a1ba8bf9028eff7b612cf77cf54fe05bfe44f` |
+
+### Preserve completed provider capture on an early refusal
+
+The owned-devnet runner records the collector's original output and the
+preceding frontier read before it asks for the frontier again. Archive review
+rechecks that output against the captured candidate root when either the
+recheck or the closed-ledger stage prevents a consumer run. Previously
+retained configuration and deposit timeout archives produced byte-identical
+reports in place. This runner update selects full general CI and the
+owned-devnet preparation controls.
+
+| Closure | Entries | Encoded bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Native v3 | 1228 | 125714 | `5aacf73b800d30b9fa2da8ba8361cbf855c5493186e7768004b855e356e3b577` |
+| Portable tools | 1205 | 123515 | `17e3681d251c98b9f226693cce3e6f53c9a7975a1facffd9258022ba865c4645` |

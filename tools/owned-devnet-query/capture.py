@@ -67,6 +67,8 @@ OPENING_PROOF_BYTES = 32 << 10
 OPENING_PROOF_VERSION_UNAVAILABLE = "opening_proof_version_unavailable"
 OPENING_BATCH_ALREADY_PRESENT = "opening_batch_already_present"
 RPC_CALL_LIMIT = 96
+PROVIDER_FILE = "provider.json"
+PROVIDER_CAPTURE = "provider-capture.json"
 CONSUMER_STDOUT = "consume-query.stdout"
 CONSUMER_FAILURE_BYTES = 4096
 # Fixed read-only report text from both selected consumer revisions. Raw
@@ -693,6 +695,7 @@ def deposit_timeout_window(contract, opening, frontier, batch, rows):
 def collect(contract, recorder, rpc, binaries, opening, query, directory, environment, guard):
     """Collect only after the controller stops the producers and clients."""
     frontier = rpc.frontier()
+    frontier_request_id = rpc.calls
     selection, limits = contract.data["selection"], contract.data["limits"]
     anchor = opening[1]
     require(frontier.version == 3 and query.height <= frontier.height - limits["header_depth"]
@@ -707,10 +710,13 @@ def collect(contract, recorder, rpc, binaries, opening, query, directory, enviro
         "--height", str(query.height), "--header-hash", query.hash,
         "--tip-height", str(frontier.height), "--tip-hash", frontier.hash,
         "--domain-id", str(selection["domain_id"]), "--batch-id", selection["batch_id_decimal"],
-        "--compare-gateway"], directory, environment, stdout_name="provider.json",
+        "--compare-gateway"], directory, environment, stdout_name=PROVIDER_FILE,
         timeout=120, stdout_cap=limits["stdout_bytes"], stderr_cap=16 << 10, guard=guard)
     provider = api_json(result.stdout(limits["stdout_bytes"]), limits["stdout_bytes"])
     headers = captured_headers(contract, opening, query, frontier, provider)
+    # Preserve the completed collector output before the follow-up observation.
+    recorder.seal(PROVIDER_CAPTURE, canonical({"format": "owned-devnet-provider-capture/v1",
+        "frontier_request_id": frontier_request_id, "provider": result.receipt["outputs"]["stdout"]}))
     require(rpc.frontier() == frontier, "capture_frontier_moved")
     return Window(headers, query, provider, result)
 

@@ -629,6 +629,63 @@ class CaptureTests(unittest.TestCase):
             with self.assertRaises(model.Refused):
                 capture.captured_headers(contract, opening, query, tip, provider)
 
+    def test_retains_valid_collector_output_before_rechecking_the_frontier(self):
+        contract, _, window = synthetic_window(5)
+        opening, tip = window.headers[:3], window.headers[-1]
+        for outcome in ("same", "moved", "interrupted", "invalid"):
+            with self.subTest(outcome=outcome), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary) / "evidence"
+                recorder = Recorder(root)
+                provider = dict(window.provider)
+                if outcome == "invalid":
+                    provider["version"] = 2
+                raw = model.canonical(provider)
+                selected = contract.data["qualified_components"]["consumer"]["binaries"]
+                binaries = mock.Mock(directory=root, **{"verify.return_value": selected})
+                rpc = mock.Mock(calls=7)
+                result = mock.Mock(**{"stdout.return_value": raw})
+
+                def collect(label, command, *args, stdout_name, **kwargs):
+                    self.assertEqual(label, "collect-provider")
+                    self.assertIn("--compare-gateway", command)
+                    self.assertEqual(stdout_name, capture.PROVIDER_FILE)
+                    result.receipt = {"outputs": {"stdout": recorder.seal(stdout_name, raw)}}
+                    return result
+
+                def recheck():
+                    if rpc.frontier.call_count == 1:
+                        return tip
+                    self.assertIn(capture.PROVIDER_CAPTURE, recorder.names)
+                    self.assertIn(capture.PROVIDER_FILE, recorder.names)
+                    if outcome == "interrupted":
+                        raise KeyboardInterrupt
+                    return window.query if outcome == "moved" else tip
+
+                rpc.frontier.side_effect = recheck
+                with mock.patch.object(recorder, "run", side_effect=collect):
+                    args = (contract, recorder, rpc, binaries, opening, window.query, root, {}, mock.Mock())
+                    if outcome == "same":
+                        self.assertIs(capture.collect(*args).provider_result, result)
+                    elif outcome == "interrupted":
+                        with self.assertRaises(KeyboardInterrupt):
+                            capture.collect(*args)
+                    else:
+                        reason = "capture_frontier_moved" if outcome == "moved" else "owned_provider_version"
+                        with self.assertRaisesRegex(model.Refused, reason):
+                            capture.collect(*args)
+                paths = {entry["path"] for entry in runner.evidence_index((recorder,), {})}
+                retained = {"evidence/" + capture.PROVIDER_FILE, "evidence/" + capture.PROVIDER_CAPTURE}
+                if outcome == "invalid":
+                    self.assertEqual(rpc.frontier.call_count, 1)
+                    self.assertTrue(paths.isdisjoint(retained))
+                else:
+                    self.assertEqual(rpc.frontier.call_count, 2)
+                    self.assertTrue(retained <= paths)
+                    marker = json.loads((root / capture.PROVIDER_CAPTURE).read_bytes())
+                    self.assertEqual(marker["frontier_request_id"], 7)
+                    self.assertEqual(marker["provider"], result.receipt["outputs"]["stdout"])
+                    self.assertEqual((root / capture.PROVIDER_FILE).read_bytes(), raw)
+
     def test_closed_oracle_chunks_cover_anchor_and_all_v3_parents(self):
         contract, _, window = synthetic_window(67)
         chunks = list(capture.oracle_requests(contract, window.headers))

@@ -156,6 +156,23 @@ header, oracle, provider and consumer evidence. The original downloads remain
 single files in the transport directory. The upload selects evidence by name
 and digest. The fresh runner owns the disposal boundary.
 
+After validating the collector's candidate header range, the runner pins the
+original `provider.json` and its pre-collection frontier request in
+`provider-capture.json`. It records the pair before repeating the frontier
+read, so a changed or unavailable recheck or a later closed-ledger failure
+preserves the complete collector output. The pair costs no extra RPC or
+collector invocation. The original output stays a single bounded file.
+
+For a run that ended during collection or closed-ledger checks,
+`recorded_provider_capture` rechecks the original collector receipt, the
+observed frontier records, the selected candidate header range, and the
+three typed proof inputs in the original archive. It reports the frontier
+as `SAME`, `MOVED` or `UNCONFIRMED`. A present and valid set of proofs is
+compared with the captured StateRoot and, when available, the stored gateway
+fields. The result describes candidate-root membership with an incomplete
+consumer and retains the original terminal result. The usual accepted-header
+and native consumer checks provide the exit for a completed run.
+
 Post-stop inspections retain a separate `owned-devnet-stop-state/v1` diagnostic
 before the existing stopped-container checks run. It binds the owned ID, service,
 inspection command and original stdout digest to allowlisted typed state fields:

@@ -200,6 +200,8 @@ def evidence_index(recorders, extra):
         allowed = set(REVIEW_FILES)
         if recorder.directory.name == "evidence":
             allowed.update(name for name in recorder.names if STOP_STATE_FILE.fullmatch(name) is not None)
+            if capture.PROVIDER_CAPTURE in recorder.names:
+                allowed.update((capture.PROVIDER_CAPTURE, capture.PROVIDER_FILE))
         for record in recorder.records:
             for field in ("launch", "started", "receipt"):
                 if record[field] is not None:
@@ -374,7 +376,6 @@ def execute(environment, workspace, checkout):
         engine.stop_producers_and_clients()
         window = capture.collect(contract, record, rpc, consumer, opening, selected,
                                  workspace, tool_environment, guard)
-        extra.add("provider.json")
         stage = "closed-ledger"
         ledger = engine.close_rpc()
         schedule = capture.read_closed_schedule(contract, record, engine, ledger, window, sources,

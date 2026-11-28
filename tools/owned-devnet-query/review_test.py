@@ -968,6 +968,109 @@ class ReviewTests(unittest.TestCase):
         self.assertFalse(result["native_consumer_reexecuted"])
         self.assertNotIn("candidate_opening_observation", result)
 
+    def provider_capture_files(self, outcome):
+        contract, files = accepted_files(terminal_format=model.TERMINAL_FORMAT)
+        for name in tuple(files):
+            if name.startswith(("evidence/consume-query.", "evidence/parent-oracle-", "evidence/query-")) or name in (
+                    "evidence/closed-ledger-provenance.json", "evidence/consumer-comparison.json"):
+                del files[name]
+        end = "evidence/terminal.json"
+        final = json.loads(files[end])
+        if outcome == "unconfirmed":
+            final.update(stage="provider-capture", outcome="UNKNOWN", reason="controller_interrupted")
+        elif outcome == "closed-ledger":
+            final.update(stage="closed-ledger", outcome="FAILURE", reason="command_failed")
+        else:
+            final.update(stage="provider-capture", outcome="REFUSED", reason="capture_frontier_moved")
+        files[end] = canonical(final)
+
+        provider = files["evidence/" + capture.PROVIDER_FILE]
+        rows = json.loads(provider)["momentums"]
+        marker = {"format": "owned-devnet-provider-capture/v1", "frontier_request_id": 7,
+                  "provider": {"file": capture.PROVIDER_FILE, **pin(provider)}}
+        files["evidence/" + capture.PROVIDER_CAPTURE] = canonical(marker)
+        samples = [(7, rows[-1])]
+        if outcome == "moved":
+            samples.append((8, rows[-2]))
+        elif outcome == "different-producer":
+            public = bytes(range(1, 33))
+            changed = dict(rows[-1], publicKey=base64.b64encode(public).decode(),
+                           producer=checks.address_text(b"\0" + hashlib.sha3_256(public).digest()[:19]))
+            samples.append((8, changed))
+        elif outcome == "closed-ledger":
+            samples.append((8, rows[-1]))
+        for request_id, row in samples:
+            raw = canonical({"jsonrpc": "2.0", "id": request_id, "result": row})
+            _, observed = FrontierReviewTests.files(request_id, raw=raw)
+            del observed[end]
+            files.update(observed)
+        return contract, files
+
+    def test_early_provider_capture_rechecks_retained_proofs_and_preserves_the_terminal(self):
+        for case, expected, recheck in (("moved", "MOVED", 8), ("different-producer", "MOVED", 8),
+                                        ("unconfirmed", "UNCONFIRMED", None), ("closed-ledger", "SAME", 8)):
+            with self.subTest(case=case):
+                contract, files = self.provider_capture_files(case)
+                raw = make_archive(files)
+                with patch.object(zipfile.ZipFile, "extractall", side_effect=AssertionError):
+                    code, result, error = self.hosted_review(raw, contract=contract, conclusion="failure",
+                                                              execution="failure")
+                self.assertEqual(code, 1, error)
+                report = result["archive_review"]
+                terminal = json.loads(files["evidence/terminal.json"])
+                self.assertEqual(report["recorded_terminal_outcome"], terminal["outcome"])
+                self.assertIsNone(report["comparison"])
+                self.assertEqual(report["materialized_bytes"], 0)
+                self.assertFalse(report["new_devnet_acceptance_established"])
+                observed = report["recorded_provider_capture"]
+                self.assertEqual(observed["status"], "PROOFS_MATCH_CAPTURED_ROOT")
+                self.assertEqual(observed["provider"], pin(files["evidence/" + capture.PROVIDER_FILE]))
+                self.assertEqual(observed["query"], json.loads(files["evidence/selected-query-header.json"]))
+                self.assertEqual(observed["frontier_confirmation"], expected)
+                self.assertEqual(observed["frontier_request_id"], 7)
+                self.assertEqual(observed["recheck_request_id"], recheck)
+                self.assertEqual(observed["gateway_comparison"]["stored_fields_compared"], 17)
+                self.assertTrue(observed["gateway_comparison"]["stored_fields_match"])
+                self.assertFalse(observed["accepted_header_authority"])
+                self.assertFalse(observed["native_consumer_completed"])
+
+    def test_early_provider_capture_requires_complete_output_and_matching_frontiers(self):
+        contract, files = self.provider_capture_files("moved")
+        for name, change, reason in (
+                (capture.PROVIDER_CAPTURE, {"frontier_request_id": 8}, "review_provider_capture_frontier"),
+                (capture.PROVIDER_CAPTURE, {"provider": {"sha256": "a" * 64}}, "review_provider_capture_output"),
+                ("collect-provider.complete.json", {"output_complete": False}, "review_recorded_command_completion"),
+                ("fixture-deposit.complete.json", {"actual_exit": 1}, "review_recorded_command_completion"),
+                ("terminal.json", {"stage": "closed-ledger"}, "review_provider_capture_confirmation")):
+            path = "evidence/" + name
+            changed = canonical({**json.loads(files[path]), **change})
+            with self.subTest(name=name, reason=reason), self.assertRaisesRegex(Refused, reason):
+                self.review(make_archive({**files, path: changed}), contract)
+        incomplete = {name: raw for name, raw in files.items() if not name.startswith("evidence/rpc-08.")}
+        with self.assertRaisesRegex(Refused, "review_provider_capture_movement"):
+            self.review(make_archive(incomplete), contract)
+
+    def test_early_provider_capture_preserves_an_absent_value_as_unverified(self):
+        contract, files = self.provider_capture_files("closed-ledger")
+        path = "evidence/" + capture.PROVIDER_FILE
+        provider = json.loads(files[path])
+        provider["witnesses"]["domain_config"]["value"] = None
+        files[path] = canonical(provider)
+        stdout = {"file": capture.PROVIDER_FILE, **pin(files[path])}
+        completion = "evidence/collect-provider.complete.json"
+        receipt = json.loads(files[completion])
+        receipt["outputs"]["stdout"] = stdout
+        files[completion] = canonical(receipt)
+        marker = "evidence/" + capture.PROVIDER_CAPTURE
+        files[marker] = canonical({**json.loads(files[marker]), "provider": stdout})
+        report = self.review(make_archive(files), contract)
+        self.assertEqual(report["recorded_terminal_outcome"], "FAILURE")
+        observed = report["recorded_provider_capture"]
+        self.assertEqual(observed["status"], "PROOFS_UNVERIFIED")
+        self.assertEqual(observed["proof_refusal"], "independent_membership_leaf")
+        self.assertIsNone(observed["proof_totals"])
+        self.assertIsNone(observed["gateway_comparison"])
+
     def interrupted_capture_files(self):
         contract, files = accepted_files(terminal_format=model.TERMINAL_FORMAT)
         end = "evidence/terminal.json"

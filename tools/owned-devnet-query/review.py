@@ -466,7 +466,7 @@ def recorded_configuration_timeout_pillar(evidence, contract, timeout, opening_p
         recorded_command_start(evidence, label, receipt, "evidence")
     observation = None
     if response in members:
-        observation = frontier_observation(evidence, contract, label, label + ".json", request_id)
+        observation, _ = frontier_observation(evidence, contract, label, label + ".json", request_id)
     closed_frontier = comparison = None
     if closed_opening is not None:
         same(closed_opening["frontier_request_id"], request_id + 1, "review_configuration_timeout_pillar_order")
@@ -645,13 +645,9 @@ def recorded_deposit_timeout_replay(evidence, contract, checkout, opening, close
             "fixture_outcome": "UNKNOWN", "transaction_submission_verified": False}
 
 
-def recorded_consumer_inputs(evidence, contract, checkout, selection, opening):
-    recorded_dispatch_selection(evidence, selection)
-    for role in WORKFLOWS:
-        recorded_input_component(evidence, contract, role)
-
-    provider = evidence.json("provider.json", contract.data["limits"]["stdout_bytes"])
-    recorded_output(evidence, "collect-provider", "provider.json")
+def recorded_provider_window(evidence, contract, opening):
+    provider = evidence.json(capture.PROVIDER_FILE, contract.data["limits"]["stdout_bytes"])
+    recorded_output(evidence, "collect-provider", capture.PROVIDER_FILE)
 
     rows = provider["momentums"]
     require(type(rows) is list and 0 < len(rows) < contract.data["limits"]["max_header_targets"],
@@ -662,9 +658,67 @@ def recorded_consumer_inputs(evidence, contract, checkout, selection, opening):
     query, tip = (capture.Header.read(row, chain) for row in (rows[target_index], rows[-1]))
     same(query_selection, query.identifier(), "review_query_header")
     same(evidence.json("selected-capture-frontier.json"), tip.identifier(), "review_frontier")
-    window = capture.Window(capture.captured_headers(contract, opening, query, tip, provider),
-                            query, provider, None)
-    schedule = recorded_closed_schedule(evidence, contract, window.headers, tip.identifier(),
+    return capture.Window(capture.captured_headers(contract, opening, query, tip, provider),
+                          query, provider, None)
+
+
+def recorded_provider_capture(evidence, contract, checkout, selection, terminal, opening,
+                              opening_signatures, frontier_headers):
+    if ("evidence/" + capture.PROVIDER_CAPTURE not in evidence.pins
+            or terminal["stage"] not in ("provider-capture", "closed-ledger")):
+        return None
+    require(opening is not None and opening_signatures is not None, "review_provider_opening_gate")
+    recorded_dispatch_selection(evidence, selection)
+    recorded_fixture_commands(evidence)
+    for role in WORKFLOWS:
+        recorded_input_component(evidence, contract, role)
+    window = recorded_provider_window(evidence, contract, opening)
+    record = evidence.json(capture.PROVIDER_CAPTURE, 4096)
+    exact_keys(record, {"format", "frontier_request_id", "provider"}, "review_provider_capture_fields")
+    same(record["format"], "owned-devnet-provider-capture/v1", "review_provider_capture_format")
+    provider_pin = evidence.pins["evidence/" + capture.PROVIDER_FILE]
+    same(record["provider"], {"file": capture.PROVIDER_FILE, **provider_pin}, "review_provider_capture_output")
+    request_id = model.uint(record["frontier_request_id"], capture.RPC_CALL_LIMIT)
+    tip = window.headers[-1]
+    require(frontier_headers.get(request_id) == tip, "review_provider_capture_frontier")
+    after = frontier_headers.get(request_id + 1)
+    confirmation = "UNCONFIRMED"
+    if after is not None:
+        confirmation = "SAME" if after == tip else "MOVED"
+    if terminal["stage"] == "closed-ledger":
+        require(confirmation == "SAME", "review_provider_capture_confirmation")
+    if terminal["reason"] == "capture_frontier_moved":
+        require(confirmation == "MOVED", "review_provider_capture_movement")
+    descriptor, profile = capture.selected_profile(contract, checkout)
+    batch = int(contract.data["selection"]["batch_id_decimal"])
+    totals, proof_refusal, gateway, gateway_refusal = None, None, None, None
+    try:
+        checked = witness_rows(profile, batch, window.query.root, window.provider["witnesses"])
+        selected_semantics(descriptor, checked["decoded"])
+        totals = checked["totals"]
+    except Refused as error:
+        proof_refusal = error.reason
+    if totals is not None:
+        try:
+            gateway = compare_frontier_batch(window.provider["gateway"], contract.data["selection"]["domain_id"],
+                                             batch, checked["decoded"]["entry"])
+        except Refused as error:
+            gateway_refusal = error.reason
+    return {"status": "PROOFS_MATCH_CAPTURED_ROOT" if totals is not None else "PROOFS_UNVERIFIED",
+            "query": window.query.identifier(), "root": window.query.root, "provider": provider_pin,
+            "frontier_confirmation": confirmation, "frontier_request_id": request_id,
+            "recheck_request_id": request_id + 1 if after is not None else None,
+            "proof_totals": totals, "proof_refusal": proof_refusal,
+            "gateway_comparison": gateway, "gateway_refusal": gateway_refusal,
+            "accepted_header_authority": False, "native_consumer_completed": False}
+
+
+def recorded_consumer_inputs(evidence, contract, checkout, selection, opening):
+    recorded_dispatch_selection(evidence, selection)
+    for role in WORKFLOWS:
+        recorded_input_component(evidence, contract, role)
+    window = recorded_provider_window(evidence, contract, opening)
+    schedule = recorded_closed_schedule(evidence, contract, window.headers, window.headers[-1].identifier(),
                                        evidence.json("closed-ledger-provenance.json"))
 
     descriptor, profile = capture.selected_profile(contract, checkout)
@@ -713,8 +767,8 @@ def recorded_interrupted_capture(evidence, contract, checkout, selection, openin
 
 
 def recorded_frontiers(evidence, contract):
-    """Read optional candidate observations without creating header authority."""
-    rows = []
+    """Read optional candidate observations and retain their parsed headers for this review."""
+    rows, headers = [], {}
     for path in sorted(evidence.pins):
         if not path.endswith(".frontier.json"):
             continue
@@ -723,8 +777,9 @@ def recorded_frontiers(evidence, contract):
         request_id = model.uint(int(match[1]), 96)
         label, name = f"rpc-{request_id:02d}", path.split("/")[1]
         frontier_request(evidence, label, request_id)
-        rows.append(frontier_observation(evidence, contract, label, name, request_id))
-    return rows
+        observation, headers[request_id] = frontier_observation(evidence, contract, label, name, request_id)
+        rows.append(observation)
+    return rows, headers
 
 
 def frontier_request(evidence, label, request_id):
@@ -742,7 +797,7 @@ def frontier_observation(evidence, contract, label, name, request_id):
     header = capture.Header.read(result, contract.data["selection"]["chain_id"])
     return {"request_id": request_id, "response": evidence.pins[path],
             "candidate_header": header.identifier(), "version": header.version,
-            "timestamp": header.timestamp, "accepted_header_authority": False}
+            "timestamp": header.timestamp, "accepted_header_authority": False}, header
 
 
 def diagnostic_receipt(evidence, label, reason):
@@ -995,7 +1050,8 @@ def recorded_startup_peer_frontiers(evidence, terminal, post_sync, contract):
         if status == "OBSERVED":
             name = label + ".json"
             same(row["response_file"], name, "review_startup_peer_response")
-            observation["observation"] = frontier_observation(evidence, contract, label, name, request_id)
+            observed, _ = frontier_observation(evidence, contract, label, name, request_id)
+            observation["observation"] = observed
             expected_bodies.add("evidence/" + name)
         else:
             require(row["response_file"] is None, "review_startup_peer_response")
@@ -1165,7 +1221,7 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
         if binding_present:
             same(recorded, selection, "review_terminal_binding")
         startup_sync = recorded_startup_sync(evidence, terminal)
-        frontiers = recorded_frontiers(evidence, contract)
+        frontiers, frontier_headers = recorded_frontiers(evidence, contract)
         post_sync = recorded_post_sync_frontier(evidence, terminal, startup_sync, frontiers)
         startup_peers = recorded_startup_peer_frontiers(evidence, terminal, post_sync, contract)
         startup_nodes = recorded_startup_nodes(evidence, terminal)
@@ -1193,6 +1249,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             opening, opening_observation, opening_row = recorded_opening(evidence, contract)
         opening_proof = recorded_opening_proof(evidence, contract, checkout, opening, opening_observation, terminal)
         opening_signatures = recorded_opening_signatures(evidence, opening, opening_observation, opening_proof)
+        provider_capture = recorded_provider_capture(evidence, contract, checkout, selection, terminal,
+                                                     opening, opening_signatures, frontier_headers)
         closed_opening = recorded_closed_opening(evidence, contract, selection, terminal, fixture_timeout,
             opening, opening_observation, opening_proof, opening_signatures, frontiers)
         timeout_pillar = recorded_configuration_timeout_pillar(
@@ -1262,6 +1320,8 @@ def review_stream(stream, archive_pin, source_revision, run_id, contract, checko
             report["startup_file_log_diagnostics"] = file_logs
         if consumer_failure is not None:
             report["recorded_consumer_failure"] = consumer_failure
+        if provider_capture is not None:
+            report["recorded_provider_capture"] = provider_capture
         if interrupted_capture is not None:
             report["recorded_interrupted_capture"] = interrupted_capture
         if gateway_mismatch is not None:
