@@ -103,8 +103,8 @@ Raw momentum data/content retain their separate
 budgets, not agreed network or representative hardware measurements. Zero does
 not disable experimental policy bounds. Typed and JSON inputs are checked.
 
-Extension validates all incoming headers, then copies the retained suffix once;
-it avoids shifting K headers after every input row. Contiguous private heights
+Extension validates all incoming headers, then builds a fresh window of
+immutable header references. Contiguous private heights
 permit constant-time root/header lookup without a mutable index, repeated
 signature work or copying key/signature buffers for root-only reads.
 Typed headers are validated before their key/signature buffers are detached;
@@ -115,9 +115,9 @@ input slices concurrently with verification.
 
 Extension allocates its new retained-header slice only after every incoming
 header and link has passed. Even an incoming header that will be evicted must
-pass its hash, signature, profile and finite schedule checks. Only newly retained
-caller key/signature buffers are cloned; existing private immutable headers can
-be reused in a fresh slice. Any refusal, rejection or insufficient depth returns
+pass its hash, signature, profile and finite schedule checks. Newly retained
+caller key/signature buffers are cloned. Earlier windows share the retained
+immutable headers by reference. Any refusal, rejection or insufficient depth returns
 the original handle without a provisional header array or detached input copies.
 Context fingerprints, saved format, trusted-local provenance and v1/v2 behavior
 are unchanged.
@@ -151,6 +151,23 @@ at retention 2, 3 and 4,096, preserve earlier handles after input/output mutatio
 and reject changed eventually evicted rows. No new node execution or signatures
 are needed for these controls. Each delivered revision still requires its own
 scheduled platform CI and artifact reconciliation.
+
+### Adding a header to a retained window
+
+Four paired Go 1.25.14 trials on Darwin arm64 used `GOMAXPROCS=1` and
+recorded envelopes in synthetic storage windows. Each operation verifies one
+recorded successor. Setup is outside the measured interval.
+
+| Headers held before extension | Median time per operation | Allocated bytes per operation |
+| --- | ---: | ---: |
+| 64 | 31.89 to 30.35 microseconds | 19,968 to 1,760 |
+| 4,096 | 196.90 to 38.15 microseconds | 1,180,544 to 33,952 |
+
+Streamed input for a 4,096-header checkpoint allocated 31,121,046 bytes
+before the change and 27,611,926 bytes after it. Allocations per operation
+increased from 336,229 to about 340,324 as headers gained independent
+storage. Median input time was 46.37 and 46.68 milliseconds.
+The writer retains the version-4 checkpoint schema and framing.
 
 ## Persistence and compatibility
 

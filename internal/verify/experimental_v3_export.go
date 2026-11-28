@@ -7,8 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-
-	"github.com/0x3639/zenon-spv/internal/chain"
 )
 
 const experimentalV3ExportSource = "exported experimental checkpoint"
@@ -41,7 +39,7 @@ func (s ExperimentalV3State) encodeExperimentalV3Checkpoint(destination io.Write
 	}
 	headers := s.data.headers
 	if headers == nil {
-		headers = []chain.CandidateV3Header{}
+		headers = experimentalV3Window{}
 	}
 	body := experimentalV3File{Format: experimentalV3StateFormat, Version: 4, Context: s.data.config.context.Fingerprint,
 		Profile: profile, Policy: s.data.config.policy, Headers: headers}

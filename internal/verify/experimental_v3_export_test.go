@@ -117,7 +117,7 @@ func checkpointEncodingFixture(t testing.TB, count int) ExperimentalV3State {
 	// does not construct a contiguous chain or produce any new signatures.
 	state.data.headers = make(experimentalV3Window, count)
 	for i := range state.data.headers {
-		state.data.headers[i] = f.headers[i%len(f.headers)]
+		state.data.headers[i] = &f.headers[i%len(f.headers)]
 	}
 	return state
 }

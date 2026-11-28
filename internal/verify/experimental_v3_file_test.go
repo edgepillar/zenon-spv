@@ -48,8 +48,12 @@ func bufferedExperimentalV3File(raw []byte) (experimentalV3File, error) {
 
 func TestStreamedStateWindowExperimentalV3Parity(t *testing.T) {
 	f := experimentalV3Inputs(t)
+	headers := make(experimentalV3Window, len(f.headers))
+	for i := range f.headers {
+		headers[i] = &f.headers[i]
+	}
 	initial := experimentalV3File{Format: experimentalV3StateFormat, Version: 4, Context: f.pin,
-		Profile: f.profile, Policy: f.policy, Headers: experimentalV3Window(f.headers)}
+		Profile: f.profile, Policy: f.policy, Headers: headers}
 	raw := experimentalV3JSON(t, initial)
 	fields := experimentalV3Fields(t, raw)
 	array := fields["retained_headers"]
@@ -113,7 +117,7 @@ func benchmarkExperimentalV3Window(b *testing.B) {
 	f := experimentalV3Inputs(b)
 	headers := make(experimentalV3Window, MaxRetainHeaders)
 	for i := range headers {
-		headers[i] = f.headers[i%len(f.headers)]
+		headers[i] = &f.headers[i%len(f.headers)]
 	}
 	raw, err := json.Marshal(experimentalV3File{Format: experimentalV3StateFormat, Version: 4, Context: f.pin,
 		Profile: f.profile, Policy: f.policy, Headers: headers})
@@ -382,7 +386,7 @@ func TestExperimentalV3PersistenceBoundsAndFailureAtomicity(t *testing.T) {
 	for i := range rows {
 		rows[i] = member
 	}
-	before := experimentalV3Window{f.headers[0]}
+	before := experimentalV3Window{&f.headers[0]}
 	target := before
 	if json.Unmarshal(experimentalV3JSON(t, rows), &target) == nil || !reflect.DeepEqual(target, before) {
 		t.Fatal("window member bound failed or published a prefix")

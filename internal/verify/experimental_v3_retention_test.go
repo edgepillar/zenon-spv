@@ -87,6 +87,37 @@ func TestExperimentalV3RetainedSuffixOwnership(t *testing.T) {
 	}
 }
 
+func TestExperimentalV3RetainedHeaderReuseAcrossEviction(t *testing.T) {
+	f := experimentalV3RetentionInputs(t, 2, 3)
+	empty := experimentalV3New(t, f)
+	result, prior := empty.Extend(f.headers[:2])
+	if result.Outcome != OutcomeAccept {
+		t.Fatal("recorded prefix was refused", result)
+	}
+	older := prior.experimentalV3Header(f.headers[0].Header.Height)
+	carried := prior.experimentalV3Header(f.headers[1].Header.Height)
+	result, next := prior.Extend(f.headers[2:])
+	if result.Outcome != OutcomeAccept || older == nil || carried == nil {
+		t.Fatal("recorded successor was refused", result)
+	}
+	if next.experimentalV3Header(older.Header.Height) != nil ||
+		next.experimentalV3Header(carried.Header.Height) != carried ||
+		prior.experimentalV3Header(older.Header.Height) != older {
+		t.Fatal("eviction changed the carried header or previous window")
+	}
+	added := next.experimentalV3Header(f.headers[2].Header.Height)
+	if added == nil || added == &f.headers[2] {
+		t.Fatal("successor does not own an independent header")
+	}
+	expectedKey := added.Header.PublicKey[0]
+	expectedSignature := added.Header.Signature[0]
+	f.headers[2].Header.PublicKey[0] ^= 1
+	f.headers[2].Header.Signature[0] ^= 1
+	if added.Header.PublicKey[0] != expectedKey || added.Header.Signature[0] != expectedSignature {
+		t.Fatal("successor retains caller-owned signature material")
+	}
+}
+
 func TestExperimentalV3EvictedInputStillValidated(t *testing.T) {
 	for _, name := range []string{"root", "signature", "version", "producer", "schedule_gap"} {
 		t.Run(name, func(t *testing.T) {
@@ -187,6 +218,29 @@ func BenchmarkExperimentalV3RetainedCopies(b *testing.B) {
 				r, next := state.Extend(batch)
 				if r.Outcome != outcome || r.Reason != reason || outcome != OutcomeAccept && next.data != state.data {
 					b.Fatal("unexpected measured extension outcome", r)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkExperimentalV3RetainOneHeader(b *testing.B) {
+	f := experimentalV3Inputs(b)
+	for _, count := range []int{64, MaxRetainHeaders} {
+		b.Run(fmt.Sprintf("retained_%d", count), func(b *testing.B) {
+			// Repeated recorded envelopes provide a fixed storage workload.
+			// The incoming header links to the last recorded envelope.
+			state := checkpointEncodingFixture(b, count)
+			tip, ok := state.Tip()
+			if !ok || tip.Hash != f.headers[1].Header.PreviousHash {
+				b.Fatal("unexpected benchmark tip")
+			}
+			expectedLen := min(count+1, MaxRetainHeaders)
+			b.ReportAllocs()
+			for b.Loop() {
+				result, next := state.Extend(f.headers[1:2])
+				if result.Outcome != OutcomeAccept || len(next.data.headers) != expectedLen {
+					b.Fatal("unexpected extension result", result)
 				}
 			}
 		})

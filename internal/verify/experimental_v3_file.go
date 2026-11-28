@@ -65,7 +65,7 @@ func (f *experimentalV3File) readJSON(r io.Reader) (size int64, inputErr, parseE
 	return size, inputErr, parseErr
 }
 
-type experimentalV3Window []chain.CandidateV3Header
+type experimentalV3Window []*chain.CandidateV3Header
 
 func (w *experimentalV3Window) UnmarshalJSON(raw []byte) error {
 	if w == nil || int64(len(raw)) > MaxExperimentalV3StateBytes {
@@ -102,7 +102,7 @@ func (w *experimentalV3Window) readValue(d *json.Decoder) error {
 		if err != nil {
 			return ErrExperimentalV3StateFile
 		}
-		rows = append(rows, h)
+		rows = append(rows, &h)
 	}
 	if token, err := d.Token(); err != nil || token != json.Delim(']') {
 		return ErrExperimentalV3StateFile
@@ -186,7 +186,7 @@ func (selected ExperimentalV3State) resumeExperimentalV3File(file experimentalV3
 		return ExperimentalV3State{}, ErrExperimentalV3StateFile
 	}
 	for i, h := range file.Headers {
-		if r := validateExperimentalV3Header(h, c, i); r.Outcome != OutcomeAccept {
+		if r := validateExperimentalV3Header(*h, c, i); r.Outcome != OutcomeAccept {
 			return ExperimentalV3State{}, ErrExperimentalV3StateFile
 		}
 		if i == 0 {

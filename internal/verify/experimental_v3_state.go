@@ -21,7 +21,7 @@ type ExperimentalV3State struct{ data *experimentalV3StateData }
 
 type experimentalV3StateData struct {
 	config       ExperimentalV3Configuration
-	headers      []chain.CandidateV3Header
+	headers      experimentalV3Window
 	trustedLocal bool
 }
 
@@ -91,12 +91,13 @@ func (s ExperimentalV3State) Extend(headers []chain.CandidateV3Header) (Result, 
 	keep := min(total, int(c.policy.RetainHeaders))
 	newCount := min(keep, len(headers))
 	oldCount := keep - newCount
-	working := make([]chain.CandidateV3Header, keep)
-	// Existing headers already belong to immutable private state. A fresh
-	// slice preserves old handles; only newly retained caller bytes need clones.
+	working := make(experimentalV3Window, keep)
+	// Each retained header has independent storage. Copy its reference to
+	// preserve old handles without keeping an evicted backing array alive.
 	copy(working, s.data.headers[len(s.data.headers)-oldCount:])
 	for i, incoming := range headers[len(headers)-newCount:] {
-		working[oldCount+i] = cloneExperimentalV3Header(incoming)
+		owned := cloneExperimentalV3Header(incoming)
+		working[oldCount+i] = &owned
 	}
 	next := ExperimentalV3State{data: &experimentalV3StateData{config: c, headers: working, trustedLocal: s.data.trustedLocal}}
 	return next.acceptedEnvelope(), next
@@ -201,7 +202,7 @@ func (s ExperimentalV3State) experimentalV3Header(height uint64) *chain.Candidat
 	if height < first || height-first >= uint64(len(s.data.headers)) {
 		return nil
 	}
-	return &s.data.headers[int(height-first)]
+	return s.data.headers[int(height-first)]
 }
 
 // RootAt returns only the root in an owned accepted header, with a matching
