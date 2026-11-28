@@ -405,6 +405,50 @@ func TestExperimentalBatchCLIHeaderFieldSpan(t *testing.T) {
 	}
 }
 
+func TestExperimentalCLIStandaloneHeaderArray(t *testing.T) {
+	f := newBatchContextCLIInputs(t)
+	rows := f.bundle["momentums"].([]json.RawMessage)
+	if len(rows) < 2 {
+		t.Fatal("fixture must exercise multiple header rows")
+	}
+	indented, err := json.MarshalIndent(rows, "", "\t")
+	if err != nil {
+		t.Fatal(err)
+	}
+	limit := uint32(len(rows))
+	raw := []byte("\t\r\n " + string(indented) + "\r\n ")
+	headers, err := decodeExperimentalCLIHeaders(raw, limit)
+	if err != nil || len(headers) != len(rows) {
+		t.Fatal("standalone header list", err)
+	}
+	clear(raw)
+	for i, row := range rows {
+		want, err := fetch.DecodeCandidateV3Momentum(row)
+		if err != nil || !reflect.DeepEqual(headers[i], want.Header) {
+			t.Fatalf("ordered detached header %d: %v", i, err)
+		}
+	}
+	if empty, err := decodeExperimentalCLIHeaders([]byte(" \t[ \r\n]\n"), limit); err != nil || empty != nil {
+		t.Fatal("empty header list must decode to nil", err)
+	}
+	for _, tc := range []struct {
+		name, document string
+		limit          uint32
+	}{
+		{"extra value", string(indented) + ` []`, limit},
+		{"trailing comma", `[` + string(rows[0]) + `,]`, limit},
+		{"invalid last row", `[` + string(rows[0]) + `, null]`, limit},
+		{"nonarray", string(rows[0]), limit},
+		{"row limit", string(indented), limit - 1},
+		{"zero row limit", `[]`, 0},
+		{"invalid row limit", `[]`, verify.MaxRetainHeaders + 1},
+	} {
+		if got, err := decodeExperimentalCLIHeaders([]byte(tc.document), tc.limit); err != errExperimentalCLIInput || got != nil {
+			t.Fatalf("%s returned a partial or invalid result: %v", tc.name, err)
+		}
+	}
+}
+
 func TestExperimentalBatchContextBundleDetachedWitnesses(t *testing.T) {
 	f := newBatchContextCLIInputs(t)
 	f.bundle["gateway"] = experimentalCLIGateway()

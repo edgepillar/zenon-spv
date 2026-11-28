@@ -77,7 +77,7 @@ func decodeExperimentalContextCLIBundle(raw []byte, maxHeaders uint32, compare b
 		*hint.target = value
 	}
 	var err error
-	next.Headers, err = decodeExperimentalCLIHeaders(rows, maxHeaders)
+	next.Headers, err = decodeExperimentalCLIHeaderRows(rows, maxHeaders)
 	if err != nil {
 		return experimentalContextCLIBundle{}, errExperimentalCLIInput
 	}

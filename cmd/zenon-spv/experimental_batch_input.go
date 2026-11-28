@@ -40,11 +40,6 @@ type experimentalCLIConfig struct {
 // It must stay local to the enclosing input decoder.
 type experimentalCLIFieldSpan []byte
 
-// The standard decoder checks the complete value before calling this method.
-type discardedExperimentalCLIValue struct{}
-
-func (*discardedExperimentalCLIValue) UnmarshalJSON([]byte) error { return nil }
-
 // Exact required fields only. Null, aliases, duplicates and trailing values
 // cannot silently replace a trust input or disable a selected comparison.
 func decodeExperimentalCLIObject(raw []byte, fields map[string]any, nullable ...string) error {
@@ -133,38 +128,46 @@ type experimentalCLIBundle struct {
 	Gateway *proof.CandidateSettlementBatch
 }
 
-type experimentalCLIRPCHeader chain.CandidateV3Header
-
-func (h *experimentalCLIRPCHeader) UnmarshalJSON(raw []byte) error {
-	header, err := fetch.DecodeCandidateV3MomentumHeader(raw)
-	if err != nil {
-		return err
+func decodeExperimentalCLIHeaders(raw []byte, maxHeaders uint32) ([]chain.CandidateV3Header, error) {
+	if len(raw) > maxExperimentalBundleBytes || maxHeaders == 0 || maxHeaders > verify.MaxRetainHeaders || !json.Valid(raw) {
+		return nil, errExperimentalCLIInput
 	}
-	*h = experimentalCLIRPCHeader(header)
-	return nil
+	return decodeExperimentalCLIHeaderRows(raw, maxHeaders)
 }
 
-func decodeExperimentalCLIHeaders(raw []byte, maxHeaders uint32) ([]chain.CandidateV3Header, error) {
-	if len(raw) > maxExperimentalBundleBytes || maxHeaders == 0 || maxHeaders > verify.MaxRetainHeaders {
+// Callers supply a value from a validated, bounded document and an already
+// checked header limit. Count the rows before allocating the header slice.
+func decodeExperimentalCLIHeaderRows(raw experimentalCLIFieldSpan, maxHeaders uint32) ([]chain.CandidateV3Header, error) {
+	at := jsonspan.SpaceEnd(raw, 0)
+	if raw[at] != '[' {
 		return nil, errExperimentalCLIInput
 	}
-	d := json.NewDecoder(bytes.NewReader(raw))
-	if token, err := d.Token(); err != nil || token != json.Delim('[') {
-		return nil, errExperimentalCLIInput
-	}
-	var headers []chain.CandidateV3Header
-	for d.More() {
-		if len(headers) >= int(maxHeaders) {
+	at = jsonspan.SpaceEnd(raw, at+1)
+	type rowSpan struct{ start, end int }
+	var firstSpans [8]rowSpan
+	spans := firstSpans[:0]
+	for raw[at] != ']' {
+		if len(spans) >= int(maxHeaders) {
 			return nil, errExperimentalCLIInput
 		}
-		var header experimentalCLIRPCHeader
-		if d.Decode(&header) != nil {
+		end := jsonspan.ValueEnd(raw, at)
+		spans = append(spans, rowSpan{at, end})
+		at = jsonspan.SpaceEnd(raw, end)
+		if raw[at] == ']' {
+			break
+		}
+		at = jsonspan.SpaceEnd(raw, at+1) // Skip the validated comma.
+	}
+	if len(spans) == 0 {
+		return nil, nil
+	}
+	headers := make([]chain.CandidateV3Header, len(spans))
+	for i, span := range spans {
+		header, err := fetch.DecodeCandidateV3MomentumHeader(raw[span.start:span.end])
+		if err != nil {
 			return nil, errExperimentalCLIInput
 		}
-		headers = append(headers, chain.CandidateV3Header(header))
-	}
-	if token, err := d.Token(); err != nil || token != json.Delim(']') || d.Decode(&discardedExperimentalCLIValue{}) != io.EOF {
-		return nil, errExperimentalCLIInput
+		headers[i] = header
 	}
 	return headers, nil
 }
@@ -184,7 +187,7 @@ func decodeExperimentalCLIBundle(raw []byte, maxHeaders uint32, compare bool) (e
 	if decodeExperimentalCLIObject(raw, fields, "witness", "gateway") != nil || version != 1 {
 		return experimentalCLIBundle{}, errExperimentalCLIInput
 	}
-	headers, err := decodeExperimentalCLIHeaders(rows, maxHeaders)
+	headers, err := decodeExperimentalCLIHeaderRows(rows, maxHeaders)
 	if err != nil {
 		return experimentalCLIBundle{}, errExperimentalCLIInput
 	}
