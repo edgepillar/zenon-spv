@@ -153,17 +153,20 @@ def file_identity(info, *, windows_cross_check=False):
             info.st_mtime_ns, change_time, getattr(info, "st_file_attributes", 0))
 
 
-def open_retained_file(path, limit, size=None):
+def open_retained_file(path, limit, size=None, *, offset=None):
     flags = (os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
              | getattr(os, "O_NONBLOCK", 0))
     try:
         before = path.lstat()
         TRANSPORT.require(stat.S_ISREG(before.st_mode) and before.st_nlink == 1
                           and not (getattr(before, "st_file_attributes", 0) & 0x400)
-                          and 0 < before.st_size <= limit and (size is None or before.st_size == size),
-                          "fragment_file")
+                          and 0 < before.st_size <= limit, "fragment_file")
+        if offset is None:
+            TRANSPORT.require(size is None or before.st_size == size, "fragment_file")
+        else:
+            TRANSPORT.require(0 <= offset <= before.st_size - size, "fragment_file_range")
         TRANSPORT.require(path.resolve(strict=True) == path, "fragment_path")
-        stream = os.fdopen(os.open(path, flags), "rb")
+        stream = os.fdopen(os.open(path, flags), "rb", buffering=0 if offset is not None else -1)
     except OSError:
         raise TRANSPORT.Refused("fragment_file_unavailable") from None
     try:
@@ -172,14 +175,17 @@ def open_retained_file(path, limit, size=None):
         TRANSPORT.require(file_identity(opened, windows_cross_check=windows)
                           == file_identity(before, windows_cross_check=windows), "fragment_file_changed")
         TRANSPORT.require(file_identity(path.lstat()) == file_identity(before), "fragment_file_changed")
+        if offset is not None:
+            TRANSPORT.require(stream.seek(offset) == offset, "fragment_file_seek")
     except BaseException:
         stream.close()
         raise
     return stream, (before, opened)
 
 
-def retained_eof(path, stream, identities):
-    TRANSPORT.require(not stream.read(1), "fragment_trailing_bytes")
+def check_retained_end(path, stream, identities, *, expect_eof=True):
+    if expect_eof:
+        TRANSPORT.require(not stream.read(1), "fragment_trailing_bytes")
     before, opened = identities
     TRANSPORT.require(file_identity(os.fstat(stream.fileno())) == file_identity(opened)
                       and file_identity(path.lstat()) == file_identity(before), "fragment_file_changed")
@@ -190,7 +196,7 @@ def read_fragment_plan(path, payload_bytes):
     stream, identities = open_retained_file(path, TRANSPORT.MANIFEST_BYTES)
     with stream:
         raw = TRANSPORT.read_exact(stream, identities[0].st_size)
-        retained_eof(path, stream, identities)
+        check_retained_end(path, stream, identities)
     try:
         value = TRANSPORT.parse_manifest(raw)
     except TRANSPORT.Refused:
@@ -201,12 +207,16 @@ def read_fragment_plan(path, payload_bytes):
                       and len(value["fragments"]) <= TRANSPORT.HARD_LIMITS["chunks"], "fragment_plan")
     parts, remaining, streamed = [], payload_bytes, 0
     for row in value["fragments"]:
-        TRANSPORT.require(type(row) is dict and set(row) == {"path", "bytes"}
+        TRANSPORT.require(type(row) is dict and set(row) in ({"path", "bytes"}, {"path", "bytes", "offset"})
                           and type(row["bytes"]) is int and 0 < row["bytes"] <= remaining, "fragment_plan")
-        selected = row["path"]
+        selected, size, offset = row["path"], row["bytes"], row.get("offset")
+        if "offset" in row:
+            TRANSPORT.require(selected is not None and type(offset) is int
+                              and 0 <= offset <= TRANSPORT.HARD_LIMITS["bytes"] - size,
+                              "fragment_plan_range")
         streamed += selected is None
-        parts.append((None if selected is None else retained_path(selected), row["bytes"]))
-        remaining -= row["bytes"]
+        parts.append((None if selected is None else retained_path(selected), size, offset))
+        remaining -= size
     expected_streams = 1 if value["format"] == STREAMED_FRAGMENT_PLAN_FORMAT else 0
     TRANSPORT.require(streamed == expected_streams, "fragment_plan_stream")
     TRANSPORT.require(remaining == 0, "fragment_plan_bytes")
@@ -216,7 +226,7 @@ def read_fragment_plan(path, payload_bytes):
 class FramedFragments:
     def __init__(self, stream, manifest_bytes, parts):
         self.input, self.manifest_bytes = stream, manifest_bytes
-        self.check_manifest_eof = all(path is not None for path, _ in parts)
+        self.check_manifest_eof = all(path is not None for path, _, _ in parts)
         self.parts = iter(parts)
         self.current = None
 
@@ -232,11 +242,13 @@ class FramedFragments:
             part = next(self.parts, None)
             if part is None:
                 return b""
-            self.path, self.remaining = part
+            self.path, self.remaining, offset = part
             if self.path is None:
                 self.current = self.input
             else:
-                self.current, self.identities = open_retained_file(self.path, self.remaining, self.remaining)
+                limit = self.remaining if offset is None else TRANSPORT.HARD_LIMITS["bytes"]
+                self.current, self.identities = open_retained_file(self.path, limit, self.remaining, offset=offset)
+                self.expect_file_eof = offset is None or offset + self.remaining == self.identities[1].st_size
         data = TRANSPORT.read_part(self.current, min(size, self.remaining))
         TRANSPORT.require(bool(data), "fragment_truncated")
         self.remaining -= len(data)
@@ -244,7 +256,7 @@ class FramedFragments:
             if self.path is None:
                 TRANSPORT.require(not TRANSPORT.read_part(self.current, 1), "fragment_trailing_bytes")
             else:
-                retained_eof(self.path, self.current, self.identities)
+                check_retained_end(self.path, self.current, self.identities, expect_eof=self.expect_file_eof)
             self.close()
         return data
 

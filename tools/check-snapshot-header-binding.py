@@ -267,11 +267,13 @@ def recover_projection(command, manifest, wire, directory, controls):
     description = json.loads(manifest)
     selected = description["selection"]
     chunks = description["chunks"]
-    first = len(chunks) - 2
+    first = len(chunks) - 3
     assert first > 0 and selected["sha256"] == byte_pin(wire)["sha256"]
     offset = first * description["chunk_bytes"]
-    suffix_bytes = len(wire) - offset
-    span = f"{offset}-{len(wire) - 1}"
+    range_bytes = sum(chunk["bytes"] for chunk in chunks[first:first + 2])
+    end = offset + range_bytes
+    assert end < len(wire)
+    span = f"{offset}-{end - 1}"
     url, etag = "https://snapshot-fixture.invalid/stream", '"recorded-fixture"'
     options = ["manifest-range", "--url", url, "--etag", etag,
                "--expect-bytes", str(len(wire)), "--expect-sha256", selected["sha256"],
@@ -289,7 +291,7 @@ def recover_projection(command, manifest, wire, directory, controls):
             requests.append(request.get_header("Range"))
             headers = Message()
             headers["Content-Range"] = f"bytes {span}/{len(wire)}"
-            headers["Content-Length"] = str(suffix_bytes)
+            headers["Content-Length"] = str(range_bytes)
             headers["ETag"] = etag
             return urllib.response.addinfourl(io.BytesIO(body), headers, url, 206)
 
@@ -298,36 +300,40 @@ def recover_projection(command, manifest, wire, directory, controls):
         assert requests == [f"bytes={span}"]
         return code, json.loads(diagnostic.getvalue()), raw_range.getvalue()
 
-    code, recovered, suffix = recover(wire[offset:])
+    code, recovered, fragment = recover(wire[offset:end])
     assert code == 0 and recovered["status"] == "SELECTED_MANIFEST_RANGE_MATCHED"
     assert recovered["manifest"] == byte_pin(manifest) and recovered["selection"] == selected
-    assert recovered["range"] == {**byte_pin(suffix), "first_chunk": first, "offset": offset,
-                                  "chunk_count": 2, "chunks": chunks[first:]}
-    assert suffix == wire[offset:] and recovered["response_body_eof_observed"]
+    assert recovered["range"] == {**byte_pin(fragment), "first_chunk": first, "offset": offset,
+                                  "chunk_count": 2, "chunks": chunks[first:first + 2]}
+    assert fragment == wire[offset:end] and recovered["response_body_eof_observed"]
 
     directory.mkdir()
-    prefix_path = directory / "prefix.raw"
+    retained_path = directory / "retained.raw"
     plan_path = directory / "fragment-plan.json"
-    prefix_path.write_bytes(wire[:offset])
+    retained = wire[:offset] + bytes(range_bytes) + wire[end:]
+    retained_path.write_bytes(retained)
     plan_path.write_bytes(encoded({"format": "zenon-r1-retained-fragments/v2", "fragments": [
-        {"path": str(prefix_path), "bytes": offset}, {"path": None, "bytes": suffix_bytes},
+        {"path": str(retained_path), "offset": 0, "bytes": offset},
+        {"path": None, "bytes": range_bytes},
+        {"path": str(retained_path), "offset": end, "bytes": len(wire) - end},
     ]}))
     selected_command = command + ["--transport-fragment-plan", str(plan_path)]
-    raw, projection = invoke(selected_command, 0, manifest + suffix)
+    raw, projection = invoke(selected_command, 0, manifest + fragment)
     assert projection["status"] == "SELECTED_CANDIDATE_PROJECTION_MATCHED"
 
-    code, incomplete, partial = recover(wire[offset:-1])
+    code, incomplete, partial = recover(wire[offset:end - 1])
     assert (code, incomplete["status"], incomplete["reason"]) == (2, "UNKNOWN", "stream_truncated")
-    assert partial == wire[offset:-1] and len(partial) < suffix_bytes
+    assert partial == wire[offset:end - 1] and len(partial) < range_bytes
     _, refusal = invoke(selected_command, 2, manifest + partial)
     assert refusal["status"] == "UNKNOWN" and refusal["reason"] == "transport_fragment_truncated"
     assert refusal["stream_inventory"] is None and "candidate_projection" not in refusal
-    assert set(directory.iterdir()) == {prefix_path, plan_path}
-    assert file_pin(prefix_path, offset) == byte_pin(wire[:offset])
+    assert set(directory.iterdir()) == {retained_path, plan_path}
+    assert file_pin(retained_path, len(retained)) == byte_pin(retained)
     controls.append({"name": "incomplete_recovered_fragment_refuses_projection", "exit": 2,
                      "error": {"stage": "fragment_recount", "category": refusal["reason"]}})
-    return raw, {"conditional_requests": 1, "retrieved_range": byte_pin(suffix),
-                 "retained_prefix": byte_pin(wire[:offset]), "chunks_checked": len(chunks),
+    return raw, {"conditional_requests": 1, "retrieved_range": byte_pin(fragment),
+                 "retained_prefix": byte_pin(wire[:offset]), "retained_suffix": byte_pin(wire[end:]),
+                 "retained_file_ranges": 2, "retained_range_copy_files": 0, "chunks_checked": len(chunks),
                  "recovered_range_files": 0, "joined_payload_files": 0,
                  "controlled_https_response": True, "live_https_peer_qualified": False}
 

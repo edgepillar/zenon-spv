@@ -275,6 +275,13 @@ and trust scope. A successful recount requires the complete ordered bytes,
 including any missing ranges recovered before this step. No joined ledger
 file is created.
 
+Both plan versions accept an explicit byte `offset` on a local file entry.
+Use it with the selected `bytes` to read a range from a larger retained
+file. Several entries can select different ranges of that same file. The
+tool checks the requested span against the file length and checks file
+identity again after reading it. The manifest digests cover the selected
+bytes in the order given by the plan.
+
 ### Stream one recovered range into the recount
 
 Use `zenon-r1-retained-fragments/v2` when one missing fragment arrives
@@ -286,8 +293,9 @@ length. Each other entry selects a retained local file.
 {
   "format": "zenon-r1-retained-fragments/v2",
   "fragments": [
-    {"path": "/absolute/path/to/retained-prefix.raw", "bytes": 11264},
-    {"path": null, "bytes": 3632}
+    {"path": "/absolute/path/to/retained.raw", "offset": 0, "bytes": 11264},
+    {"path": null, "bytes": 3632},
+    {"path": "/absolute/path/to/retained.raw", "offset": 14896, "bytes": 4096}
   ]
 }
 ```

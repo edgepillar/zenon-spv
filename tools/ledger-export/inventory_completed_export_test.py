@@ -595,6 +595,64 @@ class CompletedExport(unittest.TestCase):
                 self.assertEqual({p.name: p.read_bytes() for p in root.iterdir()}, before)
                 self.assertNotIn(f"fragment-{index}", before)
 
+    def test_retained_ranges_reuse_one_backing_file_with_and_without_a_stream(self):
+        receipt, args, manifest, wire = projection_fixture()
+        args += projection_options()
+        code, framed = self.invoke(receipt, args, io.BytesIO(manifest + wire),
+                                   format_name=PROGRAM.PROJECTION_FORMAT)
+        self.assertEqual(code, 0)
+        parts = (wire[:5], wire[5:101], wire[101:])
+        for streamed in (False, True):
+            with self.subTest(streamed=streamed), tempfile.TemporaryDirectory(prefix="snapshot-ranges-") as scratch:
+                root = Path(scratch).resolve()
+                retained, plan = root / "retained.raw", root / "plan.json"
+                fragments = []
+                with retained.open("xb") as backing:
+                    backing.write(b"unselected")
+                    for index, part in enumerate(parts):
+                        if streamed and index == 1:
+                            fragments.append({"path": None, "bytes": len(part)})
+                            backing.write(bytes(len(part)))
+                        else:
+                            fragments.append({"path": str(retained), "offset": backing.tell(), "bytes": len(part)})
+                            backing.write(part)
+                        backing.write(b"unselected")
+                format_name = PROGRAM.STREAMED_FRAGMENT_PLAN_FORMAT if streamed else PROGRAM.FRAGMENT_PLAN_FORMAT
+                plan.write_text(json.dumps({"format": format_name, "fragments": fragments}), encoding="utf-8")
+                before = retained.read_bytes()
+                code, result = self.invoke(receipt, args + [PROGRAM.FRAGMENT_PLAN_OPTION, str(plan)],
+                                           io.BytesIO(manifest + (parts[1] if streamed else b"")),
+                                           format_name=PROGRAM.PROJECTION_FORMAT)
+                self.assertEqual((code, result), (0, framed))
+                self.assertEqual(set(root.iterdir()), {retained, plan})
+                self.assertEqual(retained.read_bytes(), before)
+
+    def test_retained_range_offset_is_bounded_before_the_file_is_opened(self):
+        receipt, args, manifest, wire = projection_fixture()
+        with tempfile.TemporaryDirectory(prefix="snapshot-ranges-") as scratch:
+            root = Path(scratch).resolve()
+            retained, plan = root / "retained.raw", root / "plan.json"
+            retained.write_bytes(wire)
+            args += [PROGRAM.FRAGMENT_PLAN_OPTION, str(plan)]
+            cases = ((-1, "fragment_plan"), (0.25, "fragment_plan"), (True, "fragment_plan_range"),
+                     (None, "fragment_plan_range"), (PROGRAM.TRANSPORT.HARD_LIMITS["bytes"], "fragment_plan_range"))
+            for value, expected in cases:
+                with self.subTest(offset=value):
+                    selected = {"format": PROGRAM.FRAGMENT_PLAN_FORMAT, "fragments": [
+                        {"path": str(retained), "offset": value, "bytes": len(wire)}]}
+                    plan.write_text(json.dumps(selected), encoding="utf-8")
+                    code, result = self.invoke(receipt, args, NoRead())
+                    self.assertEqual((code, result["reason"]), (2, "transport_" + expected))
+            selected["fragments"][0]["offset"] = 1
+            plan.write_text(json.dumps(selected), encoding="utf-8")
+            code, result = self.invoke(receipt, args, io.BytesIO(manifest))
+            self.assertEqual((code, result["reason"]), (2, "transport_fragment_file_range"))
+            selected["format"] = PROGRAM.STREAMED_FRAGMENT_PLAN_FORMAT
+            selected["fragments"][0]["path"] = None
+            plan.write_text(json.dumps(selected), encoding="utf-8")
+            code, result = self.invoke(receipt, args, NoRead())
+            self.assertEqual((code, result["reason"]), (2, "transport_fragment_plan_range"))
+
     def test_streamed_fragment_requires_complete_exact_bytes_and_eof(self):
         receipt, args, manifest, wire = projection_fixture()
         args += projection_options()
@@ -719,19 +777,20 @@ class CompletedExport(unittest.TestCase):
                             PROGRAM.file_identity(opened, windows_cross_check=True))
 
     def test_fragment_growth_after_open_cannot_complete_the_stream(self):
-        with tempfile.TemporaryDirectory(prefix="snapshot-fragments-") as scratch:
-            path = Path(scratch).resolve() / "part"
-            path.write_bytes(b"abc")
-            framed = PROGRAM.FramedFragments(io.BytesIO(b""), 0, [(path, 3)])
-            try:
-                self.assertEqual(framed.read(1), b"a")
-                with path.open("ab") as changed:
-                    changed.write(b"d")
-                with self.assertRaisesRegex(PROGRAM.TRANSPORT.Refused, "fragment_trailing_bytes|fragment_file_changed"):
-                    framed.read(2)
-            finally:
-                framed.close()
-            self.assertIsNone(framed.current)
+        for offset, raw in ((None, b"abc"), (1, b"_abc_")):
+            with self.subTest(offset=offset), tempfile.TemporaryDirectory(prefix="snapshot-fragments-") as scratch:
+                path = Path(scratch).resolve() / "part"
+                path.write_bytes(raw)
+                framed = PROGRAM.FramedFragments(io.BytesIO(b""), 0, [(path, 3, offset)])
+                try:
+                    self.assertEqual(framed.read(1), b"a")
+                    with path.open("ab") as changed:
+                        changed.write(b"d")
+                    with self.assertRaisesRegex(PROGRAM.TRANSPORT.Refused, "fragment_trailing_bytes|fragment_file_changed"):
+                        framed.read(2)
+                finally:
+                    framed.close()
+                self.assertIsNone(framed.current)
 
     @staticmethod
     def fragment_inputs(root, payloads, *, streamed=None):
