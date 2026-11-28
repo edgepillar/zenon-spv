@@ -49,13 +49,51 @@ func (e *evidenceDecoder) segment(d *json.Decoder, segment *AccountSegment) erro
 	return d.Decode(&wire)
 }
 
-func (e *evidenceDecoder) commitment(d *json.Decoder, commitment *CommitmentEvidence) error {
+// commitments reads element spans from a syntax-checked bundle. Check the row
+// limit before decoding the next value and publish the slice only on success.
+func (e *evidenceDecoder) commitments(cursor *bundleValueCursor, target *[]CommitmentEvidence) error {
+	rows := bundleRows[CommitmentEvidence]{target: target, field: "commitments", limit: e.limits.MaxCommitments}
+	if cursor.raw[cursor.at] != '[' {
+		// Preserve the ordinary token handling for null and non-array values.
+		start := cursor.at
+		cursor.value()
+		return rows.UnmarshalJSON(cursor.raw[start:cursor.at])
+	}
+	cursor.at++
+	cursor.space()
+	decoded := make([]CommitmentEvidence, 0)
+	for cursor.raw[cursor.at] != ']' {
+		if err := rows.checkRowLimit(len(decoded)); err != nil {
+			return err
+		}
+		// After a comma, include the spaces before the next row, as
+		// json.Decoder.Decode does for its type-error offsets.
+		start := cursor.at
+		cursor.space()
+		cursor.value()
+		raw := cursor.raw[start:cursor.at]
+		decoded = append(decoded, CommitmentEvidence{})
+		if err := e.decodeCommitment(func(target any) error { return json.Unmarshal(raw, target) }, &decoded[len(decoded)-1]); err != nil {
+			return err
+		}
+		cursor.space()
+		if cursor.raw[cursor.at] == ']' {
+			break
+		}
+		cursor.at++ // Comma, checked by complete-document validation.
+	}
+	cursor.at++ // Closing bracket.
+	*target = decoded
+	return nil
+}
+
+func (e *evidenceDecoder) decodeCommitment(decode func(any) error, commitment *CommitmentEvidence) error {
 	type plain CommitmentEvidence
 	wire := struct {
 		*plain
 		Flat flatEvidenceJSON `json:"flat"`
 	}{plain: (*plain)(commitment), Flat: flatEvidenceJSON{target: &commitment.Flat, decoder: e, fromDecoder: true}}
-	return d.Decode(&wire)
+	return decode(&wire)
 }
 
 func (e *evidenceDecoder) stateProof(d *json.Decoder, proof *StateValueProof) error {

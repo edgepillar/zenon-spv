@@ -13,6 +13,12 @@ import (
 	"github.com/0x3639/zenon-spv/internal/chain"
 )
 
+// The reference path uses the standard streaming decoder for each row with
+// the same field bindings and budgets as the value-span reader.
+func (e *evidenceDecoder) commitment(d *json.Decoder, commitment *CommitmentEvidence) error {
+	return e.decodeCommitment(d.Decode, commitment)
+}
+
 // Exact top-level decoder body from 1535fe57199295e13e64c007629abfa24b0d3328,
 // with only its receiver signature adapted. Nested decoders stay shared so this
 // reference isolates the replaced top-level buffering and binding behavior.
@@ -137,6 +143,12 @@ func TestBundleFieldSpansMatchBufferedDecoder(t *testing.T) {
 		`{"version":-1}`, `{"version":1,"chain_id":18446744073709551616}`,
 		`{"version":1,"claimed_genesis":"bad"}`, `{"version":1,"headers":false}`,
 		`{"version":1,"commitments":[{"flat":1}]}`,
+		`{"version":1,"commitments":1e1000}`,
+		`{"version":1,"commitments":[  "wrong",null]}`,
+		`{"version":1,"commitments":[null ,` + "\n\t " + `{"height":"wrong"}],"headers":[]}`,
+		`{"version":1,"commitment\u017f":[{"height":1,"extension":{"text":"\"},]"}}, {"height":2}],"segments":[]}`,
+		`{"version":1,"commitments":[{}],"COMMITMENTS":null}`,
+		`{"version":1,"commitments":[{"flat":{"sorted_headers":[{},false]}}]}`,
 		`{"version":1,"extension":[1,]}`, `{"version":1} {}`, `{"version":1,"extension":"unterminated}`,
 		`{"extension":` + strings.Repeat("[", 10001) + `0` + strings.Repeat("]", 10001) + `,"version":1}`,
 		"{\"\xff\":1,\"version\":1}",

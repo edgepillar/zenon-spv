@@ -39,19 +39,27 @@ func (b *HeaderBundle) unmarshalJSON(raw []byte, limits DecodeLimits) error {
 func (b *HeaderBundle) unmarshalValidatedJSON(raw []byte, limits DecodeLimits) error {
 	var decoded HeaderBundle
 	evidence := newEvidenceDecoder(limits)
-	// Each array span has already passed whole-document validation. Pass it
-	// directly to its bounded reader so json.Unmarshal does not scan it again.
+	// The document has already passed syntax validation. Ordinary fields
+	// borrow a complete value span and the commitment reader walks its array
+	// directly so the individual proofs need no streaming input buffer.
+	decodeSpan := func(decode func([]byte) error) func(*bundleValueCursor) error {
+		return func(cursor *bundleValueCursor) error {
+			start := cursor.at
+			cursor.value()
+			return decode(cursor.raw[start:cursor.at])
+		}
+	}
 	fields := []struct {
 		name   string
-		decode func([]byte) error
+		decode func(*bundleValueCursor) error
 	}{
-		{"version", func(value []byte) error { return json.Unmarshal(value, &decoded.Version) }},
-		{"chain_id", func(value []byte) error { return json.Unmarshal(value, &decoded.ChainID) }},
-		{"claimed_genesis", func(value []byte) error { return json.Unmarshal(value, &decoded.ClaimedGenesis) }},
-		{"headers", (&bundleRows[chain.Header]{target: &decoded.Headers, field: "headers", limit: limits.MaxHeaders}).UnmarshalJSON},
-		{"commitments", (&bundleRows[CommitmentEvidence]{target: &decoded.Commitments, field: "commitments", limit: limits.MaxCommitments, decode: evidence.commitment}).UnmarshalJSON},
-		{"segments", (&bundleRows[AccountSegment]{target: &decoded.Segments, field: "segments", limit: limits.MaxSegments, decode: evidence.segment}).UnmarshalJSON},
-		{"state_value_proofs", (&bundleRows[StateValueProof]{target: &decoded.StateValueProofs, field: "state_value_proofs", limit: limits.MaxStateValueProofs, decode: evidence.stateProof}).UnmarshalJSON},
+		{"version", decodeSpan(func(value []byte) error { return json.Unmarshal(value, &decoded.Version) })},
+		{"chain_id", decodeSpan(func(value []byte) error { return json.Unmarshal(value, &decoded.ChainID) })},
+		{"claimed_genesis", decodeSpan(func(value []byte) error { return json.Unmarshal(value, &decoded.ClaimedGenesis) })},
+		{"headers", decodeSpan((&bundleRows[chain.Header]{target: &decoded.Headers, field: "headers", limit: limits.MaxHeaders}).UnmarshalJSON)},
+		{"commitments", func(cursor *bundleValueCursor) error { return evidence.commitments(cursor, &decoded.Commitments) }},
+		{"segments", decodeSpan((&bundleRows[AccountSegment]{target: &decoded.Segments, field: "segments", limit: limits.MaxSegments, decode: evidence.segment}).UnmarshalJSON)},
+		{"state_value_proofs", decodeSpan((&bundleRows[StateValueProof]{target: &decoded.StateValueProofs, field: "state_value_proofs", limit: limits.MaxStateValueProofs, decode: evidence.stateProof}).UnmarshalJSON)},
 	}
 	cursor := bundleValueCursor{raw: raw}
 	cursor.space()
@@ -74,9 +82,7 @@ func (b *HeaderBundle) unmarshalValidatedJSON(raw []byte, limits DecodeLimits) e
 		cursor.space()
 		cursor.at++ // Colon; complete-document validation has checked the grammar.
 		cursor.space()
-		start = cursor.at
-		cursor.value()
-		var decode func([]byte) error
+		var decode func(*bundleValueCursor) error
 		for i, field := range fields {
 			// Preserve Unicode aliases as well as ASCII case matching.
 			if !strings.EqualFold(name, field.name) {
@@ -89,10 +95,10 @@ func (b *HeaderBundle) unmarshalValidatedJSON(raw []byte, limits DecodeLimits) e
 			decode = field.decode
 			break
 		}
-		if decode != nil {
-			if err := decode(raw[start:cursor.at]); err != nil {
-				return err
-			}
+		if decode == nil {
+			cursor.value()
+		} else if err := decode(&cursor); err != nil {
+			return err
 		}
 		cursor.space()
 		if cursor.raw[cursor.at] == '}' {
