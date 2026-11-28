@@ -16,7 +16,7 @@ import (
 // The reference path uses the standard streaming decoder for each row with
 // the same field bindings and budgets as the value-span reader.
 func (e *evidenceDecoder) commitment(d *json.Decoder, commitment *CommitmentEvidence) error {
-	return e.decodeCommitment(d.Decode, commitment)
+	return e.decodeCommitment(d.Decode, commitment, nil, nil)
 }
 
 // Exact top-level decoder body from 1535fe57199295e13e64c007629abfa24b0d3328,
@@ -184,6 +184,89 @@ func TestBundleFieldSpansMatchBufferedDecoder(t *testing.T) {
 	} {
 		compareBundleFieldDecoders(t, []byte(tc.raw), tc.limits)
 	}
+}
+
+func TestRepeatedFlatProofObjects(t *testing.T) {
+	headers := []chain.AccountHeader{
+		{Height: 1, Hash: chain.Hash{1}},
+		{Height: 2, Hash: chain.Hash{2}},
+	}
+	first := &FlatContentEvidence{SortedHeaders: headers}
+	different := &FlatContentEvidence{SortedHeaders: append([]chain.AccountHeader(nil), headers...)}
+	different.SortedHeaders[1].Hash[0] = 3
+	bundle := HeaderBundle{Version: WireVersion, Commitments: []CommitmentEvidence{
+		{Height: 6, Target: headers[0], Flat: first},
+		{Height: 6, Target: headers[1], Flat: first},
+		{Height: 7, Target: headers[0], Flat: different},
+		{Height: 7, Target: different.SortedHeaders[1], Flat: different},
+		{Height: 6, Target: headers[1], Flat: first},
+	}}
+	raw, err := json.Marshal(bundle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	canonical, err := json.Marshal(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	limits := DecodeLimits{MaxFlatEvidenceMembers: 2, MaxTotalFlatEvidenceMembers: 10}
+	t.Run("independent_rows", func(t *testing.T) {
+		compareBundleFieldDecoders(t, raw, limits)
+		input := bytes.Clone(raw)
+		got, err := unmarshalHeaderBundleJSON(input, limits)
+		if err != nil || !reflect.DeepEqual(got, bundle) {
+			t.Fatal("repeated objects changed projected commitments", err)
+		}
+		got.Commitments[1].Flat.SortedHeaders[0].Height = 99
+		got.Commitments[3].Flat.SortedHeaders[1].Hash[0] = 99
+		for _, i := range []int{0, 2, 4} {
+			if !reflect.DeepEqual(got.Commitments[i], bundle.Commitments[i]) {
+				t.Fatal("a changed row affected another commitment", i)
+			}
+		}
+		if !bytes.Equal(input, raw) {
+			t.Fatal("decoding or modifying a result rewrote the input")
+		}
+	})
+	t.Run("count_allowances", func(t *testing.T) {
+		for _, selected := range []struct {
+			limits DecodeLimits
+			field  string
+			limit  int
+		}{
+			{DecodeLimits{MaxFlatEvidenceMembers: 1, MaxTotalFlatEvidenceMembers: 1}, "commitments.flat.sorted_headers", 1},
+			{DecodeLimits{MaxFlatEvidenceMembers: 2, MaxTotalFlatEvidenceMembers: 3}, "total_flat_evidence_members", 3},
+			{DecodeLimits{MaxFlatEvidenceMembers: 2, MaxTotalFlatEvidenceMembers: 9}, "total_flat_evidence_members", 9},
+		} {
+			compareBundleFieldDecoders(t, raw, selected.limits)
+			got, err := unmarshalHeaderBundleJSON(raw, selected.limits)
+			var refusal *BundleCountLimitError
+			if !errors.As(err, &refusal) || refusal.Field != selected.field || refusal.Limit != selected.limit ||
+				!reflect.DeepEqual(got, HeaderBundle{}) {
+				t.Fatal("repeated objects changed the count refusal", err)
+			}
+		}
+	})
+	t.Run("replacement_fields", func(t *testing.T) {
+		wire := fmt.Appendf(nil, `{"version":1,"commitments":[{"flat":%s},{"flat":%s,"FLAT":null},{"flat":%s}]}`,
+			canonical, canonical, canonical)
+		compareBundleFieldDecoders(t, wire, DecodeLimits{MaxFlatEvidenceMembers: 2, MaxTotalFlatEvidenceMembers: 6})
+		compareBundleFieldDecoders(t, wire, DecodeLimits{MaxFlatEvidenceMembers: 2, MaxTotalFlatEvidenceMembers: 5})
+	})
+	t.Run("stable_document_span", func(t *testing.T) {
+		input := bytes.Clone(canonical)
+		e := newEvidenceDecoder(DecodeLimits{})
+		var previous flatDecodeRecord
+		var flat *FlatContentEvidence
+		decoder := flatEvidenceJSON{target: &flat, decoder: &e, fromDecoder: true, previous: &previous, stableInput: raw}
+		if err := json.Unmarshal(input, &decoder); err != nil {
+			t.Fatal(err)
+		}
+		input[0] = ' '
+		if !bytes.Equal(previous.wire, canonical) || !reflect.DeepEqual(previous.headers, headers) {
+			t.Fatal("decode record retained the callback input buffer")
+		}
+	})
 }
 
 func FuzzBundleFieldSpans(f *testing.F) {

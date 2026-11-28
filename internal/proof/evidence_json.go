@@ -62,6 +62,7 @@ func (e *evidenceDecoder) commitments(cursor *bundleValueCursor, target *[]Commi
 	cursor.at++
 	cursor.space()
 	decoded := make([]CommitmentEvidence, 0)
+	var previous flatDecodeRecord
 	for cursor.raw[cursor.at] != ']' {
 		if err := rows.checkRowLimit(len(decoded)); err != nil {
 			return err
@@ -72,11 +73,16 @@ func (e *evidenceDecoder) commitments(cursor *bundleValueCursor, target *[]Commi
 		cursor.space()
 		cursor.value()
 		raw := cursor.raw[start:cursor.at]
+		cursor.space()
+		var stableInput []byte
+		if cursor.raw[cursor.at] != ']' {
+			stableInput = raw
+		}
 		decoded = append(decoded, CommitmentEvidence{})
-		if err := e.decodeCommitment(func(target any) error { return json.Unmarshal(raw, target) }, &decoded[len(decoded)-1]); err != nil {
+		if err := e.decodeCommitment(func(target any) error { return json.Unmarshal(raw, target) },
+			&decoded[len(decoded)-1], &previous, stableInput); err != nil {
 			return err
 		}
-		cursor.space()
 		if cursor.raw[cursor.at] == ']' {
 			break
 		}
@@ -87,12 +93,14 @@ func (e *evidenceDecoder) commitments(cursor *bundleValueCursor, target *[]Commi
 	return nil
 }
 
-func (e *evidenceDecoder) decodeCommitment(decode func(any) error, commitment *CommitmentEvidence) error {
+func (e *evidenceDecoder) decodeCommitment(decode func(any) error, commitment *CommitmentEvidence, previous *flatDecodeRecord, stableInput []byte) error {
 	type plain CommitmentEvidence
 	wire := struct {
 		*plain
 		Flat flatEvidenceJSON `json:"flat"`
-	}{plain: (*plain)(commitment), Flat: flatEvidenceJSON{target: &commitment.Flat, decoder: e, fromDecoder: true}}
+	}{plain: (*plain)(commitment), Flat: flatEvidenceJSON{
+		target: &commitment.Flat, decoder: e, fromDecoder: true, previous: previous, stableInput: stableInput,
+	}}
 	return decode(&wire)
 }
 
@@ -118,18 +126,50 @@ type flatEvidenceJSON struct {
 	target      **FlatContentEvidence
 	decoder     *evidenceDecoder
 	fromDecoder bool // A complete value has passed encoding/json's syntax check.
+	previous    *flatDecodeRecord
+	stableInput []byte // Space-inclusive commitment span in the bounded document.
+}
+
+// flatDecodeRecord keeps a single successfully decoded canonical flat object
+// for the lifetime of the commitment array. Its rows are private until the
+// complete bundle is published and each result receives independent storage.
+type flatDecodeRecord struct {
+	wire    []byte
+	headers []chain.AccountHeader
+}
+
+func (previous flatDecodeRecord) copyHeaders(raw []byte, limit int, budget *rowBudget) []chain.AccountHeader {
+	count := len(previous.headers)
+	if count == 0 || limit > 0 && count > limit ||
+		budget != nil && count > budget.remaining || !bytes.Equal(raw, previous.wire) {
+		return nil
+	}
+	headers := make([]chain.AccountHeader, count)
+	copy(headers, previous.headers)
+	if budget != nil {
+		budget.remaining -= count
+	}
+	return headers
 }
 
 func (flat *flatEvidenceJSON) UnmarshalJSON(raw []byte) error {
-	if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
-		*flat.target = nil
-		return nil
-	}
 	var decoded FlatContentEvidence
 	if *flat.target != nil {
 		// Repeated objects retain omitted fields under encoding/json's legacy
 		// merge rules. Repeated arrays still consume the shared row budget.
 		decoded = **flat.target
+	}
+	if flat.previous != nil {
+		if headers := flat.previous.copyHeaders(raw, flat.decoder.limits.MaxFlatEvidenceMembers, flat.decoder.flat); headers != nil {
+			decoded.SortedHeaders = headers
+			*flat.target = &decoded
+			return nil
+		}
+		*flat.previous = flatDecodeRecord{}
+	}
+	if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+		*flat.target = nil
+		return nil
 	}
 	wire := struct {
 		Headers bundleRows[chain.AccountHeader] `json:"sorted_headers"`
@@ -158,6 +198,13 @@ func (flat *flatEvidenceJSON) UnmarshalJSON(raw []byte) error {
 	}
 	if err != nil {
 		return err
+	}
+	if array != nil && flat.previous != nil && len(decoded.SortedHeaders) > 0 {
+		// Locate these bytes in the stable bundle span. The JSON callback
+		// may supply temporary storage for raw.
+		if start := bytes.Index(flat.stableInput, raw); start >= 0 {
+			*flat.previous = flatDecodeRecord{flat.stableInput[start : start+len(raw)], decoded.SortedHeaders}
+		}
 	}
 	*flat.target = &decoded
 	return nil

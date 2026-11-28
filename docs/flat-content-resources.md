@@ -101,6 +101,28 @@ and 63.68 and 63.35 ms with JSON validation. Allocation counts and bytes
 matched in each workload. These timings cover decoding of controlled
 arrays with fixture construction outside the timer.
 
+Within a validated commitment array, the decoder can copy the rows of the
+previous canonical flat object when the next object's bytes match exactly.
+It compares a span of the original document and gives each commitment its
+own backing slice. Each occurrence consumes its complete row allowance.
+When an allowance is insufficient, the ordinary decoder reaches the same
+row-limit refusal. The existing tests exercise all repeated-wire cases and
+the compiled retained-only queries.
+
+Four paired darwin/arm64 trials at `-cpu=1` with Go 1.25.14 measured median
+structural decode times against `2d1511e`. Both revisions decoded the same
+fixture and the timing includes full JSON syntax validation. Fixture
+construction was outside the timer.
+
+| Members per proof | Proofs | Baseline ms/op | Updated ms/op |
+| ---: | ---: | ---: | ---: |
+| 1,000 | 1 | 1.27 | 1.27 |
+| 1,000 | 16 | 20.69 | 17.95 |
+| 100,000 | 4 | 508.32 | 464.58 |
+
+The 100,000-member workload allocated about 25.63 MB per operation in both
+revisions. Each decoded list occupies separate storage.
+
 `BenchmarkFlatContent` supplies two operations for each row:
 
 - `Verify`: preflight and verify the already-decoded batch, including checks of
