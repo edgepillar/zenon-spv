@@ -54,7 +54,7 @@ func (e *evidenceDecoder) commitment(d *json.Decoder, commitment *CommitmentEvid
 	wire := struct {
 		*plain
 		Flat flatEvidenceJSON `json:"flat"`
-	}{plain: (*plain)(commitment), Flat: flatEvidenceJSON{target: &commitment.Flat, decoder: e}}
+	}{plain: (*plain)(commitment), Flat: flatEvidenceJSON{target: &commitment.Flat, decoder: e, fromDecoder: true}}
 	return d.Decode(&wire)
 }
 
@@ -77,8 +77,9 @@ func (e *evidenceDecoder) stateProof(d *json.Decoder, proof *StateValueProof) er
 }
 
 type flatEvidenceJSON struct {
-	target  **FlatContentEvidence
-	decoder *evidenceDecoder
+	target      **FlatContentEvidence
+	decoder     *evidenceDecoder
+	fromDecoder bool // A complete value has passed encoding/json's syntax check.
 }
 
 func (flat *flatEvidenceJSON) UnmarshalJSON(raw []byte) error {
@@ -98,11 +99,48 @@ func (flat *flatEvidenceJSON) UnmarshalJSON(raw []byte) error {
 		field: "commitments.flat.sorted_headers", limit: flat.decoder.limits.MaxFlatEvidenceMembers, budget: flat.decoder.flat,
 		capacityHint: flatRowsCapacityHint, decodeValidated: decodeFlatAccountHeaderRows,
 	}}
-	if err := json.Unmarshal(raw, &wire); err != nil {
+	var array []byte
+	if flat.fromDecoder {
+		array = singleFlatHeaderArray(raw)
+	}
+	var err error
+	if array != nil {
+		err = wire.Headers.UnmarshalJSON(array)
+		if typeErr, ok := err.(*json.UnmarshalTypeError); ok {
+			// Preserve the field context the anonymous wire struct supplies.
+			field := "sorted_headers"
+			if typeErr.Field != "" {
+				field += "." + typeErr.Field
+			}
+			typeErr.Struct = ""
+			typeErr.Field = field
+		}
+	} else {
+		err = json.Unmarshal(raw, &wire)
+	}
+	if err != nil {
 		return err
 	}
 	*flat.target = &decoded
 	return nil
+}
+
+// singleFlatHeaderArray borrows the array in a syntax-checked object with
+// exactly one canonical field. The ordinary decoder handles other layouts,
+// including aliases and repeated fields that share the decode-wide budget.
+func singleFlatHeaderArray(raw []byte) []byte {
+	const prefix = `{"sorted_headers":`
+	if !bytes.HasPrefix(raw, []byte(prefix+"[")) {
+		return nil
+	}
+	cursor := bundleValueCursor{raw: raw, at: len(prefix)}
+	cursor.value()
+	end := cursor.at
+	cursor.space()
+	if cursor.at != len(raw)-1 || raw[cursor.at] != '}' {
+		return nil
+	}
+	return raw[len(prefix):end]
 }
 
 const compactFlatAddressPrefix = `{"address":"`

@@ -275,7 +275,7 @@ func compareFlatCapacityEvidence(t testing.TB, raw []byte, limit, total int, dir
 		before, _ := json.Marshal(seed)
 		got := &seed
 		e := newEvidenceDecoder(DecodeLimits{MaxFlatEvidenceMembers: limit, MaxTotalFlatEvidenceMembers: total})
-		current := flatEvidenceJSON{target: &got, decoder: &e}
+		current := flatEvidenceJSON{target: &got, decoder: &e, fromDecoder: !direct}
 		var target json.Unmarshaler = &current
 		if mode == 1 {
 			old := growingFlatEvidenceJSONReference(current)
@@ -296,17 +296,23 @@ func compareFlatCapacityEvidence(t testing.TB, raw []byte, limit, total int, dir
 		results[mode] = result{got, err, bundleRowRemaining(e.flat)}
 	}
 	if !reflect.DeepEqual(results[0], results[1]) {
-		t.Fatalf("flat merge, concrete error or charged budget differs: current=%+v reference=%+v", results[0], results[1])
+		t.Fatalf("flat merge, concrete error or charged budget differs (direct=%t, array=%d, aggregate=%d, bytes=%d): current=%#v reference=%#v",
+			direct, limit, total, len(raw), results[0].err, results[1].err)
 	}
 }
 
 func TestFlatRowCapacityIntegration(t *testing.T) {
 	cases := []string{
 		"null", "{}", `{"sorted_headers":[]}`,
+		`{"sorted_headers":[null] }`,
+		`{"sorted_headers":[{"extension":"\"}][{}\\"}, null]}`,
+		`{"sorted_headers":[null],"extension":[[],{"text":"[{}]"}]}`,
+		`{"sorted_headers":[null],"sorted_header\u017f":[{},null]}`,
 		`{"SORTED_HEADER\u017f":[null,{}],"sorted_headers":null}`,
 		`{"sorted_headers":[null,null],"SORTED_HEADERS":[null,"PRIVATE_UNREACHED"]}`,
 		`{"sorted_headers":true,"sorted_headers":[]}`,
 		`{"sorted_headers":[{"hash":"bad"},null,null]}`,
+		`{"sorted_headers":[{},{"height":"invalid type"}]}`,
 		`{"sorted_headers":[null,null,null,"PRIVATE_UNREACHED"]}`,
 		`{"unknown":{"brackets":"\\\"[{}],"},"sorted_headers":[{}]}`,
 		`{"sorted_headers":[null],`,

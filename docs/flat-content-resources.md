@@ -268,6 +268,32 @@ allocated bytes were 116,744,360 and 116,744,056, respectively. The observations
 describe this local warm-file workload. The suite also runs the ordinary
 compiled retained-state CLI on all four corpus shapes.
 
+## Reading validated flat evidence arrays
+
+A commitment decoded by the standard JSON decoder can pass its sole canonical
+`sorted_headers` array directly to the bounded row reader. The enclosing
+decoder has checked the complete JSON value. The ordinary object decoder
+handles aliases, repeated fields, additional members, and standalone calls.
+Concrete type errors retain the field context from the ordinary decoder. Both
+paths charge the active per-proof and aggregate limits before decoding an
+excess row.
+
+Six paired darwin/arm64 trials with Go 1.25.14 compared normal load-and-verify
+execution with `eedd601`. The unchanged node-derived corpus determines the
+expected roots and targets. The same two-operation samples run on one CPU
+with warm files.
+
+| Members per proof | Proofs | Input bytes | Baseline median (ms/op) | Candidate median (ms/op) |
+| ---: | ---: | ---: | ---: | ---: |
+| 1,000 | 1 | 142,232 | 2.52 | 1.99 |
+| 100,000 | 1 | 14,389,236 | 202.21 | 155.92 |
+| 100,000 | 4 | 57,556,508 | 792.81 | 592.61 |
+
+The largest case reduced median allocation count from 170 to 146 and
+allocated bytes per operation from 116,744,072 to 116,743,048. These values
+describe the complete local workload including proof loading and verification.
+The separate native CLI control checks all four corpus shapes.
+
 ## Remaining acceptance gates
 
 The large list/batch path can allocate and hold much more memory than its JSON
