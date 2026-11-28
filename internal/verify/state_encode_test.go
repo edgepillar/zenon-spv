@@ -86,6 +86,23 @@ func TestPersistedStateEncodingMatchesWholeObject(t *testing.T) {
 	}
 }
 
+func TestPersistedStateEncodingHeaderRowReuse(t *testing.T) {
+	body := stateEncodingBody(4)
+	oversize := &body.Window[0]
+	oversize.ChainIdentifier, oversize.Height, oversize.TimestampUnix = ^uint64(0), ^uint64(0), ^uint64(0)
+	oversize.PublicKey = bytes.Repeat([]byte{0xff, 0xfe, 0xfd}, 512)
+	oversize.Signature = nil
+	body.Window[1].PublicKey, body.Window[1].Signature = []byte{}, []byte{0xfb}
+	body.Window[2].PublicKey, body.Window[2].Signature = nil, []byte{}
+	var want, got bytes.Buffer
+	if err := wholePersistedStateEncoding(&want, body); err != nil {
+		t.Fatal(err)
+	}
+	if err := encodePersistedState(&got, body); err != nil || !bytes.Equal(got.Bytes(), want.Bytes()) {
+		t.Fatal("growing and reusing a header row changed persisted bytes", err)
+	}
+}
+
 type stateEncodingFailureWriter struct {
 	remaining int
 	err       error

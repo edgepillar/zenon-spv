@@ -3,8 +3,13 @@ package verify
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"io"
+	"strconv"
+
+	"github.com/0x3639/zenon-spv/internal/chain"
 )
 
 // Keep the explicit top-level encoding below synchronized with the persisted
@@ -24,9 +29,10 @@ func (w *stateEncodingWriter) Write(raw []byte) (int, error) {
 }
 
 // encodePersistedState preserves the existing indented JSON bytes while keeping
-// the encoding/json value buffer to one metadata value or retained header. The
-// output buffer amortizes file writes; the existing byte cap applies before any
-// bytes reach the destination. Callers keep the atomic temporary-file protocol.
+// the encoding/json value buffer to one metadata value. Each retained header
+// uses a reusable row buffer. The output buffer amortizes file writes and the
+// byte cap applies before output reaches the destination. Callers keep the
+// atomic temporary-file protocol.
 func encodePersistedState(destination io.Writer, body persistedState) error {
 	bufferBytes := 32 << 10
 	if len(body.Window) < 31 {
@@ -87,11 +93,10 @@ func encodePersistedState(destination io.Writer, body persistedState) error {
 		if err := write("  \"retained_window\": [\n"); err != nil {
 			return err
 		}
+		row := make([]byte, 0, 1024)
 		for i := range body.Window {
-			if err := write("    "); err != nil {
-				return err
-			}
-			if err := emit("    ", &body.Window[i]); err != nil {
+			row = appendPersistedHeader(row[:0], &body.Window[i])
+			if _, err := out.Write(row); err != nil {
 				return err
 			}
 			ending := ",\n"
@@ -113,4 +118,51 @@ func encodePersistedState(destination io.Writer, body persistedState) error {
 		return err
 	}
 	return out.Flush()
+}
+
+// appendPersistedHeader mirrors the field order, indentation and encodings of
+// chain.Header in the persisted JSON. The byte-parity tests use encoding/json
+// as the reference, including the nil and empty forms of key and signature.
+func appendPersistedHeader(dst []byte, header *chain.Header) []byte {
+	dst = append(dst, "    {\n      \"version\": "...)
+	dst = strconv.AppendUint(dst, header.Version, 10)
+	field := func(name string) {
+		dst = append(dst, ",\n      \""...)
+		dst = append(dst, name...)
+		dst = append(dst, "\": "...)
+	}
+	number := func(name string, value uint64) {
+		field(name)
+		dst = strconv.AppendUint(dst, value, 10)
+	}
+	hash := func(name string, value *chain.Hash) {
+		field(name)
+		dst = append(dst, '"')
+		dst = hex.AppendEncode(dst, value[:])
+		dst = append(dst, '"')
+	}
+	binary := func(name string, value []byte) {
+		field(name)
+		if value == nil {
+			dst = append(dst, "null"...)
+			return
+		}
+		dst = append(dst, '"')
+		dst = base64.StdEncoding.AppendEncode(dst, value)
+		dst = append(dst, '"')
+	}
+
+	number("chainIdentifier", header.ChainIdentifier)
+	hash("hash", &header.HeaderHash)
+	hash("previousHash", &header.PreviousHash)
+	number("height", header.Height)
+	number("timestamp", header.TimestampUnix)
+	hash("dataHash", &header.DataHash)
+	hash("contentHash", &header.ContentHash)
+	hash("changesHash", &header.ChangesHash)
+	binary("publicKey", header.PublicKey)
+	binary("signature", header.Signature)
+	number("nextFusionPrice", header.NextFusionPrice)
+	number("nextWorkPrice", header.NextWorkPrice)
+	return append(dst, "\n    }"...)
 }
