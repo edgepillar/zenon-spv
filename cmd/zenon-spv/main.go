@@ -99,7 +99,7 @@ Usage:
   zenon-spv inspect-experimental-batch-config --config <path>
   zenon-spv query-experimental-batch-entry --config <path> --request <path> --expect-header-context <64-hex> --expect-query-context <64-hex> [--compare-gateway] <bundle.json>
   zenon-spv inspect-experimental-batch-context-config --config <path>
-  zenon-spv query-experimental-batch-context --config <path> --request <path> --expect-header-context <64-hex> --expect-query-context <64-hex> [--trusted-state <path> --expect-state-sha256 <64-hex>] [--compare-gateway] <bundle.json>
+  zenon-spv query-experimental-batch-context --config <path> --request <path> --expect-header-context <64-hex> --expect-query-context <64-hex> [--trusted-state <path> --expect-state-sha256 <64-hex>] [--compare-gateway] [--l2-storage-request <path> --l2-proof-result <path>] <bundle.json>
   zenon-spv export-experimental-batch-context-state --config <path> --request <path> --expect-header-context <64-hex> --expect-query-context <64-hex> [--trusted-state <path> --expect-state-sha256 <64-hex>] [--compare-gateway] <bundle.json>
   zenon-spv inspect-experimental-snapshot-root --config <path> --expect-header-context <64-hex> --expect-height <height> --expect-header-hash <64-hex> [--projection-report <path> --expect-projection-sha256 <64-hex>] <momentums.json>
   zenon-spv verify-headers     [--window {low|medium|high}] [--genesis-config <path>] [--state <path>] [--schedule <path>] <bundle.json>

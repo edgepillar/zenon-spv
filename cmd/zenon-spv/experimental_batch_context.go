@@ -19,7 +19,7 @@ import (
 const experimentalContextConfigCommand = "inspect-experimental-batch-context-config"
 const experimentalContextQueryCommand = "query-experimental-batch-context"
 const experimentalContextConfigUsage = "Usage: zenon-spv inspect-experimental-batch-context-config --config <path>\n"
-const experimentalContextQueryUsage = "Usage: zenon-spv query-experimental-batch-context --config <path> --request <path> --expect-header-context <64-hex> --expect-query-context <64-hex> [--trusted-state <path> --expect-state-sha256 <64-hex>] [--compare-gateway] <bundle.json>\n"
+const experimentalContextQueryUsage = "Usage: zenon-spv query-experimental-batch-context --config <path> --request <path> --expect-header-context <64-hex> --expect-query-context <64-hex> [--trusted-state <path> --expect-state-sha256 <64-hex>] [--compare-gateway] [--l2-storage-request <path> --l2-proof-result <path>] <bundle.json>\n"
 
 type experimentalContextCheckpointReport struct {
 	SHA256          string `json:"sha256"`
@@ -42,6 +42,7 @@ type experimentalContextCLIReport struct {
 	StateOutput                   *experimentalContextStateOutput                 `json:"state_output,omitempty"`
 	Result                        *verify.ExperimentalBatchContextResult          `json:"result"`
 	Gateway                       *verify.ExperimentalBatchEntryGatewayComparison `json:"gateway_comparison"`
+	L2Storage                     *experimentalL2StorageReport                    `json:"l2_storage,omitempty"`
 	Persistence                   string                                          `json:"persistence"`
 	RPCRequests                   uint32                                          `json:"rpc_requests"`
 	ProductionStateValueGuarantee bool                                            `json:"production_state_value_guarantee"`
@@ -96,6 +97,11 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 		fs.StringVar(checkpointPath, "trusted-state", "", "explicit trusted local experimental state; never provider-selected")
 		fs.Var(checkpointPin, "expect-state-sha256", "required independently selected SHA-256 of the trusted state bytes")
 	}
+	var l2RequestPath, l2WitnessPath string
+	if command == experimentalContextQueryCommand {
+		fs.StringVar(&l2RequestPath, "l2-storage-request", "", "separately selected L2 storage path or Phase 1 vault balance")
+		fs.StringVar(&l2WitnessPath, "l2-proof-result", "", "recorded Phase 1 result with one storage proof")
+	}
 	selections := registerSelectionGuards(fs)
 	if err := fs.Parse(args); errors.Is(err, flag.ErrHelp) {
 		usage := experimentalContextQueryUsage
@@ -109,6 +115,7 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 		return finish(64, "arguments", "usage")
 	}
 	var selectedHeader, selectedQuery, selectedCheckpoint *chain.Hash
+	var l2Requested bool
 	if !inspect {
 		var err error
 		if selectedHeader, err = parseContextPin(headerPin); err != nil || selectedHeader == nil || selectedHeader.IsZero() {
@@ -118,7 +125,13 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 			return finish(64, "arguments", "usage")
 		}
 		pathSupplied := false
-		fs.Visit(func(f *flag.Flag) { pathSupplied = pathSupplied || f.Name == "trusted-state" })
+		fs.Visit(func(f *flag.Flag) {
+			pathSupplied = pathSupplied || f.Name == "trusted-state"
+			l2Requested = l2Requested || f.Name == "l2-storage-request" || f.Name == "l2-proof-result"
+		})
+		if l2Requested && (l2RequestPath == "" || l2WitnessPath == "") {
+			return finish(64, "arguments", "usage")
+		}
 		if pathSupplied != checkpointPin.supplied || pathSupplied && *checkpointPath == "" {
 			return finish(64, "arguments", "usage")
 		}
@@ -166,6 +179,17 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 	request, err := verify.DecodeExperimentalBatchContextRequest(raw)
 	if err != nil || request.Context != *selectedQuery {
 		return finish(70, "request", "invalid_identity")
+	}
+	var l2Request experimentalL2StorageRequest
+	if l2Requested {
+		raw, err := readExperimentalCLIFile(l2RequestPath, maxExperimentalRequestBytes, openExperimentalCLIFile)
+		if err != nil {
+			return finish(70, "l2_storage_request", "invalid_input")
+		}
+		l2Request, err = decodeExperimentalL2StorageRequest(raw)
+		if err != nil {
+			return finish(70, "l2_storage_request", "invalid_identity")
+		}
 	}
 	state := empty
 	if selectedCheckpoint != nil {
@@ -224,6 +248,26 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 	if err != nil {
 		code, category := experimentalBatchContextQueryError(err)
 		return finish(code, "query", category)
+	}
+	if l2Requested {
+		raw, err := readExperimentalCLIFile(l2WitnessPath, fetch.MaxCandidateZenoStorageResultBytes, openExperimentalCLIFile)
+		if err != nil {
+			return finish(70, "l2_storage_witness", "invalid_input")
+		}
+		storage, err := checkExperimentalL2Storage(result, l2Request, raw)
+		switch {
+		case errors.Is(err, errExperimentalL2StorageProfile):
+			return finish(2, "l2_storage_witness", "unsupported_profile")
+		case errors.Is(err, fetch.ErrCandidateZenoStorageUnavailable):
+			return finish(2, "l2_storage_witness", "unavailable")
+		case errors.Is(err, fetch.ErrCandidateZenoStorageIdentity):
+			return finish(1, "l2_storage_witness", "identity_mismatch")
+		case errors.Is(err, errExperimentalVaultValue):
+			return finish(1, "l2_storage_witness", "invalid_vault_value")
+		case err != nil:
+			return finish(1, "l2_storage_witness", "invalid_witness")
+		}
+		report.L2Storage = &storage
 	}
 	if *compare {
 		comparison := result.CompareGateway(*bundle.Gateway)
@@ -286,13 +330,13 @@ func finishExperimentalBatchContext(report experimentalContextCLIReport, code in
 		report.Status = "error"
 	}
 	if code != 0 {
-		report.Result = nil
+		report.Result, report.L2Storage = nil, nil
 	}
 	raw, err := json.Marshal(report)
 	if err != nil {
 		// In particular, opaque non-UTF-8 ABI strings must not be silently
 		// replaced in JSON. Emit only an error envelope and no partial row.
-		report.Result, report.Error, report.Status, report.ExitCode = nil, &reportError{Stage: "output", Category: "encoding"}, "error", 70
+		report.Result, report.L2Storage, report.Error, report.Status, report.ExitCode = nil, nil, &reportError{Stage: "output", Category: "encoding"}, "error", 70
 		code = 70
 		raw, err = json.Marshal(report)
 		if err != nil {
