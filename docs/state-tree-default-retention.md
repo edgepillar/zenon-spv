@@ -117,6 +117,26 @@ budget, continuous advancing VM workload, complete node, activation observation,
 snapshot import or power-loss recovery in this experiment. These observations
 do not close those remaining M4 gates.
 
+### Portable replay resources
+
+The portable replay selects a separately pinned witness model that stores each
+sparse-tree coordinate as one integer. The leading bit encodes its depth.
+Both recorded workloads reproduced all 32,768 roots, 90 checkpoint proofs and
+the original expectation digest with 130,281 indexed nodes each. The historical
+source checks still bind the original model bytes.
+
+Four paired Python 3.9.6 trials per workload used fresh Darwin arm64 processes.
+The timings cover history reconstruction through the final checkpoint.
+
+| Recorded workload | Median history time | Median process peak RSS |
+| --- | ---: | ---: |
+| Original | 5.04 to 4.44 s | 100.30 to 78.06 MiB |
+| Successor | 5.06 to 4.40 s | 101.85 to 79.85 MiB |
+
+The distinct Python objects referenced by coordinate keys account for
+12,941,524 bytes before the change and 5,697,884 bytes after it in each cohort.
+The native process observations above retain their original scope.
+
 ## Evidence retention and cleanup corrections
 
 Exact input, source, binary, exit, completeness and sample identities are

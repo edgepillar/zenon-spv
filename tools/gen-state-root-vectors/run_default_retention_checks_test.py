@@ -115,6 +115,36 @@ class RetentionJointDriverControls(unittest.TestCase):
         suite = unittest.TestLoader().loadTestsFromModule(module)
         self.assertEqual(suite.countTestCases(), 27)
         self.assertEqual(module.C.expected_from_presealed_witnesses.cache_info().currsize, 0)
+        self.assertEqual(Path(module.C.M.G.F.__file__).name, D.WITNESS_MODEL)
+        self.assertEqual(hashlib.sha256(raw[D.WITNESS_MODEL]).hexdigest(), D.WITNESS_MODEL_PIN[1])
+        self.assertEqual(module.C.source_pins()["source_inputs"]["genesis_witness_model.py"],
+                         "6727c7f820bcc8ffe563a49524aaeba48fcda3234f883efe9f2f484d9239e5a8")
+
+    def test_compact_witness_pin_mismatch_refuses_loading(self):
+        for cohort, pins in (("original", D.PINS), ("successor", D.SUCCESSOR_PINS)):
+            with self.subTest(cohort=cohort), mock.patch.dict(
+                    pins, {D.WITNESS_MODEL: (8 << 10, "0" * 64)}), self.assertRaises(ValueError):
+                D.load_controls(cohort)
+
+    def test_compact_witnesses_match_full_layers_at_path_boundaries(self):
+        model = D.load_controls().C.M.G
+        positions = [0, 1, 1 << 254, 1 << 255, (1 << 256) - 1]
+        paths = [position.to_bytes(32, "big") for position in positions]
+        state = {path: bytes([i]) * 32 for i, path in enumerate(paths)}
+        root, proofs, _ = model.L.model(state, paths)
+        forest = model.F.Forest(root, [
+            {"path": path.hex(), "value": state[path].hex(), "proof": proofs[path].hex()}
+            for path in paths
+        ])
+        self.assertEqual({path: forest.proof(path) for path in paths}, proofs)
+        for path, value in zip(paths, (None, b"", b"\0" * 32, None, b"replacement")):
+            if value is None:
+                del state[path]
+            else:
+                state[path] = value
+            expected_root, expected_proofs, _ = model.L.model(state, paths)
+            self.assertEqual(forest.update(path, value), expected_root)
+            self.assertEqual({p: forest.proof(p) for p in paths}, expected_proofs)
 
     def test_success_preserves_comparison_and_reuses_exact_cache(self):
         f = Fixture()

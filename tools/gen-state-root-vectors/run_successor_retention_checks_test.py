@@ -58,6 +58,7 @@ class SuccessorJointControls(unittest.TestCase):
         module = D.load_controls('successor')
         self.assertEqual(unittest.defaultTestLoader.loadTestsFromModule(module).countTestCases(), 13)
         self.assertEqual(tuple(D.cache_info(module.C.expected_from_presealed_witnesses))[:2], (0, 0))
+        self.assertEqual(Path(module.C.M.M.G.F.__file__).name, D.WITNESS_MODEL)
 
     def test_success_reuses_the_admitted_successor_graph_without_relabeling(self):
         f = fixture(); text, receipt = self.execute(f, 'a' * 40)
