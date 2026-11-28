@@ -269,3 +269,72 @@ seconds, including one Go build. All archived inputs were reused. These are
 single-host fixture measurements. The original runner outcome remains
 `UNKNOWN`. A representative capture, longer recovery and retention,
 excluded-state provenance and production import acceptance remain open.
+
+## Cross the v3 activation boundary and reopen a replacement branch
+
+The same reference-gas node revision, at tree
+`f89d645c7f5be85dfe10dc7a510d80df7965d22f`, replayed two archived chain-69
+branches on an isolated ledger. The five steps each used a fresh node process
+and verified the full height/hash frontier of the ledger and cache after
+`Chain.Init`. All five processes closed their managers successfully.
+[Starting branch archive](https://github.com/edgepillar/zenon-spv/actions/runs/45905746425/artifacts/15158177983) ·
+[Replacement branch archive](https://github.com/edgepillar/zenon-spv/actions/runs/44961621978/artifacts/14730556980)
+
+| Process | Transition | Observed control |
+| --- | --- | --- |
+| Seed | Common genesis → starting v3 H4 | The recorded successors applied through the original verifier. The replay harness checked the full ledger identifier before reading the H3 proofs. |
+| Roll back | Starting H4 → starting v1 H2 | The other branch's H2 hash was refused and the frontier stayed at H4. The exact H2 then rolled back successfully. The discarded H3 and H4 state versions became unavailable. |
+| Reopen legacy and rewind | Starting H2 → common genesis | H2 reopened with its v1 header and zero StateRoot field. The stored H2 state enabled v3 for its next block. At the rewound genesis the spork was inactive. |
+| Replace branch | Common genesis → replacement v3 H3 | The recorded replacement H2 and H3 applied. The ledger identity check rejected the old H3. The node refused the unavailable H4 state version. |
+| Reopen replacement | Replacement H3 → replacement H3 | The exact replacement frontier, guard outcomes and proof bytes persisted across another process restart. |
+
+The starting H3 hash is
+`78e7fd4a5bfe0db1efd311646051e9cc971c79ecf99963b8e033a82daeac3354`.
+The replacement H3 hash is
+`a4ac633fd459766c579326f2a1728ca5d64c9da8e10b1755d80504cd3c31053f`.
+Both headers carry the same StateRoot,
+`36fd7a907707f00939bb4741da5d8f3dd4fdf4200581ebe869b934a8f1981287`.
+Nine independent sparse-proof checks confirmed that the three absence proofs
+were byte-identical at the starting, replacement and reopened H3. The proofs
+were 259 bytes for `BatchEntry`, 323 for `DomainRecord` and 291 for
+`DomainConfig`.
+
+The first probe stopped when the internal StateTree returned a root and proof
+for a different hash at a retained height. Its lookup is height-indexed.
+The successful replay kept that first outcome and checked the full ledger
+identifier before each root or proof read in the harness. The live-node
+recovery path still needs its own qualification.
+
+The compiled macOS verifier then ran six controls against the same recorded
+branches at `W=1`. It used each branch's H2 anchor and producer slots
+reconstructed by the pinned node oracle. The context fingerprints were
+computed independently. The binary came from CI checkout
+`fbd550b75edd7b2733f9edaacb01cef0895f447e` for feature
+`3a5e1c9dad20d48499573015f32451618e11f7bb`.
+[Verifier archive](https://github.com/edgepillar/zenon-spv/actions/runs/46142293662/artifacts/15262893512)
+
+| CLI control | Exit | Result |
+| --- | ---: | --- |
+| Export starting checkpoint with H3–H4 | 0 | Version 4 checkpoint and exact H3 header selection |
+| Reopen the pinned checkpoint in its own context | 0 | Same H3 header and StateRoot |
+| Reopen that checkpoint in the replacement context | 70 | `state_input/invalid_checkpoint` |
+| Select the replacement H3 hash from the starting checkpoint | 1 | `selection/header_hash_mismatch` |
+| Select replacement H3 from its recorded header alone | 2 | The header checks passed, then selection returned `selection/insufficient_depth` |
+| Supply replacement H3 under the starting anchor and schedule | 1 | `headers/not_accepted` with `ReasonUnauthorizedProducer` |
+
+The node harness SHA-256 is
+`898d10c92a98556f3c109e3dc84850fe9eda18145810a4dcd292918642a0a352`.
+The exported checkpoint SHA-256 is
+`d6856d1a309c257f3b65b477aff6c9dcb29b36fc4972bdc98db48c06fcb59b44`.
+The node build checked 25 modules and reused 21 validated module expansions
+and their ZIPs, avoiding 92,977,144 bytes of input staging. The build took
+35.34 seconds and the five node processes took 3.07 seconds in total. The
+largest sampled build workspace was 474,226,546 logical bytes. The closed
+ledger, cache and StateTree contained 44,888 logical bytes. Streaming the
+retained verifier and running the six controls took 2.22 seconds. The original
+archives were reused throughout.
+
+This evidence covers reconstructed fixtures and a configured CLI context.
+Both original runner outcomes remain `UNKNOWN`. A depth-one successor for
+the replacement branch, a present typed `BatchEntry` consumed end to end, and
+production recovery and fork-choice acceptance remain open.
