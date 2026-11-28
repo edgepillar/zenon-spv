@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0x3639/zenon-spv/internal/fetch"
 	"github.com/0x3639/zenon-spv/internal/verify"
 )
 
@@ -64,7 +65,7 @@ func TestExperimentalL2StorageSelectedBatch(t *testing.T) {
 				// A valid proof for another selected root must not fall back
 				// to the provider's claimed root.
 				batch.Entry.PostStateRoot[0] ^= 1
-				if _, err := checkExperimentalL2Storage(batch, request, raw); !errors.Is(err, errExperimentalL2WitnessIdentity) {
+				if _, err := checkExperimentalL2Storage(batch, request, raw); !errors.Is(err, fetch.ErrCandidateZenoStorageIdentity) {
 					t.Fatal("accepted root did not control the storage result", err)
 				}
 			}
@@ -115,5 +116,79 @@ func TestExperimentalBatchContextCLIL2StorageScope(t *testing.T) {
 				t.Fatalf("unexpected scoped refusal: %+v", report)
 			}
 		})
+	}
+}
+
+func TestExperimentalPhase1VaultBalance(t *testing.T) {
+	const (
+		account = "0022222222222222222222222222222222222222"
+		token   = "33333333333333333333"
+		key     = "d5336f60c93b175569f081df8a14ea4a56c1e306dd210b52925d36d9495c39af"
+		path    = "5f65b0976c2db72c539d9099680b4e49eed4dc707c7ea3fc3a5eab0061932cfd"
+		amount  = "57896044618658097711785492504343953926634992332820282019728792003957552474289"
+	)
+	vault := map[string]any{"account_hex": account, "token_standard_hex": token}
+	requestJSON := map[string]any{"contract_id": strings.Repeat("11", 32), "vault_balance": vault}
+	request, err := decodeExperimentalL2StorageRequest(experimentalCLIJSON(t, requestJSON))
+	if err != nil || request.Vault == nil || hex.EncodeToString(request.LocalKey) != key {
+		t.Fatal("vault local key", err)
+	}
+	for _, c := range []struct {
+		name, root, leaf, stored, length, amount string
+		present                                  bool
+		want                                     error
+	}{
+		{
+			name: "present u256", root: "bec08d54ebde2f6303cbc032bba2bd9546038359371417ee099225d07b52a7e3",
+			leaf:   "0bbb1a4a65594705392ba47835af8df36a39d256f2d2549fab36914e0f784fec",
+			stored: "800000000000000000000000000000000000000000000000000000003ade68b1", length: "00000020",
+			present: true, amount: amount,
+		},
+		{
+			name: "proven absence", root: strings.Repeat("00", 32), leaf: strings.Repeat("00", 32), amount: "0",
+		},
+		{
+			name: "present empty has wrong vault ABI width", root: "0def5c8644bb89ed3c405629403110bd9feca6c92548652c6c13b70854525d2f",
+			leaf:    "cec8f4681d62c4796a9f12e7901193c89e8008517a6385bb15e4983eec35e3f8",
+			present: true, length: "00000000", want: errExperimentalVaultValue,
+		},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			batch := verify.ExperimentalBatchContextResult{}
+			batch.Entry.ProtocolVersion = 1
+			batch.Context.Entry.DomainID = 1
+			batch.Request.BatchID = 9
+			if err := batch.Entry.PostStateRoot.UnmarshalText([]byte(c.root)); err != nil {
+				t.Fatal(err)
+			}
+			presence := "00"
+			var value *string
+			if c.present {
+				presence, value = "01", &c.stored
+			}
+			witness := map[string]any{"path": path, "present": c.present, "value": value,
+				"proof": presence + path + c.leaf + strings.Repeat("00", 34) + c.length + c.stored}
+			raw := experimentalCLIJSON(t, map[string]any{"domainId": 1, "batchId": 9,
+				"postStateRoot": c.root, "verified": false, "proofs": []any{witness}})
+			observed, err := checkExperimentalL2Storage(batch, request, raw)
+			if c.want != nil {
+				if !errors.Is(err, c.want) || observed.VaultBalance != nil {
+					t.Fatal("invalid vault value published a result", err)
+				}
+				return
+			}
+			if err != nil || observed.BatchID != 9 || observed.Present != c.present ||
+				hex.EncodeToString(observed.Path[:]) != path || observed.VaultBalance == nil ||
+				observed.VaultBalance.AccountHex != account || observed.VaultBalance.TokenStandardHex != token ||
+				observed.VaultBalance.AmountBaseUnits != c.amount ||
+				observed.VaultBalance.InterfaceSHA256 != "26f4d8c1b1d1cbf9dcf2ed4d99fcbc4b8e81af5bfb476c756bfd99b759fefba9" ||
+				c.present != (observed.ValueHex != nil) || c.present && *observed.ValueHex != c.stored {
+				t.Fatalf("unexpected typed vault balance: %+v, %v", observed, err)
+			}
+		})
+	}
+	requestJSON["local_key_hex"] = key
+	if _, err := decodeExperimentalL2StorageRequest(experimentalCLIJSON(t, requestJSON)); err == nil {
+		t.Fatal("mixed raw and typed key selection was accepted")
 	}
 }

@@ -71,6 +71,9 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == experimentalContextCollectionCommand {
 		os.Exit(runExperimentalCollectionMode(context.Background(), os.Args[2:], os.Stdout, os.Stderr, fetch.NewClient, true))
 	}
+	if len(os.Args) > 1 && os.Args[1] == experimentalVaultCollectionCommand {
+		os.Exit(runExperimentalVaultCollection(context.Background(), os.Args[2:], os.Stdout, os.Stderr, fetch.NewClient))
+	}
 	if err := run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, "fetch-bundle:", err)
 		os.Exit(1)

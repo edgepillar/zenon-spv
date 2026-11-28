@@ -98,6 +98,71 @@ The nonzero-batch membership and present-empty controls use independent
 single-leaf byte oracles. A recorded positive vault witness remains a
 separate input. [Chain-69 artifact](https://github.com/edgepillar/zenon-spv/actions/runs/46148797542/attempts/1)
 
+## Collect and read one Phase 1 vault balance
+
+Select the deployment independently of the gateway proof. This reader
+uses the pinned SDK example vault interface. The operator supplies the
+contract ID of a deployment with that interface and selects the L1
+account and token before fetching proof bytes. The storage proof binds the
+selected path to a root. Deployment provenance and the installed code's
+interface are separate inputs.
+[Pinned vault interface](https://github.com/Zeno-L2/zeno-contract-sdk-rs/blob/bc1548d75473797f24bb3eb79f5594969c596e39/examples/vault/artifacts/vault.interface.json)
+
+Use this alternate storage request shape with the same
+`--l2-storage-request` option. All values are lowercase hex with no
+prefix. The contract ID, L1 account and ZTS identifier use 32, 20 and
+10 bytes respectively.
+
+```json
+{
+  "contract_id": "<64 hex digits>",
+  "vault_balance": {
+    "account_hex": "<40 hex digits>",
+    "token_standard_hex": "<20 hex digits>"
+  }
+}
+```
+
+Select the same numeric domain and batch used by the L1 query. Collect
+one candidate proof for the chosen path.
+
+```sh
+fetch-bundle experimental-vault-balance \
+  --rpc "$ZENO_GATEWAY" --domain-id "$DOMAIN_ID" --batch-id "$BATCH_ID" \
+  --contract-id "$CONTRACT_ID" --account-hex "$ACCOUNT_HEX" \
+  --token-standard-hex "$TOKEN_STANDARD_HEX" > "$L2_WITNESS"
+```
+
+The collector derives the path and issues one bounded
+`zeno_getProof(domainId, [path], batchId)` request. Use the witness file
+after a successful process exit. An unavailable or pruned batch returns
+exit 2 and supplies no witness. A response for a different batch, domain
+or path is refused. In the offline CLI the accepted L1 `BatchEntry`
+supplies the root, and the verifier derives the same path from the
+separate request.
+[Pinned gateway API](https://github.com/Zeno-L2/zeno-executor/blob/a14bf0e08dad8eabeb1a0e0add9bbaf1e2adac9f/docs/gateway-api.md)
+
+The SDK maps the L1 account to
+`SHA3-256("L1_CALLER:" || account)` and left-pads the ZTS with 22 zero
+bytes to obtain the asset ID. The vault local key is
+`SHA3-256(0x01 || caller_hash || asset_id)`. A successful typed report
+adds `l2_storage.vault_balance`, which names the selected account, token,
+interface digest and decimal `amount_base_units`. A present balance
+requires exactly 32 bytes of big-endian unsigned value. A proven absent
+leaf keeps `present: false` and `value_hex: null`, with a typed amount of
+zero under the pinned vault interface. Missing witness bytes leave the
+amount unavailable.
+[Pinned caller codec](https://github.com/Zeno-L2/zeno-client-ts/blob/e9e02d8b12fa4053b8d19b1a4d6257d933bfdc0a/src/derive.ts#L21-L23)
+[Pinned balance caller](https://github.com/Zeno-L2/zeno-devnet/blob/cf1c9c0e0f0ca3b257bdbd019c5589c2c27f748f/flows/lib.ts#L475-L480)
+
+The compiled local check used the original H126 L1 evidence and a
+locally generated empty-commitment proof served by a loopback gateway.
+The collector and verifier matched the selected vault probe and returned
+a typed zero for its proven absence. A changed token refused the
+witness. A pruned batch supplied no proof. The present u256 control used
+an independent single-leaf oracle, and a present-empty leaf refused the
+vault value decoding.
+
 The next consumer query is one vault balance stored in the contract's
 `balances` mapping at an explicitly selected post-deposit batch. It needs
 the exact vault ID from its deployment record, the local key derived under

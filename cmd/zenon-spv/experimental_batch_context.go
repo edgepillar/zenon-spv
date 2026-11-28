@@ -99,7 +99,7 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 	}
 	var l2RequestPath, l2WitnessPath string
 	if command == experimentalContextQueryCommand {
-		fs.StringVar(&l2RequestPath, "l2-storage-request", "", "separately selected L2 contract ID and local key")
+		fs.StringVar(&l2RequestPath, "l2-storage-request", "", "separately selected L2 storage path or Phase 1 vault balance")
 		fs.StringVar(&l2WitnessPath, "l2-proof-result", "", "recorded Phase 1 result with one storage proof")
 	}
 	selections := registerSelectionGuards(fs)
@@ -250,7 +250,7 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 		return finish(code, "query", category)
 	}
 	if l2Requested {
-		raw, err := readExperimentalCLIFile(l2WitnessPath, maxExperimentalL2WitnessBytes, openExperimentalCLIFile)
+		raw, err := readExperimentalCLIFile(l2WitnessPath, fetch.MaxCandidateZenoStorageResultBytes, openExperimentalCLIFile)
 		if err != nil {
 			return finish(70, "l2_storage_witness", "invalid_input")
 		}
@@ -258,10 +258,12 @@ func runExperimentalBatchContext(command string, args []string, stdout, stderr i
 		switch {
 		case errors.Is(err, errExperimentalL2StorageProfile):
 			return finish(2, "l2_storage_witness", "unsupported_profile")
-		case errors.Is(err, errExperimentalL2WitnessUnavailable):
+		case errors.Is(err, fetch.ErrCandidateZenoStorageUnavailable):
 			return finish(2, "l2_storage_witness", "unavailable")
-		case errors.Is(err, errExperimentalL2WitnessIdentity):
+		case errors.Is(err, fetch.ErrCandidateZenoStorageIdentity):
 			return finish(1, "l2_storage_witness", "identity_mismatch")
+		case errors.Is(err, errExperimentalVaultValue):
+			return finish(1, "l2_storage_witness", "invalid_vault_value")
 		case err != nil:
 			return finish(1, "l2_storage_witness", "invalid_witness")
 		}
