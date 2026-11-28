@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -302,29 +303,53 @@ func selectQueryCLIOption(args []string, name, value string) []string {
 	return append(selected, name, value)
 }
 
-func buildQueryCLIs(t *testing.T, names ...string) map[string]string {
-	t.Helper()
-	// Register CLI sources and their internal helpers as test inputs. Some
-	// helpers are only imported by the commands, not by this test package.
-	// Their edits must invalidate a previously cached compiled-workflow pass.
-	for _, dir := range []string{"../../cmd/zenon-spv", "../../cmd/fetch-bundle", "../../tools/derive-producer-schedule", "../../tools/derive-checkpoints", "../../tools/verify-mainnet-genesis", "../../tools/consume-query-report", "../../tools/observe-block", "../../internal"} {
+// Register the child commands' source inputs with Go's test cache on the
+// first build in this process. Directory enumeration and opening each file
+// supply the cache inputs without reading the file contents.
+var registerQueryCLIBuildInputs = sync.OnceValue(func() error {
+	dirs := []string{
+		"../../cmd/zenon-spv",
+		"../../cmd/fetch-bundle",
+		"../../tools/derive-producer-schedule",
+		"../../tools/derive-checkpoints",
+		"../../tools/verify-mainnet-genesis",
+		"../../tools/consume-query-report",
+		"../../tools/observe-block",
+		"../../internal",
+	}
+	for _, dir := range dirs {
 		if err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, walkErr error) error {
 			if walkErr != nil {
 				return walkErr
 			}
 			if !entry.IsDir() && strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, "_test.go") {
-				_, err := os.ReadFile(path)
-				return err
+				return registerQueryCLIInput(path)
 			}
 			return nil
 		}); err != nil {
-			t.Fatal(err)
+			return err
 		}
 	}
 	for _, path := range []string{"../../go.mod", "../../go.sum"} {
-		if _, err := os.ReadFile(path); err != nil {
-			t.Fatal(err)
+		if err := registerQueryCLIInput(path); err != nil {
+			return err
 		}
+	}
+	return nil
+})
+
+func registerQueryCLIInput(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	return f.Close()
+}
+
+func buildQueryCLIs(t *testing.T, names ...string) map[string]string {
+	t.Helper()
+	if err := registerQueryCLIBuildInputs(); err != nil {
+		t.Fatal(err)
 	}
 	goTool, err := exec.LookPath("go")
 	if err != nil {
