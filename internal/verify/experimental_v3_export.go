@@ -82,7 +82,7 @@ func writeExperimentalV3Window(output *limitedStateWriter, body experimentalV3Fi
 	separator := "\n    "
 	for _, header := range headers {
 		encoded.Reset()
-		if err := encoder.Encode(header); err != nil {
+		if err := header.EncodeJSON(encoder); err != nil {
 			return err
 		}
 		if _, err := writer.WriteString(separator); err != nil {

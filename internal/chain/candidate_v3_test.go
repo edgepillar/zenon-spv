@@ -434,6 +434,31 @@ func TestCandidateV3HeaderMarshalBoundary(t *testing.T) {
 			if _, err := json.Marshal(next); !errors.Is(err, chain.ErrCandidateV3Header) {
 				t.Fatal("inconsistent projected header was emitted", err)
 			}
+			var output bytes.Buffer
+			if err := next.EncodeJSON(json.NewEncoder(&output)); !errors.Is(err, chain.ErrCandidateV3Header) || output.Len() != 0 {
+				t.Fatal("stream encoder emitted an inconsistent projected header", err)
+			}
 		})
+	}
+}
+
+func TestCandidateV3HeaderEncodeJSON(t *testing.T) {
+	first := candidateV3WireValue(t)
+	second := candidateV3WireValue(t)
+	second.Header.Signature[0] ^= 1
+	var want, got bytes.Buffer
+	reference, stream := json.NewEncoder(&want), json.NewEncoder(&got)
+	reference.SetIndent("  ", "    ")
+	stream.SetIndent("  ", "    ")
+	for _, header := range []chain.CandidateV3Header{first, second} {
+		if err := reference.Encode(header); err != nil {
+			t.Fatal(err)
+		}
+		if err := header.EncodeJSON(stream); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if !bytes.Equal(got.Bytes(), want.Bytes()) {
+		t.Fatal("reused encoder changed the projected header sequence")
 	}
 }

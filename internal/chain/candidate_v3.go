@@ -98,12 +98,30 @@ func DecodeCandidateV3Header(raw []byte) (CandidateV3Header, error) {
 // MarshalJSON emits the flat, complete projected header. Width and hash checks
 // establish encoding consistency; they do not validate the signature bytes.
 func (c CandidateV3Header) MarshalJSON() ([]byte, error) {
-	if err := c.validateWire(); err != nil {
+	wire, err := c.checkedJSON()
+	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(candidateV3JSON{
+	return json.Marshal(wire)
+}
+
+// EncodeJSON writes the same projected header through a caller's encoder.
+// It applies the width and hash checks before emitting a value.
+func (c CandidateV3Header) EncodeJSON(encoder *json.Encoder) error {
+	wire, err := c.checkedJSON()
+	if err != nil {
+		return err
+	}
+	return encoder.Encode(wire)
+}
+
+func (c CandidateV3Header) checkedJSON() (candidateV3JSON, error) {
+	if err := c.validateWire(); err != nil {
+		return candidateV3JSON{}, err
+	}
+	return candidateV3JSON{
 		candidateV3JSONHeader: candidateV3JSONHeader(c.Header), StateRoot: c.StateRoot,
-	})
+	}, nil
 }
 
 // UnmarshalJSON accepts each exact projected field once, rejects null and
