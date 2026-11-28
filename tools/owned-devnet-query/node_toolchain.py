@@ -8,6 +8,7 @@ any extracted file. No package script or binary is executed by the codec.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 import hashlib
 import json
@@ -71,11 +72,43 @@ def _identity(info):
     return (info.st_dev, info.st_ino, info.st_uid, info.st_size, info.st_mtime_ns)
 
 
+def _file_snapshot(info):
+    return (*_identity(info), info.st_ctime_ns, info.st_mode, info.st_nlink)
+
+
 def _dir_identity(path):
     info = path.lstat()
     require(stat.S_ISDIR(info.st_mode) and (not hasattr(os, "geteuid")
             or info.st_uid == os.geteuid()), "node_directory_identity")
     return info.st_dev, info.st_ino, info.st_uid
+
+
+@contextmanager
+def _open_unchanged_file(path, expected):
+    flags = (os.O_RDONLY | getattr(os, "O_BINARY", 0)
+             | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+    with os.fdopen(os.open(path, flags), "rb") as stream:
+        opened = os.fstat(stream.fileno())
+        # On Windows, path lookup and descriptor lookup derive mode and ctime differently.
+        require(stat.S_ISREG(opened.st_mode) and opened.st_nlink == expected.st_nlink
+                and _identity(opened) == _identity(expected)
+                and (os.name == "nt" or _file_snapshot(opened) == _file_snapshot(expected)),
+                "node_file_changed")
+        yield stream, opened
+
+
+def _check_file_content(row, path, expected):
+    sha, count = hashlib.sha256(), 0
+    with _open_unchanged_file(path, expected) as (stream, opened):
+        for chunk in iter(lambda: stream.read(65536), b""):
+            count += len(chunk)
+            require(count <= row.size, "node_file_changed")
+            sha.update(chunk)
+        after = os.fstat(stream.fileno())
+    require(_file_snapshot(after) == _file_snapshot(opened)
+            and _file_snapshot(path.lstat()) == _file_snapshot(expected)
+            and count == row.size and sha.hexdigest() == row.sha256,
+            "node_file_changed")
 
 
 @dataclass(frozen=True)
@@ -107,7 +140,7 @@ class Installation:
     def npm(self):
         return self.root / "lib/node_modules/npm/bin/npm-cli.js"
 
-    def verify(self):
+    def _files_on_disk(self):
         expected_dirs = dict(self.directories)
         require("" in expected_dirs and _dir_identity(self.root) == expected_dirs[""],
                 "node_root_changed")
@@ -130,31 +163,37 @@ class Installation:
             if os.name == "posix":
                 wanted = 0o500 if self.execution_enabled and row.executable else 0o400
                 require(stat.S_IMODE(before.st_mode) == wanted, "node_file_permissions")
-            sha, count = hashlib.sha256(), 0
-            descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
-            with os.fdopen(descriptor, "rb") as stream:
-                require(os.path.samestat(before, os.fstat(descriptor)), "node_file_changed")
-                for chunk in iter(lambda: stream.read(65536), b""):
-                    count += len(chunk)
-                    require(count <= row.size, "node_file_changed")
-                    sha.update(chunk)
-                after = os.fstat(descriptor)
-            final = path.lstat()
-            require(stat.S_ISREG(final.st_mode) and final.st_nlink == 1
-                    and _identity(before) == _identity(after) == _identity(final)
-                    and count == row.size and sha.hexdigest() == row.sha256, "node_file_changed")
+            yield row, path, before
+
+    def verify(self):
+        for row, path, before in self._files_on_disk():
+            _check_file_content(row, path, before)
         return self.inspection
 
     def enable_execution(self):
         require(os.name == "posix", "node_execution_platform")
-        self.verify()
         if self.execution_enabled:
+            self.verify()
             return self
+        verified = {}
+        for row, path, before in self._files_on_disk():
+            _check_file_content(row, path, before)
+            verified[row.path] = before
         for row in self.files:
-            if row.executable:
-                (self.root / row.path).chmod(0o500)
+            if not row.executable:
+                continue
+            path = self.root / row.path
+            before = verified[row.path]
+            with _open_unchanged_file(path, before) as (stream, _):
+                require(_file_snapshot(path.lstat()) == _file_snapshot(before), "node_file_changed")
+                os.fchmod(stream.fileno(), 0o500)
         result = replace(self, execution_enabled=True)
-        result.verify()
+        for row, path, after in result._files_on_disk():
+            if row.executable:
+                _check_file_content(row, path, after)
+            else:
+                # No external code ran and only executable members changed mode.
+                require(_file_snapshot(after) == _file_snapshot(verified[row.path]), "node_file_changed")
         return result
 
 
@@ -190,7 +229,7 @@ class _Sink:
         self.files.append(NodeFile(row["path"], row["sha256"], row["bytes"],
                                    row["executable"], _identity(info)))
 
-    def finish(self, report):
+    def finish(self, report, *, for_execution):
         for name, raw in WRAPPERS.items():
             relative = "bin/" + name
             with self.open(relative) as stream:
@@ -198,6 +237,9 @@ class _Sink:
             self.finish_file({"path": relative, "sha256": hashlib.sha256(raw).hexdigest(),
                               "bytes": len(raw), "executable": True})
         result = Installation(self.root, tuple(self.directories.items()), tuple(self.files), canonical(report))
+        if for_execution:
+            # The mode transition starts with a full read of the sealed installation.
+            return result.enable_execution()
         result.verify()
         return result
 
@@ -231,12 +273,16 @@ def _member(stream, size, name, executable, sink):
     return row if selected else None, bytes(package)
 
 
-def unpack_node(stream, selected, destination=None):
+def unpack_node(stream, selected, destination=None, *, for_execution=False):
     """Check the pinned format, optionally writing a fresh regular-file prefix.
 
-    Original content identity and inspection do not establish native execution,
-    an authenticated distribution or permission to run the selected scripts.
+    A caller can explicitly request local executable permissions after the
+    complete archive, manifest and installed-file checks. Intake runs no script.
     """
+    require(type(for_execution) is bool and (not for_execution or destination is not None),
+            "node_execution_destination")
+    if for_execution:
+        require(os.name == "posix", "node_execution_platform")
     selected = specification(selected)
     archive = {"sha256": selected["sha256"], "bytes": selected["archive_bytes"]}
     _hash_stream(stream, archive)
@@ -338,7 +384,7 @@ def unpack_node(stream, selected, destination=None):
                                                 "bytes": len(raw)} for name, raw in WRAPPERS.items()},
                   "files_extracted": 0 if sink is None else len(files) + len(WRAPPERS),
                   "authenticated_distribution": False}
-        return report if sink is None else sink.finish(report)
+        return report if sink is None else sink.finish(report, for_execution=for_execution)
     except Refused:
         raise
     except (lzma.LZMAError, tarfile.TarError, UnicodeError, ValueError, EOFError) as error:
@@ -348,13 +394,17 @@ def unpack_node(stream, selected, destination=None):
 class Installer:
     """One causal, bounded original download; a failed workspace is not retried."""
 
-    def __init__(self, contract, recorder, destination, command, environment, guard):
+    def __init__(self, contract, recorder, destination, command, environment, guard, *, for_execution=False):
         self.selected = specification(contract.data["node_toolchain"])
         self.recorder, self.destination = recorder, Path(destination)
         require(not self.destination.exists() and not self.destination.is_symlink(),
                 "node_destination_exists")
         require(type(command) is list and command and callable(guard), "node_download_command")
+        require(type(for_execution) is bool, "node_download_execution_mode")
+        if for_execution:
+            require(os.name == "posix", "node_execution_platform")
         self.command, self.environment, self.guard = list(command), dict(environment), guard
+        self.for_execution = for_execution
         self.attempted, self.result = False, None
 
     def fetch(self):
@@ -379,7 +429,7 @@ class Installer:
                     == {"sha256": selected["sha256"], "bytes": selected["archive_bytes"]},
                     "node_transport_content")
             with raw.open_stdout_for_validation(selected["archive_bytes"]) as stream:
-                result = unpack_node(stream, selected, self.destination)
+                result = unpack_node(stream, selected, self.destination, for_execution=self.for_execution)
             self.recorder.seal("node-toolchain-intake.json", canonical(result.inspection))
         self.result = result
         return result

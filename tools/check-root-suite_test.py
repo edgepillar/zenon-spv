@@ -298,12 +298,19 @@ class RootSuiteControls(unittest.TestCase):
         matrix = matrix.split("\n  recorded-oracles:\n", 1)[0]
         for root in ("TestCompiledPilotSourceEnumeration", "TestCompiledAdvancingBlockObserver",
                      "TestCompiledNodeAccountBasicObserver", "TestCompiledNodeAccountReceiveObserver",
-                     "TestCompiledNodeAccountPoWObserver", "TestCompiledVerifierSelectionGuards",
-                     "TestCompiledVerifierSyntaxPrivacy", "TestCompiledCollectorSyntaxPrivacy",
-                     "TestCompiledMaintainerSyntaxPrivacy"):
+                     "TestCompiledNodeAccountPoWObserver"):
             command = "-run '^" + root + "$'"
             self.assertIn(command, linux)
             self.assertNotIn(command, matrix)
+        ordinary_cli = (
+            "run: go test -v -count=1 -run '^TestCompiled(VerifierSelectionGuards|VerifierSyntaxPrivacy|"
+            "CollectorSyntaxPrivacy|MaintainerSyntaxPrivacy)$' ./internal/conformance"
+        )
+        self.assertEqual(linux.count(ordinary_cli), 1)
+        self.assertNotIn(ordinary_cli, matrix)
+        for root in CHECKER.CLI_CONTROL_REPORTS:
+            command = "-run '^" + root + "$'"
+            self.assertNotIn(command, workflow)
         self.assertIn("--full-suite --timeout 30m --package-timeout 10m --race --coverage", linux)
         self.assertIn("-run '^TestQueryCLIBuild'", linux)
         self.assertNotIn("-run '^TestQueryCLIBuild'", matrix)

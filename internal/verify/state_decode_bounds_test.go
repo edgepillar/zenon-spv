@@ -71,6 +71,25 @@ func TestRetainedWindowDecodeBoundaries(t *testing.T) {
 	}
 }
 
+func TestRetainedWindowDecodeFitsLargeExplicitCapacity(t *testing.T) {
+	for _, tc := range []struct{ count, limit int }{
+		{1025, 1025},
+		{MaxRetainHeaders, MaxPersistedHeaders},
+	} {
+		t.Run(fmt.Sprint(tc.count), func(t *testing.T) {
+			headers := stateEncodingBody(tc.count).Window
+			raw, err := json.Marshal(headers)
+			if err != nil {
+				t.Fatal(err)
+			}
+			decoded, err := decodeRetainedWindow(raw, tc.limit)
+			if err != nil || !reflect.DeepEqual(retainedHeaderWindow(decoded), headers) || cap(decoded) != tc.count {
+				t.Fatalf("window failed to fit without spare capacity: len=%d cap=%d err=%v", len(decoded), cap(decoded), err)
+			}
+		})
+	}
+}
+
 func TestRetainedWindowDecodeRejectsMalformedJSONWithoutMutation(t *testing.T) {
 	headers := sampleState(t).RetainedWindow
 	for _, raw := range []string{

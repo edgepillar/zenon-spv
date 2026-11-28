@@ -1,0 +1,129 @@
+name: ledger-inventory
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/ledger-inventory/README.md'
+      - 'tools/ledger-inventory/churn.py'
+      - 'tools/ledger-inventory/inventory.py'
+      - 'tools/ledger-inventory/inventory_test.py'
+      - 'tools/ledger-export/snapshot_projection.py'
+      - 'tools/ledger-transport/transport.py'
+      - '.github/workflows/ledger-inventory.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/ledger-inventory/README.md'
+      - 'tools/ledger-inventory/churn.py'
+      - 'tools/ledger-inventory/inventory.py'
+      - 'tools/ledger-inventory/inventory_test.py'
+      - 'tools/ledger-export/snapshot_projection.py'
+      - 'tools/ledger-transport/transport.py'
+      - '.github/workflows/ledger-inventory.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    name: Inventory (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            platform: linux-amd64
+          - runner: macos-15-intel
+            platform: darwin-amd64
+          - runner: windows-latest
+            platform: windows-amd64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 8
+    defaults:
+      run:
+        shell: bash
+    env:
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Run the bounded ledger inventory controls
+        run: python -I -B tools/ledger-inventory/inventory_test.py --source-revision "$GITHUB_SHA" > "$RUNNER_TEMP/r1-inventory-controls.json"
+      - name: Bind the control results to the checkout, platform and attempt
+        env:
+          R1_PLATFORM: ${{ matrix.platform }}
+          R1_FEATURE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python -I -B - <<'PY'
+          import hashlib, json, os, platform, re, stat, subprocess
+          from pathlib import Path
+
+          root = Path(os.environ['GITHUB_WORKSPACE'])
+          scratch = Path(os.environ['RUNNER_TEMP'])
+          def git(*args):
+              return subprocess.check_output(['git', *args], cwd=root, timeout=10)
+          def pin(raw):
+              return {'sha256': hashlib.sha256(raw).hexdigest(), 'bytes': len(raw)}
+
+          checkout = git('rev-parse', 'HEAD').decode('ascii').strip()
+          feature = os.environ['R1_FEATURE_REVISION']
+          assert checkout == os.environ['GITHUB_SHA']
+          assert all(re.fullmatch('[0-9a-f]{40}', sha) for sha in (checkout, feature))
+          assert all(re.fullmatch('[1-9][0-9]*', os.environ[key]) for key in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT'))
+          assert platform.machine().lower() in ('amd64', 'x86_64')
+          assert platform.system().lower() + '-amd64' == os.environ['R1_PLATFORM']
+
+          with (scratch / 'r1-inventory-controls.json').open('rb') as stream:
+              report_bytes = stream.read((128 << 10) + 1)
+          assert 0 < len(report_bytes) <= 128 << 10
+          report = json.loads(report_bytes)
+          assert (report['kind'], report['status'], report['source_revision'], report['skipped']) == (
+              'bounded-ledger-inventory-controls', 'PASS', checkout, 0)
+          names = report['attempted_names']
+          assert 0 < len(names) == len(set(names)) == report['tests'] and names == report['passed_names']
+
+          projection = 'tools/ledger-export/snapshot_projection.py'
+          transport = 'tools/ledger-transport/transport.py'
+          scripts = tuple('tools/ledger-inventory/' + name for name in ('inventory.py', 'inventory_test.py', 'churn.py'))
+          files = (*scripts, projection, transport,
+                   'tools/ledger-inventory/README.md', '.github/workflows/ledger-inventory.yml')
+          source = {}
+          for name in files:
+              path = root / name
+              assert stat.S_ISREG(path.lstat().st_mode)
+              with path.open('rb') as stream:
+                  working = stream.read((256 << 10) + 1)
+              selected = git('show', checkout + ':' + name)
+              assert 0 < len(selected) <= 256 << 10 and len(working) <= 256 << 10
+              relation = 'exact' if working == selected else 'CRLF-only'
+              assert relation == 'exact' or b'\r\n' not in selected and working == selected.replace(b'\n', b'\r\n')
+              source[name] = {'git': pin(selected), 'checkout': pin(working), 'relation': relation}
+          assert report['source_pins'] == {Path(name).name: source[name]['checkout']['sha256'] for name in scripts}
+          assert report['projection_source_sha256'] == source[projection]['checkout']['sha256']
+          assert report['transport_source_sha256'] == source[transport]['checkout']['sha256']
+          assert report['representative_dataset_collected'] is False and report['state_value_acceptance_enabled'] is False
+
+          result = {
+              'format': 'zenon-ledger-inventory-ci/v1', 'status': 'CONTROLS_PASSED',
+              'repository': os.environ['GITHUB_REPOSITORY'], 'workflow': os.environ['GITHUB_WORKFLOW'],
+              'event': os.environ['GITHUB_EVENT_NAME'], 'run_id': int(os.environ['GITHUB_RUN_ID']),
+              'run_attempt': int(os.environ['GITHUB_RUN_ATTEMPT']), 'source_revision': checkout,
+              'source_tree': git('rev-parse', 'HEAD^{tree}').decode('ascii').strip(), 'feature_revision': feature,
+              'platform': os.environ['R1_PLATFORM'], 'python_version': platform.python_version(),
+              'source_files': source, 'controls': report, 'runtime_qualification_transferred': False}
+          raw = (json.dumps(result, sort_keys=True, separators=(',', ':'), allow_nan=False) + '\n').encode()
+          assert len(raw) <= 256 << 10
+          with (scratch / 'r1-inventory-evidence.json').open('xb') as stream:
+              stream.write(raw)
+          PY
+      - name: Upload the source-bound control evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ledger-inventory-lane-${{ matrix.platform }}
+          path: ${{ runner.temp }}/r1-inventory-evidence.json
+          if-no-files-found: error
+          retention-days: 14

@@ -39,13 +39,19 @@ NATIVE_FILES = frozenset("internal/verify/experimental_v3_" + name for name in (
     "retention_test.go"))
 # Every other non-document tree record remains in this reviewed closure,
 # including workflows, research Go sources, Python helpers and fixture data.
-ORACLE_SOURCE_PIN = "fa7d0b29aef4795fa0b748f6c3108742c96b2ea8c9540ff3db53128ae2c2bd66"
+ORACLE_SOURCE_PINS = frozenset((
+    "44b82251f7f467064db9653184524691f2be69bec59a455ac5c0b48e9b20a389",
+))
 SHARED_TRANSPORT = "tools/ledger-transport/transport.py"
+SHARED_PROJECTION = "tools/ledger-export/snapshot_projection.py"
 TRANSPORT_FILES = frozenset("tools/ledger-transport/" + name for name in (
     "archive_index.py", "archive_index_test.py", "archive_tail.py", "archive_tail_test.py",
     "transport.py", "transport_test.py", "README.md", "THIRD_PARTY_NOTICES"))
 EXPORT_FILES = frozenset("tools/ledger-export/" + name for name in (
-    "inventory_completed_export.py", "inventory_completed_export_test.py", "README.md"))
+    "inventory_completed_export.py", "inventory_completed_export_test.py",
+    "snapshot_projection.py", "README.md"))
+INVENTORY_FILES = frozenset("tools/ledger-inventory/" + name for name in (
+    "churn.py", "inventory_test.py", "README.md"))
 PREPARATION_FILES = frozenset("tools/owned-devnet-query/" + name for name in (
     "engine_test.py", "images_test.py", "inputs.py", "inputs_test.py",
     "capture_test.py", "review.py", "review_test.py", "README.md",
@@ -55,7 +61,7 @@ FIRST_INSERTION_FILES = frozenset("tools/gen-state-root-vectors/" + name for nam
     "first-insertion-catchup_test.go.txt", "first-insertion-cpu_test.go.txt",
     "first-insertion-export_test.go.txt", "qualify_first_insertion.py",
     "qualify_first_insertion_test.py"))
-PORTABLE_FILES = TRANSPORT_FILES | EXPORT_FILES | PREPARATION_FILES | FIRST_INSERTION_FILES
+PORTABLE_FILES = TRANSPORT_FILES | EXPORT_FILES | INVENTORY_FILES | PREPARATION_FILES | FIRST_INSERTION_FILES
 # The intake is the tool contract. The general roadmap is metadata only and
 # must not add an unrelated three-platform workflow to a portable tool change.
 TRANSPORT_DOCS = frozenset(("docs/state-root-r1-intake.md",))
@@ -64,6 +70,8 @@ PORTABLE_WORKFLOWS = (
      "ed2edac4230468ec912fa18c1eb377b4006b970eeb052670abc1f57eb9803a24"),
     (".github/workflows/ledger-export.yml", EXPORT_FILES | {SHARED_TRANSPORT}, 8084,
      "8fab1803332f60cac43a20b8940988b19c38b8dd0359f005f605dcc55dcb98fb"),
+    (".github/workflows/ledger-inventory.yml", INVENTORY_FILES | {SHARED_PROJECTION, SHARED_TRANSPORT}, 6372,
+     "12289ec09b93f2e74a1e31f0d0c7088c9cd48e5d42eb71ea569c2aa53fee98d6"),
     (".github/workflows/owned-devnet-query.yml", PREPARATION_FILES, 4453,
      "cf4ddd4e2c7a5388af336e42e5d47ce43ca112ed2c699731d4b8cd2137977d66"),
     (".github/workflows/first-insertion-catchup.yml",
@@ -72,7 +80,7 @@ PORTABLE_WORKFLOWS = (
 )
 # Keep every remaining non-document dependency, including all workflows.
 # Refresh only after reviewing dependencies and selecting full runtime CI.
-PORTABLE_SOURCE_PIN = "a37c8297c0e0195bdf21eb52175986aebc25d1311e40905d038267f6851592ca"
+PORTABLE_SOURCE_PIN = "17e3681d251c98b9f226693cce3e6f53c9a7975a1facffd9258022ba865c4645"
 MAX_FILTERED_DIFF_RECORDS = 256
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192
@@ -397,12 +405,13 @@ def select_scope(root, selection, runner=run_git):
             report.update(format=NATIVE_FORMAT, run_recorded_oracles=True)
             closure = oracle_fingerprint(query(
                 ["ls-tree", "-r", "-z", "--full-tree", checkout], MAX_TREE_BYTES))
-            if closure["sha256"] != ORACLE_SOURCE_PIN:
+            pin = closure["sha256"]
+            if pin not in ORACLE_SOURCE_PINS:
                 raise ScopeError("oracle_source_pin")
             report.update(status="NATIVE_RUNTIME_ONLY", run_runtime=True,
                           run_recorded_oracles=False, reason="modified_native_v3_leaves",
                           documentation_paths=documents, native_paths=native,
-                          oracle_closure={**closure, "expected_sha256": ORACLE_SOURCE_PIN,
+                          oracle_closure={**closure, "expected_sha256": pin,
                                           "matched": True})
         elif portable:
             # Leave room below GitHub's path-filter diff limit, including docs.

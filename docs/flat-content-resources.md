@@ -87,6 +87,42 @@ reservation is limited by encoded bytes, active row allowances and a fixed
 ceiling; it does not replace the original decoder or qualify a latency gain.
 The full repeated wire lists and every existing workload below remain intact.
 
+The compact flat-row decoder reuses the most recently decoded address when
+the next row contains the same 40 hex bytes. The reuse is local to one
+validated array. Each row owns its address value and continues to consume a
+slot under both limits. Alternate JSON spellings and malformed address
+cases are tested against the ordinary decoder.
+
+Six paired darwin/arm64 samples on Go 1.25.14 decoded 100,000 rows per
+operation. With repeated addresses, median time fell from 10.60 to 9.10 ms
+for the prevalidated array and from 63.21 to 61.92 ms with JSON validation.
+With distinct addresses, medians were 10.50 and 10.68 ms for the array
+and 63.68 and 63.35 ms with JSON validation. Allocation counts and bytes
+matched in each workload. These timings cover decoding of controlled
+arrays with fixture construction outside the timer.
+
+Within a validated commitment array, the decoder can copy the rows of the
+previous canonical flat object when the next object's bytes match exactly.
+It compares a span of the original document and gives each commitment its
+own backing slice. Each occurrence consumes its complete row allowance.
+When an allowance is insufficient, the ordinary decoder reaches the same
+row-limit refusal. The existing tests exercise all repeated-wire cases and
+the compiled retained-only queries.
+
+Four paired darwin/arm64 trials at `-cpu=1` with Go 1.25.14 measured median
+structural decode times against `2d1511e`. Both revisions decoded the same
+fixture and the timing includes full JSON syntax validation. Fixture
+construction was outside the timer.
+
+| Members per proof | Proofs | Baseline ms/op | Updated ms/op |
+| ---: | ---: | ---: | ---: |
+| 1,000 | 1 | 1.27 | 1.27 |
+| 1,000 | 16 | 20.69 | 17.95 |
+| 100,000 | 4 | 508.32 | 464.58 |
+
+The 100,000-member workload allocated about 25.63 MB per operation in both
+revisions. Each decoded list occupies separate storage.
+
 `BenchmarkFlatContent` supplies two operations for each row:
 
 - `Verify`: preflight and verify the already-decoded batch, including checks of
@@ -227,6 +263,84 @@ local timing in this grid; already-decoded verification also grows with both
 members and proof count. These samples motivate separate bounded-decoder and
 flat-hash allocation work, with this corpus retained as the correctness oracle.
 They do not establish stable latency thresholds or a safe concurrency level.
+
+## Reusing validated bundle arrays
+
+The bundle reader uses the complete JSON syntax check before locating array
+fields. It passes the validated spans directly to their bounded readers and
+searches quoted text for the next quote, checking the immediately preceding
+backslashes. The standard decoder still handles scalar conversion. Controls
+compare escaped quotes, duplicate and aliased fields, syntax errors, nested
+budgets, and receiver state with the independent buffered path.
+
+Six alternating pairs on darwin/arm64 with Go 1.25.14 measured the standard
+load-and-verify operation against `ffb5c20`. Both variants compile the
+same conformance test and load the same node-derived content fixture. Each
+sample uses two operations on one CPU. All cases verify their target identity
+and the configured producer schedule.
+
+| Members per proof | Proofs | Input bytes | Baseline median (ms/op) | Candidate median (ms/op) |
+| ---: | ---: | ---: | ---: | ---: |
+| 1,000 | 1 | 142,232 | 3.28 | 2.65 |
+| 100,000 | 1 | 14,389,236 | 253.51 | 197.56 |
+| 100,000 | 4 | 57,556,508 | 1000.09 | 772.88 |
+
+The large four-proof case used one additional allocation per operation. Median
+allocated bytes were 116,744,360 and 116,744,056, respectively. The observations
+describe this local warm-file workload. The suite also runs the ordinary
+compiled retained-state CLI on all four corpus shapes.
+
+## Reading validated flat evidence arrays
+
+A commitment decoded by the standard JSON decoder can pass its sole canonical
+`sorted_headers` array directly to the bounded row reader. The enclosing
+decoder has checked the complete JSON value. The ordinary object decoder
+handles aliases, repeated fields, additional members, and standalone calls.
+Concrete type errors retain the field context from the ordinary decoder. Both
+paths charge the active per-proof and aggregate limits before decoding an
+excess row.
+
+Six paired darwin/arm64 trials with Go 1.25.14 compared normal load-and-verify
+execution with `eedd601`. The unchanged node-derived corpus determines the
+expected roots and targets. The same two-operation samples run on one CPU
+with warm files.
+
+| Members per proof | Proofs | Input bytes | Baseline median (ms/op) | Candidate median (ms/op) |
+| ---: | ---: | ---: | ---: | ---: |
+| 1,000 | 1 | 142,232 | 2.52 | 1.99 |
+| 100,000 | 1 | 14,389,236 | 202.21 | 155.92 |
+| 100,000 | 4 | 57,556,508 | 792.81 | 592.61 |
+
+The largest case reduced median allocation count from 170 to 146 and
+allocated bytes per operation from 116,744,072 to 116,743,048. These values
+describe the complete local workload including proof loading and verification.
+The separate native CLI control checks all four corpus shapes.
+
+## Reading commitments from the bundle buffer
+
+The bounded commitment reader receives each element as a span of the JSON
+document that has already passed syntax validation. The standard decoder
+still binds the commitment fields and applies the flat-proof budgets. The
+reader checks the commitment limit before consuming another element. Buffered
+reference controls check whitespace-sensitive error offsets, aliases, duplicate
+fields, nested limits, and failed receiver updates.
+
+Six paired load-and-verify trials on darwin/arm64 with Go 1.25.14 compared
+`b27aa9b` with this change. Both variants use the same node-derived fixture
+and two operations per sample on one CPU.
+
+| Members per proof | Proofs | Baseline allocated bytes/op | Candidate allocated bytes/op | Baseline median (ms/op) | Candidate median (ms/op) |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 1,000 | 1 | 743,720 | 221,312 | 1.90 | 2.02 |
+| 100,000 | 1 | 54,358,792 | 20,806,232 | 152.16 | 149.29 |
+| 100,000 | 4 | 116,743,056 | 83,191,584 | 584.16 | 592.06 |
+
+A separate six-pair run reused one 57,556,508-byte fixture across both ordinary
+compiled consumers. Every process returned the same verified output bytes.
+Median process peak RSS from Darwin's resource accounting fell from
+129,269,760 to 95,330,304 bytes. Median elapsed time was
+563.17 and 557.93 ms, respectively. These observations describe the local
+read-only workflow with warm files.
 
 ## Remaining acceptance gates
 

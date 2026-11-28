@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/iotest"
 )
 
 func TestProducerScheduleTerminalHeight(t *testing.T) {
@@ -23,6 +25,83 @@ func TestProducerScheduleTerminalHeight(t *testing.T) {
 	}
 	if _, ok := s.LookupEntry(0); ok {
 		t.Fatal("terminal height wrapped into zero")
+	}
+}
+
+func TestProducerScheduleRangeLookup(t *testing.T) {
+	coverage := []ProducerCoverage{{0, 2}, {3, 5}, {17, 17}, {math.MaxUint64 - 1, math.MaxUint64}}
+	heights := []uint64{0, 1, 2, 3, 4, 5, 17, math.MaxUint64 - 1, math.MaxUint64}
+	entries := make([]ProducerEntry, len(heights))
+	want := make(map[uint64]ProducerEntry, len(heights))
+	for i, height := range heights {
+		entry := ProducerEntry{Height: height, TimestampUnix: uint64(i + 100)}
+		entry.ProducingAddr[1] = byte(i + 1)
+		entries[i] = entry
+		want[height] = entry
+	}
+	s, err := NewProducerSchedule(3, coverage, entries, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	probes := append(heights, 6, 16, 18, math.MaxUint64-2)
+	for _, height := range probes {
+		entry, present := s.LookupEntry(height)
+		expected, covered := want[height]
+		if present != covered || entry != expected {
+			t.Fatalf("height %d: got %+v/%t, want %+v/%t", height, entry, present, expected, covered)
+		}
+	}
+}
+
+func BenchmarkProducerScheduleValidatedIndex(b *testing.B) {
+	for _, test := range []struct {
+		name  string
+		width int
+	}{
+		{"contiguous", MaxProducerScheduleEntries},
+		{"gapped", 1000},
+		{"singletons", 1},
+	} {
+		b.Run(test.name, func(b *testing.B) {
+			const count = MaxProducerScheduleEntries
+			coverage := make([]ProducerCoverage, 0, count/test.width)
+			entries := make([]ProducerEntry, count)
+			for first := 0; first < count; first += test.width {
+				last := min(first+test.width, count)
+				startHeight := uint64(first + first/test.width + 1)
+				coverage = append(coverage, ProducerCoverage{startHeight, startHeight + uint64(last-first-1)})
+				for i := first; i < last; i++ {
+					entries[i].Height = startHeight + uint64(i-first)
+					entries[i].TimestampUnix = uint64(i + 100)
+				}
+			}
+			schedule := ProducerSchedule{
+				ChainID: 3, Coverage: coverage, Entries: entries,
+				ScheduleHash: computeScheduleHash(3, coverage, entries),
+			}
+			b.Run("validate", func(b *testing.B) {
+				b.ReportAllocs()
+				for b.Loop() {
+					if err := schedule.Validate(); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+			b.Run("lookup", func(b *testing.B) {
+				if err := schedule.Validate(); err != nil {
+					b.Fatal(err)
+				}
+				b.ReportAllocs()
+				next := 0
+				for b.Loop() {
+					expected := entries[next]
+					if got, ok := schedule.LookupEntry(expected.Height); !ok || got != expected {
+						b.Fatal("lookup did not return the selected entry")
+					}
+					next = (next + 7919) % count
+				}
+			})
+		})
 	}
 }
 
@@ -141,23 +220,78 @@ func TestProducerScheduleJSONCountLimit(t *testing.T) {
 	// now structurally invalid and fail before the count cap is reached.
 	raw := `[` + strings.Repeat(`{},`, MaxProducerScheduleEntries) + `{}]`
 	var rows []struct{}
+	fields := func(*struct{}) map[string]any { return nil }
 	d := json.NewDecoder(strings.NewReader(raw))
-	err := decodeScheduleRows(d, &rows, "entries", MaxProducerScheduleEntries)
+	err := decodeScheduleRows(d, &rows, "entries", MaxProducerScheduleEntries, fields)
 	if rows != nil || !errors.Is(err, ErrProducerScheduleTooLarge) {
 		t.Fatalf("JSON entry limit: published=%t err=%v", rows != nil, err)
 	}
 
 	// The first row outside the limit must never reach the row decoder.
 	d = json.NewDecoder(strings.NewReader(`[{},false]`))
-	err = decodeScheduleRows(d, &rows, "entries", 1)
+	err = decodeScheduleRows(d, &rows, "entries", 1, fields)
 	if rows != nil || !errors.Is(err, ErrProducerScheduleTooLarge) {
 		t.Fatalf("JSON row decoded beyond limit: published=%t err=%v", rows != nil, err)
 	}
 }
 
+func TestProducerScheduleRowDecoderBoundaries(t *testing.T) {
+	schedule := fixtureSchedule(t, 2)
+	first, err := json.Marshal(schedule.Entries[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := json.Marshal(schedule.Entries[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	escaped := strings.Replace(string(first), `"height"`, `"he\u0069ght"`, 1)
+	t.Run("shared object boundary", func(t *testing.T) {
+		var standalone ProducerEntry
+		if err := json.Unmarshal([]byte(escaped), &standalone); err != nil || standalone != schedule.Entries[0] {
+			t.Fatalf("standalone row changed: %v", err)
+		}
+		input := `{"entries":[` + escaped + "," + string(second) + `],"following":true}`
+		d := json.NewDecoder(iotest.OneByteReader(strings.NewReader(input)))
+		if token, err := d.Token(); err != nil || token != json.Delim('{') {
+			t.Fatal("expected the enclosing object")
+		}
+		if token, err := d.Token(); err != nil || token != "entries" {
+			t.Fatal("expected the entries field")
+		}
+		var got []ProducerEntry
+		if err := decodeScheduleRows(d, &got, "entries", 2, (*ProducerEntry).requiredJSONFields); err != nil ||
+			len(got) != 2 || got[0] != standalone || got[1] != schedule.Entries[1] {
+			t.Fatalf("nested rows changed: %v", err)
+		}
+		if token, err := d.Token(); err != nil || token != "following" {
+			t.Fatal("row reader consumed the next field")
+		}
+	})
+
+	for _, tc := range []struct {
+		name  string
+		input string
+	}{
+		{"missing row comma", "[" + escaped + string(second) + "]"},
+		{"null second row", "[" + escaped + ",null]"},
+		{"missing fields in second row", "[" + escaped + `,{"height":102}]`},
+		{"trailing comma", "[" + escaped + ",]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := []ProducerEntry{schedule.Entries[1]}
+			d := json.NewDecoder(strings.NewReader(tc.input))
+			err := decodeScheduleRows(d, &got, "entries", 2, (*ProducerEntry).requiredJSONFields)
+			if !errors.Is(err, errInvalidScheduleJSON) || len(got) != 1 || got[0] != schedule.Entries[1] {
+				t.Fatalf("invalid array changed its target: %v", err)
+			}
+		})
+	}
+}
+
 func TestProducerScheduleByteLimit(t *testing.T) {
-	// A stream may report no file size, or a file may grow after Stat. The
-	// decoder must stop after the limit plus one byte without parsing it.
+	// A stream may report no file size, or a file may grow after Stat.
+	// Inspect at most the limit plus one byte.
 	input := bytes.NewReader(bytes.Repeat([]byte{' '}, 8192))
 	s, err := decodeProducerSchedule(input, 1024)
 	if s != nil || !errors.Is(err, ErrProducerScheduleTooLarge) {
@@ -181,5 +315,57 @@ func TestProducerScheduleByteLimit(t *testing.T) {
 	}
 	if s, err := LoadProducerSchedule(path); s != nil || !errors.Is(err, ErrProducerScheduleTooLarge) {
 		t.Fatalf("file limit: schedule=%v err=%v", s != nil, err)
+	}
+}
+
+func TestProducerScheduleStreamCompletion(t *testing.T) {
+	want := fixtureSchedule(t, 2)
+	raw, err := json.Marshal(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw = append(raw, '\n', '\t')
+	for _, reader := range []io.Reader{
+		iotest.OneByteReader(bytes.NewReader(raw)),
+		stateReadFailure{bytes.NewReader(raw), io.EOF},
+	} {
+		got, err := decodeProducerSchedule(reader, int64(len(raw)))
+		if err != nil || got == nil || got.ScheduleHash != want.ScheduleHash {
+			t.Fatalf("complete stream at the exact byte limit: %v", err)
+		}
+		expected, _ := want.LookupEntry(101)
+		if entry, ok := got.LookupEntry(101); !ok || entry != expected {
+			t.Fatal("complete stream did not build the expected lookup index")
+		}
+	}
+	failure := errors.New("controlled terminal schedule read error")
+	invalid := []byte("{\"unknown\":" + strings.Repeat(" ", 4096))
+	for _, tc := range []struct {
+		name  string
+		input []byte
+		limit int
+		err   error
+		want  error
+	}{
+		{"invalid object exceeds limit", invalid, 2048, nil, ErrProducerScheduleTooLarge},
+		{"drain after early parse failure", invalid, len(invalid), failure, failure},
+		{"complete object with read error", raw, len(raw), failure, failure},
+		{"overflow probe with read error", raw, len(raw) - 1, failure, failure},
+		{"trailing closing token", append(bytes.Clone(raw), ']'), len(raw) + 1, nil, errInvalidScheduleJSON},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			input := bytes.NewReader(tc.input)
+			var reader io.Reader = input
+			if tc.err != nil {
+				reader = stateReadFailure{input, tc.err}
+			}
+			got, err := decodeProducerSchedule(reader, int64(tc.limit))
+			if got != nil || !errors.Is(err, tc.want) {
+				t.Fatalf("unexpected stream outcome: schedule=%v err=%v", got != nil, err)
+			}
+			if read := len(tc.input) - input.Len(); read != min(len(tc.input), tc.limit+1) {
+				t.Fatalf("unexpected bounded stream length: %d", read)
+			}
+		})
 	}
 }

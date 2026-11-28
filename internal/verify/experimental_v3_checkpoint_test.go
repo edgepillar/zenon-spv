@@ -270,7 +270,7 @@ func BenchmarkExperimentalV3PinnedCheckpointInput(b *testing.B) {
 	state := experimentalV3New(b, f)
 	headers := make(experimentalV3Window, MaxRetainHeaders)
 	for i := range headers {
-		headers[i] = f.headers[i%len(f.headers)]
+		headers[i] = &f.headers[i%len(f.headers)]
 	}
 	raw, err := json.Marshal(experimentalV3File{Format: experimentalV3StateFormat, Version: 4, Context: f.pin,
 		Profile: f.profile, Policy: f.policy, Headers: headers})

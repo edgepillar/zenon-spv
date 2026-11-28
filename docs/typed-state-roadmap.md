@@ -435,7 +435,43 @@ frontier, payload and manifest bindings and reported candidate root. A shared
 root at another height or hash is rejected. The JSON includes the accepted tip
 and the selected header context, including the depth policy and schedule hash.
 The native comparison reads the report while the projection tool reads the
-ledger stream in one pass.
+ledger stream in one pass. The
+[retained-fragment recount](../tools/ledger-export/README.md#recount-directly-from-retained-fragments)
+feeds previously held bytes and a recovered range to that same projection.
+Use the selected completed-export receipt and separately pinned manifest for
+the whole put stream. The compiled snapshot checker exercises one controlled
+range response through the fragment recount and compares the resulting report
+against both the configured header range and a pinned local checkpoint. A
+truncated response leaves the recount without a projection result.
+
+For repeated checks, use `export-experimental-snapshot-header-state` with the
+same options to capture the retained experimental header checkpoint. Its
+stdout contains the checkpoint bytes and stderr contains the JSON report.
+Keep the checkpoint after exit zero and complete capture, and match the byte
+count and SHA-256 against `state_output`. The export works after successful
+header-root selection and, when requested, a successful projection comparison.
+
+To resume, keep the independently selected configuration, context, height
+and hash. Add `--trusted-state "$LOCAL_CHECKPOINT"` and
+`--expect-state-sha256 "$CHECKPOINT_SHA256"`. The checkpoint must come from
+trusted local persistence. The SHA-256 pin identifies the bytes. The verifier
+rechecks the retained headers and applies the same depth requirement when
+selecting a root. Omit the momentum file when the checkpoint contains the
+required range, or supply only consecutive successors of its tip.
+
+A checkpoint-only report has `header_checks: null` and
+`state_input.provider_headers: 0`. The state-input report records the local
+checkpoint digest and byte count. The checkpoint contains retained headers.
+Snapshot transport, state projection and node import each need their own
+evidence.
+
+The compiled controls pass the checkpoint from a recovered projection to the
+three-witness `BatchEntry` query with separately pinned header and query
+contexts. The proof-only input carries zero provider headers and reproduces the
+three typed rows from the anchor replay. An independent check compares all 17
+stored gateway fields. The controls preserve the membership result when the
+gateway supplies a different finalization height and reject a mismatched proof
+root or checkpoint digest. The replay uses the recorded test configuration.
 
 The two pinned node revisions share the L1 fold, SMT hash and compute blobs.
 Both use a 20-byte address in that fold. This supports comparison under the

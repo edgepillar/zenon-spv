@@ -9,8 +9,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 
+	"github.com/0x3639/zenon-spv/internal/jsonspan"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -89,11 +89,8 @@ func DecodeCandidateV3Header(raw []byte) (CandidateV3Header, error) {
 		return CandidateV3Header{}, fmt.Errorf("%w: JSON byte limit", ErrCandidateV3Header)
 	}
 	var value CandidateV3Header
-	if err := json.Unmarshal(raw, &value); err != nil {
-		if errors.Is(err, ErrCandidateV3Header) {
-			return CandidateV3Header{}, err
-		}
-		return CandidateV3Header{}, fmt.Errorf("%w: malformed JSON", ErrCandidateV3Header)
+	if err := value.UnmarshalJSON(raw); err != nil {
+		return CandidateV3Header{}, err
 	}
 	return value, nil
 }
@@ -101,12 +98,30 @@ func DecodeCandidateV3Header(raw []byte) (CandidateV3Header, error) {
 // MarshalJSON emits the flat, complete projected header. Width and hash checks
 // establish encoding consistency; they do not validate the signature bytes.
 func (c CandidateV3Header) MarshalJSON() ([]byte, error) {
-	if err := c.validateWire(); err != nil {
+	wire, err := c.checkedJSON()
+	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(candidateV3JSON{
+	return json.Marshal(wire)
+}
+
+// EncodeJSON writes the same projected header through a caller's encoder.
+// It applies the width and hash checks before emitting a value.
+func (c CandidateV3Header) EncodeJSON(encoder *json.Encoder) error {
+	wire, err := c.checkedJSON()
+	if err != nil {
+		return err
+	}
+	return encoder.Encode(wire)
+}
+
+func (c CandidateV3Header) checkedJSON() (candidateV3JSON, error) {
+	if err := c.validateWire(); err != nil {
+		return candidateV3JSON{}, err
+	}
+	return candidateV3JSON{
 		candidateV3JSONHeader: candidateV3JSONHeader(c.Header), StateRoot: c.StateRoot,
-	})
+	}, nil
 }
 
 // UnmarshalJSON accepts each exact projected field once, rejects null and
@@ -119,6 +134,9 @@ func (c *CandidateV3Header) UnmarshalJSON(raw []byte) error {
 	if c == nil || len(raw) > MaxCandidateV3HeaderJSONBytes {
 		return fmt.Errorf("%w: nil receiver or JSON byte limit", ErrCandidateV3Header)
 	}
+	if !json.Valid(raw) {
+		return fmt.Errorf("%w: malformed JSON", ErrCandidateV3Header)
+	}
 	var next CandidateV3Header
 	h := &next.Header
 	fields := map[string]any{
@@ -129,7 +147,7 @@ func (c *CandidateV3Header) UnmarshalJSON(raw []byte) error {
 		"nextFusionPrice": &h.NextFusionPrice, "nextWorkPrice": &h.NextWorkPrice,
 		"stateRoot": &next.StateRoot,
 	}
-	if err := decodeCandidateV3Object(raw, fields); err != nil {
+	if err := decodeValidCandidateV3Object(raw, fields); err != nil {
 		return fmt.Errorf("%w: %v", ErrCandidateV3Header, err)
 	}
 	if err := next.validateWire(); err != nil {
@@ -153,43 +171,44 @@ func (c CandidateV3Header) validateWire() error {
 	return nil
 }
 
-func decodeCandidateV3Object(raw []byte, fields map[string]any) error {
-	d := json.NewDecoder(bytes.NewReader(raw))
-	start, err := d.Token()
-	if err != nil || start != json.Delim('{') {
+// The full syntax check precedes traversal. Fields borrow spans from the
+// input while decoding synchronously. Consuming each entry in the private map
+// detects both duplicate and missing fields.
+func decodeValidCandidateV3Object(raw []byte, remaining map[string]any) error {
+	at := jsonspan.SpaceEnd(raw, 0)
+	if raw[at] != '{' {
 		return errors.New("expected one JSON object")
 	}
-	seen := make(map[string]bool, len(fields))
-	for d.More() {
-		token, err := d.Token()
-		if err != nil {
+	at = jsonspan.SpaceEnd(raw, at+1)
+	for raw[at] != '}' {
+		keyEnd := jsonspan.StringEnd(raw, at)
+		var key string
+		if err := json.Unmarshal(raw[at:keyEnd], &key); err != nil {
 			return errors.New("malformed JSON object")
 		}
-		key, ok := token.(string)
-		target, known := fields[key]
-		if !ok || !known || seen[key] {
+		target, known := remaining[key]
+		if !known {
 			return errors.New("unknown or duplicate field")
 		}
-		seen[key] = true
-		var value json.RawMessage
-		if err := d.Decode(&value); err != nil {
-			return errors.New("malformed JSON field")
-		}
-		if bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+		delete(remaining, key)
+		colon := jsonspan.SpaceEnd(raw, keyEnd)
+		start := jsonspan.SpaceEnd(raw, colon+1)
+		end := jsonspan.ValueEnd(raw, start)
+		value := raw[start:end]
+		if bytes.Equal(value, []byte("null")) {
 			return fmt.Errorf("%s must be non-null", key)
 		}
 		if err := decodeCandidateV3Field(value, key, target); err != nil {
 			// Only known schema names are echoed, never input values or unknown keys.
 			return fmt.Errorf("invalid %s", key)
 		}
+		at = jsonspan.SpaceEnd(raw, end)
+		if raw[at] == '}' {
+			break
+		}
+		at = jsonspan.SpaceEnd(raw, at+1) // Skip the validated comma.
 	}
-	if end, err := d.Token(); err != nil || end != json.Delim('}') {
-		return errors.New("malformed JSON object")
-	}
-	if err := d.Decode(new(json.RawMessage)); err != io.EOF {
-		return errors.New("trailing JSON")
-	}
-	if len(seen) != len(fields) {
+	if len(remaining) != 0 {
 		return errors.New("missing required field")
 	}
 	return nil

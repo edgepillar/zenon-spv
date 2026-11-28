@@ -9,7 +9,8 @@ PROFILE = "zenon-l1-balance-storage-sha3/v1"
 DEFAULT_LEAVES = 32768
 MAX_LEAVES = 100000
 DEPTH = 256
-ZERO = bytes(32)
+DIGEST_BYTES = DEPTH // 8
+ZERO = bytes(DIGEST_BYTES)
 VALUE_CHUNK_BYTES = 64 << 10
 
 
@@ -31,27 +32,35 @@ def frontier_value(frontier):
 
 
 def root_from_digests(leaves):
-    """Sort owned path/digest pairs in place and fold only the root."""
+    """Sort fixed-width path followed by digest records and fold the root."""
     if not leaves:
         return ZERO
     leaves.sort()
+    previous_path = leaves[0][:DIGEST_BYTES]
     for index in range(1, len(leaves)):
-        if leaves[index - 1][0] == leaves[index][0]:
+        leaf = leaves[index]
+        if leaf.startswith(previous_path):
             raise Refused("projection_path_collision")
+        previous_path = leaf[:DIGEST_BYTES]
 
     def fold(start, end, height):
-        path, root = leaves[start]
+        leaf = leaves[start]
+        path = int.from_bytes(leaf[:DIGEST_BYTES], "big")
         first_parent = 0
         if end - start > 1:
             # Above the highest differing bit every path in this range is
             # identical. Split once, then fold the shared unary ancestors.
-            split_bit = (path ^ leaves[end - 1][0]).bit_length() - 1
+            last_path = int.from_bytes(leaves[end - 1][:DIGEST_BYTES], "big")
+            split_bit = (path ^ last_path).bit_length() - 1
             right_path = ((path >> split_bit) + 1) << split_bit
-            middle = bisect_left(leaves, (right_path,), start + 1, end)
+            # The prefix alone sorts before every record for that path.
+            middle = bisect_left(leaves, right_path.to_bytes(DIGEST_BYTES, "big"), start + 1, end)
             left = fold(start, middle, split_bit)
             right = fold(middle, end, split_bit)
             root = ZERO if left == right == ZERO else sha3_256(left + right).digest()
             first_parent = split_bit + 1
+        else:
+            root = leaf[DIGEST_BYTES:]
         for bit in range(first_parent, height):
             if root == ZERO:
                 break
@@ -98,7 +107,7 @@ class Projector:
             if size == 32:
                 zero32 = chunk == ZERO
             remaining -= len(chunk)
-        self.leaves.append((int.from_bytes(path, "big"), leaf.digest()))
+        self.leaves.append(path + leaf.digest())
         self.balance_leaves += key[21] == 3
         return zero32
 

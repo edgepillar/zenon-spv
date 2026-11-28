@@ -385,7 +385,36 @@ def consumer_context_diagnostics(config, pins):
     return header, query
 
 
-def consumer_result(report, config, request, provider, header_root, descriptor=None):
+def compare_frontier_batch(gateway, domain, batch, entry, *, raw_rpc=False):
+    """Compare the stored fields while keeping the frontier hint separate."""
+    require(type(gateway) is dict and type(gateway.get("isFinalized")) is bool,
+            "consumer_gateway_identity")
+    same(gateway.get("domainId"), domain, "consumer_gateway_identity")
+    same(gateway.get("batchId"), batch, "consumer_gateway_identity")
+    if raw_rpc:
+        fields = {name[0].lower() + name[1:] for name, _ in ENTRY_SCHEMA}
+        require(set(gateway) == fields | {"domainId", "batchId", "isFinalized"}, "frontier_batch_fields")
+
+    matches = True
+    for name, kind in ENTRY_SCHEMA:
+        expected = entry[name]
+        field = name[0].lower() + name[1:]
+        got = gateway.get(field)
+        if kind == "bytes":
+            got = binary(got, 4096, nullable=True)
+        elif raw_rpc:
+            if type(kind) is int:
+                uint(got, kind)
+            elif kind == "hash":
+                hex_bytes(got, 32)
+            else:
+                require(type(got) is str and len(got.encode("utf-8")) <= 4096, "frontier_batch_text")
+        matches = matches and type(got) is type(expected) and got == expected
+    return {"stored_fields_compared": len(ENTRY_SCHEMA), "stored_fields_match": matches,
+            "frontier_is_finalized_hint": gateway["isFinalized"], "frontier_identity_authenticated": False}
+
+
+def consumer_result(report, config, request, provider, header_root, descriptor=None, *, compare_gateway=True):
     """Compare actual CLI output bytes; its successful receipt is checked outside."""
     pins = fingerprints(config, request)
     require(type(report) is dict and report.get("command") == "query-experimental-batch-context"
@@ -418,24 +447,22 @@ def consumer_result(report, config, request, provider, header_root, descriptor=N
         compare_decoded(actual.get(name), expected)
     for row, name in (("batch_entry", "batch_membership"), ("domain_record", "record_membership"), ("domain_config", "config_membership")):
         compare_decoded(actual.get(name), checked["memberships"][row])
-    gateway = provider.get("gateway")
-    require(type(gateway) is dict and type(gateway.get("isFinalized")) is bool,
-            "consumer_gateway_identity")
-    same(gateway.get("domainId"), config["query_profile"]["entry"]["domain_id"], "consumer_gateway_identity")
-    same(gateway.get("batchId"), request["batch_id"], "consumer_gateway_identity")
-    gateway_match = True
-    for name, expected in checked["decoded"]["entry"].items():
-        field = name[0].lower() + name[1:]
-        got = binary(gateway.get(field), 4096, nullable=True) if type(expected) is bytes else gateway.get(field)
-        gateway_match = gateway_match and type(got) is type(expected) and got == expected
-    comparison = report.get("gateway_comparison")
-    require(type(comparison) is dict and comparison.get("stored_fields_match") is gateway_match
-            and comparison.get("frontier_is_finalized_hint") is gateway["isFinalized"]
-            and comparison.get("frontier_identity_authenticated") is False
-            and report.get("gateway_comparison_requested") is True, "consumer_gateway_comparison")
+    require(report.get("gateway_comparison_requested") is compare_gateway
+            and "gateway_comparison" in report, "consumer_gateway_comparison")
+    comparison = report["gateway_comparison"]
+    fields_compared, gateway_match = 0, None
+    if compare_gateway:
+        gateway = compare_frontier_batch(provider.get("gateway"), config["query_profile"]["entry"]["domain_id"],
+                                        request["batch_id"], checked["decoded"]["entry"])
+        fields_compared, gateway_match = gateway["stored_fields_compared"], gateway["stored_fields_match"]
+        require(type(comparison) is dict and comparison.get("stored_fields_match") is gateway_match
+                and comparison.get("frontier_is_finalized_hint") is gateway["frontier_is_finalized_hint"]
+                and comparison.get("frontier_identity_authenticated") is False, "consumer_gateway_comparison")
+    else:
+        require("gateway" not in provider and comparison is None, "consumer_gateway_comparison")
     return {"format": "owned-devnet-independent-consumer-check/v1", "pins": pins,
         "three_membership_proofs_checked": 3, "typed_rows_checked": 3,
-        "gateway_stored_fields_compared": 17, "gateway_stored_fields_match": gateway_match,
+        "gateway_stored_fields_compared": fields_compared, "gateway_stored_fields_match": gateway_match,
         "request": request, "root": header_root, "totals": checked["totals"],
         "selected_source_semantics_checked": descriptor is not None,
         "signature_verification_independently_reimplemented": False,

@@ -200,6 +200,8 @@ def evidence_index(recorders, extra):
         allowed = set(REVIEW_FILES)
         if recorder.directory.name == "evidence":
             allowed.update(name for name in recorder.names if STOP_STATE_FILE.fullmatch(name) is not None)
+            if capture.PROVIDER_CAPTURE in recorder.names:
+                allowed.update((capture.PROVIDER_CAPTURE, capture.PROVIDER_FILE))
         for record in recorder.records:
             for field in ("launch", "started", "receipt"):
                 if record[field] is not None:
@@ -229,19 +231,55 @@ def publish_paths(path, workspace, entries):
 
 
 def closed_opening_after_timeout(contract, record, engine, rpc, opening, sources, oracle,
-                                 workspace, tool_environment, budget, reader_source):
+                                 workspace, tool_environment, budget, reader_source, *, services,
+                                 opening_row, batch_inputs=None, consumer=None):
     budget.cap_diagnostic_time(120)
-    engine.stop_producers_and_clients()
-    frontier = rpc.frontier()
+    work_deadline = budget.started + contract.data["limits"]["max_elapsed_seconds"] - budget.reserve
+    # Leave time for the closure and its frozen RPC frontier.
+    deadline = min(budget.diagnostic_deadline, work_deadline) - 10
+    if services == model.NODE_SERVICES:
+        rpc.capture_configuration_timeout_pillar(deadline=deadline)
+    engine.stop_producers_and_clients(services=services)
+    frontier, frontier_row = rpc.frontier_with_row()
     request_id = rpc.calls
     identifier = frontier.identifier()
     capture.require_opening_frontier(opening, identifier, frontier.version, frontier.timestamp)
-    ledger = engine.close_rpc()
-    _, provenance = capture.read_closed_parent_schedule(contract, record, engine, ledger,
-        opening, identifier, sources, oracle, workspace, tool_environment, budget.check, reader_source)
+    batch_observation = window = replay = range_request_id = None
+    if services == model.SERVICES and batch_inputs is not None:
+        try:
+            batch_observation = rpc.deposit_timeout_batch(frontier, *batch_inputs)
+        except (OSError, ValueError, KeyError, TypeError):
+            # The batch read is supplemental. Close the RPC node and preserve
+            # the existing opening observation if the batch read refused.
+            pass
+        if batch_observation is not None and batch_observation.witnesses is not None and consumer is not None:
+            try:
+                window, range_request_id = rpc.deposit_timeout_window(opening, frontier, batch_observation,
+                    opening_row=opening_row, frontier_row=frontier_row, deadline=deadline)
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+    ledger = engine.close_rpc(services=services)
+    _, provenance, opening_result = capture.read_closed_parent_schedule(contract, record, engine, ledger,
+        opening, identifier, sources, oracle, workspace, tool_environment, budget.check, reader_source,
+        services=services)
     budget.check(force=True)
-    return {"format": "owned-devnet-closed-opening-authorization/v1",
-            "frontier_request_id": request_id, "closed_ledger": provenance}
+    if window is not None:
+        try:
+            schedule, replay_provenance, _ = capture.read_closed_parent_schedule(contract, record, engine, ledger,
+                window.headers, identifier, sources, oracle, workspace, tool_environment, budget.check,
+                reader_source, services=services, label_prefix=capture.DEPOSIT_TIMEOUT_ORACLE,
+                reuse_opening=(provenance, opening_result))
+            provider = capture.replay_deposit_timeout(contract, record, window, schedule, *batch_inputs, consumer,
+                workspace, tool_environment, budget.check)
+            budget.check(force=True)
+            replay = {"format": capture.DEPOSIT_TIMEOUT_REPLAY_REUSING_HEADERS_FORMAT,
+                      "header_range_request_id": range_request_id,
+                      "provider": provider, "closed_ledger": replay_provenance}
+        except (OSError, ValueError, KeyError, TypeError):
+            # The opening and proof observations survive an incomplete native replay.
+            pass
+    return ({"format": "owned-devnet-closed-opening-authorization/v1",
+             "frontier_request_id": request_id, "closed_ledger": provenance}, batch_observation, replay)
 
 
 def execute(environment, workspace, checkout):
@@ -252,7 +290,7 @@ def execute(environment, workspace, checkout):
     gh_environment = dict(tool_environment, GH_TOKEN=environment["GH_TOKEN"],
         GH_HOST="github.com", GH_CONFIG_DIR=str(private / "gh"), GH_PROMPT_DISABLED="1",
         GH_NO_UPDATE_NOTIFIER="1", GH_NO_EXTENSION_UPDATE_NOTIFIER="1")
-    engine = budget = execution = contract = rpc = closed_opening = None
+    engine = budget = execution = contract = rpc = closed_opening = batch_observation = replay_observation = None
     stage, outcome, reason = "dispatch", "UNKNOWN", None
     extra = set()
     try:
@@ -287,7 +325,7 @@ def execute(environment, workspace, checkout):
         stage = "nodes"
         files.verify()
         engine.create_layout()
-        for role in model.SERVICES[:4]:
+        for role in model.NODE_SERVICES:
             engine.create(role, images.image_for(role), files)
             engine.start(role)
         rpc = capture.LocalRpc(contract, record, workspace, "/usr/bin/curl", tool_environment, guard)
@@ -318,8 +356,7 @@ def execute(environment, workspace, checkout):
         oracle.enable_execution()
         stage = "node-toolchain"
         node = Installer(contract, transport, workspace / "node-toolchain",
-                         ["/usr/bin/curl", "--disable"], tool_environment, guard).fetch()
-        node = node.enable_execution()
+                         ["/usr/bin/curl", "--disable"], tool_environment, guard, for_execution=True).fetch()
         stage = "packages"
         prepared = Packages(contract, record, sources, node, workspace / "packages",
                             tool_environment, guard).prepare()
@@ -339,7 +376,6 @@ def execute(environment, workspace, checkout):
         engine.stop_producers_and_clients()
         window = capture.collect(contract, record, rpc, consumer, opening, selected,
                                  workspace, tool_environment, guard)
-        extra.add("provider.json")
         stage = "closed-ledger"
         ledger = engine.close_rpc()
         schedule = capture.read_closed_schedule(contract, record, engine, ledger, window, sources,
@@ -358,12 +394,16 @@ def execute(environment, workspace, checkout):
         receipt = error.result.receipt
         outcome = "FAILURE" if receipt["output_complete"] is True else "UNKNOWN"
         reason = "command_failed" if outcome == "FAILURE" else "command_incomplete"
-        if (stage == "fixture-deposit" and outcome == "UNKNOWN" and receipt.get("label") == fixture_progress.COMMAND
+        timeout_scope = fixture_progress.TIMEOUT_SCOPES.get(stage)
+        if (timeout_scope is not None and outcome == "UNKNOWN" and receipt.get("label") == timeout_scope[0]
                 and receipt["reason"] == "timeout" and receipt["process_group_quiescent"] is True
                 and fixture_progress.supports(contract)):
             try:
-                closed_opening = closed_opening_after_timeout(contract, record, engine, rpc, opening, sources,
-                    oracle, workspace, tool_environment, budget, reader_source)
+                closed_opening, batch_observation, replay_observation = closed_opening_after_timeout(
+                    contract, record, engine, rpc, opening, sources, oracle, workspace,
+                    tool_environment, budget, reader_source, services=timeout_scope[1], opening_row=opening_rows[2],
+                    batch_inputs=(descriptor, profile) if stage == "fixture-deposit" else None,
+                    consumer=consumer)
             except (OSError, ValueError, KeyError, TypeError):
                 # Retain command receipts and the primary timeout even if this diagnostic is incomplete.
                 pass
@@ -384,9 +424,33 @@ def execute(environment, workspace, checkout):
             except (OSError, ValueError, KeyError, TypeError):
                 closure = None
         closed = closure is not None and all(row["observed_closed"] is True for row in closure)
-        if closed_opening is not None and closed and len(closure) == len(model.SERVICES):
-            record.seal(capture.CLOSED_OPENING_REPORT, canonical(closed_opening))
-            extra.update({capture.CLOSED_OPENING_REPORT, "parent-oracle-01.request.json", "parent-oracle-01.stdout"})
+        if closed_opening is not None and closed:
+            services = fixture_progress.TIMEOUT_SCOPES[stage][1]
+            if len(closure) == len(services) and {row["service"] for row in closure} == set(services):
+                record.seal(capture.CLOSED_OPENING_REPORT, canonical(closed_opening))
+                extra.update({capture.CLOSED_OPENING_REPORT, "parent-oracle-01.request.json", "parent-oracle-01.stdout"})
+                if batch_observation is not None:
+                    batch_report = batch_observation.report
+                    record.seal(capture.DEPOSIT_TIMEOUT_BATCH, canonical(batch_report))
+                    names = [capture.DEPOSIT_TIMEOUT_HEADER, capture.DEPOSIT_TIMEOUT_PROOFS["batch_entry"]]
+                    if batch_report["context_proof_totals"] is not None:
+                        names.extend(capture.DEPOSIT_TIMEOUT_PROOFS[name] for name in ("domain_record", "domain_config"))
+                    if batch_report["format"] == capture.DEPOSIT_TIMEOUT_BATCH_GATEWAY_FORMAT:
+                        names.append(capture.DEPOSIT_TIMEOUT_GATEWAY)
+                    first = batch_report["frontier_request_id"] + 1
+                    extra.update({capture.DEPOSIT_TIMEOUT_BATCH, *names})
+                    extra.update(f"rpc-{index:02d}.request.json" for index in range(first, first + len(names)))
+                if replay_observation is not None:
+                    record.seal(capture.DEPOSIT_TIMEOUT_REPLAY, canonical(replay_observation))
+                    request_id = replay_observation["header_range_request_id"]
+                    extra.update({capture.DEPOSIT_TIMEOUT_REPLAY, capture.DEPOSIT_TIMEOUT_STDOUT})
+                    if request_id is not None:
+                        extra.update({capture.DEPOSIT_TIMEOUT_RANGE, f"rpc-{request_id:02d}.request.json"})
+                    if batch_observation.gateway is None:
+                        request_id = batch_observation.report["frontier_request_id"] + 5
+                        extra.add(f"rpc-{request_id:02d}.request.json")
+                    for row in replay_observation["closed_ledger"]["oracle_reports"]:
+                        extra.update((row["request"]["file"], row["stdout"]["file"]))
         if budget is not None:
             record.seal("budget-report.json", canonical(budget.report()))
         if outcome == "DEVNET_CONSUMER_ACCEPTED" and not closed:
@@ -407,6 +471,7 @@ def execute(environment, workspace, checkout):
             extra.update(startup_sync_evidence_files(rpc))
             extra.update(post_sync_frontier_evidence_files(rpc))
             extra.update(startup_peer_evidence_files(rpc))
+            extra.update(rpc.configuration_timeout_pillar_evidence)
         if node_diagnostics.REPORT in record.names:
             extra.add(node_diagnostics.REPORT)
         if node_file_logs.REPORT in record.names:

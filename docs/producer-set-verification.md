@@ -234,8 +234,11 @@ The loader caps a sidecar at 256 MiB, with at most 1,000,000 entries
 and 1,000,000 coverage ranges. These hard limits retain room for the
 million-momentum design; they are not typical memory-use estimates.
 Split longer observations into separate, explicitly selected schedules.
-The file-size check and bounded read precede JSON decoding. Array decoding
-stops at the count limit; malformed or empty authority rows fail earlier.
+After checking the file size, the loader decodes rows from a bounded stream.
+It reads at most the byte limit plus one probe byte, even when the parser
+fails early. A terminal read error takes precedence over a byte overflow,
+and both take precedence over a JSON error. Array decoding stops at the
+count limit. Malformed or empty authority rows fail earlier.
 Count checks also precede index allocation
 and owned-state schedule copies. Validation walks
 sorted coverage and entries together in linear time, including terminal
@@ -261,6 +264,41 @@ coverage, dense entries, and the content hash. A failed parse leaves any
 existing in-memory schedule unchanged. CLI schedule failures precede state
 loading, writer locking, and watch RPC requests; JSON diagnostics exclude
 private filenames, arbitrary field names, and metadata values.
+
+The same generated schedules were loaded by `4b8b88a` and the streaming
+loader on darwin/arm64 with Go 1.25.14. The 4,096- and 100,000-entry figures
+are medians of six paired trials of three operations, with alternating
+revision order. The 1,000,000-entry row records one complete load per revision.
+Each operation parsed the sidecar, validated its content hash and coverage,
+and checked the first and last indexed entries.
+
+| Entries | Baseline allocated B/op | Streamed B/op | Baseline ms/op | Streamed ms/op |
+| --- | ---: | ---: | ---: | ---: |
+| 4,096 | 12,917,005 | 9,897,597 | 14.82 | 12.12 |
+| 100,000 | 348,404,056 | 249,390,840 | 297.05 | 269.43 |
+| 1,000,000 | 3,385,025,184 | 2,501,374,048 | 3,123.52 | 2,544.18 |
+
+Allocation figures count cumulative Go allocations during loading,
+validation and index construction on this host. The compiled schedule
+export and verification workflow also passed with the recorded node data.
+
+The row reader consumes objects from the schedule's decoder and reuses a
+field buffer across each array. Nested and standalone rows share the
+required-field checks. The row limit is checked before reading the next
+object, and the caller handles the enclosing delimiter or end-of-input.
+
+A second darwin/arm64 comparison reused the same schedules, Go toolchain
+and trial design, with `25b89ad` as its baseline.
+
+| Entries | Baseline allocated B/op | Shared decoder B/op | Baseline ms/op | Shared decoder ms/op |
+| --- | ---: | ---: | ---: | ---: |
+| 4,096 | 9,897,597 | 6,554,688 | 11.72 | 8.07 |
+| 100,000 | 249,390,824 | 167,790,242 | 256.69 | 181.89 |
+| 1,000,000 | 2,501,374,016 | 1,685,373,336 | 2,360.56 | 1,695.83 |
+
+The row controls cover escaped field names, adjacent objects, null and
+incomplete rows, and the next field of the enclosing object. A malformed
+array leaves its existing destination intact.
 
 ---
 
@@ -318,11 +356,12 @@ Notes:
 The JSON form mirrors the Go struct. The loader accepts exactly one object
 with known fields only; unknown fields and trailing data are errors.
 Validation rejects unsorted entries, gaps, entries outside coverage,
-overlapping ranges, and a recomputed `ScheduleHash` mismatch. Failed
-revalidation clears any previous lookup index. As before, callers must keep
-a successfully validated schedule read-only; the owned state API captures
-its own copy. These integrity checks do not authenticate the operator or
-the metadata, and a content hash is not an attestation signature.
+overlapping ranges, and a recomputed `ScheduleHash` mismatch. Each validated
+range records the offset of its first entry. Lookup finds the range and
+selects the entry by height within it. Failed revalidation clears the index.
+Callers must keep a successfully validated schedule read-only. The owned state
+API captures its own copy. These integrity checks do not authenticate the
+operator or the metadata, and a content hash is not an attestation signature.
 
 ---
 

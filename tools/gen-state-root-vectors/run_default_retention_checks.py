@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-only
 """Run the unchanged retention controls and recorded comparison in one process.
 
-Only the original exact-byte, single-entry cache is reused. Historical source,
-corpus and evidence identities stay fixed. This is recorded-data qualification,
-not node execution or consumer/state-value acceptance.
+The portable replay selects a pinned independent witness model. The original
+single-entry cache and historical source, corpus and evidence identities stay
+fixed. This tool qualifies recorded data.
 """
 
 import argparse
@@ -23,7 +23,11 @@ import unittest
 
 HERE = Path(__file__).resolve().parent
 TEST_COUNT = 27
+WITNESS_MODEL = "compact_witness_model.py"
+WITNESS_MODEL_PIN = (
+    8 << 10, "34a202d00eb74ee0eb43c21cc164e99ed77ee58cabbd93b6cb50904f5d75b4e7")
 PINS = {
+    WITNESS_MODEL: WITNESS_MODEL_PIN,
     "check_default_retention_corpus.py": (
         64 << 10, "c658a5ddb5b0f7aeec0a13be05fb433d5fd04b77469ef16feb0c33f4f66c2c40"),
     "check_default_retention_corpus_test.py": (
@@ -32,6 +36,7 @@ PINS = {
         8 << 20, "e18cf0c0ba4669233cf42d67381da50c0ae15c1229a1f3a18f52e0c8d53f59b3"),
 }
 SUCCESSOR_PINS = {
+    WITNESS_MODEL: WITNESS_MODEL_PIN,
     "check_default_retention_successor_corpus.py": (
         64 << 10, "f2f344a1c8131548db4768b58232fc24dde0c55dc45556ca000e0d5707bae018"),
     "check_default_retention_successor_corpus_test.py": (
@@ -78,11 +83,19 @@ def load_controls(cohort="original"):
     require(type(cohort) is str and cohort in ("original", "successor"))
     name = ("check_default_retention_corpus_test.py" if cohort == "original"
             else "check_default_retention_successor_corpus_test.py")
-    raw = pinned_sources(cohort)[name]
+    sources = pinned_sources(cohort)
     path = HERE / name
     spec = importlib.util.spec_from_file_location("retention_joint_" + cohort + "_controls", path)
     module = importlib.util.module_from_spec(spec)
-    exec(compile(raw, str(path), "exec"), module.__dict__)
+    exec(compile(sources[name], str(path), "exec"), module.__dict__)
+    model_path = HERE / WITNESS_MODEL
+    model_spec = importlib.util.spec_from_file_location("retention_joint_witness_model", model_path)
+    model = importlib.util.module_from_spec(model_spec)
+    exec(compile(sources[WITNESS_MODEL], str(model_path), "exec"), model.__dict__)
+    history_model = module.C.M if cohort == "original" else module.C.M.M
+    # The selected reader owns this module graph. Its historical source checks
+    # still read and compare the exact archived source inputs.
+    history_model.G.F = model
     return module
 
 
@@ -186,6 +199,7 @@ def main(argv=None):
             module = load_controls(args.cohort)
             text, receipt = execute(module, args.source_revision, cohort=args.cohort)
             pinned_sources(args.cohort)  # Includes the recorded genesis evidence.
+        receipt["replay_witness_model_sha256"] = WITNESS_MODEL_PIN[1]
         print("recorded-retention-joint " + json.dumps(receipt, sort_keys=True), file=sys.stderr)
         print(text, end="")
     except (OSError, ValueError, TypeError, KeyError, IndexError, AssertionError, RecursionError):

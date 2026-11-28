@@ -275,7 +275,7 @@ func compareFlatCapacityEvidence(t testing.TB, raw []byte, limit, total int, dir
 		before, _ := json.Marshal(seed)
 		got := &seed
 		e := newEvidenceDecoder(DecodeLimits{MaxFlatEvidenceMembers: limit, MaxTotalFlatEvidenceMembers: total})
-		current := flatEvidenceJSON{target: &got, decoder: &e}
+		current := flatEvidenceJSON{target: &got, decoder: &e, fromDecoder: !direct}
 		var target json.Unmarshaler = &current
 		if mode == 1 {
 			old := growingFlatEvidenceJSONReference(current)
@@ -296,17 +296,23 @@ func compareFlatCapacityEvidence(t testing.TB, raw []byte, limit, total int, dir
 		results[mode] = result{got, err, bundleRowRemaining(e.flat)}
 	}
 	if !reflect.DeepEqual(results[0], results[1]) {
-		t.Fatalf("flat merge, concrete error or charged budget differs: current=%+v reference=%+v", results[0], results[1])
+		t.Fatalf("flat merge, concrete error or charged budget differs (direct=%t, array=%d, aggregate=%d, bytes=%d): current=%#v reference=%#v",
+			direct, limit, total, len(raw), results[0].err, results[1].err)
 	}
 }
 
 func TestFlatRowCapacityIntegration(t *testing.T) {
 	cases := []string{
 		"null", "{}", `{"sorted_headers":[]}`,
+		`{"sorted_headers":[null] }`,
+		`{"sorted_headers":[{"extension":"\"}][{}\\"}, null]}`,
+		`{"sorted_headers":[null],"extension":[[],{"text":"[{}]"}]}`,
+		`{"sorted_headers":[null],"sorted_header\u017f":[{},null]}`,
 		`{"SORTED_HEADER\u017f":[null,{}],"sorted_headers":null}`,
 		`{"sorted_headers":[null,null],"SORTED_HEADERS":[null,"PRIVATE_UNREACHED"]}`,
 		`{"sorted_headers":true,"sorted_headers":[]}`,
 		`{"sorted_headers":[{"hash":"bad"},null,null]}`,
+		`{"sorted_headers":[{},{"height":"invalid type"}]}`,
 		`{"sorted_headers":[null,null,null,"PRIVATE_UNREACHED"]}`,
 		`{"unknown":{"brackets":"\\\"[{}],"},"sorted_headers":[{}]}`,
 		`{"sorted_headers":[null],`,
@@ -356,13 +362,14 @@ func TestFlatRowCapacityIntegration(t *testing.T) {
 func TestCompactFlatAccountHeaderJSONParity(t *testing.T) {
 	want := chain.AccountHeader{Address: chain.Address{0xab, 0xcd}, Hash: chain.Hash{0xde, 0xf0}}
 	var wire []byte
+	var lastAddress compactFlatAddress
 	for _, height := range []uint64{0, 1, 10, 100000, ^uint64(0)} {
 		want.Height = height
 		raw, err := json.Marshal(want)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got, consumed := parseCompactFlatAccountHeader(raw); consumed != len(raw) || got != want {
+		if got, consumed := parseCompactFlatAccountHeader(raw, &lastAddress); consumed != len(raw) || got != want {
 			t.Fatal("standard compact encoding did not take the direct path")
 		}
 		wire = raw
@@ -386,7 +393,7 @@ func TestCompactFlatAccountHeaderJSONParity(t *testing.T) {
 			if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(gotErr, wantErr) {
 				t.Fatal("compact or fallback rows diverged from the standard decoder")
 			}
-			if compact, consumed := parseCompactFlatAccountHeader(raw); consumed > 0 && consumed == len(raw) &&
+			if compact, consumed := parseCompactFlatAccountHeader(raw, &compactFlatAddress{}); consumed > 0 && consumed == len(raw) &&
 				(wantErr != nil || len(want) == 0 || compact != want[len(want)-1]) {
 				t.Fatal("direct projection accepted a different row")
 			}
@@ -424,6 +431,19 @@ func TestCompactFlatAccountHeaderJSONParity(t *testing.T) {
 	} {
 		for _, total := range []int{0, 1, 3} {
 			compareFlatCapacityEvidence(t, []byte(raw), 2, total, false)
+		}
+	}
+
+	// Hits, misses and equivalent hex spellings must produce the same
+	// independent account values while charging each row to both limits.
+	lower := string(wire)
+	other := strings.Replace(lower, "abcd", "1234", 1)
+	upper := strings.Replace(lower, "abcd", "ABCD", 1)
+	invalid := strings.Replace(lower, "abcd", "gbcd", 1)
+	for _, tail := range []string{lower, invalid} {
+		raw := []byte(`{"sorted_headers":[` + strings.Join([]string{lower, lower, other, other, upper, lower, tail}, ",") + "]}")
+		for _, limits := range [][2]int{{7, 7}, {6, 7}, {7, 6}} {
+			compareFlatCapacityEvidence(t, raw, limits[0], limits[1], false)
 		}
 	}
 }

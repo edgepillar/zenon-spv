@@ -77,6 +77,15 @@ extracted file. Materialization creates regular files only, followed by regular
 npm/npx wrappers after complete verification. Native execution remains a separate
 action; a matching ELF header or vendor archive does not prove native execution.
 
+Before enabling execution, the installer inventories and hashes every selected
+file. It enables each executable through its checked file descriptor and
+rehashes it after the mode change. The final inventory also checks that the
+other files kept their identity, permissions and metadata from the first scan.
+The owned runner requests this transition during intake, so that first scan also
+serves as the installed-file verification. The complete archive and selected
+manifest are checked before any execution permission is enabled.
+Each separate verification still reads and hashes the complete installation.
+
 `packages.py` is the later native preparation step. It checks the enabled
 toolchain and source snapshots, observes actual Node/npm versions, and runs
 `npm ci` with required upstream preparation scripts. Cache, temporary data,
@@ -146,6 +155,23 @@ The workflow retains a file manifest, actual command receipts, and the selected
 header, oracle, provider and consumer evidence. The original downloads remain
 single files in the transport directory. The upload selects evidence by name
 and digest. The fresh runner owns the disposal boundary.
+
+After validating the collector's candidate header range, the runner pins the
+original `provider.json` and its pre-collection frontier request in
+`provider-capture.json`. It records the pair before repeating the frontier
+read, so a changed or unavailable recheck or a later closed-ledger failure
+preserves the complete collector output. The pair costs no extra RPC or
+collector invocation. The original output stays a single bounded file.
+
+For a run that ended during collection or closed-ledger checks,
+`recorded_provider_capture` rechecks the original collector receipt, the
+observed frontier records, the selected candidate header range, and the
+three typed proof inputs in the original archive. It reports the frontier
+as `SAME`, `MOVED` or `UNCONFIRMED`. A present and valid set of proofs is
+compared with the captured StateRoot and, when available, the stored gateway
+fields. The result describes candidate-root membership with an incomplete
+consumer and retains the original terminal result. The usual accepted-header
+and native consumer checks provide the exit for a completed run.
 
 Post-stop inspections retain a separate `owned-devnet-stop-state/v1` diagnostic
 before the existing stopped-container checks run. It binds the owned ID, service,
@@ -461,32 +487,108 @@ It also binds a present opening proof to a refusal before signature checks and
 fixture commands. The reader reviews prior versions under their recorded rules
 and verifies the stages reached by each early failure.
 
+If the version-3 native command ended with incomplete output after a closed
+capture, `recorded_interrupted_capture` rechecks the retained input pins,
+parent-slot schedule, context and all three proofs against the same captured
+root. It checks the typed rows against the selected descriptor and preserves
+the actual CLI exit. Missing or invalid membership leaves the proof check
+unverified. The review streams the original archive and keeps the run's
+`UNKNOWN` terminal and review exit 1. Accepted header authority and the
+completed gateway comparison still require the native consumer result.
+
 When a version-3 fixture configuration or deposit command times out, the reader
 can expose the actual exit and elapsed time from its bound start and completion
 receipts. A deposit timeout also requires the successful configuration receipt.
 Transaction submission stays unverified when the command output is incomplete.
 
 Add `--include-resources` to either archive review command to compare retained
-configuration and deposit durations with sampled runner disk use. The optional
-report checks the command start bindings and disk sample arithmetic and retains
-the corresponding member digests. A missing command or disk sample stays absent.
-The last sample time and sampled peak describe the recorded runner observation.
-The review reads the original archive in place and preserves its terminal outcome.
-Existing calls keep the same output and exit codes.
+command durations with sampled runner disk use. The optional `setup_commands`
+field reports the node image build, executor image build and npm installation
+where start and completion receipts are available. The `fixture_commands` field
+reports configuration and deposit. Each command observation preserves the actual
+exit and output completeness, with its completion digest. The reviewer checks
+the command start bindings and disk sample arithmetic. Missing observations
+remain absent. Command times describe individual subprocesses. The sampled disk
+peak describes the runner as a whole. The review reads the original archive in
+place and preserves its terminal outcome. Existing calls without this option
+keep the same output and exit codes.
 
-After a timed-out deposit with a quiescent process group, the reviewed
-reference-gas runner can retain the opening producer-slot observation. It
-stops the owned producers, executor, and gateway, captures one bounded RPC
-frontier, and closes the RPC node before reading its ledger. One invocation
-of the pinned read-only oracle covers the exact H2 and H3 hashes, with the
-captured frontier pinned separately. The diagnostic has a 120-second work
-deadline within the original budget and uses the existing cleanup reserve.
+After a configuration or deposit timeout with a quiescent process group, the
+reviewed reference-gas runner can retain the opening producer-slot observation.
+Configuration requires the three owned producers and the RPC node. Deposit
+also requires the executor and gateway. The runner stops all selected services
+except the RPC node, captures one bounded RPC frontier, then closes the RPC
+node. The pinned read-only oracle makes one in-place ledger read for the exact
+H2 and H3 hashes and binds the captured frontier separately. The diagnostic
+uses a 120-second work deadline within the original budget and retains the
+existing cleanup reserve.
 
-Archive review checks the oracle input, original receipts, closed runtime,
-frontier, and both historical parent-slot bindings. The report describes
-the candidate opening and its source parent slots. The terminal outcome
-is the recorded deposit timeout. Header acceptance and transaction
-submission require their own evidence.
+After a deposit timeout, the runner can also read the selected BatchEntry
+at the immediate v3 parent of the frozen frontier. The target must come
+after the opening block and link to the frontier's parent hash. The
+runner verifies the bounded proof against that header's StateRoot.
+If the BatchEntry is present, it also tries the domain record and domain
+config proofs under the same root. A complete set is checked against the
+selected ABI and source rules. An absent BatchEntry or unavailable
+companion proof still yields the verified BatchEntry observation.
+After all three proofs pass, one bounded frontier batch read can compare
+all 17 stored fields with the proven BatchEntry. The comparison records
+either a match or a mismatch. The `isFinalized` value remains the frontier
+DTO's unauthenticated hint. An unavailable or malformed DTO leaves the
+three-proof observation intact. The version-2 diagnostic includes the
+comparison and its exact request and response. Version 1 remains readable.
+The proof and gateway observation uses at most five additional RPC reads
+within the original diagnostic deadline. It runs after producers and clients
+have stopped.
+
+The selected responses are retained with their request and command
+receipts only after the owned services close and the opening oracle
+reports the same frozen frontier. The archive reader rechecks the header
+link, derives the keys locally and checks the proofs and any complete
+typed context.
+
+Three checked witnesses can support a native replay. The version-3 replay
+reuses the original RPC rows for the opening H3, the selected parent, and
+the frozen frontier. At H5 these rows cover the full range. At later
+frontiers one bounded RPC request retrieves only the intervening rows.
+After the RPC node closes, the read-only oracle calculates the finite
+producer schedule for the full range. The compiled CLI checks the
+configured headers and consumes the typed query using the same witnesses.
+The archive reader reconstructs the provider from the recorded responses
+and checks its byte length and SHA-256 digest. It also checks the original
+inputs, schedule and completed CLI output. Earlier replay formats with a
+full header-range read remain readable.
+
+Replay versions 2 and 3 reference the verified H2/H3 request and output
+from the opening authorization. Later reads start at H4 under the same closed
+ledger and frozen frontier. Archive review checks that the full schedule uses
+the exact opening references, then verifies the later requests and outputs in
+order. The opening remains reviewable if a later read fails. The earlier replay
+formats with a separate full-range oracle read remain readable.
+
+A version-2 observation supplies the gateway response for comparison. If
+that read yields no usable response, the replay uses the three proofs
+with gateway comparison disabled. The archive retains the exact attempted
+gateway request and reports zero compared fields and a null match. This
+mode uses the same deadline and six-read ceiling. A completed typed result
+in this mode leaves the required gateway comparison open.
+
+The native replay is supplemental to the original timeout. Its comparison
+is recorded separately and the terminal outcome remains `UNKNOWN`.
+
+Archive review binds the oracle, original receipts, stopped service set,
+frontier and both historical parent slots to the recorded timeout stage. The
+terminal outcome remains UNKNOWN. Header acceptance and transaction submission
+require their own evidence.
+
+After a configuration timeout, the runner can sample the primary pillar's
+frontier once before stopping the producers. The read uses the existing
+loopback endpoint, at most two seconds of HTTP time, and leaves an RPC slot
+for the frozen frontier. The archive can retain the request and command
+receipt even if the response or closed-ledger oracle is unavailable. When
+both frontiers are available, the reader compares the earlier pillar
+candidate with the later frozen RPC candidate. These sequential observations
+describe the sampled nodes and carry no header authority.
 
 For the reviewed reference-gas devnet source, a timeout can retain
 `fixture-configure-progress.json` or `fixture-deposit-progress.json`. The

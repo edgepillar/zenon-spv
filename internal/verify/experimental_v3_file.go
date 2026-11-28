@@ -3,6 +3,7 @@
 package verify
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -55,7 +56,16 @@ func (f *experimentalV3File) decodeJSON(d *json.Decoder) error {
 	return nil
 }
 
-type experimentalV3Window []chain.CandidateV3Header
+// readJSON keeps input and decode failures separate. Pinned callers check the
+// complete stream and its digest before returning any parse outcome.
+func (f *experimentalV3File) readJSON(r io.Reader) (size int64, inputErr, parseErr error) {
+	size, inputErr = readBoundedState(r, MaxExperimentalV3StateBytes, func(input io.Reader) {
+		parseErr = f.decodeJSON(json.NewDecoder(bufio.NewReader(input)))
+	})
+	return size, inputErr, parseErr
+}
+
+type experimentalV3Window []*chain.CandidateV3Header
 
 func (w *experimentalV3Window) UnmarshalJSON(raw []byte) error {
 	if w == nil || int64(len(raw)) > MaxExperimentalV3StateBytes {
@@ -80,11 +90,11 @@ func (w *experimentalV3Window) readValue(d *json.Decoder) error {
 		return ErrExperimentalV3StateFile
 	}
 	rows := make(experimentalV3Window, 0)
+	var value json.RawMessage
 	for d.More() {
 		if len(rows) >= MaxRetainHeaders {
 			return ErrExperimentalV3StateFile
 		}
-		var value json.RawMessage
 		if d.Decode(&value) != nil || !utf8.Valid(value) {
 			return ErrExperimentalV3StateFile
 		}
@@ -92,7 +102,7 @@ func (w *experimentalV3Window) readValue(d *json.Decoder) error {
 		if err != nil {
 			return ErrExperimentalV3StateFile
 		}
-		rows = append(rows, h)
+		rows = append(rows, &h)
 	}
 	if token, err := d.Token(); err != nil || token != json.Delim(']') {
 		return ErrExperimentalV3StateFile
@@ -137,11 +147,15 @@ func LoadTrustedExperimentalV3State(path string, profile ExperimentalV3Profile, 
 	if info.Size() > MaxExperimentalV3StateBytes {
 		return ExperimentalV3State{}, ErrStateFileTooLarge
 	}
-	raw, err := readStateBytes(f, MaxExperimentalV3StateBytes, info.Size())
-	if err != nil {
-		return ExperimentalV3State{}, err
+	var file experimentalV3File
+	_, inputErr, parseErr := file.readJSON(f)
+	if inputErr != nil {
+		return ExperimentalV3State{}, inputErr
 	}
-	return decodeTrustedExperimentalV3State(raw, state)
+	if parseErr != nil {
+		return ExperimentalV3State{}, parseErr
+	}
+	return state.resumeExperimentalV3File(file)
 }
 
 func decodeTrustedExperimentalV3State(raw []byte, selected ExperimentalV3State) (ExperimentalV3State, error) {
@@ -172,7 +186,7 @@ func (selected ExperimentalV3State) resumeExperimentalV3File(file experimentalV3
 		return ExperimentalV3State{}, ErrExperimentalV3StateFile
 	}
 	for i, h := range file.Headers {
-		if r := validateExperimentalV3Header(h, c, i); r.Outcome != OutcomeAccept {
+		if r := validateExperimentalV3Header(*h, c, i); r.Outcome != OutcomeAccept {
 			return ExperimentalV3State{}, ErrExperimentalV3StateFile
 		}
 		if i == 0 {

@@ -11,7 +11,7 @@ from pathlib import Path
 import re
 import sys
 import threading
-from types import FunctionType
+from types import FunctionType, ModuleType
 import unittest
 
 HERE = Path(__file__).resolve().parent
@@ -23,6 +23,17 @@ TREE_CHECKS = {
     'tree-driver-resources': 'check_tree_driver_resources',
     'oracle-projection': 'check_oracle_projection',
     'projected-driver': 'check_projected_driver',
+}
+
+
+# Paths from each selected checker to its own copy of the pinned scale reader.
+SCALE_READERS = {
+    None: ('LIFE', 'SCALE'),
+    'tree-driver-resources': ('LIFE', 'SCALE'),
+    'tree-import-scale': (),
+    'tree-import-lifecycle': ('SCALE',),
+    'oracle-projection': ('IMPORT',),
+    'projected-driver': ('LEGACY', 'LIFE', 'SCALE'),
 }
 
 
@@ -63,7 +74,7 @@ def scale_model_binding(scale):
 
 
 class SharedScaleModel:
-    """Reuse one independently built scale model for two selected readers."""
+    """Reuse one independently built scale model across the selected readers."""
 
     def __init__(self):
         self.binding = self.code = self.document = None
@@ -71,10 +82,9 @@ class SharedScaleModel:
         self.computed = self.reused = 0
 
     @contextmanager
-    def select(self, program):
+    def select(self, scale):
         require = HEX.require
         require(threading.get_ident() == self.thread)
-        scale = program.CHECK.LIFE.SCALE
         original = scale.expected_document
         function = getattr(original, '__wrapped__', None)
         require(type(function) is FunctionType and function.__globals__ is vars(scale)
@@ -114,7 +124,7 @@ class SharedScaleModel:
             require(intact and scale_model_binding(scale) == binding)
 
     def report(self):
-        HEX.require(self.computed == self.reused == 1 and self.document is not None)
+        HEX.require(self.computed == 1 and self.document is not None)
         return {
             'independent_scale_models_computed': self.computed,
             'scale_models_reused': self.reused,
@@ -151,9 +161,16 @@ def run_pair(revision, tree_check, model=None):
     HEX.require(Path(program.CHECK.__file__).resolve() == HERE / recording)
     suite = unittest.defaultTestLoader.loadTestsFromModule(program)
     names = list(control_names(suite))
+    scale_scope = nullcontext()
+    if model is not None:
+        scale = program.CHECK
+        for name in SCALE_READERS[tree_check]:
+            scale = getattr(scale, name, None)
+        HEX.require(type(scale) is ModuleType)
+        scale_scope = model.select(scale)
     with GRAPH.selected_graphs(program, controls) as reused, \
             HEX.selected_oracles(program, controls, 'translated') as bindings, \
-            (model.select(program) if model is not None else nullcontext()):
+            scale_scope:
         # Validate the recording before the controls reuse its reference model.
         program.CHECK.main(recording_args)
         result = unittest.TextTestRunner(verbosity=2).run(suite)
@@ -185,8 +202,8 @@ def main(argv=None):
         return
     model = SharedScaleModel()
     try:
-        count = run_pair(args.source_revision, None, model)
-        count += run_pair(args.source_revision, 'tree-driver-resources', model)
+        count = sum(run_pair(args.source_revision, name, model) for name in SCALE_READERS)
+        HEX.require(model.reused == len(SCALE_READERS) - 1)
         report = {'format_version': 1, 'kind': 'shared-recorded-scale-model-checks',
                   'source_revision': args.source_revision, 'tests_run': count,
                   'checks_completed': True, **model.report()}

@@ -18,11 +18,13 @@ concurrency, process-memory checks and independent byte oracles remain required.
 
 ## Execution and evidence boundaries
 
-The source-read registrations that invalidate cached Go test results remain
-unchanged. Toolchain selection, disabled downloads, ordinary child build flags,
-per-command binary hashing, candidate export checks and execution markers also
-remain unchanged. A failed grouped build fails the scenario before binary
-execution or export; any partial compiler output belongs only to the test's
+The first child build in each test process registers source inputs with the Go
+test cache by enumerating the selected directories and opening source and
+module files. The registrations cover command dependencies beyond the test
+package's own imports. Each scenario builds in its private temporary directory
+under the selected toolchain with downloads disabled. It hashes every binary
+and records its execution. A failed grouped build fails the scenario before
+binary execution or export. Any partial compiler output belongs to the test's
 temporary directory.
 
 The grouped command receives the sum of the previous one-minute per-command

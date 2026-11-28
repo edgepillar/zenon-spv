@@ -5,8 +5,10 @@ import (
 	"crypto/ed25519"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -90,6 +92,57 @@ func TestSaveHeaderState_InvalidStatePreservesFile(t *testing.T) {
 	after, err := os.ReadFile(path)
 	if err != nil || !bytes.Equal(before, after) {
 		t.Fatal("invalid state replaced the existing file")
+	}
+}
+
+func TestLoadHeaderStateParallelIntegrity(t *testing.T) {
+	previous := runtime.GOMAXPROCS(2)
+	t.Cleanup(func() { runtime.GOMAXPROCS(previous) })
+	state := signedRetainedState(t, parallelStateLoadMin+1, parallelStateLoadMin)
+	path := filepath.Join(t.TempDir(), "state.json")
+	writeUncheckedState(t, path, state)
+	loaded, err := LoadOrInit(path, state.Genesis, Policy{W: 1})
+	if err != nil || len(loaded.RetainedWindow) != 2 ||
+		loaded.RetainedWindow[1].HeaderHash != state.RetainedWindow[len(state.RetainedWindow)-1].HeaderHash {
+		t.Fatal("large valid window did not resume with its selected suffix", err)
+	}
+
+	middle := len(state.RetainedWindow) / 2
+	for _, tc := range []struct {
+		name   string
+		edit   func([]chain.Header)
+		detail string
+	}{
+		{"link at the split", func(headers []chain.Header) { headers[middle].PreviousHash[0] ^= 1 },
+			fmt.Sprintf("header[%d]: noncontiguous height or broken linkage", middle)},
+		{"earliest failure", func(headers []chain.Header) {
+			headers[2].Signature[0] ^= 1
+			headers[middle].DataHash[0] ^= 1
+		}, "header[2]: invalid signature"},
+	} {
+		bad := cloneHeaderState(state)
+		tc.edit(bad.RetainedWindow)
+		raw := writeUncheckedState(t, path, bad)
+		want := bad.validateRetainedState(false)
+		_, err := LoadOrInit(path, bad.Genesis, Policy{W: 1})
+		cause := errors.Unwrap(err)
+		if !errors.Is(err, ErrInvalidRetainedState) || want == nil || cause == nil || cause.Error() != want.Error() ||
+			!strings.Contains(cause.Error(), tc.detail) {
+			t.Fatalf("%s changed the serial refusal: got %v, want %v", tc.name, err, want)
+		}
+		if after, err := os.ReadFile(path); err != nil || !bytes.Equal(raw, after) {
+			t.Fatal("refused large-window resume changed the file", err)
+		}
+	}
+	select {
+	case stateLoadWorker <- struct{}{}:
+		defer func() { <-stateLoadWorker }()
+	default:
+		t.Fatal("a finished load kept the extra worker slot")
+	}
+	writeUncheckedState(t, path, state)
+	if _, err := LoadHeaderState(path); err != nil {
+		t.Fatal("large-window load with the worker slot in use did not fall back to serial validation", err)
 	}
 }
 

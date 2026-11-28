@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
+	"github.com/0x3639/zenon-spv/internal/jsonspan"
 )
 
 // UnmarshalJSON preserves the existing field matching and unknown-field
@@ -38,16 +39,27 @@ func (b *HeaderBundle) unmarshalJSON(raw []byte, limits DecodeLimits) error {
 func (b *HeaderBundle) unmarshalValidatedJSON(raw []byte, limits DecodeLimits) error {
 	var decoded HeaderBundle
 	evidence := newEvidenceDecoder(limits)
+	// The document has already passed syntax validation. Ordinary fields
+	// borrow a complete value span and the commitment reader walks its array
+	// directly so the individual proofs need no streaming input buffer.
+	decodeSpan := func(decode func([]byte) error) func(*bundleValueCursor) error {
+		return func(cursor *bundleValueCursor) error {
+			start := cursor.at
+			cursor.value()
+			return decode(cursor.raw[start:cursor.at])
+		}
+	}
 	fields := []struct {
 		name   string
-		target any
+		decode func(*bundleValueCursor) error
 	}{
-		{"version", &decoded.Version}, {"chain_id", &decoded.ChainID},
-		{"claimed_genesis", &decoded.ClaimedGenesis},
-		{"headers", &bundleRows[chain.Header]{target: &decoded.Headers, field: "headers", limit: limits.MaxHeaders}},
-		{"commitments", &bundleRows[CommitmentEvidence]{target: &decoded.Commitments, field: "commitments", limit: limits.MaxCommitments, decode: evidence.commitment}},
-		{"segments", &bundleRows[AccountSegment]{target: &decoded.Segments, field: "segments", limit: limits.MaxSegments, decode: evidence.segment}},
-		{"state_value_proofs", &bundleRows[StateValueProof]{target: &decoded.StateValueProofs, field: "state_value_proofs", limit: limits.MaxStateValueProofs, decode: evidence.stateProof}},
+		{"version", decodeSpan(func(value []byte) error { return json.Unmarshal(value, &decoded.Version) })},
+		{"chain_id", decodeSpan(func(value []byte) error { return json.Unmarshal(value, &decoded.ChainID) })},
+		{"claimed_genesis", decodeSpan(func(value []byte) error { return json.Unmarshal(value, &decoded.ClaimedGenesis) })},
+		{"headers", decodeSpan((&bundleRows[chain.Header]{target: &decoded.Headers, field: "headers", limit: limits.MaxHeaders}).UnmarshalJSON)},
+		{"commitments", func(cursor *bundleValueCursor) error { return evidence.commitments(cursor, &decoded.Commitments) }},
+		{"segments", decodeSpan((&bundleRows[AccountSegment]{target: &decoded.Segments, field: "segments", limit: limits.MaxSegments, decode: evidence.segment}).UnmarshalJSON)},
+		{"state_value_proofs", decodeSpan((&bundleRows[StateValueProof]{target: &decoded.StateValueProofs, field: "state_value_proofs", limit: limits.MaxStateValueProofs, decode: evidence.stateProof}).UnmarshalJSON)},
 	}
 	cursor := bundleValueCursor{raw: raw}
 	cursor.space()
@@ -70,9 +82,7 @@ func (b *HeaderBundle) unmarshalValidatedJSON(raw []byte, limits DecodeLimits) e
 		cursor.space()
 		cursor.at++ // Colon; complete-document validation has checked the grammar.
 		cursor.space()
-		start = cursor.at
-		cursor.value()
-		var target any
+		var decode func(*bundleValueCursor) error
 		for i, field := range fields {
 			// Preserve Unicode aliases as well as ASCII case matching.
 			if !strings.EqualFold(name, field.name) {
@@ -82,13 +92,13 @@ func (b *HeaderBundle) unmarshalValidatedJSON(raw []byte, limits DecodeLimits) e
 				return fmt.Errorf("duplicate bundle field %q", field.name)
 			}
 			seen[i] = true
-			target = field.target
+			decode = field.decode
 			break
 		}
-		if target != nil {
-			if err := json.Unmarshal(raw[start:cursor.at], target); err != nil {
-				return err
-			}
+		if decode == nil {
+			cursor.value()
+		} else if err := decode(&cursor); err != nil {
+			return err
 		}
 		cursor.space()
 		if cursor.raw[cursor.at] == '}' {
@@ -116,58 +126,13 @@ type bundleValueCursor struct {
 }
 
 func (c *bundleValueCursor) space() {
-	for c.at < len(c.raw) {
-		switch c.raw[c.at] {
-		case ' ', '\t', '\r', '\n':
-			c.at++
-		default:
-			return
-		}
-	}
+	c.at = jsonspan.SpaceEnd(c.raw, c.at)
 }
 
 func (c *bundleValueCursor) string() {
-	c.at++
-	for {
-		switch c.raw[c.at] {
-		case '\\':
-			c.at += 2
-		case '"':
-			c.at++
-			return
-		default:
-			c.at++
-		}
-	}
+	c.at = jsonspan.StringEnd(c.raw, c.at)
 }
 
 func (c *bundleValueCursor) value() {
-	switch c.raw[c.at] {
-	case '"':
-		c.string()
-	case '[', '{':
-		depth := 1
-		c.at++
-		for depth > 0 {
-			switch c.raw[c.at] {
-			case '"':
-				c.string()
-				continue
-			case '[', '{':
-				depth++
-			case ']', '}':
-				depth--
-			}
-			c.at++
-		}
-	default:
-		for c.at < len(c.raw) {
-			switch c.raw[c.at] {
-			case ' ', '\t', '\r', '\n', ',', ']', '}':
-				return
-			default:
-				c.at++
-			}
-		}
-	}
+	c.at = jsonspan.ValueEnd(c.raw, c.at)
 }

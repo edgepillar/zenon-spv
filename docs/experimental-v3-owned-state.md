@@ -103,8 +103,8 @@ Raw momentum data/content retain their separate
 budgets, not agreed network or representative hardware measurements. Zero does
 not disable experimental policy bounds. Typed and JSON inputs are checked.
 
-Extension validates all incoming headers, then copies the retained suffix once;
-it avoids shifting K headers after every input row. Contiguous private heights
+Extension validates all incoming headers, then builds a fresh window of
+immutable header references. Contiguous private heights
 permit constant-time root/header lookup without a mutable index, repeated
 signature work or copying key/signature buffers for root-only reads.
 Typed headers are validated before their key/signature buffers are detached;
@@ -115,9 +115,9 @@ input slices concurrently with verification.
 
 Extension allocates its new retained-header slice only after every incoming
 header and link has passed. Even an incoming header that will be evicted must
-pass its hash, signature, profile and finite schedule checks. Only newly retained
-caller key/signature buffers are cloned; existing private immutable headers can
-be reused in a fresh slice. Any refusal, rejection or insufficient depth returns
+pass its hash, signature, profile and finite schedule checks. Newly retained
+caller key/signature buffers are cloned. Earlier windows share the retained
+immutable headers by reference. Any refusal, rejection or insufficient depth returns
 the original handle without a provisional header array or detached input copies.
 Context fingerprints, saved format, trusted-local provenance and v1/v2 behavior
 are unchanged.
@@ -152,6 +152,23 @@ and reject changed eventually evicted rows. No new node execution or signatures
 are needed for these controls. Each delivered revision still requires its own
 scheduled platform CI and artifact reconciliation.
 
+### Adding a header to a retained window
+
+Four paired Go 1.25.14 trials on Darwin arm64 used `GOMAXPROCS=1` and
+recorded envelopes in synthetic storage windows. Each operation verifies one
+recorded successor. Setup is outside the measured interval.
+
+| Headers held before extension | Median time per operation | Allocated bytes per operation |
+| --- | ---: | ---: |
+| 64 | 31.89 to 30.35 microseconds | 19,968 to 1,760 |
+| 4,096 | 196.90 to 38.15 microseconds | 1,180,544 to 33,952 |
+
+Streamed input for a 4,096-header checkpoint allocated 31,121,046 bytes
+before the change and 27,611,926 bytes after it. Allocations per operation
+increased from 336,229 to about 340,324 as headers gained independent
+storage. Median input time was 46.37 and 46.68 milliseconds.
+The writer retains the version-4 checkpoint schema and framing.
+
 ## Persistence and compatibility
 
 The separate file format is `zenon-experimental-v3-owned-state/v1`, with numeric
@@ -175,6 +192,42 @@ resizing or migrating the state. A saved evicted tail cannot re-prove its missin
 ancestry or authenticate its own local-file provenance. This does not qualify
 original-node state-tree recovery or root rebuilding.
 
+The file loader now decodes directly from the bounded file stream. It checks
+complete input before resuming any state and reuses one buffer for the encoded
+headers. The SHA-256-pinned stream and the byte decoder use the same retained
+header parser.
+
+Three paired samples of four operations each on Go 1.25.14 darwin/arm64 read a
+4,096-header checkpoint of repeated recorded envelopes. The previous reader
+and the new reader reached the same noncontiguous-history refusal.
+
+| Read path | Prior allocation | Current allocation | Prior median time | Current median time |
+| --- | ---: | ---: | ---: | ---: |
+| Trusted regular file | 57,955,484 B/op | 51,635,996 B/op | 93.81 ms | 85.11 ms |
+| SHA-256-pinned stream | 54,876,992 B/op | 51,633,744 B/op | 80.10 ms | 81.12 ms |
+
+These allocation totals and timing medians cover the bounded read, parsing and
+early linkage refusal on one host.
+
+The projected header decoder reuses one value buffer per JSON object and
+consumes each field from its private map. An unknown or repeated field still
+fails immediately, and any fields left in the map cause a missing-field
+failure. The complete decoded header is published only after its wire checks.
+
+Six paired darwin/arm64 trials with Go 1.25.14 and four iterations per trial
+used the same 4,096 repeated recorded envelopes, alternating the revision
+order. The SHA-256-pinned read reached the same noncontiguous-history refusal
+as `e8151cf`. This table gives local medians.
+
+| Read path | Baseline B/op | Reused B/op | Baseline allocations/op | Reused allocations/op |
+| --- | ---: | ---: | ---: | ---: |
+| Structural window parser | 51,620,932 | 46,771,250 | 958,827 | 848,235 |
+| SHA-256-pinned stream | 51,633,796 | 46,784,082 | 958,837 | 848,245 |
+
+The pinned-stream timing medians were 79.66 and 77.88 ms. Timing ranges
+overlapped for the structural parser. The recorded signed cohort, context
+and digest refusal controls, and compiled CLI checkpoint query also passed.
+
 `DecodePinnedTrustedExperimentalV3State` adds the same trusted-local decoding
 contract for a bounded, caller-owned byte buffer and an independently selected
 nonzero SHA-256 pin. Hashing and decoding use the same buffer, so a consumer can
@@ -182,13 +235,31 @@ read one regular file once without a path/hash/reopen race. The caller must not
 mutate the buffer concurrently. Retained authentication is rechecked and input
 bytes are not retained. The digest does not authenticate local provenance or
 restore evicted ancestry. The [three-row CLI](experimental-batch-context-query.md)
-uses this path only with an explicit checkpoint selector and both context pins;
-the query never rewrites its checkpoint or imports one from provider JSON.
+uses the bounded stream API `ReadPinnedTrustedCheckpoint` with an explicit local
+checkpoint selector and both context pins. Checkpoint queries open the selected
+file read-only.
 The separate [checkpoint export command](experimental-checkpoint-export.md)
 streams a v4 artifact only after a successful three-row query. The Go
 `WriteCheckpoint` method shares the bounded encoder, strips the informational
 private Source label, and detects incomplete stream writes. Existing `Save`
 keeps its source label and file behavior; export adds no provenance authority.
+
+The version-4 writer encodes windows of 64 headers or more one header at
+a time with a 16 KiB output buffer. Smaller windows use the single-object
+encoder. The byte comparison covers empty, 63-header, 64-header and
+4,096-header windows, including escaping of the local Source label. A late
+output error stops the writer, and the atomic `Save` still discards an
+incomplete temporary file. Existing checkpoint digests and the 8 MiB
+output limit apply to both paths.
+
+Three samples of eight operations on Go 1.25.14 darwin/arm64 encoded
+4,096 repeated recorded envelopes to a discard writer. The table gives
+median measurements for encoding that fixture.
+
+| Encoder | Allocated bytes/op | Allocations/op | Time/op |
+| --- | ---: | ---: | ---: |
+| Single JSON object | 27,010,815 | 32,829 | 26.54 ms |
+| Header-by-header | 7,097,960 | 36,885 | 24.57 ms |
 
 The shared atomic-writer extraction preserves native serialized bytes. A
 2,073-byte v1/v2 saved-state vector from the existing public signed fixture has

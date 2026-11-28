@@ -275,6 +275,20 @@ class QueryCheckTests(unittest.TestCase):
                 "frontier_identity_authenticated": False}}
         provider = {"witnesses": witnesses, "gateway": gateway}
         self.assertTrue(q.consumer_result(report, config, request, provider, root)["gateway_stored_fields_match"])
+        membership_provider = {"witnesses": witnesses}
+        membership_report = dict(report, gateway_comparison_requested=False, gateway_comparison=None)
+        membership = q.consumer_result(membership_report, config, request, membership_provider, root,
+                                       compare_gateway=False)
+        self.assertEqual(membership["three_membership_proofs_checked"], 3)
+        self.assertEqual(membership["gateway_stored_fields_compared"], 0)
+        self.assertIsNone(membership["gateway_stored_fields_match"])
+        for output, inputs in ((report, membership_provider),
+                               (dict(membership_report, gateway_comparison={}), membership_provider),
+                               (membership_report, provider)):
+            with self.assertRaisesRegex(model.Refused, "consumer_gateway_comparison"):
+                q.consumer_result(output, config, request, inputs, root, compare_gateway=False)
+        with self.assertRaisesRegex(model.Refused, "consumer_gateway_comparison"):
+            q.consumer_result(membership_report, config, request, membership_provider, root)
         for altered in (dict(report, rpc_requests=False),
                         dict(report, headers={"outcome": "REFUSE"}),
                         dict(report, result=dict(result, request=dict(request, batch_id=False))),

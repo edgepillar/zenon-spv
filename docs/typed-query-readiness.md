@@ -1,5 +1,9 @@
 # Typed-query readiness and acceptance ledger
 
+The [27 November opening replay](typed-query-evidence-2026-11-27.md) records
+the H1–H3 evidence from the two later reference-gas executions and the source
+and input selection for the next separately approved attempt.
+
 The [15 November source/execution supplement](typed-query-evidence-2026-11-15.md)
 records the qualified runner sources and retained H1/H2 diagnostics. The dated ledger
 below preserves its original sources, attempt counts and outcomes; it is not an

@@ -331,6 +331,59 @@ func TestExperimentalCLIRawFieldOwnership(t *testing.T) {
 	}
 }
 
+func TestExperimentalCLIObjectSyntaxAndSpans(t *testing.T) {
+	t.Run("valid_field_boundaries", func(t *testing.T) {
+		for _, document := range []string{
+			" \r\n{\"version\":1, \"witness\":null, \"head\\u0065rs\"\t: [ true, -2e+4, {\"text\":\"\\\\\\\"[,]{}\"} ] }\n",
+			"{\"headers\":-11.5e-7,\"witness\":{\"items\":[[], \"雪\", false]},\"version\":4294967295}",
+			"{\"version\":0,\"headers\":false,\"witness\":[]}",
+		} {
+			raw := []byte(document)
+			var oracle map[string]json.RawMessage
+			var wantVersion uint32
+			if json.Unmarshal(raw, &oracle) != nil || json.Unmarshal(oracle["version"], &wantVersion) != nil {
+				t.Fatal("invalid reference document")
+			}
+			var version uint32
+			var headers experimentalCLIFieldSpan
+			var witness json.RawMessage
+			if err := decodeExperimentalCLIObject(raw, map[string]any{
+				"version": &version, "headers": &headers, "witness": &witness,
+			}, "witness"); err != nil || version != wantVersion || !bytes.Equal(headers, oracle["headers"]) ||
+				!bytes.Equal(witness, oracle["witness"]) {
+				t.Fatal("field boundaries differ from standard JSON", err)
+			}
+			clear(raw)
+			if !bytes.Equal(witness, oracle["witness"]) {
+				t.Fatal("owned raw field changed with the input")
+			}
+		}
+	})
+	t.Run("refusals", func(t *testing.T) {
+		for i, document := range []string{
+			"", "null", "[]", "{",
+			"{\"version\":1,\"headers\":[],\"witness\":null} []",
+			"{\"version\":1,\"headers\":[],\"witness\":null,}",
+			"{\"version\":1,\"headers\":[],\"head\\u0065rs\":[],\"witness\":null}",
+			"{\"version\":1,\"HEADERS\":[],\"witness\":null}",
+			"{\"version\":1,\"headers\":[],\"witness\":null,\"unknown\":1}",
+			"{\"version\":1,\"headers\":[]}",
+			"{\"version\":1,\"headers\":null,\"witness\":null}",
+			"{\"version\":\"1\",\"headers\":[],\"witness\":null}",
+			"{\"version\":1,\"headers\":[\"\xff\"],\"witness\":null}",
+			"{\"version\":1,\"headers\":" + strings.Repeat("[", 10001) + strings.Repeat("]", 10001) + ",\"witness\":null}",
+		} {
+			var version uint32
+			var headers, witness experimentalCLIFieldSpan
+			if err := decodeExperimentalCLIObject([]byte(document), map[string]any{
+				"version": &version, "headers": &headers, "witness": &witness,
+			}, "witness"); err != errExperimentalCLIInput {
+				t.Fatalf("invalid document %d returned %v", i, err)
+			}
+		}
+	})
+}
+
 func TestExperimentalBatchCLIHeaderFieldSpan(t *testing.T) {
 	f := newExperimentalCLIFixture(t)
 	rows := f.bundle["momentums"].([]json.RawMessage)
@@ -349,6 +402,80 @@ func TestExperimentalBatchCLIHeaderFieldSpan(t *testing.T) {
 		if err != nil || !reflect.DeepEqual(header, want.Header) {
 			t.Fatalf("detached header %d: %v", index, err)
 		}
+	}
+}
+
+func TestExperimentalCLIStandaloneHeaderArray(t *testing.T) {
+	f := newBatchContextCLIInputs(t)
+	rows := f.bundle["momentums"].([]json.RawMessage)
+	if len(rows) < 2 {
+		t.Fatal("fixture must exercise multiple header rows")
+	}
+	indented, err := json.MarshalIndent(rows, "", "\t")
+	if err != nil {
+		t.Fatal(err)
+	}
+	limit := uint32(len(rows))
+	raw := []byte("\t\r\n " + string(indented) + "\r\n ")
+	headers, err := decodeExperimentalCLIHeaders(raw, limit)
+	if err != nil || len(headers) != len(rows) {
+		t.Fatal("standalone header list", err)
+	}
+	clear(raw)
+	for i, row := range rows {
+		want, err := fetch.DecodeCandidateV3Momentum(row)
+		if err != nil || !reflect.DeepEqual(headers[i], want.Header) {
+			t.Fatalf("ordered detached header %d: %v", i, err)
+		}
+	}
+	if empty, err := decodeExperimentalCLIHeaders([]byte(" \t[ \r\n]\n"), limit); err != nil || empty != nil {
+		t.Fatal("empty header list must decode to nil", err)
+	}
+	for _, tc := range []struct {
+		name, document string
+		limit          uint32
+	}{
+		{"extra value", string(indented) + ` []`, limit},
+		{"trailing comma", `[` + string(rows[0]) + `,]`, limit},
+		{"invalid last row", `[` + string(rows[0]) + `, null]`, limit},
+		{"nonarray", string(rows[0]), limit},
+		{"row limit", string(indented), limit - 1},
+		{"zero row limit", `[]`, 0},
+		{"invalid row limit", `[]`, verify.MaxRetainHeaders + 1},
+	} {
+		if got, err := decodeExperimentalCLIHeaders([]byte(tc.document), tc.limit); err != errExperimentalCLIInput || got != nil {
+			t.Fatalf("%s returned a partial or invalid result: %v", tc.name, err)
+		}
+	}
+}
+
+func TestExperimentalBatchContextBundleDetachedWitnesses(t *testing.T) {
+	f := newBatchContextCLIInputs(t)
+	f.bundle["gateway"] = experimentalCLIGateway()
+	raw := experimentalCLIJSON(t, f.bundle)
+	bundle, err := decodeExperimentalContextCLIBundle(raw, 4, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	clear(raw)
+
+	witnesses := f.bundle["witnesses"].(map[string]any)
+	for _, row := range []struct {
+		name string
+		got  proof.CandidateStateWitness
+	}{
+		{"batch_entry", bundle.Witnesses.BatchEntry},
+		{"domain_record", bundle.Witnesses.DomainRecord},
+		{"domain_config", bundle.Witnesses.DomainConfig},
+	} {
+		want, err := fetch.DecodeCandidateStateWitness(experimentalCLIJSON(t, witnesses[row.name]))
+		if err != nil || !reflect.DeepEqual(row.got, want) {
+			t.Fatalf("detached witness %s: %v", row.name, err)
+		}
+	}
+	wantGateway, err := fetch.DecodeCandidateSettlementBatch(experimentalCLIJSON(t, f.bundle["gateway"]))
+	if err != nil || bundle.Gateway == nil || !reflect.DeepEqual(*bundle.Gateway, wantGateway) {
+		t.Fatalf("detached gateway: %v", err)
 	}
 }
 

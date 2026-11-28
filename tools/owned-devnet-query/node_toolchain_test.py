@@ -223,15 +223,24 @@ class RegularMaterializationTests(unittest.TestCase):
     def test_invalid_manifest_leaves_only_nonexecutable_partial_files(self):
         raw, selected = fixture()
         selected["selected_manifest"]["sha256"] = "1" * 64
-        with tempfile.TemporaryDirectory(prefix="node-regular-control-") as temporary:
-            destination = Path(temporary) / "prefix"
-            with self.assertRaisesRegex(model.Refused, "node_manifest_binding"):
-                node_toolchain.unpack_node(io.BytesIO(raw), selected, destination)
-            self.assertFalse((destination / "bin/npm").exists())
-            for parent, _, names in os.walk(destination):
-                for name in names:
-                    if os.name == "posix":
-                        self.assertEqual((Path(parent) / name).stat().st_mode & 0o111, 0)
+        modes = (False, True) if os.name == "posix" else (False,)
+        for for_execution in modes:
+            with self.subTest(for_execution=for_execution), tempfile.TemporaryDirectory(
+                    prefix="node-regular-control-") as temporary:
+                destination = Path(temporary) / "prefix"
+                with self.assertRaisesRegex(model.Refused, "node_manifest_binding"):
+                    node_toolchain.unpack_node(io.BytesIO(raw), selected, destination,
+                                              for_execution=for_execution)
+                self.assertFalse((destination / "bin/npm").exists())
+                if os.name == "posix":
+                    for parent, _, names in os.walk(destination):
+                        for name in names:
+                            self.assertEqual((Path(parent) / name).stat().st_mode & 0o111, 0)
+
+    def test_execution_intake_requires_a_local_destination(self):
+        raw, selected = fixture()
+        with self.assertRaisesRegex(model.Refused, "node_execution_destination"):
+            node_toolchain.unpack_node(io.BytesIO(raw), selected, for_execution=True)
 
     def test_existing_destination_is_preserved(self):
         raw, selected = fixture()
@@ -258,28 +267,74 @@ class RegularMaterializationTests(unittest.TestCase):
                 with self.assertRaisesRegex(model.Refused, "node_execution_platform"):
                     result.enable_execution()
 
+    @unittest.skipUnless(os.name == "posix", "POSIX execution permission transition")
+    def test_permission_transition_rereads_only_executable_file_contents(self):
+        raw, selected = fixture()
+        with tempfile.TemporaryDirectory(prefix="node-regular-control-") as temporary:
+            result = node_toolchain.unpack_node(io.BytesIO(raw), selected, Path(temporary) / "prefix")
+            all_files = [row.path for row in result.files]
+            executable_files = [row.path for row in result.files if row.executable]
+            with mock.patch.object(node_toolchain, "_check_file_content",
+                                   wraps=node_toolchain._check_file_content) as check:
+                enabled = result.enable_execution()
+                self.assertEqual([call.args[0].path for call in check.call_args_list],
+                                 all_files + executable_files)
+                check.reset_mock()
+                enabled.verify()
+                self.assertEqual([call.args[0].path for call in check.call_args_list], all_files)
+
+    @unittest.skipUnless(os.name == "posix", "POSIX execution permission transition")
+    def test_permission_transition_refuses_a_rewritten_data_file_with_restored_mtime(self):
+        raw, selected = fixture()
+        with tempfile.TemporaryDirectory(prefix="node-regular-control-") as temporary:
+            result = node_toolchain.unpack_node(io.BytesIO(raw), selected, Path(temporary) / "prefix")
+            path = result.root / "include/node/node_api.h"
+            original = path.stat()
+            changed = path.read_bytes().replace(b"header", b"alterd")
+            fchmod = os.fchmod
+
+            def chmod_and_write(descriptor, mode):
+                fchmod(descriptor, mode)
+                path.chmod(0o600)
+                path.write_bytes(changed)
+                path.chmod(0o400)
+                os.utime(path, ns=(original.st_atime_ns, original.st_mtime_ns))
+
+            with mock.patch.object(node_toolchain.os, "fchmod", side_effect=chmod_and_write):
+                with self.assertRaisesRegex(model.Refused, "node_file_changed"):
+                    result.enable_execution()
+
 
 @unittest.skipUnless(os.name == "posix", "Recorded POSIX leases are not Windows qualification")
 class LeaseTests(unittest.TestCase):
     def test_download_intake_uses_the_unpackers_archive_digest_pass(self):
         raw, selected = fixture()
         contract = SimpleNamespace(data={"node_toolchain": selected})
-        with tempfile.TemporaryDirectory(prefix="node-intake-control-") as temporary:
-            root = Path(temporary)
-            recorder = owned_process.Recorder(root / "commands")
-            command = [sys.executable, "-I", "-B", "-c", f"import sys; sys.stdout.buffer.write({raw!r})"]
-            installer = node_toolchain.Installer(contract, recorder, root / "node", command, {}, lambda: None)
-            with mock.patch.object(owned_process.Result, "open_stdout",
-                                   side_effect=AssertionError("duplicate archive digest pass")), \
-                    mock.patch.object(node_toolchain, "_hash_stream",
-                                      wraps=node_toolchain._hash_stream) as hash_stream:
-                installation = installer.fetch()
-                hash_stream.assert_called_once()
-                self.assertEqual(hash_stream.call_args.args[1], pin(raw))
-            self.assertIs(installation.execution_enabled, False)
-            self.assertEqual(installation.verify()["selected_manifest"], selected["selected_manifest"])
-            self.assertEqual(len(recorder.records), 1)
-            self.assertEqual((recorder.directory / selected["filename"]).read_bytes(), raw)
+        for for_execution in (False, True):
+            with self.subTest(for_execution=for_execution), tempfile.TemporaryDirectory(
+                    prefix="node-intake-control-") as temporary:
+                root = Path(temporary)
+                recorder = owned_process.Recorder(root / "commands")
+                command = [sys.executable, "-I", "-B", "-c", f"import sys; sys.stdout.buffer.write({raw!r})"]
+                installer = node_toolchain.Installer(contract, recorder, root / "node", command, {},
+                                                     lambda: None, for_execution=for_execution)
+                with mock.patch.object(owned_process.Result, "open_stdout",
+                                       side_effect=AssertionError("duplicate archive digest pass")), \
+                        mock.patch.object(node_toolchain, "_hash_stream",
+                                          wraps=node_toolchain._hash_stream) as hash_stream, \
+                        mock.patch.object(node_toolchain, "_check_file_content",
+                                          wraps=node_toolchain._check_file_content) as check:
+                    installation = installer.fetch()
+                    hash_stream.assert_called_once()
+                    self.assertEqual(hash_stream.call_args.args[1], pin(raw))
+                    expected = [row.path for row in installation.files]
+                    if for_execution:
+                        expected.extend(row.path for row in installation.files if row.executable)
+                    self.assertEqual([call.args[0].path for call in check.call_args_list], expected)
+                self.assertIs(installation.execution_enabled, for_execution)
+                self.assertEqual(installation.verify()["selected_manifest"], selected["selected_manifest"])
+                self.assertEqual(len(recorder.records), 1)
+                self.assertEqual((recorder.directory / selected["filename"]).read_bytes(), raw)
 
     def test_lease_is_one_new_recorded_regular_inode_and_releases(self):
         import fcntl

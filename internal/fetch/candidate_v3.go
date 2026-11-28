@@ -9,12 +9,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"io"
 	"strings"
 
 	"golang.org/x/crypto/sha3"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
+	"github.com/0x3639/zenon-spv/internal/jsonspan"
 )
 
 // These are local candidate-decoding budgets, not agreed network limits.
@@ -65,7 +65,7 @@ func decodeCandidateV3Momentum(raw []byte, retainContent bool) (CandidateV3Momen
 	}
 	var next CandidateV3Momentum
 	h := &next.Header.Header
-	var data, publicKey, signature, content json.RawMessage
+	var data, publicKey, signature, content candidateRPCFieldSpan
 	var producer string
 	fields := map[string]any{
 		"version": &h.Version, "chainIdentifier": &h.ChainIdentifier,
@@ -104,6 +104,9 @@ func decodeCandidateV3Momentum(raw []byte, retainContent bool) (CandidateV3Momen
 	return next, nil
 }
 
+// candidateRPCFieldSpan borrows validated JSON bytes for synchronous decoding.
+type candidateRPCFieldSpan []byte
+
 func decodeCandidateRPCObject(raw []byte, fields map[string]any) error {
 	return decodeCandidateRPCObjectNullable(raw, fields)
 }
@@ -111,47 +114,64 @@ func decodeCandidateRPCObject(raw []byte, fields map[string]any) error {
 // Only explicitly named schema fields may be null. Existing v3 envelopes
 // continue to require every member to be non-null.
 func decodeCandidateRPCObjectNullable(raw []byte, fields map[string]any, nullable ...string) error {
-	d := json.NewDecoder(bytes.NewReader(raw))
-	if start, err := d.Token(); err != nil || start != json.Delim('{') {
+	if !json.Valid(raw) {
 		return ErrCandidateV3Momentum
 	}
+	return decodeValidatedCandidateRPCObject(raw, fields, nullable)
+}
+
+// The full syntax check precedes span traversal. Content rows borrow from
+// the validated envelope so they do not require a second staging buffer.
+func decodeValidatedCandidateRPCObject(raw []byte, fields map[string]any, nullable []string) error {
+	at := jsonspan.SpaceEnd(raw, 0)
+	if raw[at] != '{' {
+		return ErrCandidateV3Momentum
+	}
+	at = jsonspan.SpaceEnd(raw, at+1)
 	seen := make(map[string]bool, len(fields))
-	for d.More() {
-		token, err := d.Token()
-		if err != nil {
+	for raw[at] != '}' {
+		keyEnd := jsonspan.StringEnd(raw, at)
+		var key string
+		if json.Unmarshal(raw[at:keyEnd], &key) != nil {
 			return ErrCandidateV3Momentum
 		}
-		key, ok := token.(string)
 		target, known := fields[key]
-		if !ok || !known || seen[key] {
+		if !known || seen[key] {
 			return ErrCandidateV3Momentum
 		}
 		seen[key] = true
+		colon := jsonspan.SpaceEnd(raw, keyEnd)
+		start := jsonspan.SpaceEnd(raw, colon+1)
+		end := jsonspan.ValueEnd(raw, start)
+		value := raw[start:end:end]
 		allowNull := false
 		for _, name := range nullable {
 			allowNull = allowNull || name == key
 		}
-		var value json.RawMessage
-		if err := d.Decode(&value); err != nil || (bytes.Equal(bytes.TrimSpace(value), []byte("null")) && !allowNull) {
+		if bytes.Equal(value, []byte("null")) && !allowNull {
 			return ErrCandidateV3Momentum
 		}
-		if hash, ok := target.(*chain.Hash); ok {
+		switch destination := target.(type) {
+		case *chain.Hash:
 			decoded, err := decodeCandidateRPCHash(value)
 			if err != nil {
 				return ErrCandidateV3Momentum
 			}
-			*hash = decoded
-		} else if destination, ok := target.(*json.RawMessage); ok && destination != nil {
-			// The decoder has already checked the value and copied its bytes.
+			*destination = decoded
+		case *candidateRPCFieldSpan:
 			*destination = value
-		} else if err := json.Unmarshal(value, target); err != nil {
-			return ErrCandidateV3Momentum
+		default:
+			if err := json.Unmarshal(value, target); err != nil {
+				return ErrCandidateV3Momentum
+			}
 		}
+		at = jsonspan.SpaceEnd(raw, end)
+		if raw[at] == '}' {
+			break
+		}
+		at = jsonspan.SpaceEnd(raw, at+1) // Skip the validated comma.
 	}
-	if end, err := d.Token(); err != nil || end != json.Delim('}') || len(seen) != len(fields) {
-		return ErrCandidateV3Momentum
-	}
-	if err := d.Decode(new(json.RawMessage)); err != io.EOF {
+	if len(seen) != len(fields) {
 		return ErrCandidateV3Momentum
 	}
 	return nil
@@ -205,28 +225,27 @@ func decodeCandidateRPCAddress(text string) (chain.Address, error) {
 	return chain.Address(decoded), nil
 }
 
-func decodeCandidateRPCContent(raw []byte, retainContent bool) ([]chain.AccountHeader, chain.Hash, error) {
-	d := json.NewDecoder(bytes.NewReader(raw))
+func decodeCandidateRPCContent(raw candidateRPCFieldSpan, retainContent bool) ([]chain.AccountHeader, chain.Hash, error) {
 	var hash chain.Hash
-	if start, err := d.Token(); err != nil || start != json.Delim('[') {
+	at := jsonspan.SpaceEnd(raw, 0)
+	if raw[at] != '[' {
 		return nil, hash, ErrCandidateV3Momentum
 	}
+	at = jsonspan.SpaceEnd(raw, at+1)
 	var members []chain.AccountHeader
 	if retainContent {
 		members = make([]chain.AccountHeader, 0)
 	}
 	digest := sha3.New256()
-	for count := 0; d.More(); count++ {
+	for count := 0; raw[at] != ']'; count++ {
 		if count >= MaxCandidateV3MomentumContentMembers {
 			return nil, hash, ErrCandidateV3Momentum
 		}
-		var value json.RawMessage
-		if err := d.Decode(&value); err != nil {
-			return nil, hash, ErrCandidateV3Momentum
-		}
+		end := jsonspan.ValueEnd(raw, at)
 		var member chain.AccountHeader
 		var address string
-		if err := decodeCandidateRPCObject(value, map[string]any{"address": &address, "height": &member.Height, "hash": &member.Hash}); err != nil {
+		fields := map[string]any{"address": &address, "height": &member.Height, "hash": &member.Hash}
+		if err := decodeValidatedCandidateRPCObject(raw[at:end], fields, nil); err != nil {
 			return nil, hash, err
 		}
 		var err error
@@ -239,12 +258,11 @@ func decodeCandidateRPCContent(raw []byte, retainContent bool) ([]chain.AccountH
 		if retainContent {
 			members = append(members, member)
 		}
-	}
-	if end, err := d.Token(); err != nil || end != json.Delim(']') {
-		return nil, hash, ErrCandidateV3Momentum
-	}
-	if err := d.Decode(new(json.RawMessage)); err != io.EOF {
-		return nil, hash, ErrCandidateV3Momentum
+		at = jsonspan.SpaceEnd(raw, end)
+		if raw[at] == ']' {
+			break
+		}
+		at = jsonspan.SpaceEnd(raw, at+1) // Skip the validated comma.
 	}
 	copy(hash[:], digest.Sum(nil))
 	return members, hash, nil

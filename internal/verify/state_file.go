@@ -66,7 +66,7 @@ func saveHeaderState(path string, state HeaderState, openDir func(string) (*os.F
 	if path == "" {
 		return errors.New("verify: SaveHeaderState: empty path")
 	}
-	if err := state.validateRetainedState(); err != nil {
+	if err := state.validateRetainedState(false); err != nil {
 		return fmt.Errorf("save state: %w", err)
 	}
 	return writeValidatedHeaderState(path, state, openDir)
@@ -196,7 +196,7 @@ func decodeHeaderState(r io.Reader, maxBytes int64) (HeaderState, error) {
 	if body.Version == retentionStateFileVersion {
 		state.RetainHeaders = body.Capacity
 	}
-	if err := state.validateRetainedState(); err != nil {
+	if err := state.validateRetainedState(true); err != nil {
 		return HeaderState{}, fmt.Errorf("load state: %w", err)
 	}
 	return state, nil

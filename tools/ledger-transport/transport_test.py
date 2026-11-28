@@ -94,6 +94,57 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(reader.requests[-1], 1)
         self.assertTrue(report["stream_eof_observed"])
 
+    def test_emitted_transport_checks_short_fragments_and_crossed_chunk_boundaries(self):
+        for raw in (b"", b"a", b"abcdefghij"):
+            with self.subTest(size=len(raw)):
+                manifest = json_bytes(oracle_manifest(raw, 3))
+                reader = ObservedReader(manifest + b"next frame", short=2)
+
+                def emit(write):
+                    assert reader.position == len(manifest)
+                    for part in (raw[:1], raw[1:8], b"", raw[8:]):
+                        write(part)
+                    return "completed"
+
+                report, result = tool.verify_emitted(reader, len(manifest), sha(manifest), selected(raw), emit)
+                self.assertEqual(result, "completed")
+                self.assertEqual(report["format"], "zenon-r1-transport-emitted-check/v1")
+                self.assertEqual(report["status"], "SELECTED_EMITTED_TRANSPORT_MATCHED")
+                self.assertEqual(report["chunks_checked"], (len(raw) + 2) // 3)
+                self.assertEqual(report["selection"], selected(raw))
+                self.assertTrue(report["emitted_stream_completed"])
+                self.assertEqual(reader.position, len(manifest))
+
+    def test_emitted_transport_checks_extent_and_both_digest_selections(self):
+        raw = b"abcdefgh"
+        for payload, wrong_whole, reason in (
+                (raw[:-1], False, "stream_truncated"),
+                (raw + b"x", False, "trailing_input"),
+                (b"aXcdefgh", False, "chunk_digest"),
+                (raw, True, "stream_digest")):
+            with self.subTest(reason=reason), self.assertRaisesRegex(tool.Refused, "^" + reason + "$"):
+                value = oracle_manifest(raw)
+                if wrong_whole:
+                    value["selection"]["sha256"] = "00" * 32
+                manifest = json_bytes(value)
+                tool.verify_emitted(ObservedReader(manifest), len(manifest), sha(manifest),
+                                    value["selection"], lambda write: write(payload))
+
+    def test_emitted_transport_refuses_unchecked_manifest_and_suppressed_failure(self):
+        raw = b"abcdefgh"
+        manifest = json_bytes(oracle_manifest(raw))
+        producer = mock.Mock()
+        with self.assertRaisesRegex(tool.Refused, "^manifest_digest$"):
+            tool.verify_emitted(ObservedReader(manifest), len(manifest), "00" * 32, selected(raw), producer)
+        producer.assert_not_called()
+
+        def incomplete(write):
+            with self.assertRaisesRegex(tool.Refused, "^chunk_digest$"):
+                write(b"aXc")
+
+        with self.assertRaisesRegex(tool.Refused, "^stream_refused$"):
+            tool.verify_emitted(ObservedReader(manifest), len(manifest), sha(manifest), selected(raw), incomplete)
+
     def test_resume_plan_selects_exact_middle_and_final_chunk_offsets(self):
         raw = b"abcdefgh"
         value = oracle_manifest(raw)
@@ -224,6 +275,11 @@ class TransportTests(unittest.TestCase):
                                          len(manifest), manifest_pin, pin, caps)
                     self.assertEqual(report["chunks_checked"], len(expected["chunks"]))
                     self.assertTrue(report["stream_eof_observed"])
+                    self.assertEqual(sum(updates), hashed_payload_bytes)
+                    updates.clear()
+                    report, _ = tool.verify_emitted(ObservedReader(manifest), len(manifest), manifest_pin,
+                                                    pin, lambda write: write(raw), caps)
+                    self.assertEqual(report["chunks_checked"], len(expected["chunks"]))
                     self.assertEqual(sum(updates), hashed_payload_bytes)
 
     def test_single_chunk_still_requires_both_selected_digests(self):

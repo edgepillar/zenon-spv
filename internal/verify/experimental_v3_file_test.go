@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"testing/iotest"
 	"unicode/utf8"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
@@ -47,20 +48,24 @@ func bufferedExperimentalV3File(raw []byte) (experimentalV3File, error) {
 
 func TestStreamedStateWindowExperimentalV3Parity(t *testing.T) {
 	f := experimentalV3Inputs(t)
+	headers := make(experimentalV3Window, len(f.headers))
+	for i := range f.headers {
+		headers[i] = &f.headers[i]
+	}
 	initial := experimentalV3File{Format: experimentalV3StateFormat, Version: 4, Context: f.pin,
-		Profile: f.profile, Policy: f.policy, Headers: experimentalV3Window(f.headers)}
+		Profile: f.profile, Policy: f.policy, Headers: headers}
 	raw := experimentalV3JSON(t, initial)
 	fields := experimentalV3Fields(t, raw)
 	array := fields["retained_headers"]
 	delete(fields, "retained_headers")
 	rest := experimentalV3JSON(t, fields)
 	withWindow := func(field string, value []byte) []byte {
-		return []byte("{"+field+":"+string(value)+","+string(rest[1:]))
+		return []byte("{" + field + ":" + string(value) + "," + string(rest[1:]))
 	}
 	first := withWindow("\"retained_headers\"", array)
 	alias := withWindow("\"retained_hea\\u0064ers\"", array)
-	duplicate := []byte("{\"retained_headers\":"+string(array)+","+string(alias[1:]))
-	unknown := []byte(string(first[:len(first)-1])+",\"unknown\":false}")
+	duplicate := []byte("{\"retained_headers\":" + string(array) + "," + string(alias[1:]))
+	unknown := []byte(string(first[:len(first)-1]) + ",\"unknown\":false}")
 	tests := []struct {
 		name string
 		raw  []byte
@@ -93,6 +98,11 @@ func TestStreamedStateWindowExperimentalV3Parity(t *testing.T) {
 			if !reflect.DeepEqual(got, want) {
 				t.Fatal("decoded value or failure atomicity changed")
 			}
+			streamed := initial
+			size, inputErr, parseErr := streamed.readJSON(iotest.OneByteReader(bytes.NewReader(tc.raw)))
+			if size != int64(len(tc.raw)) || inputErr != nil || parseErr != err || !reflect.DeepEqual(streamed, want) {
+				t.Fatal("bounded stream changed decoding or failure atomicity", size, inputErr, parseErr)
+			}
 		})
 	}
 	window := initial.Headers
@@ -107,7 +117,7 @@ func benchmarkExperimentalV3Window(b *testing.B) {
 	f := experimentalV3Inputs(b)
 	headers := make(experimentalV3Window, MaxRetainHeaders)
 	for i := range headers {
-		headers[i] = f.headers[i%len(f.headers)]
+		headers[i] = &f.headers[i%len(f.headers)]
 	}
 	raw, err := json.Marshal(experimentalV3File{Format: experimentalV3StateFormat, Version: 4, Context: f.pin,
 		Profile: f.profile, Policy: f.policy, Headers: headers})
@@ -248,7 +258,7 @@ func TestExperimentalV3PersistenceRejectsChangedSettings(t *testing.T) {
 	}
 	// An index supplied by the caller is never authority: a fresh validated copy
 	// is used, while a changed substantive schedule hash cannot retain the pin.
-	f.schedule.idx = map[uint64]int{13: 0}
+	f.schedule.idx = fixtureSchedule(t, 2).idx
 	loaded, err := LoadTrustedExperimentalV3State(path, f.profile, f.policy, f.schedule, f.pin)
 	if err != nil || loaded.Empty() {
 		t.Fatal("caller index was not rebuilt", err)
@@ -376,7 +386,7 @@ func TestExperimentalV3PersistenceBoundsAndFailureAtomicity(t *testing.T) {
 	for i := range rows {
 		rows[i] = member
 	}
-	before := experimentalV3Window{f.headers[0]}
+	before := experimentalV3Window{&f.headers[0]}
 	target := before
 	if json.Unmarshal(experimentalV3JSON(t, rows), &target) == nil || !reflect.DeepEqual(target, before) {
 		t.Fatal("window member bound failed or published a prefix")

@@ -255,6 +255,39 @@ func TestCandidateV3HeaderProjectedWire(t *testing.T) {
 	}
 }
 
+func TestCandidateV3HeaderEscapedWire(t *testing.T) {
+	_, fields := candidateV3Wire(t)
+	var wire strings.Builder
+	wire.WriteString(" \n{\n")
+	for i := len(candidateV3WireFields) - 1; i >= 0; i-- {
+		name := candidateV3WireFields[i]
+		value := fields[name]
+		key := fmt.Sprintf("%q", name)
+		if name == "stateRoot" {
+			key = `"state\u0052oot"`
+		}
+		if name == "stateRoot" || name == "signature" {
+			value = fmt.Appendf(nil, `"\u%04x%s`, value[1], value[2:])
+		}
+		fmt.Fprintf(&wire, "\t%s : %s", key, value)
+		if i > 0 {
+			wire.WriteByte(',')
+		}
+		wire.WriteByte('\n')
+	}
+	wire.WriteString("}\n ")
+	raw := []byte(wire.String())
+	want := candidateV3WireValue(t)
+	got, err := chain.DecodeCandidateV3Header(raw)
+	if err != nil || !reflect.DeepEqual(got, want) {
+		t.Fatal("escaped or reordered projection changed", err)
+	}
+	got = chain.CandidateV3Header{}
+	if err := json.Unmarshal(raw, &got); err != nil || !reflect.DeepEqual(got, want) {
+		t.Fatal("direct JSON entry point changed the projection", err)
+	}
+}
+
 func TestCandidateV3HeaderRequiredFields(t *testing.T) {
 	raw, fields := candidateV3Wire(t)
 	for _, name := range candidateV3WireFields {
@@ -279,7 +312,7 @@ func TestCandidateV3HeaderMalformedWire(t *testing.T) {
 	raw, fields := candidateV3Wire(t)
 	cases := map[string][]byte{
 		"null": []byte("null"), "array": []byte("[]"), "scalar": []byte("3"),
-		"empty": []byte("{}"), "truncated": raw[:len(raw)-1],
+		"empty": []byte("{}"), "whitespace-only": []byte(" \r\t\n"), "truncated": raw[:len(raw)-1],
 		"trailing":          append(bytes.Clone(raw), []byte("{}")...),
 		"escaped-duplicate": append(bytes.Clone(raw[:len(raw)-1]), []byte(",\"\\u0076ersion\":3}")...),
 	}
@@ -401,6 +434,31 @@ func TestCandidateV3HeaderMarshalBoundary(t *testing.T) {
 			if _, err := json.Marshal(next); !errors.Is(err, chain.ErrCandidateV3Header) {
 				t.Fatal("inconsistent projected header was emitted", err)
 			}
+			var output bytes.Buffer
+			if err := next.EncodeJSON(json.NewEncoder(&output)); !errors.Is(err, chain.ErrCandidateV3Header) || output.Len() != 0 {
+				t.Fatal("stream encoder emitted an inconsistent projected header", err)
+			}
 		})
+	}
+}
+
+func TestCandidateV3HeaderEncodeJSON(t *testing.T) {
+	first := candidateV3WireValue(t)
+	second := candidateV3WireValue(t)
+	second.Header.Signature[0] ^= 1
+	var want, got bytes.Buffer
+	reference, stream := json.NewEncoder(&want), json.NewEncoder(&got)
+	reference.SetIndent("  ", "    ")
+	stream.SetIndent("  ", "    ")
+	for _, header := range []chain.CandidateV3Header{first, second} {
+		if err := reference.Encode(header); err != nil {
+			t.Fatal(err)
+		}
+		if err := header.EncodeJSON(stream); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if !bytes.Equal(got.Bytes(), want.Bytes()) {
+		t.Fatal("reused encoder changed the projected header sequence")
 	}
 }

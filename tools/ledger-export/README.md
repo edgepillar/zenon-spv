@@ -246,6 +246,71 @@ individual command remain distinct preserved records. This extends the finite
 [source-genesis workflow comparison](../../docs/source-genesis-ledger-export.md);
 it supplies no representative R1 dataset or network acceptance.
 
+### Recount directly from retained fragments
+
+Keep the selected completed-export receipt, the manifest and the retained
+pieces of its put stream. In a private plan file, list the existing regular
+files in stream order and record each file's exact byte length. Use physical
+absolute paths, including for the plan itself. The plan stays local because it
+contains those paths.
+
+```json
+{
+  "format": "zenon-r1-retained-fragments/v1",
+  "fragments": [
+    {"path": "/absolute/path/to/retained-prefix.raw", "bytes": 11264},
+    {"path": "/absolute/path/to/recovered-range.raw", "bytes": 3632}
+  ]
+}
+```
+
+Use the same arguments as the framed recount, add
+`--transport-fragment-plan "$R1_FRAGMENT_PLAN"` and provide only the manifest
+file on binary stdin. The selected byte count is still the whole original put
+stream. The tool opens one fragment at a time, confirms its exact length and
+EOF, and sends the bytes through the existing chunk and whole-stream checks.
+The plan has a 512 KiB limit and can select up to 4,096 fragments. The
+transport, inventory and optional projection reports keep the same format
+and trust scope. A successful recount requires the complete ordered bytes,
+including any missing ranges recovered before this step. No joined ledger
+file is created.
+
+Both plan versions accept an explicit byte `offset` on a local file entry.
+Use it with the selected `bytes` to read a range from a larger retained
+file. Several entries can select different ranges of that same file. The
+tool checks the requested span against the file length and checks file
+identity again after reading it. The manifest digests cover the selected
+bytes in the order given by the plan.
+
+### Stream one recovered range into the recount
+
+Use `zenon-r1-retained-fragments/v2` when one missing fragment arrives
+through a verified range stream. Put exactly one `null` path at the
+fragment's position in the original put stream and select its exact byte
+length. Each other entry selects a retained local file.
+
+```json
+{
+  "format": "zenon-r1-retained-fragments/v2",
+  "fragments": [
+    {"path": "/absolute/path/to/retained.raw", "offset": 0, "bytes": 11264},
+    {"path": null, "bytes": 3632},
+    {"path": "/absolute/path/to/retained.raw", "offset": 14896, "bytes": 4096}
+  ]
+}
+```
+
+Feed the pinned manifest followed immediately by the recovered fragment on
+binary stdin. The tool reads the other fragments in plan order and checks EOF
+after the streamed fragment. The chunk digests and whole-stream digest cover
+all fragments. Short, extended or changed fragments withhold the inventory
+and projection result. Recounting consumes the recovered range in one pass.
+
+Retain the range producer's actual exit, completion and digest in the
+caller's evidence. When composing a pipeline, check both processes before
+using the recount report. Use a `v1` plan when all fragments are retained
+as files.
+
 ### Compare the candidate L1 projection during the recount
 
 Add these options to the framed command above. Select the expected root
@@ -266,10 +331,10 @@ whose width differs from the typed balance query. [Candidate fold](https://githu
 
 Each included value is streamed into its SHA3-256 leaf hash, using the
 SHA3-256 key path. After the completion, chunk, whole-stream, inventory and EOF
-checks pass, the helper sorts the retained path/digest pairs and folds the
-full-depth binary tree with constant-zero empty subtrees. It keeps no raw
-value map, tree database or secondary payload. The projected-leaf cap defaults
-to 32,768 and can be set up to 100,000. The existing input byte, record, key,
+checks pass, the helper sorts the retained leaves by their 32-byte paths and
+folds the full-depth binary tree with constant-zero empty subtrees. Each leaf
+occupies one 64-byte payload containing its path and digest. The projected-leaf
+cap defaults to 32,768 and can be set up to 100,000. The input byte, record, key,
 value and read bounds still apply. [Candidate hash rules](https://github.com/digitalSloth/go-zenon/blob/9c71ae82fc983e16f914ae085d4034030c8ebe3b/common/trie/hash.go)
 
 On success, `zenon-completed-frontier-transport-projection/v1` adds
@@ -295,6 +360,22 @@ seconds with 24.2 MiB peak consumer RSS, including the Python process. Fixture
 generation and the reference calculation were outside the measurement. No
 fixture files were written. The finite result carries no representative
 throughput or hardware budget.
+
+On macOS ARM64 with Python 3.9.6, three paired subprocess measurements per
+size compared the tuple representation at `c64f545` with the packed leaves.
+The synthetic rows use keys ordered by 20-byte account address, the
+source-genesis ratio of balance to storage leaves, stored-zero balances, and
+variable storage values. Each subprocess streams those rows to the projector
+in memory. Every pair matched the selected input, computed root, and mapping
+digest.
+
+| Projected leaves | Retained leaf objects before / after | Peak process RSS before / after | Sort and fold before / after |
+| ---: | ---: | ---: | ---: |
+| 19,257 | 3.49 / 1.95 MiB | 23.17 / 21.48 MiB | 1.42 / 1.42 s |
+| 100,000 | 18.03 / 10.01 MiB | 40.27 / 31.05 MiB | 7.28 / 7.36 s |
+
+Values are medians. Leaf object totals count the list, its records, and the
+tuple fields where present. Peak RSS covers the entire projection subprocess.
 
 ## Exact record space and bounds
 
