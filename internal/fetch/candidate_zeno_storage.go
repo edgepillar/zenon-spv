@@ -18,8 +18,8 @@ import (
 const MaxCandidateZenoStorageResultBytes = 64 << 10
 
 var (
-	ErrCandidateZenoStorageUnavailable = errors.New("Zeno storage witness unavailable")
-	ErrCandidateZenoStorageIdentity    = errors.New("Zeno storage witness identity mismatch")
+	ErrCandidateZenoStorageUnavailable = errors.New("unavailable Zeno storage witness")
+	ErrCandidateZenoStorageIdentity    = errors.New("mismatched Zeno storage witness identity")
 	ErrCandidateZenoStorageInvalid     = errors.New("invalid Zeno storage witness")
 )
 
