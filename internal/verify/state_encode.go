@@ -87,11 +87,11 @@ func encodePersistedState(destination io.Writer, body persistedState) error {
 		if err := write("  \"retained_window\": [\n"); err != nil {
 			return err
 		}
-		for i, header := range body.Window {
+		for i := range body.Window {
 			if err := write("    "); err != nil {
 				return err
 			}
-			if err := emit("    ", header); err != nil {
+			if err := emit("    ", &body.Window[i]); err != nil {
 				return err
 			}
 			ending := ",\n"

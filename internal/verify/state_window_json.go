@@ -62,6 +62,14 @@ func decodeRetainedWindowValue(d *json.Decoder, maxHeaders int) ([]chain.Header,
 			if len(decoded) >= maxHeaders {
 				return nil, fmt.Errorf("%w: retained header count exceeds persistence limit", ErrInvalidRetainedState)
 			}
+			// Grow large explicit windows in fewer steps. At the maximum
+			// explicit capacity the decoded slice can be used without a
+			// second copy to trim its spare capacity.
+			if n := len(decoded); n == cap(decoded) && n >= 512 && n < MaxRetainHeaders {
+				grown := make([]chain.Header, n, min(2*n, MaxRetainHeaders, maxHeaders))
+				copy(grown, decoded)
+				decoded = grown
+			}
 			// The window is private until the complete array has decoded.
 			decoded = append(decoded, chain.Header{})
 			if err := d.Decode(&decoded[len(decoded)-1]); err != nil {

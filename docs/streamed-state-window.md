@@ -87,6 +87,32 @@ go test -run '^$' -bench '^BenchmarkStreamedStateWindow/' -benchtime=3x -benchme
 go test -run '^$' -fuzz '^FuzzStreamedStateWindow$' -fuzztime=10s ./internal/verify
 ```
 
+## Bound large window growth
+
+From 512 decoded headers, the reader grows the private backing slice by up
+to twice its length, capped by the requested count bound and the maximum
+explicit capacity of 4,096. A full 4,096-header window reaches that capacity
+exactly, so trusted resume can keep the slice when the selected capacity is
+unchanged. A larger legacy window continues to grow on demand under the
+persistence count limit. The writer passes each existing header by address to
+the JSON encoder and emits the same indented bytes.
+
+Three paired darwin/arm64 trials used Go 1.25.14 and six iterations per
+benchmark at `-cpu=1`. The baseline used the reader and writer from `1d150cc`.
+These are median allocation totals for the structural benchmarks at K=4096.
+
+| Operation | Baseline B/op | Updated B/op | Baseline allocations/op | Updated allocations/op |
+| --- | ---: | ---: | ---: | ---: |
+| Decode from JSON | 6,971,477 | 5,087,314 | 41,027 | 41,024 |
+| Encode to a discard writer | 2,395,416 | 1,346,790 | 24,597 | 20,500 |
+
+The full K=4096 sequence was also run three times per revision on the same
+machine. Its median test time was 4.95 s before and 4.93 s after. The samples
+do not establish a CI or device speedup. The regression controls check that
+4,096 decoded headers fit exactly and that bounded growth honors a lower
+configured count. Existing independent JSON and signed resume controls cover
+file bytes, signatures, producer authorization and trust configuration.
+
 The complete unchanged sequence models, native root suites, node-derived byte
 conformance and exact-source artifacts remain required. Synthetic parser and
 allocation controls establish no real network history, canonicality, consensus
