@@ -268,6 +268,34 @@ func TestCandidateV3MomentumNestedSchemaAndOrder(t *testing.T) {
 	}
 }
 
+func TestCandidateV3MomentumSpansPreserveRecordedHeader(t *testing.T) {
+	row := candidateRPCRows(t)[4]
+	want, err := DecodeCandidateV3Momentum([]byte(row.Wire))
+	if err != nil || len(want.Content) < 2 {
+		t.Fatal("recorded fixture must exercise multiple content rows", err)
+	}
+	reformatted := strings.NewReplacer(
+		`"content":`, `"co\u006etent":`,
+		`"height":`, `"hei\u0067ht":`,
+		`"hash":`, `"ha\u0073h":`,
+	).Replace(row.Wire)
+	var spaced bytes.Buffer
+	if err := json.Indent(&spaced, []byte(reformatted), "", "\t"); err != nil {
+		t.Fatal(err)
+	}
+	raw := []byte(" \t\r\n" + spaced.String() + "\r\n ")
+	got, err := DecodeCandidateV3Momentum(raw)
+	if err != nil || !reflect.DeepEqual(got, want) {
+		t.Fatal("JSON whitespace and escaped field names changed the recorded projection", err)
+	}
+	header, err := DecodeCandidateV3MomentumHeader(raw)
+	if err != nil || !reflect.DeepEqual(header, want.Header) {
+		t.Fatal("header-only projection differs", err)
+	}
+	duplicate := strings.Replace(spaced.String(), "{", `{"content":[],`, 1)
+	candidateRPCRefused(t, []byte(duplicate))
+}
+
 func TestCandidateV3MomentumLimits(t *testing.T) {
 	rows := candidateRPCRows(t)
 	base := rows[0].Wire
