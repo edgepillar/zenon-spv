@@ -12,6 +12,7 @@ import (
 
 	"github.com/0x3639/zenon-spv/internal/chain"
 	"github.com/0x3639/zenon-spv/internal/fetch"
+	"github.com/0x3639/zenon-spv/internal/jsonspan"
 	"github.com/0x3639/zenon-spv/internal/proof"
 	"github.com/0x3639/zenon-spv/internal/verify"
 )
@@ -47,32 +48,32 @@ func (*discardedExperimentalCLIValue) UnmarshalJSON([]byte) error { return nil }
 // Exact required fields only. Null, aliases, duplicates and trailing values
 // cannot silently replace a trust input or disable a selected comparison.
 func decodeExperimentalCLIObject(raw []byte, fields map[string]any, nullable ...string) error {
-	if !utf8.Valid(raw) {
+	if !utf8.Valid(raw) || !json.Valid(raw) {
 		return errExperimentalCLIInput
 	}
-	d := json.NewDecoder(bytes.NewReader(raw))
-	if token, err := d.Token(); err != nil || token != json.Delim('{') {
+	at := jsonspan.SpaceEnd(raw, 0)
+	if raw[at] != '{' {
 		return errExperimentalCLIInput
 	}
+	// Walk the validated document in place so large borrowed fields need no
+	// decoder staging buffer. The field decoders still own type validation.
+	at = jsonspan.SpaceEnd(raw, at+1)
 	seen := make(map[string]bool, len(fields))
-	for d.More() {
-		token, err := d.Token()
-		name, ok := token.(string)
+	for raw[at] != '}' {
+		end := jsonspan.StringEnd(raw, at)
+		var name string
+		if json.Unmarshal(raw[at:end], &name) != nil {
+			return errExperimentalCLIInput
+		}
 		target, known := fields[name]
-		if err != nil || !ok || !known || seen[name] {
+		if !known || seen[name] {
 			return errExperimentalCLIInput
 		}
 		seen[name] = true
-		start := d.InputOffset()
-		if d.Decode(&discardedExperimentalCLIValue{}) != nil {
-			return errExperimentalCLIInput
-		}
-		// The validated span starts after the field name and includes its colon.
-		_, value, ok := bytes.Cut(raw[start:d.InputOffset()], []byte{':'})
-		if !ok {
-			return errExperimentalCLIInput
-		}
-		value = bytes.Trim(value, " \t\n\r")
+		colon := jsonspan.SpaceEnd(raw, end)
+		start := jsonspan.SpaceEnd(raw, colon+1)
+		end = jsonspan.ValueEnd(raw, start)
+		value := raw[start:end]
 		allowNull := false
 		for _, field := range nullable {
 			allowNull = allowNull || field == name
@@ -96,11 +97,13 @@ func decodeExperimentalCLIObject(raw []byte, fields map[string]any, nullable ...
 				return errExperimentalCLIInput
 			}
 		}
+		at = jsonspan.SpaceEnd(raw, end)
+		if raw[at] == '}' {
+			break
+		}
+		at = jsonspan.SpaceEnd(raw, at+1) // Skip the validated comma.
 	}
-	if token, err := d.Token(); err != nil || token != json.Delim('}') || len(seen) != len(fields) {
-		return errExperimentalCLIInput
-	}
-	if d.Decode(&discardedExperimentalCLIValue{}) != io.EOF {
+	if len(seen) != len(fields) {
 		return errExperimentalCLIInput
 	}
 	return nil

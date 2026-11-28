@@ -40,7 +40,7 @@ NATIVE_FILES = frozenset("internal/verify/experimental_v3_" + name for name in (
 # Every other non-document tree record remains in this reviewed closure,
 # including workflows, research Go sources, Python helpers and fixture data.
 ORACLE_SOURCE_PINS = frozenset((
-    "3cd2b712d9f1ad06fbb36d05edf493f62370b9c023c070b7abaa8e81a9e64851",
+    "82ba60a7436c2facecbb04dc643a74e030efd50f539dc21dda325515d4b4934f",
 ))
 SHARED_TRANSPORT = "tools/ledger-transport/transport.py"
 SHARED_PROJECTION = "tools/ledger-export/snapshot_projection.py"
@@ -80,7 +80,7 @@ PORTABLE_WORKFLOWS = (
 )
 # Keep every remaining non-document dependency, including all workflows.
 # Refresh only after reviewing dependencies and selecting full runtime CI.
-PORTABLE_SOURCE_PIN = "4a26df7c9eab25131b1af025fb389919621cadbfb53a6d1fba992dab6a4e4b20"
+PORTABLE_SOURCE_PIN = "8258821643de95b2e5ac65038c8e8e0b54f0228c0442c33f525216149e6cab73"
 MAX_FILTERED_DIFF_RECORDS = 256
 MAX_TREE_BYTES = 2 << 20
 MAX_TREE_RECORDS = 8192

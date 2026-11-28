@@ -237,6 +237,24 @@ decoded header, proof, value and gateway data own their storage. The
 three-witness ownership test clears the source buffer after decoding and
 compares the returned values.
 
+The CLI now validates each complete object before locating its field spans
+in the input. The typed field decoders keep ownership of scalar conversion
+and detached results. The outer object still requires each selected field
+exactly once, rejects unknown names and checks the allowed null fields.
+The native proof-bundle reader shares the traversal of validated JSON.
+
+Four paired Go 1.25.14 Darwin arm64 trials used six operations per sample at
+`-cpu=1`, against `73c381f`. The native CLI bundle decoder measured these
+medians with the same prepared input bytes.
+
+| Input | Baseline B/op | Updated B/op | Baseline ms/op | Updated ms/op |
+| --- | ---: | ---: | ---: | ---: |
+| Four recorded headers and three witnesses | 104,222 | 83,029 | 0.168 | 0.139 |
+| 4,096 fixture headers and three witnesses | 64,811,439 | 56,418,218 | 78.77 | 71.23 |
+
+The compiled three-witness and collection controls also passed on the same
+source. The allocation and timing table covers decoding of prepared bytes.
+
 A second paired Go 1.25.14 darwin/arm64 observation uses the same two workloads,
 six operations per sample and three samples per version. The baseline is
 `c64f5453521f4f334bcb6205bbe00d9adfed3980`.

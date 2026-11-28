@@ -1,13 +1,13 @@
 package proof
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/0x3639/zenon-spv/internal/chain"
+	"github.com/0x3639/zenon-spv/internal/jsonspan"
 )
 
 // UnmarshalJSON preserves the existing field matching and unknown-field
@@ -126,60 +126,13 @@ type bundleValueCursor struct {
 }
 
 func (c *bundleValueCursor) space() {
-	for c.at < len(c.raw) {
-		switch c.raw[c.at] {
-		case ' ', '\t', '\r', '\n':
-			c.at++
-		default:
-			return
-		}
-	}
+	c.at = jsonspan.SpaceEnd(c.raw, c.at)
 }
 
 func (c *bundleValueCursor) string() {
-	c.at++
-	for {
-		// Complete syntax validation guarantees a closing quote. Skip
-		// plain text in one scan and check the backslashes before a quote.
-		quote := c.at + bytes.IndexByte(c.raw[c.at:], '"')
-		escaped := false
-		for i := quote - 1; i >= c.at && c.raw[i] == '\\'; i-- {
-			escaped = !escaped
-		}
-		c.at = quote + 1
-		if !escaped {
-			return
-		}
-	}
+	c.at = jsonspan.StringEnd(c.raw, c.at)
 }
 
 func (c *bundleValueCursor) value() {
-	switch c.raw[c.at] {
-	case '"':
-		c.string()
-	case '[', '{':
-		depth := 1
-		c.at++
-		for depth > 0 {
-			switch c.raw[c.at] {
-			case '"':
-				c.string()
-				continue
-			case '[', '{':
-				depth++
-			case ']', '}':
-				depth--
-			}
-			c.at++
-		}
-	default:
-		for c.at < len(c.raw) {
-			switch c.raw[c.at] {
-			case ' ', '\t', '\r', '\n', ',', ']', '}':
-				return
-			default:
-				c.at++
-			}
-		}
-	}
+	c.at = jsonspan.ValueEnd(c.raw, c.at)
 }

@@ -331,6 +331,59 @@ func TestExperimentalCLIRawFieldOwnership(t *testing.T) {
 	}
 }
 
+func TestExperimentalCLIObjectSyntaxAndSpans(t *testing.T) {
+	t.Run("valid_field_boundaries", func(t *testing.T) {
+		for _, document := range []string{
+			" \r\n{\"version\":1, \"witness\":null, \"head\\u0065rs\"\t: [ true, -2e+4, {\"text\":\"\\\\\\\"[,]{}\"} ] }\n",
+			"{\"headers\":-11.5e-7,\"witness\":{\"items\":[[], \"雪\", false]},\"version\":4294967295}",
+			"{\"version\":0,\"headers\":false,\"witness\":[]}",
+		} {
+			raw := []byte(document)
+			var oracle map[string]json.RawMessage
+			var wantVersion uint32
+			if json.Unmarshal(raw, &oracle) != nil || json.Unmarshal(oracle["version"], &wantVersion) != nil {
+				t.Fatal("invalid reference document")
+			}
+			var version uint32
+			var headers experimentalCLIFieldSpan
+			var witness json.RawMessage
+			if err := decodeExperimentalCLIObject(raw, map[string]any{
+				"version": &version, "headers": &headers, "witness": &witness,
+			}, "witness"); err != nil || version != wantVersion || !bytes.Equal(headers, oracle["headers"]) ||
+				!bytes.Equal(witness, oracle["witness"]) {
+				t.Fatal("field boundaries differ from standard JSON", err)
+			}
+			clear(raw)
+			if !bytes.Equal(witness, oracle["witness"]) {
+				t.Fatal("owned raw field changed with the input")
+			}
+		}
+	})
+	t.Run("refusals", func(t *testing.T) {
+		for i, document := range []string{
+			"", "null", "[]", "{",
+			"{\"version\":1,\"headers\":[],\"witness\":null} []",
+			"{\"version\":1,\"headers\":[],\"witness\":null,}",
+			"{\"version\":1,\"headers\":[],\"head\\u0065rs\":[],\"witness\":null}",
+			"{\"version\":1,\"HEADERS\":[],\"witness\":null}",
+			"{\"version\":1,\"headers\":[],\"witness\":null,\"unknown\":1}",
+			"{\"version\":1,\"headers\":[]}",
+			"{\"version\":1,\"headers\":null,\"witness\":null}",
+			"{\"version\":\"1\",\"headers\":[],\"witness\":null}",
+			"{\"version\":1,\"headers\":[\"\xff\"],\"witness\":null}",
+			"{\"version\":1,\"headers\":" + strings.Repeat("[", 10001) + strings.Repeat("]", 10001) + ",\"witness\":null}",
+		} {
+			var version uint32
+			var headers, witness experimentalCLIFieldSpan
+			if err := decodeExperimentalCLIObject([]byte(document), map[string]any{
+				"version": &version, "headers": &headers, "witness": &witness,
+			}, "witness"); err != errExperimentalCLIInput {
+				t.Fatalf("invalid document %d returned %v", i, err)
+			}
+		}
+	})
+}
+
 func TestExperimentalBatchCLIHeaderFieldSpan(t *testing.T) {
 	f := newExperimentalCLIFixture(t)
 	rows := f.bundle["momentums"].([]json.RawMessage)
