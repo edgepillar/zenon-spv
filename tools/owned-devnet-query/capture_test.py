@@ -635,15 +635,26 @@ class CaptureTests(unittest.TestCase):
         for outcome in ("same", "moved", "interrupted", "invalid"):
             with self.subTest(outcome=outcome), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary) / "evidence"
-                recorder = Recorder(root)
+                root.mkdir()
+                recorder = mock.Mock(directory=root, names=set(), records=())
+
+                def seal(name, raw):
+                    with (root / name).open("xb") as stream:
+                        stream.write(raw)
+                    recorder.names.add(name)
+                    return {"file": name, "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+
+                recorder.seal.side_effect = seal
                 provider = dict(window.provider)
                 if outcome == "invalid":
                     provider["version"] = 2
                 raw = model.canonical(provider)
                 selected = contract.data["qualified_components"]["consumer"]["binaries"]
-                binaries = mock.Mock(directory=root, **{"verify.return_value": selected})
+                binaries = mock.Mock(directory=root)
+                binaries.verify.return_value = selected
                 rpc = mock.Mock(calls=7)
-                result = mock.Mock(**{"stdout.return_value": raw})
+                result = mock.Mock()
+                result.stdout.return_value = raw
 
                 def collect(label, command, *args, stdout_name, **kwargs):
                     self.assertEqual(label, "collect-provider")

@@ -503,5 +503,10 @@ owned-devnet preparation controls.
 
 | Closure | Entries | Encoded bytes | SHA-256 |
 | --- | ---: | ---: | --- |
-| Native v3 | 1228 | 125714 | `5aacf73b800d30b9fa2da8ba8361cbf855c5493186e7768004b855e356e3b577` |
+| Native v3 | 1228 | 125714 | `44b82251f7f467064db9653184524691f2be69bec59a455ac5c0b48e9b20a389` |
 | Portable tools | 1205 | 123515 | `17e3681d251c98b9f226693cce3e6f53c9a7975a1facffd9258022ba865c4645` |
+
+The initial Windows preparation attempt failed while constructing the
+POSIX process recorder in the archive-selection control. The control now
+writes ordinary sealed fixture files through a mock recorder and checks the
+same outcomes on each platform. [Initial preparation run](https://github.com/edgepillar/zenon-spv/actions/runs/46142002146)
