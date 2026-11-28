@@ -68,6 +68,49 @@ was cleaned up. This single observation measures elapsed time and
 materialized file sizes. It leaves peak memory, throughput and target hardware
 acceptance open.
 
+## Private installation rehearsal
+
+The private manifest SHA-256 is
+`688f13c358498f889133ea2ba5ab642b21aa10501ce2b929c85b3e4ac547d261`.
+It selects three commands per platform and the source-pinned Python outer
+reader. All nine binaries matched the original CI payload sizes, SHA-256
+digests, native image formats and embedded clean VCS revision
+`c64f5453521f4f334bcb6205bbe00d9adfed3980`. Their embedded Go version was
+`go1.25.14`. [Original candidate CI](https://github.com/edgepillar/zenon-spv/actions/runs/45911169119/attempts/1)
+
+| Candidate platform | Exact artifact ID | Local installation evidence |
+| --- | ---: | --- |
+| Linux amd64 | 15160289032 | Staged ELF64 executables and verified build information and notice files. |
+| macOS amd64 | 15161063070 | Staged Mach-O executables and ran the installed read-only workflow on Apple Silicon using Rosetta. |
+| Windows amd64 | 15161241296 | Staged PE32+ executables and verified build information and notice files. |
+
+The inspection checked the selected commands' package closure against the
+pinned source, toolchain and local checksum-verified Go modules. The
+installation manifest binds 16 license and notice paths to four distinct
+protected payloads. The reviewed inputs include the project license, the
+Go distribution and its used vendored packages, and the pinned
+`golang.org/x/crypto` and `golang.org/x/sys` modules. Retaining notice
+bytes and build information leaves the independent distribution review open.
+
+Install a version in its own private directory. Verify the selected
+platform, executables, outer reader and notices from one manifest before
+using the explicit command paths. Store the saved state, expectations and
+trust settings outside that directory. To roll back after selecting an
+independently accepted version, reverify its directory and select its
+explicit paths with its paired anchor, profile, schedule and context.
+Preserve the saved inputs and evidence outside both versions.
+[Operator procedure](operator-pilot.md)
+
+The macOS rehearsal refused an inconsistent executable digest during
+installation preflight. The verified manifest still matched the installed files.
+The installed observer and outer reader matched all five preselected
+targets and refused the archived wrong target. The timed inspection and
+rehearsal phase took 6.54 seconds and materialized at most 19,832,673
+install-file bytes for one platform at a time. It reused the original
+archives with zero downloads, builds or RPC calls. Target-host install
+execution on Linux and Windows and independent consumer acceptance remain
+open.
+
 ## Scope for review
 
 The operational choice is a read-only native CLI observation against a retained
@@ -83,6 +126,6 @@ state-value proofs remain unestablished. [Operator procedure](operator-pilot.md)
 
 The frozen `6ecc2310538d511e3b26bea4c658082853266a11` review candidate keeps
 its original review scope. The runtime source in this replay has its own CI
-and retained evidence. Scoped distribution still needs independent review,
-source and dependency license notices for the selected deliverable and
-authenticated distribution of its exact bytes. [Native roadmap](native-roadmap.md)
+and retained evidence. Independent review of the selected installation and
+authenticated distribution of its exact bytes remain release exits.
+[Native roadmap](native-roadmap.md)
