@@ -1,11 +1,60 @@
-# Chain-69 opening evidence on 27 November 2026
+# Chain-69 opening and BatchEntry evidence, 27–28 November 2026
 
-The selected query uses domain 1 and batch 0 on chain 69. Both runs below
-selected the reference-gas renewal contract with SHA-256
+The selected query uses domain 1 and batch 0 on chain 69. The runs in this
+record selected the reference-gas renewal contract with SHA-256
 `7af671795d7a9a97d57432ce1b38d490580340e7b844a083298dbcaf8a5c4fe0`.
-The retained opening proof tests the selected BatchEntry key at H3, before
-fixture configuration. See the [readiness ledger](typed-query-readiness.md)
-for earlier executions and the remaining acceptance gates.
+See the [readiness ledger](typed-query-readiness.md) for the earlier
+executions and remaining acceptance gates.
+
+## Successful owned BatchEntry query on 28 November
+
+The single approved dispatch used `main` at
+`c64f5453521f4f334bcb6205bbe00d9adfed3980`. The isolated chain-69 fixture
+configured domain 1, installed its vault and completed one deposit of exactly
+1 test ZNN. The opening proof recorded batch 0 as absent at H3. The native
+consumer subsequently returned `DEVNET_CONSUMER_ACCEPTED` at H126. The
+configuration, deposit and consumer processes each completed with exit 0.
+The owned runtime was observed closed. [Executed workflow](https://github.com/edgepillar/zenon-spv/actions/runs/46148797542)
+
+| Selected input or result | Verified evidence |
+| --- | --- |
+| Anchor | v1 H2, `1ad0b03092d00325987ddc16d2c3d46d3f306092c16ec4b427406e8056c23740` |
+| v3 boundary and range | H3 through H127, with 125 producer slots derived from the selected closed ledger |
+| Query header | H126, `fe3bca70f680be2400fdf2082d7e9c314d11aafbcca7f36d98cf20ecf44a5a28` |
+| Header StateRoot | `9715728a0ceb60960a31ff171f44f7a1141f44f900fe5bf746e9a8cdf700b14e` |
+| Depth | H127 was the captured tip and supplied the next header for `W=1` |
+| Three locally derived keys | Present `BatchEntry`, `DomainRecord` and `DomainConfig` under one root |
+| Independent proof and ABI review | 2,613 proof bytes, 34 siblings and 1,216 value bytes across the three rows |
+| Native result | All 17 stored BatchEntry fields matched the gateway |
+
+The hosted consumer and parent oracle came from their separately selected
+Linux artifacts at `58e03fa9ff58a752cfd1718245b31cba73dde473`. The archive
+review bound the runner and attempt, checked 1,199 indexed files, derived
+the query context, folded each proof against the header root and compared
+the decoded rows with the actual CLI output. The original 623,651-byte ZIP
+has SHA-256
+`e891ffcef7d37f18a41d7028880b0cb08ffbad9c695121b8d7c2b1a7d87014ba`.
+[Result archive](https://github.com/edgepillar/zenon-spv/actions/runs/46148797542/artifacts/15265652595)
+
+The retained exact-main macOS binary replayed that provider body, config
+and request with zero RPC requests. Its 10,222-byte report matched the
+hosted Linux report byte for byte. Changing either pinned context produced
+`configuration_pin/mismatch` with exit 70. The local supervisor's aggregate
+`FAILURE` record was preserved because the two intended refusals returned
+nonzero. All three complete command receipts were reconciled without a
+second replay. [Exact-main macOS binary archive](https://github.com/edgepillar/zenon-spv/actions/runs/45911169119/artifacts/15161063070)
+
+The hosted execution step took 25 minutes 12 seconds. Configuration took
+556.53 seconds and the deposit phase took 589.79 seconds. The sampled
+peak new disk use was 3,412,742,144 bytes (3.18 GiB) over 4,980 samples.
+The offline replay reused both original archives and took 2.06 seconds
+without a build. These measurements cover the selected fixture workload.
+
+This completes the first owned typed `BatchEntry` result with the native
+CLI. The declared anchor, producer schedule, selected profile and context pins
+define the experiment's trust scope. General live-node recovery, intended
+network activation, representative R1 budgets, independent review and
+production state-proof acceptance remain open.
 
 ## Opening and terminal outcomes
 
@@ -167,29 +216,23 @@ This sample measures document size. The test used one build and existing
 module inputs, took 9.63 seconds, and observed 156,457,595 bytes of temporary
 workspace data after execution and before cleanup.
 
-## Remaining acceptance evidence
+## Qualification for the successful runner
 
-The captures provide two observed opening transitions and independently
-rechecked candidate-root absence proofs. The next execution must derive its
-own anchor from its opening response. D2 still requires finite producer
-authorization from the selected closed-ledger range. D3 and the native host
-exit require three present canonical proofs under the same header-derived
-StateRoot, a completed typed BatchEntry result and all 17 stored gateway
-fields matching.
+The two earlier captures established observed opening transitions and
+independently rechecked candidate-root absence proofs. The later successful
+dispatch derived its own anchor and closed-ledger producer schedule.
 
-The next prepared main runner is
-`c64f5453521f4f334bcb6205bbe00d9adfed3980`. Its exact-source qualification
-covered 44 original archives and 21 binaries. It gives the reference-gas
-configuration command 660 seconds and retains selected progress on timeout.
-A fresh dispatch requires its own approval. [General CI](https://github.com/edgepillar/zenon-spv/actions/runs/45911169119),
-[preparation CI](https://github.com/edgepillar/zenon-spv/actions/runs/45911169178).
+Main runner `c64f5453521f4f334bcb6205bbe00d9adfed3980` had exact-source CI
+qualification covering 44 original archives and 21 binaries before dispatch.
+It gives reference-gas configuration 660 seconds and retains selected
+progress on timeout. [General CI](https://github.com/edgepillar/zenon-spv/actions/runs/45911169119) ·
+[Preparation CI](https://github.com/edgepillar/zenon-spv/actions/runs/45911169178)
 
-The consumer and parent-oracle archives use source
-`58e03fa9ff58a752cfd1718245b31cba73dde473`. The 27 November metadata check
-reported both archives unexpired. The earlier listed expiry is 11 December 2026
-at 15:36 UTC, so the next dispatch must repeat the availability check.
-[Consumer artifact](https://github.com/edgepillar/zenon-spv/actions/runs/44764773500/artifacts/14645836816),
-[parent-oracle artifact](https://github.com/edgepillar/zenon-spv/actions/runs/44764773665/artifacts/14644100853).
+The selected consumer and parent-oracle inputs used
+`58e03fa9ff58a752cfd1718245b31cba73dde473`. Both artifact identities,
+sizes, digests and availability were checked before the dispatch.
+[Consumer artifact](https://github.com/edgepillar/zenon-spv/actions/runs/44764773500/artifacts/14645836816) ·
+[Parent-oracle artifact](https://github.com/edgepillar/zenon-spv/actions/runs/44764773665/artifacts/14644100853)
 
 ## Closed-fixture snapshot transport and header comparison
 
@@ -230,8 +273,8 @@ orchestration error and retained interrupted runs with their failure status.
 
 The original fixture outcome remains `UNKNOWN`. This completes a bounded
 transport and header-root comparison for reconstructed fixtures.
-Representative capture, excluded-state provenance, import and restart, and
-successful live typed consumption remain open.
+Representative capture, excluded-state provenance, and production import and
+restart acceptance remain open.
 
 ## Restore the closed H3 ledger and rebuild derived stores
 
@@ -335,9 +378,9 @@ retained verifier and running the six controls took 2.22 seconds. The original
 archives were reused throughout.
 
 This evidence covers reconstructed fixtures and a configured CLI context.
-Both original runner outcomes remain `UNKNOWN`. A depth-one successor for
-the replacement branch, a present typed `BatchEntry` consumed end to end, and
-production recovery and fork-choice acceptance remain open.
+Both original runner outcomes remain `UNKNOWN`. The replacement archive ends
+at H3, and the checked rows are absent in these two captures. Production
+recovery and fork-choice acceptance remain open.
 
 ## Replay with experimentally hash-bound node storage
 

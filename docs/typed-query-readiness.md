@@ -1,8 +1,11 @@
 # Typed-query readiness and acceptance ledger
 
-The [27 November opening replay](typed-query-evidence-2026-11-27.md) records
-the H1–H3 evidence from the two later reference-gas executions and the source
-and input selection for the next separately approved attempt.
+The [28 November owned BatchEntry query](typed-query-evidence-2026-11-27.md#successful-owned-batchentry-query-on-28-november)
+completed on the isolated chain-69 fixture at `c64f545`. Domain 1, batch 0
+was present at H126 under the selected header StateRoot, and the native CLI
+matched all 17 stored gateway fields. This satisfies G2 for the selected
+owned query and supplies D3 and native D5 execution evidence. The general
+node, intended-network, representative-budget and release gates remain open.
 
 The [15 November source/execution supplement](typed-query-evidence-2026-11-15.md)
 records the qualified runner sources and retained H1/H2 diagnostics. The dated ledger
@@ -150,7 +153,7 @@ remain deferred when their path is not part of the selected query.
 | C08: canonical proof/ABI/schema | [Strict ABI](candidate-batch-entry-codec.md), canonical-proof and source-field rules, malformed/trailing/unknown-schema refusals. | Compare actual authenticated bytes under the exact selected schema. |
 | C09: exact/one-short limits | Value, node, proof, aggregate-work/input caps and bounded collector/consumer controls. | Local policy caps and codec observations do not establish production hardware/resource budgets. |
 | C10: mixed root/time/processed facts | Same-H/root three-row composition and [current-H domain semantics](batch-entry-domain-context.md). | H<finalizeAtHeight<=T does not establish finality at H. Processed/withdrawal claims require separately selected D4 policy. |
-| C11: gateway/nested identity | All 17 stored BatchEntry fields are compared by the [strict consumer](../tools/owned-devnet-query/query_checks.py). | Actual selected DTO comparison remains open; unrelated nested L2 input/message proof cases belong to D4. |
+| C11: gateway/nested identity | The [strict consumer](../tools/owned-devnet-query/query_checks.py) matched all 17 stored BatchEntry fields in the selected owned run. | Other nested L2 input and message proof cases require their own D4 scope. |
 | C12: unavailable/pruned/incomplete | Bounded acquisition, command completion, partial-output and missing-witness refusal controls. | Preserve actual failure/unknown; DA retrieval and liveness are not established by an L1 membership result. |
 | C13: state/context/restart | v1/v2 regression, immutable ownership, source-separated checkpoints, and [recorded activation rollback, branch replacement and restart](typed-query-evidence-2026-11-27.md#replay-with-experimentally-hash-bound-node-storage). | General node recovery, live checkpoint workflows and trust renewal remain open. |
 | C14: process/output/channel | Actual exit/completeness capture, owned closure and [retained-result review](../tools/owned-devnet-query/review.py). | An ACCEPT-bearing payload cannot promote a failed/incomplete process into successful consumption. |
@@ -160,9 +163,9 @@ remain deferred when their path is not part of the selected query.
 
 | Gate | State / concrete remaining evidence |
 | --- | --- |
-| G0: scope/source/query | Three separately authorized exact-source executions are retained as non-accepting: builder closure, first node RPC read, then selected-height readiness deadline. All three authorizations are consumed; a new fixture run needs a new explicit approval. Actual run-derived anchor/range remain open. |
-| G1: conformance/profile | New-source bounded conformance and H1 lifecycle are recorded; actual first-v3 range/authorization and applicable profile review remain open. |
-| G2: actual typed consumer | **OPEN:** the real selected three-row capture and completed native consumer. Green CI and retained-result mathematics do not close it. |
+| G0: scope/source/query | The exact `c64f545` dispatch used main, the selected reference-gas renewal contract, the run-derived H2 anchor and the selected domain 1, batch 0 query. Its single-run authorization was consumed. |
+| G1: conformance/profile | The owned run captured v1 H2 and v3 H3, then checked the configured v3 range H3–H127 under finite closed-ledger producer slots. Agreement on the intended network profile remains open. |
+| G2: actual typed consumer | **SATISFIED FOR THE SELECTED OWNED QUERY:** attempt 1 of run `46148797542` completed the three-row query and native comparison. The original hosted archive and a byte-identical exact-main macOS replay retain the result. |
 | G3: integrated node/profile | General identity/recovery and agreed supported profile behavior remain open; a narrow owned devnet success would not close every node lifecycle path. |
 | G4: representative budgets | **OPEN:** an authorized consistent raw-ledger dataset, capture owner/method and full identity/size/frontier metadata; see [#270](https://github.com/edgepillar/zenon-spv/issues/270). Source-genesis and synthetic workloads are not representative R1 data. |
 | G5: exact-network activation/pilot | **OPEN:** authenticated intended-network inputs and an actual scoped pilot. Native v1/v2 inclusion remains independent of Zeno v3 activation. |
