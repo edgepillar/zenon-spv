@@ -58,6 +58,7 @@ func decodeRetainedWindowValue(d *json.Decoder, maxHeaders int) ([]chain.Header,
 		}
 		// Preserve the distinction between [] and null in saved-state round trips.
 		decoded = make([]chain.Header, 0)
+		var headers chain.HeaderJSONDecoder
 		for d.More() {
 			if len(decoded) >= maxHeaders {
 				return nil, fmt.Errorf("%w: retained header count exceeds persistence limit", ErrInvalidRetainedState)
@@ -72,7 +73,7 @@ func decodeRetainedWindowValue(d *json.Decoder, maxHeaders int) ([]chain.Header,
 			}
 			// The window is private until the complete array has decoded.
 			decoded = append(decoded, chain.Header{})
-			if err := d.Decode(&decoded[len(decoded)-1]); err != nil {
+			if err := headers.Decode(d, &decoded[len(decoded)-1]); err != nil {
 				return nil, err
 			}
 		}

@@ -98,18 +98,40 @@ func (h *Header) ComputeHash() Hash {
 	return Hash(sha3.Sum256(buf))
 }
 
+type headerJSONFields Header
+
+type headerJSON = struct {
+	headerJSONFields
+	Fusion *uint64 `json:"nextFusionPrice"`
+	Work   *uint64 `json:"nextWorkPrice"`
+}
+
 // UnmarshalJSON requires explicit prices for v2. Missing or null prices must
 // not silently become zero through proof bundles or persisted state.
 func (h *Header) UnmarshalJSON(raw []byte) error {
-	type plain Header
-	var wire struct {
-		plain
-		Fusion *uint64 `json:"nextFusionPrice"`
-		Work   *uint64 `json:"nextWorkPrice"`
-	}
+	var wire headerJSON
 	if err := json.Unmarshal(raw, &wire); err != nil {
 		return err
 	}
+	return setHeaderFromJSON(h, &wire)
+}
+
+// HeaderJSONDecoder decodes consecutive headers directly from a JSON stream
+// with the same field rules as Header.UnmarshalJSON. Use one instance per
+// reader. Each successful call assigns a header with its own decoded bytes.
+type HeaderJSONDecoder struct {
+	wire headerJSON
+}
+
+func (d *HeaderJSONDecoder) Decode(stream *json.Decoder, h *Header) error {
+	d.wire = headerJSON{}
+	if err := stream.Decode(&d.wire); err != nil {
+		return err
+	}
+	return setHeaderFromJSON(h, &d.wire)
+}
+
+func setHeaderFromJSON(h *Header, wire *headerJSON) error {
 	if wire.Version == MomentumVersion2 && (wire.Fusion == nil || wire.Work == nil) {
 		return errors.New("version 2 header requires nextFusionPrice and nextWorkPrice")
 	}
@@ -119,7 +141,7 @@ func (h *Header) UnmarshalJSON(raw []byte) error {
 	if wire.Work != nil {
 		wire.NextWorkPrice = *wire.Work
 	}
-	*h = Header(wire.plain)
+	*h = Header(wire.headerJSONFields)
 	return nil
 }
 

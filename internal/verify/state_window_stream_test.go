@@ -320,6 +320,36 @@ func TestStreamedStateWindowTrustedResume(t *testing.T) {
 	}
 }
 
+func TestStreamedStateWindowResetsHeaderFields(t *testing.T) {
+	const first = `{"version":2,"nextFusionPrice":7,"nextWorkPrice":8,"publicKey":"AAE=","signature":"AgM="}`
+	const second = `{"Version":2,"NextFusionPrice":9,"NextWorkPrice":10,"publicKey":"BAU=","signature":"Bgc="}`
+	const third = `{"version":1,"extra":{"nextFusionPrice":11}}`
+	raw := []byte(`[` + first + `,` + second + `,` + third + `,null]`)
+	var want []chain.Header
+	if err := json.Unmarshal(raw, &want); err != nil {
+		t.Fatal(err)
+	}
+	got, err := decodeRetainedWindow(raw, len(want))
+	if err != nil || !reflect.DeepEqual(got, want) {
+		t.Fatal("reused decoder changed header values or kept fields from an earlier row", err)
+	}
+	got[0].PublicKey[0] ^= 1
+	got[0].Signature[0] ^= 1
+	if !reflect.DeepEqual(got[1:], want[1:]) {
+		t.Fatal("decoded headers share mutable bytes")
+	}
+	for _, bad := range []string{
+		`{"version":2,"nextFusionPrice":9}`,
+		`{"version":2,"nextFusionPrice":9,"nextWorkPrice":null}`,
+		`{"version":2,"nextFusionPrice":9,"nextWorkPrice":"10"}`,
+	} {
+		got, err := decodeRetainedWindow([]byte(`[`+first+`,`+bad+`]`), 2)
+		if err == nil || got != nil {
+			t.Fatal("later header inherited a price or published a partial window")
+		}
+	}
+}
+
 func FuzzStreamedStateWindow(f *testing.F) {
 	for _, input := range []string{
 		`{}`, `null`, `{"retained_window":null}`, `{"retained_window":[],"capacity":1}`,
